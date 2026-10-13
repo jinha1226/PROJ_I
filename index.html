@@ -155,7 +155,10 @@ const DW=76,DH=54,exploreGrid=Array.from({length:DH},()=>Array(DW).fill(0));
 const chambers=[];let seed=14729;function dungeonRandom(){seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296}
 function dig(x,y){if(x>=1&&x<DW-1&&y>=1&&y<DH-1)exploreGrid[y][x]=1}
 function carveTunnel(a,b){let [x,y]=a;const [tx,ty]=b;const horizontal=dungeonRandom()<.5;const lineX=()=>{while(x!==tx){dig(x,y);x+=Math.sign(tx-x)}dig(x,y)},lineY=()=>{while(y!==ty){dig(x,y);y+=Math.sign(ty-y)}dig(x,y)};if(horizontal){lineX();lineY()}else{lineY();lineX()}}
-for(let attempts=0;attempts<650&&chambers.length<27;attempts++){const w=5+Math.floor(dungeonRandom()*7),h=5+Math.floor(dungeonRandom()*6),x=2+Math.floor(dungeonRandom()*(DW-w-4)),y=2+Math.floor(dungeonRandom()*(DH-h-4));if(chambers.some(([rx,ry,rw,rh])=>x<rx+rw+2&&x+w+2>rx&&y<ry+rh+2&&y+h+2>ry))continue;chambers.push([x,y,w,h]);for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++)dig(i,j)}
+// Original combat arena is 18 x 14 world units. At 1.6 units per tile,
+// its usable floor corresponds to roughly 11 x 9 cells.
+for(let attempts=0;attempts<900&&chambers.length<22;attempts++){const w=11,h=9,x=2+Math.floor(dungeonRandom()*(DW-w-4)),y=2+Math.floor(dungeonRandom()*(DH-h-4));if(chambers.some(([rx,ry,rw,rh])=>x<rx+rw+2&&x+w+2>rx&&y<ry+rh+2&&y+h+2>ry))continue;chambers.push([x,y,w,h]);for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++)dig(i,j)}
+
 const centers=chambers.map(([x,y,w,h])=>[Math.floor(x+w/2),Math.floor(y+h/2)]);
 const connected=new Set([0]);while(connected.size<centers.length){let best=null;for(const i of connected)for(let j=0;j<centers.length;j++){if(connected.has(j))continue;const d=(centers[i][0]-centers[j][0])**2+(centers[i][1]-centers[j][1])**2;if(!best||d<best.d)best={i,j,d}}if(!best)break;carveTunnel(centers[best.i],centers[best.j]);connected.add(best.j)}
 for(let i=0;i<centers.length;i++)for(let j=i+1;j<centers.length;j++){const d=Math.hypot(centers[i][0]-centers[j][0],centers[i][1]-centers[j][1]);if(d<19&&dungeonRandom()<.12)carveTunnel(centers[i],centers[j])}
@@ -166,7 +169,7 @@ const mapDirs=[[1,0],[-1,0],[0,1],[0,-1]];
 function mapReveal(){let changed=false;const reveal=(x,y)=>{if(x>=0&&y>=0&&x<DW&&y<DH&&exploreGrid[y][x]&&!explored[y][x]){explored[y][x]=true;changed=true}};const room=chambers.find(([rx,ry,w,h])=>explorer.x>=rx&&explorer.x<rx+w&&explorer.y>=ry&&explorer.y<ry+h);if(room){const [rx,ry,w,h]=room;for(let y=ry;y<ry+h;y++)for(let x=rx;x<rx+w;x++)reveal(x,y)}else{for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++)if(dx*dx+dy*dy<=9)reveal(explorer.x+dx,explorer.y+dy)}return changed}
 function mapRoute(){const queue=[[explorer.x,explorer.y]],seen=new Set([explorer.x+','+explorer.y]),parent=new Map();let target=null;for(let i=0;i<queue.length;i++){const [x,y]=queue[i];if(!explored[y][x]){target=[x,y];break}for(const [dx,dy] of mapDirs){const nx=x+dx,ny=y+dy,k=nx+','+ny;if(nx<0||ny<0||nx>=DW||ny>=DH||!exploreGrid[ny][nx]||seen.has(k))continue;seen.add(k);parent.set(k,[x,y]);queue.push([nx,ny])}}if(!target)return [];const path=[];while(target[0]!==explorer.x||target[1]!==explorer.y){path.push(target);target=parent.get(target[0]+','+target[1]);if(!target)break}return path.reverse()}
 function drawExplore(){const cw=mapCanvas.width/DW,ch=mapCanvas.height/DH;mapCtx.fillStyle='#080d15';mapCtx.fillRect(0,0,mapCanvas.width,mapCanvas.height);let total=0,known=0;for(let y=0;y<DH;y++)for(let x=0;x<DW;x++){if(!exploreGrid[y][x])continue;total++;if(!explored[y][x])continue;known++;mapCtx.fillStyle='#465b62';mapCtx.fillRect(x*cw+1,y*ch+1,cw-2,ch-2)}mapCtx.fillStyle='#f0d59d';mapCtx.beginPath();mapCtx.arc((explorer.x+.5)*cw,(explorer.y+.5)*ch,Math.min(cw,ch)*.38,0,Math.PI*2);mapCtx.fill();document.getElementById('exploreInfo').textContent='지도 완성도 '+Math.round(known/total*100)+'% · 발견 '+known+'/'+total+'칸 · '+(known===total?'지도 완성!':exploreRunning?'자동 탐험 중':'일시정지') }
-function tickExplore(dt){if(!exploreActive||!exploreRunning||exploreMode!=='travel')return;exploreClock+=dt;exploreSaveClock+=dt;while(exploreClock>=.28){exploreClock-=.28;mapReveal();if(!explorePath.length)explorePath=mapRoute();if(explorePath.length){const [x,y]=explorePath.shift();explorer={x,y}}else{exploreRunning=false;break}}if(exploreSaveClock>=2||!exploreRunning){localStorage.setItem('proj_i_map_v1',JSON.stringify(explored));exploreSaveClock=0}drawExplore()}
+function tickExplore(dt){if(!exploreActive||!exploreRunning||exploreMode!=='travel')return;exploreClock+=dt;exploreSaveClock+=dt;while(exploreClock>=.28){exploreClock-=.28;mapReveal();if(!explorePath.length)explorePath=mapRoute();if(explorePath.length){const [x,y]=explorePath.shift();explorer={x,y}}else{exploreRunning=false;break}}if(exploreSaveClock>=2||!exploreRunning){localStorage.setItem('proj_i_map_v3',JSON.stringify(explored));exploreSaveClock=0}drawExplore()}
 document.getElementById('exploreBtn').onclick=()=>{exploreActive=true;exploreRunning=true;exploreClock=0;mapReveal();drawExplore();document.getElementById('explorePanel').hidden=false;document.getElementById('exploreToggle').textContent='탐험 일시정지'};
 document.getElementById('exploreClose').onclick=()=>{exploreActive=exploreMode==='travel';localStorage.setItem('proj_i_map_v1',JSON.stringify(explored));document.getElementById('explorePanel').hidden=true};
 document.getElementById('exploreToggle').onclick=()=>{exploreRunning=!exploreRunning;document.getElementById('exploreToggle').textContent=exploreRunning?'탐험 일시정지':'탐험 계속';drawExplore()};
@@ -184,11 +187,11 @@ function travelWorld(){
  const add=(w,h,d,x,y,z,c)=>travelBlock(w,h,d,x,y,z,c);
  const dungeonNames=[...dungeonKit.keys()];
  const choose=(pattern)=>dungeonNames.find(n=>pattern.test(n));
- const floorModel=choose(/^(floor|tile_ground|ground_tile)/i);
- const wallModel=choose(/^wall(?!.*corner)/i);
- const pillarModel=choose(/^(pillar|column)/i);
- const torchModel=choose(/^torch/i);
- const crateModel=choose(/^(crate|barrel)/i);
+ const floorModel=null; // Preserve the original combat room's geometry and dimensions
+ const wallModel=null; // No arbitrary GLB wall pieces with incompatible bounds
+ const pillarModel=null;
+ const torchModel=null;
+ const crateModel=null;
  const place=(name,x,y,z,size,angle=0)=>{if(name)placeKit(name,x,y,z,size,angle)};
  // Build rooms from the original combat-room language: layered stone floor,
  // continuous masonry perimeter, raised trim, columns and torches.
