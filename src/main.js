@@ -1,3 +1,4 @@
+import {createTravelBlock,disposeTravelGeometry} from './rendering/travelGeometry.js';
 import {drawExplorationMap} from './ui/explorationMap.js';
 import {tileToWorld,worldToTile} from './rendering/coordinates.js';
 import {updatePartyHealthUI} from './ui/partyHealth.js';
@@ -298,8 +299,8 @@ document.getElementById('exploreBtn').onclick=()=>{exploreActive=true;exploreRun
 document.getElementById('exploreClose').onclick=()=>{exploreActive=exploreMode==='travel';localStorage.setItem('proj_i_map_v1',JSON.stringify(explored));document.getElementById('explorePanel').hidden=true};
 document.getElementById('exploreToggle').onclick=()=>{exploreRunning=!exploreRunning;document.getElementById('exploreToggle').textContent=exploreRunning?'탐험 일시정지':'탐험 계속';drawExplore()};
 
-function clearTravel(){for(const m of travelMeshes){scene.remove(m);m.geometry?.dispose();if(m.material&&!Array.isArray(m.material))m.material.dispose()}travelMeshes=[];for(const m of travelMarkers){scene.remove(m)}travelMarkers=[]}
-function travelBlock(w,h,d,x,y,z,color){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.95}));m.position.set(x,y,z);scene.add(m);travelMeshes.push(m);return m}
+function clearTravel(){disposeTravelGeometry(scene,travelMeshes,travelMarkers);travelMeshes=[];travelMarkers=[]}
+function travelBlock(w,h,d,x,y,z,color){return createTravelBlock(THREE,scene,travelMeshes,w,h,d,x,y,z,color)}
 function travelWorld(){
  dungeonGeometryBuilt=true;clearTravel();for(const o of roomObjects)scene.remove(o);roomObjects=[];obstacles=[];
  const T=1.6,wx=x=>(x-DW/2)*T,wz=y=>(y-DH/2)*T;
