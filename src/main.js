@@ -1,3 +1,4 @@
+import {expeditionReward,livingRoster,recordHeroDeath,closeInterruptedExpedition} from './expedition/rules.js';
 import * as THREE from 'three';import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';import {clone} from 'three/addons/utils/SkeletonUtils.js';
 const $=id=>document.getElementById(id),game=$('game');const scene=new THREE.Scene();scene.background=new THREE.Color(0x111722);scene.fog=new THREE.Fog(0x111722,23,48);
 const camera=new THREE.OrthographicCamera(-12,12,12,-12,.1,100);const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;game.prepend(renderer.domElement);
@@ -183,17 +184,17 @@ const GUILD_KEY='proj_i_guild_v1';
 let guild;try{guild=JSON.parse(localStorage.getItem(GUILD_KEY))}catch(e){}
 if(!guild||!Array.isArray(guild.roster))guild={supplies:30,nextId:4,expeditions:0,deepest:0,roster:[{id:1,type:'Knight',hp:115,alive:true},{id:2,type:'Rogue_Hooded',hp:78,alive:true},{id:3,type:'Mage',hp:75,alive:true}]};
 const saveGuild=()=>localStorage.setItem(GUILD_KEY,JSON.stringify(guild));
-if(guild.activeExpedition){guild.activeExpedition=false;guild.expeditions++;localStorage.setItem(GUILD_KEY,JSON.stringify(guild))}
+if(closeInterruptedExpedition(guild))saveGuild()
 let retreating=false,expeditionSteps=0,expeditionKills=0,expeditionLoot=0,expeditionSettled=true,expeditionDiscoveries=new Set(),retreatEscapeRoom=-1,retreatGrace=0;
 const commandBar=document.createElement('div');commandBar.style.cssText='position:absolute;bottom:12px;left:12px;z-index:30;display:flex;gap:8px';
 const retreatButton=document.createElement('button');retreatButton.textContent='⚑ 퇴각';const hubButton=document.createElement('button');hubButton.textContent='거점';
 for(const b of [retreatButton,hubButton])b.style.cssText='padding:12px;background:#263e52;color:white;border:1px solid #8fa6bd;border-radius:8px';
 commandBar.append(retreatButton,hubButton);document.getElementById('game').appendChild(commandBar);
 const hubPanel=document.createElement('div');hubPanel.style.cssText='display:none;position:absolute;inset:12% 7%;z-index:65;background:#101923f5;color:white;padding:18px;overflow:auto;border:1px solid #8198a9;border-radius:12px';document.getElementById('game').appendChild(hubPanel);
-function markCasualty(a){if(a.team!=='hero'||!a.rosterId)return;const h=guild.roster.find(h=>h.id===a.rosterId);if(h&&h.alive){h.alive=false;h.hp=0;saveGuild()}}
+function markCasualty(a){if(a.team!=='hero'||!a.rosterId)return;const h=guild.roster.find(h=>h.id===a.rosterId);if(recordHeroDeath(guild.roster,a.rosterId))saveGuild()}
 function syncRoster(){for(const a of actors.filter(a=>a.team==='hero'&&a.rosterId)){const h=guild.roster.find(h=>h.id===a.rosterId);if(h){h.alive=!a.dead&&a.hp>0;h.hp=Math.max(1,Math.ceil(a.hp))}}saveGuild()}
 function showHub(msg=''){
- const living=guild.roster.filter(h=>h.alive);
+ const living=livingRoster(guild.roster,Infinity);
  if(exploreMode!=='base')return;
  hubPanel.style.display='block';
  hubPanel.innerHTML='<h2>원정대 거점</h2><p>'+msg+'</p><p>보급품 '+guild.supplies+' · 원정 '+guild.expeditions+'회 · 최장 이동 '+guild.deepest+'칸</p><h3>영웅 명부</h3>'+guild.roster.map(h=>'<div>'+({Knight:'전사',Rogue_Hooded:'궁수',Mage:'마법사'}[h.type])+' #'+h.id+' · '+(h.alive?'HP '+h.hp:'☠ 영구 사망')+'</div>').join('')+'<p>모집 비용: 보급품 10</p><button id="recruitK">전사 모집</button> <button id="recruitR">궁수 모집</button> <button id="recruitM">마법사 모집</button><p><button id="expeditionGo">원정 출발 ('+Math.min(3,living.length)+'명)</button> <button id="hubClose">닫기</button></p>';
@@ -205,7 +206,7 @@ function returnToBase(msg,success=true){
  if(expeditionSettled)return;
  expeditionSettled=true;clearTimeout(nextBattleTimer);syncRoster();
  const survivors=actors.filter(a=>a.team==='hero'&&!a.dead&&a.hp>0).length;
- const reward=success&&survivors?Math.floor(expeditionDiscoveries.size/5)+expeditionLoot:0;
+ const reward=expeditionReward({successful:success,survivors,discoveredTiles:expeditionDiscoveries.size,loot:expeditionLoot});
  guild.expeditions++;guild.deepest=Math.max(guild.deepest,expeditionSteps);guild.supplies+=reward;guild.activeExpedition=false;saveGuild();
  exploreMode='base';exploreRunning=false;ready=false;finished=true;retreating=false;
  for(const a of actors){scene.remove(a.root);scene.remove(a.ring)}actors=[];
@@ -429,7 +430,7 @@ function partyTravelPosition(dt=0){
   a.ring.position.set(a.pos.x,.035,a.pos.z);a.mixer.update(dt);
  });
 }
-async function enterTravel(){visitedRooms.add(0);clearTimeout(nextBattleTimer);exploreMode='travel';exploreActive=true;exploreRunning=true;finished=false;paused=false;ready=false;document.getElementById('explorePanel').hidden=true;document.getElementById('notice').textContent='';revealDungeon();if(!actors.some(a=>a.team==='hero')){if(retreating)return returnToBase('원정대 전멸',false);try{const team=guild.roster.filter(h=>h.alive).slice(0,3);await Promise.all(team.map(async h=>{const stats={Knight:[115,19,1.5,.9],Rogue_Hooded:[78,13,5,1.15],Mage:[75,11,5.5,1.3]}[h.type];const a=await spawn(h.type,'hero',0,0,h.hp,stats[1],stats[2],stats[3]);a.rosterId=h.id}));actors.sort((a,b)=>a.team==='hero'&&b.team==='hero'?team.findIndex(h=>h.id===a.rosterId)-team.findIndex(h=>h.id===b.rosterId):0);$('party').innerHTML=actors.filter(a=>a.team==='hero').map(a=>'<div class="card"><div class="name"><span>'+({Knight:'전사',Rogue_Hooded:'궁수',Mage:'마법사'}[a.name])+'</span><span>'+a.max+' HP</span></div><div class="hp"><span id="hp-'+a.name+'"></span></div></div>').join('')}catch(e){console.error(e);guild.activeExpedition=false;saveGuild();exploreMode='base';showHub('영웅 로딩 실패: '+e.message);return}}await populateDungeonMonsters();travelTarget=worldPoint(explorer.x,explorer.y);partyTravelPosition();$('status').textContent='STAGE '+progress.stage+' · 던전 탐험';$('battleInfo').textContent='자동 탐험 · 지도 '+Math.round(explored.flat().filter(Boolean).length/exploreGrid.flat().filter(Boolean).length*100)+'%';}
+async function enterTravel(){visitedRooms.add(0);clearTimeout(nextBattleTimer);exploreMode='travel';exploreActive=true;exploreRunning=true;finished=false;paused=false;ready=false;document.getElementById('explorePanel').hidden=true;document.getElementById('notice').textContent='';revealDungeon();if(!actors.some(a=>a.team==='hero')){if(retreating)return returnToBase('원정대 전멸',false);try{const team=livingRoster(guild.roster);await Promise.all(team.map(async h=>{const stats={Knight:[115,19,1.5,.9],Rogue_Hooded:[78,13,5,1.15],Mage:[75,11,5.5,1.3]}[h.type];const a=await spawn(h.type,'hero',0,0,h.hp,stats[1],stats[2],stats[3]);a.rosterId=h.id}));actors.sort((a,b)=>a.team==='hero'&&b.team==='hero'?team.findIndex(h=>h.id===a.rosterId)-team.findIndex(h=>h.id===b.rosterId):0);$('party').innerHTML=actors.filter(a=>a.team==='hero').map(a=>'<div class="card"><div class="name"><span>'+({Knight:'전사',Rogue_Hooded:'궁수',Mage:'마법사'}[a.name])+'</span><span>'+a.max+' HP</span></div><div class="hp"><span id="hp-'+a.name+'"></span></div></div>').join('')}catch(e){console.error(e);guild.activeExpedition=false;saveGuild();exploreMode='base';showHub('영웅 로딩 실패: '+e.message);return}}await populateDungeonMonsters();travelTarget=worldPoint(explorer.x,explorer.y);partyTravelPosition();$('status').textContent='STAGE '+progress.stage+' · 던전 탐험';$('battleInfo').textContent='자동 탐험 · 지도 '+Math.round(explored.flat().filter(Boolean).length/exploreGrid.flat().filter(Boolean).length*100)+'%';}
 function explorerRoomIndex(){return centers.findIndex(([x,y])=>x===explorer.x&&y===explorer.y)}
 async function populateDungeonMonsters(){
  if(dungeonMonstersReady)return;
