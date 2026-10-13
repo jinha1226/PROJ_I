@@ -1,3 +1,4 @@
+import {drawExplorationMap} from './ui/explorationMap.js';
 import {tileToWorld,worldToTile} from './rendering/coordinates.js';
 import {updatePartyHealthUI} from './ui/partyHealth.js';
 import {mapRoute as computeExplorationRoute} from './dungeon/explorationRoute.js';
@@ -291,7 +292,7 @@ function runPathfinderComparison(){
  comparePanel.appendChild(canvas);
  comparePanel.querySelector('#compareClose').onclick=()=>comparePanel.style.display='none';
 }
-function drawExplore(){const cw=mapCanvas.width/DW,ch=mapCanvas.height/DH;mapCtx.fillStyle='#080d15';mapCtx.fillRect(0,0,mapCanvas.width,mapCanvas.height);let total=0,known=0;for(let y=0;y<DH;y++)for(let x=0;x<DW;x++){if(!exploreGrid[y][x])continue;total++;if(!explored[y][x])continue;known++;mapCtx.fillStyle='#465b62';mapCtx.fillRect(x*cw+1,y*ch+1,cw-2,ch-2)}if(routeHistory.length>1){mapCtx.strokeStyle=pathfinderSkill?'#6bc8ff':'#f1a35c';mapCtx.lineWidth=1.6;mapCtx.beginPath();routeHistory.forEach(([x,y],i)=>{if(i===0)mapCtx.moveTo((x+.5)*cw,(y+.5)*ch);else mapCtx.lineTo((x+.5)*cw,(y+.5)*ch)});mapCtx.stroke()}mapCtx.fillStyle='#f0d59d';mapCtx.beginPath();mapCtx.arc((explorer.x+.5)*cw,(explorer.y+.5)*ch,Math.min(cw,ch)*.38,0,Math.PI*2);mapCtx.fill();document.getElementById('exploreInfo').textContent=(pathfinderSkill?'길잡이 ON · ':'길잡이 OFF · ')+'지도 완성도 '+Math.round(known/total*100)+'% · 발견 '+known+'/'+total+'칸 · '+(known===total?'지도 완성!':exploreRunning?'자동 탐험 중':'일시정지') }
+function drawExplore(){drawExplorationMap({mapCanvas,mapCtx,DW,DH,exploreGrid,explored,routeHistory,pathfinderSkill,explorer,exploreRunning,infoElement:document.getElementById('exploreInfo')})}
 function tickExplore(dt){if(!exploreActive||!exploreRunning||exploreMode!=='travel')return;exploreClock+=dt;exploreSaveClock+=dt;while(exploreClock>=.28){exploreClock-=.28;mapReveal();if(!explorePath.length)explorePath=mapRoute();if(explorePath.length){const [x,y]=explorePath.shift();explorer={x,y}}else{exploreRunning=false;break}}if(exploreSaveClock>=2||!exploreRunning){localStorage.setItem('proj_i_map_v3',JSON.stringify(explored));exploreSaveClock=0}drawExplore()}
 document.getElementById('exploreBtn').onclick=()=>{exploreActive=true;exploreRunning=true;exploreClock=0;mapReveal();drawExplore();document.getElementById('explorePanel').hidden=false;document.getElementById('exploreToggle').textContent='탐험 일시정지'};
 document.getElementById('exploreClose').onclick=()=>{exploreActive=exploreMode==='travel';localStorage.setItem('proj_i_map_v1',JSON.stringify(explored));document.getElementById('explorePanel').hidden=true};
