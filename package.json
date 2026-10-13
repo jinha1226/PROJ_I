@@ -1,0 +1,9 @@
+{
+  "name": "proj-i",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules --test tests/*.test.mjs",
+    "check": "npm test"
+  }
+}
