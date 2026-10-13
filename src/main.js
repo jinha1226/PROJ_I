@@ -1,3 +1,4 @@
+import {beginRoomEncounter} from './expedition/encounter.js';
 import {updateEffects as advanceCombatEffects} from './combat/effects.js';
 import {applyDamage as resolveDamage} from './combat/applyDamage.js';
 import {renderPathfinderComparison} from './ui/pathfinderComparison.js';
@@ -334,12 +335,7 @@ async function populateDungeonMonsters(){
  }
  try{await Promise.all(jobs)}catch(e){dungeonMonstersReady=false;console.error('Dungeon monster generation failed',e)}
 }
-async function roomEncounter(idx){
- exploreMode='combat';activeCombatRoom=idx;exploreActive=false;ready=false;finished=false;visitedRooms.add(idx);explorePath=[];
- const enemies=dungeonRoomMonsters.get(idx)||[];
- for(const enemy of enemies){if(enemy.dead)continue;enemy.root.visible=true;enemy.ring.visible=true}
- ready=true;$('status').textContent='STAGE '+progress.stage+' · 전투';renderHP();
-}
+async function roomEncounter(idx){const state={exploreMode,activeCombatRoom,exploreActive,ready,finished,visitedRooms,explorePath,dungeonRoomMonsters,progress};beginRoomEncounter(idx,state,{status:$('status'),renderHP});({exploreMode,activeCombatRoom,exploreActive,ready,finished,explorePath}=state)}
 function routeToEntrance(){return routeBetween(exploreGrid,[explorer.x,explorer.y],centers[0],mapDirs)}
 function travelStep(dt){if(!canTravel(exploreMode,paused,travelBusy,actors))return;if(retreating&&explorer.x===centers[0][0]&&explorer.y===centers[0][1]&&actors.filter(a=>a.team==='hero'&&!a.dead).every(a=>a.pos.distanceTo(worldPoint(...centers[0]))<3)){returnToBase('원정대 귀환');return}const lead=actors.find(a=>a.team==='hero'&&!a.dead);if(!lead)return returnToBase('원정대 전멸',false);if(!travelTarget)travelTarget=worldPoint(explorer.x,explorer.y);partyTravelPosition(dt*speed);if(retreatGrace>0)retreatGrace=Math.max(0,retreatGrace-dt*speed);if(lead.pos.distanceTo(travelTarget)>.28)return;const idx=chambers.findIndex(([x,y,w,h])=>explorer.x>=x&&explorer.x<x+w&&explorer.y>=y&&explorer.y<y+h);if(retreating&&idx!==retreatEscapeRoom)retreatEscapeRoom=-1;if(idx>=0&&(!visitedRooms.has(idx)||retreating)&&!(retreating&&idx===retreatEscapeRoom)){const foes=dungeonRoomMonsters.get(idx)||[];const leadPos=lead.pos;const nearest=foes.filter(a=>!a.dead).reduce((d,a)=>Math.min(d,leadPos.distanceTo(a.pos)),Infinity);if(nearest<=3.4){revealDungeon();roomEncounter(idx);return}}mapReveal();if(!explorePath.length)explorePath=retreating?routeToEntrance():mapRoute();if(explorePath.length){const [x,y]=explorePath.shift();explorer={x,y};expeditionSteps++;if(!retreating)expeditionDiscoveries.add(x+','+y);recordRouteTile(x,y);travelTarget=worldPoint(x,y)}else if(retreating){returnToBase('퇴각 경로 없음',false);return}else exploreRunning=false;revealDungeon();$('battleInfo').textContent='자동 탐험 · 지도 '+Math.round(explored.flat().filter(Boolean).length/exploreGrid.flat().filter(Boolean).length*100)+'%'}
 function frame(t){requestAnimationFrame(frame);const elapsed=frameDelta(t,last);last=t;if(exploreMode==='travel')travelStep(elapsed);else tickExplore(elapsed);if(exploreMode==='combat')for(let i=0;i<speed;i++)update(elapsed);if(shake>0){camera.position.x=13+(Math.random()-.5)*shake;camera.position.y=19+(Math.random()-.5)*shake;camera.position.z=21+(Math.random()-.5)*shake}else camera.position.set(13,19,21);if(unifiedDungeon){const p=actors.find(a=>a.team==='hero')?.pos||worldPoint(explorer.x,explorer.y);camera.position.set(p.x+11,16,p.z+18);camera.lookAt(p.x,0,p.z)}renderer.render(scene,camera)}requestAnimationFrame(frame);loadDungeonKit();exploreMode='base';showHub('마왕 토벌을 위한 첫 원정대를 편성하세요.');
