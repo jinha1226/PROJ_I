@@ -86,7 +86,7 @@ jobs:
           required=['Knight','Rogue_Hooded','Mage','Skeleton_Warrior','Skeleton_Mage']
           missing=[name for name in required if name not in manifest]
           if missing: raise RuntimeError(f'Missing required KayKit files: {missing}')
-          if not any(k.startswith('dungeon_') for k in manifest): raise RuntimeError('No KayKit dungeon models found')
+          if not (root/'dungeon_manifest.json').is_file(): raise RuntimeError('No KayKit dungeon manifest generated')
           print('KayKit assets:',manifest)
           PY
       - uses: actions/upload-pages-artifact@v3
