@@ -1,3 +1,4 @@
+import {settleExpedition,expeditionSummary} from './expedition/settlement.js';
 import {beginRoomEncounter} from './expedition/encounter.js';
 import {updateEffects as advanceCombatEffects} from './combat/effects.js';
 import {applyDamage as resolveDamage} from './combat/applyDamage.js';
@@ -183,12 +184,10 @@ function showHub(msg=''){
 function returnToBase(msg,success=true){
  if(expeditionSettled)return;
  expeditionSettled=true;clearTimeout(nextBattleTimer);syncRoster();
- const survivors=actors.filter(a=>a.team==='hero'&&!a.dead&&a.hp>0).length;
- const reward=expeditionReward({successful:success,survivors,discoveredTiles:expeditionDiscoveries.size,loot:expeditionLoot});
- guild.expeditions++;guild.deepest=Math.max(guild.deepest,expeditionSteps);guild.supplies+=reward;guild.activeExpedition=false;saveGuild();
+ const summary=settleExpedition({guild,actors,successful:success,discoveredTiles:expeditionDiscoveries.size,loot:expeditionLoot,steps:expeditionSteps,kills:expeditionKills,rewardCalculator:expeditionReward});saveGuild();
  exploreMode='base';exploreRunning=false;ready=false;finished=true;retreating=false;
  for(const a of actors){scene.remove(a.root);scene.remove(a.ring)}actors=[];
- showHub(msg+' · 생존 '+survivors+'명 · 처치 '+expeditionKills+' · 이동 '+expeditionSteps+'칸 · 보급품 +'+reward+(reward?'':' (전리품 미회수)'));
+ showHub(expeditionSummary(msg,summary));
 }
 function issueRetreat(){
  if(exploreMode==='base')return showHub();
