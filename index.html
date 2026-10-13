@@ -42,20 +42,36 @@ async function spawn(name,team,x,z,hp,damage,range,cooldown){const gltf=await lo
 function look(a,b){const d=b.pos.clone().sub(a.pos);d.y=0;if(d.lengthSq()>.001){const angle=Math.atan2(d.x,d.z);a.root.rotation.y=angle}}
 function blocked(x,z,r=.4){return obstacles.some(o=>Math.abs(x-o.x)<o.hx+r&&Math.abs(z-o.z)<o.hz+r)}
 function lineClear(p,q,r=.3){if(blocked(p.x,p.z,r)||blocked(q.x,q.z,r))return false;const n=Math.max(1,Math.ceil(p.distanceTo(q)/.2));for(let i=1;i<n;i++){const t=i/n;if(blocked(p.x+(q.x-p.x)*t,p.z+(q.z-p.z)*t,r))return false}return true}
-function route(a,goal){
- if(lineClear(a.pos,goal,.43))return goal;
- const nodes=[a.pos.clone(),goal.clone()];
- for(const o of obstacles)for(const sx of [-1,1])for(const sz of [-1,1]){const x=o.x+sx*(o.hx+.92),z=o.z+sz*(o.hz+.92);if(Math.abs(x)<7.8&&Math.abs(z)<5.8&&!blocked(x,z,.43))nodes.push(new THREE.Vector3(x,0,z))}
- const dist=nodes.map(()=>Infinity),prev=nodes.map(()=>-1),seen=new Set();dist[0]=0;
- for(let k=0;k<nodes.length;k++){let u=-1;for(let i=0;i<nodes.length;i++)if(!seen.has(i)&&(u<0||dist[i]<dist[u]))u=i;if(u<0||!isFinite(dist[u]))break;if(u===1)break;seen.add(u);for(let v=1;v<nodes.length;v++)if(v!==u&&!seen.has(v)&&lineClear(nodes[u],nodes[v],.43)){const d=dist[u]+nodes[u].distanceTo(nodes[v]);if(d<dist[v]){dist[v]=d;prev[v]=u}}}
- if(prev[1]<0){let best=null,bestDist=Infinity;for(let i=2;i<nodes.length;i++)if(isFinite(dist[i])){const d=nodes[i].distanceToSquared(goal);if(d<bestDist){bestDist=d;best=i}}if(best===null)return null;let n=best;while(prev[n]>0)n=prev[n];return nodes[n]}
- let n=1;while(prev[n]>0)n=prev[n];return nodes[n]
+function findPath(from,goal,r=.43){
+ if(blocked(goal.x,goal.z,r)||blocked(from.x,from.z,r))return null;
+ const nodes=[from.clone(),goal.clone()];
+ for(const o of obstacles)for(const sx of [-1,1])for(const sz of [-1,1]){const x=o.x+sx*(o.hx+r+.18),z=o.z+sz*(o.hz+r+.18);if(Math.abs(x)<7.7&&Math.abs(z)<5.7&&!blocked(x,z,r))nodes.push(new THREE.Vector3(x,0,z))}
+ const dist=nodes.map(()=>Infinity),prev=nodes.map(()=>-1),used=new Set();dist[0]=0;
+ for(let k=0;k<nodes.length;k++){let u=-1;for(let i=0;i<nodes.length;i++)if(!used.has(i)&&(u<0||dist[i]<dist[u]))u=i;if(u<0||!isFinite(dist[u]))break;if(u===1)break;used.add(u);for(let v=1;v<nodes.length;v++)if(!used.has(v)&&v!==u&&lineClear(nodes[u],nodes[v],r)){const d=dist[u]+nodes[u].distanceTo(nodes[v]);if(d<dist[v]){dist[v]=d;prev[v]=u}}}
+ if(!isFinite(dist[1]))return null;
+ const path=[nodes[1]];let n=1;while(prev[n]>0){n=prev[n];path.unshift(nodes[n])}return {points:path,length:dist[1]}
 }
-function move(a,goal,dt){const waypoint=route(a,goal);if(!waypoint)return false;const delta=waypoint.clone().sub(a.pos).setY(0),distance=delta.length();if(distance<.05)return true;const step=Math.min(distance,dt*(a.team==='hero'?2.3:1.8));const next=a.pos.clone().addScaledVector(delta.normalize(),step);if(blocked(next.x,next.z,.42))return false;a.pos.copy(next);a.root.position.x=a.pos.x;a.root.position.z=a.pos.z;animation(a,'walk');return true}
+function move(a,goal,dt){
+ const changed=!a.pathGoal||a.pathGoal.distanceToSquared(goal)>.36;
+ if(changed||!a.path?.length||a.pathAge<=0){const path=findPath(a.pos,goal);if(!path)return false;a.path=path.points;a.pathGoal=goal.clone();a.pathAge=.6}
+ a.pathAge-=dt;
+ while(a.path.length&&a.pos.distanceTo(a.path[0])<.13)a.path.shift();
+ if(!a.path.length)return true;
+ let waypoint=a.path[0];
+ // Skip intermediate corners when a direct shortcut becomes possible.
+ for(let i=a.path.length-1;i>0;i--)if(lineClear(a.pos,a.path[i],.43)){a.path.splice(0,i);waypoint=a.path[0];break}
+ const delta=waypoint.clone().sub(a.pos).setY(0),distance=delta.length();if(distance<.02)return true;
+ const step=Math.min(distance,dt*(a.team==='hero'?2.3:1.8)),next=a.pos.clone().addScaledVector(delta.normalize(),step);
+ if(blocked(next.x,next.z,.42)){a.pathAge=0;return false}
+ a.pos.copy(next);a.root.position.x=a.pos.x;a.root.position.z=a.pos.z;animation(a,'walk');return true
+}
 function approachGoal(a,target){
- const diff=a.pos.clone().sub(target.pos).setY(0);if(diff.lengthSq()<.01)diff.set(1,0,0);diff.normalize();
- const candidates=[];for(let i=0;i<16;i++){const angle=i*Math.PI*2/16;const dir=new THREE.Vector3(Math.cos(angle),0,Math.sin(angle));for(const radius of [Math.max(.85,a.range*.75),Math.max(.85,a.range*.95)]){const p=target.pos.clone().addScaledVector(dir,radius);if(Math.abs(p.x)>7.5||Math.abs(p.z)>5.5||blocked(p.x,p.z,.5)||!lineClear(p,target.pos,.2))continue;const waypoint=route(a,p);if(waypoint)candidates.push({p,cost:a.pos.distanceTo(waypoint)+(waypoint===p?0:1.5)+p.distanceTo(a.pos)*.05})}}
- candidates.sort((x,y)=>x.cost-y.cost);return candidates[0]?.p||null
+ const candidates=[];
+ for(let i=0;i<24;i++){const angle=i*Math.PI*2/24,dir=new THREE.Vector3(Math.cos(angle),0,Math.sin(angle));for(const radius of [Math.max(.85,a.range*.72),Math.max(.95,a.range*.94)]){const p=target.pos.clone().addScaledVector(dir,radius);if(Math.abs(p.x)>7.5||Math.abs(p.z)>5.5||blocked(p.x,p.z,.43)||!lineClear(p,target.pos,.2))continue;const path=findPath(a.pos,p);if(path)candidates.push({p,cost:path.length})}}
+ candidates.sort((x,y)=>x.cost-y.cost);
+ if(!candidates.length)return null;
+ if(a.pathGoal&&candidates.some(c=>c.p.distanceToSquared(a.pathGoal)<.1&&c.cost<candidates[0].cost+1.1))return a.pathGoal;
+ return candidates[0].p
 }
 const impacts=[],shots=[],pending=[];let shake=0,flash=0;const fxMat=(color,opacity=1)=>new THREE.MeshBasicMaterial({color,transparent:true,opacity,depthWrite:false,side:THREE.DoubleSide});
 function impact(pos,color,power=1){const ring=new THREE.Mesh(new THREE.RingGeometry(.12,.22,24),fxMat(color,.9));ring.rotation.x=-Math.PI/2;ring.position.copy(pos);ring.position.y=.13;scene.add(ring);impacts.push({mesh:ring,age:0,duration:.36,power});for(let i=0;i<9;i++){const angle=i*Math.PI*2/9;const m=new THREE.Mesh(new THREE.IcosahedronGeometry(.055+Math.random()*.06,0),fxMat(color));m.position.copy(pos).add(new THREE.Vector3(0,1.1,0));scene.add(m);impacts.push({mesh:m,age:0,duration:.3+Math.random()*.2,velocity:new THREE.Vector3(Math.cos(angle)*(2+Math.random()*3),1+Math.random()*3,Math.sin(angle)*(2+Math.random()*3))})}shake=Math.max(shake,.16*power);flash=Math.max(flash,.07)}
