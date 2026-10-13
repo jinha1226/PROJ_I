@@ -61,17 +61,19 @@ jobs:
             if kind=='dungeon':
               candidates=[p for p in glbs if '/gltf/' in p.lower()]
               if not candidates: candidates=glbs
-              # Preserve a broader, named subset of the actual dungeon kit.
-              names=['floor','wall','pillar','torch','chest','barrel','crate','column','arch','door','stairs','banner','candle','skull','bones','rubble','stone','table','chair']
-              for token in names:
-                matches=[p for p in candidates if token in pathlib.PurePosixPath(p).stem.lower()]
-                if not matches: continue
-                matches.sort(key=lambda p:(len(pathlib.PurePosixPath(p).stem),len(p)))
-                for index,src in enumerate(matches[:3]):
-                  suffix='' if index==0 else str(index+1)
-                  dst=root/('dungeon_'+token+suffix+'.glb')
-                  with archive.open(src) as f,dst.open('wb') as o: shutil.copyfileobj(f,o)
-                  manifest['dungeon_'+token+suffix]=str(dst)
+              # Export the real upstream names; never guess which substring is a tile.
+              import json
+              catalog={}
+              for src in candidates:
+                stem=pathlib.PurePosixPath(src).stem
+                if stem.lower().endswith('.gltf'): stem=stem[:-5]
+                if stem in catalog: continue
+                dst=root/('dungeon_'+stem+'.glb')
+                with archive.open(src) as f,dst.open('wb') as o: shutil.copyfileobj(f,o)
+                catalog[stem]=dst.name
+              (root/'dungeon_manifest.json').write_text(json.dumps(catalog,indent=2))
+              print('Dungeon models:',sorted(catalog),flush=True)
+              if not catalog: raise RuntimeError('Dungeon GLB catalog empty')
             else:
               for name in selected[kind]:
                 matches=[p for p in glbs if pathlib.PurePosixPath(p).stem.lower()==name.lower()]
