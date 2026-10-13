@@ -35,6 +35,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: Fetch CC0 KayKit character models
+        run: |
+          python - <<'PY'
+          import io, pathlib, urllib.request, zipfile, shutil
+          url='https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/archive/refs/heads/main.zip'
+          archive=zipfile.ZipFile(io.BytesIO(urllib.request.urlopen(url,timeout=90).read()))
+          files=[n for n in archive.namelist() if n.lower().endswith('.glb')]
+          out=pathlib.Path('assets/kaykit');out.mkdir(parents=True,exist_ok=True)
+          for name in ('Knight','Rogue','Mage'):
+              matches=[p for p in files if pathlib.PurePosixPath(p).stem.lower()==name.lower()]
+              if not matches:
+                  print(f'KayKit {name} GLB not found; fallback will be used.')
+                  continue
+              with archive.open(matches[0]) as src,(out/(name+'.glb')).open('wb') as dst:
+                  shutil.copyfileobj(src,dst)
+              print('Downloaded',matches[0])
+          PY
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
