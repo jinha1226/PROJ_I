@@ -67,7 +67,7 @@ function move(a,goal,dt){
 }
 function approachGoal(a,target){
  const candidates=[];
- for(let i=0;i<24;i++){const angle=i*Math.PI*2/24,dir=new THREE.Vector3(Math.cos(angle),0,Math.sin(angle));for(const radius of [Math.max(.85,a.range*.72),Math.max(.95,a.range*.94)]){const p=target.pos.clone().addScaledVector(dir,radius);if(Math.abs(p.x)>7.5||Math.abs(p.z)>5.5||blocked(p.x,p.z,.43)||!lineClear(p,target.pos,.2))continue;const path=findPath(a.pos,p);if(path)candidates.push({p,cost:path.length})}}
+ for(let i=0;i<24;i++){const angle=i*Math.PI*2/24,dir=new THREE.Vector3(Math.cos(angle),0,Math.sin(angle));for(const radius of [Math.max(.85,a.range*.72),Math.max(.95,a.range*.94)]){const p=target.pos.clone().addScaledVector(dir,radius);if((!unifiedDungeon&&(Math.abs(p.x)>7.5||Math.abs(p.z)>5.5))||blocked(p.x,p.z,.43)||!lineClear(p,target.pos,.2))continue;const path=findPath(a.pos,p);if(path)candidates.push({p,cost:path.length})}}
  candidates.sort((x,y)=>x.cost-y.cost);
  if(!candidates.length)return null;
  if(a.pathGoal&&candidates.some(c=>c.p.distanceToSquared(a.pathGoal)<.1&&c.cost<candidates[0].cost+2.5))return a.pathGoal;
@@ -116,7 +116,7 @@ $('upgradeBtn').onclick=()=>{paused=true;$('pause').textContent='계속';$('tact
 $('closeUpgrades').onclick=()=>{$('upgradePanel').hidden=true;paused=false;$('pause').textContent='일시정지'};
 function renderProgress(){$('status').textContent='STAGE '+progress.stage+(progress.farming?' · 파밍':'')+' · '+progress.gold+' G'+(progress.stage%5===0?' · BOSS':'')+' · '+currentTheme}
 let nextBattleTimer=null;
-function queueNextBattle(){clearTimeout(nextBattleTimer);nextBattleTimer=setTimeout(()=>{if(!paused&&!document.hidden)enterTravel();else queueNextBattle()},2300/speed)}
+function queueNextBattle(){clearTimeout(nextBattleTimer);nextBattleTimer=setTimeout(()=>{if(unifiedDungeon&&expeditionSettled)return;if(!paused&&!document.hidden)enterTravel();else queueNextBattle()},2300/speed)}
 function tacticLevel(id){return progress.tacticLevels[id]||1}
 function tacticCost(id){return tacticLevel(id)===1?75:tacticLevel(id)===2?200:Infinity}
 const TACTIC_DETAILS={
@@ -215,7 +215,7 @@ function issueRetreat(){
  if(exploreMode==='base')return showHub();
  if(retreating||expeditionSettled)return;
  if(!actors.some(a=>a.team==='hero'&&!a.dead))return returnToBase('원정대 전멸',false);
- retreating=true;clearTimeout(nextBattleTimer);ready=false;finished=false;
+ retreating=true;clearTimeout(nextBattleTimer);if(exploreMode==='combat'){const pursuers=actors.filter(a=>a.team==='enemy'&&!a.dead&&a.dungeonRoom===activeCombatRoom);for(const hero of actors.filter(a=>a.team==='hero'&&!a.dead)){const near=pursuers.filter(e=>e.pos.distanceTo(hero.pos)<e.range+1);for(const enemy of near){if(hero.dead)break;const damage=Math.max(1,Math.ceil(enemy.damage*.45));hero.hp=Math.max(0,hero.hp-damage);float(hero,'퇴각 -'+damage,'#ffb28a');if(hero.hp===0){hero.dead=true;animation(hero,'death',true);hero.ring.visible=false}}}syncRoster();if(!actors.some(a=>a.team==='hero'&&!a.dead))return returnToBase('퇴각 중 전멸',false)}ready=false;finished=false;
  exploreMode='travel';exploreRunning=true;exploreActive=true;activeCombatRoom=-1;
  explorePath=[];travelTarget=worldPoint(explorer.x,explorer.y);
  $('notice').textContent='퇴각 중 · 살아있는 몬스터와 다시 마주치면 교전';
@@ -430,7 +430,7 @@ function partyTravelPosition(dt=0){
   a.mixer.update(dt);
  });
 }
-async function enterTravel(){visitedRooms.add(0);clearTimeout(nextBattleTimer);exploreMode='travel';exploreActive=true;exploreRunning=true;finished=false;paused=false;ready=false;document.getElementById('explorePanel').hidden=true;document.getElementById('notice').textContent='';revealDungeon();if(!actors.some(a=>a.team==='hero')){if(retreating)return returnToBase('원정대 전멸',false);try{const team=guild.roster.filter(h=>h.alive).slice(0,3);await Promise.all(team.map(async h=>{const stats={Knight:[115,19,1.5,.9],Rogue_Hooded:[78,13,5,1.15],Mage:[75,11,5.5,1.3]}[h.type];const a=await spawn(h.type,'hero',0,0,h.hp,stats[1],stats[2],stats[3]);a.rosterId=h.id}));$('party').innerHTML=actors.filter(a=>a.team==='hero').map(a=>'<div class="card"><div class="name"><span>'+({Knight:'전사',Rogue_Hooded:'궁수',Mage:'마법사'}[a.name])+'</span><span>'+a.max+' HP</span></div><div class="hp"><span id="hp-'+a.name+'"></span></div></div>').join('')}catch(e){console.error(e);$('error').style.display='block';$('error').textContent=e.message;return}}await populateDungeonMonsters();travelTarget=worldPoint(explorer.x,explorer.y);partyTravelPosition();$('status').textContent='STAGE '+progress.stage+' · 던전 탐험';$('battleInfo').textContent='자동 탐험 · 지도 '+Math.round(explored.flat().filter(Boolean).length/exploreGrid.flat().filter(Boolean).length*100)+'%';}
+async function enterTravel(){visitedRooms.add(0);clearTimeout(nextBattleTimer);exploreMode='travel';exploreActive=true;exploreRunning=true;finished=false;paused=false;ready=false;document.getElementById('explorePanel').hidden=true;document.getElementById('notice').textContent='';revealDungeon();if(!actors.some(a=>a.team==='hero')){if(retreating)return returnToBase('원정대 전멸',false);try{const team=guild.roster.filter(h=>h.alive).slice(0,3);await Promise.all(team.map(async h=>{const stats={Knight:[115,19,1.5,.9],Rogue_Hooded:[78,13,5,1.15],Mage:[75,11,5.5,1.3]}[h.type];const a=await spawn(h.type,'hero',0,0,h.hp,stats[1],stats[2],stats[3]);a.rosterId=h.id}));actors.sort((a,b)=>a.team==='hero'&&b.team==='hero'?team.findIndex(h=>h.id===a.rosterId)-team.findIndex(h=>h.id===b.rosterId):0);$('party').innerHTML=actors.filter(a=>a.team==='hero').map(a=>'<div class="card"><div class="name"><span>'+({Knight:'전사',Rogue_Hooded:'궁수',Mage:'마법사'}[a.name])+'</span><span>'+a.max+' HP</span></div><div class="hp"><span id="hp-'+a.name+'"></span></div></div>').join('')}catch(e){console.error(e);$('error').style.display='block';$('error').textContent=e.message;return}}await populateDungeonMonsters();travelTarget=worldPoint(explorer.x,explorer.y);partyTravelPosition();$('status').textContent='STAGE '+progress.stage+' · 던전 탐험';$('battleInfo').textContent='자동 탐험 · 지도 '+Math.round(explored.flat().filter(Boolean).length/exploreGrid.flat().filter(Boolean).length*100)+'%';}
 function explorerRoomIndex(){return centers.findIndex(([x,y])=>x===explorer.x&&y===explorer.y)}
 async function populateDungeonMonsters(){
  if(dungeonMonstersReady)return;
