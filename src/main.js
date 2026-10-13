@@ -1,3 +1,4 @@
+import {mapRoute as computeExplorationRoute} from './dungeon/explorationRoute.js';
 import {DW,DH,exploreGrid,chambers,centers} from './dungeon/generator.js';
 import {GameMode,canOpenBase,canTravel} from './core/gameState.js';
 import {frameDelta} from './core/gameLoop.js';
@@ -220,34 +221,7 @@ function mapReveal(){let changed=false;const reveal=(x,y)=>{if(x>=0&&y>=0&&x<DW&
 // Pathfinder is a party skill; it can be toggled for an A/B run on the same seed.
 let pathfinderSkill=false,routeHistory=[],routeVisits=new Map();
 function recordRouteTile(x,y){const key=x+','+y;routeVisits.set(key,(routeVisits.get(key)||0)+1);routeHistory.push([x,y])}
-function mapRoute(){
- const queue=[[explorer.x,explorer.y]],seen=new Set([explorer.x+','+explorer.y]),parent=new Map(),distance=new Map([[explorer.x+','+explorer.y,0]]);
- const candidates=[];
- for(let i=0;i<queue.length;i++){
-  const [x,y]=queue[i],key=x+','+y,d=distance.get(key);
-  if(!explored[y][x]&&exploreGrid[y][x]){candidates.push({x,y,d});continue}
-  for(const [dx,dy] of mapDirs){
-   const nx=x+dx,ny=y+dy,k=nx+','+ny;
-   if(nx<0||ny<0||nx>=DW||ny>=DH||!exploreGrid[ny][nx]||seen.has(k))continue;
-   seen.add(k);parent.set(k,[x,y]);distance.set(k,d+1);queue.push([nx,ny]);
-  }
- }
- if(!candidates.length)return [];
- // Without Pathfinder: closest unseen tile. With Pathfinder: prioritize
- // promising frontiers and avoid retracing already traversed ground.
- let best=candidates[0],bestScore=Infinity;
- for(const c of candidates){
-  const neighbors=mapDirs.reduce((n,[dx,dy])=>{const x=c.x+dx,y=c.y+dy;return n+(x>=0&&y>=0&&x<DW&&y<DH&&exploreGrid[y][x]&&!explored[y][x]?1:0)},0);
-  const visits=routeVisits.get(c.x+','+c.y)||0;
-  const score=pathfinderSkill?c.d+visits*2.5-neighbors*3:c.d;
-  if(score<bestScore){best=c;bestScore=score}
- }
- const path=[];let target=[best.x,best.y];
- while(target[0]!==explorer.x||target[1]!==explorer.y){
-  path.push(target);target=parent.get(target[0]+','+target[1]);if(!target)break;
- }
- return path.reverse();
-}
+function mapRoute(){return computeExplorationRoute({explorer,explored,exploreGrid,DW,DH,mapDirs,routeVisits,pathfinderSkill})}
 // Deterministic headless A/B exploration: identical map, start, visibility,
 // and movement speed; only the Pathfinder skill differs.
 function simulatePathfinder(hasSkill){
