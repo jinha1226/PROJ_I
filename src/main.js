@@ -167,11 +167,11 @@ if(!guild||!Array.isArray(guild.roster))guild={supplies:30,nextId:4,expeditions:
 const saveGuild=()=>localStorage.setItem(GUILD_KEY,JSON.stringify(guild));
 if(closeInterruptedExpedition(guild))saveGuild()
 let retreating=false,expeditionSteps=0,expeditionKills=0,expeditionLoot=0,expeditionSettled=true,expeditionDiscoveries=new Set(),retreatEscapeRoom=-1,retreatGrace=0;
-const commandBar=document.createElement('div');commandBar.style.cssText='position:absolute;bottom:12px;left:12px;z-index:30;display:flex;gap:8px';
+const commandBar=document.createElement('div');commandBar.id='commandBar';
 const retreatButton=document.createElement('button');retreatButton.textContent='⚑ 퇴각';const hubButton=document.createElement('button');hubButton.textContent='거점';
-for(const b of [retreatButton,hubButton])b.style.cssText='padding:12px;background:#263e52;color:white;border:1px solid #8fa6bd;border-radius:8px';
+retreatButton.setAttribute('aria-label','원정 퇴각');hubButton.setAttribute('aria-label','거점 열기');
 commandBar.append(retreatButton,hubButton);document.getElementById('game').appendChild(commandBar);
-const hubPanel=document.createElement('div');hubPanel.style.cssText='display:none;position:absolute;inset:12% 7%;z-index:65;background:#101923f5;color:white;padding:18px;overflow:auto;border:1px solid #8198a9;border-radius:12px';document.getElementById('game').appendChild(hubPanel);
+const hubPanel=document.createElement('div');hubPanel.id='hubPanel';hubPanel.style.display='none';document.getElementById('game').appendChild(hubPanel);
 function markCasualty(a){if(a.team!=='hero'||!a.rosterId)return;const h=guild.roster.find(h=>h.id===a.rosterId);if(recordHeroDeath(guild.roster,a.rosterId))saveGuild()}
 function syncRoster(){for(const a of actors.filter(a=>a.team==='hero'&&a.rosterId)){const h=guild.roster.find(h=>h.id===a.rosterId);if(h){h.alive=!a.dead&&a.hp>0;h.hp=Math.max(1,Math.ceil(a.hp))}}saveGuild()}
 function showHub(msg=''){
@@ -215,6 +215,10 @@ comparePanel.style.cssText='display:none;position:absolute;inset:12% 5% 8%;z-ind
 document.getElementById('game').appendChild(comparePanel);
 compareButton.onclick=()=>{runPathfinderComparison();comparePanel.style.display='block'};
 const mapCanvas=document.getElementById('exploreMap'),mapCtx=mapCanvas.getContext('2d');
+const miniMap=document.getElementById('miniMap'),miniCtx=miniMap.getContext('2d');
+function syncMiniMap(){if(!miniCtx)return;miniCtx.clearRect(0,0,miniMap.width,miniMap.height);miniCtx.drawImage(mapCanvas,0,0,miniMap.width,miniMap.height)}
+miniMap.addEventListener('click',()=>document.getElementById('exploreBtn').click());miniMap.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('exploreBtn').click()}});
+
 const mapDirs=[[1,0],[-1,0],[0,1],[0,-1]];
 function mapReveal(){let changed=false;const reveal=(x,y)=>{if(x>=0&&y>=0&&x<DW&&y<DH&&exploreGrid[y][x]&&!explored[y][x]){explored[y][x]=true;changed=true}};const room=chambers.find(([rx,ry,w,h])=>explorer.x>=rx&&explorer.x<rx+w&&explorer.y>=ry&&explorer.y<ry+h);if(room){const [rx,ry,w,h]=room;for(let y=ry;y<ry+h;y++)for(let x=rx;x<rx+w;x++)reveal(x,y)}else{for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++)if(dx*dx+dy*dy<=9)reveal(explorer.x+dx,explorer.y+dy)}return changed}
 // Pathfinder is a party skill; it can be toggled for an A/B run on the same seed.
@@ -225,7 +229,7 @@ function mapRoute(){return computeExplorationRoute({explorer,explored,exploreGri
 // and movement speed; only the Pathfinder skill differs.
 function simulatePathfinder(hasSkill){return simulatePathfinderRun(hasSkill,{DW,DH,centers,chambers,exploreGrid,mapDirs})}
 function runPathfinderComparison(){return renderPathfinderComparison({document,comparePanel,DW,DH,exploreGrid,simulatePathfinder})}
-function drawExplore(){drawExplorationMap({mapCanvas,mapCtx,DW,DH,exploreGrid,explored,routeHistory,pathfinderSkill,explorer,exploreRunning,infoElement:document.getElementById('exploreInfo')})}
+function drawExplore(){drawExplorationMap({mapCanvas,mapCtx,DW,DH,exploreGrid,explored,routeHistory,pathfinderSkill,explorer,exploreRunning,infoElement:document.getElementById('exploreInfo')});syncMiniMap()}
 function tickExplore(dt){if(!exploreActive||!exploreRunning||exploreMode!=='travel')return;exploreClock+=dt;exploreSaveClock+=dt;while(exploreClock>=.28){exploreClock-=.28;mapReveal();if(!explorePath.length)explorePath=mapRoute();if(explorePath.length){const [x,y]=explorePath.shift();explorer={x,y}}else{exploreRunning=false;break}}if(exploreSaveClock>=2||!exploreRunning){localStorage.setItem('proj_i_map_v3',JSON.stringify(explored));exploreSaveClock=0}drawExplore()}
 document.getElementById('exploreBtn').onclick=()=>{exploreActive=true;exploreRunning=true;exploreClock=0;mapReveal();drawExplore();document.getElementById('explorePanel').hidden=false;document.getElementById('exploreToggle').textContent='탐험 일시정지'};
 document.getElementById('exploreClose').onclick=()=>{exploreActive=exploreMode==='travel';localStorage.setItem('proj_i_map_v1',JSON.stringify(explored));document.getElementById('explorePanel').hidden=true};
