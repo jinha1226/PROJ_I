@@ -1,3 +1,4 @@
+import {ENEMY_VARIANTS,selectMonsterTarget} from './combat/monsterBehaviors.js';
 import {createTravelBlock,disposeTravelGeometry} from './rendering/travelGeometry.js';
 import {drawExplorationMap} from './ui/explorationMap.js';
 import {tileToWorld,worldToTile} from './rendering/coordinates.js';
@@ -88,20 +89,8 @@ function impact(pos,color,power=1){const ring=new THREE.Mesh(new THREE.RingGeome
 function projectile(a,b,kind){const start=a.pos.clone().add(new THREE.Vector3(0,1.35,0)),end=b.pos.clone().add(new THREE.Vector3(0,1.15,0));const color=kind==='arrow'?0xffd68a:0x70b9ff;const core=new THREE.Mesh(kind==='arrow'?new THREE.ConeGeometry(.095,.8,7):new THREE.IcosahedronGeometry(.32,1),fxMat(color));core.position.copy(start);if(kind==='arrow')core.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),end.clone().sub(start).normalize());scene.add(core);let glow=null;if(kind==='spell'){glow=new THREE.PointLight(0x559bff,5,4);scene.add(glow)}shots.push({core,glow,start,end,age:0,duration:kind==='arrow'?.2:.37,kind,target:b,attacker:a})}
 function float(a,value,color){const ndc=a.pos.clone().add(new THREE.Vector3(0,2.1,0)).project(camera);const el=document.createElement('div');el.className='float';el.textContent=value;el.style.color=color;el.style.left=((ndc.x+1)*.5*game.clientWidth)+'px';el.style.top=((1-ndc.y)*.5*game.clientHeight)+'px';game.append(el);setTimeout(()=>el.remove(),750)}
 function applyDamage(a,b,color,multiplier=1){if(b.dead)return;let amount=attackDamage(a,b,multiplier);if(b.guardTime>0&&b.guard&&!b.guard.dead){amount=Math.ceil(amount*(b.guardFactor||.55));if(b.counterGuard&&b.guard&&!b.guard.dead&&a.team!==b.team){a.hp=Math.max(0,a.hp-Math.ceil(b.guard.damage*.3));if(a.hp===0){a.dead=true;markCasualty(a);animation(a,'death',true);a.ring.visible=false;a.dying=0}}float(b,'방어!','#7ed7ff')}b.hp=Math.max(0,b.hp-amount);float(b,'-'+amount,color);impact(b.pos,a.team==='hero'?0xffd47d:0xff6666,a.name==='Knight'?1.7:1);b.stagger=.22;b.knockback=.34;b.knockDirection=b.pos.clone().sub(a.pos).setY(0).normalize();if(b.knockDirection.lengthSq()<.001)b.knockDirection.set(0,0,1);b.root.position.y+=.12;if(b.hp===0){b.dead=true;markCasualty(b);animation(b,'death',true);b.ring.visible=false;b.dying=0}else animation(b,'hit',true)}
-const ENEMY_VARIANTS={
- brute:{label:'중장 해골',tint:0xb8a28a,glow:0x8f5435,behavior:'charge',hp:1.55,damage:1.2,range:1.45,cooldown:1.65},
- stalker:{label:'추적 해골',tint:0x86bfa2,glow:0x267b49,behavior:'hunter',hp:.85,damage:1.12,range:1.45,cooldown:1.05},
- caster:{label:'해골 주술사',tint:0x9b9de9,glow:0x5555cc,behavior:'backline',hp:.85,damage:1.2,range:5.3,cooldown:1.85},
- boss:{label:'해골 군주',tint:0xd9a15e,glow:0xb04c1f,behavior:'hunter',hp:4.5,damage:1.65,range:1.8,cooldown:1.7},
- guardian:{label:'방패 해골',tint:0x92b9d5,glow:0x3d76a0,behavior:'charge',hp:1.8,damage:.8,range:1.45,cooldown:1.6}
-};
-const MONSTER_BEHAVIORS={
- charge:{select:(a,targets)=>targets.reduce((best,t)=>!best||t.pos.distanceToSquared(a.pos)<best.pos.distanceToSquared(a.pos)?t:best,null)},
- hunter:{select:(a,targets)=>targets.reduce((best,t)=>!best||t.hp/t.max<best.hp/best.max?t:best,null)},
- backline:{select:(a,targets)=>targets.find(t=>t.name==='Mage')||targets.find(t=>t.name==='Rogue_Hooded')||targets[0]}
-};
 function spawnEnemy(kind,x,z){const v=ENEMY_VARIANTS[kind],mage=kind==='caster',name=mage?'Skeleton_Mage':'Skeleton_Warrior',stage=progress.stage;return spawn(name,'enemy',x,z,Math.round((mage?55:65)*(1+(stage-1)*.12)*v.hp),Math.round((mage?12:10)*(1+(stage-1)*.065)*v.damage),v.range,v.cooldown,v).then(a=>{if(kind==='boss'){a.isBoss=true;a.root.scale.multiplyScalar(1.6);a.bossCooldown=4.5}return a})}
-function monsterTarget(a,targets){const behavior=MONSTER_BEHAVIORS[a.behavior]||MONSTER_BEHAVIORS.charge;return behavior.select(a,targets)}
+function monsterTarget(a,targets){return selectMonsterTarget(a,targets)}
 const TACTICS={
  taunt:{role:'Knight',label:'도발',cooldown:10,score:(a,allies,enemies)=>enemies.filter(e=>e.pos.distanceTo(a.pos)<5&&e.target&&e.target!==a).length*45+((allies.some(h=>h!==a&&h.hp/h.max<.55))?25:0),execute:(a,allies,enemies)=>{for(const e of enemies)if(e.pos.distanceTo(a.pos)<(tacticLevel('taunt')>=2?6.5:5)){e.tauntedBy=a;e.tauntTime=4.5;e.target=a}float(a,'도발!','#ffbb68');impact(a.pos,0xffa544,1.3);if(tacticLevel('taunt')>=3){a.guard=a;a.guardTime=4.5;a.guardFactor=.8}}},
  protect:{role:'Knight',label:'아군 보호',cooldown:5,score:(a,allies,enemies)=>allies.some(h=>h!==a&&h.hp/h.max<.55&&enemies.some(e=>e.pos.distanceTo(h.pos)<3))?88:0,execute:(a,allies,enemies)=>{const h=allies.filter(h=>h!==a&&!h.dead).sort((x,y)=>x.hp/x.max-y.hp/y.max)[0];if(h){h.guard=a;h.guardTime=tacticLevel('protect')>=2?6:4;h.counterGuard=tacticLevel('protect')>=3;float(a,'수호!','#7ed7ff')}}},
