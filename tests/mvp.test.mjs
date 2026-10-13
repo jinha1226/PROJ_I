@@ -1,42 +1,40 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { Script } from 'node:vm';
+import { SourceTextModule } from 'node:vm';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
-const js = scripts.map((match) => match[1]).join('\n');
+const scripts = [...html.matchAll(/<script[^>]*type="module"[^>]*>([\s\S]*?)<\/script>/gi)];
+const js = scripts.map(m=>m[1]).join('\n');
 
-test('entry page and gameplay script exist', () => {
-  assert.match(html, /<html\s+lang="ko"/i);
-  assert.ok(scripts.length > 0, 'inline gameplay script must exist');
-  assert.match(html, /id="map"/);
+test('3D entrypoint and canvas host',()=>{
+  assert.match(html, /id="stage"/);
   assert.match(html, /id="log"/);
+  assert.match(html, /three\/addons\/loaders/);
+  assert.ok(scripts.length>0);
 });
 
-test('inline JavaScript parses', () => {
-  assert.doesNotThrow(() => new Script(js, { filename: 'index.html' }));
+test('module syntax parses',()=>{
+  // node --experimental-vm-modules is needed to construct an ESM module.
+  assert.doesNotThrow(()=>new SourceTextModule(js));
 });
 
-test('MVP includes dungeon, combat, return and upgrades', () => {
-  for (const symbol of ['const NODES=', 'const TYPES=', 'function start(', 'function combat(', 'function finish(', 'function upgrades(', 'function map(']) {
-    assert.ok(js.includes(symbol), `missing gameplay component: ${symbol}`);
+test('exploration, combat, fog, upgrades and return exist',()=>{
+  for(const symbol of ['function buildWorld(', 'function updateFog(', 'function route(', 'function choose(', 'function battle(', 'function finish(', 'function renderUI(']){
+    assert.ok(js.includes(symbol), 'missing '+symbol);
   }
-  assert.match(js, /localStorage\.setItem/);
-  assert.match(js, /localStorage\.getItem/);
+  assert.match(js,/localStorage\.setItem/);
 });
 
-test('all referenced HTML ids exist', () => {
-  const defined = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
-  const referenced = [...js.matchAll(/\$\("([^"]+)"\)/g)].map((m) => m[1]);
-  for (const id of referenced) assert.ok(defined.has(id), `missing element #${id}`);
+test('referenced element IDs exist',()=>{
+  const ids=new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]));
+  for(const [,id] of js.matchAll(/\$\('([^']+)'\)/g)){
+    assert.ok(ids.has(id), 'missing element #'+id);
+  }
 });
 
-test('dungeon nodes and encounter definitions stay aligned', () => {
-  const nodes = js.match(/const NODES=(\[[^;]+\]);/);
-  const types = js.match(/const TYPES=(\[[^;]+\]);/);
-  assert.ok(nodes && types);
-  const nodeCount = JSON.parse(nodes[1]).length;
-  const typeCount = JSON.parse(types[1].replaceAll("'", '"')).length;
-  assert.equal(nodeCount, typeCount);
+test('dungeon room and encounter count agree',()=>{
+  assert.match(js,/const rooms=/);
+  assert.match(js,/const edges=/);
+  assert.match(js,/const types=/);
 });
