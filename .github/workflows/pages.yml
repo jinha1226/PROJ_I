@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: '22'
       - name: Run MVP checks
-        run: node --test tests/*.test.mjs
+        run: node --experimental-vm-modules --test tests/*.test.mjs
   deploy:
     if: github.event_name != 'pull_request'
     needs: test
