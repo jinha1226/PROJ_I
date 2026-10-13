@@ -1,3 +1,4 @@
+import {tileToWorld,worldToTile} from './rendering/coordinates.js';
 import {updatePartyHealthUI} from './ui/partyHealth.js';
 import {mapRoute as computeExplorationRoute} from './dungeon/explorationRoute.js';
 import {DW,DH,exploreGrid,chambers,centers} from './dungeon/generator.js';
@@ -362,7 +363,7 @@ function travelWorld(){
 }
 function placeKit(type,x,y,z,footprint,rotation=0){const src=dungeonKit.get(type);if(!src)return;const mesh=clone(src.scene),bounds=new THREE.Box3().setFromObject(mesh),size=bounds.getSize(new THREE.Vector3());const scale=footprint/Math.max(size.x,size.z,.01);mesh.scale.setScalar(scale);mesh.rotation.y=rotation;mesh.position.set(x-bounds.getCenter(new THREE.Vector3()).x*scale,y-bounds.min.y*scale,z-bounds.getCenter(new THREE.Vector3()).z*scale);scene.add(mesh);travelMeshes.push(mesh)}
 async function loadDungeonKit(){try{dungeonManifest=await (await fetch('assets/kaykit/dungeon_manifest.json')).json()}catch(e){console.warn('Dungeon manifest unavailable',e);return}const names=Object.keys(dungeonManifest);console.info('KayKit actual dungeon catalog',names);const selected=names.filter(n=>/^(floor|wall|pillar|column|torch|barrel|crate|chest|rubble|banner|stairs|arch|door|table|chair|candle)/i.test(n));await Promise.all(selected.map(async name=>{try{dungeonKit.set(name,await loader.loadAsync('assets/kaykit/'+dungeonManifest[name]))}catch(e){console.warn('Failed dungeon model',name,e)}}));travelLastTile='';if(exploreMode==='travel'&&!dungeonGeometryBuilt)travelWorld()}
-function worldPoint(x,y){return new THREE.Vector3((x-DW/2)*1.6,0,(y-DH/2)*1.6)}
+function worldPoint(x,y){const p=tileToWorld(x,y,DW,DH);return new THREE.Vector3(p.x,p.y,p.z)}
 function revealDungeon(){const changed=mapReveal();const key=explored.map(row=>row.map(v=>v?'1':'0').join('')).join('');if(key!==travelLastTile){travelLastTile=key;if(!dungeonGeometryBuilt)travelWorld();localStorage.setItem('proj_i_map_v3',JSON.stringify(explored))}drawExplore();return changed}
 
 function partyTravelPosition(dt=0){
