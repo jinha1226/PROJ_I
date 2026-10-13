@@ -1,3 +1,4 @@
+import {evaluateTactics as decideTactic} from './combat/tacticDecision.js';
 import {decayCombatTimers,chooseCombatTarget,livingCombatSides} from './combat/actorLogic.js';
 import {settleExpedition,expeditionSummary} from './expedition/settlement.js';
 import {beginRoomEncounter} from './expedition/encounter.js';
@@ -142,7 +143,7 @@ $('tacticRows').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b
 $('tacticsBtn').onclick=()=>{paused=true;$('upgradePanel').hidden=true;$('pause').textContent='계속';renderTactics();$('tacticsPanel').hidden=false};
 $('closeTactics').onclick=()=>{$('tacticsPanel').hidden=true;paused=false;$('pause').textContent='일시정지'};
 
-function evaluateTactics(a,allies,enemies){if(a.team!=='hero')return false;a.tacticCooldowns??={};const options=(equipped[a.name]||[]).map(id=>({id,t:TACTICS[id]})).filter(o=>!(a.tacticCooldowns[o.id]>0)).map(o=>({...o,score:o.t.score(a,allies,enemies)})).sort((x,y)=>y.score-x.score);const best=options[0];if(!best||best.score<60)return false;best.t.execute(a,allies,enemies);a.lastAction=best.t.label;a.actionTime=2.4;a.tacticCooldowns[best.id]=best.t.cooldown;a.timer=Math.max(a.timer,.5);return true}
+function evaluateTactics(a,allies,enemies){return decideTactic(a,allies,enemies,{equipped,TACTICS})}
 function hit(a,b){if(b.dead)return;a.lastAction='일반 공격';a.actionTime=.8;animation(a,'attack',true);const duration=a.current?.getClip().duration||.7;const windup=Math.max(.12,Math.min(.55,duration*(a.name==='Knight'?.42:.48)));pending.push({a,b,remaining:windup})}
 function resolveAOE(a,b){if(a.dead)return;for(const enemy of actors.filter(e=>e.team!==a.team&&!e.dead&&e.pos.distanceTo(b.pos)<(tacticLevel('aoe')>=2?3.5:2.8)))applyDamage(a,enemy,'#8bc7ff',tacticLevel('aoe')>=3?1.35:1)}
 function resolveAttack(a,b){if(a.dead||b.dead||!lineClear(a.pos,b.pos,.2))return;if(a.name==='Rogue_Hooded')projectile(a,b,'arrow');else if(a.name==='Mage'||a.name==='Skeleton_Mage')projectile(a,b,'spell');else applyDamage(a,b,a.team==='hero'?'#ffe29b':'#ff8181')}
