@@ -173,8 +173,68 @@ document.getElementById('exploreToggle').onclick=()=>{exploreRunning=!exploreRun
 
 function clearTravel(){for(const m of travelMeshes){scene.remove(m);m.geometry?.dispose();if(m.material&&!Array.isArray(m.material))m.material.dispose()}travelMeshes=[];for(const m of travelMarkers){scene.remove(m)}travelMarkers=[]}
 function travelBlock(w,h,d,x,y,z,color){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.95}));m.position.set(x,y,z);scene.add(m);travelMeshes.push(m);return m}
-function travelWorld(){clearTravel();for(const o of roomObjects)scene.remove(o);roomObjects=[];obstacles=[];const tile=1.6,has=(x,y)=>x>=0&&y>=0&&x<DW&&y<DH&&!!exploreGrid[y][x];const catalog=[...dungeonKit.keys()],pick=(pattern)=>catalog.find(n=>pattern.test(n));const floor=pick(/^floor(?!.*wall)/i),wall=pick(/^wall(?!.*corner)/i),corner=pick(/^wall.*corner|^wall_corner/i),props=catalog.filter(n=>/^(pillar|column|barrel|crate|rubble|torch|banner|chest)/i.test(n));for(let y=0;y<DH;y++)for(let x=0;x<DW;x++){if(!explored[y][x]||!has(x,y))continue;const wx=(x-DW/2)*tile,wz=(y-DH/2)*tile;if(floor)placeKit(floor,wx,0,wz,tile);else travelBlock(tile,.12,tile,wx,-.12,wz,0x52625d);for(const [dx,dy,angle] of [[0,-1,0],[1,0,Math.PI/2],[0,1,Math.PI],[-1,0,-Math.PI/2]]){if(has(x+dx,y+dy))continue;if(wall)placeKit(wall,wx+dx*tile*.5,0,wz+dy*tile*.5,tile,angle);else travelBlock(dx?.24:tile,1.8,dy?.24:tile,wx+dx*tile*.5,.9,wz+dy*tile*.5,0x343a40)}const h=(x*92821+y*68917)>>>0;if(props.length&&h%47===0&&!centers.some(([cx,cy])=>Math.abs(cx-x)<=1&&Math.abs(cy-y)<=1))placeKit(props[h%props.length],wx+.3,0,wz+.3,tile*.5)}}
-
+function travelWorld(){
+ clearTravel();for(const o of roomObjects)scene.remove(o);roomObjects=[];obstacles=[];
+ const T=1.6,wx=x=>(x-DW/2)*T,wz=y=>(y-DH/2)*T;
+ const inside=(x,y)=>x>=0&&y>=0&&x<DW&&y<DH;
+ const open=(x,y)=>inside(x,y)&&exploreGrid[y][x]===1;
+ const known=(x,y)=>inside(x,y)&&explored[y][x];
+ const roomAt=(x,y)=>chambers.findIndex(([rx,ry,rw,rh])=>x>=rx&&x<rx+rw&&y>=ry&&y<ry+rh);
+ const materials={floor:0x565451,alt:0x66615a,wall:0x41434a,trim:0x77736b,wood:0x58402e};
+ const add=(w,h,d,x,y,z,c)=>travelBlock(w,h,d,x,y,z,c);
+ const dungeonNames=[...dungeonKit.keys()];
+ const choose=(pattern)=>dungeonNames.find(n=>pattern.test(n));
+ const floorModel=choose(/^(floor|tile_ground|ground_tile)/i);
+ const wallModel=choose(/^wall(?!.*corner)/i);
+ const pillarModel=choose(/^(pillar|column)/i);
+ const torchModel=choose(/^torch/i);
+ const crateModel=choose(/^(crate|barrel)/i);
+ const place=(name,x,y,z,size,angle=0)=>{if(name)placeKit(name,x,y,z,size,angle)};
+ // Build rooms from the original combat-room language: layered stone floor,
+ // continuous masonry perimeter, raised trim, columns and torches.
+ for(let ri=0;ri<chambers.length;ri++){
+  const [rx,ry,rw,rh]=chambers[ri];
+  for(let y=ry;y<ry+rh;y++)for(let x=rx;x<rx+rw;x++){
+   if(!known(x,y))continue;
+   const px=wx(x),pz=wz(y),alt=(x+y)%5===0;
+   if(floorModel)place(floorModel,px,0,pz,T);
+   else{add(T,.28,T,px,-.18,pz,alt?materials.alt:materials.floor);add(T-.08,.035,T-.08,px,-.02,pz,alt?materials.floor:materials.alt)}
+  }
+  const corners=[[rx,ry],[rx+rw-1,ry],[rx,ry+rh-1],[rx+rw-1,ry+rh-1]];
+  for(const [x,y] of corners){
+   if(!known(x,y))continue;
+   const px=wx(x),pz=wz(y);
+   if(pillarModel)place(pillarModel,px,0,pz,T*.68);
+   else{add(.68,2.65,.68,px,1.33,pz,materials.trim);add(.85,.22,.85,px,2.7,pz,materials.alt)}
+  }
+  const torchSites=[[rx+1,ry],[rx+rw-2,ry+rh-1]];
+  for(const [x,y] of torchSites){
+   if(!known(x,y))continue;
+   const px=wx(x),pz=wz(y);
+   if(torchModel)place(torchModel,px,0,pz,T*.5);
+   else{add(.15,1.05,.15,px,.55,pz,materials.wood);const light=new THREE.PointLight(0xffab5d,2.5,8);light.position.set(px,1.6,pz);scene.add(light);travelMarkers.push(light)}
+  }
+ }
+ // Corridors and door thresholds use the same stone floor as the rooms.
+ for(let y=0;y<DH;y++)for(let x=0;x<DW;x++){
+  if(!known(x,y)||!open(x,y))continue;
+  const px=wx(x),pz=wz(y),ri=roomAt(x,y);
+  if(ri<0){if(floorModel)place(floorModel,px,0,pz,T);else{add(T,.28,T,px,-.18,pz,materials.floor);add(T-.1,.035,T-.1,px,-.02,pz,materials.alt)}}
+  // Every wall is placed on an actual solid/open boundary, never across a doorway.
+  for(const [dx,dy,angle] of [[0,-1,0],[1,0,Math.PI/2],[0,1,Math.PI],[-1,0,-Math.PI/2]]){
+   if(open(x+dx,y+dy))continue;
+   const bx=px+dx*T*.5,bz=pz+dy*T*.5;
+   if(wallModel)place(wallModel,bx,0,bz,T,angle);
+   else{add(dx?.38:T,2.6,dy?.38:T,bx,1.3,bz,materials.wall);add(dx?.48:T,.42,dy?.48:T,bx,2.68,bz,materials.trim)}
+  }
+  // Sparse props along walls; keep the center of every room and corridors clear.
+  const hash=(Math.imul(x+1,73856093)^Math.imul(y+1,19349663))>>>0;
+  if(ri>=0&&hash%37===0&&!centers.some(([cx,cy])=>Math.abs(cx-x)<=2&&Math.abs(cy-y)<=2)){
+   if(crateModel)place(crateModel,px+.28,0,pz+.25,T*.45);
+   else add(.6,.65,.6,px+.28,.3,pz+.25,materials.wood)
+  }
+ }
+}
 function placeKit(type,x,y,z,footprint,rotation=0){const src=dungeonKit.get(type);if(!src)return;const mesh=clone(src.scene),bounds=new THREE.Box3().setFromObject(mesh),size=bounds.getSize(new THREE.Vector3());const scale=footprint/Math.max(size.x,size.z,.01);mesh.scale.setScalar(scale);mesh.rotation.y=rotation;mesh.position.set(x-bounds.getCenter(new THREE.Vector3()).x*scale,y-bounds.min.y*scale,z-bounds.getCenter(new THREE.Vector3()).z*scale);scene.add(mesh);travelMeshes.push(mesh)}
 async function loadDungeonKit(){try{dungeonManifest=await (await fetch('assets/kaykit/dungeon_manifest.json')).json()}catch(e){console.warn('Dungeon manifest unavailable',e);return}const names=Object.keys(dungeonManifest);console.info('KayKit actual dungeon catalog',names);const selected=names.filter(n=>/^(floor|wall|pillar|column|torch|barrel|crate|chest|rubble|banner|stairs|arch|door|table|chair|candle)/i.test(n));await Promise.all(selected.map(async name=>{try{dungeonKit.set(name,await loader.loadAsync('assets/kaykit/'+dungeonManifest[name]))}catch(e){console.warn('Failed dungeon model',name,e)}}));travelLastTile='';if(exploreMode==='travel')travelWorld()}
 function worldPoint(x,y){return new THREE.Vector3((x-DW/2)*1.6,0,(y-DH/2)*1.6)}
