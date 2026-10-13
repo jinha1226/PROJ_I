@@ -40,7 +40,11 @@ jobs:
           python - <<'PY'
           import io, pathlib, urllib.request, zipfile, shutil
           url='https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0/archive/refs/heads/main.zip'
-          archive=zipfile.ZipFile(io.BytesIO(urllib.request.urlopen(url,timeout=90).read()))
+          try:
+              archive=zipfile.ZipFile(io.BytesIO(urllib.request.urlopen(url,timeout=90).read()))
+          except Exception as exc:
+              print('KayKit archive unavailable, deploying procedural models:', exc)
+              raise SystemExit(0)
           files=[n for n in archive.namelist() if n.lower().endswith('.glb')]
           out=pathlib.Path('assets/kaykit');out.mkdir(parents=True,exist_ok=True)
           for name in ('Knight','Rogue','Mage'):
