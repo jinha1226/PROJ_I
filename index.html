@@ -205,7 +205,7 @@ function returnToBase(msg,success=true){
  if(expeditionSettled)return;
  expeditionSettled=true;clearTimeout(nextBattleTimer);syncRoster();
  const survivors=actors.filter(a=>a.team==='hero'&&!a.dead&&a.hp>0).length;
- const reward=success&&survivors?5+Math.floor(expeditionSteps/5)+expeditionLoot:0;
+ const reward=success&&survivors&&expeditionSteps>0?Math.floor(expeditionSteps/5)+expeditionLoot:0;
  guild.expeditions++;guild.deepest=Math.max(guild.deepest,expeditionSteps);guild.supplies+=reward;saveGuild();
  exploreMode='base';exploreRunning=false;ready=false;finished=true;retreating=false;
  for(const a of actors){scene.remove(a.root);scene.remove(a.ring)}actors=[];
