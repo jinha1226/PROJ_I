@@ -242,7 +242,27 @@ function placeKit(type,x,y,z,footprint,rotation=0){const src=dungeonKit.get(type
 async function loadDungeonKit(){try{dungeonManifest=await (await fetch('assets/kaykit/dungeon_manifest.json')).json()}catch(e){console.warn('Dungeon manifest unavailable',e);return}const names=Object.keys(dungeonManifest);console.info('KayKit actual dungeon catalog',names);const selected=names.filter(n=>/^(floor|wall|pillar|column|torch|barrel|crate|chest|rubble|banner|stairs|arch|door|table|chair|candle)/i.test(n));await Promise.all(selected.map(async name=>{try{dungeonKit.set(name,await loader.loadAsync('assets/kaykit/'+dungeonManifest[name]))}catch(e){console.warn('Failed dungeon model',name,e)}}));travelLastTile='';if(exploreMode==='travel'&&!dungeonGeometryBuilt)travelWorld()}
 function worldPoint(x,y){return new THREE.Vector3((x-DW/2)*1.6,0,(y-DH/2)*1.6)}
 function revealDungeon(){const changed=mapReveal();const key=explored.map(row=>row.map(v=>v?'1':'0').join('')).join('');if(key!==travelLastTile){travelLastTile=key;if(!dungeonGeometryBuilt)travelWorld();localStorage.setItem('proj_i_map_v3',JSON.stringify(explored))}drawExplore();return changed}
-function partyTravelPosition(dt=0){const p=travelTarget||worldPoint(explorer.x,explorer.y);actors.filter(a=>a.team==='hero').forEach((a,i)=>{const off=i===0?0:i===1?-.45:.45;const goal=p.clone().add(new THREE.Vector3(off,0,i===0?0:.5));const delta=goal.clone().sub(a.pos);const distance=delta.length();if(distance>.03){const step=dt?Math.min(distance,dt*(i===0?3.2:3.7)):distance;const direction=delta.normalize();a.pos.addScaledVector(direction,step);a.root.position.x=a.pos.x;a.root.position.z=a.pos.z;a.root.rotation.y=Math.atan2(direction.x,direction.z);animation(a,'walk')}else animation(a,'idle');a.ring.position.set(a.pos.x,.035,a.pos.z);a.mixer.update(dt)})}
+const PARTY_SLOTS=[[-.8,0],[.8,0],[0,1.6]];
+function partyTravelPosition(dt=0){
+ const p=travelTarget||worldPoint(explorer.x,explorer.y);
+ const heroes=actors.filter(a=>a.team==='hero');
+ heroes.forEach((a,i)=>{
+  const [ox,oz]=PARTY_SLOTS[i]||[0,0];
+  const goal=p.clone().add(new THREE.Vector3(ox,0,oz));
+  // Preserve a distinct position for each party member, including at spawn.
+  const delta=goal.clone().sub(a.pos),distance=delta.length();
+  if(distance>.03){
+   const step=dt?Math.min(distance,dt*3.2):distance;
+   const direction=delta.normalize();
+   a.pos.addScaledVector(direction,step);
+   a.root.position.x=a.pos.x;a.root.position.z=a.pos.z;
+   a.root.rotation.y=Math.atan2(direction.x,direction.z);
+   animation(a,'walk');
+  }else animation(a,'idle');
+  a.ring.position.set(a.pos.x,.035,a.pos.z);
+  a.mixer.update(dt);
+ });
+}
 async function enterTravel(){visitedRooms.add(0);clearTimeout(nextBattleTimer);exploreMode='travel';exploreActive=true;exploreRunning=true;finished=false;paused=false;ready=false;document.getElementById('explorePanel').hidden=true;document.getElementById('notice').textContent='';revealDungeon();if(!actors.some(a=>a.team==='hero')){try{await Promise.all([spawn('Knight','hero',0,0,Math.round(115*(1+progress.upgrades.health*.15)),Math.round(19*(1+progress.upgrades.attack*.12)),1.5,.9),spawn('Rogue_Hooded','hero',0,0,Math.round(78*(1+progress.upgrades.health*.15)),Math.round(13*(1+progress.upgrades.attack*.12)),5,1.15),spawn('Mage','hero',0,0,Math.round(75*(1+progress.upgrades.health*.15)),Math.round(11*(1+progress.upgrades.attack*.12)),5.5,1.3)]);$('party').innerHTML=actors.filter(a=>a.team==='hero').map(a=>'<div class="card"><div class="name"><span>'+({Knight:'전사',Rogue_Hooded:'궁수',Mage:'마법사'}[a.name])+'</span><span>'+a.max+' HP</span></div><div class="hp"><span id="hp-'+a.name+'"></span></div></div>').join('')}catch(e){console.error(e);$('error').style.display='block';$('error').textContent=e.message;return}}await populateDungeonMonsters();travelTarget=worldPoint(explorer.x,explorer.y);partyTravelPosition();$('status').textContent='STAGE '+progress.stage+' · 던전 탐험';$('battleInfo').textContent='자동 탐험 · 지도 '+Math.round(explored.flat().filter(Boolean).length/exploreGrid.flat().filter(Boolean).length*100)+'%';}
 function explorerRoomIndex(){return centers.findIndex(([x,y])=>x===explorer.x&&y===explorer.y)}
 async function populateDungeonMonsters(){
