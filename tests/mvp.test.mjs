@@ -1,6 +1,9 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {SourceTextModule} from 'node:vm';
-const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');const scripts=[...html.matchAll(/<script[^>]*type="module"[^>]*>([\s\S]*?)<\/script>/gi)];const js=scripts.map(m=>m[1]).join('\n');
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const js=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+const rules=readFileSync(new URL('../src/expedition/rules.js',import.meta.url),'utf8');
+const scripts=[js,rules];
 test('single room battle viewport exists',()=>{assert.match(html,/id="game"/);assert.match(html,/id="party"/);assert.match(html,/id="restart"/);assert.match(js,/function room\(/);assert.doesNotMatch(html,/id="minimap"/)});
-test('JavaScript module syntax parses',()=>{assert.ok(scripts.length);assert.doesNotThrow(()=>new SourceTextModule(js))});
+test('JavaScript module syntax parses',()=>{assert.match(html,/src="\.\/src\/main\.js"/);for(const code of scripts)assert.doesNotThrow(()=>new SourceTextModule(code))});
 test('KayKit heroes and skeleton combat',()=>{for(const name of ['Knight','Rogue_Hooded','Mage','Skeleton_Warrior','Skeleton_Mage'])assert.ok(js.includes(name),name);for(const name of ['function animation(','function look(','function move(','function hit(','function update('])assert.ok(js.includes(name),name)});
 test('DOM references resolve',()=>{const ids=new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]));for(const [,id] of js.matchAll(/\$\('([^']+)'\)/g))assert.ok(ids.has(id),'missing #'+id)});
