@@ -182,7 +182,19 @@ for(let i=0;i<centers.length;i++)for(let j=i+1;j<centers.length;j++){
 const explored=Array.from({length:DH},()=>Array(DW).fill(false));try{const saved=JSON.parse(localStorage.getItem('proj_i_map_v4')||'null');if(Array.isArray(saved))for(let y=0;y<DH;y++)for(let x=0;x<DW;x++)explored[y][x]=Boolean(saved[y]?.[x])&&!!exploreGrid[y][x]}catch(e){console.warn('Map save reset',e)}
 let dungeonManifest={},dungeonKit=new Map(),travelTarget=null,travelLastTile='',travelBusy=false;let dungeonGeometryBuilt=false;let activeCombatRoom=-1;let dungeonMonstersReady=false;const dungeonRoomMonsters=new Map();let unifiedDungeon=true;let explorer={x:centers[0][0],y:centers[0][1]},explorePath=[],exploreActive=true,exploreRunning=true,exploreClock=0,exploreSaveClock=0,exploreMode='travel',visitedRooms=new Set(),travelMeshes=[],travelMarkers=[];
 // Test control: enable/disable the Pathfinder party skill before restarting.
-const guideToggle=document.createElement('button');guideToggle.textContent='길잡이: OFF';guideToggle.style.cssText='position:absolute;top:58px;right:12px;z-index:20;padding:8px 12px;background:#192c3d;color:#fff;border:1px solid #68889a;border-radius:8px';guideToggle.onclick=()=>{pathfinderSkill=!pathfinderSkill;guideToggle.textContent='길잡이: '+(pathfinderSkill?'ON':'OFF');explorePath=[];drawExplore()};document.getElementById('game').appendChild(guideToggle);
+const guideToggle=document.createElement('button');
+guideToggle.textContent='길잡이 스킬: 없음';
+guideToggle.style.cssText='position:absolute;top:58px;right:12px;z-index:20;padding:8px 12px;background:#192c3d;color:#fff;border:1px solid #68889a;border-radius:8px';
+guideToggle.onclick=()=>{pathfinderSkill=!pathfinderSkill;guideToggle.textContent='길잡이 스킬: '+(pathfinderSkill?'보유':'없음');explorePath=[];drawExplore()};
+document.getElementById('game').appendChild(guideToggle);
+const compareButton=document.createElement('button');
+compareButton.textContent='길잡이 경로 비교';
+compareButton.style.cssText='position:absolute;top:99px;right:12px;z-index:20;padding:8px 12px;background:#243b35;color:#fff;border:1px solid #6ba894;border-radius:8px';
+document.getElementById('game').appendChild(compareButton);
+const comparePanel=document.createElement('div');
+comparePanel.style.cssText='display:none;position:absolute;inset:12% 5% 8%;z-index:50;background:#101923f5;color:#f4f0e7;border:1px solid #68889a;border-radius:12px;padding:16px;overflow:auto';
+document.getElementById('game').appendChild(comparePanel);
+compareButton.onclick=()=>{runPathfinderComparison();comparePanel.style.display='block'};
 const mapCanvas=document.getElementById('exploreMap'),mapCtx=mapCanvas.getContext('2d');
 const mapDirs=[[1,0],[-1,0],[0,1],[0,-1]];
 function mapReveal(){let changed=false;const reveal=(x,y)=>{if(x>=0&&y>=0&&x<DW&&y<DH&&exploreGrid[y][x]&&!explored[y][x]){explored[y][x]=true;changed=true}};const room=chambers.find(([rx,ry,w,h])=>explorer.x>=rx&&explorer.x<rx+w&&explorer.y>=ry&&explorer.y<ry+h);if(room){const [rx,ry,w,h]=room;for(let y=ry;y<ry+h;y++)for(let x=rx;x<rx+w;x++)reveal(x,y)}else{for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++)if(dx*dx+dy*dy<=9)reveal(explorer.x+dx,explorer.y+dy)}return changed}
@@ -216,6 +228,73 @@ function mapRoute(){
   path.push(target);target=parent.get(target[0]+','+target[1]);if(!target)break;
  }
  return path.reverse();
+}
+// Deterministic headless A/B exploration: identical map, start, visibility,
+// and movement speed; only the Pathfinder skill differs.
+function simulatePathfinder(hasSkill){
+ const known=Array.from({length:DH},()=>Array(DW).fill(false));
+ const visits=new Map(),history=[],start=centers[0],pos=[...start];
+ const key=(x,y)=>x+','+y;
+ const reveal=()=>{
+  const room=chambers.find(([rx,ry,w,h])=>pos[0]>=rx&&pos[0]<rx+w&&pos[1]>=ry&&pos[1]<ry+h);
+  const mark=(x,y)=>{if(x>=0&&y>=0&&x<DW&&y<DH&&exploreGrid[y][x])known[y][x]=true};
+  if(room){const [rx,ry,w,h]=room;for(let y=ry;y<ry+h;y++)for(let x=rx;x<rx+w;x++)mark(x,y)}
+  else for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++)if(dx*dx+dy*dy<=9)mark(pos[0]+dx,pos[1]+dy);
+ };
+ const total=exploreGrid.flat().filter(Boolean).length,thresholds={50:null,90:null,100:null};
+ let distance=0,revisited=0,deadEnds=0,backtrack=0;
+ const step=(x,y)=>{
+  const k=key(x,y);if(visits.has(k))revisited++;
+  visits.set(k,(visits.get(k)||0)+1);history.push([x,y]);
+  pos[0]=x;pos[1]=y;distance++;reveal();
+  const pct=100*known.flat().filter(Boolean).length/total;
+  for(const t of [50,90,100])if(thresholds[t]===null&&pct>=t)thresholds[t]=distance;
+ };
+ step(...start);distance=0;
+ let guard=0;
+ while(guard++<DW*DH*12){
+  const queue=[[...pos]],seen=new Set([key(...pos)]),parent=new Map(),dist=new Map([[key(...pos),0]]),candidates=[];
+  for(let i=0;i<queue.length;i++){
+   const [x,y]=queue[i],k=key(x,y),d=dist.get(k);
+   if(!known[y][x])candidates.push({x,y,d});
+   for(const [dx,dy] of mapDirs){
+    const nx=x+dx,ny=y+dy,nk=key(nx,ny);
+    if(nx<0||ny<0||nx>=DW||ny>=DH||!exploreGrid[ny][nx]||seen.has(nk))continue;
+    seen.add(nk);parent.set(nk,[x,y]);dist.set(nk,d+1);queue.push([nx,ny]);
+   }
+  }
+  if(!candidates.length)break;
+  let chosen=candidates[0],best=Infinity;
+  for(const c of candidates){
+   const unseen=mapDirs.reduce((n,[dx,dy])=>{const x=c.x+dx,y=c.y+dy;return n+(x>=0&&y>=0&&x<DW&&y<DH&&exploreGrid[y][x]&&!known[y][x]?1:0)},0);
+   const score=hasSkill?c.d+(visits.get(key(c.x,c.y))||0)*2.5-unseen*3:c.d;
+   if(score<best){best=score;chosen=c}
+  }
+  const path=[];let p=[chosen.x,chosen.y];
+  while(p[0]!==pos[0]||p[1]!==pos[1]){path.push(p);p=parent.get(key(...p));if(!p)break}
+  path.reverse();
+  if(!path.length)break;
+  if(path.length>1)backtrack+=path.slice(0,-1).filter(([x,y])=>visits.has(key(x,y))).length;
+  const nbs=mapDirs.filter(([dx,dy])=>{const x=pos[0]+dx,y=pos[1]+dy;return x>=0&&y>=0&&x<DW&&y<DH&&exploreGrid[y][x]}).length;
+  if(nbs===1)deadEnds++;
+  for(const [x,y] of path)step(x,y);
+ }
+ return {hasSkill,history,distance,revisited,backtrack,deadEnds,thresholds,coverage:Math.round(100*known.flat().filter(Boolean).length/total),complete:!known.some((row,y)=>row.some((v,x)=>exploreGrid[y][x]&&!v))};
+}
+function runPathfinderComparison(){
+ const base=simulatePathfinder(false),guide=simulatePathfinder(true);
+ const canvas=document.createElement('canvas');canvas.width=DW*9;canvas.height=DH*9;canvas.style.cssText='width:100%;max-height:55vh;object-fit:contain;background:#080d15';
+ const ctx=canvas.getContext('2d');
+ for(let y=0;y<DH;y++)for(let x=0;x<DW;x++)if(exploreGrid[y][x]){ctx.fillStyle='#34444d';ctx.fillRect(x*9,y*9,8,8)}
+ const trace=(r,color)=>{ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();r.history.forEach(([x,y],i)=>i?ctx.lineTo(x*9+4.5,y*9+4.5):ctx.moveTo(x*9+4.5,y*9+4.5));ctx.stroke()};
+ trace(base,'#f1a35c');trace(guide,'#6bc8ff');
+ comparePanel.innerHTML='<button id="compareClose" style="float:right">닫기</button><h3>동일 던전 시드 14729 · 길잡이 A/B 비교</h3><p>주황: 스킬 없음 / 파랑: 길잡이 보유 · 전투 시간 제외, 한 칸당 동일 이동 시간</p>'+
+ '<table style="width:100%;text-align:right;border-collapse:collapse"><tr><th>지표</th><th>없음</th><th>있음</th></tr>'+
+ [['이동 칸 수','distance'],['재방문 칸 수','revisited'],['기존 경로 되돌아감','backtrack'],['막다른 길 횟수','deadEnds'],['탐색률 %','coverage']].map(([label,k])=>'<tr><td>'+label+'</td><td>'+base[k]+'</td><td>'+guide[k]+'</td></tr>').join('')+
+ [50,90,100].map(t=>'<tr><td>'+t+'% 도달 이동 칸</td><td>'+(base.thresholds[t]??'-')+'</td><td>'+(guide.thresholds[t]??'-')+'</td></tr>').join('')+
+ '</table><p>완료 여부: 없음 '+(base.complete?'완료':'미완료')+' / 있음 '+(guide.complete?'완료':'미완료')+'</p>';
+ comparePanel.appendChild(canvas);
+ comparePanel.querySelector('#compareClose').onclick=()=>comparePanel.style.display='none';
 }
 function drawExplore(){const cw=mapCanvas.width/DW,ch=mapCanvas.height/DH;mapCtx.fillStyle='#080d15';mapCtx.fillRect(0,0,mapCanvas.width,mapCanvas.height);let total=0,known=0;for(let y=0;y<DH;y++)for(let x=0;x<DW;x++){if(!exploreGrid[y][x])continue;total++;if(!explored[y][x])continue;known++;mapCtx.fillStyle='#465b62';mapCtx.fillRect(x*cw+1,y*ch+1,cw-2,ch-2)}if(routeHistory.length>1){mapCtx.strokeStyle=pathfinderSkill?'#6bc8ff':'#f1a35c';mapCtx.lineWidth=1.6;mapCtx.beginPath();routeHistory.forEach(([x,y],i)=>{if(i===0)mapCtx.moveTo((x+.5)*cw,(y+.5)*ch);else mapCtx.lineTo((x+.5)*cw,(y+.5)*ch)});mapCtx.stroke()}mapCtx.fillStyle='#f0d59d';mapCtx.beginPath();mapCtx.arc((explorer.x+.5)*cw,(explorer.y+.5)*ch,Math.min(cw,ch)*.38,0,Math.PI*2);mapCtx.fill();document.getElementById('exploreInfo').textContent=(pathfinderSkill?'길잡이 ON · ':'길잡이 OFF · ')+'지도 완성도 '+Math.round(known/total*100)+'% · 발견 '+known+'/'+total+'칸 · '+(known===total?'지도 완성!':exploreRunning?'자동 탐험 중':'일시정지') }
 function tickExplore(dt){if(!exploreActive||!exploreRunning||exploreMode!=='travel')return;exploreClock+=dt;exploreSaveClock+=dt;while(exploreClock>=.28){exploreClock-=.28;mapReveal();if(!explorePath.length)explorePath=mapRoute();if(explorePath.length){const [x,y]=explorePath.shift();explorer={x,y}}else{exploreRunning=false;break}}if(exploreSaveClock>=2||!exploreRunning){localStorage.setItem('proj_i_map_v3',JSON.stringify(explored));exploreSaveClock=0}drawExplore()}
