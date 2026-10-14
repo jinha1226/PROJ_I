@@ -72,6 +72,22 @@ export function sellItem(profile: Profile, gridId: 'stash' | 'backpack', uid: nu
   };
 }
 
+/** Sells every stack explicitly categorized as junk in one hideout grid. */
+export function sellJunk(profile: Profile, gridId: 'stash' | 'backpack'): Profile | null {
+  const grid = profile[gridId];
+  const junk = grid.items.filter(p => itemDef(p.item.defId).category === 'junk');
+  if (!junk.length) return null;
+  const multiplier = deriveBonuses(profile.upgrades).sellMul;
+  const value = junk.reduce((sum, p) => sum + Math.round(stackValue(p.item) * multiplier), 0);
+  const sold = new Set(junk.map(p => p.item.uid));
+  return {
+    ...profile,
+    gold: profile.gold + value,
+    [gridId]: {...grid, items: grid.items.filter(p => !sold.has(p.item.uid))},
+    stats: {...profile.stats, totalEarned: profile.stats.totalEarned + value},
+  };
+}
+
 /** Buys one item into the stash if there is gold and room. */
 export function buyItem(profile: Profile, defId: string): Profile | null {
   const entry = SHOP.find(s => s.defId === defId);

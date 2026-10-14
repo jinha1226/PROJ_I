@@ -5,9 +5,11 @@ import {itemDef} from '../items/catalog';
 import {emptyGrid, stackValue} from '../items/inventory';
 import {emptySlots, type Stores} from '../items/stores';
 import {settleRaid} from '../meta/economy';
-import {loadProfile, raidStores, resetProfile, saveProfile, type Profile} from '../meta/profile';
+import {loadProfile, newProfile, raidStores, resetProfile, saveProfile, type Profile} from '../meta/profile';
 import type {AssetLibrary} from '../render/assets';
-import {Stage} from '../render/stage';
+import {PIXEL_STEPS, Stage} from '../render/stage';
+import type {VisualSettings} from '../render/visual';
+import type {MeshStandardMaterial} from 'three';
 import type {RaidModifiers} from '../sim/modifiers';
 import {deriveBonuses} from '../meta/upgrades';
 import {applyGridBonuses} from '../meta/workshop';
@@ -45,6 +47,8 @@ export class App {
   private paused = false;
   private endTimer = 0;
   private last = performance.now();
+  /** Visual-lab mode: throwaway profile, nothing saved, raids restart on their own. */
+  private lab = false;
 
   constructor(
     private readonly assets: AssetLibrary,
@@ -60,12 +64,12 @@ export class App {
       getProfile: () => this.profile,
       setProfile: p => {
         this.profile = p;
-        saveProfile(p);
+        this.save(p);
       },
       startRaid: () => this.startRaid(),
       resetProfile: () => {
         this.profile = applyGridBonuses(resetProfile());
-        saveProfile(this.profile);
+        this.save(this.profile);
         this.hideout.refresh();
       },
       sound: kind => sfx[kind](),
@@ -103,6 +107,10 @@ export class App {
     byId('btnBag').addEventListener('click', () => this.onUiAction('inventory'));
     byId('btnMap').addEventListener('click', () => this.onUiAction('map'));
     byId('btnPause').addEventListener('click', () => this.onUiAction('pause'));
+    byId('returnBtn').addEventListener('click', () => this.onUiAction('returnNow'));
+    byId('autoSpeed').addEventListener('click', () => this.onUiAction('autoSpeed'));
+    // Badges double as toggles (the only way on touch screens).
+    for (const id of ['autoReturn', 'autoExplore', 'autoBattle'] as const) byId(id).addEventListener('click', () => this.onUiAction(id));
     document.body.classList.toggle('touch', this.input.isTouch);
   }
 
@@ -111,7 +119,22 @@ export class App {
       sfx.toggleMute();
       return;
     }
+    if (action === 'pixel') {
+      const i = PIXEL_STEPS.indexOf(this.stage.pixel as (typeof PIXEL_STEPS)[number]);
+      const next = PIXEL_STEPS[(i + 1) % PIXEL_STEPS.length];
+      this.stage.setPixelSize(next);
+      if (this.screen === 'raid') this.hud.notice(next > 1 ? `픽셀 그래픽 ${next}px <kbd>P</kbd>` : '픽셀 그래픽 끔 <kbd>P</kbd>', 'info');
+      return;
+    }
     if (this.screen !== 'raid' || !this.session) return;
+    if (action === 'returnNow') {
+      this.session.returnNow();
+      return;
+    }
+    if (action === 'autoSpeed') {
+      this.session.cycleAutoSpeed();
+      return;
+    }
     if (action === 'autoReturn' || action === 'autoExplore' || action === 'autoBattle') {
       this.session.toggleAuto(action);
       return;
@@ -145,7 +168,7 @@ export class App {
     this.preRaid = this.profile;
     // The loadout leaves the safe profile now: quitting mid-raid counts as losing it.
     this.profile = {...this.profile, backpack: emptyGrid(BACKPACK_SIZE.w, BACKPACK_SIZE.h), slots: emptySlots()};
-    saveProfile(this.profile);
+    this.save(this.profile);
     const seed = (Date.now() ^ (this.preRaid.raidCounter * 2654435761)) >>> 0;
     byId('loading').hidden = false;
     byId('loadingText').textContent = '던전을 생성하는 중…';
@@ -167,6 +190,27 @@ export class App {
         this.last = performance.now();
       }, 30),
     );
+  }
+
+  applyVisual(v: VisualSettings): void {
+    this.stage.applyVisual(v);
+    // One shared atlas material for the whole dungeon: gloss is just two uniforms.
+    const m = this.assets.dungeonMaterial as MeshStandardMaterial;
+    m.roughness = v.specular ? 0.42 : 1;
+    m.metalness = v.specular ? 0.25 : 0;
+  }
+
+  private save(p: Profile): void {
+    if (!this.lab) saveProfile(p);
+  }
+
+  /** `?lab`: start an auto-playing raid with every automation, for comparing visuals. */
+  startLab(): void {
+    this.lab = true;
+    const base = newProfile();
+    const upgrades = {'command.build': 1, 'command.autoReturn': 1, 'command.autoExplore': 3, 'command.autoBattle': 3, 'alchemist.build': 1, 'alchemist.vitality': 5};
+    this.profile = {...base, upgrades};
+    this.startRaid();
   }
 
   /** The hideout tree feeds the raid only through these multipliers. */
@@ -195,13 +239,14 @@ export class App {
     const carried: Stores = session.raid.stores;
     const {profile, haul, lost} = settleRaid(this.preRaid, outcome, carried, Math.random, deriveBonuses(this.preRaid.upgrades).exhaustLoss);
     this.profile = profile;
-    saveProfile(profile);
+    this.save(profile);
     if (outcome === 'extracted') sfx.extracted();
     this.renderResults(outcome, haul, session, new Set(lost.map(i => i.uid)));
     session.dispose();
     this.session = null;
     this.preRaid = null;
     this.showScreen('results');
+    if (this.lab) setTimeout(() => this.startLab(), 2500);
   }
 
   private renderResults(outcome: Outcome, haul: number, session: RaidSession, lost: ReadonlySet<number>): void {

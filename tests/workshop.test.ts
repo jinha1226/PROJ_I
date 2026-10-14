@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {BACKPACK_SIZE} from '../src/config';
 import {addAuto, makeItem} from '../src/items/inventory';
-import {sellItem} from '../src/meta/economy';
+import {sellItem, sellJunk} from '../src/meta/economy';
 import {newProfile, parseProfile, type Profile} from '../src/meta/profile';
 import {deriveBonuses, NODES} from '../src/meta/upgrades';
 import {countItem, craft, purchase, purchaseCheck} from '../src/meta/workshop';
@@ -61,6 +61,22 @@ describe('hideout upgrades', () => {
     const plain = sellItem(base, 'stash', uid)!.gold - base.gold;
     const haggled = {...base, upgrades: {'market.build': 1, 'market.haggle': 3}};
     expect(sellItem(haggled, 'stash', uid)!.gold - base.gold).toBe(Math.round(plain * 1.15));
+  });
+
+  it('bulk-sells only junk from the departure backpack', () => {
+    let profile = newProfile();
+    profile = {...profile, backpack: addAuto(addAuto(profile.backpack, makeItem('cracked_plate')).grid, makeItem('iron_scrap', 3)).grid};
+    const sold = sellJunk(profile, 'backpack')!;
+    expect(sold.backpack.items.map(p => p.item.defId)).toEqual(['iron_scrap']);
+    expect(sold.gold - profile.gold).toBe(10);
+    expect(sold.stats.totalEarned - profile.stats.totalEarned).toBe(10);
+  });
+
+  it('keeps a tracked upgrade through saves and clears it when maxed', () => {
+    let profile = withStash(newProfile(), [['iron_scrap', 10]]);
+    profile = {...profile, trackedUpgrade: 'blacksmith.build'};
+    expect(parseProfile(JSON.stringify(profile))?.trackedUpgrade).toBe('blacksmith.build');
+    expect(purchase(profile, 'blacksmith.build')?.trackedUpgrade).toBeNull();
   });
 
   it('every node has a valid cost for each level', () => {

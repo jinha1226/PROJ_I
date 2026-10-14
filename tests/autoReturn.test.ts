@@ -70,3 +70,21 @@ describe('auto return', () => {
     expect(high).toBeGreaterThan(low);
   });
 });
+
+describe('return now', () => {
+  it('walks home on command even with plenty of oil, and manual input cancels it', () => {
+    const {raid, auto} = setup(5);
+    expect(auto.returnNow()).toBe(true);
+    expect(auto.status().phase).toBe('returning');
+    step(raid, auto, {move: {x: 1, z: 0}});
+    expect(auto.status().phase).toBe('paused');
+    auto.returnNow();
+    for (let t = 0; t < 300 && !raid.outcome; t += DT) step(raid, auto);
+    expect(raid.outcome).toBe('extracted');
+  });
+
+  it('is unavailable while locked', () => {
+    const {auto} = setup(5, 0);
+    expect(auto.returnNow()).toBe(false);
+  });
+});

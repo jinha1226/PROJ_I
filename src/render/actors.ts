@@ -1,4 +1,4 @@
-import type {Scene} from 'three';
+import {CircleGeometry, Mesh, MeshBasicMaterial, type Scene} from 'three';
 import {PLAYER} from '../config';
 import {angleDiff} from '../core/math';
 import {itemDef} from '../items/catalog';
@@ -6,6 +6,10 @@ import type {Raid} from '../sim/raid';
 import type {Enemy, Player, SimEvent} from '../sim/types';
 import type {AssetLibrary} from './assets';
 import {CharacterView} from './character';
+import {visual} from './visual';
+
+const blobGeometry = new CircleGeometry(0.75, 20).rotateX(-Math.PI / 2);
+const blobMaterial = new MeshBasicMaterial({color: 0x000000, transparent: true, opacity: 0.55, depthWrite: false});
 
 const MOVE_EPSILON = 0.6;
 const ROGUE_GEAR = ['Knife', 'Knife_Offhand', '1H_Crossbow', '2H_Crossbow', 'Throwable'];
@@ -27,6 +31,8 @@ interface EnemyView {
 export class ActorRenderer {
   readonly player: CharacterView;
   private readonly enemies = new Map<number, EnemyView>();
+  /** Soft dark disc under each character so they sit on the floor. */
+  private readonly blobs = new Map<CharacterView, Mesh>();
   private gearKey = '';
   /** Forces attack clips to restart for each new swing, even the same clip twice. */
   private swingSerial = 0;
@@ -117,8 +123,27 @@ export class ActorRenderer {
     return this.enemies.get(id)?.view ?? null;
   }
 
+  private blob(view: CharacterView, x: number, z: number, alive: boolean): void {
+    let b = this.blobs.get(view);
+    if (!b) {
+      b = new Mesh(blobGeometry, blobMaterial);
+      b.renderOrder = 1;
+      this.scene.add(b);
+      this.blobs.set(view, b);
+    }
+    b.visible = visual.blobShadows && alive && view.root.visible;
+    b.position.set(x, 0.05, z);
+  }
+
+  private syncOutlines(view: CharacterView): void {
+    const on = visual.outline > 0;
+    for (const shell of view.outlines) shell.visible = on;
+  }
+
   update(dt: number): void {
     this.syncPlayerGear();
+    this.syncOutlines(this.player);
+    this.blob(this.player, this.raid.player.x, this.raid.player.z, true);
     this.animatePlayer(this.raid.player);
     this.player.root.position.set(this.raid.player.x, 0, this.raid.player.z);
     this.player.root.rotation.y = this.raid.player.facing;
@@ -135,6 +160,8 @@ export class ActorRenderer {
       ev.lastZ = e.z;
       this.animateEnemy(e, ev);
       ev.view.root.position.set(e.x, 0, e.z);
+      this.syncOutlines(ev.view);
+      this.blob(ev.view, e.x, e.z, e.alive);
       ev.view.root.rotation.y = e.facing;
       ev.view.update(dt);
     }
@@ -242,6 +269,8 @@ export class ActorRenderer {
   }
 
   dispose(): void {
+    for (const b of this.blobs.values()) this.scene.remove(b);
+    this.blobs.clear();
     this.player.dispose();
     for (const ev of this.enemies.values()) ev.view.dispose();
     this.enemies.clear();

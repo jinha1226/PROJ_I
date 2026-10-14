@@ -31,6 +31,7 @@ export class Hud {
   private readonly autoBadge = byId('autoReturn');
   private readonly exploreBadge = byId('autoExplore');
   private readonly battleBadge = byId('autoBattle');
+  private readonly speedBadge = byId('autoSpeed');
   private readonly belt: Record<'belt0' | 'belt1', HTMLElement> = {belt0: byId('belt0'), belt1: byId('belt1')};
   private readonly cache = new Map<string, string>();
   private hurtFlash = 0;
@@ -59,13 +60,24 @@ export class Hud {
     this.hurtFlash = 1;
   }
 
-  update(dt: number, raid: Raid, uiOpen: boolean, auto: AutoReturnStatus, explore: AutoExplorePhase, battle: AutoBattlePhase): void {
+  /** Full-screen color pulse for big moments (legendary finds). */
+  flash(color: string): void {
+    const el = byId('screenFlash');
+    el.style.setProperty('--flash', color);
+    el.classList.remove('on');
+    void el.offsetWidth;
+    el.classList.add('on');
+  }
+
+  update(dt: number, raid: Raid, uiOpen: boolean, auto: AutoReturnStatus, explore: AutoExplorePhase, battle: AutoBattlePhase, speed = 1, speedAvailable = false): void {
     this.updateAuto(auto);
     this.updateExplore(explore);
     const battleText: Record<AutoBattlePhase, string> = {locked: '', off: '자동 전투 <b>꺼짐</b> <kbd>B</kbd>', paused: '자동 전투 일시정지', idle: '자동 전투 대기', fighting: '자동 전투 중'};
     this.set('battle', this.battleBadge, battleText[battle]);
     this.battleBadge.hidden = battle === 'locked';
     this.battleBadge.className = `autoBadge ${battle === 'fighting' ? 'threat' : battle}`;
+    this.speedBadge.hidden = !speedAvailable;
+    this.set('autoSpeed', this.speedBadge, `배속 <b>${speed}×</b> <kbd>V</kbd>`);
     const p = raid.player;
     const hpRatio = Math.max(0, p.hp / p.maxHp);
     this.hpFill.style.transform = `scaleX(${hpRatio})`;
@@ -122,6 +134,7 @@ export class Hud {
     };
     this.set('auto', this.autoBadge, text[auto.phase]);
     this.autoBadge.hidden = auto.phase === 'locked';
+    byId('returnBtn').hidden = auto.phase === 'locked' || auto.phase === 'returning';
     this.autoBadge.className = `autoBadge ${auto.phase}`;
   }
 

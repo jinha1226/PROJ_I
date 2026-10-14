@@ -1,16 +1,17 @@
 import {itemDef} from '../items/catalog';
 import {gridValue, stackValue, type ItemStack} from '../items/inventory';
 import {quickEquip, quickMove, type Source, type Stores} from '../items/stores';
-import {buyItem, grantCharityKit, needsCharityKit, sellItem, SHOP} from '../meta/economy';
+import {buyItem, grantCharityKit, needsCharityKit, sellItem, sellJunk, SHOP} from '../meta/economy';
 import {hideoutStores, withHideoutStores, type Profile} from '../meta/profile';
-import {BUILDINGS, isBuilt, levelOf, nodesOf, type BuildingId} from '../meta/upgrades';
-import {craft, purchase, purchaseCheck} from '../meta/workshop';
+import {BUILDINGS, isBuilt, levelOf, NODE_BY_ID, nodesOf, type BuildingId} from '../meta/upgrades';
+import {countItem, craft, purchase, purchaseCheck} from '../meta/workshop';
 import type {AssetLibrary} from '../render/assets';
 import {CampView} from '../render/camp';
 import type {Stage} from '../render/stage';
 import {renderBuildingPanel} from './buildingPanel';
 import {byId, el, fmt} from './dom';
 import {InventoryUI, itemTile, type ItemAction} from './inventory';
+import {TechTree} from './techTree';
 
 export interface HideoutCallbacks {
   getProfile(): Profile;
@@ -27,11 +28,13 @@ export class Hideout {
   private readonly panel = byId('buildingPanel');
   private readonly labels = byId('campLabels');
   private readonly stashOverlay = byId('stashOverlay');
+  private readonly tracker = byId('upgradeTracker');
   private readonly inventory: InventoryUI;
   private readonly shopEl = el('div', 'shop');
   private readonly camp: CampView;
   private readonly labelEls = new Map<BuildingId, HTMLElement>();
   private selected: BuildingId | null = null;
+  private readonly tree: TechTree;
 
   constructor(
     private readonly icons: ReadonlyMap<string, string>,
@@ -56,6 +59,22 @@ export class Hideout {
       if (confirm('모든 진행 상황을 초기화할까요?')) cb.resetProfile();
     });
     this.buildShop();
+    this.tree = new TechTree({
+      icons,
+      getProfile: () => cb.getProfile(),
+      purchase: nodeId => {
+        const next = purchase(cb.getProfile(), nodeId);
+        if (!next) {
+          cb.sound('denied');
+          return false;
+        }
+        cb.setProfile(next);
+        cb.sound(nodeId.endsWith('.build') ? 'extracted' : 'coins');
+        this.refresh();
+        return true;
+      },
+    });
+    byId('openTree').addEventListener('click', () => this.tree.show(true));
     for (const b of BUILDINGS) {
       const label = el('button', 'campLabel');
       label.addEventListener('click', () => this.select(b.id));
@@ -75,13 +94,13 @@ export class Hideout {
       return [((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1];
     };
     canvas.addEventListener('pointermove', e => {
-      if (this.root.hidden || !this.stashOverlay.hidden) return;
+      if (this.root.hidden || !this.stashOverlay.hidden || this.tree.open) return;
       const id = this.camp.pick(...ndc(e));
       this.camp.setHovered(id);
       canvas.style.cursor = id ? 'pointer' : '';
     });
     canvas.addEventListener('click', e => {
-      if (this.root.hidden || !this.stashOverlay.hidden) return;
+      if (this.root.hidden || !this.stashOverlay.hidden || this.tree.open) return;
       const id = this.camp.pick(...ndc(e));
       if (id) this.select(id);
     });
@@ -118,6 +137,10 @@ export class Hideout {
         this.refresh();
       },
       openStash: () => this.openStash(true),
+      track: nodeId => {
+        this.cb.setProfile({...this.cb.getProfile(), trackedUpgrade: nodeId});
+        this.refresh();
+      },
     });
   }
 
@@ -134,6 +157,22 @@ export class Hideout {
 
   private buildShop(): void {
     this.shopEl.replaceChildren(el('h3', 'invTitle', '상인'));
+    const sellAll = el('button', 'dangerBtn sellJunk', '가방 고물 일괄 판매') as HTMLButtonElement;
+    sellAll.addEventListener('click', () => {
+      const profile = this.cb.getProfile();
+      const next = sellJunk(profile, 'backpack');
+      if (!next) {
+        this.cb.sound('denied');
+        return;
+      }
+      const count = profile.backpack.items.filter(p => itemDef(p.item.defId).category === 'junk').length;
+      const value = next.gold - profile.gold;
+      if (!confirm(`가방의 고물 ${count}묶음을 ${fmt(value)}G에 모두 판매할까요?\n일부 고물은 건설·제작에도 쓰입니다.`)) return;
+      this.cb.setProfile(next);
+      this.cb.sound('coins');
+      this.refresh();
+    });
+    this.shopEl.append(sellAll);
     const list = el('div', 'shopList');
     for (const entry of SHOP) {
       const def = itemDef(entry.defId);
@@ -152,6 +191,39 @@ export class Hideout {
       list.append(row);
     }
     this.shopEl.append(list, el('p', 'shopHint', '아이템을 클릭하면 판매·이동·장착할 수 있습니다. 드래그로 배치하고, 드래그 중 <kbd>R</kbd>로 회전합니다.'));
+  }
+
+  private renderTracker(): void {
+    const profile = this.cb.getProfile();
+    const node = profile.trackedUpgrade ? NODE_BY_ID.get(profile.trackedUpgrade) : null;
+    if (!node || levelOf(profile.upgrades, node.id) >= node.maxLevel || node.comingSoon) {
+      this.tracker.hidden = true;
+      return;
+    }
+    const level = levelOf(profile.upgrades, node.id);
+    const cost = node.cost(level + 1);
+    const building = BUILDINGS.find(b => b.id === node.building)!;
+    const rows = cost.items.map(([id, qty]) => {
+      const def = itemDef(id);
+      const have = countItem(profile, id);
+      const icon = this.icons.get(id);
+      return `<div class="trackerReq${have < qty ? ' short' : ' done'}">${icon ? `<img src="${icon}" alt="">` : `<span class="itemGlyph" style="color:${def.icon.color}">${def.icon.glyph}</span>`}<span>${def.name}</span><b>${have} / ${qty}</b></div>`;
+    }).join('');
+    const prereq = node.requires && levelOf(profile.upgrades, node.requires.node) < node.requires.level
+      ? `<div class="trackerLocked">선행 필요: ${NODE_BY_ID.get(node.requires.node)?.name} Lv${node.requires.level}</div>`
+      : '';
+    this.tracker.innerHTML = `
+      <header><span>추적 중</span><button class="trackerClose" title="추적 해제">×</button></header>
+      <strong>${building.name} · ${node.name}${node.maxLevel > 1 ? ` Lv${level + 1}` : ''}</strong>
+      <small>${node.effect(level + 1)}</small>
+      ${prereq}
+      <div class="trackerReq${profile.gold < cost.gold ? ' short' : ' done'}"><span class="trackerGold">●</span><span>금화</span><b>${fmt(profile.gold)} / ${fmt(cost.gold)}G</b></div>
+      ${rows || '<div class="trackerDone">필요한 물품 없음</div>'}`;
+    this.tracker.hidden = false;
+    this.tracker.querySelector('.trackerClose')?.addEventListener('click', () => {
+      this.cb.setProfile({...this.cb.getProfile(), trackedUpgrade: null});
+      this.refresh();
+    });
   }
 
   private actions(source: Source, item: ItemStack): ItemAction[] {
@@ -205,6 +277,7 @@ export class Hideout {
     else {
       this.inventory.hideCard();
       this.stashOverlay.hidden = true;
+      this.tree.show(false);
       this.stage.canvas.style.cursor = '';
     }
   }
@@ -216,6 +289,7 @@ export class Hideout {
   refresh(): void {
     const p = this.cb.getProfile();
     this.camp.sync(p.upgrades);
+    this.renderTracker();
     const stashValue = gridValue(p.stash);
     const loadoutValue = gridValue(p.backpack) + Object.values(p.slots).reduce((s, i) => s + (i ? stackValue(i) : 0), 0);
     this.header.innerHTML = `
@@ -241,7 +315,7 @@ export class Hideout {
     const canvas = this.stage.canvas;
     this.camp.resize(canvas.clientWidth / Math.max(1, canvas.clientHeight));
     this.camp.update(dt);
-    this.stage.renderer.render(this.camp.scene, this.camp.camera);
+    this.stage.renderScene(this.camp.scene, this.camp.camera);
     for (const [id, label] of this.labelEls) {
       const v = this.camp.labelAnchor(id).project(this.camp.camera);
       label.style.transform = `translate(${((v.x + 1) / 2) * canvas.clientWidth}px, ${((1 - v.y) / 2) * canvas.clientHeight}px) translate(-50%, -100%)`;

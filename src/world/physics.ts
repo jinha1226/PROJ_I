@@ -58,6 +58,44 @@ export function resolveCollisions(map: TileMap, colliders: readonly Circle[], po
   return hit;
 }
 
+/** True when no circular collider (inflated by `r`) crosses the segment a→b, ignoring ones at either end. */
+export function segmentClear(colliders: readonly Circle[], a: Vec2, b: Vec2, r: number): boolean {
+  const dx = b.x - a.x;
+  const dz = b.z - a.z;
+  const len2 = dx * dx + dz * dz || 1e-6;
+  for (const c of colliders) {
+    // The goal itself (a chest) or something we already touch never blocks.
+    const near = (p: Vec2): boolean => (p.x - c.x) ** 2 + (p.z - c.z) ** 2 < (c.r + r + 0.4) ** 2;
+    if (near(a) || near(b)) continue;
+    const t = Math.max(0, Math.min(1, ((c.x - a.x) * dx + (c.z - a.z) * dz) / len2));
+    const px = a.x + dx * t - c.x;
+    const pz = a.z + dz * t - c.z;
+    if (px * px + pz * pz < (c.r + r) ** 2) return false;
+  }
+  return true;
+}
+
+/** Extra path cost for tiles whose center sits inside a big prop, so paths flow around furniture. */
+const PROP_TILE_PENALTY = 8;
+const BIG_PROP = 0.8;
+
+function propPenalties(map: TileMap & {colliders?: readonly Circle[]}): Float32Array {
+  const pen = new Float32Array(map.w * map.h);
+  for (const c of map.colliders ?? []) {
+    if (c.r < BIG_PROP) continue;
+    const tx = toTile(c.x);
+    const ty = toTile(c.z);
+    for (let y = ty - 1; y <= ty + 1; y++) {
+      for (let x = tx - 1; x <= tx + 1; x++) {
+        if (!isFloor(map, x, y)) continue;
+        const d = Math.hypot(x * TILE + TILE / 2 - c.x, y * TILE + TILE / 2 - c.z);
+        if (d < c.r + 0.9) pen[y * map.w + x] = PROP_TILE_PENALTY;
+      }
+    }
+  }
+  return pen;
+}
+
 /** True when nothing but floor lies between a and b (sampled every half unit). */
 export function lineOfSight(map: TileMap, a: Vec2, b: Vec2): boolean {
   const dx = b.x - a.x;
@@ -99,9 +137,11 @@ const NEIGHBORS: readonly (readonly [number, number, number])[] = [
 export class FlowField {
   readonly cost: Float32Array;
   private targetIdx = -1;
+  private readonly penalty: Float32Array;
 
-  constructor(private readonly map: TileMap) {
+  constructor(private readonly map: TileMap & {colliders?: readonly Circle[]}) {
     this.cost = new Float32Array(map.w * map.h).fill(Infinity);
+    this.penalty = propPenalties(map);
   }
 
   /** Recomputes only when the target moves to another tile. */
@@ -127,7 +167,7 @@ export class FlowField {
         // No corner cutting through rock.
         if (dx && dy && (!isFloor(this.map, cx + dx, cy) || !isFloor(this.map, cx, cy + dy))) continue;
         const n = ny * w + nx;
-        const next = this.cost[cur] + c;
+        const next = this.cost[cur] + c + this.penalty[n];
         if (next < this.cost[n] - 1e-4) {
           this.cost[n] = next;
           queue.push(n);

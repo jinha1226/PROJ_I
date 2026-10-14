@@ -22,6 +22,8 @@ export interface Profile {
   raidCounter: number;
   /** Hideout tree: node id → level. */
   upgrades: Levels;
+  /** Upgrade pinned to the quest-style hideout tracker. */
+  trackedUpgrade: string | null;
 }
 
 const STORAGE_KEY = 'proj_i_extract_profile_v1';
@@ -39,6 +41,7 @@ export function newProfile(): Profile {
     stats: {raids: 0, extracts: 0, deaths: 0, bestHaul: 0, totalEarned: 0},
     raidCounter: 0,
     upgrades: {},
+    trackedUpgrade: null,
   };
 }
 
@@ -107,6 +110,7 @@ export function parseProfile(raw: string): Profile | null {
     },
     raidCounter: num(data.raidCounter, 0),
     upgrades,
+    trackedUpgrade: typeof data.trackedUpgrade === 'string' && NODE_BY_ID.has(data.trackedUpgrade) ? data.trackedUpgrade : null,
   };
   const slotMax = Math.max(0, ...SLOT_IDS.map(id => profile.slots[id]?.uid ?? 0));
   reserveUids(Math.max(maxUid(profile.stash), maxUid(profile.backpack), slotMax));

@@ -27,6 +27,8 @@ export interface InventoryHost {
   dropOutside?(source: Source, item: ItemStack): void;
   onMoved?(item: ItemStack): void;
   onDenied?(): void;
+  /** Just-revealed notable items glow for a moment. */
+  isFresh?(uid: number): boolean;
 }
 
 const SLOT_LABEL: Readonly<Record<SlotId, string>> = {weapon: '무기', armor: '방어구', belt0: '벨트 1', belt1: '벨트 2'};
@@ -177,8 +179,14 @@ export class InventoryUI {
       right.append(this.gridElement(panel.gridId, stores, cell));
     }
     if (!this.panels.length) right.append(el('div', 'invEmpty', '주변에 열린 상자가 없습니다.<br><small>상자나 시체 근처에서 <b>E</b></small>'));
-    if (this.extraEl) right.append(this.extraEl);
     this.root.append(right);
+    // Extra content such as the merchant gets its own column so it sits to the
+    // right of the stash instead of underneath it.
+    if (this.extraEl) {
+      const extra = el('section', 'invColumn invExtra');
+      extra.append(this.extraEl);
+      this.root.append(extra);
+    }
   }
 
   private gridElement(gridId: string, stores: Stores, cell: number): HTMLElement {
@@ -211,6 +219,7 @@ export class InventoryUI {
     }
     const tile = itemTile(def, item, rot, this.icons, cell);
     tile.dataset.uid = String(item.uid);
+    if (this.host.isFresh?.(item.uid)) tile.classList.add('fresh');
     tile.addEventListener('pointerdown', e => this.onDown(e, source, item, rot, tile));
     tile.addEventListener('pointerenter', () => {
       if (!this.drag && !this.pinned) this.showCard(item, tile, null);
@@ -220,6 +229,9 @@ export class InventoryUI {
     });
     tile.addEventListener('contextmenu', e => {
       e.preventDefault();
+      // A quick action can move the hovered item out from under the pointer.
+      // Close any hover/pinned card before the inventory is rebuilt.
+      this.unpin();
       this.host.actions(source, item)[0]?.run();
     });
     return tile;
@@ -362,9 +374,9 @@ export class InventoryUI {
   private onUp(e: PointerEvent): void {
     const d = this.drag;
     if (!d) return;
-    this.drag = null;
-    d.ghost.remove();
     if (!d.moved) {
+      this.drag = null;
+      d.ghost.remove();
       // Plain click: pin the card with context actions.
       const tile = this.root.querySelector(`[data-uid="${d.item.uid}"]`) as HTMLElement | null;
       if (tile) {
@@ -373,8 +385,12 @@ export class InventoryUI {
       }
       return;
     }
-    const stores = this.host.getStores();
+    // destAt uses the active drag to offset the grabbed cell, so resolve the
+    // destination before clearing drag state.
     const dest = this.destAt(e.clientX, e.clientY);
+    this.drag = null;
+    d.ghost.remove();
+    const stores = this.host.getStores();
     if (!dest) {
       if (this.host.dropOutside && itemOf(stores, d.source)) this.host.dropOutside(d.source, d.item);
       return;

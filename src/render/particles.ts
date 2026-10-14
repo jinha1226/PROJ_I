@@ -19,6 +19,10 @@ export interface EmitOptions {
   drag?: number;
 }
 
+const GROUND = 0.03;
+/** Particles shrink away only during this last share of their life (litter stays full size). */
+const FADE_SHARE = 0.3;
+
 const HIDDEN = new Matrix4().makeScale(0, 0, 0);
 
 /**
@@ -34,6 +38,8 @@ export class ParticlePool {
   private readonly size: Float32Array;
   private readonly grav: Float32Array;
   private readonly drag: Float32Array;
+  /** Tumble angle; only advances while airborne, so litter rests flat. */
+  private readonly spin: Float32Array;
   private cursor = 0;
   private readonly m = new Matrix4();
   private readonly q = new Quaternion();
@@ -64,6 +70,7 @@ export class ParticlePool {
     this.size = new Float32Array(capacity);
     this.grav = new Float32Array(capacity);
     this.drag = new Float32Array(capacity);
+    this.spin = new Float32Array(capacity);
   }
 
   emit(o: EmitOptions): void {
@@ -82,6 +89,7 @@ export class ParticlePool {
       this.size[i] = rand(o.size);
       this.grav[i] = o.gravity ?? 0;
       this.drag[i] = o.drag ?? 2;
+      this.spin[i] = Math.random() * 6;
       this.mesh.setColorAt(i, this.mix.lerpColors(this.c, this.c2, Math.random()));
     }
     if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
@@ -103,11 +111,23 @@ export class ParticlePool {
       this.vel[j + 2] *= k;
       this.vel[j + 1] -= this.grav[i] * dt;
       this.pos[j] += this.vel[j] * dt;
-      this.pos[j + 1] = Math.max(0.03, this.pos[j + 1] + this.vel[j + 1] * dt);
+      this.pos[j + 1] += this.vel[j + 1] * dt;
       this.pos[j + 2] += this.vel[j + 2] * dt;
+      const airborne = this.pos[j + 1] > GROUND + 0.01;
+      if (!airborne && this.grav[i] > 0) {
+        // Hit the floor: small bounce, heavy friction, then rest.
+        this.pos[j + 1] = GROUND;
+        this.vel[j + 1] = Math.abs(this.vel[j + 1]) > 1.5 ? -this.vel[j + 1] * 0.25 : 0;
+        this.vel[j] *= 0.6;
+        this.vel[j + 2] *= 0.6;
+      } else if (!airborne) {
+        this.pos[j + 1] = GROUND;
+      } else {
+        this.spin[i] += dt * 9;
+      }
       const t = this.life[i] / this.maxLife[i];
-      const sz = this.size[i] * (0.3 + 0.7 * t);
-      this.q.setFromAxisAngle(this.v.set(0.3, 1, 0.2).normalize(), this.life[i] * 9 + i);
+      const sz = this.size[i] * Math.min(1, 0.15 + t / FADE_SHARE);
+      this.q.setFromAxisAngle(this.v.set(0.3, 1, 0.2).normalize(), this.spin[i] + i);
       this.m.compose(this.v.set(this.pos[j], this.pos[j + 1], this.pos[j + 2]), this.q, this.s.set(sz, sz, sz));
       this.mesh.setMatrixAt(i, this.m);
     }

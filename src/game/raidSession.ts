@@ -27,6 +27,11 @@ import {Feedback} from './feedback';
 const AUTO_AIM_RANGE = 7;
 /** Animation keeps a sliver of motion during hitstop so frames do not look frozen-broken. */
 const HITSTOP_ANIM_SCALE = 0.04;
+const SLOWMO_SECONDS = 0.22;
+const SLOWMO_SCALE = 0.3;
+const FRESH_SECONDS = 3;
+const COMBAT_RANGE = 11;
+const AUTO_SPEEDS = [1, 2, 3] as const;
 
 export interface SessionDeps {
   stage: Stage;
@@ -52,6 +57,12 @@ export class RaidSession {
   private readonly invOverlay = byId('invOverlay');
   private lastContainer: number | null = null;
   private aim: Vec2 = {x: 0, z: 0};
+  /** Seconds left of the post-kill slow-motion beat. */
+  private slowmo = 0;
+  /** Recently revealed notable items glow in the bag view until this time. */
+  private readonly fresh = new Map<number, number>();
+  private clock = 0;
+  private autoSpeed: (typeof AUTO_SPEEDS)[number] = 1;
 
   constructor(
     private readonly deps: SessionDeps,
@@ -67,7 +78,10 @@ export class RaidSession {
     this.level = new LevelView(stage.scene, assets, this.raid.map, this.raid.containers, this.raid.zones);
     this.actors = new ActorRenderer(stage.scene, assets, this.raid);
     this.fx = new Fx(stage.scene, stage, byId('floatLayer'));
-    this.feedback = new Feedback(this.raid, this.fx, this.actors, stage, deps.hud, deps.sfx);
+    this.feedback = new Feedback(this.raid, this.fx, this.actors, stage, deps.hud, deps.sfx, {
+      onKill: () => (this.slowmo = SLOWMO_SECONDS),
+      onReveal: uid => this.fresh.set(uid, this.clock + FRESH_SECONDS),
+    });
     this.inventory = new InventoryUI(byId('raidInventory'), deps.icons, {
       getStores: () => this.raid.stores,
       setStores: next => (this.raid.stores = next),
@@ -84,6 +98,7 @@ export class RaidSession {
       },
       onMoved: item => (itemDef(item.defId).category === 'currency' ? deps.sfx.coins() : deps.sfx.pickup()),
       onDenied: () => deps.sfx.denied(),
+      isFresh: uid => (this.fresh.get(uid) ?? 0) > this.clock,
     });
 
     const p = this.raid.player;
@@ -182,9 +197,18 @@ export class RaidSession {
   };
 
   /** Advances one frame. Returns the outcome once the raid has ended. */
-  frame(dt: number, paused: boolean): Outcome | null {
+  frame(realDt: number, paused: boolean): Outcome | null {
     const {stage, input, hud, map} = this.deps;
     const raid = this.raid;
+    this.clock += realDt;
+    const exploreBefore = this.autoExplore.status();
+    const battleBefore = this.autoBattle.status();
+    const speedAvailable = !['locked', 'off'].includes(exploreBefore) || !['locked', 'off'].includes(battleBefore);
+    const scaled = realDt * (speedAvailable ? this.autoSpeed : 1);
+    // A kill briefly slows everything down; the camera keeps real time.
+    const slowmoActive = this.slowmo > 0;
+    let dt = slowmoActive ? scaled * SLOWMO_SCALE : scaled;
+    this.slowmo = Math.max(0, this.slowmo - realDt);
     const pointer = input.pointer;
     if (pointer.active) this.aim = stage.groundPoint(pointer.x, pointer.y);
     else this.aim = this.autoAim();
@@ -193,6 +217,8 @@ export class RaidSession {
       const human = input.sample(this.aim, this.inventoryOpen || this.inventory.isDragging());
       // Dragging items in the bag counts as the player being busy, not as idle.
       const manual = isManual(human.move, human.attack && !human.uiBlocked, human.dodge) || this.inventory.isDragging();
+      // Automation speed must not amplify a player's temporary manual takeover.
+      if (manual) dt = slowmoActive ? realDt * SLOWMO_SCALE : realDt;
       const simInput = composeAutomation(human, dt, manual, this.autoBattle, this.autoExplore, this.autoReturn);
       // E toggles: with the bag open, it closes the bag (and the container) instead.
       if (simInput.interact && this.inventoryOpen) {
@@ -214,17 +240,41 @@ export class RaidSession {
 
     const animDt = paused ? 0 : raid.hitstop > 0 ? dt * HITSTOP_ANIM_SCALE : dt;
     this.actors.update(animDt);
+    this.fx.ambientDust(raid.player.x, raid.player.z, realDt);
     this.fx.update(animDt, this.pose);
     const near = raid.openContainer === null ? raid.nearestContainer() : null;
     this.level.update(dt, raid.player, near, raid.extractZone);
-    stage.setTorchSites(this.level.torchSites, raid.player);
-    stage.update(dt, raid.player, pointer.active ? this.aim : null, raid.oilRatio);
+    stage.setTorchSites(this.level.torchSites, raid.player, this.level.torchColors);
+    stage.setCombat(raid.enemies.some(e => e.alive && e.alerted && e.canSee && dist(e, raid.player) < COMBAT_RANGE));
+    stage.update(realDt, raid.player, pointer.active ? this.aim : null, raid.oilRatio);
     stage.render();
 
-    hud.update(dt, raid, this.inventoryOpen, this.autoReturn.status(), this.autoExplore.status(), this.autoBattle.status());
+    hud.update(dt, raid, this.inventoryOpen, this.autoReturn.status(), this.autoExplore.status(), this.autoBattle.status(), this.autoSpeed, speedAvailable);
     if (this.inventoryOpen) this.inventory.refresh();
     map.draw(raid);
     return raid.outcome;
+  }
+
+  /** "Go home now": walks to the nearest exit (needs the auto-return node). */
+  returnNow(): void {
+    if (!this.autoReturn.unlocked) {
+      this.deps.hud.notice('즉시 귀환은 지휘탑의 자동 귀환을 해금하면 쓸 수 있습니다', 'info');
+      return;
+    }
+    if (this.inventoryOpen) this.setInventoryOpen(false);
+    this.autoReturn.returnNow();
+  }
+
+  cycleAutoSpeed(): void {
+    const explore = this.autoExplore.status();
+    const battle = this.autoBattle.status();
+    if (['locked', 'off'].includes(explore) && ['locked', 'off'].includes(battle)) {
+      this.deps.hud.notice('자동 탐험 또는 자동 전투를 켜야 배속을 사용할 수 있습니다', 'info');
+      return;
+    }
+    const index = AUTO_SPEEDS.indexOf(this.autoSpeed);
+    this.autoSpeed = AUTO_SPEEDS[(index + 1) % AUTO_SPEEDS.length];
+    this.deps.hud.notice(`자동 진행 ${this.autoSpeed}배속`, 'info');
   }
 
   toggleAuto(which: 'autoReturn' | 'autoExplore' | 'autoBattle'): void {

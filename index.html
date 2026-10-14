@@ -12,6 +12,7 @@
   <body>
     <div id="game">
       <div id="vignette"></div>
+      <div id="screenFlash"></div>
       <div id="floatLayer"></div>
 
       <div id="hud" hidden>
@@ -19,7 +20,7 @@
           <div class="bar hp"><div id="hpFill" class="fill"></div><span id="hpText"></span></div>
           <div class="bar st"><div id="stFill" class="fill"></div></div>
         </div>
-        <div id="timerBox"><span class="label">랜턴 기름</span><div class="bar oil"><div id="oilFill" class="fill"></div></div><div id="timer"></div><div class="autoRow"><div id="autoReturn" hidden></div><div id="autoExplore" hidden></div><div id="autoBattle" hidden></div></div></div>
+        <div id="timerBox"><span class="label">랜턴 기름</span><div class="bar oil"><div id="oilFill" class="fill"></div></div><div id="timer"></div><div class="autoRow"><div id="autoReturn" hidden></div><div id="autoExplore" hidden></div><div id="autoBattle" hidden></div><button id="autoSpeed" class="autoBadge" hidden></button></div><button id="returnBtn" hidden>⚑ 지금 귀환 <kbd>X</kbd></button></div>
         <div id="raidInfo">
           <div id="carried"></div>
           <div id="extractList"></div>
@@ -34,7 +35,7 @@
           <button id="belt0" class="beltSlot"></button>
           <button id="belt1" class="beltSlot"></button>
         </div>
-        <div id="keyHelp"><kbd>WASD</kbd> 이동 <kbd>좌클릭</kbd> 공격 <kbd>Space</kbd> 회피 <kbd>Shift</kbd> 달리기 <kbd>E</kbd> 루팅 <kbd>Tab</kbd> 가방 <kbd>M</kbd> 지도</div>
+        <div id="keyHelp"><kbd>WASD</kbd> 이동 <kbd>좌클릭</kbd> 공격 <kbd>Space</kbd> 회피 <kbd>Shift</kbd> 달리기 <kbd>E</kbd> 루팅 <kbd>Tab</kbd> 가방 <kbd>M</kbd> 지도 <kbd>V</kbd> 자동 배속 <kbd>P</kbd> 픽셀</div>
       </div>
 
       <div id="touchControls" hidden>
@@ -79,14 +80,27 @@
         <div id="hideoutHeader"></div>
       </header>
       <div id="campLabels"></div>
+      <aside id="upgradeTracker" hidden></aside>
       <aside id="buildingPanel" hidden></aside>
       <footer class="hideoutFoot">
         <p>건물을 눌러 건설·강화·제작하세요. 던전에서 <b>약탈</b>하고 랜턴 기름이 떨어지기 전에 <b>탈출</b>하세요.</p>
         <button id="resetSave" class="ghostBtn">초기화</button>
+        <button id="openTree" class="ghostBtn">기술 트리</button>
         <button id="openStash" class="ghostBtn">창고 · 출정 준비</button>
         <button id="raidStart" class="primaryBtn big">던전 진입 ▶</button>
       </footer>
     </section>
+
+    <div id="treeOverlay" hidden>
+      <header class="treeHead">
+        <h2>기술 트리</h2><span id="treeGold"></span>
+        <span class="hint">노드를 눌러 강화 · 드래그로 이동 · 휠/핀치로 확대</span>
+        <button id="treeZoomOut" class="ghostBtn">−</button><button id="treeZoomIn" class="ghostBtn">+</button><button id="treeReset" class="ghostBtn">맞춤</button>
+        <button id="treeClose" class="primaryBtn">닫기</button>
+      </header>
+      <div id="treeViewport"><div id="treeStage"></div></div>
+      <div id="treeTip" hidden></div>
+    </div>
 
     <div id="stashOverlay" class="overlay" hidden>
       <div class="overlayPanel stashPanel">

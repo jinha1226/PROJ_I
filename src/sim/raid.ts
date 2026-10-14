@@ -358,7 +358,7 @@ export class Raid {
     if (c.searchTimer * this.mods.lootSpeed >= REVEAL_SECONDS[itemDef(next.item.defId).rarity]) {
       c.searchTimer = 0;
       c.revealed++;
-      this.emit({type: 'reveal', container: c.id, defId: next.item.defId});
+      this.emit({type: 'reveal', container: c.id, defId: next.item.defId, uid: next.item.uid});
     }
   }
 

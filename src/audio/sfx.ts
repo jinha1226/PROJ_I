@@ -157,6 +157,19 @@ export class Sfx {
     }
   }
 
+  /** Epic / legendary find: a short rising fanfare over a low swell. */
+  treasure(legendary: boolean): void {
+    const notes = legendary ? [523, 659, 784, 1046, 1318] : [587, 740, 880, 1175];
+    notes.forEach((f, i) => this.tone(f, f, 0.5, 'triangle', 0.2, i * 0.07));
+    this.tone(legendary ? 130 : 175, legendary ? 260 : 220, legendary ? 1.4 : 0.9, 'sine', 0.25);
+    this.hiss(legendary ? 1.2 : 0.7, 'highpass', 4000, 9000, 0.12);
+  }
+
+  kill(): void {
+    this.tone(90, 40, 0.35, 'sine', 0.8);
+    this.hiss(0.25, 'lowpass', 3000, 300, 0.35);
+  }
+
   pickup(): void {
     this.tone(660, 990, 0.08, 'triangle', 0.15);
   }

@@ -1,5 +1,5 @@
 import {dist, type Vec2} from '../../core/math';
-import {FlowField, lineOfSight} from '../../world/physics';
+import {FlowField, lineOfSight, segmentClear} from '../../world/physics';
 import type {GameMap} from '../../world/mapgen';
 
 const STUCK_SECONDS = 1.2;
@@ -41,7 +41,9 @@ export class Steering {
       this.stuckTimer = 0;
       this.nudge = moved < STUCK_DISTANCE ? {x: Math.random() * 2 - 1, z: Math.random() * 2 - 1} : null;
     }
-    const target = lineOfSight(this.map, from, goal) ? goal : this.field.nextStep(from);
+    // Straight only when neither walls nor furniture are in the way.
+    const clear = lineOfSight(this.map, from, goal) && segmentClear(this.map.colliders, from, goal, 0.6);
+    const target = clear ? goal : this.field.nextStep(from);
     if (!target) return {x: 0, z: 0};
     const dx = target.x - from.x + (this.nudge?.x ?? 0) * 2;
     const dz = target.z - from.z + (this.nudge?.z ?? 0) * 2;

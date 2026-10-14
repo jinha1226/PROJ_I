@@ -57,6 +57,18 @@ export class AutoReturn {
     return this.enabled;
   }
 
+  /** Player command: head for the nearest exit right now. Moving manually cancels it. */
+  returnNow(): boolean {
+    if (!this.unlocked || !this.raid.player.alive || this.raid.outcome) return false;
+    const plan = this.plan();
+    if (!plan) return false;
+    this.enabled = true;
+    this.active = true;
+    this.idleTimer = RESUME_AFTER_IDLE;
+    this.raid.emit({type: 'notice', text: `<b>${this.raid.zones[plan.zone].name}</b>(으)로 귀환합니다 — 이동키로 취소`, tone: 'info'});
+    return true;
+  }
+
   /** Nearest extraction by walking distance, and the seconds needed to reach and use it. */
   plan(): {zone: number; seconds: number} | null {
     const p = this.raid.player;

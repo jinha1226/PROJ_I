@@ -2,6 +2,7 @@ import {AnimationMixer, Color, LoopOnce, LoopRepeat, type AnimationAction, type 
 import {clone} from 'three/addons/utils/SkeletonUtils.js';
 import type {WeaponMesh} from '../items/catalog';
 import type {AssetLibrary, CharacterName, PropName} from './assets';
+import {addOutlines, installRim} from './visual';
 
 export interface PlayOptions {
   loop?: boolean;
@@ -26,6 +27,8 @@ export class CharacterView {
   private current: AnimationAction | null = null;
   private currentName = '';
   private flashLevel = 0;
+  /** Inverted-hull outline shells (shown only when outlines are on). */
+  readonly outlines: Mesh[];
   private readonly flashColor = new Color();
 
   constructor(
@@ -42,10 +45,12 @@ export class CharacterView {
       mesh.receiveShadow = false;
       // Cloned materials compile to the same shader program: no hitch, but independent emissive.
       const mat = (mesh.material as Material).clone() as MeshStandardMaterial;
+      installRim(mat, name === 'Knight');
       mesh.material = mat;
       this.materials.push(mat);
       mesh.frustumCulled = false;
     });
+    this.outlines = addOutlines(this.root);
     this.mixer = new AnimationMixer(this.root);
     for (const clip of asset.clips) this.actions.set(clip.name, this.mixer.clipAction(clip));
   }

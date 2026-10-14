@@ -2,9 +2,9 @@ import type {SlotId} from '../items/stores';
 import type {SimInput} from '../sim/types';
 import type {Vec2} from './math';
 
-export type UiAction = 'inventory' | 'map' | 'pause' | 'mute' | 'autoReturn' | 'autoExplore' | 'autoBattle';
+export type UiAction = 'inventory' | 'map' | 'pause' | 'mute' | 'autoReturn' | 'autoExplore' | 'autoBattle' | 'autoSpeed' | 'pixel' | 'returnNow';
 
-const KEY_ACTIONS: Readonly<Record<string, UiAction>> = {Tab: 'inventory', KeyI: 'inventory', KeyM: 'map', Escape: 'pause', KeyN: 'mute', KeyG: 'autoReturn', KeyH: 'autoExplore', KeyB: 'autoBattle'};
+const KEY_ACTIONS: Readonly<Record<string, UiAction>> = {Tab: 'inventory', KeyI: 'inventory', KeyM: 'map', Escape: 'pause', KeyN: 'mute', KeyG: 'autoReturn', KeyH: 'autoExplore', KeyB: 'autoBattle', KeyV: 'autoSpeed', KeyP: 'pixel', KeyX: 'returnNow'};
 const JOYSTICK_RADIUS = 56;
 
 /**

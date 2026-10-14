@@ -14,7 +14,7 @@ import urllib.request
 import zipfile
 
 CHARACTER_PACKS = {
-    'adventurers': ('KayKit-Character-Pack-Adventures-1.0', ['Knight', 'Rogue_Hooded', 'Mage']),
+    'adventurers': ('KayKit-Character-Pack-Adventures-1.0', ['Knight', 'Rogue_Hooded', 'Mage', 'Barbarian', 'Rogue']),
     'skeletons': ('KayKit-Character-Pack-Skeletons-1.0', ['Skeleton_Warrior', 'Skeleton_Mage']),
 }
 SKELETON_PROPS = ['Skeleton_Blade', 'Skeleton_Axe', 'Skeleton_Staff', 'Skeleton_Crossbow', 'Skeleton_Shield_Small_A']

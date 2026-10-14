@@ -8,6 +8,7 @@ export interface BuildingPanelActions {
   purchase(nodeId: string): void;
   craft(recipeId: string): void;
   openStash(): void;
+  track(nodeId: string | null): void;
 }
 
 function iconHtml(defId: string, icons: ReadonlyMap<string, string>): string {
@@ -44,10 +45,18 @@ function nodeRow(profile: Profile, node: UpgradeNode, icons: ReadonlyMap<string,
     ${maxed || node.comingSoon ? '' : `<div class="nodeCost">${costHtml(profile, node.cost(level + 1), icons)}</div>`}`;
   const problem = purchaseCheck(profile, node.id);
   const label = problem ? REASON[problem] : isBuild ? '건설' : level === 0 ? '해금' : '강화';
+  const buttons = el('div', 'nodeActions');
   const button = el('button', problem ? 'ghostBtn' : 'primaryBtn', label) as HTMLButtonElement;
   button.disabled = Boolean(problem);
   button.addEventListener('click', () => actions.purchase(node.id));
-  row.append(button);
+  buttons.append(button);
+  if (!maxed && !node.comingSoon) {
+    const tracking = profile.trackedUpgrade === node.id;
+    const track = el('button', tracking ? 'trackBtn on' : 'trackBtn', tracking ? '추적 중' : '추적');
+    track.addEventListener('click', () => actions.track(tracking ? null : node.id));
+    buttons.append(track);
+  }
+  row.append(buttons);
   return row;
 }
 
@@ -74,6 +83,9 @@ export function renderBuildingPanel(root: HTMLElement, profile: Profile, id: Bui
   const head = el('header', 'panelHead', `<div><h2>${def.name}</h2><p>${def.desc}</p></div>`);
   const close = el('button', 'ghostBtn', '닫기');
   close.addEventListener('click', () => (root.hidden = true));
+  const treeBtn = el('button', 'ghostBtn', '트리');
+  treeBtn.addEventListener('click', () => document.getElementById('openTree')?.click());
+  head.append(treeBtn);
   head.append(close);
   root.append(head);
 

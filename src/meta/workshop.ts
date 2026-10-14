@@ -95,7 +95,12 @@ export function purchase(profile: Profile, nodeId: string): Profile | null {
   const level = levelOf(profile.upgrades, nodeId);
   const paid = pay(profile, node.cost(level + 1));
   if (!paid) return null;
-  return applyGridBonuses({...paid, upgrades: {...paid.upgrades, [nodeId]: level + 1}});
+  const reachedMax = level + 1 >= node.maxLevel;
+  return applyGridBonuses({
+    ...paid,
+    upgrades: {...paid.upgrades, [nodeId]: level + 1},
+    trackedUpgrade: reachedMax && paid.trackedUpgrade === nodeId ? null : paid.trackedUpgrade,
+  });
 }
 
 export function canCraft(profile: Profile, recipe: Recipe): boolean {

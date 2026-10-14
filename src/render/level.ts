@@ -19,6 +19,7 @@ import type {Vec2} from '../core/math';
 import type {ContainerType} from '../items/loot';
 import type {Container, ExtractZone} from '../sim/types';
 import {isFloor, tileCenter, type GameMap} from '../world/mapgen';
+import {THEMES} from '../world/themes';
 import type {AssetLibrary} from './assets';
 import {composeMatrix, PieceBatch, placeClone, type InstanceTransform} from './instancer';
 
@@ -62,6 +63,8 @@ function tileHash(x: number, y: number): number {
 /** Static dungeon geometry, container props, torch flames and extraction beacons. */
 export class LevelView {
   readonly torchSites: Vector3[] = [];
+  /** Parallel to torchSites: each torch's light color (its room theme). */
+  readonly torchColors: number[] = [];
   /** Parallel to torchSites: the torch prop whose cutaway also hides its flame. */
   private readonly torchCuts: Cuttable[] = [];
   private readonly batches = new Map<string, PieceBatch>();
@@ -94,13 +97,15 @@ export class LevelView {
       this.cuttables.push(cut);
       this.torchCuts.push(cut);
       this.torchSites.push(new Vector3(t.x + Math.sin(t.rot) * 0.5, (t.y ?? 2) + 0.8, t.z + Math.cos(t.rot) * 0.5));
+      this.torchColors.push(t.color ?? 0xff8a3c);
     }
     for (const c of containers) this.addContainer(c);
     for (const batch of this.batches.values()) batch.build(scene);
 
-    const flameMat = new MeshBasicMaterial({color: new Color(1.6, 0.75, 0.25), blending: AdditiveBlending, transparent: true, depthWrite: false, toneMapped: false});
+    const flameMat = new MeshBasicMaterial({color: 0xffffff, blending: AdditiveBlending, transparent: true, depthWrite: false, toneMapped: false});
     this.flames = new InstancedMesh(new OctahedronGeometry(0.16, 0), flameMat, Math.max(1, this.torchSites.length));
     this.flames.count = this.torchSites.length;
+    this.torchColors.forEach((c, i) => this.flames.setColorAt(i, new Color(c).multiplyScalar(1.6)));
     scene.add(this.flames);
 
     const hlMat = new MeshBasicMaterial({color: 0xffd27a, transparent: true, opacity: 0.6, blending: AdditiveBlending, depthWrite: false, side: DoubleSide});
@@ -125,19 +130,26 @@ export class LevelView {
   }
 
   private buildFloorsAndWalls(map: GameMap): void {
-    const inRoom = new Uint8Array(map.w * map.h);
-    for (const r of map.rooms) for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) inRoom[y * map.w + x] = 1;
+    // Room index + 1 per tile (0 = corridor), for themed floors and walls.
+    const inRoom = new Int16Array(map.w * map.h);
+    map.rooms.forEach((r, i) => {
+      for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) inRoom[y * map.w + x] = i + 1;
+    });
     const vertices = new Set<string>();
     for (let y = 0; y < map.h; y++) {
       for (let x = 0; x < map.w; x++) {
         if (!isFloor(map, x, y)) continue;
         const h = tileHash(x, y);
-        const piece = !inRoom[y * map.w + x] ? 'floor_dirt_large' : h % 11 === 0 ? 'floor_tile_large_rocks' : h % 17 === 0 ? 'floor_tile_big_grate' : 'floor_tile_large';
-        this.batch(piece).add({x: tileCenter(x), z: tileCenter(y), rot: ((h >> 3) % 4) * (Math.PI / 2)});
+        const room = map.rooms[inRoom[y * map.w + x] - 1];
+        const theme = room ? THEMES[room.theme] : null;
+        const piece = !theme ? (h % 5 === 0 ? 'floor_dirt_large_rocky' : 'floor_dirt_large') : theme.floors[(h >>> 5) % theme.floors.length];
+        this.batch(piece).add({x: tileCenter(x), z: tileCenter(y), rot: ((h >>> 3) % 4) * (Math.PI / 2)});
         for (const [dx, dy] of DIRS) {
           if (isFloor(map, x + dx, y + dy)) continue;
           const base = {x: tileCenter(x) + (dx * TILE) / 2, z: tileCenter(y) + (dy * TILE) / 2, rot: dx ? Math.PI / 2 : 0};
-          this.addWall(base);
+          // North walls of some themed rooms get a variant (bookshelves, cracks).
+          const variant = theme?.northWall && dy === -1 && (h >>> 7) % 100 < theme.northWall.chance * 100 ? theme.northWall.piece : 'wall';
+          this.addWall(base, variant);
           // Edge endpoints: columns there seal the gaps at corners.
           const ex = dx ? [[x + (dx > 0 ? 1 : 0), y], [x + (dx > 0 ? 1 : 0), y + 1]] : [[x, y + (dy > 0 ? 1 : 0)], [x + 1, y + (dy > 0 ? 1 : 0)]];
           for (const [vx, vy] of ex) vertices.add(`${vx},${vy}`);
@@ -150,8 +162,8 @@ export class LevelView {
     }
   }
 
-  private addWall(base: InstanceTransform): void {
-    const batch = this.batch('wall');
+  private addWall(base: InstanceTransform, piece = 'wall'): void {
+    const batch = this.batch(piece);
     this.cuttables.push({batch, index: batch.add(base), base, mode: 'squash', current: 1});
   }
 

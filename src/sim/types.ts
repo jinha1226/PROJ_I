@@ -170,7 +170,7 @@ export type SimEvent =
   | {type: 'awaken'; enemy: number}
   | {type: 'death'; actor: number}
   | {type: 'containerOpen'; container: number}
-  | {type: 'reveal'; container: number; defId: string}
+  | {type: 'reveal'; container: number; defId: string; uid: number}
   | {type: 'useStart'; actor: number; duration: number}
   | {type: 'healed'; actor: number; amount: number}
   | {type: 'raiderLoot'; enemy: number; container: number}

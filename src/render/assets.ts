@@ -1,13 +1,14 @@
 import {LoadingManager, Mesh, MeshStandardMaterial, type AnimationClip, type Material, type Object3D} from 'three';
 import {GLTFLoader, type GLTF} from 'three/addons/loaders/GLTFLoader.js';
+import {THEME_PIECES} from '../world/themes';
 
-export type CharacterName = 'Knight' | 'Skeleton_Warrior' | 'Skeleton_Mage' | 'Rogue_Hooded';
-export const CHARACTERS: readonly CharacterName[] = ['Knight', 'Skeleton_Warrior', 'Skeleton_Mage', 'Rogue_Hooded'];
+export type CharacterName = 'Knight' | 'Skeleton_Warrior' | 'Skeleton_Mage' | 'Rogue_Hooded' | 'Barbarian' | 'Rogue' | 'Mage';
+export const CHARACTERS: readonly CharacterName[] = ['Knight', 'Skeleton_Warrior', 'Skeleton_Mage', 'Rogue_Hooded', 'Barbarian', 'Rogue', 'Mage'];
 export const PROPS = ['Skeleton_Blade', 'Skeleton_Axe', 'Skeleton_Staff', 'Skeleton_Crossbow', 'Skeleton_Shield_Small_A'] as const;
 export type PropName = (typeof PROPS)[number];
 
 /** Dungeon pieces the level, containers and item icons use. */
-export const DUNGEON_PIECES = [
+const BASE_PIECES = [
   'floor_tile_large', 'floor_tile_large_rocks', 'floor_tile_big_grate', 'floor_dirt_large', 'wall', 'torch_mounted', 'pillar',
   'banner_patternA_red', 'banner_patternA_blue', 'banner_patternA_green', 'banner_patternA_yellow',
   'table_medium_decorated_A', 'crates_stacked', 'keg_decorated', 'barrel_small_stack',
@@ -15,6 +16,7 @@ export const DUNGEON_PIECES = [
   'coin', 'plate', 'bottle_B_brown', 'candle_triple', 'plate_stack', 'keg', 'sword_shield_broken', 'banner_thin_red',
   'keyring', 'sword_shield_gold', 'bottle_A_labeled_green', 'bottle_A_brown',
 ] as const;
+export const DUNGEON_PIECES: readonly string[] = [...new Set<string>([...BASE_PIECES, ...THEME_PIECES])];
 
 /** Medieval Hexagon pieces for the hideout camp. */
 export const HEX_PIECES = [
