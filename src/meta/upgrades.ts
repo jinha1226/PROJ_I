@@ -82,6 +82,7 @@ export const NODES: readonly UpgradeNode[] = [
   {id: 'market.bag', building: 'market', name: '가방 확장', maxLevel: 4, effect: l => `가방 +${l}줄`, cost: linear(200, l => [['ancient_silk', l + 1]]), requires: {node: 'market.build', level: 1}},
   {id: 'market.stash', building: 'market', name: '창고 확장', maxLevel: 3, effect: l => `창고 +${2 * l}줄`, cost: linear(150, l => [['iron_scrap', 2 * l]]), requires: {node: 'market.build', level: 1}},
   {id: 'market.haggle', building: 'market', name: '흥정', maxLevel: 3, effect: l => `판매가 +${pct(0.05 * l)}`, cost: linear(300, l => [['candelabra', l]]), requires: {node: 'market.build', level: 1}},
+  {id: 'market.recruit', building: 'market', name: '용병 알선망', maxLevel: 3, effect: l => `후보 ${3 + (l >= 2 ? 1 : 0)}명 · 후보 질 향상 ${l}단계`, cost: linear(350, l => [['silverware', 1], ['ancient_silk', l]]), requires: {node: 'market.build', level: 1}},
   // 여관 · 보급소
   build('tavern', {gold: 250, items: [['old_keg', 1], ['lamp_oil', 2]]}),
   {id: 'tavern.tank', building: 'tavern', name: '큰 기름통', maxLevel: 5, effect: l => `랜턴 기름 용량 +${pct(0.1 * l)}`, cost: linear(120, l => [['lamp_oil', 1], ['iron_scrap', l]]), requires: {node: 'tavern.build', level: 1}},
@@ -89,6 +90,7 @@ export const NODES: readonly UpgradeNode[] = [
   {id: 'tavern.emergency', building: 'tavern', name: '비상 귀환', maxLevel: 3, effect: l => `기름 소진 시 손실 50% → ${[35, 20, 10][l - 1]}%`, cost: linear(300, l => [['broken_crest', l]]), requires: {node: 'tavern.tank', level: 1}},
   // 병영
   build('barracks', {gold: 400, items: [['bone_dust', 10], ['iron_scrap', 10]]}),
+  {id: 'barracks.roster', building: 'barracks', name: '용병단 정원', maxLevel: 6, effect: l => `최대 용병 ${4 + l}명`, cost: linear(260, l => [['iron_scrap', 2 + l], ['bone_dust', l]]), requires: {node: 'barracks.build', level: 1}},
   {id: 'barracks.endurance', building: 'barracks', name: '지구력', maxLevel: 5, effect: l => `최대 스태미나 +${8 * l}`, cost: linear(150, l => [['bone_dust', 2 * l]]), requires: {node: 'barracks.build', level: 1}},
   soon('barracks.whirlwind', 'barracks', '회전베기', '주변 적을 모두 베는 스킬', 'barracks.build'),
   soon('barracks.dash', 'barracks', '돌진베기', '전방으로 돌진하며 베는 스킬', 'barracks.build'),

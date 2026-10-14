@@ -1,7 +1,7 @@
 import {itemDef} from '../items/catalog';
 import {gridValue, stackValue, type ItemStack} from '../items/inventory';
 import {quickEquip, quickMove, type Source, type Stores} from '../items/stores';
-import {buyItem, grantCharityKit, needsCharityKit, sellItem, sellJunk, SHOP} from '../meta/economy';
+import {buyItem, sellItem, sellJunk, SHOP} from '../meta/economy';
 import {hideoutStores, withHideoutStores, type Profile} from '../meta/profile';
 import {BUILDINGS, isBuilt, levelOf, NODE_BY_ID, nodesOf, type BuildingId} from '../meta/upgrades';
 import {countItem, craft, purchase, purchaseCheck} from '../meta/workshop';
@@ -12,11 +12,12 @@ import {renderBuildingPanel} from './buildingPanel';
 import {byId, el, fmt} from './dom';
 import {InventoryUI, itemTile, type ItemAction} from './inventory';
 import {TechTree} from './techTree';
+import {GuildPanel} from './guildPanel';
 
 export interface HideoutCallbacks {
   getProfile(): Profile;
   setProfile(p: Profile): void;
-  startRaid(): void;
+  startRaid(mercId: number): void;
   resetProfile(): void;
   sound(kind: 'coins' | 'denied' | 'pickup' | 'extracted'): void;
 }
@@ -35,6 +36,7 @@ export class Hideout {
   private readonly labelEls = new Map<BuildingId, HTMLElement>();
   private selected: BuildingId | null = null;
   private readonly tree: TechTree;
+  private readonly guild: GuildPanel;
 
   constructor(
     private readonly icons: ReadonlyMap<string, string>,
@@ -43,6 +45,15 @@ export class Hideout {
     private readonly cb: HideoutCallbacks,
   ) {
     this.camp = new CampView(assets);
+    this.guild = new GuildPanel({
+      getProfile: cb.getProfile,
+      setProfile: p => {
+        cb.setProfile(p);
+        this.camp.syncMercenaries(p.mercenaries);
+      },
+      sound: kind => cb.sound(kind),
+    });
+    byId('guildClose').addEventListener('click', () => this.refresh());
     this.inventory = new InventoryUI(byId('hideoutInventory'), icons, {
       getStores: () => hideoutStores(cb.getProfile()),
       setStores: next => cb.setProfile(withHideoutStores(cb.getProfile(), next)),
@@ -52,8 +63,10 @@ export class Hideout {
       onMoved: () => cb.sound('pickup'),
       onDenied: () => cb.sound('denied'),
     }, '출정 장비');
-    byId('raidStart').addEventListener('click', () => this.tryStart());
+    byId('raidStart').addEventListener('click', () => this.openDirectMercPicker());
+    byId('directMercClose').addEventListener('click', () => (byId('directMercOverlay').hidden = true));
     byId('openStash').addEventListener('click', () => this.openStash(true));
+    byId('openGuild').addEventListener('click', () => this.guild.show(true));
     byId('stashClose').addEventListener('click', () => this.openStash(false));
     byId('resetSave').addEventListener('click', () => {
       if (confirm('모든 진행 상황을 초기화할까요?')) cb.resetProfile();
@@ -94,13 +107,13 @@ export class Hideout {
       return [((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1];
     };
     canvas.addEventListener('pointermove', e => {
-      if (this.root.hidden || !this.stashOverlay.hidden || this.tree.open) return;
+      if (this.root.hidden || !this.stashOverlay.hidden || !byId('guildOverlay').hidden || this.tree.open) return;
       const id = this.camp.pick(...ndc(e));
       this.camp.setHovered(id);
       canvas.style.cursor = id ? 'pointer' : '';
     });
     canvas.addEventListener('click', e => {
-      if (this.root.hidden || !this.stashOverlay.hidden || this.tree.open) return;
+      if (this.root.hidden || !this.stashOverlay.hidden || !byId('guildOverlay').hidden || this.tree.open) return;
       const id = this.camp.pick(...ndc(e));
       if (id) this.select(id);
     });
@@ -260,15 +273,27 @@ export class Hideout {
     return out;
   }
 
-  private tryStart(): void {
-    let profile = this.cb.getProfile();
-    if (needsCharityKit(profile)) {
-      profile = grantCharityKit(profile);
-      this.cb.setProfile(profile);
-      alert('빈털터리 모험가에게 길드가 녹슨 검을 지급했습니다.');
+  private openDirectMercPicker(): void {
+    const profile = this.cb.getProfile();
+    const list = byId('directMercList');
+    list.replaceChildren();
+    const ready = profile.mercenaries.filter(m => m.status === 'ready');
+    if (!ready.length) list.append(el('p', 'guildNote', '직접 출정할 수 있는 용병이 없습니다. 부상 회복을 기다리거나 영입 후보를 확인하세요.'));
+    for (const merc of profile.mercenaries) {
+      const klass = merc.cls === 'tank' ? '기사 · 방어' : merc.cls === 'melee' ? '야만전사 · 근접' : merc.cls === 'ranged' ? '사냥꾼 · 원거리' : '마법사 · 치유';
+      const kit = Object.values(merc.equipment).filter(Boolean).map(id => itemDef(id!).name).join(' · ') || '장비 없음';
+      const card = el('article', `directMercCard${merc.status === 'ready' ? '' : ' unavailable'}`);
+      card.innerHTML = `<div><b>${merc.name}</b><span>${klass} · Lv${merc.level}</span><small>${kit}</small><small>${merc.traits.map(t => ({ironwall: '철벽', quickhands: '날쌘 손', veteran: '노련함', treasure: '보물 사냥꾼', coward: '겁쟁이', frail: '허약', slow: '굼뜸'} as Record<string, string>)[t] ?? t).join(' · ')}</small></div><button class="primaryBtn">이 용병으로 출정</button>`;
+      const button = card.querySelector('button') as HTMLButtonElement;
+      button.disabled = merc.status !== 'ready';
+      button.addEventListener('click', () => {
+        if (!confirm(`${merc.name}으로 직접 출정합니다. 사망하면 이 용병과 장비를 영구히 잃습니다. 출발할까요?`)) return;
+        byId('directMercOverlay').hidden = true;
+        this.cb.startRaid(merc.id);
+      });
+      list.append(card);
     }
-    if (!profile.slots.weapon && !confirm('무기 없이 출발합니다. 맨손으로 싸울까요?')) return;
-    this.cb.startRaid();
+    byId('directMercOverlay').hidden = false;
   }
 
   show(visible: boolean): void {
@@ -277,6 +302,8 @@ export class Hideout {
     else {
       this.inventory.hideCard();
       this.stashOverlay.hidden = true;
+      this.guild.show(false);
+      byId('directMercOverlay').hidden = true;
       this.tree.show(false);
       this.stage.canvas.style.cursor = '';
     }
@@ -289,9 +316,11 @@ export class Hideout {
   refresh(): void {
     const p = this.cb.getProfile();
     this.camp.sync(p.upgrades);
+    this.camp.syncMercenaries(p.mercenaries);
     this.renderTracker();
     const stashValue = gridValue(p.stash);
-    const loadoutValue = gridValue(p.backpack) + Object.values(p.slots).reduce((s, i) => s + (i ? stackValue(i) : 0), 0);
+    const mercLoadoutValue = p.mercenaries.reduce((total, merc) => total + Object.values(merc.equipment).reduce((sum, id) => sum + (id ? itemDef(id).value : 0), 0), 0);
+    const loadoutValue = gridValue(p.backpack) + Object.values(p.slots).reduce((s, i) => s + (i ? stackValue(i) : 0), 0) + mercLoadoutValue;
     this.header.innerHTML = `
       <div class="stat"><span>보유 금화</span><b class="gold">${fmt(p.gold)}G</b></div>
       <div class="stat"><span>창고 가치</span><b>${fmt(stashValue)}G</b></div>
@@ -315,6 +344,7 @@ export class Hideout {
     const canvas = this.stage.canvas;
     this.camp.resize(canvas.clientWidth / Math.max(1, canvas.clientHeight));
     this.camp.update(dt);
+    this.guild.tick(Date.now());
     this.stage.renderScene(this.camp.scene, this.camp.camera);
     for (const [id, label] of this.labelEls) {
       const v = this.camp.labelAnchor(id).project(this.camp.camera);

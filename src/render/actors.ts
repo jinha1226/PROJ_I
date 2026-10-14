@@ -4,7 +4,7 @@ import {angleDiff} from '../core/math';
 import {itemDef} from '../items/catalog';
 import type {Raid} from '../sim/raid';
 import type {Enemy, Player, SimEvent} from '../sim/types';
-import type {AssetLibrary} from './assets';
+import type {AssetLibrary, CharacterName} from './assets';
 import {CharacterView} from './character';
 import {visual} from './visual';
 
@@ -44,8 +44,9 @@ export class ActorRenderer {
     private readonly scene: Scene,
     private readonly assets: AssetLibrary,
     private readonly raid: Raid,
+    playerModel: CharacterName = 'Knight',
   ) {
-    this.player = new CharacterView(assets, 'Knight');
+    this.player = new CharacterView(assets, playerModel);
     scene.add(this.player.root);
     this.syncPlayerGear();
     for (const e of raid.enemies) this.ensureEnemy(e);

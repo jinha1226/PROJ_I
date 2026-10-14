@@ -87,6 +87,7 @@
         <button id="resetSave" class="ghostBtn">초기화</button>
         <button id="openTree" class="ghostBtn">기술 트리</button>
         <button id="openStash" class="ghostBtn">창고 · 출정 준비</button>
+        <button id="openGuild" class="ghostBtn">길드 · 원정</button>
         <button id="raidStart" class="primaryBtn big">던전 진입 ▶</button>
       </footer>
     </section>
@@ -106,6 +107,22 @@
       <div class="overlayPanel stashPanel">
         <header><h2>창고 · 출정 준비</h2><span class="hint">출정 장비와 가방은 레이드에 가져갑니다. 죽으면 잃습니다.</span><button id="stashClose" class="ghostBtn">닫기</button></header>
         <div id="hideoutInventory" class="inventory"></div>
+      </div>
+    </div>
+
+    <div id="guildOverlay" class="overlay" hidden>
+      <div class="overlayPanel guildPanel">
+        <header><h2>길드 관리</h2><span class="hint">용병을 영입하고 자동 원정을 준비합니다.</span><span id="guildGold" class="gold"></span><button id="guildClose" class="ghostBtn">닫기</button></header>
+        <nav class="guildTabs"><button id="guildRosterTab" class="on">용병단</button><button id="guildExpeditionTab">원정 게시판</button></nav>
+        <div id="guildBody"></div>
+      </div>
+    </div>
+
+    <div id="directMercOverlay" class="overlay" hidden>
+      <div class="overlayPanel directMercPanel">
+        <header><h2>직접 출정할 용병</h2><span class="hint">선택한 용병의 직업 외형과 개인 장비로 던전에 진입합니다.</span><button id="directMercClose" class="ghostBtn">닫기</button></header>
+        <p class="directMercWarning">직접 원정에서 사망하면 선택한 용병과 장비를 잃습니다.</p>
+        <div id="directMercList" class="directMercList"></div>
       </div>
     </div>
 

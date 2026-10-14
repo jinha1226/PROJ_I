@@ -6,6 +6,7 @@ import {CONTAINER_LABEL} from '../items/loot';
 import {quickEquip, quickMove, type Source, type Stores} from '../items/stores';
 import {ActorRenderer} from '../render/actors';
 import type {AssetLibrary} from '../render/assets';
+import type {CharacterName} from '../render/assets';
 import {Fx, type ActorPose} from '../render/fx';
 import {LevelView} from '../render/level';
 import type {Stage} from '../render/stage';
@@ -69,6 +70,7 @@ export class RaidSession {
     seed: number,
     stores: Stores,
     modifiers: RaidModifiers,
+    playerModel: CharacterName = 'Knight',
   ) {
     const {stage, assets} = deps;
     this.raid = new Raid(generateMap(seed), {seed, stores, modifiers});
@@ -76,7 +78,7 @@ export class RaidSession {
     this.autoExplore = new AutoExplore(this.raid, modifiers.autoExplore);
     this.autoBattle = new AutoBattle(this.raid, modifiers.autoBattle);
     this.level = new LevelView(stage.scene, assets, this.raid.map, this.raid.containers, this.raid.zones);
-    this.actors = new ActorRenderer(stage.scene, assets, this.raid);
+    this.actors = new ActorRenderer(stage.scene, assets, this.raid, playerModel);
     this.fx = new Fx(stage.scene, stage, byId('floatLayer'));
     this.feedback = new Feedback(this.raid, this.fx, this.actors, stage, deps.hud, deps.sfx, {
       onKill: () => (this.slowmo = SLOWMO_SECONDS),

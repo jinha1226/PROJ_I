@@ -5,7 +5,7 @@ import {itemDef} from '../items/catalog';
 import {emptyGrid, stackValue} from '../items/inventory';
 import {emptySlots, type Stores} from '../items/stores';
 import {settleRaid} from '../meta/economy';
-import {loadProfile, newProfile, raidStores, resetProfile, saveProfile, type Profile} from '../meta/profile';
+import {loadProfile, newProfile, raidStoresForMerc, resetProfile, saveProfile, type Profile} from '../meta/profile';
 import type {AssetLibrary} from '../render/assets';
 import {PIXEL_STEPS, Stage} from '../render/stage';
 import type {VisualSettings} from '../render/visual';
@@ -49,6 +49,7 @@ export class App {
   private last = performance.now();
   /** Visual-lab mode: throwaway profile, nothing saved, raids restart on their own. */
   private lab = false;
+  private directMercId: number | null = null;
 
   constructor(
     private readonly assets: AssetLibrary,
@@ -66,7 +67,7 @@ export class App {
         this.profile = p;
         this.save(p);
       },
-      startRaid: () => this.startRaid(),
+      startRaid: mercId => this.startRaid(mercId),
       resetProfile: () => {
         this.profile = applyGridBonuses(resetProfile());
         this.save(this.profile);
@@ -164,10 +165,18 @@ export class App {
     this.setPaused(false);
   }
 
-  private startRaid(): void {
+  private startRaid(mercId: number): void {
+    const merc = this.profile.mercenaries.find(m => m.id === mercId && m.status === 'ready');
+    if (!merc) return;
+    this.directMercId = merc.id;
     this.preRaid = this.profile;
     // The loadout leaves the safe profile now: quitting mid-raid counts as losing it.
-    this.profile = {...this.profile, backpack: emptyGrid(BACKPACK_SIZE.w, BACKPACK_SIZE.h), slots: emptySlots()};
+    this.profile = {
+      ...this.profile,
+      backpack: emptyGrid(BACKPACK_SIZE.w, BACKPACK_SIZE.h),
+      slots: emptySlots(),
+      mercenaries: this.profile.mercenaries.map(m => m.id === merc.id ? {...m, status: 'expedition'} : m),
+    };
     this.save(this.profile);
     const seed = (Date.now() ^ (this.preRaid.raidCounter * 2654435761)) >>> 0;
     byId('loading').hidden = false;
@@ -179,13 +188,15 @@ export class App {
         this.session = new RaidSession(
           {stage: this.stage, assets: this.assets, input: this.input, sfx, hud: this.hud, map: this.map, icons: this.icons},
           seed,
-          raidStores(this.preRaid!),
+          raidStoresForMerc(this.preRaid!, merc),
           this.raidModifiers(),
+          merc.cls === 'tank' ? 'Knight' : merc.cls === 'melee' ? 'Barbarian' : merc.cls === 'ranged' ? 'Rogue_Hooded' : 'Mage',
         );
         this.endTimer = 0;
         byId('loading').hidden = true;
         this.showScreen('raid');
         this.hud.notice(`탈출구 ${this.session.raid.zones.length}곳 — <kbd>M</kbd> 지도에서 확인`, 'info');
+        this.hud.notice(`${merc.name} (${merc.cls === 'tank' ? '기사' : merc.cls === 'melee' ? '야만전사' : merc.cls === 'ranged' ? '사냥꾼' : '마법사'}) 직접 조작 중`, 'good');
         this.hud.notice('전리품을 챙겨 제한 시간 안에 탈출하라!', 'good');
         this.last = performance.now();
       }, 30),
@@ -210,7 +221,8 @@ export class App {
     const base = newProfile();
     const upgrades = {'command.build': 1, 'command.autoReturn': 1, 'command.autoExplore': 3, 'command.autoBattle': 3, 'alchemist.build': 1, 'alchemist.vitality': 5};
     this.profile = {...base, upgrades};
-    this.startRaid();
+    const merc = this.profile.mercenaries.find(m => m.status === 'ready')!;
+    this.startRaid(merc.id);
   }
 
   /** The hideout tree feeds the raid only through these multipliers. */
@@ -237,14 +249,33 @@ export class App {
     const session = this.session;
     if (!session || !this.preRaid) return;
     const carried: Stores = session.raid.stores;
-    const {profile, haul, lost} = settleRaid(this.preRaid, outcome, carried, Math.random, deriveBonuses(this.preRaid.upgrades).exhaustLoss);
-    this.profile = profile;
-    this.save(profile);
+    const settlement = settleRaid(this.preRaid, outcome, carried, Math.random, deriveBonuses(this.preRaid.upgrades).exhaustLoss);
+    const mercId = this.directMercId;
+    const mercenaries = settlement.profile.mercenaries.map(m => {
+      if (m.id !== mercId) return m;
+      if (outcome === 'dead') return {...m, status: 'dead' as const, injuredUntil: null, equipment: {weapon: null, armor: null, trinket: null, belt0: null, belt1: null}};
+      if (outcome === 'forfeit') return {...m, status: 'ready' as const, injuredUntil: null, equipment: {weapon: null, armor: null, trinket: null, belt0: null, belt1: null}};
+      return {
+        ...m,
+        status: 'ready' as const,
+        injuredUntil: null,
+        equipment: {
+          ...m.equipment,
+          weapon: carried.slots.weapon?.defId ?? null,
+          armor: carried.slots.armor?.defId ?? null,
+          belt0: carried.slots.belt0?.defId ?? null,
+          belt1: carried.slots.belt1?.defId ?? null,
+        },
+      };
+    });
+    this.profile = {...settlement.profile, slots: {...this.preRaid.slots}, mercenaries};
+    this.save(this.profile);
     if (outcome === 'extracted') sfx.extracted();
-    this.renderResults(outcome, haul, session, new Set(lost.map(i => i.uid)));
+    this.renderResults(outcome, settlement.haul, session, new Set(settlement.lost.map(i => i.uid)));
     session.dispose();
     this.session = null;
     this.preRaid = null;
+    this.directMercId = null;
     this.showScreen('results');
     if (this.lab) setTimeout(() => this.startLab(), 2500);
   }

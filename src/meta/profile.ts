@@ -3,6 +3,8 @@ import {ITEMS} from '../items/catalog';
 import {addAuto, emptyGrid, makeItem, maxUid, place, reserveUids, type Grid, type ItemStack} from '../items/inventory';
 import {emptySlots, SLOT_IDS, type SlotId, type Stores} from '../items/stores';
 import {deriveBonuses, NODE_BY_ID, type Levels} from './upgrades';
+import {generateMerc, makeCandidates, reserveGuildIds, type Expedition, type MercCandidate, type Mercenary} from './guild';
+import {Rng} from '../core/rng';
 
 export interface ProfileStats {
   raids: number;
@@ -24,6 +26,11 @@ export interface Profile {
   upgrades: Levels;
   /** Upgrade pinned to the quest-style hideout tracker. */
   trackedUpgrade: string | null;
+  mercenaries: Mercenary[];
+  candidates: MercCandidate[];
+  expeditions: Expedition[];
+  frontierFloor: number;
+  guildSeed: number;
 }
 
 const STORAGE_KEY = 'proj_i_extract_profile_v1';
@@ -32,16 +39,25 @@ export const STARTER_WEAPON = 'rusty_sword';
 export function newProfile(): Profile {
   let stash = emptyGrid(STASH_SIZE.w, STASH_SIZE.h);
   for (const [id, qty] of [['bandage', 3], ['cracked_plate', 1]] as const) stash = addAuto(stash, makeItem(id, qty)).grid;
+  const guildSeed = 241;
+  const rng = new Rng(guildSeed);
+  const mercenaries = Array.from({length: 4}, () => generateMerc(rng));
+  mercenaries[0] = {...mercenaries[0], name: '아린', equipment: {weapon: STARTER_WEAPON, armor: null, trinket: null, belt0: 'bandage', belt1: 'health_potion'}};
   return {
     version: 1,
     gold: 150,
     stash,
     backpack: emptyGrid(BACKPACK_SIZE.w, BACKPACK_SIZE.h),
-    slots: {...emptySlots(), weapon: makeItem(STARTER_WEAPON), belt0: makeItem('bandage', 2), belt1: makeItem('health_potion')},
+    slots: emptySlots(),
     stats: {raids: 0, extracts: 0, deaths: 0, bestHaul: 0, totalEarned: 0},
     raidCounter: 0,
     upgrades: {},
     trackedUpgrade: null,
+    mercenaries,
+    candidates: makeCandidates(guildSeed + 1, Date.now()),
+    expeditions: [],
+    frontierFloor: 1,
+    guildSeed,
   };
 }
 
@@ -111,9 +127,30 @@ export function parseProfile(raw: string): Profile | null {
     raidCounter: num(data.raidCounter, 0),
     upgrades,
     trackedUpgrade: typeof data.trackedUpgrade === 'string' && NODE_BY_ID.has(data.trackedUpgrade) ? data.trackedUpgrade : null,
+    mercenaries: Array.isArray(data.mercenaries) ? data.mercenaries as Mercenary[] : [],
+    candidates: Array.isArray(data.candidates) ? data.candidates as MercCandidate[] : [],
+    expeditions: Array.isArray(data.expeditions) ? data.expeditions as Expedition[] : [],
+    frontierFloor: Math.max(1, Math.floor(num(data.frontierFloor, 1))),
+    guildSeed: Math.floor(num(data.guildSeed, 241)),
   };
+  if (!profile.mercenaries.length) {
+    const rng = new Rng(profile.guildSeed);
+    profile.mercenaries = Array.from({length: 4}, () => generateMerc(rng));
+    const first = profile.mercenaries[0];
+    first.equipment = {
+      weapon: slots.weapon?.defId ?? null,
+      armor: slots.armor?.defId ?? null,
+      trinket: null,
+      belt0: slots.belt0?.defId ?? null,
+      belt1: slots.belt1?.defId ?? null,
+    };
+    for (const id of SLOT_IDS) slots[id] = null;
+  }
+  if (!profile.candidates.length) profile.candidates = makeCandidates(profile.guildSeed + 1, Date.now());
+  reserveGuildIds(profile.mercenaries, profile.expeditions, profile.candidates);
   const slotMax = Math.max(0, ...SLOT_IDS.map(id => profile.slots[id]?.uid ?? 0));
-  reserveUids(Math.max(maxUid(profile.stash), maxUid(profile.backpack), slotMax));
+  const lootMax = Math.max(0, ...profile.expeditions.map(e => e.loot ? maxUid(e.loot) : 0));
+  reserveUids(Math.max(maxUid(profile.stash), maxUid(profile.backpack), slotMax, lootMax));
   return profile;
 }
 
@@ -151,3 +188,16 @@ export const withHideoutStores = (p: Profile, s: Stores): Profile => ({...p, sta
 
 /** What the player carries into a raid. */
 export const raidStores = (p: Profile): Stores => ({grids: {backpack: p.backpack}, slots: {...p.slots}});
+
+/** Direct expeditions use the selected mercenary's loadout, with the shared bag. */
+export function raidStoresForMerc(p: Profile, merc: Mercenary): Stores {
+  const slots = emptySlots();
+  for (const id of SLOT_IDS) {
+    const defId = id === 'weapon' ? merc.equipment.weapon
+      : id === 'armor' ? merc.equipment.armor
+      : id === 'belt0' ? merc.equipment.belt0
+      : merc.equipment.belt1;
+    if (defId) slots[id] = makeItem(defId);
+  }
+  return {grids: {backpack: p.backpack}, slots};
+}

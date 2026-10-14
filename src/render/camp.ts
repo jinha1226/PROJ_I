@@ -22,6 +22,8 @@ import {Rng} from '../core/rng';
 import {BUILDINGS, isBuilt, nodesOf, type BuildingId, type Levels} from '../meta/upgrades';
 import type {AssetLibrary} from './assets';
 import {CharacterView} from './character';
+import {buildMerc, type MercView} from './mercLook';
+import type {Mercenary} from '../meta/guild';
 import {ParticlePool} from './particles';
 
 const HEX_W = 2;
@@ -62,6 +64,7 @@ export class CampView {
   private readonly ray = new Raycaster();
   private readonly ring: Mesh;
   private readonly knight: CharacterView;
+  private readonly mercViews = new Map<number, MercView>();
   private readonly embers: ParticlePool;
   private readonly fire: PointLight;
   private hovered: BuildingId | null = null;
@@ -191,6 +194,31 @@ export class CampView {
     }
   }
 
+  /** Displays the current guild roster around the campfire. */
+  syncMercenaries(mercs: readonly Mercenary[]): void {
+    const keep = new Set(mercs.map(m => m.id));
+    for (const [id, view] of this.mercViews) {
+      if (keep.has(id)) continue;
+      view.root.removeFromParent();
+      this.mercViews.delete(id);
+    }
+    for (const merc of mercs) {
+      let view = this.mercViews.get(merc.id);
+      if (!view) {
+        view = buildMerc(this.assets, merc.look);
+        view.root.scale.setScalar(0.31);
+        const idle = [...view.actions.keys()].find(name => name.toLowerCase().includes('idle'));
+        if (idle) view.play(idle);
+        this.scene.add(view.root);
+        this.mercViews.set(merc.id, view);
+      }
+      const col = (merc.id - 1) % 4;
+      const row = Math.floor((merc.id - 1) / 4);
+      view.root.position.set(-2.1 + col * 1.35, 0, 2.2 + row * 1.25);
+      view.root.rotation.y = Math.PI + (col % 2) * 0.25;
+    }
+  }
+
   /** Building under a canvas-relative pointer position, if any. */
   pick(ndcX: number, ndcY: number): BuildingId | null {
     this.ray.setFromCamera(new Vector2(ndcX, ndcY), this.camera);
@@ -230,6 +258,7 @@ export class CampView {
     this.camera.position.set(CAMERA_OFFSET.x * zoom + sway, CAMERA_OFFSET.y * zoom, CAMERA_OFFSET.z * zoom);
     this.camera.lookAt(0, 0, -0.8);
     this.knight.update(dt);
+    for (const view of this.mercViews.values()) view.mixer.update(dt);
     this.fire.intensity = 16 + 4 * Math.sin(this.time * 11) * Math.sin(this.time * 6.7);
     if (Math.random() < 0.6) {
       this.embers.emit({x: (Math.random() - 0.5) * 0.4, y: 0.25, z: (Math.random() - 0.5) * 0.4, count: 1, color: 0xff7a2a, color2: 0xffd27a, speed: [0, 0.2], up: [0.8, 1.8], life: [0.6, 1.3], size: [0.05, 0.11], drag: 0.5});
