@@ -1,2 +1,0 @@
-export function createTravelBlock(THREE,scene,meshes,w,h,d,x,y,z,color){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.95}));m.position.set(x,y,z);scene.add(m);meshes.push(m);return m}
-export function disposeTravelGeometry(scene,meshes,markers){for(const m of meshes){scene.remove(m);m.geometry?.dispose();if(m.material&&!Array.isArray(m.material))m.material.dispose()}for(const m of markers)scene.remove(m)}

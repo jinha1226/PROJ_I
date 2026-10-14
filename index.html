@@ -1,1 +1,118 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>PROJ_I · Dungeon Expedition</title><link rel="stylesheet" href="./src/ui/layout.css"><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script></head><body><div id="game"><div id="hud"><div id="title">PROJ_I <small>/ DUNGEON EXPEDITION</small></div><div id="status">KayKit 로딩 중...</div></div><div id="explorePanel" hidden><strong>던전 탐험 · 고정 지도</strong><div id="exploreInfo"></div><canvas id="exploreMap" width="600" height="400"></canvas><div id="exploreControls"><button id="exploreToggle">탐험 일시정지</button><button class="secondary" id="exploreClose">전투로 돌아가기</button></div></div><aside id="partyDock" aria-label="파티 상태"><div class="dockHeading">Expedition Party</div><div class="party" id="party"></div></aside><aside id="mapDock" aria-label="탐험 지도"><div class="dockHeading">Exploration Map</div><canvas id="miniMap" width="228" height="164" role="button" tabindex="0" aria-label="전체 탐험 지도 열기"></canvas><div id="mapCaption">지도 확인하기 ↗</div></aside><div id="battleInfo">전투 준비 중</div><div id="notice"></div><div id="error"></div><div id="upgradePanel" hidden><h2>영구 강화</h2><p id="upgradeInfo"></p><div id="upgradeRows"></div><div class="buttons"><button id="closeUpgrades">완료</button></div></div><div id="tacticsPanel" hidden><h2>전술 편성</h2><div class="panelFoot" id="tacticInfo"></div><div id="tacticRows"></div><div class="buttons"><button id="closeTactics">완료</button></div></div><div id="bottom"><div class="buttons"><button id="exploreBtn" class="secondary">탐험</button><button id="upgradeBtn" class="secondary">강화</button><button id="tacticsBtn" class="secondary">전술 편성</button><button id="restart" disabled>다시 전투</button><button id="speed" class="secondary">1×</button><button id="pause" class="secondary">일시정지</button></div></div></div><script type="module" src="./src/main.js"></script></body></html>
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+    <title>심연 약탈자 · Abyss Raiders</title>
+    <link rel="icon" href="data:," />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;600;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="game">
+      <div id="vignette"></div>
+      <div id="floatLayer"></div>
+
+      <div id="hud" hidden>
+        <div id="vitals">
+          <div class="bar hp"><div id="hpFill" class="fill"></div><span id="hpText"></span></div>
+          <div class="bar st"><div id="stFill" class="fill"></div></div>
+        </div>
+        <div id="timerBox"><span class="label">랜턴 기름</span><div class="bar oil"><div id="oilFill" class="fill"></div></div><div id="timer"></div><div class="autoRow"><div id="autoReturn" hidden></div><div id="autoExplore" hidden></div><div id="autoBattle" hidden></div></div></div>
+        <div id="raidInfo">
+          <div id="carried"></div>
+          <div id="extractList"></div>
+        </div>
+        <div id="notices"></div>
+        <div id="extractProgress" hidden>
+          <div id="extractText"></div>
+          <div class="bar"><div id="extractFill" class="fill"></div></div>
+        </div>
+        <div id="prompt" hidden></div>
+        <div id="belt">
+          <button id="belt0" class="beltSlot"></button>
+          <button id="belt1" class="beltSlot"></button>
+        </div>
+        <div id="keyHelp"><kbd>WASD</kbd> 이동 <kbd>좌클릭</kbd> 공격 <kbd>Space</kbd> 회피 <kbd>Shift</kbd> 달리기 <kbd>E</kbd> 루팅 <kbd>Tab</kbd> 가방 <kbd>M</kbd> 지도</div>
+      </div>
+
+      <div id="touchControls" hidden>
+        <div id="stickZone"><div class="stickBase"><div id="stickKnob"></div></div></div>
+        <button id="btnAttack" class="touchBtn big">⚔</button>
+        <button id="btnDodge" class="touchBtn">회피</button>
+        <button id="btnInteract" class="touchBtn">줍기</button>
+        <div id="touchTop">
+          <button id="btnBag" class="touchBtn small">가방</button>
+          <button id="btnMap" class="touchBtn small">지도</button>
+          <button id="btnPause" class="touchBtn small">Ⅱ</button>
+        </div>
+      </div>
+
+      <div id="invOverlay" class="overlay" hidden>
+        <div class="overlayPanel inventoryPanel">
+          <header><h2>가방</h2><span class="hint">드래그로 이동 · 드래그 중 <kbd>R</kbd> 회전 · 클릭으로 메뉴 · 패널 밖으로 끌어 버리기</span><button id="invClose" class="ghostBtn">닫기 <kbd>Tab</kbd></button></header>
+          <div id="raidInventory" class="inventory"></div>
+        </div>
+      </div>
+
+      <div id="mapOverlay" class="overlay" hidden>
+        <div class="overlayPanel mapPanel">
+          <header><h2>던전 지도</h2><button id="mapClose" class="ghostBtn">닫기 <kbd>M</kbd></button></header>
+          <canvas id="mapCanvas"></canvas>
+        </div>
+      </div>
+
+      <div id="pauseOverlay" class="overlay" hidden>
+        <div class="overlayPanel small">
+          <h2>일시정지</h2>
+          <button id="resume" class="primaryBtn">계속하기</button>
+          <button id="muteBtn" class="ghostBtn">소리 끄기</button>
+          <button id="forfeit" class="dangerBtn">레이드 포기</button>
+        </div>
+      </div>
+    </div>
+
+    <section id="hideout" hidden>
+      <header class="hideoutTop">
+        <div class="brand"><h1>심연 약탈자</h1><span>Abyss Raiders · 야영지</span></div>
+        <div id="hideoutHeader"></div>
+      </header>
+      <div id="campLabels"></div>
+      <aside id="buildingPanel" hidden></aside>
+      <footer class="hideoutFoot">
+        <p>건물을 눌러 건설·강화·제작하세요. 던전에서 <b>약탈</b>하고 랜턴 기름이 떨어지기 전에 <b>탈출</b>하세요.</p>
+        <button id="resetSave" class="ghostBtn">초기화</button>
+        <button id="openStash" class="ghostBtn">창고 · 출정 준비</button>
+        <button id="raidStart" class="primaryBtn big">던전 진입 ▶</button>
+      </footer>
+    </section>
+
+    <div id="stashOverlay" class="overlay" hidden>
+      <div class="overlayPanel stashPanel">
+        <header><h2>창고 · 출정 준비</h2><span class="hint">출정 장비와 가방은 레이드에 가져갑니다. 죽으면 잃습니다.</span><button id="stashClose" class="ghostBtn">닫기</button></header>
+        <div id="hideoutInventory" class="inventory"></div>
+      </div>
+    </div>
+
+    <section id="results" class="overlay" hidden>
+      <div class="overlayPanel resultPanel">
+        <h2 id="resultTitle"></h2>
+        <p id="resultBody"></p>
+        <div id="resultStats"></div>
+        <div id="resultItems"></div>
+        <button id="toHideout" class="primaryBtn big">은신처로</button>
+      </div>
+    </section>
+
+    <div id="loading">
+      <div class="loadingBox">
+        <h1>심연 약탈자</h1>
+        <div class="bar"><div id="loadingFill" class="fill"></div></div>
+        <p id="loadingText">불러오는 중…</p>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

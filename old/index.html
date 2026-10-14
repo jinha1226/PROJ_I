@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>PROJ_I · Dungeon Expedition</title>
+  </head>
+  <body>
+    <div id="game">
+      <div id="hud">
+        <div id="title">PROJ_I <small>/ DUNGEON EXPEDITION</small></div>
+        <div id="status">KayKit 로딩 중...</div>
+      </div>
+
+      <div id="explorePanel" hidden>
+        <strong>던전 탐험 · 고정 지도</strong>
+        <div id="exploreInfo"></div>
+        <canvas id="exploreMap" width="600" height="400"></canvas>
+        <div id="exploreControls">
+          <button id="exploreToggle">탐험 일시정지</button>
+          <button class="secondary" id="exploreClose">전투로 돌아가기</button>
+        </div>
+      </div>
+
+      <aside id="partyDock" aria-label="파티 상태">
+        <div class="dockHeading">Expedition Party</div>
+        <div class="party" id="party"></div>
+      </aside>
+      <aside id="mapDock" aria-label="탐험 지도">
+        <div class="dockHeading">Exploration Map</div>
+        <canvas id="miniMap" width="228" height="164" role="button" tabindex="0" aria-label="전체 탐험 지도 열기"></canvas>
+        <div id="mapCaption">지도 확인하기 ↗</div>
+      </aside>
+
+      <div id="battleInfo">전투 준비 중</div>
+      <div id="notice"></div>
+
+      <div id="upgradePanel" hidden>
+        <h2>영구 강화</h2>
+        <p id="upgradeInfo"></p>
+        <div id="upgradeRows"></div>
+        <div class="buttons"><button id="closeUpgrades">완료</button></div>
+      </div>
+      <div id="tacticsPanel" hidden>
+        <h2>전술 편성</h2>
+        <div class="panelFoot" id="tacticInfo"></div>
+        <div id="tacticRows"></div>
+        <div class="buttons"><button id="closeTactics">완료</button></div>
+      </div>
+
+      <div id="bottom">
+        <div class="buttons">
+          <button id="exploreBtn" class="secondary">탐험</button>
+          <button id="upgradeBtn" class="secondary">강화</button>
+          <button id="tacticsBtn" class="secondary">전술 편성</button>
+          <button id="restart" disabled>다시 전투</button>
+          <button id="speed" class="secondary">1×</button>
+          <button id="pause" class="secondary">일시정지</button>
+        </div>
+      </div>
+
+      <div id="commandBar">
+        <button id="retreatBtn" aria-label="원정 퇴각">⚑ 퇴각</button>
+        <button id="hubBtn" aria-label="거점 열기">거점</button>
+      </div>
+      <div id="hubPanel" hidden></div>
+      <button id="guideToggle" class="debugButton">길잡이 스킬: 없음</button>
+      <button id="compareBtn" class="debugButton">길잡이 경로 비교</button>
+      <div id="comparePanel" hidden></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,8 +1,0 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';
-import {activeCombatActors,livingCombatSides,chooseCombatTarget,decayCombatTimers} from '../src/combat/actorLogic.js';
-import {evaluateTactics} from '../src/combat/tacticDecision.js';
-const p=x=>({x,distanceToSquared:q=>(x-q.x)**2});
-test('active combat filters enemies from other rooms',()=>{const actors=[{team:'hero',dead:false},{team:'enemy',dungeonRoom:2,dead:false},{team:'enemy',dungeonRoom:3,dead:false}];assert.equal(activeCombatActors(actors,2).length,2);assert.equal(livingCombatSides(actors,2).foes.length,1)});
-test('target selection prioritizes taunt, then focus, then nearest',()=>{const enemies=[{team:'enemy',pos:p(2)},{team:'enemy',pos:p(8)}],actor={team:'hero',pos:p(0)};assert.equal(chooseCombatTarget(actor,enemies),enemies[0]);actor.focusTime=2;actor.focus=enemies[1];assert.equal(chooseCombatTarget(actor,enemies),enemies[1]);actor.tauntTime=1;actor.tauntedBy=enemies[0];assert.equal(chooseCombatTarget(actor,enemies),enemies[0])});
-test('combat timers cannot decay below zero',()=>{const a={tauntTime:.1,guardTime:.1,focusTime:.1,kiteBonusTime:.1,retreatTime:.1,tacticCooldowns:{heal:.1}};decayCombatTimers(a,1);assert.equal(a.tauntTime,0);assert.equal(a.tacticCooldowns.heal,0)});
-test('tactics execute highest score only when eligible',()=>{let count=0;const a={team:'hero',name:'Knight',timer:0};const TACTICS={guard:{score:()=>80,execute:()=>count++,cooldown:3,label:'수호'}};assert.equal(evaluateTactics(a,[],[],{equipped:{Knight:['guard']},TACTICS}),true);assert.equal(count,1);assert.equal(a.tacticCooldowns.guard,3);assert.equal(evaluateTactics(a,[],[],{equipped:{Knight:['guard']},TACTICS}),false)});

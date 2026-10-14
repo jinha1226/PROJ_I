@@ -23,8 +23,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run MVP checks
-        run: node --experimental-vm-modules --test tests/*.test.mjs
+          cache: npm
+      - run: npm ci
+      - name: Type-check
+        run: npm run typecheck
+      - name: Unit and integration tests
+        run: npm run test:coverage
+
   deploy:
     if: github.event_name != 'pull_request'
     needs: test
@@ -34,63 +39,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Download CC0 KayKit character models
+        run: python3 -I scripts/fetch-assets.py --dungeon
+      - name: Build
+        run: npm run build
       - uses: actions/configure-pages@v5
-      - name: Install actual KayKit CC0 character and dungeon GLBs
-        run: |
-          python - <<'PY'
-          import io, pathlib, urllib.request, zipfile, shutil
-          sources = {
-            'adventurers': 'KayKit-Character-Pack-Adventures-1.0',
-            'skeletons': 'KayKit-Character-Pack-Skeletons-1.0',
-            'dungeon': 'KayKit-Dungeon-Remastered-1.0',
-          }
-          selected = {
-            'adventurers': ['Knight','Rogue_Hooded','Mage'],
-            'skeletons': ['Skeleton_Warrior','Skeleton_Mage'],
-          }
-          root=pathlib.Path('assets/kaykit')
-          root.mkdir(parents=True,exist_ok=True)
-          manifest={}
-          for kind,repo in sources.items():
-            url=f'https://github.com/KayKit-Game-Assets/{repo}/archive/refs/heads/main.zip'
-            print('Downloading',url,flush=True)
-            request=urllib.request.Request(url,headers={'User-Agent':'PROJ-I-build'})
-            with urllib.request.urlopen(request,timeout=120) as response:
-              archive=zipfile.ZipFile(io.BytesIO(response.read()))
-            glbs=[p for p in archive.namelist() if p.lower().endswith('.glb')]
-            if kind=='dungeon':
-              candidates=[p for p in glbs if '/gltf/' in p.lower()]
-              if not candidates: candidates=glbs
-              # Export the real upstream names; never guess which substring is a tile.
-              import json
-              catalog={}
-              for src in candidates:
-                stem=pathlib.PurePosixPath(src).stem
-                if stem.lower().endswith('.gltf'): stem=stem[:-5]
-                if stem in catalog: continue
-                dst=root/('dungeon_'+stem+'.glb')
-                with archive.open(src) as f,dst.open('wb') as o: shutil.copyfileobj(f,o)
-                catalog[stem]=dst.name
-              (root/'dungeon_manifest.json').write_text(json.dumps(catalog,indent=2))
-              print('Dungeon models:',sorted(catalog),flush=True)
-              if not catalog: raise RuntimeError('Dungeon GLB catalog empty')
-            else:
-              for name in selected[kind]:
-                matches=[p for p in glbs if pathlib.PurePosixPath(p).stem.lower()==name.lower()]
-                if not matches:
-                  print('Available GLB names:',[pathlib.PurePosixPath(p).stem for p in glbs[:30]])
-                  raise RuntimeError(f'Missing KayKit {name} in {repo}')
-                src=matches[0];dst=root/(name+'.glb')
-                with archive.open(src) as f,dst.open('wb') as o: shutil.copyfileobj(f,o)
-                manifest[name]=str(dst)
-          required=['Knight','Rogue_Hooded','Mage','Skeleton_Warrior','Skeleton_Mage']
-          missing=[name for name in required if name not in manifest]
-          if missing: raise RuntimeError(f'Missing required KayKit files: {missing}')
-          if not (root/'dungeon_manifest.json').is_file(): raise RuntimeError('No KayKit dungeon manifest generated')
-          print('KayKit assets:',manifest)
-          PY
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: dist
       - id: deployment
         uses: actions/deploy-pages@v4

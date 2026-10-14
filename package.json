@@ -3,7 +3,25 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --experimental-vm-modules --test tests/*.test.mjs",
-    "check": "npm test"
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "assets": "python3 -I scripts/fetch-assets.py",
+    "check": "npm run typecheck && npm test",
+    "sim": "SIM=1 vitest run tests/balance.sim.test.ts"
+  },
+  "dependencies": {
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "@types/three": "0.170.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "happy-dom": "^15.11.7",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vitest": "^2.1.8"
   }
 }
