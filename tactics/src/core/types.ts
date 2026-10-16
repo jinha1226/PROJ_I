@@ -14,11 +14,14 @@ export interface Cell {
   fire: number;
   /** 남은 증기 턴. 원거리 공격이 지나가지 못한다 */
   steam: number;
+  /** 남은 연기 턴. 시야 · 원거리 공격을 막는다 (연막 두루마리) */
+  smoke: number;
   /** 식은 용암 · 언 늪처럼 몇 턴 뒤 원래 타일로 돌아간다 */
   revert?: { tile: TileKind; turns: number };
 }
 
-export type EnemyKind = 'goblin' | 'archer' | 'spearman' | 'beetle' | 'lizard' | 'wolf' | 'ogre';
+export type EnemyKind = 'goblin' | 'archer' | 'spearman' | 'beetle' | 'lizard' | 'wolf' | 'ogre' | 'orc' | 'priest';
+export type ItemId = 'smoke';
 export type StatId = 'str' | 'dex' | 'int';
 export type WeaponId = 'sword' | 'axe' | 'spear' | 'hammer' | 'fireStaff' | 'frostStaff';
 
@@ -38,6 +41,8 @@ export interface Unit {
   stuck: number;
   /** 폭탄벌레의 도화선: 다음 턴 그 자리에서 터진다 (유일한 예고). 칸은 유닛 위치 기준이라 밀리면 같이 움직인다 */
   intent?: Vec;
+  /** 오크 사제: 내리친 뒤 기도를 모으는 남은 턴 (0이면 내리칠 수 있다) */
+  charge: number;
 }
 
 export interface HeroInfo {
@@ -50,6 +55,8 @@ export interface HeroInfo {
   spare: WeaponId | null;
   /** 무기 고유 기술의 남은 재사용 대기 */
   cooldown: Partial<Record<WeaponId, number>>;
+  /** 든 소모품 (쓰면 사라진다) */
+  items: ItemId[];
   hp: number;
   maxHp: number;
 }

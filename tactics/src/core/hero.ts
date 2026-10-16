@@ -2,7 +2,7 @@
 import { ATK_PER_LEVEL, BASE_ATK, POINT_BLANK_MULT, SHORTFALL_PENALTY } from '../data/rules';
 import { FREEZE_TURNS, QUAKE_STUN, STAT_NAME, WEAPONS } from '../data/weapons';
 import {
-  DIRS8, add, applyElement, blocked, cellAt, chebyshev, freeze, heroUnit, hurt, manhattan, nameOf, push, say, unitAt,
+  DIRS8, add, applyElement, blocked, cellAt, chebyshev, freeze, heroUnit, hurt, manhattan, nameOf, opaque, push, say, unitAt,
 } from './board';
 import { hitPunct, josa } from './josa';
 import type { Battle, HeroInfo, StatId, Unit, Vec, WeaponId } from './types';
@@ -35,12 +35,12 @@ export function shortfall(h: HeroInfo, w: WeaponId): string {
   return parts.join(', ');
 }
 
-/** 지팡이 화살: d 방향으로 range칸까지 날아가 처음 맞은 유닛에서 멈춘다. 바위 · 증기 앞에서 멈춘다 */
+/** 지팡이 화살: d 방향으로 range칸까지 날아가 처음 맞은 유닛에서 멈춘다. 바위 · 증기 · 연기 앞에서 멈춘다 */
 function boltPath(b: Battle, from: Vec, d: Vec, range: number): Vec[] {
   const out: Vec[] = [];
   for (let i = 1; i <= range; i++) {
     const p = add(from, d, i);
-    if (blocked(b, p) || cellAt(b, p).steam > 0) break;
+    if (blocked(b, p) || opaque(cellAt(b, p))) break;
     out.push(p);
     if (unitAt(b, p)) break;
   }

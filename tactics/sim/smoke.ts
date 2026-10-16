@@ -10,13 +10,19 @@ import { WEAPONS } from '../src/data/weapons';
 
 /** 턴 상한: 넘기면 그 맵에서 진 것으로 친다 */
 const TURN_CAP = 150;
+/** 이만큼 적 체력이 그대로면 교착으로 보고 다가가는 쪽에 무게를 크게 준다 (사제와 기둥 사이 춤추기 같은).
+ * 한 칸 다가가는 값이 한 대 맞는 값(체력 × 4)보다 커야 맞을 각오로 붙는다 */
+const STALL_TURNS = 8;
+const NEAR_WEIGHT = 0.2;
+const STALL_NEAR_WEIGHT = 15;
+let nearWeight = NEAR_WEIGHT;
 
 const score = (b: Battle) => {
   const me = heroUnit(b);
   const foes = enemies(b);
   const near = foes.reduce((s, u) => s + Math.max(Math.abs(u.pos.x - me.pos.x), Math.abs(u.pos.y - me.pos.y)), 0);
   return (b.status === 'dead' ? -1000 : 0) + (b.status === 'cleared' ? 500 : 0) +
-    me.hp * 4 - foes.reduce((s, u) => s + u.hp + 8, 0) - near * 0.2;
+    me.hp * 4 - foes.reduce((s, u) => s + u.hp + 8, 0) - near * nearWeight;
 };
 
 type Plan = { step?: Vec; kind?: ActionKind; cell?: Vec };
@@ -53,8 +59,14 @@ for (const w of Object.keys(WEAPONS) as WeaponId[]) {
   for (let i = 0; i < N; i++) {
     const run = startRun(w);
     const t: number[] = [];
+    let lastFoeHp = -1;
+    let still = 0;
     while (run.phase === 'battle') {
       const b = run.battle;
+      const foeHp = enemies(b).reduce((s, u) => s + u.hp, 0);
+      still = foeHp === lastFoeHp ? still + 1 : 0;
+      lastFoeHp = foeHp;
+      nearWeight = still >= STALL_TURNS ? STALL_NEAR_WEIGHT : NEAR_WEIGHT;
       if (b.turn > TURN_CAP) b.status = 'dead';
       else play(b, bestTurn(b));
       if (settle(run)) {

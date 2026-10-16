@@ -5,11 +5,12 @@ import { WEAPONS } from '../data/weapons';
 import { DIRS8, add, cellAt, chebyshev, enemies, enterTile, envStep, heroUnit, say } from './board';
 import { enemyTurn } from './enemy';
 import { heroCanStand, perform, type ActionKind } from './hero';
+import { applyItem } from './items';
 import { josa } from './josa';
 import type { Battle, Cell, HeroInfo, Unit, Vec } from './types';
 
 function newUnit(id: number, kind: Unit['kind'], pos: Vec, hp: number): Unit {
-  return { id, kind, pos, hp, maxHp: hp, dead: false, frozen: 0, stunned: 0, stuck: 0 };
+  return { id, kind, pos, hp, maxHp: hp, dead: false, frozen: 0, stunned: 0, stuck: 0, charge: 0 };
 }
 
 export function createBattle(map: MapDef, hero: HeroInfo): Battle {
@@ -22,7 +23,7 @@ export function createBattle(map: MapDef, hero: HeroInfo): Battle {
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const ch = map.rows[y]![x]!;
-      cells.push({ tile: TILE_CHAR[ch] ?? 'floor', fire: 0, steam: 0 });
+      cells.push({ tile: TILE_CHAR[ch] ?? 'floor', fire: 0, steam: 0, smoke: 0 });
       const kind = ENEMY_CHAR[ch];
       if (kind) units.push(newUnit(nextId++, kind, { x, y }, ENEMIES[kind].hp));
       if (ch === HERO_CHAR) units[0]!.pos = { x, y };
@@ -81,6 +82,13 @@ export function enemyNear(b: Battle): boolean {
 /** 무기 공격 · 기술. 성공하면 턴이 넘어간다 */
 export function act(b: Battle, kind: ActionKind, cell: Vec): boolean {
   if (b.status !== 'play' || !perform(b, kind, cell)) return false;
+  endTurn(b);
+  return true;
+}
+
+/** 소모품 하나를 고른 칸에 쓴다. 성공하면 턴이 넘어간다 */
+export function useItem(b: Battle, idx: number, cell: Vec): boolean {
+  if (b.status !== 'play' || !applyItem(b, idx, cell)) return false;
   endTurn(b);
   return true;
 }

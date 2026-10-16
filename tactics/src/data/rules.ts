@@ -17,6 +17,8 @@ export const SHOCK_DMG = 3;
 /** 불이 붙으면 타는 턴 */
 export const FIRE_TURNS = 3;
 export const STEAM_TURNS = 3;
+/** 연막 두루마리의 연기 */
+export const SMOKE_TURNS = 3;
 /** 서리로 식은 용암 · 언 늪이 돌아가기까지 */
 export const REVERT_TURNS = 3;
 /** 서리가 물을 얼릴 때 그 위의 유닛 빙결 턴 */

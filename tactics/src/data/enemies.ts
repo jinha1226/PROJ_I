@@ -2,7 +2,7 @@
 import type { Element, EnemyKind, TileKind } from '../core/types';
 
 /** 공격 모양. 칸은 유닛 위치와 방향(8방향) 기준으로 계산한다 (core/enemy.ts attackCells) */
-export type AttackShape = 'melee' | 'reach2' | 'sweep' | 'ray' | 'blast';
+export type AttackShape = 'melee' | 'reach2' | 'sweep' | 'ray' | 'blast' | 'smite';
 
 export interface EnemyDef {
   name: string;
@@ -40,7 +40,17 @@ export const ENEMIES: Record<EnemyKind, EnemyDef> = {
   },
   wolf: { name: '늑대', glyph: '늑', hp: 5, dmg: 2, acts: 2, xp: 4, shape: 'melee', immune: [], desc: '빠르다 (한 턴에 두 번). 도망칠 수 없다' },
   ogre: { name: '오우거', glyph: '오', hp: 24, dmg: 7, acts: 1, slow: true, xp: 15, shape: 'sweep', immune: [], desc: '앞 세 칸을 휩쓴다. 느리다 (두 턴에 한 번)' },
+  orc: { name: '오크 전사', glyph: '전', hp: 10, dmg: 3, acts: 1, xp: 5, shape: 'melee', immune: [], desc: '붙은 한 칸을 때린다. 단단하다' },
+  priest: {
+    name: '오크 사제', glyph: '사', hp: 6, dmg: 3, acts: 1, xp: 6, shape: 'smite', immune: [],
+    desc: '보이기만 하면 사이에 누가 있든 내리친다 (바위 · 연기가 막는다). 두 턴에 한 번. 붙으면 물러난다',
+  },
 };
+
+/** 오크 사제가 내리칠 수 있는 거리 (체비쇼프) */
+export const SMITE_RANGE = 7;
+/** 내리친 뒤 기도를 모으는 턴 (1이면 두 턴에 한 번) */
+export const SMITE_CD = 1;
 
 /** 궁수 화살이 날아가는 최대 거리 */
 export const RAY_RANGE = 8;

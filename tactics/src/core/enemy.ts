@@ -1,7 +1,8 @@
 // 적: 공격 칸 · 정통 턴제 행동 (때릴 수 있으면 바로 때리고, 아니면 다가간다) (tactics/DESIGN.md 2절)
-import { ENEMIES, RAY_RANGE, type EnemyDef } from '../data/enemies';
+import { ENEMIES, RAY_RANGE, SMITE_CD, SMITE_RANGE, type EnemyDef } from '../data/enemies';
 import {
-  DIRS8, add, applyElement, blocked, cellAt, chebyshev, enemies, eq, heroUnit, hurt, kill, nameOf, say, unitAt,
+  DIRS8, add, applyElement, blocked, cellAt, chebyshev, enemies, eq, heroUnit, hurt, kill, nameOf, opaque, say, sees,
+  unitAt,
 } from './board';
 import { hitPunct, josa } from './josa';
 import type { Battle, Unit, Vec } from './types';
@@ -41,7 +42,7 @@ export function attackCells(b: Battle, u: Unit, pos: Vec, d: Vec): Vec[] {
     case 'ray':
       for (let i = 1; i <= RAY_RANGE; i++) {
         const p = add(pos, d, i);
-        if (blocked(b, p) || cellAt(b, p).steam > 0) break;
+        if (blocked(b, p) || opaque(cellAt(b, p))) break;
         out.push(p);
         const t = unitAt(b, p);
         if (t && t.id !== u.id) break;
@@ -51,10 +52,18 @@ export function attackCells(b: Battle, u: Unit, pos: Vec, d: Vec): Vec[] {
   return out.filter((p) => !blocked(b, p));
 }
 
-/** pos에서 주인공을 때릴 수 있는 방향 (화살은 처음 맞는 게 주인공이어야 한다) */
+/** 오크 사제가 pos에서 p를 내리칠 수 있나 (시야 · 거리) */
+const smites = (b: Battle, pos: Vec, p: Vec) => chebyshev(pos, p) <= SMITE_RANGE && sees(b, pos, p);
+
+/**
+ * pos에서 주인공을 때릴 수 있는 방향 (화살은 처음 맞는 게 주인공이어야 한다).
+ * 사제는 붙지 않고 보이는 자리를 찾는다 (자리 잡기용. 실제로는 붙어서도 내리친다)
+ */
 function strikeDir(b: Battle, u: Unit, pos: Vec): Vec | undefined {
   const me = heroUnit(b);
-  if (defOf(u).shape === 'blast') return chebyshev(pos, me.pos) <= 1 ? HERE : undefined;
+  const shape = defOf(u).shape;
+  if (shape === 'blast') return chebyshev(pos, me.pos) <= 1 ? HERE : undefined;
+  if (shape === 'smite') return chebyshev(pos, me.pos) > 1 && smites(b, pos, me.pos) ? HERE : undefined;
   return DIRS8.find((d) => {
     const cells = attackCells(b, u, pos, d);
     if (defOf(u).shape === 'ray') {
@@ -70,6 +79,15 @@ export function threatCells(b: Battle, u: Unit): Vec[] {
   if (u.kind === 'hero' || u.dead) return [];
   if (u.intent) return attackCells(b, u, u.pos, u.intent);
   const out: Vec[] = [];
+  if (defOf(u).shape === 'smite') {
+    for (let y = 0; y < b.h; y++) {
+      for (let x = 0; x < b.w; x++) {
+        const p = { x, y };
+        if (!blocked(b, p) && !eq(p, u.pos) && smites(b, u.pos, p)) out.push(p);
+      }
+    }
+    return out;
+  }
   const dirs = defOf(u).shape === 'blast' ? [HERE] : DIRS8;
   for (const d of dirs) out.push(...attackCells(b, u, u.pos, d));
   return out;
@@ -121,7 +139,7 @@ function step(b: Battle, u: Unit): void {
   if (to) u.pos = to;
 }
 
-/** 붙은 궁수는 한 칸 물러선다 (쏠 자리를 다시 잡는다) */
+/** 붙은 궁수 · 사제는 한 칸 물러선다 (쏠 자리를 다시 잡는다) */
 function backOff(b: Battle, u: Unit): boolean {
   const me = heroUnit(b);
   const away = DIRS8.map((d) => add(u.pos, d)).filter((p) => safeFor(b, u, p) && chebyshev(p, me.pos) > 1);
@@ -145,10 +163,27 @@ function strike(b: Battle, u: Unit, d: Vec): void {
   if (def.element && hitCells.length) applyElement(b, hitCells, def.element);
 }
 
+/** 사제: 준비됐고 보이면 내리친다. 기도 중이면 붙었을 때 물러서고, 보이는 자리면 그대로 있는다. 'move'면 걸어서 자리를 찾는다 */
+function priestAct(b: Battle, u: Unit): 'done' | 'move' {
+  const def = defOf(u);
+  const me = heroUnit(b);
+  if (u.charge === 0 && smites(b, u.pos, me.pos)) {
+    say(b, `${josa(def.name, '이/가')} 기도를 올렸다.`, 'info');
+    hurt(b, me, def.dmg, `신의 벌이 당신을 내리쳤다${hitPunct(def.dmg)}`);
+    u.charge = SMITE_CD;
+    return 'done';
+  }
+  if (u.charge > 0) u.charge--;
+  if (chebyshev(u.pos, me.pos) <= 1 && backOff(b, u)) return 'done';
+  return strikeDir(b, u, u.pos) ? 'done' : 'move';
+}
+
 /** 적 하나의 한 번 행동 */
 function actOnce(b: Battle, u: Unit): void {
   const def = defOf(u);
-  if (def.shape === 'blast') {
+  if (def.shape === 'smite') {
+    if (priestAct(b, u) === 'done') return;
+  } else if (def.shape === 'blast') {
     if (u.intent) {
       kill(b, u, `${josa(def.name, '이/가')} 터졌다!`); // 죽으면서 3×3 폭발 (board.kill)
       return;

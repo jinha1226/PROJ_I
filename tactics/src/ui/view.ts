@@ -11,6 +11,7 @@ const TILE_COLOR: Record<TileKind, string> = {
 const UNIT_COLOR: Record<Unit['kind'], string> = {
   hero: '#3f86d8', goblin: '#b8443a', archer: '#b8443a', spearman: '#b8443a',
   beetle: '#8a8a2a', lizard: '#d9781f', wolf: '#8a6f55', ogre: '#7d3c98',
+  orc: '#5f7d3a', priest: '#9a5fd0',
 };
 
 export interface DrawOpts {
@@ -58,6 +59,13 @@ export function drawBoard(cv: HTMLCanvasElement, b: Battle, o: DrawOpts = {}): n
       if (c.steam > 0) {
         g.fillStyle = 'rgba(235,235,235,0.5)';
         g.fillRect(px, py, s, s);
+      }
+      if (c.smoke > 0) {
+        g.fillStyle = 'rgba(70,70,80,0.78)';
+        g.fillRect(px, py, s, s);
+        g.fillStyle = '#c8c8d0';
+        g.font = `bold ${s * 0.26}px sans-serif`;
+        g.fillText(String(c.smoke), px + s * 0.8, py + s * 0.22);
       }
       if (c.revert) {
         g.fillStyle = c.revert.tile === 'lava' ? '#ff8a50' : '#b0c070';
@@ -174,6 +182,12 @@ function drawUnit(g: CanvasRenderingContext2D, u: Unit, s: number): void {
     g.fillStyle = '#ffd84a';
     g.font = `bold ${s * 0.22}px sans-serif`;
     g.fillText(u.stunned > 0 ? '기절' : '물', u.pos.x * s + s * 0.22, u.pos.y * s + s * 0.16);
+  }
+  if (u.kind === 'priest') {
+    // 기도 중이면 남은 턴, 내리칠 수 있으면 붉은 별
+    g.fillStyle = u.charge > 0 ? '#c8b0ff' : '#ff3b3b';
+    g.font = `bold ${s * 0.3}px sans-serif`;
+    g.fillText(u.charge > 0 ? String(u.charge) : '✦', u.pos.x * s + s * 0.18, u.pos.y * s + s * 0.2);
   }
   if (u.intent) {
     g.fillStyle = '#ff3b3b';

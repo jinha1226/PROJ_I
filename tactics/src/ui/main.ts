@@ -1,11 +1,14 @@
 // 화면 흐름 · 터치 입력 (정통 턴제). 규칙은 core에 맡기고, 여기서는 누른 칸을 행동으로 바꾼다
 import { cellAt, chebyshev, eq, heroUnit, nameOf, unitAt } from '../core/board';
 import { threatCells } from '../core/enemy';
-import { act, enemyNear, heroSteps, leave, nextStepToward, onStairs, stepHero, swapWeapon, wait } from '../core/game';
+import { act, enemyNear, heroSteps, leave, nextStepToward, onStairs, stepHero, swapWeapon, useItem, wait } from '../core/game';
 import { attackPower, perform, shortfall, skillReady, targets, type ActionKind } from '../core/hero';
+import { applyItem, itemTargets } from '../core/items';
 import { nextMap, settle, spendPoint, startRun, type Run } from '../core/run';
 import type { Battle, StatId, Vec, WeaponId } from '../core/types';
 import { ENEMIES } from '../data/enemies';
+import { ITEMS } from '../data/items';
+import { ACT1 } from '../data/maps';
 import { LEVEL_XP, TILE_NAME } from '../data/rules';
 import { STAT_NAME, WEAPONS } from '../data/weapons';
 import { drawBoard } from './view';
@@ -19,8 +22,9 @@ const WALK_DELAY = 90;
 const WALK_MAX = 20;
 
 let run: Run | null = null;
-/** 'move': 누르면 걷거나 붙은 적을 때린다 / 'attack' · 'skill': 대상 고르기 (미리보기 → 확정) */
-let mode: 'move' | ActionKind = 'move';
+/** 'move': 누르면 걷거나 붙은 적을 때린다 / 'attack' · 'skill' · 'item': 대상 고르기 (미리보기 → 확정) */
+type Mode = 'move' | ActionKind | 'item';
+let mode: Mode = 'move';
 let pending: { cell: Vec; preview: Battle } | null = null;
 let threat: Vec[] | undefined;
 let info = '';
@@ -34,11 +38,25 @@ const TILE_DESC: Partial<Record<string, string>> = {
   water: '들어가면 다음 턴 못 걷는다. 번개가 퍼진다',
   swamp: '서 있으면 매 턴 독. 불이 닿으면 폭발',
   grass: '불이 붙으면 매 턴 번진다',
-  rock: '막힌다. 밀려서 부딪히면 피해. 궁수 시야를 끊는다',
+  rock: '막힌다. 밀려서 부딪히면 피해. 궁수 · 사제의 시야를 끊는다',
   stairs: '여기서 나갈 수 있다 (처치 경험치만)',
 };
 
 // ── 그리기 ─────────────────────────────
+
+/** 지금 고르는 행동의 대상 칸 */
+function modeCells(b: Battle): Vec[] {
+  if (mode === 'move') return [];
+  if (mode === 'item') return b.hero.items[0] ? itemTargets(b, b.hero.items[0]) : [];
+  return targets(b, mode).map((t) => t.cell);
+}
+
+/** 대상 칸에 지금 행동을 실행한다 (턴은 넘기지 않는다) */
+function performMode(b: Battle, cell: Vec): boolean {
+  if (mode === 'move') return false;
+  if (mode === 'item') return applyItem(b, 0, cell);
+  return perform(b, mode, cell);
+}
 
 function render(): void {
   if (!run) return showStart();
@@ -46,7 +64,7 @@ function render(): void {
   const b = pending?.preview ?? live;
   renderTop(live);
   const moves = mode === 'move' && !pending ? heroSteps(live) : undefined;
-  const tgs = mode !== 'move' && !pending ? targets(live, mode).map((t) => t.cell) : undefined;
+  const tgs = mode !== 'move' && !pending ? modeCells(live) : undefined;
   cellPx = drawBoard(cv, b, { moves, threat, targets: tgs, selected: pending?.cell, base: pending ? live : undefined });
   renderActions(live);
   $('info').innerHTML = info || idleInfo(live);
@@ -64,7 +82,7 @@ function renderTop(b: Battle): void {
   const w = WEAPONS[h.weapon];
   const short = shortfall(h, h.weapon);
   $('top').innerHTML = `
-    <div class="row"><b>${b.mapName}</b><span class="dim">${run!.mapIdx + 1}/4 · ${b.turn}턴</span></div>
+    <div class="row"><b>${b.mapName}</b><span class="dim">${run!.mapIdx + 1}/${ACT1.length} · ${b.turn}턴</span></div>
     <div class="bar"><i style="width:${(Math.max(0, me.hp) / me.maxHp) * 100}%"></i><span>체력 ${Math.max(0, me.hp)} / ${me.maxHp}</span></div>
     <div class="bar"><i class="xp" style="width:${xpPct}%"></i><span>레벨 ${h.level} · 경험치 ${h.xp}${LEVEL_XP[h.level] ? ` / ${need}` : ''}</span></div>
     <div class="row"><span>힘 ${h.stats.str} · 민첩 ${h.stats.dex} · 지능 ${h.stats.int}</span>
@@ -88,6 +106,8 @@ function renderActions(b: Battle): void {
   };
   btn('조준', `${w.name} 공격`, mode === 'attack', play, () => choose('attack'));
   btn(w.skill.name, cd > 0 ? `대기 ${cd}턴` : '기술', mode === 'skill', play && skillReady(b), () => choose('skill'));
+  const item = h.items[0];
+  btn(item ? ITEMS[item].short : '소모품', item ? `${h.items.length}개` : '없음', mode === 'item', play && !!item, () => choose('item'));
   btn('교체', h.spare ? WEAPONS[h.spare].name : '예비 없음', false, play && !!h.spare, () => {
     reset();
     swapWeapon(b);
@@ -121,7 +141,7 @@ function reset(): void {
   info = '';
 }
 
-function choose(kind: ActionKind): void {
+function choose(kind: ActionKind | 'item'): void {
   if (!run || busy) return;
   if (mode === kind) {
     reset();
@@ -129,11 +149,14 @@ function choose(kind: ActionKind): void {
   }
   reset();
   mode = kind;
-  const tgs = targets(run.battle, kind);
-  const w = WEAPONS[run.battle.hero.weapon];
-  info = kind === 'skill' ? `<b>${w.skill.name}</b>: ${w.skill.desc}` : `<b>${w.name}</b>: ${w.desc} — 빈칸에도 쏠 수 있다`;
+  const b = run.battle;
+  const tgs = modeCells(b);
+  const w = WEAPONS[b.hero.weapon];
+  const it = b.hero.items[0];
+  info = kind === 'item' && it ? `<b>${ITEMS[it].name}</b>: ${ITEMS[it].desc}`
+    : kind === 'skill' ? `<b>${w.skill.name}</b>: ${w.skill.desc}` : `<b>${w.name}</b>: ${w.desc} — 빈칸에도 쏠 수 있다`;
   if (!tgs.length) info += '<br><span class="warn">지금은 대상이 없다</span>';
-  else if (tgs.length === 1) return preview(tgs[0]!.cell); // 주변 공격처럼 대상이 하나면 바로 미리보기
+  else if (tgs.length === 1) return preview(tgs[0]!); // 주변 공격처럼 대상이 하나면 바로 미리보기
   else info += '<br>노란 칸을 누르면 결과를 미리 보여준다';
   render();
 }
@@ -142,7 +165,7 @@ function preview(cell: Vec): void {
   if (!run || mode === 'move') return;
   const pv = structuredClone(run.battle);
   const from = pv.log.length;
-  if (!perform(pv, mode, cell)) return;
+  if (!performMode(pv, cell)) return;
   pending = { cell, preview: pv };
   const said = pv.log.slice(from).map((l) => l.text).join(' · ');
   info = `<b>미리보기</b> — 같은 칸을 한 번 더 누르면 실행 (그다음 적이 움직인다)<br>${said || '아무 일도 일어나지 않는다'}`;
@@ -189,10 +212,11 @@ cv.addEventListener('click', (e) => {
     if (pending && eq(pending.cell, cell)) {
       const kind = mode;
       reset();
-      act(b, kind, cell);
+      if (kind === 'item') useItem(b, 0, cell);
+      else act(b, kind, cell);
       return after();
     }
-    if (targets(b, mode).some((t) => eq(t.cell, cell))) return preview(cell);
+    if (modeCells(b).some((p) => eq(p, cell))) return preview(cell);
     reset();
   }
 
@@ -227,10 +251,11 @@ cv.addEventListener('click', (e) => {
 function describe(b: Battle, p: Vec): string {
   const u = unitAt(b, p);
   const c = cellAt(b, p);
-  const tile = `${TILE_NAME[c.tile]}${c.fire ? ' · 불' : ''}${c.steam ? ' · 증기' : ''}${c.revert ? ` (${c.revert.turns}턴 뒤 ${TILE_NAME[c.revert.tile]})` : ''}`;
+  const tile = `${TILE_NAME[c.tile]}${c.fire ? ' · 불' : ''}${c.steam ? ' · 증기' : ''}${c.smoke ? ` · 연기 ${c.smoke}턴` : ''}${c.revert ? ` (${c.revert.turns}턴 뒤 ${TILE_NAME[c.revert.tile]})` : ''}`;
   if (u && u.kind !== 'hero') {
     const d = ENEMIES[u.kind];
-    const st = [u.frozen ? `빙결 ${u.frozen}` : '', u.stunned ? `기절 ${u.stunned}` : '', u.stuck ? '물에 빠짐' : '', u.intent ? '도화선!' : '']
+    const st = [u.frozen ? `빙결 ${u.frozen}` : '', u.stunned ? `기절 ${u.stunned}` : '', u.stuck ? '물에 빠짐' : '', u.intent ? '도화선!' : '',
+      u.kind === 'priest' ? (u.charge ? `기도 중 ${u.charge}` : '내리칠 준비') : '']
       .filter(Boolean).join(' · ');
     const hits = Math.ceil(u.hp / attackPower(b.hero));
     return `<b>${d.name}</b> 체력 ${u.hp}/${u.maxHp} · 공격 ${d.dmg} — ${d.desc}${st ? ` · ${st}` : ''}<br>지금 무기로 ${hits}대 · 주황 칸이 닿는 범위`;

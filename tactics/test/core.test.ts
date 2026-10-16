@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyElement, cellAt, enemies, heroUnit, push } from '../src/core/board';
-import { enemyTurn } from '../src/core/enemy';
-import { act, createBattle, endTurn, heroSteps, leave, stepHero, wait } from '../src/core/game';
+import { applyElement, cellAt, enemies, heroUnit, push, sees } from '../src/core/board';
+import { enemyTurn, threatCells } from '../src/core/enemy';
+import { act, createBattle, endTurn, heroSteps, leave, stepHero, useItem, wait } from '../src/core/game';
 import { attackPower, perform } from '../src/core/hero';
 import { newHero, settle, startRun } from '../src/core/run';
 import type { Battle, WeaponId } from '../src/core/types';
@@ -185,4 +185,59 @@ test('판: 맵을 깨면 맵 사이로, 체력 20% 회복', () => {
   assert.ok(settle(run));
   assert.equal(run.phase, 'between');
   assert.equal(run.hero.hp, 10 + Math.ceil(run.hero.maxHp * 0.2));
+});
+
+test('시야: 바위가 끊고, 유닛은 막지 않으며, 양쪽이 같다', () => {
+  const b = battle(['@.g.p', '.....', '..#..', '.....', '....p']);
+  assert.ok(sees(b, { x: 0, y: 0 }, { x: 4, y: 0 }), '사이의 고블린은 시야를 막지 않는다');
+  assert.ok(!sees(b, { x: 0, y: 0 }, { x: 4, y: 4 }), '가운데 바위');
+  for (let y = 0; y < 5; y++) {
+    for (let x = 0; x < 5; x++) assert.equal(sees(b, { x: 0, y: 0 }, { x, y }), sees(b, { x, y }, { x: 0, y: 0 }));
+  }
+});
+
+test('오크 사제: 보이면 사이에 누가 있든 내리치고, 두 턴에 한 번', () => {
+  const b = battle(['@.o..p', '......']);
+  const me = heroUnit(b);
+  const [orc, priest] = [nth(b, 0), nth(b, 1)];
+  orc.frozen = 9;
+  enemyTurn(b);
+  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg, '전사 너머로 내리침');
+  assert.equal(priest.charge, 1);
+  enemyTurn(b);
+  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg, '기도를 모으는 턴');
+  enemyTurn(b);
+  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg * 2);
+});
+
+test('오크 사제: 바위 뒤에 숨으면 못 내리치고, 보이는 자리로 걸어 나온다', () => {
+  const b = battle(['......', '@#...p', '......']);
+  const me = heroUnit(b);
+  const priest = nth(b, 0);
+  assert.ok(!threatCells(b, priest).some((p) => p.x === 0 && p.y === 1), '내 칸은 사제 시야 밖');
+  let turns = 0;
+  while (!sees(b, priest.pos, me.pos) && turns < 5) {
+    enemyTurn(b);
+    turns++;
+  }
+  assert.ok(turns > 0 && turns < 5, '보이는 자리로 걸어 나왔다');
+  assert.equal(me.hp, me.maxHp, '걷는 턴에는 못 내리친다');
+  enemyTurn(b);
+  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg);
+});
+
+test('연막 두루마리: 연기가 사제의 시야를 3턴 막고 사라진다, 쓰면 없어진다', () => {
+  const b = battle(['@....p', '......', '......']);
+  const me = heroUnit(b);
+  assert.equal(b.hero.items.length, 1, '하나 들고 시작');
+  assert.ok(!useItem(b, 0, { x: 5, y: 2 }), '사거리 밖');
+  assert.ok(useItem(b, 0, { x: 2, y: 1 }));
+  assert.equal(b.hero.items.length, 0);
+  assert.equal(me.hp, me.maxHp, '연기 너머라 안 맞음');
+  wait(b);
+  wait(b);
+  assert.equal(me.hp, me.maxHp, '세 턴 동안 가린다');
+  assert.equal(cellAt(b, { x: 2, y: 1 }).smoke, 0, '걷혔다');
+  wait(b);
+  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg, '연기가 걷히면 다시 맞는다');
 });

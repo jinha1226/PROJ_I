@@ -13,7 +13,7 @@ export const TILE_CHAR: Record<string, TileKind> = {
 };
 /** 적 글자 (그 칸은 바닥) */
 export const ENEMY_CHAR: Record<string, EnemyKind> = {
-  g: 'goblin', a: 'archer', s: 'spearman', b: 'beetle', l: 'lizard', v: 'wolf', G: 'ogre',
+  g: 'goblin', a: 'archer', s: 'spearman', b: 'beetle', l: 'lizard', v: 'wolf', G: 'ogre', o: 'orc', p: 'priest',
 };
 export const HERO_CHAR = '@';
 
@@ -64,6 +64,23 @@ export const ACT1: MapDef[] = [
       'a.....,,,,',
       '...@..vww>',
       '#.....www#',
+    ],
+  },
+  {
+    // 사제는 기둥 사이로 보이면 내리친다. 기둥 뒤를 따라 다가가면 시야가 끊긴다
+    name: '오크 사제의 예배당',
+    clearXp: 12,
+    rows: [
+      '#...p....#',
+      '..#....#..',
+      '....##....',
+      '.o......o.',
+      '..#....#..',
+      '...#..#...',
+      '..........',
+      '.#..##..#.',
+      '....@.....',
+      '>........#',
     ],
   },
   {

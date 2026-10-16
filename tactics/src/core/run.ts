@@ -1,5 +1,6 @@
 // 한 판: 무기 고르기 → 맵 → 맵 사이 → … → 보스 (tactics/DESIGN.md 1절)
 import { ACT1 } from '../data/maps';
+import { START_ITEMS } from '../data/items';
 import { CLEAR_HEAL, START_HP } from '../data/rules';
 import { STAT_NAME, WEAPONS } from '../data/weapons';
 import { heroUnit } from './board';
@@ -21,7 +22,7 @@ export interface Run {
 export function newHero(weapon: WeaponId): HeroInfo {
   const stats: Record<StatId, number> = { str: 1, dex: 1, int: 1 };
   for (const [s, need] of Object.entries(WEAPONS[weapon].req) as [StatId, number][]) stats[s] = Math.max(stats[s], need);
-  return { level: 1, xp: 0, points: 0, stats, weapon, spare: null, cooldown: {}, hp: START_HP, maxHp: START_HP };
+  return { level: 1, xp: 0, points: 0, stats, weapon, spare: null, cooldown: {}, items: [...START_ITEMS], hp: START_HP, maxHp: START_HP };
 }
 
 export function startRun(weapon: WeaponId): Run {

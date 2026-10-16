@@ -23,6 +23,40 @@ export const cellAt = (b: Battle, p: Vec): Cell => b.cells[p.y * b.w + p.x]!;
 /** 바위나 보드 밖: 지나갈 수 없고, 밀려 부딪힌다 */
 export const blocked = (b: Battle, p: Vec) => !inBounds(b, p) || SOLID.has(cellAt(b, p).tile);
 
+/** 증기 · 연기: 시야와 원거리 공격이 지나가지 못한다 */
+export const opaque = (c: Cell) => c.steam > 0 || c.smoke > 0;
+
+/**
+ * a에서 b가 보이나. 브레젠햄 직선이 바위를 지나면 안 보인다. 증기 · 연기는 양 끝 칸에 있어도 가린다.
+ * 유닛은 시야를 막지 않는다. 두 끝을 정렬해 그리므로 a→b와 b→a가 같다
+ */
+export function sees(b: Battle, from: Vec, to: Vec): boolean {
+  const [a, z] = from.y < to.y || (from.y === to.y && from.x <= to.x) ? [from, to] : [to, from];
+  const dx = Math.abs(z.x - a.x);
+  const dy = -Math.abs(z.y - a.y);
+  const sx = a.x < z.x ? 1 : -1;
+  const sy = a.y < z.y ? 1 : -1;
+  let err = dx + dy;
+  let x = a.x;
+  let y = a.y;
+  for (;;) {
+    const p = { x, y };
+    if (opaque(cellAt(b, p))) return false;
+    const end = x === z.x && y === z.y;
+    if (end) return true;
+    if (!eq(p, a) && blocked(b, p)) return false;
+    const e2 = 2 * err;
+    if (e2 >= dy) {
+      err += dy;
+      x += sx;
+    }
+    if (e2 <= dx) {
+      err += dx;
+      y += sy;
+    }
+  }
+}
+
 export const heroUnit = (b: Battle): Unit => b.units[0]!;
 export const unitAt = (b: Battle, p: Vec): Unit | undefined => b.units.find((u) => !u.dead && eq(u.pos, p));
 export const enemies = (b: Battle): Unit[] => b.units.filter((u) => !u.dead && u.kind !== 'hero');
@@ -252,6 +286,7 @@ export function envStep(b: Battle): void {
       const c = cellAt(b, { x, y });
       if (c.fire > 0 && --c.fire === 0 && c.tile === 'grass') c.tile = 'floor'; // 다 탄 풀은 사라진다
       if (c.steam > 0) c.steam--;
+      if (c.smoke > 0) c.smoke--;
       if (c.revert && --c.revert.turns <= 0) {
         c.tile = c.revert.tile;
         c.revert = undefined;
