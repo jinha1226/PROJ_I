@@ -1,83 +1,46 @@
 // 봇으로 1막을 무기별로 돌려 본다: 끝까지 도는지, 얼마나 어려운지, 맵마다 몇 턴 걸리는지
-// npx tsx tactics/sim/smoke.ts [판 수]
-// 봇: 한 수 앞만 본다 — 걷기 · 공격 · 기술 · 기다리기를 전부 해보고(적 행동까지) 점수가 가장 좋은 것
-import { enemies, heroUnit } from '../src/core/board';
-import { endTurn, heroSteps, stepHero } from '../src/core/game';
-import { perform, targets, type ActionKind } from '../src/core/hero';
+// npx tsx sim/smoke.ts [판 수] [--d1 한 수 앞만] [--items 소모품도 씀] [--w 무기]
+// 기본은 소모품 없이 (지형만으로 깨지는지, DESIGN.md "스테이지")
+// 최저 체력: 판 동안 가장 낮았던 체력 비율 (끝 체력은 레벨업 회복 때문에 늘 가득이라 난이도를 못 보여준다)
+// 나감: 체력이 낮거나 오래 교착이면 봇이 계단으로 나간다 → 그 맵에 무기별 답이 없다는 신호
 import { nextMap, settle, spendPoint, startRun } from '../src/core/run';
-import type { Battle, StatId, Vec, WeaponId } from '../src/core/types';
+import type { StatId, WeaponId } from '../src/core/types';
 import { WEAPONS } from '../src/data/weapons';
+import { DEFAULT_BOT, playBattle, type BotOpts } from './bot';
 
-/** 턴 상한: 넘기면 그 맵에서 진 것으로 친다 */
-const TURN_CAP = 150;
-/** 이만큼 적 체력이 그대로면 교착으로 보고 다가가는 쪽에 무게를 크게 준다 (사제와 기둥 사이 춤추기 같은).
- * 한 칸 다가가는 값이 한 대 맞는 값(체력 × 4)보다 커야 맞을 각오로 붙는다 */
-const STALL_TURNS = 8;
-const NEAR_WEIGHT = 0.2;
-const STALL_NEAR_WEIGHT = 15;
-let nearWeight = NEAR_WEIGHT;
+const args = process.argv.slice(2);
+const N = Number(args.find((a) => /^\d+$/.test(a)) ?? 3);
+const flag = (f: string) => args.includes(f);
+const only = args[args.indexOf('--w') + 1] as WeaponId | undefined;
+const opts: BotOpts = { ...DEFAULT_BOT, depth: flag('--d1') ? 1 : 2, items: flag('--items') };
 
-const score = (b: Battle) => {
-  const me = heroUnit(b);
-  const foes = enemies(b);
-  const near = foes.reduce((s, u) => s + Math.max(Math.abs(u.pos.x - me.pos.x), Math.abs(u.pos.y - me.pos.y)), 0);
-  return (b.status === 'dead' ? -1000 : 0) + (b.status === 'cleared' ? 500 : 0) +
-    me.hp * 4 - foes.reduce((s, u) => s + u.hp + 8, 0) - near * nearWeight;
-};
-
-type Plan = { step?: Vec; kind?: ActionKind; cell?: Vec };
-
-function bestTurn(b: Battle): Plan {
-  const plans: Plan[] = [{}];
-  for (const p of heroSteps(b)) plans.push({ step: p });
-  for (const kind of ['attack', 'skill'] as const) {
-    for (const t of targets(b, kind)) plans.push({ kind, cell: t.cell });
-  }
-  let best = { s: -Infinity, plan: {} as Plan };
-  for (const plan of plans) {
-    const c = structuredClone(b);
-    play(c, plan);
-    const s = score(c) + Math.random() * 0.1;
-    if (s > best.s) best = { s, plan };
-  }
-  return best.plan;
-}
-
-function play(b: Battle, p: Plan): void {
-  if (p.step) stepHero(b, p.step);
-  else if (p.kind) {
-    perform(b, p.kind, p.cell!);
-    endTurn(b);
-  } else endTurn(b);
-}
-
-const N = Number(process.argv[2] ?? 3);
-for (const w of Object.keys(WEAPONS) as WeaponId[]) {
+const t0 = Date.now();
+for (const w of (flag('--w') && only ? [only] : Object.keys(WEAPONS)) as WeaponId[]) {
   let wins = 0;
   const reached: number[] = [];
   const turns: string[] = [];
+  const lows: number[] = [];
+  /** 맵마다 일찍 나간 횟수 */
+  const left: number[] = [];
   for (let i = 0; i < N; i++) {
     const run = startRun(w);
     const t: number[] = [];
-    let lastFoeHp = -1;
-    let still = 0;
+    let low = 1;
     while (run.phase === 'battle') {
-      const b = run.battle;
-      const foeHp = enemies(b).reduce((s, u) => s + u.hp, 0);
-      still = foeHp === lastFoeHp ? still + 1 : 0;
-      lastFoeHp = foeHp;
-      nearWeight = still >= STALL_TURNS ? STALL_NEAR_WEIGHT : NEAR_WEIGHT;
-      if (b.turn > TURN_CAP) b.status = 'dead';
-      else play(b, bestTurn(b));
-      if (settle(run)) {
-        t.push(b.turn);
-        while (run.hero.points > 0) spendPoint(run, Object.keys(WEAPONS[w].req)[0] as StatId);
-        if ((run.phase as string) === 'between') nextMap(run); // settle이 phase를 바꾼다
-      }
+      low = Math.min(low, playBattle(run.battle, opts));
+      settle(run);
+      t.push(run.battle.turn);
+      if (run.battle.status === 'left') left[t.length - 1] = (left[t.length - 1] ?? 0) + 1;
+      while (run.hero.points > 0) spendPoint(run, Object.keys(WEAPONS[w].req)[0] as StatId);
+      if ((run.phase as string) === 'between') nextMap(run); // settle이 phase를 바꾼다
     }
-    if ((run.phase as string) === 'victory') wins++;
+    if ((run.phase as string) === 'victory') {
+      wins++;
+    }
+    lows.push(Math.round(low * 100));
     reached.push(run.mapIdx + 1);
     turns.push(t.join('-'));
   }
-  console.log(`${WEAPONS[w].name.padEnd(6)} 승 ${wins}/${N}  도달한 맵 ${reached.join(',')}  맵별 턴 ${turns.join(' | ')}`);
+  console.log(`${WEAPONS[w].name.padEnd(6)} 승 ${wins}/${N}  도달한 맵 ${reached.join(',')}  최저 체력 ${lows.join(',')}%${left.length ? `  나감 ${left.map((n, i) => (n ? `${i + 1}번 맵 ${n}` : '')).filter(Boolean).join(', ')}` : ''}  맵별 턴 ${turns.join(' | ')}`);
 }
+console.log(`(${opts.depth}수 앞${opts.items ? ', 소모품 씀' : ''} · ${((Date.now() - t0) / 1000).toFixed(1)}초)`);
