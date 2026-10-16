@@ -2,10 +2,10 @@
 import { ATK_PER_LEVEL, BASE_ATK, POINT_BLANK_MULT, SHORTFALL_PENALTY } from '../data/rules';
 import { FREEZE_TURNS, QUAKE_STUN, STAT_NAME, WEAPONS } from '../data/weapons';
 import {
-  DIRS8, add, applyElement, blocked, cellAt, chebyshev, freeze, heroUnit, hurt, manhattan, nameOf, opaque, push, say, unitAt,
+  DIRS8, add, applyElement, blocked, cellAt, chebyshev, freeze, heroUnit, hurt, manhattan, nameOf, opaque, push, rollDmg, say, unitAt,
 } from './board';
 import { hitPunct, josa } from './josa';
-import type { Battle, HeroInfo, StatId, Unit, Vec, WeaponId } from './types';
+import type { Battle, DmgRange, HeroInfo, StatId, Unit, Vec, WeaponId } from './types';
 
 export type ActionKind = 'attack' | 'skill';
 
@@ -24,6 +24,13 @@ export function attackPower(h: HeroInfo, w: WeaponId = h.weapon): number {
     dmg += diff >= 0 ? diff : diff * SHORTFALL_PENALTY;
   }
   return Math.max(1, dmg);
+}
+
+/** 무기 피해 범위 = 공격력 ± 무기의 흔들림 (최소 1) */
+export function attackRange(h: HeroInfo, w: WeaponId = h.weapon): DmgRange {
+  const p = attackPower(h, w);
+  const s = WEAPONS[w].spread;
+  return [Math.max(1, p - s), p + s];
 }
 
 /** 조건이 모자란 능력치 설명 (없으면 빈 문자열) */
@@ -113,8 +120,10 @@ export function heroCanStand(b: Battle, p: Vec): boolean {
   return t !== 'pit' && t !== 'lava' && !unitAt(b, p);
 }
 
-function strike(b: Battle, t: Unit | undefined, dmg: number): void {
+/** 맞은 것마다 따로 굴린다 */
+function strike(b: Battle, t: Unit | undefined, range: DmgRange): void {
   if (!t) return;
+  const dmg = rollDmg(b, range, 'hero');
   hurt(b, t, dmg, `${josa(nameOf(t), '을/를')} 맞혔다${hitPunct(dmg)}`);
 }
 
@@ -125,7 +134,7 @@ export function perform(b: Battle, kind: ActionKind, cell: Vec): boolean {
   const me = heroUnit(b);
   const h = b.hero;
   const def = WEAPONS[h.weapon];
-  const dmg = attackPower(h);
+  const dmg = attackRange(h);
   const d = tg.dir;
 
   if (kind === 'attack') {
@@ -154,7 +163,8 @@ export function perform(b: Battle, kind: ActionKind, cell: Vec): boolean {
         const end = path[path.length - 1]!;
         const t = unitAt(b, end);
         const close = chebyshev(end, me.pos) <= 1 && def.weakClose;
-        strike(b, t, close ? Math.max(1, Math.floor(dmg * POINT_BLANK_MULT)) : dmg);
+        const half = (n: number) => Math.max(1, Math.floor(n * POINT_BLANK_MULT));
+        strike(b, t, close ? [half(dmg[0]), half(dmg[1])] : dmg);
         if (def.element) applyElement(b, [end], def.element);
         break;
       }
@@ -192,7 +202,8 @@ export function perform(b: Battle, kind: ActionKind, cell: Vec): boolean {
       break;
     case 'burst': {
       const area = [tg.cell, ...DIRS8.map((o) => add(tg.cell, o))].filter((p) => !blocked(b, p));
-      for (const p of area) strike(b, unitAt(b, p), sk.dmg ?? 2);
+      const fixed = sk.dmg ?? 2;
+      for (const p of area) strike(b, unitAt(b, p), [fixed, fixed]);
       applyElement(b, area, 'fire');
       break;
     }

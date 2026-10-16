@@ -3,7 +3,7 @@
 import { cellAt, chebyshev, enemies, heroUnit } from '../src/core/board';
 import { endTurn, heroSteps, leave, onStairs, stepHero, swapWeapon, useItem } from '../src/core/game';
 import { itemTargets } from '../src/core/items';
-import { attackPower, perform, targets, type ActionKind } from '../src/core/hero';
+import { attackRange, perform, targets, type ActionKind } from '../src/core/hero';
 import type { Battle, Unit, Vec } from '../src/core/types';
 import { ENEMIES } from '../src/data/enemies';
 
@@ -94,11 +94,13 @@ export function play(b: Battle, p: Plan): void {
   }
 }
 
-/** 적 하나가 앞으로 줄 피해: 한 턴 피해(빠르면 두 배, 느리면 절반) × 잡는 데 걸리는 대수 */
+const avg = ([lo, hi]: readonly [number, number]) => (lo + hi) / 2;
+
+/** 적 하나가 앞으로 줄 피해: 한 턴 평균 피해(빠르면 두 배, 느리면 절반) × 잡는 데 걸리는 평균 대수 */
 function threatOf(b: Battle, u: Unit): number {
   const d = ENEMIES[u.kind as keyof typeof ENEMIES];
-  const perTurn = d.dmg * d.acts * (d.slow ? 0.5 : 1);
-  return perTurn * Math.ceil(u.hp / attackPower(b.hero));
+  const perTurn = avg(d.dmg) * d.acts * (d.slow ? 0.5 : 1);
+  return perTurn * Math.ceil(u.hp / avg(attackRange(b.hero)));
 }
 
 /** 가장 가까운 계단까지 (없으면 0) */
@@ -123,8 +125,10 @@ export function evaluate(b: Battle, w: Weights, mood: Mood): number {
   return me.hp * w.hp - threat - near * (mood === 'stall' ? w.stallNear : w.near);
 }
 
+/** 복제본에 해 본다. 실제 굴림을 엿보지 않도록 평균으로 굴린다 */
 function tryPlan(b: Battle, p: Plan): Battle {
   const c = structuredClone(b);
+  c.roll = 'avg';
   play(c, p);
   return c;
 }

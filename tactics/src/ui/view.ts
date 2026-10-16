@@ -25,6 +25,8 @@ export interface DrawOpts {
   selected?: Vec;
   /** 미리보기라면 원래 상태 (피해 숫자를 비교해 보여준다) */
   base?: Battle;
+  /** 미리보기에서 피해를 최대로 굴린 결과 (그리는 b는 최소 굴림). 숫자를 "최소~최대"로, 죽을 수도 있으면 ? */
+  alt?: Battle;
 }
 
 export function drawBoard(cv: HTMLCanvasElement, b: Battle, o: DrawOpts = {}): number {
@@ -126,8 +128,18 @@ export function drawBoard(cv: HTMLCanvasElement, b: Battle, o: DrawOpts = {}): n
       const before = o.base.units.find((v) => v.id === u.id);
       if (!before || before.dead) continue;
       const lost = before.hp - Math.max(0, u.hp);
+      const hiU = o.alt?.units.find((v) => v.id === u.id);
+      const lostHi = hiU ? before.hp - Math.max(0, hiU.hp) : lost;
       const cx = u.pos.x * s + s / 2;
       const cy = u.pos.y * s + s / 2;
+      if (!u.dead && hiU?.dead) {
+        // 최대로 굴리면 죽는다
+        g.fillStyle = '#000';
+        g.font = `bold ${s * 0.4}px sans-serif`;
+        g.fillText('?', cx + s * 0.3 + 1, cy + 1);
+        g.fillStyle = '#ffd84a';
+        g.fillText('?', cx + s * 0.3, cy);
+      }
       if (u.dead) {
         g.strokeStyle = '#f2c94c';
         g.lineWidth = 3;
@@ -139,12 +151,13 @@ export function drawBoard(cv: HTMLCanvasElement, b: Battle, o: DrawOpts = {}): n
         g.stroke();
         g.lineWidth = 1;
       }
-      if (lost > 0) {
-        g.font = `bold ${s * 0.34}px sans-serif`;
+      if (lostHi > 0) {
+        const text = lostHi > lost ? `-${lost}~${lostHi}` : `-${lost}`;
+        g.font = `bold ${s * (lostHi > lost ? 0.26 : 0.34)}px sans-serif`;
         g.fillStyle = '#000';
-        g.fillText(`-${lost}`, cx + 1, u.pos.y * s + s * 0.16 + 1);
+        g.fillText(text, cx + 1, u.pos.y * s + s * 0.16 + 1);
         g.fillStyle = '#ffd84a';
-        g.fillText(`-${lost}`, cx, u.pos.y * s + s * 0.16);
+        g.fillText(text, cx, u.pos.y * s + s * 0.16);
       }
     }
   }

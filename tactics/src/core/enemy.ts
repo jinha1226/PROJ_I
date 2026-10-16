@@ -1,7 +1,7 @@
 // 적: 공격 칸 · 정통 턴제 행동 (때릴 수 있으면 바로 때리고, 아니면 다가간다) (tactics/DESIGN.md 2절)
 import { ENEMIES, RAY_RANGE, SMITE_CD, SMITE_RANGE, type EnemyDef } from '../data/enemies';
 import {
-  DIRS8, add, applyElement, blocked, cellAt, chebyshev, enemies, eq, heroUnit, hurt, kill, nameOf, opaque, say, sees,
+  DIRS8, add, applyElement, blocked, cellAt, chebyshev, enemies, eq, heroUnit, hurt, kill, nameOf, opaque, rollDmg, say, sees,
   unitAt,
 } from './board';
 import { hitPunct, josa } from './josa';
@@ -158,7 +158,8 @@ function strike(b: Battle, u: Unit, d: Vec): void {
     const t = unitAt(b, p);
     if (!t || t.id === u.id) continue;
     const who = t.kind === 'hero' ? '당신을' : josa(nameOf(t), '을/를');
-    hurt(b, t, def.dmg, `${josa(def.name, '이/가')} ${who} 맞혔다${hitPunct(def.dmg)}`);
+    const dmg = rollDmg(b, def.dmg, 'foe');
+    hurt(b, t, dmg, `${josa(def.name, '이/가')} ${who} 맞혔다${hitPunct(dmg)}`);
   }
   if (def.element && hitCells.length) applyElement(b, hitCells, def.element);
 }
@@ -169,7 +170,8 @@ function priestAct(b: Battle, u: Unit): 'done' | 'move' {
   const me = heroUnit(b);
   if (u.charge === 0 && smites(b, u.pos, me.pos)) {
     say(b, `${josa(def.name, '이/가')} 기도를 올렸다.`, 'info');
-    hurt(b, me, def.dmg, `신의 벌이 당신을 내리쳤다${hitPunct(def.dmg)}`);
+    const dmg = rollDmg(b, def.dmg, 'foe');
+    hurt(b, me, dmg, `신의 벌이 당신을 내리쳤다${hitPunct(dmg)}`);
     u.charge = SMITE_CD;
     return 'done';
   }

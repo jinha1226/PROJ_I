@@ -5,7 +5,7 @@ import {
   POISON_DMG, REVERT_TURNS, SHOCK_DMG, SOLID, STEAM_TURNS,
 } from '../data/rules';
 import { josa } from './josa';
-import type { Battle, Cell, Element, LogLine, Unit, Vec } from './types';
+import type { Battle, Cell, DmgRange, Element, LogLine, Unit, Vec } from './types';
 
 export const DIRS4: readonly Vec[] = [{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }];
 export const DIRS8: readonly Vec[] = [
@@ -73,6 +73,27 @@ export function say(b: Battle, text: string, tone: LogLine['tone'] = 'info'): vo
 
 // ── 피해 · 죽음 · 경험치 ─────────────────────────────
 
+/** 피해 굴림. by: 누가 때리나 (worst 모드에서 내 공격은 최소, 적 공격은 최대) */
+export function rollDmg(b: Battle, [lo, hi]: DmgRange, by: 'hero' | 'foe'): number {
+  switch (b.roll) {
+    case 'min':
+      return lo;
+    case 'max':
+      return hi;
+    case 'avg':
+      return Math.round((lo + hi) / 2);
+    case 'worst':
+      return by === 'hero' ? lo : hi;
+  }
+  // mulberry32
+  b.seed = (b.seed + 0x6d2b79f5) | 0;
+  let t = b.seed;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  const r = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  return lo + Math.floor(r * (hi - lo + 1));
+}
+
 /** 피해를 준다. 문장은 부른 쪽이 만든다 (msg가 있으면 피해 수치를 붙여 기록) */
 export function hurt(b: Battle, u: Unit, dmg: number, msg?: string): void {
   if (u.dead || dmg <= 0) return;
@@ -103,12 +124,12 @@ export function kill(b: Battle, u: Unit, how?: string): void {
   }
 }
 
-/** 3×3 폭발: 가운데 칸 포함, 안에 있는 모두 */
-export function blast(b: Battle, center: Vec, dmg: number, msg: string): void {
+/** 3×3 폭발: 가운데 칸 포함, 안에 있는 모두 (맞은 것마다 따로 굴린다) */
+export function blast(b: Battle, center: Vec, dmg: DmgRange, msg: string): void {
   say(b, msg, 'env');
   for (const d of [{ x: 0, y: 0 }, ...DIRS8]) {
     const t = unitAt(b, add(center, d));
-    if (t) hurt(b, t, dmg, `${josa(nameOf(t), '이/가')} 폭발에 휘말렸다`);
+    if (t) hurt(b, t, rollDmg(b, dmg, 'foe'), `${josa(nameOf(t), '이/가')} 폭발에 휘말렸다`);
   }
 }
 
@@ -211,7 +232,7 @@ export function applyElement(b: Battle, cells: Vec[], el: Element): void {
       else if (c.tile === 'grass') c.fire = FIRE_TURNS;
     }
   }
-  for (const p of explode) blast(b, p, GAS_DMG, '독 늪이 폭발했다!');
+  for (const p of explode) blast(b, p, [GAS_DMG, GAS_DMG], '독 늪이 폭발했다!');
   if (shock.length) conduct(b, shock);
 }
 

@@ -24,11 +24,20 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            tactics/package-lock.json
       - run: npm ci
       - name: Type-check
         run: npm run typecheck
       - name: Unit and integration tests
         run: npm run test:coverage
+      - name: Board tactics prototype — install, type-check, tests
+        working-directory: tactics
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -43,11 +52,19 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            tactics/package-lock.json
       - run: npm ci
       - name: Download CC0 KayKit character models
         run: python3 -I scripts/fetch-assets.py --dungeon
       - name: Build
         run: npm run build
+      - name: Build board tactics prototype into dist/tactics
+        working-directory: tactics
+        run: |
+          npm ci
+          npx vite build --outDir ../dist/tactics --emptyOutDir
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

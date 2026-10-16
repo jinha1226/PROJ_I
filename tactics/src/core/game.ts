@@ -13,7 +13,8 @@ function newUnit(id: number, kind: Unit['kind'], pos: Vec, hp: number): Unit {
   return { id, kind, pos, hp, maxHp: hp, dead: false, frozen: 0, stunned: 0, stuck: 0, charge: 0 };
 }
 
-export function createBattle(map: MapDef, hero: HeroInfo): Battle {
+/** seed를 주면 피해 굴림이 재현된다 (없으면 무작위) */
+export function createBattle(map: MapDef, hero: HeroInfo, seed = Math.floor(Math.random() * 2 ** 32)): Battle {
   const h = map.rows.length;
   const w = map.rows[0]!.length;
   const cells: Cell[] = [];
@@ -29,7 +30,7 @@ export function createBattle(map: MapDef, hero: HeroInfo): Battle {
       if (ch === HERO_CHAR) units[0]!.pos = { x, y };
     }
   }
-  const b: Battle = { w, h, cells, units, nextId, hero, turn: 1, status: 'play', mapName: map.name, clearXp: map.clearXp, log: [] };
+  const b: Battle = { w, h, cells, units, nextId, hero, turn: 1, status: 'play', mapName: map.name, clearXp: map.clearXp, log: [], seed, roll: 'random' };
   say(b, `${map.name}. 적 ${units.length - 1}마리.`, 'info');
   return b;
 }

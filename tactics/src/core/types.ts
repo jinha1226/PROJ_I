@@ -7,6 +7,13 @@ export interface Vec {
 
 export type TileKind = 'floor' | 'rock' | 'pit' | 'lava' | 'ice' | 'water' | 'swamp' | 'grass' | 'stairs';
 export type Element = 'fire' | 'frost' | 'shock';
+/** 피해 범위 [최소, 최대]. 명중은 늘 하고 크기만 이 안에서 정해진다 */
+export type DmgRange = readonly [number, number];
+/**
+ * 피해 굴림 방식. random: 실제 게임 / min · max: 미리보기의 양 끝 /
+ * avg: 봇이 수를 읽을 때 / worst: 나에게 가장 나쁜 쪽 (내 공격은 최소, 적 공격은 최대)
+ */
+export type RollMode = 'random' | 'min' | 'max' | 'avg' | 'worst';
 
 export interface Cell {
   tile: TileKind;
@@ -80,4 +87,7 @@ export interface Battle {
   mapName: string;
   clearXp: number;
   log: LogLine[];
+  /** 피해 굴림 난수 상태 (상태 안에 있어서 복제 · 재현된다) */
+  seed: number;
+  roll: RollMode;
 }

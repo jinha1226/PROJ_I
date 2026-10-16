@@ -2,7 +2,7 @@
 import { cellAt, chebyshev, eq, heroUnit, nameOf, unitAt } from '../core/board';
 import { threatCells } from '../core/enemy';
 import { act, enemyNear, heroSteps, leave, nextStepToward, onStairs, stepHero, swapWeapon, useItem, wait } from '../core/game';
-import { attackPower, perform, shortfall, skillReady, targets, type ActionKind } from '../core/hero';
+import { attackRange, perform, shortfall, skillReady, targets, type ActionKind } from '../core/hero';
 import { applyItem, itemTargets } from '../core/items';
 import { nextMap, settle, spendPoint, startRun, type Run } from '../core/run';
 import type { Battle, StatId, Vec, WeaponId } from '../core/types';
@@ -25,7 +25,8 @@ let run: Run | null = null;
 /** 'move': 누르면 걷거나 붙은 적을 때린다 / 'attack' · 'skill' · 'item': 대상 고르기 (미리보기 → 확정) */
 type Mode = 'move' | ActionKind | 'item';
 let mode: Mode = 'move';
-let pending: { cell: Vec; preview: Battle } | null = null;
+/** 미리보기: 내 피해를 최소로 굴린 결과와 최대로 굴린 결과 (실제 굴림은 엿볼 수 없다) */
+let pending: { cell: Vec; preview: Battle; alt: Battle } | null = null;
 let threat: Vec[] | undefined;
 let info = '';
 let cellPx = 40;
@@ -65,7 +66,7 @@ function render(): void {
   renderTop(live);
   const moves = mode === 'move' && !pending ? heroSteps(live) : undefined;
   const tgs = mode !== 'move' && !pending ? modeCells(live) : undefined;
-  cellPx = drawBoard(cv, b, { moves, threat, targets: tgs, selected: pending?.cell, base: pending ? live : undefined });
+  cellPx = drawBoard(cv, b, { moves, threat, targets: tgs, selected: pending?.cell, base: pending ? live : undefined, alt: pending?.alt });
   renderActions(live);
   $('info').innerHTML = info || idleInfo(live);
   const lines = (pending ? pending.preview.log : live.log).slice(-6);
@@ -86,7 +87,7 @@ function renderTop(b: Battle): void {
     <div class="bar"><i style="width:${(Math.max(0, me.hp) / me.maxHp) * 100}%"></i><span>체력 ${Math.max(0, me.hp)} / ${me.maxHp}</span></div>
     <div class="bar"><i class="xp" style="width:${xpPct}%"></i><span>레벨 ${h.level} · 경험치 ${h.xp}${LEVEL_XP[h.level] ? ` / ${need}` : ''}</span></div>
     <div class="row"><span>힘 ${h.stats.str} · 민첩 ${h.stats.dex} · 지능 ${h.stats.int}</span>
-      <span>${w.name} 공격 ${attackPower(h)}${short ? ` <span style="color:var(--red)">(${short})</span>` : ''}</span></div>`;
+      <span>${w.name} 공격 ${range(attackRange(h))}${short ? ` <span style="color:var(--red)">(${short})</span>` : ''}</span></div>`;
 }
 
 function renderActions(b: Battle): void {
@@ -124,6 +125,8 @@ function renderActions(b: Battle): void {
     after();
   });
 }
+
+const range = ([lo, hi]: readonly [number, number]) => (lo === hi ? String(lo) : `${lo}~${hi}`);
 
 function idleInfo(b: Battle): string {
   if (b.status !== 'play') return '';
@@ -164,11 +167,14 @@ function choose(kind: ActionKind | 'item'): void {
 function preview(cell: Vec): void {
   if (!run || mode === 'move') return;
   const pv = structuredClone(run.battle);
+  const alt = structuredClone(run.battle);
+  pv.roll = 'min';
+  alt.roll = 'max';
   const from = pv.log.length;
-  if (!performMode(pv, cell)) return;
-  pending = { cell, preview: pv };
-  const said = pv.log.slice(from).map((l) => l.text).join(' · ');
-  info = `<b>미리보기</b> — 같은 칸을 한 번 더 누르면 실행 (그다음 적이 움직인다)<br>${said || '아무 일도 일어나지 않는다'}`;
+  if (!performMode(pv, cell) || !performMode(alt, cell)) return;
+  pending = { cell, preview: pv, alt };
+  const said = pv.log.slice(from).map((l) => l.text.replace(/ \(-\d+\)$/, '')).join(' · ');
+  info = `<b>미리보기</b> — 같은 칸을 한 번 더 누르면 실행 (그다음 적이 움직인다). 피해는 숫자 범위 안에서 정해진다<br>${said || '아무 일도 일어나지 않는다'}`;
   render();
 }
 
@@ -257,8 +263,9 @@ function describe(b: Battle, p: Vec): string {
     const st = [u.frozen ? `빙결 ${u.frozen}` : '', u.stunned ? `기절 ${u.stunned}` : '', u.stuck ? '물에 빠짐' : '', u.intent ? '도화선!' : '',
       u.kind === 'priest' ? (u.charge ? `기도 중 ${u.charge}` : '내리칠 준비') : '']
       .filter(Boolean).join(' · ');
-    const hits = Math.ceil(u.hp / attackPower(b.hero));
-    return `<b>${d.name}</b> 체력 ${u.hp}/${u.maxHp} · 공격 ${d.dmg} — ${d.desc}${st ? ` · ${st}` : ''}<br>지금 무기로 ${hits}대 · 주황 칸이 닿는 범위`;
+    const [lo, hi] = attackRange(b.hero);
+    const hits = range([Math.ceil(u.hp / hi), Math.ceil(u.hp / lo)]);
+    return `<b>${d.name}</b> 체력 ${u.hp}/${u.maxHp} · 피해 ${range(d.dmg)} — ${d.desc}${st ? ` · ${st}` : ''}<br>지금 무기로 ${hits}대 · 주황 칸이 닿는 범위`;
   }
   if (u) return `<b>${nameOf(u)}</b> · ${tile}`;
   return `<b>${tile}</b>${TILE_DESC[c.tile] ? ` — ${TILE_DESC[c.tile]}` : ''}`;
@@ -276,7 +283,7 @@ function overlay(html: string): HTMLElement {
 function showStart(): void {
   const o = overlay(`
     <h1>보드 전술 시제품 · 1막</h1>
-    <p>정통 턴제: 당신이 한 가지를 하면 적이 모두 한 번씩 움직인다. 확률은 없다 — 피해는 늘 적힌 그대로다.
+    <p>정통 턴제: 당신이 한 가지를 하면 적이 모두 한 번씩 움직인다. 공격은 늘 맞고, 피해만 적힌 범위 안에서 정해진다. 용암 · 충돌 같은 지형 피해는 늘 그대로다.
     둘 이상에게 둘러싸이지 않을 자리를 찾고, 용암 · 구덩이 · 원소로 적을 처리한다. 무기를 골라 시작한다.</p>
     ${(Object.keys(WEAPONS) as WeaponId[]).map((id) => {
       const w = WEAPONS[id];

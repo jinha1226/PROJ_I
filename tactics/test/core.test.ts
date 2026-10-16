@@ -3,15 +3,19 @@ import assert from 'node:assert/strict';
 import { applyElement, cellAt, enemies, heroUnit, push, sees } from '../src/core/board';
 import { enemyTurn, threatCells } from '../src/core/enemy';
 import { act, createBattle, endTurn, heroSteps, leave, stepHero, useItem, wait } from '../src/core/game';
-import { attackPower, perform } from '../src/core/hero';
+import { attackPower, attackRange, perform } from '../src/core/hero';
 import { newHero, settle, startRun } from '../src/core/run';
 import type { Battle, WeaponId } from '../src/core/types';
 import { ENEMIES } from '../src/data/enemies';
 import { ACT1 } from '../src/data/maps';
 import { COLLIDE_DMG, LAVA_DMG, SHOCK_DMG } from '../src/data/rules';
 
-const battle = (rows: string[], weapon: WeaponId = 'sword'): Battle =>
-  createBattle({ name: '시험', clearXp: 5, rows }, newHero(weapon));
+/** 시험은 피해를 늘 최대로 굴린다 (범위 자체는 따로 시험한다) */
+const battle = (rows: string[], weapon: WeaponId = 'sword'): Battle => {
+  const b = createBattle({ name: '시험', clearXp: 5, rows }, newHero(weapon), 1);
+  b.roll = 'max';
+  return b;
+};
 const nth = (b: Battle, i: number) => enemies(b)[i]!;
 
 test('수제 맵: 줄 길이가 같고 주인공이 하나', () => {
@@ -25,7 +29,7 @@ test('정통 턴제: 붙은 적은 예고 없이 바로 때리고, 물러서면 
   const b = battle(['.....', '.@g..', '.....']);
   const me = heroUnit(b);
   wait(b);
-  assert.equal(me.hp, me.maxHp - ENEMIES.goblin.dmg, '붙어 있으면 바로 맞는다');
+  assert.equal(me.hp, me.maxHp - ENEMIES.goblin.dmg[1], '붙어 있으면 바로 맞는다');
   const hp = me.hp;
   stepHero(b, { x: 0, y: 1 });
   assert.equal(me.hp, hp, '물러선 턴은 안 맞는다');
@@ -58,13 +62,14 @@ test('창병은 직선 두 칸을 찌르고, 사이에 선 고블린도 맞는�
   const b = battle(['@gs..']);
   const [gob] = [nth(b, 0)];
   enemyTurn(b);
-  assert.equal(gob.hp, gob.maxHp - ENEMIES.spearman.dmg, '사이의 고블린이 맞음');
+  assert.equal(gob.hp, gob.maxHp - ENEMIES.spearman.dmg[1], '사이의 고블린이 맞음');
 });
 
 test('폭탄벌레: 붙으면 도화선, 다음 턴 3×3으로 터진다 (주변 적도)', () => {
   const b = battle(['......', '.@b...', '..g...']);
   const me = heroUnit(b);
   const [beetle, gob] = [nth(b, 0), nth(b, 1)];
+  gob.hp = gob.maxHp = 20; // 최대 굴림에 죽지 않게
   enemyTurn(b);
   assert.ok(beetle.intent, '도화선');
   const hp = me.hp;
@@ -155,8 +160,9 @@ test('깊은 물에 들어가면 다음 턴은 걷지 못한다', () => {
 test('망치는 맞힌 적을 민다, 빙결된 적은 행동하지 못한다', () => {
   const b = battle(['..@..', '..g..', '.....', '.....'], 'hammer');
   const g = nth(b, 0);
+  g.hp = g.maxHp = 30; // 최대 굴림에 죽지 않게
   assert.ok(perform(b, 'attack', { x: 2, y: 1 }));
-  assert.equal(g.hp, g.maxHp - attackPower(b.hero));
+  assert.equal(g.hp, g.maxHp - attackRange(b.hero)[1]);
   assert.equal(g.pos.y, 2, '밀렸다');
 
   const f = battle(['@g...', '.....'], 'frostStaff');
@@ -202,12 +208,12 @@ test('오크 사제: 보이면 사이에 누가 있든 내리치고, 두 턴에 
   const [orc, priest] = [nth(b, 0), nth(b, 1)];
   orc.frozen = 9;
   enemyTurn(b);
-  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg, '전사 너머로 내리침');
+  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg[1], '전사 너머로 내리침');
   assert.equal(priest.charge, 1);
   enemyTurn(b);
-  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg, '기도를 모으는 턴');
+  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg[1], '기도를 모으는 턴');
   enemyTurn(b);
-  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg * 2);
+  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg[1] * 2);
 });
 
 test('오크 사제: 바위 뒤에 숨으면 못 내리치고, 보이는 자리로 걸어 나온다', () => {
@@ -223,7 +229,7 @@ test('오크 사제: 바위 뒤에 숨으면 못 내리치고, 보이는 자리�
   assert.ok(turns > 0 && turns < 5, '보이는 자리로 걸어 나왔다');
   assert.equal(me.hp, me.maxHp, '걷는 턴에는 못 내리친다');
   enemyTurn(b);
-  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg);
+  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg[1]);
 });
 
 test('연막 두루마리: 연기가 사제의 시야를 3턴 막고 사라진다, 쓰면 없어진다', () => {
@@ -239,5 +245,42 @@ test('연막 두루마리: 연기가 사제의 시야를 3턴 막고 사라진�
   assert.equal(me.hp, me.maxHp, '세 턴 동안 가린다');
   assert.equal(cellAt(b, { x: 2, y: 1 }).smoke, 0, '걷혔다');
   wait(b);
-  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg, '연기가 걷히면 다시 맞는다');
+  assert.equal(me.hp, me.maxHp - ENEMIES.priest.dmg[1], '연기가 걷히면 다시 맞는다');
+});
+
+test('피해 범위: 명중은 늘 하고, 굴림은 범위 안이며 같은 시드면 같다', () => {
+  const rolls = (seed: number) => {
+    const b = createBattle({ name: '시험', clearXp: 5, rows: ['@g', '..'] }, newHero('sword'), seed);
+    const g = nth(b, 0);
+    const out: number[] = [];
+    for (let i = 0; i < 30; i++) {
+      g.hp = g.maxHp = 99;
+      perform(b, 'attack', g.pos);
+      out.push(99 - g.hp);
+    }
+    return out;
+  };
+  const [lo, hi] = attackRange(newHero('sword'));
+  const a = rolls(7);
+  assert.ok(a.every((d) => d >= lo && d <= hi), '범위 안');
+  assert.ok(new Set(a).size > 1, '흔들린다');
+  assert.deepEqual(rolls(7), a, '같은 시드 = 같은 굴림');
+});
+
+test('굴림 방식: 최소 · 최대 · 최악 (미리보기 · 봇용)', () => {
+  const at = (roll: Battle['roll']) => {
+    const b = battle(['@g', '..']);
+    b.roll = roll;
+    const g = nth(b, 0);
+    perform(b, 'attack', g.pos);
+    return g.maxHp - g.hp;
+  };
+  const [lo, hi] = attackRange(newHero('sword'));
+  assert.equal(at('min'), lo);
+  assert.equal(at('max'), Math.min(hi, ENEMIES.goblin.hp));
+  assert.equal(at('worst'), lo, '최악: 내 공격은 최소');
+  const b = battle(['@g', '..']);
+  b.roll = 'worst';
+  wait(b);
+  assert.equal(heroUnit(b).hp, heroUnit(b).maxHp - ENEMIES.goblin.dmg[1], '최악: 적 공격은 최대');
 });
