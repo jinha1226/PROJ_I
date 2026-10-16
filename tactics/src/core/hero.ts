@@ -1,6 +1,6 @@
 // 주인공: 공격력 · 무기 공격 · 무기 고유 기술 (tactics/DESIGN.md 3절)
 import {
-  ATK_PER_LEVEL, BASE_ATK, DEX_MIN_DMG, INT_CD, MIN_SKILL_CD, POINT_BLANK_MULT, SHORTFALL_PENALTY,
+  ATK_PER_LEVEL, BASE_ATK, DEX_MIN_DMG, INT_CD, INT_PER_SKILL_POWER, MIN_SKILL_CD, POINT_BLANK_MULT, SHORTFALL_PENALTY,
 } from '../data/rules';
 import { FREEZE_TURNS, QUAKE_STUN, STAT_NAME, WEAPONS } from '../data/weapons';
 import {
@@ -34,6 +34,11 @@ export function attackRange(h: HeroInfo, w: WeaponId = h.weapon): DmgRange {
   const s = WEAPONS[w].spread;
   const hi = p + s;
   return [Math.min(hi, Math.max(1, p - s) + (h.stats.dex - 1) * DEX_MIN_DMG), hi];
+}
+
+/** 기술 위력 보너스 (지능 2점마다 +1): 피해 +1 / 밀기 +1칸 / 기절 · 빙결 +1턴 */
+export function skillPower(h: HeroInfo): number {
+  return Math.floor((h.stats.int - 1) / INT_PER_SKILL_POWER);
 }
 
 /** 기술 재사용 대기. 지능이 줄인다 */
@@ -181,43 +186,44 @@ export function perform(b: Battle, kind: ActionKind, cell: Vec): boolean {
   }
 
   const sk = def.skill;
+  const pow = skillPower(h);
   say(b, `${sk.name}!`, 'info');
   switch (sk.kind) {
     case 'slash': {
-      strike(b, unitAt(b, add(me.pos, d)), dmg);
+      strike(b, unitAt(b, add(me.pos, d)), [dmg[0] + pow, dmg[1] + pow]);
       me.pos = add(me.pos, d, 2);
       break;
     }
     case 'shove':
       for (const o of DIRS8) {
         const t = unitAt(b, add(me.pos, o));
-        if (t) push(b, t, o, 1);
+        if (t) push(b, t, o, 1 + pow);
       }
       break;
     case 'thrust': {
       const t = unitAt(b, add(me.pos, d));
       strike(b, t, dmg);
-      if (t && !t.dead) push(b, t, d, 2);
+      if (t && !t.dead) push(b, t, d, 2 + pow);
       break;
     }
     case 'quake':
       for (const o of DIRS8) {
         const t = unitAt(b, add(me.pos, o));
         if (!t) continue;
-        t.stunned = Math.max(t.stunned, QUAKE_STUN);
+        t.stunned = Math.max(t.stunned, QUAKE_STUN + pow);
         say(b, `${josa(nameOf(t), '이/가')} 기절했다.`, 'env');
       }
       break;
     case 'burst': {
       const area = [tg.cell, ...DIRS8.map((o) => add(tg.cell, o))].filter((p) => !blocked(b, p));
-      const fixed = sk.dmg ?? 2;
+      const fixed = (sk.dmg ?? 2) + pow;
       for (const p of area) strike(b, unitAt(b, p), [fixed, fixed]);
       applyElement(b, area, 'fire');
       break;
     }
     case 'freeze': {
       const t = unitAt(b, tg.cell);
-      if (t) freeze(b, t, FREEZE_TURNS);
+      if (t) freeze(b, t, FREEZE_TURNS + pow);
       applyElement(b, [tg.cell], 'frost');
       break;
     }

@@ -45,6 +45,8 @@ export const DEX_MIN_DMG = 1;
 /** 지능: 기술 재사용 대기 감소, 그래도 이보다 짧아지지 않는다 */
 export const INT_CD = 1;
 export const MIN_SKILL_CD = 2;
+/** 지능 이만큼마다 모든 무기 기술의 위력 +1 (피해 +1 / 밀기 +1칸 / 기절 · 빙결 +1턴) */
+export const INT_PER_SKILL_POWER = 2;
 /** 지능 이만큼마다 연막 +1턴 */
 export const INT_PER_ITEM_TURN = 2;
 

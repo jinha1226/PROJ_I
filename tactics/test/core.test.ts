@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { applyElement, cellAt, enemies, heroUnit, push, sees } from '../src/core/board';
 import { enemyTurn, threatCells } from '../src/core/enemy';
 import { act, createBattle, endTurn, heroSteps, leave, stepHero, useItem, wait } from '../src/core/game';
-import { attackPower, attackRange, perform, skillCd } from '../src/core/hero';
+import { attackPower, attackRange, perform, skillCd, skillPower } from '../src/core/hero';
 import { newHero, settle, spendPoint, startRun } from '../src/core/run';
 import type { Battle, WeaponId } from '../src/core/types';
 import { ENEMIES } from '../src/data/enemies';
@@ -306,4 +306,19 @@ test('능력치의 무기와 상관없는 효과: 힘 = 체력, 민첩 = 최소 
   assert.equal(skillCd(f), WEAPONS.frostStaff.skill.cd - 1, '지능 2');
   f.stats.int = 99;
   assert.equal(skillCd(f), 2, '최소 2턴');
+});
+
+test('지능 2점마다 기술 위력 +1: 빙결이 길어지고 찌르고 밀기가 더 멀리 민다', () => {
+  const f = battle(['@.g...', '......'], 'frostStaff');
+  f.hero.stats.int = 4; // 1을 넘는 3점 → 위력 +1
+  assert.equal(skillPower(f.hero), 1);
+  assert.ok(act(f, 'skill', nth(f, 0).pos));
+  assert.equal(nth(f, 0).frozen, 3 + 1 - 1, '빙결 3+1턴, 이번 턴 적 차례에서 1 줄었다');
+
+  const s = battle(['@g.....', '.......'], 'spear');
+  s.hero.stats.int = 3;
+  const g = nth(s, 0);
+  g.hp = g.maxHp = 30;
+  assert.ok(perform(s, 'skill', g.pos));
+  assert.equal(g.pos.x, 1 + 2 + 1, '두 칸 + 위력 한 칸');
 });

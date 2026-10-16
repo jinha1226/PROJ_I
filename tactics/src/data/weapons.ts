@@ -43,13 +43,13 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     skill: { kind: 'quake', name: '땅 내려치기', desc: '주변 적을 2턴 기절시킨다', cd: 7 },
   },
   fireStaff: {
-    name: '불꽃 지팡이', req: { int: 3 }, atk: 2, spread: 1, attack: 'bolt', range: 3, element: 'fire', weakClose: true,
-    desc: '직선 3칸, 맞은 칸에 불. 붙은 적에게는 절반',
+    name: '불꽃 지팡이', req: { int: 3 }, atk: 2, spread: 1, attack: 'bolt', range: 4, element: 'fire', weakClose: true,
+    desc: '직선 4칸, 맞은 칸에 불. 붙은 적에게는 절반',
     skill: { kind: 'burst', name: '화염 폭발', desc: '사거리 4 안의 한 칸에 3×3 불', cd: 8, range: 4, dmg: 2 },
   },
   frostStaff: {
-    name: '서리 지팡이', req: { int: 2 }, atk: 1, spread: 1, attack: 'bolt', range: 3, element: 'frost', weakClose: true,
-    desc: '직선 3칸, 맞은 칸에 서리. 붙은 적에게는 절반',
+    name: '서리 지팡이', req: { int: 2 }, atk: 1, spread: 1, attack: 'bolt', range: 4, element: 'frost', weakClose: true,
+    desc: '직선 4칸, 맞은 칸에 서리. 붙은 적에게는 절반',
     skill: { kind: 'freeze', name: '빙결', desc: '사거리 3 안의 적 하나를 3턴 얼린다 (밀면 미끄러진다)', cd: 7, range: 3 },
   },
 };

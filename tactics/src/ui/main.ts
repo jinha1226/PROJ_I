@@ -2,7 +2,7 @@
 import { cellAt, chebyshev, eq, heroUnit, nameOf, unitAt } from '../core/board';
 import { threatCells } from '../core/enemy';
 import { act, enemyNear, heroSteps, leave, nextStepToward, onStairs, stepHero, swapWeapon, useItem, wait } from '../core/game';
-import { attackRange, perform, shortfall, skillCd, skillReady, targets, type ActionKind } from '../core/hero';
+import { attackRange, perform, shortfall, skillCd, skillPower, skillReady, targets, type ActionKind } from '../core/hero';
 import { applyItem, itemTargets } from '../core/items';
 import { nextMap, settle, spendPoint, startRun, type Run } from '../core/run';
 import type { Battle, HeroInfo, StatId, Vec, WeaponId } from '../core/types';
@@ -137,6 +137,7 @@ function statGain(h: HeroInfo, s: StatId): string {
   if (s === 'str') out.push(`체력 +${STR_HP}`);
   const [c, d] = [skillCd(h), skillCd(next)];
   if (c !== d) out.push(`기술 대기 ${c} → ${d}`);
+  if (skillPower(next) > skillPower(h)) out.push(`기술 위력 +${skillPower(next)}`);
   return out.join('<br>') || '지금 무기에는 변화 없음';
 }
 
@@ -169,7 +170,7 @@ function choose(kind: ActionKind | 'item'): void {
   const w = WEAPONS[b.hero.weapon];
   const it = b.hero.items[0];
   info = kind === 'item' && it ? `<b>${ITEMS[it].name}</b>: ${ITEMS[it].desc}`
-    : kind === 'skill' ? `<b>${w.skill.name}</b>: ${w.skill.desc}` : `<b>${w.name}</b>: ${w.desc} — 빈칸에도 쏠 수 있다`;
+    : kind === 'skill' ? `<b>${w.skill.name}</b>: ${w.skill.desc}${skillPower(b.hero) ? ` (지능 위력 +${skillPower(b.hero)})` : ''}` : `<b>${w.name}</b>: ${w.desc} — 빈칸에도 쏠 수 있다`;
   if (!tgs.length) info += '<br><span class="warn">지금은 대상이 없다</span>';
   else if (tgs.length === 1) return preview(tgs[0]!); // 주변 공격처럼 대상이 하나면 바로 미리보기
   else info += '<br>노란 칸을 누르면 결과를 미리 보여준다';
@@ -327,7 +328,7 @@ function renderOverlay(): void {
       <h1>맵을 벗어났다</h1>${sum}
       ${pts > 0 ? `<h2>능력치 점수 ${pts}</h2><div class="stats">${(['str', 'dex', 'int'] as StatId[]).map((s) =>
         `<button data-s="${s}">${STAT_NAME[s]} ${r.hero.stats[s]} → ${r.hero.stats[s] + 1}<small>${statGain(r.hero, s)}</small></button>`).join('')}</div>
-      <p>힘: 최대 체력 · 민첩: 최소 피해 · 지능: 기술 재사용 대기와 연막. 든 무기가 요구하는 능력치는 공격도 올린다</p>` : ''}
+      <p>힘: 최대 체력 · 민첩: 최소 피해 · 지능: 기술 재사용 대기, 2점마다 기술 위력과 연막. 든 무기가 요구하는 능력치는 공격도 올린다</p>` : ''}
       <h2>체력 ${r.hero.hp} / ${r.hero.maxHp}</h2>
       <button id="next" ${pts > 0 ? 'disabled' : ''}><b>다음 맵</b><small>${pts > 0 ? '능력치를 먼저 고른다' : ''}</small></button>`);
     o.querySelectorAll<HTMLButtonElement>('button[data-s]').forEach((x) => {
