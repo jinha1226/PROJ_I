@@ -2,10 +2,10 @@
 // 후보 행동을 전부 복제본에 해 보고(적 반응까지) 점수가 가장 좋은 것. 두 수 앞은 첫 수 상위 beam개만 펼친다
 import { cellAt, chebyshev, enemies, heroUnit } from '../src/core/board';
 import { endTurn, heroSteps, leave, onStairs, stepHero, swapWeapon, useItem } from '../src/core/game';
-import { itemTargets } from '../src/core/items';
+import { itemTargets, itemUses } from '../src/core/items';
 import { attackRange, perform, targets, type ActionKind } from '../src/core/hero';
 import { chooseReward, skipReward, type Run } from '../src/core/run';
-import type { Battle, StatId, Unit, Vec } from '../src/core/types';
+import type { Battle, StatId, Unit, UseHow, Vec } from '../src/core/types';
 import { WEAPONS } from '../src/data/weapons';
 import { ENEMIES } from '../src/data/enemies';
 
@@ -50,7 +50,7 @@ export type Plan =
   | { t: 'wait' }
   | { t: 'step'; to: Vec }
   | { t: 'act'; kind: ActionKind; cell: Vec }
-  | { t: 'item'; idx: number; cell: Vec }
+  | { t: 'item'; idx: number; how: UseHow; cell: Vec }
   | { t: 'swap' }
   | { t: 'leave' };
 
@@ -65,9 +65,13 @@ export function plans(b: Battle, items: boolean): Plan[] {
   }
   if (items) {
     const me = heroUnit(b).pos;
+    // 봇은 정체를 안다고 친다 (소모품 값어치의 상한). 모르는 두루마리가 칸을 못 고르는 제약은 itemTargets가 지킨다
     b.hero.items.forEach((id, idx) => {
       if (b.hero.items.indexOf(id) !== idx) return; // 같은 소모품은 한 번만 본다
-      for (const cell of itemTargets(b, id)) if (chebyshev(cell, me) <= ITEM_REACH) out.push({ t: 'item', idx, cell });
+      for (const how of itemUses(id)) {
+        if (id === 'identify') continue; // 감정은 싸움에 쓸모가 없다
+        for (const cell of itemTargets(b, idx, how)) if (chebyshev(cell, me) <= ITEM_REACH) out.push({ t: 'item', idx, how, cell });
+      }
     });
   }
   if (b.hero.spare) out.push({ t: 'swap' });
@@ -87,7 +91,7 @@ export function play(b: Battle, p: Plan): void {
       if (!perform(b, p.kind, p.cell)) return;
       return endTurn(b);
     case 'item':
-      useItem(b, p.idx, p.cell);
+      useItem(b, p.idx, p.how, p.cell);
       return;
     case 'swap':
       swapWeapon(b);

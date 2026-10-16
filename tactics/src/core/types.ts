@@ -28,7 +28,9 @@ export interface Cell {
 }
 
 export type EnemyKind = 'goblin' | 'archer' | 'spearman' | 'beetle' | 'lizard' | 'wolf' | 'ogre' | 'orc' | 'priest';
-export type ItemId = 'heal' | 'fireBomb' | 'frostBomb' | 'smoke' | 'blink' | 'repel';
+export type ItemId = 'heal' | 'fireBomb' | 'frostBomb' | 'smoke' | 'blink' | 'repel' | 'identify';
+/** 소모품 쓰는 법: 물약은 마시거나 던지고, 두루마리는 읽는다 */
+export type UseHow = 'drink' | 'throw' | 'read';
 export type StatId = 'str' | 'dex' | 'int';
 export type WeaponId = 'sword' | 'axe' | 'spear' | 'hammer' | 'fireStaff' | 'frostStaff';
 
@@ -64,6 +66,10 @@ export interface HeroInfo {
   cooldown: Partial<Record<WeaponId, number>>;
   /** 든 소모품 (쓰면 사라진다) */
   items: ItemId[];
+  /** 정체를 아는 소모품 종류 (한 번 쓰거나 감정하면 판 끝까지) */
+  known: ItemId[];
+  /** 이 판에서 모르는 소모품이 보이는 이름 (물약 색 · 두루마리 글자) */
+  names: Record<ItemId, string>;
   /** 무기 강화 (보상). 그 무기 공격력에 더한다 */
   enchant: Partial<Record<WeaponId, number>>;
   hp: number;

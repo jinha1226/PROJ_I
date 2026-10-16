@@ -3,9 +3,9 @@ import { cellAt, chebyshev, eq, heroUnit, nameOf, unitAt } from '../core/board';
 import { threatCells } from '../core/enemy';
 import { act, enemyNear, heroSteps, leave, nextStepToward, onStairs, stepHero, swapWeapon, useItem, wait } from '../core/game';
 import { attackRange, perform, shortfall, skillCd, skillPower, skillReady, targets, type ActionKind } from '../core/hero';
-import { applyItem, itemTargets } from '../core/items';
+import { applyItem, identifiable, isKnown, itemName, itemTargets, itemUses } from '../core/items';
 import { chooseReward, describeReward, nextMap, settle, skipReward, spendPoint, startRun, type Run } from '../core/run';
-import type { Battle, HeroInfo, StatId, Vec, WeaponId } from '../core/types';
+import type { Battle, HeroInfo, StatId, UseHow, Vec, WeaponId } from '../core/types';
 import { ENEMIES } from '../data/enemies';
 import { ITEMS } from '../data/items';
 import { ACT1 } from '../data/maps';
@@ -25,8 +25,9 @@ let run: Run | null = null;
 /** 'move': 누르면 걷거나 붙은 적을 때린다 / 'attack' · 'skill' · 'item': 대상 고르기 (미리보기 → 확정) */
 type Mode = 'move' | ActionKind | 'item';
 let mode: Mode = 'move';
-/** 쓸 소모품 (가방 안 순서) */
+/** 쓸 소모품 (가방 안 순서)과 쓰는 법 */
 let itemIdx = 0;
+let itemHow: UseHow = 'read';
 /** 소모품 고르는 중 (정보 칸에 목록) */
 let picking = false;
 /** 미리보기: 내 피해를 최소로 굴린 결과와 최대로 굴린 결과 (실제 굴림은 엿볼 수 없다) */
@@ -52,14 +53,14 @@ const TILE_DESC: Partial<Record<string, string>> = {
 /** 지금 고르는 행동의 대상 칸 */
 function modeCells(b: Battle): Vec[] {
   if (mode === 'move') return [];
-  if (mode === 'item') return b.hero.items[itemIdx] ? itemTargets(b, b.hero.items[itemIdx]!) : [];
+  if (mode === 'item') return itemTargets(b, itemIdx, itemHow);
   return targets(b, mode).map((t) => t.cell);
 }
 
 /** 대상 칸에 지금 행동을 실행한다 (턴은 넘기지 않는다) */
 function performMode(b: Battle, cell: Vec): boolean {
   if (mode === 'move') return false;
-  if (mode === 'item') return applyItem(b, itemIdx, cell);
+  if (mode === 'item') return applyItem(b, itemIdx, itemHow, cell);
   return perform(b, mode, cell);
 }
 
@@ -74,10 +75,13 @@ function render(): void {
   renderActions(live);
   $('info').innerHTML = info || idleInfo(live);
   $('info').querySelectorAll<HTMLButtonElement>('button[data-i]').forEach((x) => {
+    x.onclick = () => pickItem(Number(x.dataset.i), x.dataset.how as UseHow);
+  });
+  $('info').querySelectorAll<HTMLButtonElement>('button[data-pick]').forEach((x) => {
     x.onclick = () => {
-      picking = false;
-      itemIdx = Number(x.dataset.i);
-      choose('item');
+      reset();
+      useItem(live, itemIdx, 'read', heroUnit(live).pos, Number(x.dataset.pick));
+      after();
     };
   });
   const lines = (pending ? pending.preview.log : live.log).slice(-6);
@@ -177,10 +181,41 @@ function openItems(): void {
   }
   reset();
   picking = true;
-  const items = run.battle.hero.items;
-  info = `<b>어느 것을 쓸까?</b><div class="items">${items.map((id, i) =>
-    `<button data-i="${i}">${ITEMS[id].short}<small>${ITEMS[id].desc}</small></button>`).join('')}</div>`;
+  const h = run.battle.hero;
+  const verb: Record<UseHow, string> = { drink: '마시기', throw: '던지기', read: '읽기' };
+  info = `<b>어느 것을 쓸까?</b> 모르는 물건은 미리보기 없이 바로 쓴다<div class="items">${h.items.map((id, i) =>
+    itemUses(id).map((how) => {
+      const known = isKnown(h, id);
+      const sub = known ? (how === 'throw' ? ITEMS[id].throwDesc : ITEMS[id].desc) : '정체를 모른다';
+      return `<button data-i="${i}" data-how="${how}">${known ? ITEMS[id].short : itemName(h, id)} ${verb[how]}<small>${sub}</small></button>`;
+    }).join('')).join('')}</div>`;
   render();
+}
+
+/** 목록에서 하나를 골랐다: 모르는 물건 · 칸이 하나뿐이면 바로 쓰고, 감정은 감정할 것을 고르고, 아니면 칸 고르기 */
+function pickItem(idx: number, how: UseHow): void {
+  if (!run) return;
+  const b = run.battle;
+  const id = b.hero.items[idx];
+  if (!id) return;
+  itemIdx = idx;
+  itemHow = how;
+  picking = false;
+  const cells = itemTargets(b, idx, how);
+  if (id === 'identify' && isKnown(b.hero, id)) {
+    const can = identifiable(b.hero, idx);
+    if (can.length > 1) {
+      info = `<b>무엇을 감정할까?</b><div class="items">${can.map((i) =>
+        `<button data-pick="${i}">${itemName(b.hero, b.hero.items[i]!)}</button>`).join('')}</div>`;
+      return render();
+    }
+  }
+  if (!isKnown(b.hero, id) && cells.length === 1) {
+    reset();
+    useItem(b, idx, how, cells[0]!);
+    return after();
+  }
+  choose('item');
 }
 
 function choose(kind: ActionKind | 'item'): void {
@@ -195,7 +230,8 @@ function choose(kind: ActionKind | 'item'): void {
   const tgs = modeCells(b);
   const w = WEAPONS[b.hero.weapon];
   const it = b.hero.items[itemIdx];
-  info = kind === 'item' && it ? `<b>${ITEMS[it].name}</b>: ${ITEMS[it].desc}`
+  const itemDesc = it && (isKnown(b.hero, it) ? (itemHow === 'throw' ? ITEMS[it].throwDesc : ITEMS[it].desc) : '정체를 모른다 — 칸을 누르면 바로 던진다');
+  info = kind === 'item' && it ? `<b>${itemName(b.hero, it)}</b>: ${itemDesc}`
     : kind === 'skill' ? `<b>${w.skill.name}</b>: ${w.skill.desc}${skillPower(b.hero) ? ` (지능 위력 +${skillPower(b.hero)})` : ''}` : `<b>${w.name}</b>: ${w.desc} — 빈칸에도 쏠 수 있다`;
   if (!tgs.length) info += '<br><span class="warn">지금은 대상이 없다</span>';
   else if (tgs.length === 1) return preview(tgs[0]!); // 주변 공격처럼 대상이 하나면 바로 미리보기
@@ -257,11 +293,20 @@ cv.addEventListener('click', (e) => {
     if (pending && eq(pending.cell, cell)) {
       const kind = mode;
       reset();
-      if (kind === 'item') useItem(b, itemIdx, cell);
+      if (kind === 'item') useItem(b, itemIdx, itemHow, cell);
       else act(b, kind, cell);
       return after();
     }
-    if (modeCells(b).some((p) => eq(p, cell))) return preview(cell);
+    if (modeCells(b).some((p) => eq(p, cell))) {
+      // 모르는 물건은 미리보기가 정체를 흘리므로 바로 쓴다
+      const it = b.hero.items[itemIdx];
+      if (mode === 'item' && it && !isKnown(b.hero, it)) {
+        reset();
+        useItem(b, itemIdx, itemHow, cell);
+        return after();
+      }
+      return preview(cell);
+    }
     reset();
   }
 

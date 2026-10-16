@@ -7,7 +7,7 @@ import { enemyTurn } from './enemy';
 import { heroCanStand, perform, type ActionKind } from './hero';
 import { applyItem } from './items';
 import { josa } from './josa';
-import type { Battle, Cell, HeroInfo, Unit, Vec } from './types';
+import type { Battle, Cell, HeroInfo, Unit, UseHow, Vec } from './types';
 
 function newUnit(id: number, kind: Unit['kind'], pos: Vec, hp: number): Unit {
   return { id, kind, pos, hp, maxHp: hp, dead: false, frozen: 0, stunned: 0, stuck: 0, charge: 0 };
@@ -87,9 +87,9 @@ export function act(b: Battle, kind: ActionKind, cell: Vec): boolean {
   return true;
 }
 
-/** 소모품 하나를 고른 칸에 쓴다. 성공하면 턴이 넘어간다 */
-export function useItem(b: Battle, idx: number, cell: Vec): boolean {
-  if (b.status !== 'play' || !applyItem(b, idx, cell)) return false;
+/** 소모품 하나를 how로 고른 칸에 쓴다 (pick: 감정할 가방 자리). 성공하면 턴이 넘어간다 */
+export function useItem(b: Battle, idx: number, how: UseHow, cell: Vec, pick?: number): boolean {
+  if (b.status !== 'play' || !applyItem(b, idx, how, cell, pick)) return false;
   endTurn(b);
   return true;
 }

@@ -34,8 +34,9 @@ function heroAt(w: WeaponId, level: number, items: boolean): HeroInfo {
   h.stats[main] += level - 1;
   h.maxHp += (level - 1) * HP_PER_LEVEL + (main === 'str' ? (level - 1) * STR_HP : 0);
   h.hp = h.maxHp;
-  // 소모품 조건: 6종 1개씩 / 아니면 빈 가방
-  h.items = items ? (Object.keys(ITEMS) as ItemId[]) : [];
+  // 소모품 조건: 싸움에 쓰는 종류 1개씩, 정체를 안다 (값어치의 상한) / 아니면 빈 가방
+  h.items = items ? (Object.keys(ITEMS) as ItemId[]).filter((id) => id !== 'identify') : [];
+  h.known = [...h.items];
   return h;
 }
 

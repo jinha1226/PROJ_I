@@ -8,6 +8,7 @@ import { CLEAR_HEAL, START_HP, STR_HP } from '../data/rules';
 import { STAT_NAME, WEAPONS } from '../data/weapons';
 import { heroUnit } from './board';
 import { createBattle } from './game';
+import { itemName, rollItemNames } from './items';
 import { josa } from './josa';
 import type { Battle, HeroInfo, ItemId, StatId, WeaponId } from './types';
 
@@ -29,7 +30,7 @@ export function newHero(weapon: WeaponId): HeroInfo {
   const stats: Record<StatId, number> = { str: 1, dex: 1, int: 1 };
   for (const [s, need] of Object.entries(WEAPONS[weapon].req) as [StatId, number][]) stats[s] = Math.max(stats[s], need);
   const hp = START_HP + (stats.str - 1) * STR_HP; // 힘 무기로 시작하면 체력도 조금 많다
-  return { level: 1, xp: 0, points: 0, stats, weapon, spare: null, cooldown: {}, items: [...START_ITEMS], enchant: {}, hp, maxHp: hp };
+  return { level: 1, xp: 0, points: 0, stats, weapon, spare: null, cooldown: {}, items: [...START_ITEMS], known: [...START_ITEMS], names: rollItemNames(), enchant: {}, hp, maxHp: hp };
 }
 
 export function startRun(weapon: WeaponId): Run {
@@ -127,8 +128,11 @@ export function describeReward(h: HeroInfo, r: Reward): { title: string; detail:
       return { title: `${STAT_NAME[r.stat]} +1`, detail: '능력치 하나 더' };
     case 'vigor':
       return { title: '단련', detail: `최대 체력 +${VIGOR_HP}` };
-    case 'item':
-      return { title: ITEMS[r.item].name, detail: `${ITEMS[r.item].desc}${h.items.length >= ITEM_SLOTS ? ' (가방이 가득 찼다)' : ''}` };
+    case 'item': {
+      const full = h.items.length >= ITEM_SLOTS ? ' (가방이 가득 찼다)' : '';
+      if (!h.known.includes(r.item)) return { title: itemName(h, r.item), detail: `정체를 모른다. 써 보면 안다${full}` };
+      return { title: ITEMS[r.item].name, detail: `${ITEMS[r.item].desc}${full}` };
+    }
   }
 }
 

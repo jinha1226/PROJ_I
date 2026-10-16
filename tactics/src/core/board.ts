@@ -85,13 +85,16 @@ export function rollDmg(b: Battle, [lo, hi]: DmgRange, by: 'hero' | 'foe'): numb
     case 'worst':
       return by === 'hero' ? lo : hi;
   }
-  // mulberry32
+  return lo + Math.floor(rand(b) * (hi - lo + 1));
+}
+
+/** 전투 난수 0~1 (mulberry32, 상태 안의 시드). 굴림 방식과 상관없이 늘 시드를 쓴다 */
+export function rand(b: Battle): number {
   b.seed = (b.seed + 0x6d2b79f5) | 0;
   let t = b.seed;
   t = Math.imul(t ^ (t >>> 15), t | 1);
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-  const r = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  return lo + Math.floor(r * (hi - lo + 1));
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
 
 /** 피해를 준다. 문장은 부른 쪽이 만든다 (msg가 있으면 피해 수치를 붙여 기록) */
