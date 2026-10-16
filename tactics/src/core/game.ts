@@ -10,7 +10,7 @@ import { josa } from './josa';
 import type { Battle, Cell, HeroInfo, Unit, UseHow, Vec } from './types';
 
 function newUnit(id: number, kind: Unit['kind'], pos: Vec, hp: number): Unit {
-  return { id, kind, pos, hp, maxHp: hp, dead: false, frozen: 0, stunned: 0, stuck: 0, charge: 0 };
+  return { id, kind, pos, hp, maxHp: hp, dead: false, frozen: 0, stunned: 0, stuck: 0, charge: 0, retreat: 0 };
 }
 
 /** seed를 주면 피해 굴림이 재현된다 (없으면 무작위) */

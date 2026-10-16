@@ -1,5 +1,5 @@
 // 적: 공격 칸 · 정통 턴제 행동 (때릴 수 있으면 바로 때리고, 아니면 다가간다) (tactics/DESIGN.md 2절)
-import { ENEMIES, RAY_RANGE, SMITE_CD, SMITE_RANGE, type EnemyDef } from '../data/enemies';
+import { ENEMIES, RAY_RANGE, RETREAT_CD, SMITE_CD, SMITE_RANGE, type EnemyDef } from '../data/enemies';
 import {
   DIRS8, add, applyElement, blocked, cellAt, chebyshev, enemies, eq, heroUnit, hurt, kill, nameOf, opaque, rollDmg, say, sees,
   unitAt,
@@ -139,14 +139,16 @@ function step(b: Battle, u: Unit): void {
   if (to) u.pos = to;
 }
 
-/** 붙은 궁수 · 사제는 한 칸 물러선다 (쏠 자리를 다시 잡는다) */
+/** 붙은 궁수 · 사제는 한 칸 물러선다 (쏠 자리를 다시 잡는다). 연달아 물러서지는 못한다 */
 function backOff(b: Battle, u: Unit): boolean {
+  if (u.retreat > 0) return false;
   const me = heroUnit(b);
   const away = DIRS8.map((d) => add(u.pos, d)).filter((p) => safeFor(b, u, p) && chebyshev(p, me.pos) > 1);
   const shoot = away.find((p) => strikeDir(b, u, p));
   const to = shoot ?? away[0];
   if (!to) return false;
   u.pos = to;
+  u.retreat = RETREAT_CD;
   return true;
 }
 
@@ -198,7 +200,12 @@ function actOnce(b: Battle, u: Unit): void {
   } else {
     const d = strikeDir(b, u, u.pos);
     if (d) return strike(b, u, d);
-    if (def.shape === 'ray' && chebyshev(u.pos, heroUnit(b).pos) <= 1 && backOff(b, u)) return;
+    const me = heroUnit(b);
+    if (def.shape === 'ray' && chebyshev(u.pos, me.pos) <= 1) {
+      if (backOff(b, u)) return;
+      // 물러서지 못하면 붙은 채로 쏜다
+      return strike(b, u, { x: me.pos.x - u.pos.x, y: me.pos.y - u.pos.y });
+    }
   }
   if (u.stuck > 0) {
     u.stuck--;
@@ -215,6 +222,7 @@ export function enemyTurn(b: Battle): void {
       u.frozen--;
       continue;
     }
+    if (u.retreat > 0) u.retreat--;
     if (u.stunned > 0) {
       u.stunned--;
       continue;

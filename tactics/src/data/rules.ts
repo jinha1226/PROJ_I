@@ -36,7 +36,7 @@ export const HP_PER_LEVEL = 8;
 export const BASE_ATK = 1;
 export const ATK_PER_LEVEL = 1;
 /** 레벨 n이 되는 데 필요한 누적 경험치 (index = 레벨 - 1) */
-export const LEVEL_XP = [0, 8, 20, 36, 56, 80, 110, 145, 185, 230];
+export const LEVEL_XP = [0, 10, 28, 54, 88, 130, 180, 240, 310, 390];
 // 능력치의 무기와 상관없는 효과 (1을 넘는 1점마다, DESIGN.md 3절 ②)
 /** 힘: 최대 체력 */
 export const STR_HP = 3;

@@ -52,6 +52,8 @@ export interface Unit {
   intent?: Vec;
   /** 오크 사제: 내리친 뒤 기도를 모으는 남은 턴 (0이면 내리칠 수 있다) */
   charge: number;
+  /** 궁수 · 사제: 물러선 뒤 다시 물러서지 못하는 남은 턴 */
+  retreat: number;
 }
 
 export interface HeroInfo {

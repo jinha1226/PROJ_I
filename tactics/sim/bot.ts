@@ -146,11 +146,27 @@ function tryPlan(b: Battle, p: Plan): Battle {
   return c;
 }
 
-export function bestTurn(b: Battle, o: BotOpts = DEFAULT_BOT, mood: Mood = 'fight'): Plan {
-  const first = plans(b, o.items).map((p) => {
-    const c = tryPlan(b, p);
-    return { p, c, s: evaluate(c, o.w, mood) + Math.random() * 0.01 };
+/**
+ * 교착이면 가장 가까운 적 하나를 정해, 그 적을 때리거나 그 적에게 가까워지는 수만 남긴다.
+ * 두 수 앞을 보면 적이 다시 자리를 잡아 거리가 그대로라 다가가는 값이 안 보인다 (사선에서 한 칸씩 비키는 춤)
+ */
+function chaseOnly(b: Battle, first: { p: Plan; c: Battle }[]): { p: Plan; c: Battle }[] {
+  const me = heroUnit(b).pos;
+  const target = enemies(b).sort((x, y) => chebyshev(x.pos, me) - chebyshev(y.pos, me))[0];
+  if (!target) return first;
+  const d0 = chebyshev(target.pos, me);
+  const keep = first.filter(({ p, c }) => {
+    const t = c.units.find((u) => u.id === target.id);
+    if (!t || t.dead || t.hp < target.hp) return true; // 때렸다
+    return p.t === 'step' && chebyshev(p.to, target.pos) < d0; // 다가갔다 (적이 움직이기 전 기준)
   });
+  return keep.length ? keep : first;
+}
+
+export function bestTurn(b: Battle, o: BotOpts = DEFAULT_BOT, mood: Mood = 'fight'): Plan {
+  let cand = plans(b, o.items).map((p) => ({ p, c: tryPlan(b, p) }));
+  if (mood === 'stall') cand = chaseOnly(b, cand);
+  const first = cand.map(({ p, c }) => ({ p, c, s: evaluate(c, o.w, mood) + Math.random() * 0.01 }));
   first.sort((x, y) => y.s - x.s);
   if (o.depth === 1) return first[0]!.p;
   let best = { s: -Infinity, p: first[0]!.p };
@@ -181,7 +197,9 @@ export function playBattle(b: Battle, o: BotOpts = DEFAULT_BOT, turnCap = 150): 
     const foeHp = enemies(b).reduce((s, u) => s + u.hp, 0);
     still = foeHp === lastFoeHp ? still + 1 : 0;
     lastFoeHp = foeHp;
-    const mood: Mood = still >= GIVE_UP_TURNS ? 'flee' : still >= STALL_TURNS ? 'stall' : 'fight';
+    // 계단이 없는 맵(보스)에서는 포기하지 않고 계속 붙는다
+    const canLeave = b.cells.some((c) => c.tile === 'stairs');
+    const mood: Mood = still >= GIVE_UP_TURNS && canLeave ? 'flee' : still >= STALL_TURNS ? 'stall' : 'fight';
     play(b, bestTurn(b, o, mood));
   }
 }

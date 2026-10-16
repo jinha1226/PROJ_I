@@ -40,7 +40,7 @@ export const ENEMIES: Record<EnemyKind, EnemyDef> = {
     immune: ['lava'], fireproof: true, desc: '붙은 한 칸에 불을 뿜는다. 용암 · 불에 멀쩡하다',
   },
   wolf: { name: '늑대', glyph: '늑', hp: 5, dmg: [1, 3], acts: 2, xp: 4, shape: 'melee', immune: [], desc: '빠르다 (한 턴에 두 번). 도망칠 수 없다' },
-  ogre: { name: '오우거', glyph: '오', hp: 24, dmg: [4, 10], acts: 1, slow: true, xp: 15, shape: 'sweep', immune: [], desc: '앞 세 칸을 휩쓴다. 느리다 (두 턴에 한 번)' },
+  ogre: { name: '오우거', glyph: '오', hp: 32, dmg: [4, 10], acts: 1, slow: true, xp: 15, shape: 'sweep', immune: [], desc: '앞 세 칸을 휩쓴다. 느리다 (두 턴에 한 번)' },
   orc: { name: '오크 전사', glyph: '전', hp: 10, dmg: [2, 5], acts: 1, xp: 5, shape: 'melee', immune: [], desc: '붙은 한 칸을 때린다. 단단하다' },
   priest: {
     name: '오크 사제', glyph: '사', hp: 6, dmg: [2, 4], acts: 1, xp: 6, shape: 'smite', immune: [],
@@ -52,6 +52,9 @@ export const ENEMIES: Record<EnemyKind, EnemyDef> = {
 export const SMITE_RANGE = 7;
 /** 내리친 뒤 기도를 모으는 턴 (1이면 두 턴에 한 번) */
 export const SMITE_CD = 1;
+
+/** 궁수 · 사제가 물러선 뒤 다시 물러서지 못하는 턴 (2면 물러선 다음 턴은 제자리) */
+export const RETREAT_CD = 2;
 
 /** 궁수 화살이 날아가는 최대 거리 */
 export const RAY_RANGE = 8;

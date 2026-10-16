@@ -2,7 +2,8 @@
 // npx tsx sim/smoke.ts [판 수] [--d1 한 수 앞만] [--items 소모품도 씀] [--w 무기] [--stat str|dex|int (기본: 무기의 첫 능력치)]
 // 기본은 소모품 없이 (지형만으로 깨지는지, DESIGN.md "스테이지")
 // 최저 체력: 판 동안 가장 낮았던 체력 비율 (끝 체력은 레벨업 회복 때문에 늘 가득이라 난이도를 못 보여준다)
-// 나감: 체력이 낮거나 오래 교착이면 봇이 계단으로 나간다 → 그 맵에 무기별 답이 없다는 신호
+// 나감: 오래 교착이면 봇이 계단으로 나간다 → 그 맵에 무기별 답이 없다는 신호
+// 맵별 최대 손실: 그 맵 동안 가장 크게 잃은 체력 비율의 평균 (도착 레벨 평균) — 난이도 곡선
 import { nextMap, settle, spendPoint, startRun } from '../src/core/run';
 import type { StatId, WeaponId } from '../src/core/types';
 import { WEAPONS } from '../src/data/weapons';
@@ -23,12 +24,20 @@ for (const w of (flag('--w') && only ? [only] : Object.keys(WEAPONS)) as WeaponI
   const lows: number[] = [];
   /** 맵마다 일찍 나간 횟수 */
   const left: number[] = [];
+  /** 맵마다 [최대 손실 비율 합, 도착 레벨 합, 판 수] — 난이도 곡선 */
+  const curve: [number, number, number][] = [];
   for (let i = 0; i < N; i++) {
     const run = startRun(w);
     const t: number[] = [];
     let low = 1;
     while (run.phase === 'battle') {
-      low = Math.min(low, playBattle(run.battle, opts));
+      const lvl = run.hero.level;
+      const mapLow = playBattle(run.battle, opts);
+      low = Math.min(low, mapLow);
+      const c = (curve[run.mapIdx] ??= [0, 0, 0]);
+      c[0] += 1 - mapLow;
+      c[1] += lvl;
+      c[2]++;
       settle(run);
       t.push(run.battle.turn);
       if (run.battle.status === 'left') left[t.length - 1] = (left[t.length - 1] ?? 0) + 1;
@@ -43,6 +52,8 @@ for (const w of (flag('--w') && only ? [only] : Object.keys(WEAPONS)) as WeaponI
     reached.push(run.mapIdx + 1);
     turns.push(t.join('-'));
   }
-  console.log(`${WEAPONS[w].name.padEnd(6)} 승 ${wins}/${N}  도달한 맵 ${reached.join(',')}  최저 체력 ${lows.join(',')}%${left.length ? `  나감 ${left.map((n, i) => (n ? `${i + 1}번 맵 ${n}` : '')).filter(Boolean).join(', ')}` : ''}  맵별 턴 ${turns.join(' | ')}`);
+  const curveText = curve.map(([l, v, n]) => `${Math.round((l / n) * 100)}%(Lv${(v / n).toFixed(1)})`).join(' ');
+  console.log(`${WEAPONS[w].name.padEnd(6)} 승 ${wins}/${N}  맵별 최대 손실 ${curveText}`);
+  console.log(`${''.padEnd(6)}  도달한 맵 ${reached.join(',')}  최저 체력 ${lows.join(',')}%${left.length ? `  나감 ${left.map((n, i) => (n ? `${i + 1}번 맵 ${n}` : '')).filter(Boolean).join(', ')}` : ''}  맵별 턴 ${turns.join(' | ')}`);
 }
 console.log(`(${opts.depth}수 앞${opts.items ? ', 소모품 씀' : ''}${statArg ? `, 능력치는 늘 ${statArg}` : ''} · ${((Date.now() - t0) / 1000).toFixed(1)}초)`);

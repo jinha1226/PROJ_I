@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyElement, cellAt, enemies, heroUnit, push, sees } from '../src/core/board';
+import { applyElement, cellAt, chebyshev, enemies, heroUnit, push, sees } from '../src/core/board';
 import { enemyTurn, threatCells } from '../src/core/enemy';
 import { applyItem, identifiable, itemName, itemTargets, itemUses, rollItemNames } from '../src/core/items';
 import { act, createBattle, endTurn, heroSteps, leave, stepHero, useItem, wait } from '../src/core/game';
@@ -429,4 +429,16 @@ test('모르는 이름: 판마다 섞이고, 같은 판 안에서는 겹치지 �
   const names = rollItemNames();
   assert.equal(new Set(Object.values(names)).size, Object.keys(names).length);
   assert.ok(names.heal.endsWith('물약') && names.smoke.endsWith('두루마리'));
+});
+
+test('궁수는 붙으면 물러서지만 연달아 물러서지 못하고, 그때는 붙은 채로 쏜다', () => {
+  const b = battle(['......', '.@a...', '......']);
+  const me = heroUnit(b);
+  const archer = nth(b, 0);
+  wait(b);
+  assert.equal(me.hp, me.maxHp, '첫 턴은 물러선다');
+  assert.ok(chebyshev(archer.pos, me.pos) > 1);
+  me.pos = { x: archer.pos.x - 1, y: archer.pos.y }; // 다시 붙었다
+  wait(b);
+  assert.equal(me.hp, me.maxHp - ENEMIES.archer.dmg[1], '못 물러서고 붙은 채로 쐈다');
 });
