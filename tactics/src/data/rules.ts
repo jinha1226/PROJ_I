@@ -37,6 +37,17 @@ export const BASE_ATK = 1;
 export const ATK_PER_LEVEL = 1;
 /** 레벨 n이 되는 데 필요한 누적 경험치 (index = 레벨 - 1) */
 export const LEVEL_XP = [0, 8, 20, 36, 56, 80, 110, 145, 185, 230];
+// 능력치의 무기와 상관없는 효과 (1을 넘는 1점마다, DESIGN.md 3절 ②)
+/** 힘: 최대 체력 */
+export const STR_HP = 3;
+/** 민첩: 최소 피해 (최대를 넘지 않는다) */
+export const DEX_MIN_DMG = 1;
+/** 지능: 기술 재사용 대기 감소, 그래도 이보다 짧아지지 않는다 */
+export const INT_CD = 1;
+export const MIN_SKILL_CD = 2;
+/** 지능 이만큼마다 연막 +1턴 */
+export const INT_PER_ITEM_TURN = 2;
+
 /** 맵을 깨면 최대 체력의 이 비율만큼 회복 */
 export const CLEAR_HEAL = 0.2;
 

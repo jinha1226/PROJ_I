@@ -96,11 +96,16 @@ export function play(b: Battle, p: Plan): void {
 
 const avg = ([lo, hi]: readonly [number, number]) => (lo + hi) / 2;
 
-/** 적 하나가 앞으로 줄 피해: 한 턴 평균 피해(빠르면 두 배, 느리면 절반) × 잡는 데 걸리는 평균 대수 */
+/**
+ * 적 하나가 앞으로 줄 피해: 한 턴 평균 피해(빠르면 두 배, 느리면 절반) × 잡는 데 걸리는 대수.
+ * 대수는 올림과 실제 비율의 평균 — 올림만 쓰면 공격력이 높을 때 모든 적이 "1대"가 되어
+ * 죽이지 못한 공격의 값이 0이 된다 (지능을 올린 지팡이 봇이 오히려 약해졌던 원인)
+ */
 function threatOf(b: Battle, u: Unit): number {
   const d = ENEMIES[u.kind as keyof typeof ENEMIES];
   const perTurn = avg(d.dmg) * d.acts * (d.slow ? 0.5 : 1);
-  return perTurn * Math.ceil(u.hp / avg(attackRange(b.hero)));
+  const hits = u.hp / avg(attackRange(b.hero));
+  return perTurn * (Math.ceil(hits) + hits) / 2;
 }
 
 /** 가장 가까운 계단까지 (없으면 0) */

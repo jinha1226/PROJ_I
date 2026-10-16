@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import { applyElement, cellAt, enemies, heroUnit, push, sees } from '../src/core/board';
 import { enemyTurn, threatCells } from '../src/core/enemy';
 import { act, createBattle, endTurn, heroSteps, leave, stepHero, useItem, wait } from '../src/core/game';
-import { attackPower, attackRange, perform } from '../src/core/hero';
-import { newHero, settle, startRun } from '../src/core/run';
+import { attackPower, attackRange, perform, skillCd } from '../src/core/hero';
+import { newHero, settle, spendPoint, startRun } from '../src/core/run';
 import type { Battle, WeaponId } from '../src/core/types';
 import { ENEMIES } from '../src/data/enemies';
 import { ACT1 } from '../src/data/maps';
-import { COLLIDE_DMG, LAVA_DMG, SHOCK_DMG } from '../src/data/rules';
+import { COLLIDE_DMG, LAVA_DMG, SHOCK_DMG, START_HP, STR_HP } from '../src/data/rules';
+import { WEAPONS } from '../src/data/weapons';
 
 /** 시험은 피해를 늘 최대로 굴린다 (범위 자체는 따로 시험한다) */
 const battle = (rows: string[], weapon: WeaponId = 'sword'): Battle => {
@@ -283,4 +284,26 @@ test('굴림 방식: 최소 · 최대 · 최악 (미리보기 · 봇용)', () =>
   b.roll = 'worst';
   wait(b);
   assert.equal(heroUnit(b).hp, heroUnit(b).maxHp - ENEMIES.goblin.dmg[1], '최악: 적 공격은 최대');
+});
+
+test('능력치의 무기와 상관없는 효과: 힘 = 체력, 민첩 = 최소 피해, 지능 = 재사용 대기', () => {
+  assert.equal(newHero('hammer').maxHp, START_HP + 3 * STR_HP, '힘 4로 시작하는 망치는 체력도 많다');
+  const run = startRun('sword');
+  run.hero.points = 1;
+  const hp = run.hero.maxHp;
+  spendPoint(run, 'str');
+  assert.equal(run.hero.maxHp, hp + STR_HP);
+
+  const h = newHero('sword');
+  const [lo, hi] = attackRange(h);
+  h.stats.dex += 1; // 검은 민첩 무기라 공격도 +1
+  assert.deepEqual(attackRange(h), [lo + 2, hi + 1]);
+  h.stats.dex += 5;
+  const [lo2, hi2] = attackRange(h);
+  assert.equal(lo2, hi2, '최소는 최대를 넘지 않는다');
+
+  const f = newHero('frostStaff');
+  assert.equal(skillCd(f), WEAPONS.frostStaff.skill.cd - 1, '지능 2');
+  f.stats.int = 99;
+  assert.equal(skillCd(f), 2, '최소 2턴');
 });

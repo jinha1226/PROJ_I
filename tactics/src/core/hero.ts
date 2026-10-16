@@ -1,5 +1,7 @@
 // 주인공: 공격력 · 무기 공격 · 무기 고유 기술 (tactics/DESIGN.md 3절)
-import { ATK_PER_LEVEL, BASE_ATK, POINT_BLANK_MULT, SHORTFALL_PENALTY } from '../data/rules';
+import {
+  ATK_PER_LEVEL, BASE_ATK, DEX_MIN_DMG, INT_CD, MIN_SKILL_CD, POINT_BLANK_MULT, SHORTFALL_PENALTY,
+} from '../data/rules';
 import { FREEZE_TURNS, QUAKE_STUN, STAT_NAME, WEAPONS } from '../data/weapons';
 import {
   DIRS8, add, applyElement, blocked, cellAt, chebyshev, freeze, heroUnit, hurt, manhattan, nameOf, opaque, push, rollDmg, say, unitAt,
@@ -26,11 +28,17 @@ export function attackPower(h: HeroInfo, w: WeaponId = h.weapon): number {
   return Math.max(1, dmg);
 }
 
-/** 무기 피해 범위 = 공격력 ± 무기의 흔들림 (최소 1) */
+/** 무기 피해 범위 = 공격력 ± 무기의 흔들림 (최소 1). 민첩이 최소를 올린다 (최대를 넘지 않는다) */
 export function attackRange(h: HeroInfo, w: WeaponId = h.weapon): DmgRange {
   const p = attackPower(h, w);
   const s = WEAPONS[w].spread;
-  return [Math.max(1, p - s), p + s];
+  const hi = p + s;
+  return [Math.min(hi, Math.max(1, p - s) + (h.stats.dex - 1) * DEX_MIN_DMG), hi];
+}
+
+/** 기술 재사용 대기. 지능이 줄인다 */
+export function skillCd(h: HeroInfo, w: WeaponId = h.weapon): number {
+  return Math.max(MIN_SKILL_CD, WEAPONS[w].skill.cd - (h.stats.int - 1) * INT_CD);
 }
 
 /** 조건이 모자란 능력치 설명 (없으면 빈 문자열) */
@@ -214,6 +222,6 @@ export function perform(b: Battle, kind: ActionKind, cell: Vec): boolean {
       break;
     }
   }
-  h.cooldown[h.weapon] = sk.cd;
+  h.cooldown[h.weapon] = skillCd(h);
   return true;
 }

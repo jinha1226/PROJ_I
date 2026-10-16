@@ -2,14 +2,14 @@
 import { cellAt, chebyshev, eq, heroUnit, nameOf, unitAt } from '../core/board';
 import { threatCells } from '../core/enemy';
 import { act, enemyNear, heroSteps, leave, nextStepToward, onStairs, stepHero, swapWeapon, useItem, wait } from '../core/game';
-import { attackRange, perform, shortfall, skillReady, targets, type ActionKind } from '../core/hero';
+import { attackRange, perform, shortfall, skillCd, skillReady, targets, type ActionKind } from '../core/hero';
 import { applyItem, itemTargets } from '../core/items';
 import { nextMap, settle, spendPoint, startRun, type Run } from '../core/run';
-import type { Battle, StatId, Vec, WeaponId } from '../core/types';
+import type { Battle, HeroInfo, StatId, Vec, WeaponId } from '../core/types';
 import { ENEMIES } from '../data/enemies';
 import { ITEMS } from '../data/items';
 import { ACT1 } from '../data/maps';
-import { LEVEL_XP, TILE_NAME } from '../data/rules';
+import { LEVEL_XP, STR_HP, TILE_NAME } from '../data/rules';
 import { STAT_NAME, WEAPONS } from '../data/weapons';
 import { drawBoard } from './view';
 
@@ -106,7 +106,7 @@ function renderActions(b: Battle): void {
     el.appendChild(x);
   };
   btn('조준', `${w.name} 공격`, mode === 'attack', play, () => choose('attack'));
-  btn(w.skill.name, cd > 0 ? `대기 ${cd}턴` : '기술', mode === 'skill', play && skillReady(b), () => choose('skill'));
+  btn(w.skill.name, cd > 0 ? `대기 ${cd}턴` : `기술 · 대기 ${skillCd(h)}`, mode === 'skill', play && skillReady(b), () => choose('skill'));
   const item = h.items[0];
   btn(item ? ITEMS[item].short : '소모품', item ? `${h.items.length}개` : '없음', mode === 'item', play && !!item, () => choose('item'));
   btn('교체', h.spare ? WEAPONS[h.spare].name : '예비 없음', false, play && !!h.spare, () => {
@@ -127,6 +127,18 @@ function renderActions(b: Battle): void {
 }
 
 const range = ([lo, hi]: readonly [number, number]) => (lo === hi ? String(lo) : `${lo}~${hi}`);
+
+/** 능력치 1점을 올리면 바뀌는 것 (맵 사이 버튼에 보여준다) */
+function statGain(h: HeroInfo, s: StatId): string {
+  const next: HeroInfo = { ...h, stats: { ...h.stats, [s]: h.stats[s] + 1 } };
+  const out: string[] = [];
+  const [a, b] = [range(attackRange(h)), range(attackRange(next))];
+  if (a !== b) out.push(`공격 ${a} → ${b}`);
+  if (s === 'str') out.push(`체력 +${STR_HP}`);
+  const [c, d] = [skillCd(h), skillCd(next)];
+  if (c !== d) out.push(`기술 대기 ${c} → ${d}`);
+  return out.join('<br>') || '지금 무기에는 변화 없음';
+}
 
 function idleInfo(b: Battle): string {
   if (b.status !== 'play') return '';
@@ -283,6 +295,7 @@ function overlay(html: string): HTMLElement {
 function showStart(): void {
   const o = overlay(`
     <h1>보드 전술 시제품 · 1막</h1>
+    <p style="font-size:11px">빌드 ${__BUILD__}</p>
     <p>정통 턴제: 당신이 한 가지를 하면 적이 모두 한 번씩 움직인다. 공격은 늘 맞고, 피해만 적힌 범위 안에서 정해진다. 용암 · 충돌 같은 지형 피해는 늘 그대로다.
     둘 이상에게 둘러싸이지 않을 자리를 찾고, 용암 · 구덩이 · 원소로 적을 처리한다. 무기를 골라 시작한다.</p>
     ${(Object.keys(WEAPONS) as WeaponId[]).map((id) => {
@@ -313,7 +326,8 @@ function renderOverlay(): void {
     const o = overlay(`
       <h1>맵을 벗어났다</h1>${sum}
       ${pts > 0 ? `<h2>능력치 점수 ${pts}</h2><div class="stats">${(['str', 'dex', 'int'] as StatId[]).map((s) =>
-        `<button data-s="${s}">${STAT_NAME[s]} ${r.hero.stats[s]} → ${r.hero.stats[s] + 1}</button>`).join('')}</div>` : ''}
+        `<button data-s="${s}">${STAT_NAME[s]} ${r.hero.stats[s]} → ${r.hero.stats[s] + 1}<small>${statGain(r.hero, s)}</small></button>`).join('')}</div>
+      <p>힘: 최대 체력 · 민첩: 최소 피해 · 지능: 기술 재사용 대기와 연막. 든 무기가 요구하는 능력치는 공격도 올린다</p>` : ''}
       <h2>체력 ${r.hero.hp} / ${r.hero.maxHp}</h2>
       <button id="next" ${pts > 0 ? 'disabled' : ''}><b>다음 맵</b><small>${pts > 0 ? '능력치를 먼저 고른다' : ''}</small></button>`);
     o.querySelectorAll<HTMLButtonElement>('button[data-s]').forEach((x) => {

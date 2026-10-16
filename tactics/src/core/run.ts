@@ -1,7 +1,7 @@
 // 한 판: 무기 고르기 → 맵 → 맵 사이 → … → 보스 (tactics/DESIGN.md 1절)
 import { ACT1 } from '../data/maps';
 import { START_ITEMS } from '../data/items';
-import { CLEAR_HEAL, START_HP } from '../data/rules';
+import { CLEAR_HEAL, START_HP, STR_HP } from '../data/rules';
 import { STAT_NAME, WEAPONS } from '../data/weapons';
 import { heroUnit } from './board';
 import { createBattle } from './game';
@@ -22,7 +22,8 @@ export interface Run {
 export function newHero(weapon: WeaponId): HeroInfo {
   const stats: Record<StatId, number> = { str: 1, dex: 1, int: 1 };
   for (const [s, need] of Object.entries(WEAPONS[weapon].req) as [StatId, number][]) stats[s] = Math.max(stats[s], need);
-  return { level: 1, xp: 0, points: 0, stats, weapon, spare: null, cooldown: {}, items: [...START_ITEMS], hp: START_HP, maxHp: START_HP };
+  const hp = START_HP + (stats.str - 1) * STR_HP; // 힘 무기로 시작하면 체력도 조금 많다
+  return { level: 1, xp: 0, points: 0, stats, weapon, spare: null, cooldown: {}, items: [...START_ITEMS], hp, maxHp: hp };
 }
 
 export function startRun(weapon: WeaponId): Run {
@@ -66,6 +67,10 @@ export function spendPoint(run: Run, stat: StatId): boolean {
   if (run.hero.points <= 0) return false;
   run.hero.points--;
   run.hero.stats[stat]++;
+  if (stat === 'str') {
+    run.hero.maxHp += STR_HP;
+    run.hero.hp += STR_HP;
+  }
   run.summary.push(`${STAT_NAME[stat]} +1`);
   return true;
 }
