@@ -4,7 +4,7 @@ import { threatCells } from '../core/enemy';
 import { act, enemyNear, heroSteps, leave, nextStepToward, onStairs, stepHero, swapWeapon, useItem, wait } from '../core/game';
 import { attackRange, perform, shortfall, skillCd, skillPower, skillReady, targets, type ActionKind } from '../core/hero';
 import { applyItem, itemTargets } from '../core/items';
-import { nextMap, settle, spendPoint, startRun, type Run } from '../core/run';
+import { chooseReward, describeReward, nextMap, settle, skipReward, spendPoint, startRun, type Run } from '../core/run';
 import type { Battle, HeroInfo, StatId, Vec, WeaponId } from '../core/types';
 import { ENEMIES } from '../data/enemies';
 import { ITEMS } from '../data/items';
@@ -25,6 +25,10 @@ let run: Run | null = null;
 /** 'move': 누르면 걷거나 붙은 적을 때린다 / 'attack' · 'skill' · 'item': 대상 고르기 (미리보기 → 확정) */
 type Mode = 'move' | ActionKind | 'item';
 let mode: Mode = 'move';
+/** 쓸 소모품 (가방 안 순서) */
+let itemIdx = 0;
+/** 소모품 고르는 중 (정보 칸에 목록) */
+let picking = false;
 /** 미리보기: 내 피해를 최소로 굴린 결과와 최대로 굴린 결과 (실제 굴림은 엿볼 수 없다) */
 let pending: { cell: Vec; preview: Battle; alt: Battle } | null = null;
 let threat: Vec[] | undefined;
@@ -48,14 +52,14 @@ const TILE_DESC: Partial<Record<string, string>> = {
 /** 지금 고르는 행동의 대상 칸 */
 function modeCells(b: Battle): Vec[] {
   if (mode === 'move') return [];
-  if (mode === 'item') return b.hero.items[0] ? itemTargets(b, b.hero.items[0]) : [];
+  if (mode === 'item') return b.hero.items[itemIdx] ? itemTargets(b, b.hero.items[itemIdx]!) : [];
   return targets(b, mode).map((t) => t.cell);
 }
 
 /** 대상 칸에 지금 행동을 실행한다 (턴은 넘기지 않는다) */
 function performMode(b: Battle, cell: Vec): boolean {
   if (mode === 'move') return false;
-  if (mode === 'item') return applyItem(b, 0, cell);
+  if (mode === 'item') return applyItem(b, itemIdx, cell);
   return perform(b, mode, cell);
 }
 
@@ -69,6 +73,13 @@ function render(): void {
   cellPx = drawBoard(cv, b, { moves, threat, targets: tgs, selected: pending?.cell, base: pending ? live : undefined, alt: pending?.alt });
   renderActions(live);
   $('info').innerHTML = info || idleInfo(live);
+  $('info').querySelectorAll<HTMLButtonElement>('button[data-i]').forEach((x) => {
+    x.onclick = () => {
+      picking = false;
+      itemIdx = Number(x.dataset.i);
+      choose('item');
+    };
+  });
   const lines = (pending ? pending.preview.log : live.log).slice(-6);
   $('log').innerHTML = lines.map((l) => `<div class="${l.tone}">${l.text}</div>`).join('');
   renderOverlay();
@@ -107,8 +118,7 @@ function renderActions(b: Battle): void {
   };
   btn('조준', `${w.name} 공격`, mode === 'attack', play, () => choose('attack'));
   btn(w.skill.name, cd > 0 ? `대기 ${cd}턴` : `기술 · 대기 ${skillCd(h)}`, mode === 'skill', play && skillReady(b), () => choose('skill'));
-  const item = h.items[0];
-  btn(item ? ITEMS[item].short : '소모품', item ? `${h.items.length}개` : '없음', mode === 'item', play && !!item, () => choose('item'));
+  btn('소모품', h.items.length ? `${h.items.length}개` : '없음', mode === 'item' || picking, play && h.items.length > 0, openItems);
   btn('교체', h.spare ? WEAPONS[h.spare].name : '예비 없음', false, play && !!h.spare, () => {
     reset();
     swapWeapon(b);
@@ -152,9 +162,25 @@ function idleInfo(b: Battle): string {
 
 function reset(): void {
   mode = 'move';
+  picking = false;
   pending = null;
   threat = undefined;
   info = '';
+}
+
+/** 소모품 목록을 정보 칸에 띄운다. 하나를 누르면 그걸 쓸 칸을 고른다 */
+function openItems(): void {
+  if (!run || busy) return;
+  if (picking || mode === 'item') {
+    reset();
+    return render();
+  }
+  reset();
+  picking = true;
+  const items = run.battle.hero.items;
+  info = `<b>어느 것을 쓸까?</b><div class="items">${items.map((id, i) =>
+    `<button data-i="${i}">${ITEMS[id].short}<small>${ITEMS[id].desc}</small></button>`).join('')}</div>`;
+  render();
 }
 
 function choose(kind: ActionKind | 'item'): void {
@@ -168,7 +194,7 @@ function choose(kind: ActionKind | 'item'): void {
   const b = run.battle;
   const tgs = modeCells(b);
   const w = WEAPONS[b.hero.weapon];
-  const it = b.hero.items[0];
+  const it = b.hero.items[itemIdx];
   info = kind === 'item' && it ? `<b>${ITEMS[it].name}</b>: ${ITEMS[it].desc}`
     : kind === 'skill' ? `<b>${w.skill.name}</b>: ${w.skill.desc}${skillPower(b.hero) ? ` (지능 위력 +${skillPower(b.hero)})` : ''}` : `<b>${w.name}</b>: ${w.desc} — 빈칸에도 쏠 수 있다`;
   if (!tgs.length) info += '<br><span class="warn">지금은 대상이 없다</span>';
@@ -231,7 +257,7 @@ cv.addEventListener('click', (e) => {
     if (pending && eq(pending.cell, cell)) {
       const kind = mode;
       reset();
-      if (kind === 'item') useItem(b, 0, cell);
+      if (kind === 'item') useItem(b, itemIdx, cell);
       else act(b, kind, cell);
       return after();
     }
@@ -324,13 +350,28 @@ function renderOverlay(): void {
   const sum = r.summary.map((s) => `<p>${s}</p>`).join('');
   if (r.phase === 'between') {
     const pts = r.hero.points;
+    const rw = r.rewards;
     const o = overlay(`
       <h1>맵을 벗어났다</h1>${sum}
+      ${rw ? `<h2>보상 — 하나를 고른다</h2>${rw.map((x, i) => {
+        const d = describeReward(r.hero, x);
+        return `<button data-r="${i}"><b>${d.title}</b><small>${d.detail}</small></button>`;
+      }).join('')}<button id="skip"><small>보상 없이 넘어가기</small></button>` : ''}
       ${pts > 0 ? `<h2>능력치 점수 ${pts}</h2><div class="stats">${(['str', 'dex', 'int'] as StatId[]).map((s) =>
         `<button data-s="${s}">${STAT_NAME[s]} ${r.hero.stats[s]} → ${r.hero.stats[s] + 1}<small>${statGain(r.hero, s)}</small></button>`).join('')}</div>
       <p>힘: 최대 체력 · 민첩: 최소 피해 · 지능: 기술 재사용 대기, 2점마다 기술 위력과 연막. 든 무기가 요구하는 능력치는 공격도 올린다</p>` : ''}
       <h2>체력 ${r.hero.hp} / ${r.hero.maxHp}</h2>
-      <button id="next" ${pts > 0 ? 'disabled' : ''}><b>다음 맵</b><small>${pts > 0 ? '능력치를 먼저 고른다' : ''}</small></button>`);
+      <button id="next" ${pts > 0 || rw ? 'disabled' : ''}><b>다음 맵</b><small>${rw ? '보상을 먼저 고른다' : pts > 0 ? '능력치를 먼저 고른다' : ''}</small></button>`);
+    o.querySelectorAll<HTMLButtonElement>('button[data-r]').forEach((x) => {
+      x.onclick = () => {
+        chooseReward(r, Number(x.dataset.r));
+        render();
+      };
+    });
+    o.querySelector<HTMLButtonElement>('#skip')?.addEventListener('click', () => {
+      skipReward(r);
+      render();
+    });
     o.querySelectorAll<HTMLButtonElement>('button[data-s]').forEach((x) => {
       x.onclick = () => {
         spendPoint(r, x.dataset.s as StatId);

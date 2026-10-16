@@ -47,3 +47,6 @@ button:disabled { opacity: 0.4; }
 #overlay button b { color: var(--gold); }
 #overlay .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 #overlay .stats button { text-align: center; }
+
+#info .items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; }
+#info .items button { min-height: 40px; padding: 6px 4px; }

@@ -4,7 +4,9 @@ import { cellAt, chebyshev, enemies, heroUnit } from '../src/core/board';
 import { endTurn, heroSteps, leave, onStairs, stepHero, swapWeapon, useItem } from '../src/core/game';
 import { itemTargets } from '../src/core/items';
 import { attackRange, perform, targets, type ActionKind } from '../src/core/hero';
-import type { Battle, Unit, Vec } from '../src/core/types';
+import { chooseReward, skipReward, type Run } from '../src/core/run';
+import type { Battle, StatId, Unit, Vec } from '../src/core/types';
+import { WEAPONS } from '../src/data/weapons';
 import { ENEMIES } from '../src/data/enemies';
 
 export interface Weights {
@@ -48,7 +50,7 @@ export type Plan =
   | { t: 'wait' }
   | { t: 'step'; to: Vec }
   | { t: 'act'; kind: ActionKind; cell: Vec }
-  | { t: 'item'; cell: Vec }
+  | { t: 'item'; idx: number; cell: Vec }
   | { t: 'swap' }
   | { t: 'leave' };
 
@@ -61,10 +63,12 @@ export function plans(b: Battle, items: boolean): Plan[] {
   for (const kind of ['attack', 'skill'] as const) {
     for (const tg of targets(b, kind)) out.push({ t: 'act', kind, cell: tg.cell });
   }
-  const it = b.hero.items[0];
-  if (items && it) {
+  if (items) {
     const me = heroUnit(b).pos;
-    for (const cell of itemTargets(b, it)) if (chebyshev(cell, me) <= ITEM_REACH) out.push({ t: 'item', cell });
+    b.hero.items.forEach((id, idx) => {
+      if (b.hero.items.indexOf(id) !== idx) return; // 같은 소모품은 한 번만 본다
+      for (const cell of itemTargets(b, id)) if (chebyshev(cell, me) <= ITEM_REACH) out.push({ t: 'item', idx, cell });
+    });
   }
   if (b.hero.spare) out.push({ t: 'swap' });
   if (onStairs(b)) out.push({ t: 'leave' });
@@ -83,7 +87,7 @@ export function play(b: Battle, p: Plan): void {
       if (!perform(b, p.kind, p.cell)) return;
       return endTurn(b);
     case 'item':
-      useItem(b, 0, p.cell);
+      useItem(b, p.idx, p.cell);
       return;
     case 'swap':
       swapWeapon(b);
@@ -176,4 +180,25 @@ export function playBattle(b: Battle, o: BotOpts = DEFAULT_BOT, turnCap = 150): 
     const mood: Mood = still >= GIVE_UP_TURNS ? 'flee' : still >= STALL_TURNS ? 'stall' : 'fight';
     play(b, bestTurn(b, o, mood));
   }
+}
+
+/**
+ * 맵 사이 보상 고르기: 강화 > 무기의 첫 능력치 > 단련 > (소모품을 쓰는 봇이면) 소모품. 무기는 고르지 않는다 (바꿔 쓸 줄 모른다).
+ * 고를 게 없으면 넘긴다
+ */
+export function chooseBotReward(run: Run, items: boolean): void {
+  const rw = run.rewards;
+  if (!rw) return;
+  const main = Object.keys(WEAPONS[run.hero.weapon].req)[0] as StatId;
+  const rank = (i: number): number => {
+    const r = rw[i]!;
+    if (r.kind === 'enchant') return 0;
+    if (r.kind === 'stat') return r.stat === main ? 1 : 3;
+    if (r.kind === 'vigor') return 2;
+    if (r.kind === 'item') return items ? 4 : 99;
+    return 99;
+  };
+  const best = rw.map((_, i) => i).sort((a, b) => rank(a) - rank(b))[0]!;
+  if (rank(best) < 99 && chooseReward(run, best)) return;
+  skipReward(run);
 }

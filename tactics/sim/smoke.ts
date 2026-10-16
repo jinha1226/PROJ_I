@@ -6,7 +6,7 @@
 import { nextMap, settle, spendPoint, startRun } from '../src/core/run';
 import type { StatId, WeaponId } from '../src/core/types';
 import { WEAPONS } from '../src/data/weapons';
-import { DEFAULT_BOT, playBattle, type BotOpts } from './bot';
+import { DEFAULT_BOT, chooseBotReward, playBattle, type BotOpts } from './bot';
 
 const args = process.argv.slice(2);
 const N = Number(args.find((a) => /^\d+$/.test(a)) ?? 3);
@@ -32,6 +32,7 @@ for (const w of (flag('--w') && only ? [only] : Object.keys(WEAPONS)) as WeaponI
       settle(run);
       t.push(run.battle.turn);
       if (run.battle.status === 'left') left[t.length - 1] = (left[t.length - 1] ?? 0) + 1;
+      chooseBotReward(run, opts.items);
       while (run.hero.points > 0) spendPoint(run, statArg ?? (Object.keys(WEAPONS[w].req)[0] as StatId));
       if ((run.phase as string) === 'between') nextMap(run); // settle이 phase를 바꾼다
     }

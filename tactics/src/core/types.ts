@@ -28,7 +28,7 @@ export interface Cell {
 }
 
 export type EnemyKind = 'goblin' | 'archer' | 'spearman' | 'beetle' | 'lizard' | 'wolf' | 'ogre' | 'orc' | 'priest';
-export type ItemId = 'smoke';
+export type ItemId = 'heal' | 'fireBomb' | 'frostBomb' | 'smoke' | 'blink' | 'repel';
 export type StatId = 'str' | 'dex' | 'int';
 export type WeaponId = 'sword' | 'axe' | 'spear' | 'hammer' | 'fireStaff' | 'frostStaff';
 
@@ -64,6 +64,8 @@ export interface HeroInfo {
   cooldown: Partial<Record<WeaponId, number>>;
   /** 든 소모품 (쓰면 사라진다) */
   items: ItemId[];
+  /** 무기 강화 (보상). 그 무기 공격력에 더한다 */
+  enchant: Partial<Record<WeaponId, number>>;
   hp: number;
   maxHp: number;
 }

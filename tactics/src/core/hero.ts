@@ -17,10 +17,10 @@ export interface Target {
   dir: Vec;
 }
 
-/** 무기 공격력 = 기본(레벨) + 무기 + 조건을 넘는 능력치 - 모자란 능력치 × 벌점 (최소 1) */
+/** 무기 공격력 = 기본(레벨) + 무기 + 강화 + 조건을 넘는 능력치 - 모자란 능력치 × 벌점 (최소 1) */
 export function attackPower(h: HeroInfo, w: WeaponId = h.weapon): number {
   const def = WEAPONS[w];
-  let dmg = BASE_ATK + (h.level - 1) * ATK_PER_LEVEL + def.atk;
+  let dmg = BASE_ATK + (h.level - 1) * ATK_PER_LEVEL + def.atk + (h.enchant[w] ?? 0);
   for (const [stat, need] of Object.entries(def.req) as [StatId, number][]) {
     const diff = h.stats[stat] - need;
     dmg += diff >= 0 ? diff : diff * SHORTFALL_PENALTY;
