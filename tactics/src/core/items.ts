@@ -3,9 +3,8 @@ import {
   FIRE_BOMB_DMG, FROST_BOMB_TURNS, HEAL_FRAC, ITEMS, ITEM_RANGE, POTION_COLORS, REPEL_DIST, SCROLL_SYLLABLES,
 } from '../data/items';
 import { INT_PER_ITEM_TURN, SMOKE_TURNS } from '../data/rules';
-import {
-  DIRS8, add, applyElement, blocked, cellAt, chebyshev, eq, freeze, heroUnit, hurt, nameOf, push, rand, say, unitAt,
-} from './board';
+import { DIRS8, add, blocked, cellAt, chebyshev, eq, heroUnit, hurt, nameOf, push, rand, say, unitAt } from './board';
+import { applyElement, freeze } from './elements';
 import { heroCanStand } from './hero';
 import { josa } from './josa';
 import type { Battle, HeroInfo, ItemId, UseHow, Vec } from './types';

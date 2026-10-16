@@ -1,9 +1,10 @@
 // 적: 공격 칸 · 정통 턴제 행동 (때릴 수 있으면 바로 때리고, 아니면 다가간다) (tactics/DESIGN.md 2절)
 import { ENEMIES, RAY_RANGE, RETREAT_CD, SMITE_CD, SMITE_RANGE, type EnemyDef } from '../data/enemies';
 import {
-  DIRS8, add, applyElement, blocked, cellAt, chebyshev, enemies, eq, heroUnit, hurt, kill, nameOf, opaque, rollDmg, say, sees,
-  unitAt,
+  DIRS8, add, blocked, cellAt, chebyshev, enemies, eq, heroUnit, hurt, kill, nameOf, rollDmg, say, unitAt,
 } from './board';
+import { opaque, sees } from './sight';
+import { applyElement } from './elements';
 import { hitPunct, josa } from './josa';
 import type { Battle, Unit, Vec } from './types';
 

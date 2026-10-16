@@ -1,11 +1,14 @@
 // 주인공: 공격력 · 무기 공격 · 무기 고유 기술 (tactics/DESIGN.md 3절)
 import {
   ATK_PER_LEVEL, BASE_ATK, DEX_MIN_DMG, INT_CD, INT_PER_SKILL_POWER, MIN_SKILL_CD, POINT_BLANK_MULT, SHORTFALL_PENALTY,
+  STR_HP,
 } from '../data/rules';
 import { FREEZE_TURNS, QUAKE_STUN, STAT_NAME, WEAPONS } from '../data/weapons';
 import {
-  DIRS8, add, applyElement, blocked, cellAt, chebyshev, freeze, heroUnit, hurt, manhattan, nameOf, opaque, push, rollDmg, say, unitAt,
+  DIRS8, add, blocked, cellAt, chebyshev, heroUnit, hurt, manhattan, nameOf, push, rollDmg, say, unitAt,
 } from './board';
+import { opaque } from './sight';
+import { applyElement, freeze } from './elements';
 import { hitPunct, josa } from './josa';
 import type { Battle, DmgRange, HeroInfo, StatId, Unit, Vec, WeaponId } from './types';
 
@@ -230,4 +233,13 @@ export function perform(b: Battle, kind: ActionKind, cell: Vec): boolean {
   }
   h.cooldown[h.weapon] = skillCd(h);
   return true;
+}
+
+/** 능력치 +1과 무기와 상관없는 효과 (힘 = 최대 체력) */
+export function applyStat(h: HeroInfo, stat: StatId): void {
+  h.stats[stat]++;
+  if (stat === 'str') {
+    h.maxHp += STR_HP;
+    h.hp += STR_HP;
+  }
 }

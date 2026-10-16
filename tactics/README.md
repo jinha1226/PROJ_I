@@ -18,8 +18,12 @@ npx tsx sim/check.ts 2 --map 4            # 맵 검사표: 잘 둠/대충 · 평
 봇 결과 읽기: **최저 체력**은 판 동안 가장 낮았던 체력 비율(낮을수록 어려움), **나감**은 오래 교착이라 봇이 계단으로 나간 맵(그 무기로는 지형 답이 안 보인다는 신호).
 
 ## 구조
-- `src/core/` 규칙 (화면과 무관): `board.ts` 칸 · 피해 · 밀치기 · 원소 반응 · 환경 / `enemy.ts` 적 행동 / `hero.ts` 무기 · 기술 / `game.ts` 턴 / `run.ts` 한 판
-- `src/core/items.ts` 소모품
-- `src/data/` 수치 표: `weapons.ts` · `enemies.ts` · `rules.ts` · `maps.ts` · `items.ts`
-- `src/ui/` 화면 · 터치 입력 (`view.ts` 보드 그리기, `main.ts` 흐름)
-- `test/` 규칙 테스트, `sim/` 밸런스 봇 (`bot.ts` 두 수 앞 탐색 · `smoke.ts` 무기별 판 돌리기)
+파일 하나는 한 가지 일만 하고 500줄을 넘기지 않는다.
+
+- `src/core/` 규칙 (화면과 무관, 봇 · 시험이 그대로 쓴다)
+  - `board.ts` 칸 · 피해 굴림 · 죽음 · 경험치 · 밀치기 / `elements.ts` 원소 반응 · 빙결 · 감전 · 환경 한 단계 / `sight.ts` 시야
+  - `enemy.ts` 적 행동 / `hero.ts` 무기 · 기술 · 능력치 / `items.ts` 소모품 · 미확인 / `game.ts` 한 맵의 턴 / `run.ts` 한 판 / `rewards.ts` 보상 3택1
+- `src/data/` 수치 표: `weapons.ts` · `enemies.ts` · `rules.ts` · `maps.ts` · `items.ts` · `rewards.ts`
+- `src/ui/` 화면: `main.ts` 상태 · 입력 / `view.ts` 보드 그리기 / `text.ts` 설명 글 / `screens.ts` 시작 · 맵 사이 · 끝 화면 / `dom.ts`
+- `test/` 모듈별 규칙 시험 (`board` · `enemy` · `hero` · `items` · `run`, 공용 `helpers.ts`)
+- `sim/` 봇: `bot.ts` 두 수 앞 탐색 · `smoke.ts` 무기별 판 · 난이도 곡선 · `check.ts` 맵 검사표

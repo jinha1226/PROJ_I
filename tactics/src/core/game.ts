@@ -2,7 +2,8 @@
 import { ENEMIES } from '../data/enemies';
 import { ENEMY_CHAR, HERO_CHAR, TILE_CHAR, type MapDef } from '../data/maps';
 import { WEAPONS } from '../data/weapons';
-import { DIRS8, add, cellAt, chebyshev, enemies, enterTile, envStep, heroUnit, say } from './board';
+import { DIRS8, add, cellAt, chebyshev, enemies, enterTile, heroUnit, say } from './board';
+import { envStep } from './elements';
 import { enemyTurn } from './enemy';
 import { heroCanStand, perform, type ActionKind } from './hero';
 import { applyItem } from './items';
