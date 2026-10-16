@@ -105,3 +105,14 @@ test('지능 2점마다 기술 위력 +1: 빙결이 길어지고 찌르고 밀�
   assert.ok(perform(s, 'skill', g.pos));
   assert.equal(g.pos.x, 1 + 2 + 1, '두 칸 + 위력 한 칸');
 });
+
+test('창: 붙은 적에게는 절반, 그 뒤의 적에게는 그대로', () => {
+  const b = battle(['@gg...', '......'], 'spear');
+  const [near, far] = [nth(b, 0), nth(b, 1)];
+  near.hp = near.maxHp = 30;
+  far.hp = far.maxHp = 30;
+  assert.ok(perform(b, 'attack', near.pos));
+  const hi = attackRange(b.hero)[1];
+  assert.equal(near.hp, 30 - Math.floor(hi / 2), '붙은 적은 절반');
+  assert.equal(far.hp, 30 - hi, '뒤의 적은 그대로');
+});

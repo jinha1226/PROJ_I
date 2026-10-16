@@ -31,21 +31,21 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
     skill: { kind: 'slash', name: '베고 지나가기', desc: '붙은 적을 베고 그 너머 칸으로 간다', cd: 5 },
   },
   axe: {
-    name: '도끼', req: { str: 3 }, atk: 1, spread: 1, attack: 'around', desc: '주변 8칸 전부',
+    name: '도끼', req: { str: 3 }, atk: 2, spread: 1, attack: 'around', desc: '주변 8칸 전부',
     skill: { kind: 'shove', name: '휘둘러 밀기', desc: '주변의 모든 것을 한 칸 밀어낸다', cd: 5 },
   },
   spear: {
-    name: '창', req: { str: 2, dex: 1 }, atk: 2, spread: 1, attack: 'reach2', desc: '직선 두 칸 관통. 다가오는 적을 먼저 찌른다',
+    name: '창', req: { str: 2, dex: 1 }, atk: 2, spread: 1, attack: 'reach2', weakClose: true, desc: '직선 두 칸 관통. 다가오는 적을 먼저 찌른다. 붙은 적에게는 절반',
     skill: { kind: 'thrust', name: '찌르고 밀기', desc: '붙은 적을 찌르고 두 칸 날린다', cd: 5 },
   },
   hammer: {
-    name: '망치', req: { str: 4 }, atk: 4, spread: 2, attack: 'adjacent', push: 1, desc: '붙은 한 칸, 맞으면 한 칸 밀림',
-    skill: { kind: 'quake', name: '땅 내려치기', desc: '주변 적을 2턴 기절시킨다', cd: 7 },
+    name: '망치', req: { str: 4 }, atk: 3, spread: 2, attack: 'adjacent', push: 1, desc: '붙은 한 칸, 맞으면 한 칸 밀림',
+    skill: { kind: 'quake', name: '땅 내려치기', desc: '주변 적을 1턴 기절시킨다', cd: 7 },
   },
   fireStaff: {
     name: '불꽃 지팡이', req: { int: 3 }, atk: 2, spread: 1, attack: 'bolt', range: 4, element: 'fire', weakClose: true,
     desc: '직선 4칸, 맞은 칸에 불. 붙은 적에게는 절반',
-    skill: { kind: 'burst', name: '화염 폭발', desc: '사거리 4 안의 한 칸에 3×3 불', cd: 8, range: 4, dmg: 2 },
+    skill: { kind: 'burst', name: '화염 폭발', desc: '사거리 4 안의 한 칸에 3×3 불', cd: 10, range: 4, dmg: 2 },
   },
   frostStaff: {
     name: '서리 지팡이', req: { int: 2 }, atk: 2, spread: 1, attack: 'bolt', range: 4, element: 'frost', weakClose: true,
@@ -57,6 +57,6 @@ export const WEAPONS: Record<WeaponId, WeaponDef> = {
 /** 빙결 기술의 빙결 턴 */
 export const FREEZE_TURNS = 3;
 /** 땅 내려치기의 기절 턴 */
-export const QUAKE_STUN = 2;
+export const QUAKE_STUN = 1;
 
 export const STAT_NAME: Record<StatId, string> = { str: '힘', dex: '민첩', int: '지능' };

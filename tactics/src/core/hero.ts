@@ -152,6 +152,8 @@ export function perform(b: Battle, kind: ActionKind, cell: Vec): boolean {
   const def = WEAPONS[h.weapon];
   const dmg = attackRange(h);
   const d = tg.dir;
+  /** 붙은 적에게 절반 (지팡이 · 창) */
+  const halved = (r: DmgRange): DmgRange => r.map((n) => Math.max(1, Math.floor(n * POINT_BLANK_MULT))) as unknown as DmgRange;
 
   if (kind === 'attack') {
     switch (def.attack) {
@@ -163,8 +165,11 @@ export function perform(b: Battle, kind: ActionKind, cell: Vec): boolean {
         break;
       }
       case 'reach2': {
-        const hit = [add(me.pos, d), add(me.pos, d, 2)].map((p) => unitAt(b, p)).filter((u): u is Unit => !!u);
-        for (const t of hit) strike(b, t, dmg);
+        const near = unitAt(b, add(me.pos, d));
+        const far = unitAt(b, add(me.pos, d, 2));
+        const hit = [near, far].filter((u): u is Unit => !!u);
+        if (near) strike(b, near, def.weakClose ? halved(dmg) : dmg);
+        if (far) strike(b, far, dmg);
         if (!hit.length) say(b, '허공을 찔렀다.');
         break;
       }
@@ -179,8 +184,7 @@ export function perform(b: Battle, kind: ActionKind, cell: Vec): boolean {
         const end = path[path.length - 1]!;
         const t = unitAt(b, end);
         const close = chebyshev(end, me.pos) <= 1 && def.weakClose;
-        const half = (n: number) => Math.max(1, Math.floor(n * POINT_BLANK_MULT));
-        strike(b, t, close ? [half(dmg[0]), half(dmg[1])] : dmg);
+        strike(b, t, close ? halved(dmg) : dmg);
         if (def.element) applyElement(b, [end], def.element);
         break;
       }
