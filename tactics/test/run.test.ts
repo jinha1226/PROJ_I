@@ -9,6 +9,7 @@ import { newHero, nextMap, settle, startRun } from '../src/core/run';
 import { ENEMIES } from '../src/data/enemies';
 import { ACT1 } from '../src/data/maps';
 import { ENCHANT_ATK, REWARD_CHOICES } from '../src/data/rewards';
+import { josa } from '../src/core/josa';
 import { battle } from './helpers';
 
 test('수제 맵: 줄 길이가 같고 주인공이 하나', () => {
@@ -76,4 +77,11 @@ test('보상 적용: 강화는 든 무기에 붙고, 새 무기는 예비 칸으
   run.rewards = [{ kind: 'weapon', weapon: 'axe' }];
   assert.ok(chooseReward(run, 0));
   assert.equal(run.hero.spare, 'axe');
+});
+
+test('조사: 숫자는 읽는 소리로 (레벨 2가 · 레벨 3이 · 1로)', () => {
+  assert.equal(josa('레벨 2', '이/가'), '레벨 2가');
+  assert.equal(josa('레벨 3', '이/가'), '레벨 3이');
+  assert.equal(josa('1', '으로/로'), '1로');
+  assert.equal(josa('고블린', '을/를'), '고블린을');
 });

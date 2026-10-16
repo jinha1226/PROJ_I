@@ -13,6 +13,8 @@ npm run typecheck
 npm run sim -- 4   # 봇으로 1막을 무기별로 4판씩 (소모품 없이, 두 수 앞)
 npm run sim -- 4 --d1 --items --w sword   # 한 수 앞만 · 소모품도 씀 · 무기 하나만
 npx tsx sim/check.ts 2 --map 4            # 맵 검사표: 잘 둠/대충 · 평균/최악 굴림 · 소모품 유무를 무기별로
+npx tsx sim/solve.ts --map 1 --w sword --show   # 정답 찾기: 가장 적게 다치고 깨는 수순 (빔 탐색, --roll worst)
+npx tsx sim/solve.ts --all --w spear --beam 300 # 모든 맵: 봇 → 정답
 ```
 
 봇 결과 읽기: **최저 체력**은 판 동안 가장 낮았던 체력 비율(낮을수록 어려움), **나감**은 오래 교착이라 봇이 계단으로 나간 맵(그 무기로는 지형 답이 안 보인다는 신호).
@@ -26,4 +28,4 @@ npx tsx sim/check.ts 2 --map 4            # 맵 검사표: 잘 둠/대충 · 평
 - `src/data/` 수치 표: `weapons.ts` · `enemies.ts` · `rules.ts` · `maps.ts` · `items.ts` · `rewards.ts`
 - `src/ui/` 화면: `main.ts` 상태 · 입력 / `view.ts` 보드 그리기 / `text.ts` 설명 글 / `screens.ts` 시작 · 맵 사이 · 끝 화면 / `dom.ts`
 - `test/` 모듈별 규칙 시험 (`board` · `enemy` · `hero` · `items` · `run`, 공용 `helpers.ts`)
-- `sim/` 봇: `bot.ts` 두 수 앞 탐색 · `smoke.ts` 무기별 판 · 난이도 곡선 · `check.ts` 맵 검사표
+- `sim/` 봇: `bot.ts` 두 수 앞 탐색 · `smoke.ts` 무기별 판 · 난이도 곡선 · `check.ts` 맵 검사표 · `solve.ts` 정답 찾기 · `start.ts` 도착 상태

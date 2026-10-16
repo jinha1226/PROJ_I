@@ -108,7 +108,7 @@ export function gainXp(b: Battle, xp: number): void {
     h.points++;
     me.maxHp += HP_PER_LEVEL;
     if (!me.dead) me.hp += HP_PER_LEVEL;
-    say(b, `레벨 ${h.level}이 되었다! 최대 체력 +${HP_PER_LEVEL}, 능력치 점수 +1`, 'good');
+    say(b, `레벨 ${josa(String(h.level), '이/가')} 되었다! 최대 체력 +${HP_PER_LEVEL}, 능력치 점수 +1`, 'good');
   }
 }
 
