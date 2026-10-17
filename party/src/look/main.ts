@@ -395,17 +395,67 @@ const flatBtn = button(() => `2D 느낌: ${settings.flat ? '켜짐' : '꺼짐'}`
   for (const b of ui.querySelectorAll('button')) b.dispatchEvent(new Event('refresh'));
 });
 flatBtn.classList.add('on');
-button(() => '확대 +', () => { settings.dist = Math.max(12, settings.dist - 3); placeCamera(); });
-button(() => '축소 −', () => { settings.dist = Math.min(36, settings.dist + 3); placeCamera(); });
+button(() => '확대 +', () => zoom(1 / 1.15));
+button(() => '축소 −', () => zoom(1.15));
+
+// ── 확대 · 축소 · 이동: 휠 / 두 손가락 벌리기 · 모으기 / 한 손가락 · 마우스로 끌기 ──
+function zoom(k: number) {
+  settings.dist = THREE.MathUtils.clamp(settings.dist * k, 6, 45);
+  placeCamera();
+}
+const view = renderer.domElement;
+view.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  zoom(e.deltaY > 0 ? 1.1 : 1 / 1.1);
+}, { passive: false });
+const pointers = new Map<number, { x: number; y: number }>();
+let pinchDist = 0;
+view.addEventListener('pointerdown', (e) => {
+  view.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+  }
+});
+view.addEventListener('pointermove', (e) => {
+  const prev = pointers.get(e.pointerId);
+  if (!prev) return;
+  const cur = { x: e.clientX, y: e.clientY };
+  pointers.set(e.pointerId, cur);
+  if (pointers.size >= 2) {
+    const [a, b] = [...pointers.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (pinchDist > 0) zoom(pinchDist / Math.max(1, d));
+    pinchDist = d;
+    return;
+  }
+  // 끌기: 화면 이동량을 바닥 이동량으로 (거리에 비례)
+  const k = settings.dist / window.innerHeight * (settings.flat ? 0.8 : 1.1);
+  focus.x -= (cur.x - prev.x) * k;
+  focus.z -= (cur.y - prev.y) * k / Math.sin(THREE.MathUtils.degToRad(settings.pitch));
+  focus.x = THREE.MathUtils.clamp(focus.x, -12, 12);
+  focus.z = THREE.MathUtils.clamp(focus.z, -10, 10);
+  placeCamera();
+});
+const release = (e: PointerEvent) => {
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinchDist = 0;
+};
+view.addEventListener('pointerup', release);
+view.addEventListener('pointercancel', release);
 const fpsEl = document.createElement('span');
 fpsEl.id = 'fps';
 ui.appendChild(fpsEl);
 
+/** 카메라가 바라보는 바닥 지점 (끌어서 옮긴다) */
+const focus = new THREE.Vector3(1, 0.8, 0);
+
 function placeCamera() {
   camera = settings.flat ? ortho : persp;
   const p = THREE.MathUtils.degToRad(settings.pitch);
-  camera.position.set(1, Math.sin(p) * settings.dist, Math.cos(p) * settings.dist);
-  camera.lookAt(1, 0.8, 0);
+  camera.position.set(focus.x, focus.y + Math.sin(p) * settings.dist, focus.z + Math.cos(p) * settings.dist);
+  camera.lookAt(focus);
   // 직교 카메라: 화면에 보이는 폭을 거리 대신 확대 값으로
   const aspect = window.innerWidth / window.innerHeight;
   const half = settings.dist * 0.2;
