@@ -109,14 +109,14 @@ function propKey(p: Prop): string {
 }
 
 /** 층 깊이에 맞는 무작위 장비 */
-export function genItem(rng: Rng, depth: number): Item {
+export function genItem(rng: Rng, depth: number, force?: Item['rarity']): Item {
   const slotRoll = rng.next();
   const slot: ItemSlot = slotRoll < 0.36 ? 'weapon' : slotRoll < 0.68 ? 'armour' : 'jewel';
   const bases = ITEM_BASE_LIST.filter((b) => b.slot === slot).map((b) => ({ b, w: b.weightDrop ?? 1 }));
   const base = weighted(rng, bases).b;
 
   const r = rng.next();
-  let rarity: Item['rarity'] = r < 0.06 + depth * 0.04 ? 'artifact' : r < 0.55 ? 'magic' : 'common';
+  let rarity: Item['rarity'] = force ?? (r < 0.06 + depth * 0.04 ? 'artifact' : r < 0.55 ? 'magic' : 'common');
   if (slot === 'jewel' && rarity === 'common') rarity = 'magic';
 
   const plus = slot === 'jewel' ? 0 : rng.int(0, Math.min(4, depth));

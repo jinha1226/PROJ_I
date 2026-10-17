@@ -5,9 +5,12 @@ import { Camera } from './render/camera';
 import { Renderer } from './render/renderer';
 import { genFloor } from './sim/gen';
 import { newParty, saveFromUnit, type Hero } from './sim/hero';
+import { resolvePrompt } from './sim/objects';
+import { newRun } from './sim/run';
 import { World } from './sim/world';
 import { Hud } from './ui/hud';
 import { RestScreen } from './ui/rest';
+import { CharacterSheet } from './ui/sheet';
 import { createUiState } from './ui/state';
 
 const STEP = 1 / 60;
@@ -28,7 +31,8 @@ try {
 } catch {
   // 저장소를 못 쓰면 기본값
 }
-let world = new World(genFloor(runSeed, depth), runSeed * 31 + depth, heroes, difficulty);
+let run = newRun();
+let world = new World(genFloor(runSeed, depth), runSeed * 31 + depth, heroes, difficulty, run);
 let restOpen = false;
 
 let explore = true;
@@ -39,7 +43,7 @@ try {
 }
 
 function startFloor() {
-  world = new World(genFloor(runSeed, depth), runSeed * 31 + depth, heroes, difficulty);
+  world = new World(genFloor(runSeed, depth), runSeed * 31 + depth, heroes, difficulty, run);
   world.autoExplore = explore;
   ui.selected = [];
   ui.inspect = null;
@@ -53,6 +57,7 @@ function startFloor() {
 function restart() {
   runSeed = (Math.random() * 1e9) | 0;
   heroes = newParty();
+  run = newRun();
   depth = 1;
   rest.close();
   restOpen = false;
@@ -62,14 +67,18 @@ function restart() {
 function floorCleared() {
   for (const p of world.party) saveFromUnit(p);
   restOpen = true;
-  rest.open(heroes, depth, runSeed + depth * 997);
+  rest.open(heroes, run, depth, runSeed + depth * 997);
 }
 
-const rest = new RestScreen(() => {
-  restOpen = false;
-  depth++;
-  startFloor();
-});
+const sheet = new CharacterSheet();
+const rest = new RestScreen(
+  () => {
+    restOpen = false;
+    depth++;
+    startFloor();
+  },
+  (h, done) => sheet.open(h, null, done),
+);
 
 function toggleExplore() {
   explore = !explore;
@@ -114,7 +123,42 @@ const input = new Input(canvas, cam, ui, {
   toggleAutoAll,
   toggleExplore,
 });
-const hud = new Hud(ui, () => world, (slot) => input.useSkill(slot, false));
+const hud = new Hud(
+  ui,
+  () => world,
+  (slot) => input.useSkill(slot, false),
+  (u) => {
+    // 상태창을 보는 동안은 멈춘다
+    if (!u.hero) return;
+    const wasPaused = ui.paused;
+    ui.paused = true;
+    sheet.open(u.hero, u, () => (ui.paused = wasPaused));
+  },
+  (i) => input.useItem(i),
+);
+
+/** 이벤트 선택지 (샘 · 제단 · 포로). 고르는 동안 월드는 멈춰 있다 */
+let promptShown: object | null = null;
+function updatePrompt() {
+  const box = $('prompt');
+  const pr = world.prompt;
+  if (!pr) {
+    box.classList.add('hidden');
+    promptShown = null;
+    return;
+  }
+  if (promptShown === pr) return;
+  promptShown = pr;
+  box.classList.remove('hidden');
+  const inner = box.querySelector('.box')!;
+  inner.innerHTML = `<h2>${pr.title}</h2><p>${pr.text}</p>`;
+  for (const c of pr.choices) {
+    const b = document.createElement('button');
+    b.textContent = c.label;
+    b.addEventListener('click', () => resolvePrompt(world, c.id));
+    inner.appendChild(b);
+  }
+}
 
 $('btn-pause').addEventListener('click', togglePause);
 $('btn-all').addEventListener('click', () => (ui.selected = world.party.filter((u) => u.alive)));
@@ -210,6 +254,8 @@ function frame(now: number) {
     }
   }
   cam.padBottom = $('party').offsetHeight + 8;
+  $('belt').style.bottom = `${cam.padBottom + 4}px`;
+  updatePrompt();
   input.update(dt);
   renderer.draw(world, ui);
   hud.update();

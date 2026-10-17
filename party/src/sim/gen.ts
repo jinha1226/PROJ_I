@@ -3,7 +3,7 @@
 // 1단계의 수동 맵과 같은 MapDef 를 만들어 내므로 나머지 시스템은 그대로 쓴다.
 import { Rng } from '../core/rng';
 import { BOSS_GROUP, ENCOUNTERS, FLOORS } from '../data/encounters';
-import type { MapDef } from '../data/maps';
+import type { MapDef, ObjectKind, RoomRole } from '../data/maps';
 
 const COLS = 4, ROWS = 3, CW = 13, CH = 10;
 
@@ -37,6 +37,27 @@ export function genFloor(seed: number, depth: number): MapDef {
     return [x, y, w, h];
   });
   const center = (r: number[]) => [r[0] + Math.floor(r[2] / 2), r[1] + Math.floor(r[3] / 2)] as [number, number];
+  const roles: RoomRole[] = rooms.map((_, i) => (i === 0 ? 'start' : i === rooms.length - 1 ? 'end' : 'main'));
+  const nMain = rooms.length;
+
+  // 곁가지 방: 경로 중간 방 옆의 빈 칸에 붙인다. 자동 탐험은 들르지 않고, 털지 말지는 플레이어가 정한다
+  const sideOf: number[] = [];
+  const used = new Set(path.map(([x, y]) => `${x},${y}`));
+  const wantSide = rng.int(1, 2);
+  for (let tries = 0; tries < 20 && sideOf.length < wantSide; tries++) {
+    const from = rng.int(1, nMain - 2);
+    const [cx, cy] = path[from];
+    const free = ([[1, 0], [-1, 0], [0, 1], [0, -1]] as const)
+      .map(([dx, dy]) => [cx + dx, cy + dy] as [number, number])
+      .filter(([x, y]) => x >= 0 && y >= 0 && x < COLS && y < ROWS && !used.has(`${x},${y}`));
+    if (!free.length) continue;
+    const [sx, sy] = free[rng.int(0, free.length - 1)];
+    used.add(`${sx},${sy}`);
+    const w = rng.int(5, 8), h = rng.int(4, 6);
+    rooms.push([sx * CW + 1 + rng.int(0, CW - 2 - w), sy * CH + 1 + rng.int(0, CH - 2 - h), w, h]);
+    roles.push('side');
+    sideOf.push(from);
+  }
 
   const corridors: MapDef['corridors'] = [];
   const corridorTiles = new Set<number>();
@@ -46,9 +67,12 @@ export function genFloor(seed: number, depth: number): MapDef {
     for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++)
       for (let x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) corridorTiles.add(y * W + x);
   };
-  for (let i = 0; i + 1 < rooms.length; i++) {
-    const [ax, ay] = center(rooms[i]);
-    const [bx, by] = center(rooms[i + 1]);
+  const links: [number, number][] = [];
+  for (let i = 0; i + 1 < nMain; i++) links.push([i, i + 1]);
+  sideOf.forEach((from, k) => links.push([from, nMain + k]));
+  for (const [ia, ib] of links) {
+    const [ax, ay] = center(rooms[ia]);
+    const [bx, by] = center(rooms[ib]);
     const wide = rng.chance(0.35);
     if (rng.chance(0.5)) {
       carve(ax, ay, bx, ay);
@@ -64,7 +88,7 @@ export function genFloor(seed: number, depth: number): MapDef {
   // 기둥: 큰 방에만, 통로가 지나가는 칸은 피한다
   const pillars: [number, number][] = [];
   rooms.forEach(([x, y, w, h], i) => {
-    if (i === 0 || w < 8 || h < 6) return;
+    if (i === 0 || roles[i] === 'side' || w < 8 || h < 6) return;
     const [cx, cy] = center(rooms[i]);
     for (let k = rng.int(0, 2); k > 0; k--) {
       const px = rng.int(x + 2, x + w - 3), py = rng.int(y + 2, y + h - 3);
@@ -78,32 +102,56 @@ export function genFloor(seed: number, depth: number): MapDef {
   const partyStart: [number, number][] = [[sx - 1, sy - 1], [sx - 1, sy], [sx, sy - 1], [sx, sy]];
 
   const spawns: MapDef['spawns'] = [];
+  const objects: NonNullable<MapDef['objects']> = [];
   const table = (d: number) => ENCOUNTERS[Math.min(FLOORS, Math.max(1, d))];
-  rooms.forEach(([x, y, w, h], i) => {
-    if (i === 0) return;
-    const last = i === rooms.length - 1;
-    const pool = last && !final ? table(depth + 1) : final ? table(depth - 1) : table(depth);
-    const group = last && final ? BOSS_GROUP : pool[rng.int(0, pool.length - 1)];
-    const used = new Set<number>();
-    group.forEach((id, k) => {
+  const place = (room: number[], ids: string[], usedTiles: Set<number>, centerFirst = false) => {
+    const [x, y, w, h] = room;
+    ids.forEach((id, k) => {
       let tx = 0, ty = 0;
-      if (last && final && k === 0) [tx, ty] = center(rooms[i]);
+      if (centerFirst && k === 0) [tx, ty] = center(room);
       else
         for (let t = 0; t < 30; t++) {
           tx = rng.int(x + 1, x + w - 2);
           ty = rng.int(y + 1, y + h - 2);
-          if (!used.has(ty * W + tx) && !blocked.has(ty * W + tx)) break;
+          if (!usedTiles.has(ty * W + tx) && !blocked.has(ty * W + tx)) break;
         }
-      used.add(ty * W + tx);
+      usedTiles.add(ty * W + tx);
       spawns.push({ id, x: tx, y: ty });
     });
+  };
+  rooms.forEach((room, i) => {
+    const role = roles[i];
+    if (role === 'start') return;
+    const usedTiles = new Set<number>();
+    if (role === 'side') {
+      // 곁가지 방: 상자 + 지키는 무리 / 미믹 / 이벤트
+      const [cx, cy] = center(room);
+      usedTiles.add(cy * W + cx);
+      const r = rng.next();
+      const kind: ObjectKind = r < 0.5 ? 'chest' : r < 0.62 ? 'mimic' : (['fountain', 'altar', 'prisoner'] as const)[rng.int(0, 2)];
+      objects.push({ kind, x: cx, y: cy });
+      if (kind === 'chest') {
+        const pool = table(depth + 1);
+        place(room, pool[rng.int(0, pool.length - 1)], usedTiles);
+      }
+      return;
+    }
+    const last = role === 'end';
+    const pool = last && !final ? table(depth + 1) : final ? table(depth - 1) : table(depth);
+    const group = last && final ? BOSS_GROUP : pool[rng.int(0, pool.length - 1)];
+    place(room, group, usedTiles, last && final);
   });
+  // 가끔 길 위의 방에도 상자 하나
+  if (rng.chance(0.35) && nMain > 3) {
+    const [x, y, w, h] = rooms[rng.int(1, nMain - 2)];
+    objects.push({ kind: 'chest', x: x + rng.int(1, w - 2), y: y + rng.int(1, h - 2) });
+  }
 
   return {
     width: W,
     height: ROWS * CH + 1,
-    rooms, corridors, pillars, partyStart, spawns,
-    stairs: final ? undefined : center(rooms[rooms.length - 1]),
+    rooms, corridors, pillars, partyStart, spawns, roles, objects,
+    stairs: final ? undefined : center(rooms[nMain - 1]),
     depth,
   };
 }

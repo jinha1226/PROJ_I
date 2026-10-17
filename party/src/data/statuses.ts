@@ -17,6 +17,10 @@ export const STATUSES: Record<StatusId, StatusDef> = {
     id: 'stun', name: '기절', icon: '기', color: '#ffe14d', harmful: true, stacking: 'refresh',
     immuneTag: 'unstunnable', stun: true, severity: 30,
   },
+  fear: {
+    id: 'fear', name: '공포', icon: '공', color: '#c080ff', harmful: true, stacking: 'refresh',
+    immuneTag: 'mindless', severity: 15,
+  },
   taunted: {
     id: 'taunted', name: '도발됨', icon: '도', color: '#ff5555', harmful: true, stacking: 'refresh', severity: 0,
   },

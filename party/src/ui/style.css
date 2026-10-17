@@ -59,7 +59,8 @@ button.on { border-color: var(--accent); color: var(--accent); }
 .pcol.selected .card { border-color: #66ff88; }
 .card .head { display: flex; justify-content: space-between; align-items: baseline; gap: 4px; }
 .card .name { font-weight: bold; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card .lv { color: #e8cf7a; font-size: 11px; white-space: nowrap; }
+.card .lv { color: #e8cf7a; font-size: 11px; white-space: nowrap; margin-left: auto; }
+.card .info { padding: 0 5px; font-size: 11px; line-height: 15px; flex-shrink: 0; }
 .bar { height: 7px; background: #222; border-radius: 3px; margin-top: 3px; overflow: hidden; position: relative; }
 .bar > div { height: 100%; }
 .bar.hp { height: 11px; }
@@ -180,7 +181,7 @@ button.on { border-color: var(--accent); color: var(--accent); }
 #rest .rec { display: inline !important; color: #111; background: var(--accent); border-radius: 3px; padding: 0 4px; font-size: 10px; }
 #rest .skip { margin-top: 6px; }
 #rest .lvrow { margin-bottom: 8px; }
-#rest .perks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 3px; }
+#rest .perks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 3px; }
 #rest .next { margin-top: 14px; text-align: right; }
 #rest .next button { font-size: 15px; padding: 7px 16px; border-color: var(--accent); color: var(--accent); }
 #rest .next button:disabled { opacity: 0.5; cursor: default; }
@@ -195,4 +196,60 @@ button.on { border-color: var(--accent); color: var(--accent); }
 
 @media (max-width: 500px) {
   .card select { display: none; }
+}
+
+/* ── 캐릭터 상태창 ── */
+#sheet .box { width: min(900px, 96vw); }
+#sheet .shead { display: flex; align-items: center; gap: 12px; }
+#sheet .shead h2 { margin: 0; }
+#sheet .shead .close { margin-left: auto; }
+#sheet .glyph { width: 46px; height: 46px; border: 2px solid; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
+#sheet .xp { display: inline-block; width: 80px; height: 5px; background: #222; vertical-align: middle; border-radius: 3px; overflow: hidden; }
+#sheet .xp i { display: block; height: 100%; background: #c8a84a; }
+#sheet .cols { display: grid; grid-template-columns: 1fr 1.3fr; gap: 18px; }
+#sheet h3 { margin: 12px 0 6px; font-size: 14px; }
+#sheet .kv { display: grid; grid-template-columns: 96px 1fr; gap: 3px 8px; font-size: 12px; }
+#sheet .dim { color: #8a8a99; }
+#sheet .small { font-size: 11px; }
+#sheet .good { color: #88ccff; }
+#sheet .bad { color: #ff8877; }
+#sheet .gear { padding: 4px 0; border-bottom: 1px solid #262632; font-size: 12px; }
+#sheet .skrow { display: grid; grid-template-columns: 96px 1fr 34px 1.2fr; gap: 6px; align-items: center; font-size: 12px; padding: 2px 0; }
+#sheet .skrow.rel { cursor: pointer; }
+#sheet .skrow.rel:hover { background: #20202c; }
+#sheet .star { color: #555; margin-right: 4px; }
+#sheet .star.on { color: #ffcc66; }
+#sheet .skbar { position: relative; height: 7px; background: #222; border-radius: 3px; }
+#sheet .skbar i { position: absolute; left: 0; top: 0; bottom: 0; background: #6a9ad8; border-radius: 3px; }
+#sheet .skbar em { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #ffcc66; }
+#sheet .skv { text-align: right; }
+#sheet .skd { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#sheet .abil { padding: 5px 0; border-bottom: 1px solid #262632; font-size: 12px; }
+#sheet .tag { font-size: 10px; color: #7ddc7d; margin-left: 6px; }
+#sheet .tag.m { color: #ffcc66; }
+#rest .sheetbtn { padding: 0 6px; font-size: 11px; margin-right: 4px; }
+@media (max-width: 900px), (max-height: 500px) {
+  #sheet .cols { grid-template-columns: 1fr; gap: 4px; }
+  #sheet .skrow { grid-template-columns: 70px 1fr 28px 1fr; font-size: 11px; }
+  #sheet .kv { grid-template-columns: 80px 1fr; font-size: 11px; }
+}
+
+/* ── 소모품 벨트: 하단 패널 바로 위 오른쪽 ── */
+#belt { position: fixed; right: 8px; bottom: 182px; display: flex; gap: 4px; }
+.bslot {
+  width: 52px; height: 46px; padding: 2px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--panel); border: 1px solid #5a5a6a; border-radius: 6px;
+}
+.bslot span { font-size: 18px; font-weight: bold; line-height: 1.1; }
+.bslot small { font-size: 9px; white-space: nowrap; overflow: hidden; max-width: 100%; }
+.bslot.empty { opacity: 0.25; }
+.bslot.targeting { border-color: #fff; box-shadow: 0 0 6px #fff; }
+#prompt .box { width: min(460px, 92vw); text-align: center; }
+#prompt .box p { color: #ccc; line-height: 1.6; }
+#prompt .box button { display: block; width: 100%; margin-top: 6px; padding: 8px; }
+@media (max-width: 900px), (max-height: 500px) {
+  #belt { right: 4px; bottom: 126px; gap: 3px; }
+  .bslot { width: 40px; height: 36px; }
+  .bslot span { font-size: 14px; }
+  .bslot small { display: none; }
 }

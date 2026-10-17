@@ -13,7 +13,14 @@ export interface MapDef {
   stairs?: [number, number];
   /** 층 번호 (1부터) */
   depth?: number;
+  /** 방의 역할. side = 곁가지 방 (자동 탐험이 들르지 않는다) */
+  roles?: RoomRole[];
+  /** 상자 · 이벤트 */
+  objects?: { kind: ObjectKind; x: number; y: number }[];
 }
+
+export type RoomRole = 'start' | 'main' | 'side' | 'end';
+export type ObjectKind = 'chest' | 'mimic' | 'fountain' | 'altar' | 'prisoner';
 
 export const MAP1: MapDef = {
   width: 48,

@@ -40,6 +40,7 @@ export class Renderer {
 
     this.drawTiles(w);
     this.drawStairs(w);
+    this.drawObjects(w);
 
     // ── 바닥 표시 (예고 범위, 고수 지점, 선택 원) ──
     for (const u of w.units) if (u.alive && u.cast) this.drawCastArea(w, u);
@@ -209,6 +210,51 @@ export class Renderer {
           ctx.fillRect(sx, sy, s, s);
         }
       }
+  }
+
+  /** 상자 · 이벤트 오브젝트 (본 적 있는 칸만) */
+  private drawObjects(w: World) {
+    const ctx = this.ctx, z = this.cam.zoom;
+    for (const o of w.objects) {
+      if (!w.seen[Math.floor(o.y) * w.map.w + Math.floor(o.x)]) continue;
+      const [sx, sy] = this.cam.toScreen(o.x, o.y);
+      ctx.globalAlpha = o.used ? 0.35 : 1;
+      if (o.kind === 'chest' || o.kind === 'mimic') {
+        const bw = z * 0.62, bh = z * 0.42;
+        ctx.fillStyle = '#7a4a22';
+        ctx.fillRect(sx - bw / 2, sy - bh, bw, bh);
+        ctx.fillStyle = o.used ? '#3a2a1a' : '#9a6232';
+        ctx.fillRect(sx - bw / 2, sy - bh - z * 0.14, bw, z * 0.16);
+        ctx.fillStyle = '#e8c050';
+        ctx.fillRect(sx - bw / 2, sy - bh * 0.62, bw, z * 0.06);
+        ctx.fillRect(sx - z * 0.05, sy - bh * 0.75, z * 0.1, z * 0.14);
+      } else {
+        const col = o.kind === 'fountain' ? '#4aa8ff' : o.kind === 'altar' ? '#c03838' : '#c8c8c8';
+        const txt = o.kind === 'fountain' ? '샘' : o.kind === 'altar' ? '제' : '포';
+        ctx.fillStyle = '#1a1a24';
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - z * 0.2, z * 0.34, z * 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = col;
+        ctx.font = `bold ${Math.round(z * 0.32)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(txt, sx, sy - z * 0.2);
+      }
+      // 아직 안 연 것은 반짝임으로 눈에 띄게
+      if (!o.used) {
+        const a = 0.35 + Math.sin(w.time * 4 + o.id) * 0.25;
+        ctx.strokeStyle = `rgba(255, 220, 120, ${a})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, z * 0.45, z * 0.2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
   }
 
   /** 내려가는 계단: 계단 칸 + 아래 화살표 */

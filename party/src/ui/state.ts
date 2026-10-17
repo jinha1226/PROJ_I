@@ -21,6 +21,8 @@ export interface UiState {
   inspect: Unit | null;
   drag: Drag | null;
   targeting: { unit: Unit; slot: number } | null;
+  /** 소모품 대상 지정 중인 벨트 칸 */
+  itemTarget: number | null;
   paused: boolean;
   speed: number;
   marks: ClickMark[];
@@ -35,6 +37,7 @@ export function createUiState(): UiState {
     inspect: null,
     drag: null,
     targeting: null,
+    itemTarget: null,
     paused: true,
     speed: 1,
     marks: [],

@@ -4,6 +4,9 @@ import { DIFFICULTIES, type Difficulty, type DifficultyId } from '../data/diffic
 import { MONSTERS } from '../data/units';
 import { updateUnit } from './behavior';
 import { beginFloor, gainXp, newParty, type Hero } from './hero';
+import { genItem, itemTitle } from './items';
+import { checkObjects, type EventPrompt, type WorldObject } from './objects';
+import { newRun, type RunState } from './run';
 import { GameMap } from './map';
 import { resolveCollisions } from './movement';
 import { computeStats } from './stats';
@@ -80,9 +83,17 @@ export class World {
   readonly depth: number;
   readonly stairs: { x: number; y: number } | null;
   readonly rooms: MapDef['rooms'];
+  readonly roles: NonNullable<MapDef['roles']>;
+  readonly run: RunState;
+  /** 상자 · 이벤트 */
+  objects: WorldObject[];
+  /** 이벤트 선택 대기 (화면이 선택지를 띄우고 그동안 시뮬레이션을 멈춘다) */
+  prompt: EventPrompt | null = null;
   visitedRooms: boolean[];
   /** 자동 탐험: 전투가 없을 때 다음 방 → 계단으로 파티를 이동시킨다 */
   autoExplore = false;
+  /** 자동 탐험이 곁가지 방의 상자·이벤트까지 들르는지 (시뮬레이션의 '개입하는 플레이어' 흉내용) */
+  exploreSides = false;
   private exploreMove = false;
   private groupSeq = 0;
   private groupFields = new Map<number, Float32Array>();
@@ -97,8 +108,11 @@ export class World {
 
   readonly difficulty: Difficulty;
 
-  constructor(def: MapDef, seed: number, heroes: Hero[] = newParty(), difficulty: DifficultyId = 'easy') {
+  constructor(def: MapDef, seed: number, heroes: Hero[] = newParty(), difficulty: DifficultyId = 'easy', run: RunState = newRun()) {
     this.difficulty = DIFFICULTIES[difficulty];
+    this.run = run;
+    this.roles = def.roles ?? def.rooms.map((_, i) => (i === 0 ? 'start' : 'main'));
+    this.objects = (def.objects ?? []).map((o, i) => ({ id: i, kind: o.kind, x: o.x + 0.5, y: o.y + 0.5, used: false }));
     this.rng = new Rng(seed);
     this.map = GameMap.fromDef(def);
     this.depth = def.depth ?? 1;
@@ -300,6 +314,11 @@ export class World {
     if (this.focusTarget === u) this.focusTarget = null;
     if (this.leader === u) this.leader = this.party.find((p) => p.alive) ?? null;
     if (u.faction === 'enemy') this.grantXp(u.def.xp ?? 0);
+    if (u.def.id === 'mimic') {
+      const it = genItem(this.rng, this.depth + 1);
+      this.run.found.push(it);
+      this.log(`미믹이 삼키고 있던 ${itemTitle(it)}을(를) 얻었다`, '#ffcc55');
+    }
     if (u.def.boss) {
       this.outcome = 'victory';
       this.log(`${u.name}을(를) 쓰러뜨렸다! 승리!`, '#ffe14d');
@@ -311,7 +330,7 @@ export class World {
   }
 
   /** 처치 경험치: 살아 있는 파티원이 똑같이 받는다 */
-  private grantXp(xp: number) {
+  grantXp(xp: number) {
     for (const p of this.party) {
       if (!p.alive || !p.hero) continue;
       const maxHp = p.stats.maxHp;
@@ -350,12 +369,15 @@ export class World {
     if (!this.autoExplore || this.inCombat || this.outcome) return;
     const live = this.party.filter((p) => p.alive);
     if (!live.length || live.some((p) => p.command || p.cast)) return;
-    const next = this.visitedRooms.findIndex((v) => !v);
+    // 곁가지 방은 들르지 않는다 (털지 말지는 플레이어가 정한다)
+    const next = this.visitedRooms.findIndex((v, i) => !v && this.roles[i] !== 'side');
     let target: { x: number; y: number } | null = null;
+    const obj = this.exploreSides ? this.objects.find((o) => !o.used) : undefined;
     if (next >= 0) {
       const [x, y, w, h] = this.rooms[next];
       target = this.map.nearestFloor(x + w / 2, y + h / 2);
-    } else if (this.stairs) target = this.stairs;
+    } else if (obj) target = obj;
+    else if (this.stairs) target = this.stairs;
     if (!target) return;
     this.commandMove(live, target.x, target.y);
     for (const p of live) p.holdPos = null;
@@ -364,6 +386,8 @@ export class World {
 
   // ── 시뮬레이션 ──
   tick(dt: number) {
+    // 이벤트 선택을 기다리는 동안은 멈춘다
+    if (this.prompt) return;
     this.time += dt;
 
     this.awareTimer -= dt;
@@ -373,6 +397,7 @@ export class World {
       this.updateCombatState(0.2);
       this.checkLowHp();
       this.updateRooms();
+      checkObjects(this);
       this.exploreStep();
     }
 

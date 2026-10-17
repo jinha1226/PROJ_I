@@ -8,6 +8,7 @@ import type { UiState } from './state';
 import { RES_NAME, SKILL_NAME } from '../data/names';
 import { FLOORS } from '../data/encounters';
 import { xpToNext } from '../sim/hero';
+import { BELT_SIZE, CONSUMABLES } from '../data/consumables';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -55,6 +56,8 @@ export class Hud {
     private ui: UiState,
     private getWorld: () => World,
     private onSkill: (slot: number) => void,
+    private onInfo: (u: Unit) => void,
+    private onItem: (index: number) => void,
   ) {}
 
   /** 월드가 바뀌면(층 이동·재시작) 하단 파티 패널을 새로 만든다 */
@@ -70,7 +73,7 @@ export class Hud {
         <div class="pskills"></div>
         <div class="card">
           <div class="head"><span class="name" style="color:${u.def.color}">${i + 1}. ${u.name}<span class="lead"></span></span>
-            <span class="lv"></span></div>
+            <span class="lv"></span><button class="info" title="상태창">ⓘ</button></div>
           <div class="bar hp"><div></div><span class="bt"></span></div>
           ${u.stats.maxMp > 0 ? '<div class="bar mp"><div></div></div>' : ''}
           <div class="bar xp"><div></div></div>
@@ -82,6 +85,9 @@ export class Hud {
           </div>
         </div>`;
       const card = col.querySelector<HTMLElement>('.card')!;
+      const info = col.querySelector<HTMLButtonElement>('.info')!;
+      info.addEventListener('pointerdown', (e) => e.stopPropagation());
+      info.addEventListener('click', () => this.onInfo(u));
       const sel = col.querySelector('select')!;
       sel.value = u.tactic;
       sel.addEventListener('change', () => (u.tactic = sel.value as TacticId));
@@ -218,8 +224,13 @@ export class Hud {
     $('btn-pause').textContent = ui.paused ? '▶ 재개' : '⏸ 일시정지';
     $('btn-pause').classList.toggle('on', ui.paused);
 
+    this.updateBelt();
     const hint = $('targeting-hint');
-    if (ui.targeting) {
+    if (ui.itemTarget !== null && w.run.belt[ui.itemTarget]) {
+      const c = CONSUMABLES[w.run.belt[ui.itemTarget]];
+      hint.textContent = `${c.name} — ${c.target === 'enemy' ? '적을' : '지점을'} 누르세요 (우클릭/Esc 취소)`;
+      hint.classList.remove('hidden');
+    } else if (ui.targeting) {
       const ab = ui.targeting.unit.abilities[ui.targeting.slot].def;
       const what = ab.target === 'ground' ? '지점을' : ab.target === 'ally' ? '아군을' : '적을';
       hint.textContent = `${ui.targeting.unit.name}: ${ab.name} — ${what} 누르세요 (우클릭/Esc 취소)`;
@@ -228,6 +239,36 @@ export class Hud {
 
     this.updateInspect();
     this.updateLog();
+  }
+
+  /** 소모품 벨트 (4칸, 파티 공용) */
+  private updateBelt() {
+    const w = this.getWorld();
+    const ver = w.run.belt.join();
+    const box = $('belt');
+    if (box.dataset.ver !== ver) {
+      box.dataset.ver = ver;
+      box.innerHTML = '';
+      for (let i = 0; i < BELT_SIZE; i++) {
+        const id = w.run.belt[i];
+        const b = document.createElement('button');
+        b.className = 'bslot';
+        if (id) {
+          const c = CONSUMABLES[id];
+          b.title = `${c.name}: ${c.desc}`;
+          b.innerHTML = `<span style="color:${c.color}">${c.icon}</span><small>${c.name}</small>`;
+          b.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            this.onItem(i);
+          });
+        } else {
+          b.classList.add('empty');
+          b.disabled = true;
+        }
+        box.appendChild(b);
+      }
+    }
+    box.querySelectorAll<HTMLElement>('.bslot').forEach((b, i) => b.classList.toggle('targeting', this.ui.itemTarget === i));
   }
 
   /** 아군 한 명만 선택했을 때 정보 창 내용 */

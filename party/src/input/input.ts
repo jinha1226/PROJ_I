@@ -1,5 +1,7 @@
 // 마우스/터치 입력 (Pointer Events). 드래그 명령, 범위 선택, 스킬 대상 지정, 단축키.
+import { CONSUMABLES } from '../data/consumables';
 import type { Camera } from '../render/camera';
+import { useConsumable } from '../sim/objects';
 import type { Unit } from '../sim/unit';
 import type { World } from '../sim/world';
 import type { UiState } from '../ui/state';
@@ -75,13 +77,18 @@ export class Input {
       return;
     }
     if (e.button === 2) {
-      if (ui.targeting) ui.targeting = null;
+      if (ui.itemTarget !== null) ui.itemTarget = null;
+      else if (ui.targeting) ui.targeting = null;
       else this.commandAt(sx, sy);
       return;
     }
     if (e.button !== 0) return;
     this.canvas.setPointerCapture(e.pointerId);
 
+    if (ui.itemTarget !== null) {
+      this.resolveItemTarget(sx, sy);
+      return;
+    }
     if (ui.targeting) {
       this.resolveTargeting(sx, sy, e.shiftKey);
       return;
@@ -234,6 +241,37 @@ export class Input {
     return tg === 'enemy' ? t.faction !== u.faction : tg === 'ally' ? t.faction === u.faction : false;
   }
 
+  /** 벨트 소모품 사용: 대상이 필요 없으면 바로, 아니면 대상 지정 모드로 */
+  useItem(index: number) {
+    const id = this.w.run.belt[index];
+    if (!id) return;
+    if (CONSUMABLES[id].target === 'none') {
+      useConsumable(this.w, index, null, 0, 0);
+      this.ui.itemTarget = null;
+    } else {
+      this.ui.targeting = null;
+      this.ui.itemTarget = this.ui.itemTarget === index ? null : index;
+    }
+  }
+
+  private resolveItemTarget(sx: number, sy: number) {
+    const idx = this.ui.itemTarget!;
+    const id = this.w.run.belt[idx];
+    if (!id) {
+      this.ui.itemTarget = null;
+      return;
+    }
+    const p = this.cam.toWorld(sx, sy);
+    const t = this.unitAt(sx, sy);
+    const ok = CONSUMABLES[id].target === 'enemy'
+      ? !!t && t.faction !== 'party' && useConsumable(this.w, idx, t, t.x, t.y)
+      : useConsumable(this.w, idx, null, p.x, p.y);
+    if (ok) {
+      this.mark(p.x, p.y, CONSUMABLES[id].color);
+      this.ui.itemTarget = null;
+    }
+  }
+
   private resolveTargeting(sx: number, sy: number, keep: boolean) {
     const tg = this.ui.targeting!;
     const ab = tg.unit.abilities[tg.slot].def;
@@ -297,7 +335,8 @@ export class Input {
     } else if (k === 'h') {
       this.hooks.toggleHelp();
     } else if (k === 'escape') {
-      if (ui.targeting) ui.targeting = null;
+      if (ui.itemTarget !== null) ui.itemTarget = null;
+      else if (ui.targeting) ui.targeting = null;
       else ui.selected = [];
     } else if (k === 'r' && (w.outcome === 'victory' || w.outcome === 'defeat' || e.shiftKey)) {
       this.hooks.restart();

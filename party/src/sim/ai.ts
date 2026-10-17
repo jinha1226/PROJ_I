@@ -28,6 +28,7 @@ export function think(w: World, u: Unit): Intent | null {
 
   const enemies = w.knownEnemies(u);
   if (enemies.length === 0) return idle(w, u);
+  if (u.hasStatus('fear')) return flee(w, u, enemies);
 
   const manual = u.faction === 'party' && !u.autoMode;
   const cands: Cand[] = [];
@@ -262,6 +263,22 @@ function evalAbility(w: World, u: Unit, ab: AbilityDef, slot: number, enemies: U
     }
   }
   return out;
+}
+
+/** 공포: 가장 가까운 적에게서 멀어진다 (공격하지 않음) */
+function flee(w: World, u: Unit, enemies: Unit[]): Intent | null {
+  let near = enemies[0], nd = Infinity;
+  for (const e of enemies) {
+    const d = dist(u, e);
+    if (d < nd) { nd = d; near = e; }
+  }
+  const ax = (u.x - near.x) / (nd || 1), ay = (u.y - near.y) / (nd || 1);
+  for (const rot of [0, 0.7, -0.7, 1.4, -1.4, 2.1, -2.1]) {
+    const c = Math.cos(rot), s = Math.sin(rot);
+    const tx = u.x + (ax * c - ay * s) * 3, ty = u.y + (ax * s + ay * c) * 3;
+    if (!w.map.isWallAt(tx, ty) && w.map.clearPath(u.x, u.y, tx, ty, u.radius)) return { type: 'move', x: tx, y: ty };
+  }
+  return null;
 }
 
 /** 원거리·지원형: 근접 적이 붙으면 거리를 벌린다 */

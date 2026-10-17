@@ -2,7 +2,6 @@ import { dist } from '../core/rng';
 import { STATUSES } from '../data/statuses';
 import type { AbilityDef, Effect } from './defs';
 import { applyDamage, cleanse, heal, resistMult, resolveWeaponHit, tryApplyStatus } from './combat';
-import { train } from './hero';
 import { abilityCooldown, abilityMult, abilityPower, avgWeaponDamage, castTimeOf, failChance, hitChance } from './stats';
 import type { AbilityState, Unit } from './unit';
 import type { World } from './world';
@@ -63,9 +62,6 @@ function resolveAbility(w: World, u: Unit, slot: number, target: Unit | null, x:
   const st = u.abilities[slot];
   const ab = st.def;
   const fail = failChance(u, ab);
-  // 시도만 해도 훈련된다 (DCSS 식)
-  for (const s of ab.schools ?? []) train(u, s, 1.5);
-  if (ab.type === 'spell') train(u, 'spellcasting', 1);
   if (fail > 0 && w.rng.chance(fail)) {
     u.mp -= ab.cost;
     st.cd = abilityCooldown(st) * 0.5;

@@ -1,8 +1,9 @@
 import type { UnitDef } from '../sim/defs';
 
 // ── 파티 (1단계: 고정 파티. 2단계부터 종족+직업 조합으로 생성) ──
-// 조작 부담을 줄이려고 처음엔 직접 쓰는 기술 2개로 시작하고, learnable 의 스킬 조건을 채우면
-// 레벨업 선택지로 새 기술이 나온다 (최대 4개).
+// 처음엔 직접 쓰는 기술 2개로 시작한다. 레벨업 때 직업 스킬(classSkills)에 투자해
+// learnable 의 조건을 채우면 그 기술을 저절로 익힌다 (최대 4개, 수동 전용).
+// 어느 스킬에 투자하느냐가 곧 빌드의 갈림길이다.
 // ac/ev 는 맨몸 수치이고 갑옷·무기는 gear 의 시작 장비가 준다.
 export const PARTY: UnitDef[] = [
   {
@@ -11,7 +12,8 @@ export const PARTY: UnitDef[] = [
     ac: 2, ev: 3, will: 12, levelHp: 10,
     skills: { fighting: 3, sword: 3, armour: 3, shield: 3, dodge: 1 },
     gear: { weapon: 'long_sword', armour: 'chain_mail' },
-    learnable: [{ ability: 'whirlwind', skill: 'sword', level: 5 }, { ability: 'war_cry', skill: 'fighting', level: 5 }],
+    classSkills: ['fighting', 'shield', 'armour'],
+    learnable: [{ ability: 'whirlwind', skill: 'fighting', level: 5 }, { ability: 'war_cry', skill: 'shield', level: 6 }],
     weapon: { name: '장검', skill: 'sword', damage: [7, 11], delay: 1.1, range: 0.5 },
     abilities: ['shield_bash', 'taunt'], tactic: 'defensive', targetPref: 'threat',
   },
@@ -21,9 +23,10 @@ export const PARTY: UnitDef[] = [
     ac: 0, ev: 9, will: 22, levelHp: 5, levelMp: 4,
     skills: { spellcasting: 3, fire: 3, ice: 2, dodge: 2 },
     gear: { weapon: 'staff', armour: 'robe' },
+    classSkills: ['fire', 'ice', 'spellcasting', 'dodge'],
     learnable: [
       { ability: 'fireball', skill: 'fire', level: 5 },
-      { ability: 'frost_nova', skill: 'ice', level: 4 },
+      { ability: 'frost_nova', skill: 'ice', level: 5 },
       { ability: 'fire_storm', skill: 'fire', level: 8 },
     ],
     weapon: {
@@ -38,7 +41,8 @@ export const PARTY: UnitDef[] = [
     ac: 0, ev: 12, will: 14, levelHp: 7,
     skills: { bow: 3, dodge: 3, fighting: 2, armour: 1 },
     gear: { weapon: 'short_bow', armour: 'leather' },
-    learnable: [{ ability: 'pinning_shot', skill: 'bow', level: 5 }, { ability: 'volley', skill: 'bow', level: 7 }],
+    classSkills: ['bow', 'dodge', 'fighting'],
+    learnable: [{ ability: 'pinning_shot', skill: 'bow', level: 5 }, { ability: 'volley', skill: 'bow', level: 8 }],
     weapon: {
       name: '단궁', skill: 'bow', damage: [5, 8], delay: 1.0, range: 7,
       projectile: { speed: 16, color: '#e8d8a0' },
@@ -51,7 +55,8 @@ export const PARTY: UnitDef[] = [
     ac: 0, ev: 5, will: 20, levelHp: 6, levelMp: 4,
     skills: { faith: 3, spellcasting: 2, bow: 1, armour: 1 },
     gear: { weapon: 'sling', armour: 'ring_mail' },
-    learnable: [{ ability: 'smite', skill: 'faith', level: 4 }, { ability: 'mass_heal', skill: 'faith', level: 6 }],
+    classSkills: ['faith', 'spellcasting', 'armour'],
+    learnable: [{ ability: 'smite', skill: 'faith', level: 5 }, { ability: 'mass_heal', skill: 'faith', level: 8 }],
     weapon: {
       name: '투석구', skill: 'bow', damage: [3, 5], delay: 1.2, range: 6,
       projectile: { speed: 14, color: '#bbbbbb' },
@@ -114,6 +119,13 @@ const monsterList: UnitDef[] = [
     resists: { poison: 1, neg: 3, cold: 1 }, tags: ['mindless'],
     skills: { mace: 3 },
     weapon: { name: '녹슨 철퇴', skill: 'mace', damage: [5, 8], delay: 1.2, range: 0.5 },
+    abilities: [], tactic: 'aggressive', targetPref: 'nearest',
+  },
+  {
+    id: 'mimic', xp: 45, name: '미믹', title: '상자로 위장', glyph: 'M', color: '#d0a050', role: 'melee',
+    radius: 0.4, mass: 3, speed: 2.6, hp: 95, mp: 0, str: 16, dex: 10, int: 3, ac: 6, ev: 2, will: 10,
+    skills: { fighting: 5 },
+    weapon: { name: '이빨', skill: 'fighting', damage: [8, 13], delay: 1.1, range: 0.5 },
     abilities: [], tactic: 'aggressive', targetPref: 'nearest',
   },
   {
