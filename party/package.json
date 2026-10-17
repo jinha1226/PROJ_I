@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "sim": "vite-node scripts/headless.ts"
+    "sim": "vite-node scripts/run-sim.ts"
   },
   "devDependencies": {
     "@types/node": "^18.19.130",

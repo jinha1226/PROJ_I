@@ -2,7 +2,8 @@ import { dist } from '../core/rng';
 import { STATUSES } from '../data/statuses';
 import type { AbilityDef, Effect } from './defs';
 import { applyDamage, cleanse, heal, resistMult, resolveWeaponHit, tryApplyStatus } from './combat';
-import { abilityPower, avgWeaponDamage, failChance, hitChance } from './stats';
+import { train } from './hero';
+import { abilityCooldown, abilityMult, abilityPower, avgWeaponDamage, castTimeOf, failChance, hitChance } from './stats';
 import type { AbilityState, Unit } from './unit';
 import type { World } from './world';
 
@@ -32,7 +33,7 @@ export function beginCast(w: World, u: Unit, slot: number, target: Unit | null, 
     resolveAbility(w, u, slot, target, x, y);
     return;
   }
-  u.cast = { slot, target, x, y, time: 0, total: ab.castTime };
+  u.cast = { slot, target, x, y, time: 0, total: castTimeOf(u, ab) };
   // 적의 범위 공격 예고: 아군이 범위 근처에 있으면 플레이어에게 알린다
   if (u.faction === 'enemy' && ab.radius && w.isVisible(u)) {
     const c = areaCenter(ab, u, x, y);
@@ -62,18 +63,22 @@ function resolveAbility(w: World, u: Unit, slot: number, target: Unit | null, x:
   const st = u.abilities[slot];
   const ab = st.def;
   const fail = failChance(u, ab);
+  // 시도만 해도 훈련된다 (DCSS 식)
+  for (const s of ab.schools ?? []) train(u, s, 1.5);
+  if (ab.type === 'spell') train(u, 'spellcasting', 1);
   if (fail > 0 && w.rng.chance(fail)) {
     u.mp -= ab.cost;
-    st.cd = ab.cooldown * 0.5;
+    st.cd = abilityCooldown(st) * 0.5;
     w.float(u, `${ab.name} 실패!`, '#ff8888');
     w.log(`${u.name}의 ${ab.name} 시전 실패 (실패율 ${Math.round(fail * 100)}%)`, '#ff8888');
     return;
   }
   u.mp -= ab.cost;
-  st.cd = ab.cooldown;
+  st.cd = abilityCooldown(st);
   const power = abilityPower(u, ab);
+  const mult = abilityMult(u, st);
   if (ab.castTime > 0 || ab.radius || u.def.boss) w.log(`${u.name}: ${ab.name}`, ab.color);
-  if (ab.selfEffects) applyEffects(w, u, ab.selfEffects, u, power);
+  if (ab.selfEffects) applyEffects(w, u, ab.selfEffects, u, power, mult);
 
   if (ab.dash && target) {
     const d = dist(u, target);
@@ -87,7 +92,7 @@ function resolveAbility(w: World, u: Unit, slot: number, target: Unit | null, x:
     }
   }
 
-  const land = () => landAbility(w, u, ab, target, x, y, power);
+  const land = () => landAbility(w, u, ab, target, x, y, power, mult);
   if (ab.projectile) {
     w.spawnProjectile({
       source: u, target: ab.target === 'enemy' || ab.target === 'ally' ? target : null,
@@ -99,7 +104,7 @@ function resolveAbility(w: World, u: Unit, slot: number, target: Unit | null, x:
   }
 }
 
-function landAbility(w: World, u: Unit, ab: AbilityDef, target: Unit | null, x: number, y: number, power: number) {
+function landAbility(w: World, u: Unit, ab: AbilityDef, target: Unit | null, x: number, y: number, power: number, mult: number) {
   let victims: Unit[];
   if (ab.radius) {
     const c = areaCenter(ab, u, x, y);
@@ -109,21 +114,21 @@ function landAbility(w: World, u: Unit, ab: AbilityDef, target: Unit | null, x: 
     victims = target && target.alive ? [target] : [];
     if (target) w.effect({ kind: 'ring', x: target.x, y: target.y, r: 0.5, color: ab.color, dur: 0.25 });
   }
-  for (const v of victims) applyEffects(w, u, ab.effects, v, power);
+  for (const v of victims) applyEffects(w, u, ab.effects, v, power, mult);
 }
 
-function applyEffects(w: World, u: Unit, effects: Effect[], v: Unit, power: number) {
+function applyEffects(w: World, u: Unit, effects: Effect[], v: Unit, power: number, mult: number) {
   for (const e of effects) {
     if (!v.alive) return;
     switch (e.kind) {
       case 'damage':
-        applyDamage(w, v, w.rng.range(e.base[0], e.base[1]) + power * e.scale, e.element, u);
+        applyDamage(w, v, (w.rng.range(e.base[0], e.base[1]) + power * e.scale) * mult, e.element, u);
         break;
       case 'weapon':
-        resolveWeaponHit(w, u, v, e.mult, true);
+        resolveWeaponHit(w, u, v, e.mult * mult, true);
         break;
       case 'heal':
-        heal(w, v, w.rng.range(e.base[0], e.base[1]) + power * e.scale);
+        heal(w, v, (w.rng.range(e.base[0], e.base[1]) + power * e.scale) * mult);
         break;
       case 'status':
         tryApplyStatus(w, v, e, u, power);
@@ -141,17 +146,23 @@ function applyEffects(w: World, u: Unit, effects: Effect[], v: Unit, power: numb
 // ── AI 용 기대값 계산 ──
 
 /** 대상 하나에게 이 능력이 줄 기대 피해 (저항·면역 반영) */
+function multFor(u: Unit, ab: AbilityDef): number {
+  const st = u.abilities.find((a) => a.def === ab);
+  return st ? abilityMult(u, st) : 1;
+}
+
 export function expectedDamage(u: Unit, ab: AbilityDef, t: Unit): number {
   const power = abilityPower(u, ab);
+  const mult = multFor(u, ab);
   let total = 0;
   for (const e of ab.effects) {
     if (e.kind === 'damage') {
-      let d = ((e.base[0] + e.base[1]) / 2 + power * e.scale) * resistMult(t, e.element) * u.stats.dmgMult;
+      let d = ((e.base[0] + e.base[1]) / 2 + power * e.scale) * mult * resistMult(t, e.element) * u.stats.dmgMult;
       if (e.element === 'physical') d -= t.stats.ac * 0.3;
       total += Math.max(0, d);
     } else if (e.kind === 'weapon') {
-      const el = u.def.weapon.element ?? 'physical';
-      let d = avgWeaponDamage(u) * e.mult * resistMult(t, el);
+      const el = u.weapon.element ?? 'physical';
+      let d = avgWeaponDamage(u) * e.mult * mult * resistMult(t, el);
       if (el === 'physical') d -= t.stats.ac * 0.3;
       total += Math.max(0, d) * (ab.type === 'technique' ? 1 : hitChance(u, t));
     } else if (e.kind === 'status') {
@@ -169,5 +180,5 @@ export function expectedHeal(u: Unit, ab: AbilityDef): number {
   const power = abilityPower(u, ab);
   let h = 0;
   for (const e of ab.effects) if (e.kind === 'heal') h += (e.base[0] + e.base[1]) / 2 + power * e.scale;
-  return h;
+  return h * multFor(u, ab);
 }

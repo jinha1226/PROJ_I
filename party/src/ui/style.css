@@ -22,7 +22,8 @@ button {
 button:hover { background: #3a3a4c; }
 button.on { border-color: var(--accent); color: var(--accent); }
 
-#top { top: 8px; left: 50%; transform: translateX(-50%); padding: 5px; display: flex; gap: 5px; align-items: center; }
+#top { top: 8px; left: 50%; transform: translateX(-50%); padding: 5px; display: flex; gap: 5px; align-items: center; width: max-content; }
+#top button, #combat-state { white-space: nowrap; }
 #combat-state { padding: 0 8px; font-weight: bold; }
 
 #party { position: fixed; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 6px; width: 220px; }
@@ -36,6 +37,9 @@ button.on { border-color: var(--accent); color: var(--accent); }
 .bar > div { height: 100%; }
 .bar.hp > div { background: #4caf50; }
 .bar.mp > div { background: #4a7cff; }
+.bar.xp { height: 3px; background: #1a1a22; }
+.bar.xp > div { background: #c8a84a; }
+.card .lv { color: #e8cf7a; font-size: 11px; margin-left: auto; margin-right: 6px; }
 .card .row { display: flex; gap: 6px; align-items: center; margin-top: 4px; font-size: 11px; }
 .card select { background: #22222e; color: var(--text); border: 1px solid #444; font: inherit; font-size: 11px; }
 .card .statuses { min-height: 14px; font-size: 11px; }
@@ -108,7 +112,7 @@ button.on { border-color: var(--accent); color: var(--accent); }
   button { padding: 3px 6px; }
   #top {
     top: 4px; left: auto; right: 4px; transform: none; padding: 3px; gap: 3px;
-    flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 160px);
+    flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 160px); width: auto;
   }
   #top button { font-size: 11px; }
   #party { top: 4px; left: 4px; width: 148px; gap: 3px; }
@@ -137,4 +141,38 @@ button.on { border-color: var(--accent); color: var(--accent); }
 /* 터치 기기에서는 키보드/마우스 조작표를 숨긴다 */
 @media (pointer: coarse) {
   .pc-only { display: none; }
+}
+
+/* ── 쉬는 화면 ── */
+#rest .box { width: min(760px, 96vw); }
+#rest h3 { margin: 14px 0 6px; }
+#rest .done { color: #7ddc7d; }
+#rest .dim, #outcome .dim { color: #8a8a99; }
+#rest .small { font-size: 11px; }
+#rest .note { color: #cfcfa0; margin: 4px 0; }
+#rest .hrow { padding: 4px 0; border-bottom: 1px solid #262632; line-height: 1.5; }
+#rest .items { display: flex; gap: 8px; flex-wrap: wrap; }
+#rest .item {
+  flex: 1 1 200px; border: 1px solid #3a3a4a; border-radius: 6px; padding: 7px 9px; cursor: pointer; background: #1c1c27;
+}
+#rest .item.picked { border-color: var(--accent); box-shadow: 0 0 6px var(--accent); }
+#rest .item ul { margin: 4px 0 0; padding-left: 16px; font-size: 12px; }
+#rest .item li.bad, #rest .bad { color: #ff8877; }
+#rest .good { color: #7ddc7d; }
+#rest .iname { font-weight: bold; }
+#rest .targets { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 6px; margin-top: 8px; }
+#rest .target, #rest .perk {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; white-space: normal; padding: 6px 8px;
+}
+#rest .target span { display: block; }
+#rest .rec { display: inline !important; color: #111; background: var(--accent); border-radius: 3px; padding: 0 4px; font-size: 10px; }
+#rest .skip { margin-top: 6px; }
+#rest .lvrow { margin-bottom: 8px; }
+#rest .perks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 3px; }
+#rest .next { margin-top: 14px; text-align: right; }
+#rest .next button { font-size: 15px; padding: 7px 16px; border-color: var(--accent); color: var(--accent); }
+#rest .next button:disabled { opacity: 0.5; cursor: default; }
+@media (max-width: 900px), (max-height: 500px) {
+  #rest .item { flex-basis: 150px; padding: 5px 7px; }
+  #rest .perks { grid-template-columns: 1fr; }
 }

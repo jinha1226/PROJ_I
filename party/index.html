@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>PROJ_BH 전투 프로토타입</title>
+  <title>PROJ_BH 파티 던전</title>
   <link rel="stylesheet" href="/src/ui/style.css" />
 </head>
 <body>
@@ -13,6 +13,7 @@
     <button id="btn-pause" title="Space">⏸ 일시정지</button>
     <button id="btn-all" title="` 또는 Ctrl+A">전체 선택</button>
     <button id="btn-auto" title="T">자동전투: 켜짐</button>
+    <button id="btn-explore" title="X · 전투가 없을 때 다음 방 → 계단으로 이동">자동 탐험: 켜짐</button>
     <button id="btn-speed" title="게임 속도">속도 1x</button>
     <button id="btn-crisis" title="보스 범위 공격 예고 · 아군 체력 위험 때">위기 시: 감속</button>
     <button id="btn-follow" title="C">카메라 추적: 켜짐</button>
@@ -28,16 +29,21 @@
   <div id="targeting-hint" class="hidden"></div>
   <div id="crisis" class="hidden"></div>
 
+  <div id="rest" class="overlay hidden"><div class="box"></div></div>
+
   <div id="outcome" class="hidden">
     <div class="box">
       <h1 id="outcome-title"></h1>
-      <button id="btn-restart">다시 시작 (R)</button>
+      <p id="outcome-sub" class="dim"></p>
+      <button id="btn-restart">새 런 시작 (R)</button>
     </div>
   </div>
 
   <div id="help" class="overlay">
     <div class="box">
-      <h2>전투 프로토타입 조작법</h2>
+      <h2>파티 던전 — 5층 런</h2>
+      <p class="tip">층마다 방을 정리하고 <b>계단(▼)</b>에 도착하면 다음 층으로 내려갑니다. 5층의 오우거 족장을 쓰러뜨리면 승리.<br />
+        쓴 스킬이 저절로 오르고, 층을 마치면 <b>보상 장비 하나</b>와 <b>레벨업 선택</b>을 고릅니다. 쓰러진 동료는 다음 층에서 돌아옵니다.</p>
       <table class="pc-only">
         <tr><td>아군을 바닥으로 드래그</td><td>그 위치로 이동 후 위치 고수</td></tr>
         <tr><td>아군을 적에게 드래그</td><td>그 적을 공격</td></tr>
@@ -48,6 +54,7 @@
         <tr><td>F</td><td>커서 아래 적 집중 공격 지정/해제</td></tr>
         <tr><td><b>Space</b></td><td><b>일시정지</b> — 멈춘 상태에서도 모든 명령 입력 가능</td></tr>
         <tr><td>T</td><td>자동전투 전체 켜기/끄기 (캐릭터 카드에서 개별 설정)</td></tr>
+        <tr><td>X</td><td>자동 탐험 켜기/끄기 (전투가 없을 때 다음 방 → 계단)</td></tr>
         <tr><td>위기 시 버튼</td><td>보스 범위 공격 예고 · 아군 체력 위험 때 감속 / 일시정지 / 끔</td></tr>
         <tr><td>방향키 / 휠 클릭 드래그 / 휠</td><td>카메라 이동 / 확대 (C: 파티 추적)</td></tr>
         <tr><td>Esc</td><td>대상 지정 취소 / 선택 해제</td></tr>

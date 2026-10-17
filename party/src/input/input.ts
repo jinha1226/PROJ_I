@@ -13,6 +13,7 @@ export interface InputHooks {
   toggleHelp(): void;
   togglePause(): void;
   toggleAutoAll(): void;
+  toggleExplore(): void;
 }
 
 export class Input {
@@ -289,6 +290,8 @@ export class Input {
       if (t) w.setFocus(w.focusTarget === t ? null : t);
     } else if (k === 't') {
       this.hooks.toggleAutoAll();
+    } else if (k === 'x') {
+      this.hooks.toggleExplore();
     } else if (k === 'c') {
       this.cam.follow = !this.cam.follow;
     } else if (k === 'h') {
@@ -296,7 +299,7 @@ export class Input {
     } else if (k === 'escape') {
       if (ui.targeting) ui.targeting = null;
       else ui.selected = [];
-    } else if (k === 'r' && (w.outcome || e.shiftKey)) {
+    } else if (k === 'r' && (w.outcome === 'victory' || w.outcome === 'defeat' || e.shiftKey)) {
       this.hooks.restart();
     } else if (k.startsWith('arrow')) {
       e.preventDefault();

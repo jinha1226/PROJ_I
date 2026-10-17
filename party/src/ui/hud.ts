@@ -1,10 +1,13 @@
 // DOM 기반 HUD: 파티 카드, 스킬바, 적 정보, 전투 로그.
 import { ELEMENT_NAME } from '../sim/combat';
-import { RESIST_KEYS, type ResistKey, type SkillId, type TacticId } from '../sim/defs';
-import { attackDelay, avgWeaponDamage, failChance } from '../sim/stats';
+import { RESIST_KEYS, type SkillId, type TacticId } from '../sim/defs';
+import { abilityCooldown, attackDelay, avgWeaponDamage, failChance } from '../sim/stats';
 import type { Unit } from '../sim/unit';
 import type { World } from '../sim/world';
 import type { UiState } from './state';
+import { RES_NAME, SKILL_NAME } from '../data/names';
+import { FLOORS } from '../data/encounters';
+import { xpToNext } from '../sim/hero';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -15,13 +18,7 @@ const TACTICS: [TacticId, string][] = [
   ['support', '지원형'],
 ];
 
-export const SKILL_NAME: Record<SkillId, string> = {
-  fighting: '전투', sword: '검술', axe: '도끼술', mace: '둔기술', spear: '창술', bow: '원거리 무기',
-  armour: '갑옷', dodge: '회피', shield: '방패', spellcasting: '주문 시전', fire: '화염', ice: '냉기',
-  earth: '대지', necro: '강령술', summon: '소환술', faith: '신앙',
-};
-
-const RES_NAME: Record<ResistKey, string> = { fire: '화염', cold: '냉기', elec: '전기', poison: '독', neg: '음에너지' };
+export { SKILL_NAME };
 
 function resistText(u: Unit): string {
   const parts: string[] = [];
@@ -33,7 +30,7 @@ function resistText(u: Unit): string {
     else if (v > 0) parts.push(`<span class="res-good">${RES_NAME[k]} ${'+'.repeat(v)}</span>`);
     else parts.push(`<span class="res-bad">${RES_NAME[k]} 취약</span>`);
   }
-  const tags = u.def.tags ?? [];
+  const tags = u.tags;
   if (tags.includes('mindless')) parts.push('<span class="res-good">정신 없음(의지 판정 면역)</span>');
   if (tags.includes('unstunnable')) parts.push('<span class="res-good">기절 면역</span>');
   return parts.join(', ') || '없음';
@@ -71,9 +68,10 @@ export class Hud {
       el.className = 'card';
       el.innerHTML = `
         <div class="head"><span class="name" style="color:${u.def.color}">${i + 1}. ${u.name}<span class="lead"></span></span>
-        <span class="title">${u.def.title}</span></div>
+        <span class="lv"></span><span class="title">${u.def.title}</span></div>
         <div class="bar hp"><div></div></div>
         ${u.stats.maxMp > 0 ? '<div class="bar mp"><div></div></div>' : ''}
+        <div class="bar xp"><div></div></div>
         <div class="statuses"></div>
         <div class="row">
           <select>${TACTICS.map(([id, n]) => `<option value="${id}">${n}</option>`).join('')}</select>
@@ -116,11 +114,17 @@ export class Hud {
         u.statuses.map((s) => `<span class="chip" style="color:${s.def.color}">${s.def.name}${s.stacks > 1 ? '×' + s.stacks : ''}</span>`).join('');
       el.querySelector('.cmd')!.textContent = commandText(u);
       el.querySelector('.lead')!.textContent = w.leader === u ? ' ★' : '';
+      if (u.hero) {
+        el.querySelector('.lv')!.textContent = `Lv${u.hero.xl}${u.hero.pending ? ' ▲' : ''}`;
+        (el.querySelector('.bar.xp > div') as HTMLElement).style.width = `${(u.hero.xp / xpToNext(u.hero.xl)) * 100}%`;
+      }
       const auto = el.querySelector<HTMLInputElement>('input.auto')!;
       if (auto.checked !== u.autoMode) auto.checked = u.autoMode;
     });
 
-    $('combat-state').innerHTML = w.inCombat ? '<span style="color:#ff8866">전투 중</span>' : '<span style="color:#88cc88">탐험</span>';
+    $('combat-state').innerHTML =
+      `<span style="color:#9ab">${w.depth}/${FLOORS}층</span> ` +
+      (w.inCombat ? '<span style="color:#ff8866">전투 중</span>' : '<span style="color:#88cc88">탐험</span>');
     $('pause-banner').classList.toggle('hidden', !ui.paused || !!w.outcome);
     $('btn-pause').textContent = ui.paused ? '▶ 재개' : '⏸ 일시정지';
     $('btn-pause').classList.toggle('on', ui.paused);
@@ -148,7 +152,7 @@ export class Hud {
       return;
     }
     bar.classList.remove('hidden');
-    const version = u.abilities.map((a) => `${a.auto}${a.prio}`).join();
+    const version = u.abilities.map((a) => `${a.def.id}${a.auto}${a.prio}${a.rank}`).join();
     const shown = u.abilities.filter((a) => !a.hidden);
     if (this.skillFor !== u || this.skillVersion !== version) {
       this.skillFor = u;
@@ -161,7 +165,7 @@ export class Hud {
       const el = bar.querySelector<HTMLElement>(`.skill[data-slot="${i}"]`)!;
       const mask = el.querySelector<HTMLElement>('.cdmask')!;
       const cdt = el.querySelector<HTMLElement>('.cdtext')!;
-      mask.style.height = st.cd > 0 ? `${Math.min(1, st.cd / st.def.cooldown) * 100}%` : '0';
+      mask.style.height = st.cd > 0 ? `${Math.min(1, st.cd / abilityCooldown(st)) * 100}%` : '0';
       cdt.textContent = st.cd > 0 ? st.cd.toFixed(st.cd < 3 ? 1 : 0) : '';
       const btn = el.querySelector<HTMLElement>('.btn')!;
       btn.classList.toggle('disabled', u.mp < st.def.cost);
@@ -172,13 +176,13 @@ export class Hud {
     const skills = (Object.entries(u.skills) as [SkillId, number][])
       .filter(([, v]) => v > 0)
       .sort((a, b) => b[1] - a[1])
-      .map(([k, v]) => `${SKILL_NAME[k]} ${v}`)
+      .map(([k, v]) => `${SKILL_NAME[k]} ${v.toFixed(1)}`)
       .join(' · ');
     bar.querySelector('.info')!.innerHTML =
       `<b style="color:${u.def.color}">${u.name}</b> ${u.def.title}<br>` +
       `HP ${Math.ceil(u.hp)}/${s.maxHp}${s.maxMp ? ` · MP ${Math.floor(u.mp)}/${s.maxMp}` : ''}<br>` +
       `AC ${s.ac.toFixed(0)} · EV ${s.ev.toFixed(0)} · 의지 ${s.will}<br>` +
-      `${u.def.weapon.name}: 피해 ${avgWeaponDamage(u).toFixed(1)} / ${attackDelay(u).toFixed(2)}초<br>` +
+      `${u.weapon.name}: 피해 ${avgWeaponDamage(u).toFixed(1)} / ${attackDelay(u).toFixed(2)}초<br>` +
       `저항: ${resistText(u)}<br>` +
       `<span style="color:#999">${skills}</span>`;
   }
@@ -210,7 +214,7 @@ export class Hud {
           ${ab.cost ? `<span class="cost">${ab.cost}</span>` : ''}
           <div class="cdmask"></div><span class="cdtext"></span>
         </div>
-        <div class="label">${ab.name}${fail > 0 ? ` <span style="color:#f88">${Math.round(fail * 100)}%</span>` : ''}</div>
+        <div class="label">${ab.name}${st.rank ? `<span style="color:#e8cf7a"> +${st.rank}</span>` : ''}${fail > 0 ? ` <span style="color:#f88">${Math.round(fail * 100)}%</span>` : ''}</div>
         <div class="ctl">
           <button class="auto ${st.auto ? 'on' : ''}" title="자동전투에서 사용">${st.auto ? '자동' : '수동'}</button>
           <button class="up" title="자동 사용 우선순위 올리기">▲</button>
@@ -252,8 +256,8 @@ export class Hud {
     box.querySelector('.kv')!.innerHTML = `
       <span>체력</span><span>${Math.ceil(t.hp)} / ${s.maxHp}</span>
       <span>AC / EV</span><span>${s.ac.toFixed(0)} / ${s.ev.toFixed(0)}</span>
-      <span>의지력</span><span>${t.def.tags?.includes('mindless') ? '∞' : s.will}</span>
-      <span>공격</span><span>${t.def.weapon.name} (${t.def.weapon.element ? ELEMENT_NAME[t.def.weapon.element] : '물리'})</span>
+      <span>의지력</span><span>${t.tags.includes('mindless') ? '∞' : s.will}</span>
+      <span>공격</span><span>${t.weapon.name} (${t.weapon.element ? ELEMENT_NAME[t.weapon.element] : '물리'})</span>
       <span>능력</span><span>${abil}</span>
       <span>저항</span><span>${resistText(t)}</span>
       <span>상태</span><span>${t.statuses.map((x) => `<span style="color:${x.def.color}">${x.def.name}</span>`).join(' ') || '-'}</span>

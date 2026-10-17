@@ -1,6 +1,7 @@
 // 공통 전투 파이프라인.
 // 평타·마법·몬스터 능력·지속 피해 모두 applyDamage / tryApplyStatus 를 거친다.
 import { STATUSES } from '../data/statuses';
+import { train } from './hero';
 import type { Element, StatusApply } from './defs';
 import { attackDelay, hitChance, RESIST_MULT, weaponDmgMult, willChance } from './stats';
 import type { Unit } from './unit';
@@ -78,7 +79,7 @@ export function tryApplyStatus(w: World, t: Unit, ap: StatusApply, source: Unit 
   const def = STATUSES[ap.status];
   if (!t.alive) return false;
   if (ap.chance !== undefined && !w.rng.chance(ap.chance)) return false;
-  const tags = t.def.tags ?? [];
+  const tags = t.tags;
   if (def.immuneTag && tags.includes(def.immuneTag)) {
     w.float(t, `${def.name} 면역`, '#aaaaaa');
     return false;
@@ -143,7 +144,9 @@ export function cleanse(w: World, u: Unit) {
 export function performAttack(w: World, u: Unit, t: Unit) {
   u.attackCd = attackDelay(u);
   u.swing = 0.15;
-  const wpn = u.def.weapon;
+  const wpn = u.weapon;
+  train(u, wpn.skill, 1);
+  train(u, 'fighting', 0.4);
   if (wpn.projectile) {
     w.spawnProjectile({
       source: u, target: t, x: u.x, y: u.y, tx: t.x, ty: t.y,
@@ -157,11 +160,15 @@ export function performAttack(w: World, u: Unit, t: Unit) {
 
 export function resolveWeaponHit(w: World, u: Unit, t: Unit, mult: number, guaranteed: boolean) {
   if (!t.alive) return;
-  const wpn = u.def.weapon;
+  const wpn = u.weapon;
   if (!guaranteed && !w.rng.chance(hitChance(u, t))) {
     w.float(t, '빗나감', '#999999', 0.8);
+    train(t, 'dodge', 0.6);
     return;
   }
+  // 맞는 쪽: 갑옷·방패 훈련
+  if (t.armourWeight > 0) train(t, 'armour', 0.5);
+  if (t.skills.shield > 0) train(t, 'shield', 0.4);
   const dmg = w.rng.range(wpn.damage[0], wpn.damage[1]) * weaponDmgMult(u) * mult;
   if (!wpn.projectile) w.effect({ kind: 'slash', x: t.x, y: t.y - 0.3, r: 0.4, color: '#ffffff', dur: 0.15 });
   applyDamage(w, t, dmg, wpn.element ?? 'physical', u, { attack: true });

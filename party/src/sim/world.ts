@@ -1,7 +1,8 @@
 import { dist, Rng } from '../core/rng';
 import type { MapDef } from '../data/maps';
-import { MONSTERS, PARTY } from '../data/units';
+import { MONSTERS } from '../data/units';
 import { updateUnit } from './behavior';
+import { beginFloor, gainXp, newParty, type Hero } from './hero';
 import { GameMap } from './map';
 import { resolveCollisions } from './movement';
 import { computeStats } from './stats';
@@ -56,6 +57,8 @@ export interface Crisis {
 }
 
 export const SIGHT = 8;
+const DEPTH_HP = 0.3;
+const DEPTH_DMG = 0.3;
 
 export class World {
   readonly map: GameMap;
@@ -73,33 +76,54 @@ export class World {
   focusTarget: Unit | null = null;
   leader: Unit | null = null;
   inCombat = false;
-  outcome: 'victory' | 'defeat' | null = null;
+  /** victory = 보스 처치(런 승리), cleared = 계단 도착(다음 층) */
+  outcome: 'victory' | 'defeat' | 'cleared' | null = null;
+  readonly depth: number;
+  readonly stairs: { x: number; y: number } | null;
+  readonly rooms: MapDef['rooms'];
+  visitedRooms: boolean[];
+  /** 자동 탐험: 전투가 없을 때 다음 방 → 계단으로 파티를 이동시킨다 */
+  autoExplore = false;
+  private exploreMove = false;
   readonly visible: Uint8Array;
+  /** 파티가 보고 있는 적. 칸 중심이 아니라 실제 위치끼리 시야를 잰다 (모퉁이 궁수 대비) */
+  private seenUnits = new Set<Unit>();
   readonly seen: Uint8Array;
   private nextId = 1;
   private visTimer = 0;
   private awareTimer = 0;
   private calmTimer = 0;
 
-  constructor(def: MapDef, seed: number) {
+  constructor(def: MapDef, seed: number, heroes: Hero[] = newParty()) {
     this.rng = new Rng(seed);
     this.map = GameMap.fromDef(def);
+    this.depth = def.depth ?? 1;
+    this.stairs = def.stairs ? { x: def.stairs[0] + 0.5, y: def.stairs[1] + 0.5 } : null;
+    this.rooms = def.rooms;
+    this.visitedRooms = def.rooms.map((_, i) => i === 0);
     this.visible = new Uint8Array(this.map.w * this.map.h);
     this.seen = new Uint8Array(this.map.w * this.map.h);
-    PARTY.forEach((d, i) => {
-      const [x, y] = def.partyStart[i];
-      this.party.push(this.spawn(d.id, 'party', x + 0.5, y + 0.5));
+    heroes.forEach((h, i) => {
+      const [x, y] = def.partyStart[i % def.partyStart.length];
+      beginFloor(h);
+      this.party.push(this.addUnit(new Unit(this.nextId++, h.def, 'party', x + 0.5, y + 0.5, h)));
     });
     this.leader = this.party[0];
     for (const s of def.spawns) this.spawn(s.id, 'enemy', s.x + 0.5, s.y + 0.5);
     this.updateVisibility();
-    this.log('던전에 들어섰다. [Space] 일시정지 · [H] 도움말', '#cccccc');
+    this.log(this.depth === 1 ? '던전에 들어섰다. [Space] 일시정지 · [H] 도움말' : `${this.depth}층에 내려왔다${this.stairs ? '' : ' — 족장의 기척이 느껴진다'}`, '#cccccc');
   }
 
   spawn(id: string, faction: 'party' | 'enemy', x: number, y: number): Unit {
-    const def = faction === 'party' ? PARTY.find((p) => p.id === id)! : MONSTERS[id];
+    const def = MONSTERS[id];
     if (!def) throw new Error(`unknown unit ${id}`);
     const u = new Unit(this.nextId++, def, faction, x, y);
+    // 깊은 층의 몬스터는 더 튼튼하고 아프다 (보스는 고정)
+    if (!def.boss) u.scale = { hp: 1 + (this.depth - 1) * DEPTH_HP, dmg: 1 + (this.depth - 1) * DEPTH_DMG };
+    return this.addUnit(u);
+  }
+
+  private addUnit(u: Unit): Unit {
     computeStats(u);
     u.hp = u.stats.maxHp;
     u.mp = u.stats.maxMp;
@@ -115,7 +139,7 @@ export class World {
     return this.units.filter((v) => v.alive && v.faction === u.faction);
   }
   isVisible(u: Unit) {
-    return this.visible[Math.floor(u.y) * this.map.w + Math.floor(u.x)] === 1;
+    return u.faction === 'party' || this.seenUnits.has(u);
   }
   /** AI 가 인지하고 있는 적 목록 */
   knownEnemies(u: Unit): Unit[] {
@@ -133,6 +157,7 @@ export class World {
   }
 
   commandMove(units: Unit[], x: number, y: number) {
+    this.exploreMove = false;
     const live = units.filter((u) => u.alive);
     if (!live.length) return;
     const hold = live.length === 1 || this.inCombat;
@@ -241,14 +266,60 @@ export class World {
     this.log(`${u.name} 쓰러짐${by ? ` (${by.name})` : ''}`, u.faction === 'party' ? '#ff6666' : '#aaaaaa');
     if (this.focusTarget === u) this.focusTarget = null;
     if (this.leader === u) this.leader = this.party.find((p) => p.alive) ?? null;
+    if (u.faction === 'enemy') this.grantXp(u.def.xp ?? 0);
     if (u.def.boss) {
       this.outcome = 'victory';
-      this.log('오우거 족장을 쓰러뜨렸다! 승리!', '#ffe14d');
+      this.log(`${u.name}을(를) 쓰러뜨렸다! 승리!`, '#ffe14d');
     }
     if (u.faction === 'party' && this.party.every((p) => !p.alive)) {
       this.outcome = 'defeat';
       this.log('파티가 전멸했다...', '#ff4444');
     }
+  }
+
+  /** 처치 경험치: 살아 있는 파티원이 똑같이 받는다 */
+  private grantXp(xp: number) {
+    for (const p of this.party) {
+      if (!p.alive || !p.hero) continue;
+      const maxHp = p.stats.maxHp;
+      if (gainXp(p.hero, xp)) {
+        computeStats(p);
+        p.hp += p.stats.maxHp - maxHp;
+        this.float(p, `레벨 ${p.hero.xl}!`, '#ffe14d', 1.3);
+        this.log(`${p.name} 레벨 ${p.hero.xl} 달성 (층을 마치면 선택)`, '#ffe14d');
+      }
+    }
+  }
+
+  private updateRooms() {
+    for (const p of this.party) {
+      if (!p.alive) continue;
+      this.rooms.forEach(([x, y, w, h], i) => {
+        if (p.x >= x && p.x < x + w && p.y >= y && p.y < y + h) this.visitedRooms[i] = true;
+      });
+    }
+    // 계단: 전투 중이 아닐 때 파티원 하나라도 밟으면 다음 층
+    if (this.stairs && !this.inCombat && !this.outcome && this.party.some((p) => p.alive && !p.command && dist(p, this.stairs!) < 0.8)) {
+      this.outcome = 'cleared';
+      this.log(`${this.depth}층을 벗어났다`, '#88ccff');
+    }
+  }
+
+  /** 자동 탐험 한 걸음: 아무도 명령이 없고 전투가 아니면 다음 미방문 방 → 계단 */
+  private exploreStep() {
+    if (!this.autoExplore || this.inCombat || this.outcome) return;
+    const live = this.party.filter((p) => p.alive);
+    if (!live.length || live.some((p) => p.command || p.cast)) return;
+    const next = this.visitedRooms.findIndex((v) => !v);
+    let target: { x: number; y: number } | null = null;
+    if (next >= 0) {
+      const [x, y, w, h] = this.rooms[next];
+      target = this.map.nearestFloor(x + w / 2, y + h / 2);
+    } else if (this.stairs) target = this.stairs;
+    if (!target) return;
+    this.commandMove(live, target.x, target.y);
+    for (const p of live) p.holdPos = null;
+    this.exploreMove = true;
   }
 
   // ── 시뮬레이션 ──
@@ -261,6 +332,8 @@ export class World {
       this.updateAwareness();
       this.updateCombatState(0.2);
       this.checkLowHp();
+      this.updateRooms();
+      this.exploreStep();
     }
 
     for (const u of this.units) if (u.alive) updateUnit(this, u, dt);
@@ -324,7 +397,13 @@ export class World {
       (e) => e.faction === 'enemy' && e.alive && (e.aware || this.isVisible(e)) && party.some((p) => dist(p, e) < 12),
     );
     if (engaged) {
-      if (!this.inCombat) this.log('전투 시작!', '#ffaa66');
+      if (!this.inCombat) {
+        this.log('전투 시작!', '#ffaa66');
+        // 자동 탐험 이동 중이었다면 멈추고 AI 에 맡긴다
+        if (this.exploreMove)
+          for (const p of this.party) if (p.command?.intent.type === 'move') { p.command = null; p.holdPos = null; }
+        this.exploreMove = false;
+      }
       this.inCombat = true;
       this.calmTimer = 0;
     } else if (this.inCombat) {
@@ -361,6 +440,13 @@ export class World {
             this.seen[i] = 1;
           }
         }
+    }
+    this.seenUnits.clear();
+    for (const e of this.units) {
+      if (!e.alive || e.faction === 'party') continue;
+      const tileVisible = this.visible[Math.floor(e.y) * w + Math.floor(e.x)] === 1;
+      if (tileVisible || this.party.some((p) => p.alive && dist(p, e) <= SIGHT && this.map.los(p.x, p.y, e.x, e.y)))
+        this.seenUnits.add(e);
     }
   }
 }

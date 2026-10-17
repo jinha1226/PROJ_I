@@ -39,6 +39,7 @@ export class Renderer {
     ctx.fillRect(0, 0, cam.w, cam.h);
 
     this.drawTiles(w);
+    this.drawStairs(w);
 
     // ── 바닥 표시 (예고 범위, 고수 지점, 선택 원) ──
     for (const u of w.units) if (u.alive && u.cast) this.drawCastArea(w, u);
@@ -208,6 +209,27 @@ export class Renderer {
           ctx.fillRect(sx, sy, s, s);
         }
       }
+  }
+
+  /** 내려가는 계단: 계단 칸 + 아래 화살표 */
+  private drawStairs(w: World) {
+    const st = w.stairs;
+    if (!st || !w.seen[Math.floor(st.y) * w.map.w + Math.floor(st.x)]) return;
+    const ctx = this.ctx, z = this.cam.zoom;
+    const [sx, sy] = this.cam.toScreen(Math.floor(st.x), Math.floor(st.y));
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = i % 2 ? '#2a3a52' : '#3d5578';
+      ctx.fillRect(sx + z * 0.1, sy + z * (0.1 + i * 0.2), z * 0.8, z * 0.2);
+    }
+    const pulse = 0.6 + Math.sin(w.time * 3) * 0.25;
+    ctx.strokeStyle = `rgba(136, 204, 255, ${pulse})`;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(sx + 1, sy + 1, z - 2, z - 2);
+    ctx.fillStyle = '#cfe6ff';
+    ctx.font = `bold ${Math.round(z * 0.32)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('▼', sx + z / 2, sy + z / 2);
   }
 
   private ring(u: Unit, color: string, width: number) {

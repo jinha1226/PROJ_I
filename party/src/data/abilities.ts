@@ -108,6 +108,53 @@ const list: AbilityDef[] = [
     effects: [{ kind: 'status', status: 'protected', duration: 8 }],
     aiRole: 'buff',
   },
+  // ── 성장으로 배우는 기술 ──
+  {
+    id: 'whirlwind', name: '회전 베기', icon: '회', color: '#ffd080', type: 'technique', schools: ['fighting'],
+    desc: '주변 적 모두를 벤다.',
+    cost: 0, castTime: 0, cooldown: 8, range: 0, target: 'self', radius: 1.6, affects: 'enemies',
+    effects: [{ kind: 'weapon', mult: 0.9 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'war_cry', name: '전투 함성', icon: '함', color: '#ff9944', type: 'technique', schools: ['fighting'],
+    desc: '주변 5칸 아군이 8초간 괴력(피해 +30%).',
+    cost: 0, castTime: 0, cooldown: 20, range: 0, target: 'self', radius: 5, affects: 'allies',
+    effects: [{ kind: 'status', status: 'might', duration: 8 }],
+    aiRole: 'buff',
+  },
+  {
+    id: 'frost_nova', name: '서리 폭발', icon: '빙', color: '#99ddff', type: 'spell', schools: ['ice'], level: 3,
+    desc: '주변 적에게 냉기 피해를 주고 높은 확률로 감속시킨다. 붙은 적을 떼어낼 때.',
+    cost: 6, castTime: 0, cooldown: 10, range: 0, target: 'self', radius: 2, affects: 'enemies',
+    effects: [
+      { kind: 'damage', element: 'cold', base: [4, 7], scale: 0.4 },
+      { kind: 'status', status: 'slow', duration: 3, chance: 0.8 },
+    ],
+    aiRole: 'damage',
+  },
+  {
+    id: 'volley', name: '화살비', icon: '비', color: '#e8d8a0', type: 'technique', schools: ['bow'],
+    desc: '지점에 화살을 쏟아부어 범위 안의 적을 모두 맞힌다. (아군 피해 없음)',
+    cost: 0, castTime: 0.6, cooldown: 10, range: 7, target: 'ground', radius: 1.5, affects: 'enemies',
+    projectile: { speed: 14, color: '#e8d8a0' },
+    effects: [{ kind: 'weapon', mult: 0.9 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'mass_heal', name: '치유의 빛', icon: '빛', color: '#ccffaa', type: 'spell', schools: ['faith'], level: 4,
+    desc: '주변 4칸 아군 모두의 체력을 회복한다.',
+    cost: 12, castTime: 1.0, cooldown: 14, range: 0, target: 'self', radius: 4, affects: 'allies',
+    effects: [{ kind: 'heal', base: [8, 12], scale: 0.5 }],
+    aiRole: 'heal',
+  },
+  {
+    id: 'smite', name: '심판', icon: '심', color: '#fff2a0', type: 'spell', schools: ['faith'], level: 3,
+    desc: '신성 피해. 저항할 수 없다.',
+    cost: 5, castTime: 0.4, cooldown: 4, range: 6, target: 'enemy',
+    effects: [{ kind: 'damage', element: 'holy', base: [6, 10], scale: 0.5 }],
+    aiRole: 'damage',
+  },
   // ── 몬스터 ──
   {
     id: 'lightning_bolt', name: '번개 화살', icon: '번', color: '#ffe14d', type: 'spell', level: 3,

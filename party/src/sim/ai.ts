@@ -93,7 +93,7 @@ function targetWeight(w: World, u: Unit, e: Unit): number {
         wt /= 1 + d * 0.1;
         break;
       default:
-        wt /= 1 + Math.max(0, d - u.def.weapon.range) * 0.2;
+        wt /= 1 + Math.max(0, d - u.weapon.range) * 0.2;
     }
   } else {
     switch (u.def.targetPref) {
@@ -118,7 +118,7 @@ function targetWeight(w: World, u: Unit, e: Unit): number {
 }
 
 function attackValue(w: World, u: Unit, e: Unit, d: number, reach: number): number {
-  const el = u.def.weapon.element ?? 'physical';
+  const el = u.weapon.element ?? 'physical';
   const dmg = Math.max(0.5, avgWeaponDamage(u) * resistMult(e, el) - (el === 'physical' ? e.stats.ac * 0.3 : 0));
   let s = ((dmg * hitChance(u, e)) / attackDelay(u)) * targetWeight(w, u, e);
   if (d > reach) s /= 1 + (d - reach) * (u.tactic === 'support' ? 0.4 : 0.15);
@@ -181,6 +181,14 @@ function evalAbility(w: World, u: Unit, ab: AbilityDef, slot: number, enemies: U
     }
     case 'heal': {
       const amount = expectedHeal(u, ab);
+      if (ab.target === 'self' && ab.radius) {
+        // 범위 치유: 범위 안 아군의 회복량 합
+        let val = 0;
+        for (const a of unitsInArea(w, ab, u, u.x, u.y))
+          if (a.hpFrac < 0.85) val += Math.min(amount, a.stats.maxHp - a.hp) * (1 + (1 - a.hpFrac) * 3);
+        if (val > 0) out.push(mk(null, u.x, u.y, (val / time) * 0.6 * (u.tactic === 'support' ? 1.5 : 1) * manaOk));
+        break;
+      }
       for (const a of allies) {
         if (a.hpFrac > 0.85) continue;
         const d = dist(u, a);
@@ -206,9 +214,9 @@ function evalAbility(w: World, u: Unit, ab: AbilityDef, slot: number, enemies: U
       const sdef = STATUSES[eff.status];
       for (const e of enemies) {
         if (e.hasStatus(eff.status)) continue;
-        if (sdef.immuneTag && e.def.tags?.includes(sdef.immuneTag)) continue;
+        if (sdef.immuneTag && e.tags.includes(sdef.immuneTag)) continue;
         let p = eff.chance ?? 1;
-        if (eff.will) p *= e.def.tags?.includes('mindless') ? 0 : willChance(abilityPower(u, ab), e.stats.will);
+        if (eff.will) p *= e.tags.includes('mindless') ? 0 : willChance(abilityPower(u, ab), e.stats.will);
         if (p <= 0.05) continue;
         let val = threatOf(e) * eff.duration * 0.6;
         if (e.cast) val += 25; // 시전 끊기

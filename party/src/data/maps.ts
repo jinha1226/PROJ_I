@@ -9,6 +9,10 @@ export interface MapDef {
   pillars: [number, number][];
   partyStart: [number, number][];
   spawns: { id: string; x: number; y: number }[];
+  /** 내려가는 계단 (없으면 보스층) */
+  stairs?: [number, number];
+  /** 층 번호 (1부터) */
+  depth?: number;
 }
 
 export const MAP1: MapDef = {

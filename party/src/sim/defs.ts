@@ -136,4 +136,54 @@ export interface UnitDef {
   targetPref: TargetPref;
   sight?: number;
   boss?: boolean;
+  /** 처치 경험치 (몬스터) */
+  xp?: number;
+  /** 레벨당 체력/마나 증가 (파티) */
+  levelHp?: number;
+  levelMp?: number;
+  /** 시작 장비의 기본 아이템 id (파티) */
+  gear?: Partial<Record<ItemSlot, string>>;
+  /** 스킬 수치가 닿으면 레벨업 선택지로 나오는 기술 (파티) */
+  learnable?: { ability: string; skill: SkillId; level: number }[];
+}
+
+// ── 장비 ──
+export type ItemSlot = 'weapon' | 'armour' | 'jewel';
+export type Rarity = 'common' | 'magic' | 'artifact';
+
+/** 장비 속성. 장비와 레벨업 보너스가 같은 형식을 쓴다 */
+export type Prop =
+  | { kind: 'resist'; key: ResistKey; v: number }
+  | { kind: 'stat'; stat: 'str' | 'dex' | 'int'; v: number }
+  | { kind: 'ac' | 'ev' | 'will' | 'hp' | 'mp' | 'acc'; v: number }
+  /** 해당 계열 기술의 위력 % */
+  | { kind: 'power'; school: SkillId; v: number }
+  /** 시전 속도 % */
+  | { kind: 'castSpeed'; v: number }
+  /** 평타 피해 % */
+  | { kind: 'weaponDmg'; v: number }
+  | { kind: 'onHit'; apply: StatusApply }
+  | { kind: 'tag'; tag: string };
+
+export interface ItemBase {
+  id: string;
+  name: string;
+  slot: ItemSlot;
+  /** 무기 */
+  weapon?: Omit<WeaponDef, 'name'>;
+  /** 갑옷: AC 와 무게 (무게는 회피 감소·마법 실패율 증가) */
+  ac?: number;
+  weight?: number;
+  /** 드롭 가중치 */
+  weightDrop?: number;
+}
+
+export interface Item {
+  uid: number;
+  base: ItemBase;
+  name: string;
+  rarity: Rarity;
+  /** 강화 수치 (무기: 피해·명중, 갑옷: AC) */
+  plus: number;
+  props: Prop[];
 }
