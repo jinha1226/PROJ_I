@@ -17,7 +17,10 @@ document.body.prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#15131c');
-const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+const persp = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+// 2D 느낌: 원근이 없는 카메라 (멀리 있어도 작아지지 않는다)
+const ortho = new THREE.OrthographicCamera(-10, 10, 6, -6, 0.1, 200);
+let camera: THREE.PerspectiveCamera | THREE.OrthographicCamera = persp;
 
 scene.add(new THREE.HemisphereLight(0xc8d8ff, 0x3a2c22, 0.8));
 const sun = new THREE.DirectionalLight(0xfff0dd, 2.0);
@@ -28,7 +31,7 @@ Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, n
 scene.add(sun);
 
 // ── 셀 셰이딩 · 외곽선 설정 (화면 버튼으로 바꿀 수 있다) ──
-const settings = { outline: 0.008, steps: 3, shadows: true, pitch: 45, dist: 28 };
+const settings = { outline: 0.008, steps: 3, shadows: true, pitch: 45, dist: 28, flat: false };
 
 function gradient(steps: number): THREE.DataTexture {
   const data = new Uint8Array(steps);
@@ -219,6 +222,11 @@ function nearest(a: Actor, side: Actor['side']) {
   return { t: best, d: bd };
 }
 
+/** 바라보는 방향. 2D 모드에선 배틀하트처럼 왼쪽 · 오른쪽만 (살짝 화면 쪽으로 틀어 얼굴이 보이게) */
+function face(a: Actor, dx: number, dz: number) {
+  a.root.rotation.y = settings.flat ? (dx >= 0 ? 1 : -1) * (Math.PI / 2 - 0.45) : Math.atan2(dx, dz);
+}
+
 function hit(target: Actor, dmg: number, color: string) {
   if (target.hp <= 0) return;
   target.hp -= dmg;
@@ -252,13 +260,13 @@ function update(dt: number) {
       const back = a.home.clone().sub(a.root.position);
       if (back.length() > 0.2) {
         a.root.position.addScaledVector(back.normalize(), dt * 3);
-        a.root.rotation.y = Math.atan2(back.x, back.z);
+        face(a, back.x, back.z);
         play(a, 'Running_A');
       } else play(a, 'Idle');
       continue;
     }
     tmp.copy(t.root.position).sub(a.root.position);
-    a.root.rotation.y = Math.atan2(tmp.x, tmp.z);
+    face(a, tmp.x, tmp.z);
     const reach = a.look.ranged ? 9 : 1.6 * (a.look.scale ?? 1);
     if (d > reach) {
       if (a.busy <= 0) {
@@ -341,13 +349,17 @@ function button(label: () => string, onClick: () => void) {
   const b = document.createElement('button');
   const refresh = () => (b.textContent = label());
   b.addEventListener('click', () => { onClick(); refresh(); });
+  b.addEventListener('refresh', refresh);
   refresh();
   ui.appendChild(b);
   return b;
 }
-const OUTLINES = [0, 0.005, 0.008, 0.012];
-button(() => `외곽선: ${['없음', '얇게', '보통', '굵게'][OUTLINES.indexOf(settings.outline)]}`, () => {
-  settings.outline = OUTLINES[(OUTLINES.indexOf(settings.outline) + 1) % OUTLINES.length];
+const OUTLINES_P = [0, 0.005, 0.008, 0.012];
+const OUTLINES_O = [0, 0.003, 0.005, 0.008];
+const outlines = () => (settings.flat ? OUTLINES_O : OUTLINES_P);
+button(() => `외곽선: ${['없음', '얇게', '보통', '굵게'][Math.max(0, outlines().indexOf(settings.outline))]}`, () => {
+  const list = outlines();
+  settings.outline = list[(list.indexOf(settings.outline) + 1) % list.length];
   for (const m of toonMats) m.userData.outlineParameters.thickness = settings.outline;
 });
 button(() => `명암: ${settings.steps}단`, () => {
@@ -360,9 +372,29 @@ button(() => `그림자: ${settings.shadows ? '켜짐' : '꺼짐'}`, () => {
   sun.castShadow = settings.shadows;
 });
 button(() => `시점: ${settings.pitch}°`, () => {
-  settings.pitch = settings.pitch === 35 ? 45 : settings.pitch === 45 ? 55 : 35;
+  settings.pitch = settings.pitch === 25 ? 35 : settings.pitch === 35 ? 45 : settings.pitch === 45 ? 55 : 25;
   placeCamera();
 });
+const hemi = scene.children.find((o) => (o as THREE.HemisphereLight).isHemisphereLight) as THREE.HemisphereLight;
+const flatBtn = button(() => `2D 느낌: ${settings.flat ? '켜짐' : '꺼짐'}`, () => {
+  settings.flat = !settings.flat;
+  // 2D 프리셋: 원근 없음 · 낮은 시점 · 2단 명암 · 그림자 끔 · 굵은 외곽선 · 평평한 조명
+  // (직교 카메라에선 외곽선 두께 계산이 달라 값이 작아야 같은 굵기로 보인다)
+  if (settings.flat) Object.assign(settings, { pitch: 35, steps: 2, shadows: false, outline: 0.005 });
+  else Object.assign(settings, { pitch: 45, steps: 3, shadows: true, outline: 0.008 });
+  sun.castShadow = settings.shadows;
+  hemi.intensity = settings.flat ? 1.4 : 0.8;
+  sun.intensity = settings.flat ? 1.4 : 2.0;
+  gradientMap = gradient(settings.steps);
+  for (const m of toonMats) {
+    m.gradientMap = gradientMap;
+    m.needsUpdate = true;
+    m.userData.outlineParameters.thickness = settings.outline;
+  }
+  placeCamera();
+  for (const b of ui.querySelectorAll('button')) b.dispatchEvent(new Event('refresh'));
+});
+flatBtn.classList.add('on');
 button(() => '확대 +', () => { settings.dist = Math.max(12, settings.dist - 3); placeCamera(); });
 button(() => '축소 −', () => { settings.dist = Math.min(36, settings.dist + 3); placeCamera(); });
 const fpsEl = document.createElement('span');
@@ -370,16 +402,23 @@ fpsEl.id = 'fps';
 ui.appendChild(fpsEl);
 
 function placeCamera() {
+  camera = settings.flat ? ortho : persp;
   const p = THREE.MathUtils.degToRad(settings.pitch);
   camera.position.set(1, Math.sin(p) * settings.dist, Math.cos(p) * settings.dist);
   camera.lookAt(1, 0.8, 0);
+  // 직교 카메라: 화면에 보이는 폭을 거리 대신 확대 값으로
+  const aspect = window.innerWidth / window.innerHeight;
+  const half = settings.dist * 0.2;
+  Object.assign(ortho, { left: -half * aspect, right: half * aspect, top: half, bottom: -half });
+  ortho.updateProjectionMatrix();
 }
 
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setSize(w, h);
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
+  persp.aspect = w / h;
+  persp.updateProjectionMatrix();
+  placeCamera();
   const dpr = window.devicePixelRatio || 1;
   hud.width = w * dpr;
   hud.height = h * dpr;
