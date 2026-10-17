@@ -32,13 +32,19 @@ export function think(w: World, u: Unit): Intent | null {
 
   // 붕괴 (sim/stress.ts): 자동전투 행동이 망가진다
   const mood = u.hero?.mood;
-  if (mood === 'afraid' && enemies.some((e) => dist(u, e) < 3.2)) return flee(w, u, enemies);
-  if (mood === 'hesitant' && w.rng.chance(0.25)) return null;
+  if (mood === 'afraid' && enemies.some((e) => dist(u, e) < 5)) return flee(w, u, enemies);
+  if (mood === 'hesitant' && w.rng.chance(0.25)) {
+    if (!w.isSaying(u)) w.say(u, '…', '#8fa0b8', 1.2);
+    return null;
+  }
   if (mood === 'reckless') {
+    // 가장 먼 적에게까지 혼자 돌진한다 (한 번 정하면 쓰러질 때까지)
     u.holdPos = null;
-    let near = enemies[0];
-    for (const e of enemies) if (dist(u, e) < dist(u, near)) near = e;
-    return { type: 'attack', target: near };
+    const cur = u.intent?.type === 'attack' && u.intent.target.alive ? u.intent.target : null;
+    if (cur) return u.intent;
+    let far = enemies[0];
+    for (const e of enemies) if (dist(u, e) > dist(u, far)) far = e;
+    return { type: 'attack', target: far };
   }
 
   const manual = u.faction === 'party' && !u.autoMode;

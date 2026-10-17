@@ -63,6 +63,24 @@ export interface Crisis {
   y: number;
 }
 
+/** 머리 위 말풍선 (대사 · 명령 거부) */
+export interface Bubble {
+  unit: Unit;
+  text: string;
+  color: string;
+  t: number;
+  dur: number;
+}
+
+/** 붕괴 · 각성 순간. 화면 쪽에서 꺼내 잠깐 멈추고 크게 보여 준다 */
+export interface MoodBreak {
+  unit: Unit;
+  title: string;
+  desc: string;
+  line: string;
+  color: string;
+}
+
 export const SIGHT = 8;
 
 export class World {
@@ -75,6 +93,8 @@ export class World {
   floaters: Floater[] = [];
   logs: LogLine[] = [];
   crises: Crisis[] = [];
+  bubbles: Bubble[] = [];
+  moodBreaks: MoodBreak[] = [];
   private crisisAt = new Map<string, number>();
   private lowHp = new Set<Unit>();
   time = 0;
@@ -285,6 +305,15 @@ export class World {
     const stack = this.floaters.filter((f) => f.t < 0.25 && Math.abs(f.x - u.x) < 0.3).length;
     this.floaters.push({ x: u.x, y: u.y - 0.9 - stack * 0.28, text, color, t: 0, scale });
   }
+  /** 말풍선: 유닛마다 하나 (새 말이 이전 말을 덮는다) */
+  say(u: Unit, text: string, color: string, dur = 2.4) {
+    this.bubbles = this.bubbles.filter((b) => b.unit !== u);
+    this.bubbles.push({ unit: u, text, color, t: 0, dur });
+  }
+  isSaying(u: Unit) {
+    return this.bubbles.some((b) => b.unit === u);
+  }
+
   /** 같은 key 는 6초에 한 번만 알린다 */
   crisis(key: string, text: string, x: number, y: number, color = '#ff6666') {
     const last = this.crisisAt.get(key);
@@ -470,6 +499,8 @@ export class World {
       f.y -= dt * 0.8;
     }
     this.floaters = this.floaters.filter((f) => f.t < 1.1);
+    for (const b of this.bubbles) b.t += dt;
+    this.bubbles = this.bubbles.filter((b) => b.t < b.dur && b.unit.alive);
     this.units = this.units.filter((u) => u.alive || u.faction === 'party' || this.time - u.deathTime < 1.5);
   }
 

@@ -11,6 +11,7 @@ import { FLOORS } from '../data/encounters';
 import { xpToNext } from '../sim/hero';
 import { BELT_SIZE, CONSUMABLES } from '../data/consumables';
 import { MOODS } from '../data/moods';
+import { WARN_STRESS } from '../sim/stress';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -193,7 +194,8 @@ export class Hud {
       if (u.hero) {
         const st = col.querySelector<HTMLElement>('.bar.st > div')!;
         st.style.width = `${u.hero.stress}%`;
-        st.style.background = mood ? mood.color : u.hero.stress >= 70 ? '#d070ff' : '#8a5cc0';
+        st.style.background = mood ? mood.color : u.hero.stress >= WARN_STRESS ? '#d070ff' : '#8a5cc0';
+        col.classList.toggle('stress-warn', !mood && u.hero.stress >= WARN_STRESS);
       }
       col.querySelector('.statuses')!.innerHTML =
         (mood ? `<span class="chip mood" style="color:${mood.color}" title="${mood.desc}">${mood.virtue ? '★' : '!'}${mood.name}</span>` : '') +

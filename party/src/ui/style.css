@@ -311,3 +311,21 @@ button.on { border-color: var(--accent); color: var(--accent); }
 #setup details { margin-top: 2px; }
 #setup details summary { cursor: pointer; }
 @media (max-width: 700px) { #sheet .tals { grid-template-columns: 1fr; } }
+
+/* 스트레스 경고 · 붕괴 연출 */
+.pcol.stress-warn .bar.st { height: 4px; animation: stwarn 0.8s ease-in-out infinite alternate; }
+@keyframes stwarn { from { opacity: 0.35; } to { opacity: 1; box-shadow: 0 0 6px #d070ff; } }
+#moodbanner { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); z-index: 30; pointer-events: none;
+  min-width: 280px; max-width: 92vw; text-align: center; padding: 12px 20px; border-radius: 10px;
+  background: #0d0b12ee; border: 2px solid var(--mc, #c080ff); box-shadow: 0 0 30px var(--mc, #c080ff); }
+#moodbanner .mt { font-size: 22px; font-weight: bold; color: var(--mc, #c080ff); }
+#moodbanner .ml { font-size: 16px; color: #f4f1ea; margin-top: 4px; font-style: italic; }
+#moodbanner .md { font-size: 12px; color: #aaa; margin-top: 6px; }
+#moodbanner.pop { animation: moodpop 3.2s ease-out forwards; }
+@keyframes moodpop {
+  0% { opacity: 0; transform: translateX(-50%) scale(1.6); }
+  8% { opacity: 1; transform: translateX(-50%) scale(1); }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (max-height: 500px) { #moodbanner { top: 12%; } #moodbanner .mt { font-size: 18px; } }

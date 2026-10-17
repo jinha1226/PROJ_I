@@ -265,6 +265,32 @@ $('btn-crisis').addEventListener('click', () => {
 });
 updateCrisisButton();
 
+/** 붕괴 · 각성 순간: 잠깐 멈추고 크게 보여 준다 (위기 설정과 무관하게 항상) */
+let moodFreeze = 0;
+let moodShown = 0;
+function handleMoodBreaks(dt: number) {
+  const mb = world.moodBreaks.shift();
+  if (mb) {
+    const el = $('moodbanner');
+    el.querySelector('.mt')!.textContent = mb.title;
+    el.querySelector('.ml')!.textContent = `「${mb.line}」`;
+    el.querySelector('.md')!.textContent = mb.desc;
+    el.style.setProperty('--mc', mb.color);
+    el.classList.remove('hidden');
+    // 다시 그려 애니메이션을 처음부터
+    el.classList.remove('pop');
+    void el.offsetWidth;
+    el.classList.add('pop');
+    cam.x = mb.unit.x;
+    cam.y = mb.unit.y;
+    moodFreeze = 1.4;
+    moodShown = 3.2;
+  }
+  moodFreeze = Math.max(0, moodFreeze - dt);
+  moodShown = Math.max(0, moodShown - dt);
+  if (moodShown <= 0) $('moodbanner').classList.add('hidden');
+}
+
 function handleCrises(dt: number) {
   const list = world.crises.splice(0);
   if (list.length && crisisMode !== 'off') {
@@ -298,7 +324,8 @@ function frame(now: number) {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   handleCrises(dt);
-  if (!ui.paused && !world.outcome && !restOpen) {
+  handleMoodBreaks(dt);
+  if (!ui.paused && !world.outcome && !restOpen && moodFreeze <= 0) {
     acc += dt * ui.speed * (slowTimer > 0 ? 0.3 : 1);
     while (acc >= STEP) {
       world.tick(STEP);

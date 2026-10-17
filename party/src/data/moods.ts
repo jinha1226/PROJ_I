@@ -18,13 +18,13 @@ export interface MoodDef {
 export const MOODS: Record<MoodId, MoodDef> = {
   afraid: {
     id: 'afraid', name: '겁에 질림', icon: '겁', color: '#c080ff', virtue: false,
-    desc: '적이 가까이 오면 싸우지 않고 도망친다. 주는 피해 -15%. 명령을 가끔 거부한다.',
+    desc: '적이 5칸 안에 오면 싸우지 않고 도망친다. 주는 피해 -15%. 명령을 가끔 거부한다.',
     mods: { dmgMult: 0.85 },
     barks: ['다 죽을 거야!', '여긴 싫어…', '도망쳐야 해!'],
   },
   reckless: {
     id: 'reckless', name: '무모함', icon: '광', color: '#ff6655', virtue: false,
-    desc: '대열과 위치 고수를 무시하고 가장 가까운 적에게 돌진한다. 주는 피해 +10%, 받는 피해 +25%. 명령을 가끔 거부한다.',
+    desc: '대열과 위치 고수를 무시하고 멀리 있는 적에게까지 혼자 돌진한다. 주는 피해 +10%, 받는 피해 +25%. 명령을 가끔 거부한다.',
     mods: { dmgMult: 1.1, dmgTakenMult: 1.25 },
     barks: ['내가 다 쓸어버리겠어!', '비켜, 겁쟁이들!', '피를 보여 줘!'],
   },

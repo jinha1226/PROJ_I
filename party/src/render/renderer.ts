@@ -164,6 +164,9 @@ export class Renderer {
       ctx.globalAlpha = 1;
     }
 
+    // ── 말풍선 ──
+    for (const b of w.bubbles) this.drawBubble(b.unit, b.text, b.color, b.t, b.dur);
+
     if (ui.paused) {
       ctx.strokeStyle = 'rgba(255,204,102,0.55)';
       ctx.lineWidth = 6;
@@ -389,6 +392,58 @@ export class Renderer {
     ctx.stroke();
   }
 
+  private trails = new WeakMap<Unit, { x: number; y: number }[]>();
+
+  /** 위치 기록으로 잔상을 그린다 (무모함 돌진) */
+  private drawTrail(u: Unit, sx: number, sy: number, r: number, on: boolean) {
+    let hist = this.trails.get(u);
+    if (!on) {
+      if (hist) this.trails.delete(u);
+      return;
+    }
+    if (!hist) this.trails.set(u, (hist = []));
+    hist.push({ x: sx, y: sy });
+    if (hist.length > 10) hist.shift();
+    const ctx = this.ctx;
+    for (let i = 0; i < hist.length - 1; i++) {
+      const p = hist[i];
+      if (Math.hypot(p.x - sx, p.y - sy) < 2) continue;
+      ctx.globalAlpha = (i / hist.length) * 0.35;
+      ctx.fillStyle = '#ff4433';
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y - r * 1.1, r * 0.9, r * 1.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  private drawBubble(u: Unit, text: string, color: string, t: number, dur: number) {
+    const ctx = this.ctx;
+    const [sx, sy] = this.cam.toScreen(u.x, u.y);
+    const r = u.radius * this.cam.zoom;
+    ctx.font = 'bold 12px sans-serif';
+    const tw = ctx.measureText(text).width + 14;
+    const bx = sx - tw / 2, by = sy - r * 2.3 - 62 - Math.min(1, t * 6) * 4;
+    ctx.globalAlpha = Math.min(1, (dur - t) * 3, t * 8);
+    ctx.fillStyle = '#f4f1ea';
+    roundRect(ctx, bx, by, tw, 20, 8);
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(sx - 5, by + 20);
+    ctx.lineTo(sx, by + 27);
+    ctx.lineTo(sx + 5, by + 20);
+    ctx.fillStyle = '#f4f1ea';
+    ctx.fill();
+    ctx.fillStyle = '#1a1a22';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, sx, by + 10.5);
+    ctx.globalAlpha = 1;
+  }
+
   private drawUnit(w: World, u: Unit) {
     const ctx = this.ctx, z = this.cam.zoom;
     const [sx, sy] = this.cam.toScreen(u.x, u.y);
@@ -406,6 +461,22 @@ export class Renderer {
       ctx.globalAlpha = 1;
       return;
     }
+
+    // 붕괴 · 각성: 발밑 아우라 (맥박), 무모함은 붉은 잔상
+    const mood = u.hero?.mood ? MOODS[u.hero.mood] : null;
+    if (mood) {
+      const pulse = 0.5 + 0.5 * Math.sin(w.time * (mood.virtue ? 3 : 6));
+      ctx.fillStyle = mood.color + (mood.virtue ? '30' : '40');
+      ctx.strokeStyle = mood.color;
+      ctx.globalAlpha = 0.5 + pulse * 0.5;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, r * (1.7 + pulse * 0.4), r * (0.8 + pulse * 0.2), 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    this.drawTrail(u, sx, sy, r, mood?.id === 'reckless');
 
     // 그림자
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
@@ -443,22 +514,29 @@ export class Renderer {
       ctx.fillRect(barX, y + 5, (barW * u.mp) / u.stats.maxMp, 3);
     }
 
-    // 상태이상 아이콘 (붕괴 · 각성은 맨 앞에 테두리로)
-    const mood = u.hero?.mood ? MOODS[u.hero.mood] : null;
-    if (u.statuses.length || mood) {
+    // 붕괴 · 각성 이름 (상시, 붕괴는 깜빡임)
+    if (mood) {
+      y -= 15;
+      const label = `${mood.virtue ? '★' : '!'} ${mood.name}`;
+      ctx.font = 'bold 11px sans-serif';
+      const tw = ctx.measureText(label).width + 8;
+      ctx.globalAlpha = mood.virtue ? 1 : 0.65 + 0.35 * Math.sin(w.time * 8);
+      ctx.fillStyle = '#000d';
+      roundRect(ctx, sx - tw / 2, y - 1, tw, 14, 4);
+      ctx.fill();
+      ctx.strokeStyle = mood.color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = mood.color;
+      ctx.fillText(label, sx, y + 6.5);
+      ctx.globalAlpha = 1;
+    }
+
+    // 상태이상 아이콘
+    if (u.statuses.length) {
       y -= 15;
       ctx.font = 'bold 10px sans-serif';
-      let x = sx - ((u.statuses.length + (mood ? 1 : 0)) * 14) / 2;
-      if (mood) {
-        ctx.fillStyle = '#000c';
-        ctx.fillRect(x, y, 13, 13);
-        ctx.strokeStyle = mood.color;
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(x + 0.5, y + 0.5, 12, 12);
-        ctx.fillStyle = mood.color;
-        ctx.fillText(mood.icon, x + 6.5, y + 7);
-        x += 14;
-      }
+      let x = sx - (u.statuses.length * 14) / 2;
       for (const s of u.statuses) {
         ctx.fillStyle = '#000c';
         ctx.fillRect(x, y, 13, 13);
