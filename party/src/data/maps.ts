@@ -59,6 +59,5 @@ export const MAP1: MapDef = {
     { id: 'orc', x: 43, y: 26 },
     { id: 'orc_shaman', x: 44, y: 18 },
     { id: 'hyena', x: 41, y: 25 },
-    { id: 'hyena', x: 37, y: 25 },
   ],
 };

@@ -210,7 +210,7 @@ export class Input {
   /** 스킬 사용 시작. 적/아군 대상 스킬은 커서 아래 유효 대상이 있으면 즉시 사용 */
   useSkill(slot: number, quick: boolean) {
     const u = this.ui.selected.find((s) => s.alive);
-    if (!u || slot >= u.abilities.length) return;
+    if (!u || slot >= u.abilities.length || u.abilities[slot].hidden) return;
     const ab = u.abilities[slot].def;
     if (ab.target === 'self') {
       this.w.commandAbility(u, slot, null, u.x, u.y);

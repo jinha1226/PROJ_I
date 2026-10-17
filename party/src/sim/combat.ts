@@ -52,10 +52,11 @@ export function applyDamage(
     w.alert(target);
   }
 
-  // 시전 방해: 시전 시간이 긴 마법일수록, 큰 피해일수록 끊기기 쉽다
+  // 시전 방해: 시전 시간이 긴 마법일수록, 큰 피해일수록 끊기기 쉽다.
+  // 기술(내려찍기, 조준 사격)은 맞아도 끊기지 않고 기절로만 끊긴다
   if (target.cast && dmg > 0 && !opts.dot) {
     const ab = target.abilities[target.cast.slot].def;
-    if (ab.castTime >= 0.8) {
+    if (ab.type === 'spell' && ab.castTime >= 0.8) {
       const p = 0.1 + (dmg / target.stats.maxHp) * 1.5;
       if (w.rng.chance(p)) w.cancelCast(target, '시전 방해!');
     }

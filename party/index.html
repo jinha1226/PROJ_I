@@ -14,6 +14,7 @@
     <button id="btn-all" title="` 또는 Ctrl+A">전체 선택</button>
     <button id="btn-auto" title="T">자동전투: 켜짐</button>
     <button id="btn-speed" title="게임 속도">속도 1x</button>
+    <button id="btn-crisis" title="보스 범위 공격 예고 · 아군 체력 위험 때">위기 시: 감속</button>
     <button id="btn-follow" title="C">카메라 추적: 켜짐</button>
     <button id="btn-help" title="H">도움말</button>
     <span id="combat-state"></span>
@@ -25,6 +26,7 @@
   <div id="skillbar" class="panel hidden"></div>
   <div id="pause-banner" class="hidden">일시정지 · 명령을 입력하세요</div>
   <div id="targeting-hint" class="hidden"></div>
+  <div id="crisis" class="hidden"></div>
 
   <div id="outcome" class="hidden">
     <div class="box">
@@ -46,6 +48,7 @@
         <tr><td>F</td><td>커서 아래 적 집중 공격 지정/해제</td></tr>
         <tr><td><b>Space</b></td><td><b>일시정지</b> — 멈춘 상태에서도 모든 명령 입력 가능</td></tr>
         <tr><td>T</td><td>자동전투 전체 켜기/끄기 (캐릭터 카드에서 개별 설정)</td></tr>
+        <tr><td>위기 시 버튼</td><td>보스 범위 공격 예고 · 아군 체력 위험 때 감속 / 일시정지 / 끔</td></tr>
         <tr><td>방향키 / 휠 클릭 드래그 / 휠</td><td>카메라 이동 / 확대 (C: 파티 추적)</td></tr>
         <tr><td>Esc</td><td>대상 지정 취소 / 선택 해제</td></tr>
       </table>
@@ -57,10 +60,12 @@
         <tr><td>두 손가락 벌리기/모으기</td><td>확대 / 축소</td></tr>
         <tr><td>적 탭</td><td>저항·면역 정보 (정보 창의 버튼으로 집중 공격 지정)</td></tr>
         <tr><td>스킬 버튼 → 대상 탭</td><td>스킬 사용</td></tr>
+        <tr><td>위기 시 버튼</td><td>보스 범위 공격 예고 · 아군 체력 위험 때 감속 / 일시정지 / 끔</td></tr>
       </table>
       <p class="tip">
-        적에게 커서를 올리면 저항·면역을 볼 수 있습니다. 불의 정령에겐 화염이 거의 통하지 않고, 해골에겐 독이 통하지 않습니다.<br />
-        전사의 <b>방패 강타</b>로 적을 기절시킨 사이 <b>화염 폭풍</b>(시전 3초)을 써 보세요. 좁은 통로에 전사를 세우면 적이 지나가지 못합니다.<br />
+        평소에는 자동전투에 맡기고, 화면이 느려지며 경고가 뜰 때 개입하세요.<br />
+        적에게 커서를 올리거나 탭하면 저항·면역을 볼 수 있습니다. 불의 정령에겐 화염이 거의 통하지 않고, 해골에겐 독이 통하지 않습니다.<br />
+        전사의 <b>방패 강타</b>는 적 주술사의 시전을 끊습니다. 불의 정령에겐 <b>서리 화살</b>을 쓰세요. 좁은 통로에 전사를 세우면 적이 지나가지 못합니다.<br />
         빨간 원은 적의 범위 공격 예고입니다. 아군을 드래그해서 피하세요.
       </p>
       <button id="btn-help-close">시작하기</button>

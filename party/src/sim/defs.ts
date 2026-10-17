@@ -130,6 +130,8 @@ export interface UnitDef {
   weapon: WeaponDef;
   armourWeight?: number;
   abilities: string[];
+  /** 스킬바에 나오지 않고 자동전투에서만 쓰는 능력 */
+  autoAbilities?: string[];
   tactic: TacticId;
   targetPref: TargetPref;
   sight?: number;

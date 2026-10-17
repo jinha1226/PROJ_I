@@ -47,6 +47,14 @@ export interface LogLine {
   time: number;
 }
 
+/** 플레이어가 개입해야 할 순간. 화면 쪽에서 꺼내 감속/일시정지에 쓴다 */
+export interface Crisis {
+  text: string;
+  color: string;
+  x: number;
+  y: number;
+}
+
 export const SIGHT = 8;
 
 export class World {
@@ -58,6 +66,9 @@ export class World {
   fx: Fx[] = [];
   floaters: Floater[] = [];
   logs: LogLine[] = [];
+  crises: Crisis[] = [];
+  private crisisAt = new Map<string, number>();
+  private lowHp = new Set<Unit>();
   time = 0;
   focusTarget: Unit | null = null;
   leader: Unit | null = null;
@@ -168,6 +179,25 @@ export class World {
     const stack = this.floaters.filter((f) => f.t < 0.25 && Math.abs(f.x - u.x) < 0.3).length;
     this.floaters.push({ x: u.x, y: u.y - 0.9 - stack * 0.28, text, color, t: 0, scale });
   }
+  /** 같은 key 는 6초에 한 번만 알린다 */
+  crisis(key: string, text: string, x: number, y: number, color = '#ff6666') {
+    const last = this.crisisAt.get(key);
+    if (last !== undefined && this.time - last < 6) return;
+    this.crisisAt.set(key, this.time);
+    this.crises.push({ text, color, x, y });
+    if (this.crises.length > 8) this.crises.shift();
+  }
+
+  private checkLowHp() {
+    for (const p of this.party) {
+      if (!p.alive) continue;
+      if (p.hpFrac < 0.35 && !this.lowHp.has(p)) {
+        this.lowHp.add(p);
+        this.crisis(`low:${p.id}`, `${p.name} 체력 위험!`, p.x, p.y, '#ff5555');
+      } else if (p.hpFrac > 0.6) this.lowHp.delete(p);
+    }
+  }
+
   log(text: string, color = '#cccccc') {
     this.logs.push({ text, color, time: this.time });
     if (this.logs.length > 60) this.logs.shift();
@@ -230,6 +260,7 @@ export class World {
       this.awareTimer = 0.2;
       this.updateAwareness();
       this.updateCombatState(0.2);
+      this.checkLowHp();
     }
 
     for (const u of this.units) if (u.alive) updateUnit(this, u, dt);

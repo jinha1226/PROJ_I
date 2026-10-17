@@ -141,7 +141,7 @@ function evalAbility(w: World, u: Unit, ab: AbilityDef, slot: number, enemies: U
   const out: Cand[] = [];
   const time = ab.castTime + 0.5;
   let risk = 1;
-  if (ab.castTime >= 0.8 && threatened(w, u)) risk = 0.3;
+  if (ab.type === 'spell' && ab.castTime >= 0.8 && threatened(w, u)) risk = 0.3;
   const manaOk = ab.cost === 0 || u.mp - ab.cost >= u.stats.maxMp * 0.15 ? 1 : 0.6;
   const allies = w.alliesOf(u);
   const mk = (target: Unit | null, x: number, y: number, score: number): Cand => ({
@@ -159,10 +159,11 @@ function evalAbility(w: World, u: Unit, ab: AbilityDef, slot: number, enemies: U
           let val = 0, hostiles = 0;
           for (const v of vs) {
             const exp = Math.min(expectedDamage(u, ab, v), v.hp * 1.2);
+            // 평타 점수와 같은 잣대로 비교되도록 대상 가중치를 곱한다
             if (v.faction !== u.faction) {
-              val += exp * (w.focusTarget === v ? 1.5 : 1);
+              val += exp * targetWeight(w, u, v);
               hostiles++;
-            } else val -= exp * 4;
+            } else val -= exp * 6;
           }
           if (hostiles === 0 || val <= 0) continue;
           const score = (val / time) * risk * manaOk - distPenalty(u, ab, dist(u, p));

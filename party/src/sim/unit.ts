@@ -20,6 +20,8 @@ export interface AbilityState {
   auto: boolean;
   /** 자동전투 우선순위 (클수록 먼저) */
   prio: number;
+  /** 스킬바에 표시하지 않음 (자동 전용). 항상 목록 끝에 온다 */
+  hidden?: boolean;
 }
 
 export interface StatusInst {
@@ -110,10 +112,11 @@ export class Unit {
     this.radius = def.radius;
     this.tactic = def.tactic;
     this.skills = Object.fromEntries(ALL_SKILLS.map((s) => [s, def.skills?.[s] ?? 0])) as Record<SkillId, number>;
-    this.abilities = def.abilities.map((id, i) => {
+    const ids = [...def.abilities, ...(def.autoAbilities ?? [])];
+    this.abilities = ids.map((id, i) => {
       const a = ABILITIES[id];
       if (!a) throw new Error(`unknown ability ${id}`);
-      return { def: a, cd: 0, auto: true, prio: def.abilities.length - i };
+      return { def: a, cd: 0, auto: true, prio: ids.length - i, hidden: i >= def.abilities.length };
     });
   }
 

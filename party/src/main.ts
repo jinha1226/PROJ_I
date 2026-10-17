@@ -21,6 +21,7 @@ function restart() {
   ui.inspect = null;
   ui.targeting = null;
   ui.paused = false;
+  slowTimer = 0;
   hud.build();
   centerParty();
 }
@@ -70,6 +71,49 @@ $('btn-help-close').addEventListener('click', () => {
 });
 $('btn-restart').addEventListener('click', restart);
 $('btn-follow').addEventListener('click', () => (cam.follow = !cam.follow));
+// 위기 순간(보스 범위 공격 예고, 아군 체력 위험)에 잠깐 느려지거나 멈춘다
+type CrisisMode = 'slow' | 'pause' | 'off';
+const CRISIS_LABEL: Record<CrisisMode, string> = { slow: '감속', pause: '일시정지', off: '끔' };
+let crisisMode: CrisisMode = 'slow';
+try {
+  const saved = localStorage.getItem('bh.crisis');
+  if (saved === 'slow' || saved === 'pause' || saved === 'off') crisisMode = saved;
+} catch {
+  // 저장소를 못 쓰면 기본값
+}
+let slowTimer = 0;
+let crisisShown = 0;
+function updateCrisisButton() {
+  $('btn-crisis').textContent = `위기 시: ${CRISIS_LABEL[crisisMode]}`;
+  $('btn-crisis').classList.toggle('on', crisisMode !== 'off');
+}
+$('btn-crisis').addEventListener('click', () => {
+  const order: CrisisMode[] = ['slow', 'pause', 'off'];
+  crisisMode = order[(order.indexOf(crisisMode) + 1) % order.length];
+  try {
+    localStorage.setItem('bh.crisis', crisisMode);
+  } catch {
+    // 무시
+  }
+  updateCrisisButton();
+});
+updateCrisisButton();
+
+function handleCrises(dt: number) {
+  const list = world.crises.splice(0);
+  if (list.length && crisisMode !== 'off') {
+    const c = list[list.length - 1];
+    $('crisis').textContent = c.text + (crisisMode === 'pause' ? ' (일시정지됨)' : '');
+    ($('crisis') as HTMLElement).style.color = c.color;
+    crisisShown = 2;
+    if (crisisMode === 'slow') slowTimer = 1.6;
+    else ui.paused = true;
+  }
+  slowTimer = Math.max(0, slowTimer - dt);
+  crisisShown = Math.max(0, crisisShown - dt);
+  $('crisis').classList.toggle('hidden', crisisShown <= 0);
+}
+
 const SPEEDS = [1, 1.5, 0.5];
 $('btn-speed').addEventListener('click', () => {
   ui.speed = SPEEDS[(SPEEDS.indexOf(ui.speed) + 1) % SPEEDS.length];
@@ -87,8 +131,9 @@ let acc = 0;
 function frame(now: number) {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
+  handleCrises(dt);
   if (!ui.paused && !world.outcome) {
-    acc += dt * ui.speed;
+    acc += dt * ui.speed * (slowTimer > 0 ? 0.3 : 1);
     while (acc >= STEP) {
       world.tick(STEP);
       acc -= STEP;

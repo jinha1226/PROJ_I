@@ -33,6 +33,12 @@ export function beginCast(w: World, u: Unit, slot: number, target: Unit | null, 
     return;
   }
   u.cast = { slot, target, x, y, time: 0, total: ab.castTime };
+  // 적의 범위 공격 예고: 아군이 범위 근처에 있으면 플레이어에게 알린다
+  if (u.faction === 'enemy' && ab.radius && w.isVisible(u)) {
+    const c = areaCenter(ab, u, x, y);
+    if (w.party.some((p) => p.alive && dist(p, c) <= ab.radius! + 1.2))
+      w.crisis(`aoe:${u.id}`, `${u.name}: ${ab.name}! 피하세요`, c.x, c.y);
+  }
 }
 
 export function updateCast(w: World, u: Unit, dt: number) {

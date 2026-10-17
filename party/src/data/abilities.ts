@@ -140,7 +140,7 @@ const list: AbilityDef[] = [
     desc: '1.2초 뒤 주변을 강타한다. 범위 표시를 보고 피하자.',
     cost: 0, castTime: 1.2, cooldown: 8, range: 0, target: 'self', radius: 1.9, affects: 'enemies',
     effects: [
-      { kind: 'damage', element: 'physical', base: [16, 24], scale: 0 },
+      { kind: 'damage', element: 'physical', base: [26, 36], scale: 0 },
       { kind: 'status', status: 'stun', duration: 1.2, chance: 0.5 },
     ],
     aiRole: 'damage',

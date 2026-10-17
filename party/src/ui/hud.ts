@@ -149,14 +149,15 @@ export class Hud {
     }
     bar.classList.remove('hidden');
     const version = u.abilities.map((a) => `${a.auto}${a.prio}`).join();
+    const shown = u.abilities.filter((a) => !a.hidden);
     if (this.skillFor !== u || this.skillVersion !== version) {
       this.skillFor = u;
       this.skillVersion = version;
       this.buildSkillbar(u);
     }
     // 매 프레임 갱신: 재사용 대기, 마나, 정보
-    const ranks = [...u.abilities].sort((a, b) => b.prio - a.prio);
-    u.abilities.forEach((st, i) => {
+    const ranks = [...shown].sort((a, b) => b.prio - a.prio);
+    shown.forEach((st, i) => {
       const el = bar.querySelector<HTMLElement>(`.skill[data-slot="${i}"]`)!;
       const mask = el.querySelector<HTMLElement>('.cdmask')!;
       const cdt = el.querySelector<HTMLElement>('.cdtext')!;
@@ -186,7 +187,7 @@ export class Hud {
     const bar = $('skillbar');
     const keys = ['Q', 'W', 'E', 'R'];
     bar.innerHTML = '<div class="info"></div>';
-    u.abilities.forEach((st, i) => {
+    u.abilities.filter((a) => !a.hidden).forEach((st, i) => {
       const ab = st.def;
       const fail = failChance(u, ab);
       const el = document.createElement('div');
@@ -221,7 +222,7 @@ export class Hud {
       });
       el.querySelector('.auto')!.addEventListener('click', () => (st.auto = !st.auto));
       el.querySelector('.up')!.addEventListener('click', () => {
-        const higher = u.abilities.filter((a) => a.prio > st.prio).sort((a, b) => a.prio - b.prio)[0];
+        const higher = u.abilities.filter((a) => !a.hidden && a.prio > st.prio).sort((a, b) => a.prio - b.prio)[0];
         if (higher) [higher.prio, st.prio] = [st.prio, higher.prio];
       });
       bar.appendChild(el);

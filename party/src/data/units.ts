@@ -1,6 +1,8 @@
 import type { UnitDef } from '../sim/defs';
 
 // ── 파티 (1단계: 고정 파티. 2단계부터 종족+직업 조합으로 생성) ──
+// 조작 부담을 줄이려고 캐릭터마다 직접 쓰는 스킬은 2개만 둔다.
+// 화염구 · 화염 폭풍 · 속박 사격은 2단계 성장에서 해금할 예정 (data/abilities.ts 에 정의는 남겨 둠)
 export const PARTY: UnitDef[] = [
   {
     id: 'warrior', name: '브론', title: '인간 전사', glyph: '전', color: '#e0b050', role: 'tank',
@@ -19,7 +21,7 @@ export const PARTY: UnitDef[] = [
       name: '마력탄', skill: 'spellcasting', damage: [3, 5], delay: 1.2, range: 6,
       projectile: { speed: 12, color: '#c9a0ff' },
     },
-    abilities: ['fire_bolt', 'fireball', 'fire_storm', 'frost_bolt'], tactic: 'ranged', targetPref: 'threat',
+    abilities: ['fire_bolt', 'frost_bolt'], tactic: 'ranged', targetPref: 'threat',
   },
   {
     id: 'archer', name: '카이', title: '하플링 사냥꾼', glyph: '궁', color: '#7fd06a', role: 'ranged',
@@ -30,7 +32,7 @@ export const PARTY: UnitDef[] = [
       name: '단궁', skill: 'bow', damage: [5, 8], delay: 1.0, range: 7,
       projectile: { speed: 16, color: '#e8d8a0' },
     },
-    abilities: ['aimed_shot', 'poison_arrow', 'pinning_shot'], tactic: 'ranged', targetPref: 'threat',
+    abilities: ['aimed_shot', 'poison_arrow'], tactic: 'ranged', targetPref: 'threat',
   },
   {
     id: 'healer', name: '미라', title: '인간 사제', glyph: '치', color: '#f2f2ff', role: 'support',
@@ -41,7 +43,7 @@ export const PARTY: UnitDef[] = [
       name: '투석구', skill: 'bow', damage: [3, 5], delay: 1.2, range: 6,
       projectile: { speed: 14, color: '#bbbbbb' },
     },
-    abilities: ['heal', 'cleanse', 'prayer'], tactic: 'support', targetPref: 'threat',
+    abilities: ['heal', 'prayer'], autoAbilities: ['cleanse'], tactic: 'support', targetPref: 'threat',
   },
 ];
 
