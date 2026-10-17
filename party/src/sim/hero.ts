@@ -9,7 +9,7 @@ import { SKILL_NAME } from '../data/names';
 import { PARTY } from '../data/units';
 import type { Item, ItemSlot, Prop, SkillId, TacticId, UnitDef } from './defs';
 import { makeItem, propText } from './items';
-import { ALL_SKILLS, abilityStates, type AbilityState, type Unit } from './unit';
+import { ALL_SKILLS, abilityStates, defaultRow, type AbilityState, type Row, type Unit } from './unit';
 
 export const MAX_SKILL = 10;
 export const MAX_ACTIVE = 4;
@@ -33,6 +33,7 @@ export interface Hero {
   pending: number;
   offer: Perk[] | null;
   tactic: TacticId;
+  row: Row;
   autoMode: boolean;
   /** 층 시작 시점 기록 (쉬는 화면에서 성장 표시) */
   startSkills: Record<SkillId, number>;
@@ -55,7 +56,7 @@ export function newHero(def: UnitDef): Hero {
   return {
     def, xl: 1, xp: 0, skills, train: {}, gear, perks: [], pending: 0, offer: null,
     abilities: abilityStates(def.abilities, def.autoAbilities),
-    tactic: def.tactic, autoMode: true,
+    tactic: def.tactic, row: defaultRow(def), autoMode: true,
     startSkills: { ...skills }, startXl: 1,
   };
 }
@@ -75,6 +76,7 @@ export function beginFloor(h: Hero) {
 export function saveFromUnit(u: Unit) {
   if (!u.hero) return;
   u.hero.tactic = u.tactic;
+  u.hero.row = u.row;
   u.hero.autoMode = u.autoMode;
 }
 

@@ -64,6 +64,11 @@ function execute(w: World, u: Unit, it: Intent, dt: number, cmd: Command | null)
         stopMoving(u);
         return 'done';
       }
+      if (cmd?.group && w.shouldWait(u, cmd.group)) {
+        stopMoving(u);
+        cmd.lastProgress = w.time;
+        return 'running';
+      }
       if (!moveTo(w, u, it.x, it.y, dt)) return fail(w, u, cmd);
       return progress(w, u, cmd, d, false);
     }

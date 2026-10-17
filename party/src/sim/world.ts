@@ -85,6 +85,8 @@ export class World {
   /** 자동 탐험: 전투가 없을 때 다음 방 → 계단으로 파티를 이동시킨다 */
   autoExplore = false;
   private exploreMove = false;
+  private groupSeq = 0;
+  private groupFields = new Map<number, Float32Array>();
   readonly visible: Uint8Array;
   /** 파티가 보고 있는 적. 칸 중심이 아니라 실제 위치끼리 시야를 잰다 (모퉁이 궁수 대비) */
   private seenUnits = new Set<Unit>();
@@ -168,19 +170,45 @@ export class World {
       this.leader = live[0];
       return;
     }
-    // 대형: 목표 주변 바닥 칸을 고르고, 목표에 가까운 유닛일수록 무리에서 먼 칸을 맡긴다.
-    // (좁은 통로에서 서로 엇갈려 지나가야 하는 배정을 피한다)
-    const slots = this.map.nearbyFloorSlots(x, y, live.length);
-    slots[0] = this.map.nearestFloor(x, y);
+    // 진형: 목표 주변 바닥 칸을 '다가오는 방향 기준 앞쪽' 순으로 세우고,
+    // 전열은 가장 앞 칸들, 후열은 가장 뒤 칸들을 맡는다.
+    // 같은 줄 안에서는 목표에 가까운 유닛이 더 앞 칸을 맡아 서로 엇갈려 지나가지 않게 한다.
+    const dest = this.map.nearestFloor(x, y);
+    const slots = this.map.nearbyFloorSlots(x, y, live.length + 2);
+    slots[0] = dest;
     const c = { x: live.reduce((s, u) => s + u.x, 0) / live.length, y: live.reduce((s, u) => s + u.y, 0) / live.length };
-    slots.sort((a, b) => dist(b, c) - dist(a, c));
-    const order = [...live].sort((a, b) => dist(a, { x, y }) - dist(b, { x, y }));
-    order.forEach((u, i) => {
-      const p = slots[Math.min(i, slots.length - 1)];
+    const dl = dist(c, dest) || 1;
+    const dir = { x: (c.x - dest.x) / dl, y: (c.y - dest.y) / dl };
+    const behind = (p: { x: number; y: number }) => (p.x - dest.x) * dir.x + (p.y - dest.y) * dir.y;
+    slots.sort((a, b) => behind(a) - behind(b));
+    const byDist = (a: Unit, b: Unit) => dist(a, dest) - dist(b, dest);
+    const front = live.filter((u) => u.row === 'front').sort(byDist);
+    const back = live.filter((u) => u.row === 'back').sort(byDist);
+    const backSlots = slots.slice(Math.max(front.length, slots.length - back.length));
+    const group = ++this.groupSeq;
+    if (front.length && back.length) {
+      this.groupFields.set(group, this.map.distanceField(dest.x, dest.y));
+      if (this.groupFields.size > 6) this.groupFields.delete(this.groupFields.keys().next().value!);
+    }
+    const assign = (u: Unit, p: { x: number; y: number }) => {
       this.issue(u, { type: 'move', x: p.x, y: p.y });
+      u.command!.group = group;
       u.holdPos = hold ? p : null;
-    });
-    this.leader = order[0];
+    };
+    front.forEach((u, i) => assign(u, slots[Math.min(i, slots.length - 1)]));
+    back.forEach((u, i) => assign(u, backSlots[Math.min(i, backSlots.length - 1)] ?? slots[slots.length - 1]));
+    this.leader = front[0] ?? back[0];
+  }
+
+  /** 후열 유닛이 함께 이동 중인 전열을 앞지르려 하면 기다린다 */
+  shouldWait(u: Unit, group: number): boolean {
+    const field = this.groupFields.get(group);
+    if (!field || u.row !== 'back') return false;
+    const at = (v: Unit) => field[Math.floor(v.y) * this.map.w + Math.floor(v.x)];
+    let lead = Infinity;
+    for (const p of this.party)
+      if (p.alive && p.row === 'front' && p.command?.group === group) lead = Math.min(lead, at(p));
+    return lead !== Infinity && at(u) < lead + 1.5;
   }
 
   commandAttack(units: Unit[], target: Unit) {

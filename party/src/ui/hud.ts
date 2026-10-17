@@ -74,6 +74,7 @@ export class Hud {
         <div class="bar xp"><div></div></div>
         <div class="statuses"></div>
         <div class="row">
+          <button class="rowbtn" title="진형: 전열은 앞장서고, 후열은 함께 이동할 때 전열 뒤를 따른다"></button>
           <select>${TACTICS.map(([id, n]) => `<option value="${id}">${n}</option>`).join('')}</select>
           <label><input type="checkbox" class="auto" /> 자동</label>
           <span class="cmd"></span>
@@ -82,6 +83,9 @@ export class Hud {
       sel.value = u.tactic;
       sel.addEventListener('change', () => (u.tactic = sel.value as TacticId));
       sel.addEventListener('pointerdown', (e) => e.stopPropagation());
+      const rowBtn = el.querySelector<HTMLButtonElement>('.rowbtn')!;
+      rowBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+      rowBtn.addEventListener('click', () => (u.row = u.row === 'front' ? 'back' : 'front'));
       const auto = el.querySelector<HTMLInputElement>('input.auto')!;
       auto.checked = u.autoMode;
       auto.addEventListener('change', () => (u.autoMode = auto.checked));
@@ -120,6 +124,12 @@ export class Hud {
       }
       const auto = el.querySelector<HTMLInputElement>('input.auto')!;
       if (auto.checked !== u.autoMode) auto.checked = u.autoMode;
+      const rowBtn = el.querySelector<HTMLElement>('.rowbtn')!;
+      const rowText = u.row === 'front' ? '전열' : '후열';
+      if (rowBtn.textContent !== rowText) {
+        rowBtn.textContent = rowText;
+        rowBtn.classList.toggle('front', u.row === 'front');
+      }
     });
 
     $('combat-state').innerHTML =

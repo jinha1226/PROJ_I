@@ -13,6 +13,15 @@ export interface Command {
   intent: Intent;
   bestDist: number;
   lastProgress: number;
+  /** 여럿이 함께 받은 이동 명령의 묶음 번호 (진형 유지용) */
+  group?: number;
+}
+
+/** 진형: 전열은 앞장서고, 후열은 함께 이동할 때 전열을 앞지르지 않는다 */
+export type Row = 'front' | 'back';
+
+export function defaultRow(def: UnitDef): Row {
+  return def.role === 'tank' || def.role === 'melee' ? 'front' : 'back';
 }
 
 export interface AbilityState {
@@ -94,6 +103,7 @@ export class Unit {
   stats!: Stats;
 
   tactic: TacticId;
+  row: Row;
   autoMode = true;
   command: Command | null = null;
   intent: Intent | null = null;
@@ -132,10 +142,12 @@ export class Unit {
       this.skills = hero.skills;
       this.abilities = hero.abilities;
       this.tactic = hero.tactic;
+      this.row = hero.row;
       this.autoMode = hero.autoMode;
       this.refreshGear();
     } else {
       this.tactic = def.tactic;
+      this.row = defaultRow(def);
       this.skills = Object.fromEntries(ALL_SKILLS.map((s) => [s, def.skills?.[s] ?? 0])) as Record<SkillId, number>;
       this.abilities = abilityStates(def.abilities, def.autoAbilities);
     }

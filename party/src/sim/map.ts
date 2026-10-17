@@ -109,6 +109,27 @@ export class GameMap {
     return out;
   }
 
+  /** (x,y) 에서 각 바닥 칸까지의 걸음 수 (벽을 돌아가는 실제 거리). 닿지 않으면 Infinity */
+  distanceField(x: number, y: number): Float32Array {
+    const W = this.w;
+    const field = new Float32Array(W * this.h).fill(Infinity);
+    const start = this.nearestFloor(x, y);
+    const s = Math.floor(start.y) * W + Math.floor(start.x);
+    field[s] = 0;
+    const queue = [s];
+    for (let qi = 0; qi < queue.length; qi++) {
+      const cur = queue[qi];
+      const cx = cur % W, cy = (cur / W) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = cx + dx, ny = cy + dy, ni = ny * W + nx;
+        if (this.isWall(nx, ny) || field[ni] !== Infinity) continue;
+        field[ni] = field[cur] + 1;
+        queue.push(ni);
+      }
+    }
+    return field;
+  }
+
   /** A* (8방향, 모서리 끼기 금지) 후 직선화한 경유점 목록. 마지막 점은 목표 좌표 그대로. */
   findPath(sx: number, sy: number, gx: number, gy: number, r: number): Pt[] | null {
     const W = this.w;
