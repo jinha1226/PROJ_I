@@ -1,0 +1,133 @@
+:root {
+  --bg: #0b0b10;
+  --panel: rgba(18, 18, 26, 0.88);
+  --border: #3a3a4a;
+  --text: #ddd;
+  --dim: #888;
+  --accent: #ffcc66;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
+  font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; font-size: 13px;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
+}
+canvas#game { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; touch-action: none; }
+.panel { position: fixed; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; }
+.hidden { display: none !important; }
+button {
+  background: #2a2a38; color: var(--text); border: 1px solid #4a4a5a; border-radius: 4px;
+  padding: 4px 9px; font: inherit; cursor: pointer;
+}
+button:hover { background: #3a3a4c; }
+button.on { border-color: var(--accent); color: var(--accent); }
+
+#top { top: 8px; left: 50%; transform: translateX(-50%); padding: 5px; display: flex; gap: 5px; align-items: center; }
+#combat-state { padding: 0 8px; font-weight: bold; }
+
+#party { position: fixed; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 6px; width: 220px; }
+.card { background: var(--panel); border: 2px solid var(--border); border-radius: 6px; padding: 6px 8px; cursor: pointer; }
+.card.selected { border-color: #66ff88; }
+.card.dead { opacity: 0.4; }
+.card .head { display: flex; justify-content: space-between; align-items: baseline; }
+.card .name { font-weight: bold; font-size: 14px; }
+.card .title { color: var(--dim); font-size: 11px; }
+.bar { height: 7px; background: #222; border-radius: 3px; margin-top: 3px; overflow: hidden; position: relative; }
+.bar > div { height: 100%; }
+.bar.hp > div { background: #4caf50; }
+.bar.mp > div { background: #4a7cff; }
+.card .row { display: flex; gap: 6px; align-items: center; margin-top: 4px; font-size: 11px; }
+.card select { background: #22222e; color: var(--text); border: 1px solid #444; font: inherit; font-size: 11px; }
+.card .statuses { min-height: 14px; font-size: 11px; }
+.chip { display: inline-block; padding: 0 3px; margin-right: 2px; border-radius: 3px; background: #333; }
+.card .cmd { color: var(--accent); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.card label { white-space: nowrap; }
+
+#inspect { top: 52px; right: 8px; width: 230px; padding: 8px 10px; }
+#inspect h3 { margin: 0 0 2px; font-size: 14px; }
+#inspect .sub { color: var(--dim); font-size: 11px; margin-bottom: 4px; }
+#inspect .kv { display: grid; grid-template-columns: 70px 1fr; gap: 1px 6px; font-size: 12px; }
+#inspect .res-bad { color: #ff8866; }
+#inspect .res-good { color: #88ccff; }
+#inspect button { margin-top: 6px; width: 100%; }
+
+#log { bottom: 8px; left: 8px; width: 330px; max-height: 180px; padding: 6px 8px; overflow: hidden; font-size: 12px; line-height: 1.45; }
+
+#skillbar { bottom: 8px; left: 50%; transform: translateX(-50%); width: max-content; padding: 8px; display: flex; gap: 8px; align-items: stretch; }
+#skillbar .info { width: 190px; flex-shrink: 0; font-size: 11px; line-height: 1.5; color: #bbb; }
+#skillbar .info b { color: #fff; font-size: 13px; }
+.skill { width: 96px; flex-shrink: 0; position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.skill .btn {
+  width: 64px; height: 64px; position: relative; border: 2px solid #555; border-radius: 8px; background: #1d1d28;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; overflow: hidden;
+}
+.skill .btn:hover { border-color: #aaa; }
+.skill .btn.targeting { border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.skill .btn.disabled { opacity: 0.45; }
+.skill .icon { font-size: 24px; font-weight: bold; }
+.skill .key { position: absolute; top: 2px; left: 4px; font-size: 10px; color: var(--dim); }
+.skill .cost { position: absolute; bottom: 2px; right: 4px; font-size: 10px; color: #8af; }
+.skill .cdmask { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.65); }
+.skill .cdtext { position: absolute; font-size: 16px; font-weight: bold; }
+.skill .label { font-size: 11px; white-space: nowrap; }
+.skill .ctl { display: flex; gap: 2px; font-size: 10px; align-items: center; }
+.skill .ctl > * { flex-shrink: 0; }
+.skill .ctl button { padding: 0 4px; font-size: 10px; white-space: nowrap; }
+.skill .rank { white-space: nowrap; color: var(--dim); }
+
+#pause-banner {
+  position: fixed; top: 50px; left: 50%; transform: translateX(-50%); color: var(--accent);
+  font-size: 18px; font-weight: bold; text-shadow: 0 0 6px #000; pointer-events: none;
+}
+#targeting-hint {
+  position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); color: var(--accent);
+  background: var(--panel); padding: 4px 10px; border-radius: 4px; pointer-events: none;
+}
+
+.overlay, #outcome { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; }
+.box { background: #16161f; border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; max-width: 640px; }
+.box h1, .box h2 { margin-top: 0; }
+.box table { border-collapse: collapse; width: 100%; }
+.box td { padding: 3px 8px; border-bottom: 1px solid #262632; }
+.box td:first-child { color: var(--accent); white-space: nowrap; }
+.box .tip { color: #aaa; line-height: 1.6; }
+#outcome .box { text-align: center; }
+
+.box { max-height: 92vh; overflow-y: auto; }
+.box h3 { margin: 12px 0 4px; font-size: 14px; }
+
+/* ── 작은 화면 (휴대폰) ── */
+@media (max-width: 900px), (max-height: 500px) {
+  html, body { font-size: 11px; }
+  button { padding: 3px 6px; }
+  #top {
+    top: 4px; left: auto; right: 4px; transform: none; padding: 3px; gap: 3px;
+    flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 160px);
+  }
+  #top button { font-size: 11px; }
+  #party { top: 4px; left: 4px; width: 148px; gap: 3px; }
+  .card { padding: 3px 5px; border-width: 1px; }
+  .card .name { font-size: 12px; }
+  .card .title, .card .cmd { display: none; }
+  .card .statuses { min-height: 0; font-size: 10px; }
+  .card .row { margin-top: 2px; gap: 4px; font-size: 10px; }
+  .bar { height: 5px; margin-top: 2px; }
+  #log { display: none; }
+  #inspect { top: auto; bottom: 4px; right: 4px; width: 170px; padding: 5px 7px; font-size: 11px; }
+  #inspect .kv { grid-template-columns: 52px 1fr; font-size: 11px; }
+  #skillbar { bottom: 4px; padding: 4px; gap: 4px; }
+  #skillbar .info { display: none; }
+  .skill { width: 66px; }
+  .skill .btn { width: 50px; height: 50px; }
+  .skill .icon { font-size: 20px; }
+  .skill .key, .skill .rank { display: none; }
+  .skill .label { font-size: 10px; }
+  #targeting-hint { bottom: 96px; }
+  #pause-banner { top: auto; bottom: 100px; font-size: 14px; }
+  .box { padding: 12px 14px; font-size: 11px; }
+}
+
+/* 터치 기기에서는 키보드/마우스 조작표를 숨긴다 */
+@media (pointer: coarse) {
+  .pc-only { display: none; }
+}

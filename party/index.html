@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>PROJ_BH 전투 프로토타입</title>
+  <link rel="stylesheet" href="/src/ui/style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="top" class="panel">
+    <button id="btn-pause" title="Space">⏸ 일시정지</button>
+    <button id="btn-all" title="` 또는 Ctrl+A">전체 선택</button>
+    <button id="btn-auto" title="T">자동전투: 켜짐</button>
+    <button id="btn-speed" title="게임 속도">속도 1x</button>
+    <button id="btn-follow" title="C">카메라 추적: 켜짐</button>
+    <button id="btn-help" title="H">도움말</button>
+    <span id="combat-state"></span>
+  </div>
+
+  <div id="party"></div>
+  <div id="inspect" class="panel hidden"></div>
+  <div id="log" class="panel"></div>
+  <div id="skillbar" class="panel hidden"></div>
+  <div id="pause-banner" class="hidden">일시정지 · 명령을 입력하세요</div>
+  <div id="targeting-hint" class="hidden"></div>
+
+  <div id="outcome" class="hidden">
+    <div class="box">
+      <h1 id="outcome-title"></h1>
+      <button id="btn-restart">다시 시작 (R)</button>
+    </div>
+  </div>
+
+  <div id="help" class="overlay">
+    <div class="box">
+      <h2>전투 프로토타입 조작법</h2>
+      <table class="pc-only">
+        <tr><td>아군을 바닥으로 드래그</td><td>그 위치로 이동 후 위치 고수</td></tr>
+        <tr><td>아군을 적에게 드래그</td><td>그 적을 공격</td></tr>
+        <tr><td>아군 클릭 / 1~4</td><td>선택 (Shift: 추가 선택, ` 또는 Ctrl+A: 전체)</td></tr>
+        <tr><td>빈 바닥 드래그</td><td>범위 선택</td></tr>
+        <tr><td>선택 후 바닥/적 클릭 (또는 우클릭)</td><td>이동 / 공격 명령</td></tr>
+        <tr><td>Q W E R / 스킬 버튼</td><td>스킬 사용 → 대상 클릭 (적 위에 커서를 두고 누르면 즉시)</td></tr>
+        <tr><td>F</td><td>커서 아래 적 집중 공격 지정/해제</td></tr>
+        <tr><td><b>Space</b></td><td><b>일시정지</b> — 멈춘 상태에서도 모든 명령 입력 가능</td></tr>
+        <tr><td>T</td><td>자동전투 전체 켜기/끄기 (캐릭터 카드에서 개별 설정)</td></tr>
+        <tr><td>방향키 / 휠 클릭 드래그 / 휠</td><td>카메라 이동 / 확대 (C: 파티 추적)</td></tr>
+        <tr><td>Esc</td><td>대상 지정 취소 / 선택 해제</td></tr>
+      </table>
+      <h3 class="pc-only">모바일 (가로 화면 권장)</h3>
+      <table>
+        <tr><td>아군을 끌어서 놓기</td><td>이동 / 공격 (PC와 같음)</td></tr>
+        <tr><td>아군 탭 → 바닥/적 탭</td><td>선택 후 이동 / 공격 (카드 탭으로도 선택, 여럿은 「전체 선택」)</td></tr>
+        <tr><td>빈 곳을 한 손가락으로 끌기</td><td>화면 이동</td></tr>
+        <tr><td>두 손가락 벌리기/모으기</td><td>확대 / 축소</td></tr>
+        <tr><td>적 탭</td><td>저항·면역 정보 (정보 창의 버튼으로 집중 공격 지정)</td></tr>
+        <tr><td>스킬 버튼 → 대상 탭</td><td>스킬 사용</td></tr>
+      </table>
+      <p class="tip">
+        적에게 커서를 올리면 저항·면역을 볼 수 있습니다. 불의 정령에겐 화염이 거의 통하지 않고, 해골에겐 독이 통하지 않습니다.<br />
+        전사의 <b>방패 강타</b>로 적을 기절시킨 사이 <b>화염 폭풍</b>(시전 3초)을 써 보세요. 좁은 통로에 전사를 세우면 적이 지나가지 못합니다.<br />
+        빨간 원은 적의 범위 공격 예고입니다. 아군을 드래그해서 피하세요.
+      </p>
+      <button id="btn-help-close">시작하기</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

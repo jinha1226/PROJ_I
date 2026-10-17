@@ -1,0 +1,156 @@
+import type { AbilityDef } from '../sim/defs';
+
+const list: AbilityDef[] = [
+  // ── 전사 ──
+  {
+    id: 'shield_bash', name: '방패 강타', icon: '강', color: '#ffe14d', type: 'technique', schools: ['shield'],
+    desc: '붙어 있는 적을 방패로 가격해 2초간 기절시킨다. 시전 중인 적의 마법을 끊는다.',
+    cost: 0, castTime: 0, cooldown: 8, range: 0.6, target: 'enemy',
+    effects: [{ kind: 'weapon', mult: 0.7 }, { kind: 'status', status: 'stun', duration: 2 }],
+    aiRole: 'disable',
+  },
+  {
+    id: 'taunt', name: '도발', icon: '도', color: '#ff5555', type: 'technique',
+    desc: '주변 4칸의 적이 4초간 자신만 공격하게 만들고, 방어 태세(AC+6)에 들어간다.',
+    cost: 0, castTime: 0, cooldown: 12, range: 0, target: 'self', radius: 4, affects: 'enemies',
+    effects: [{ kind: 'taunt', duration: 4 }],
+    selfEffects: [{ kind: 'status', status: 'guarded', duration: 6 }],
+    aiRole: 'taunt',
+  },
+  // ── 화염술사 ──
+  {
+    id: 'fire_bolt', name: '화염 화살', icon: '화', color: '#ff7a2f', type: 'spell', schools: ['fire'], level: 2,
+    desc: '화염 피해를 주는 화살. 확률적으로 화상.',
+    cost: 4, castTime: 0.5, cooldown: 2.5, range: 7, target: 'enemy',
+    projectile: { speed: 12, color: '#ff7a2f' },
+    effects: [
+      { kind: 'damage', element: 'fire', base: [5, 9], scale: 0.5 },
+      { kind: 'status', status: 'burn', duration: 3, chance: 0.35 },
+    ],
+    aiRole: 'damage',
+  },
+  {
+    id: 'fireball', name: '화염구', icon: '구', color: '#ff9a3f', type: 'spell', schools: ['fire'], level: 4,
+    desc: '지점에서 폭발한다. 아군도 피해를 입는다.',
+    cost: 9, castTime: 1.2, cooldown: 7, range: 7, target: 'ground', radius: 1.6, affects: 'all',
+    projectile: { speed: 10, color: '#ff9a3f' },
+    effects: [
+      { kind: 'damage', element: 'fire', base: [6, 10], scale: 0.5 },
+      { kind: 'status', status: 'burn', duration: 4, chance: 0.5 },
+    ],
+    aiRole: 'damage',
+  },
+  {
+    id: 'fire_storm', name: '화염 폭풍', icon: '폭', color: '#ff4422', type: 'spell', schools: ['fire'], level: 5,
+    desc: '3초 동안 집중한 뒤 넓은 범위를 불태운다. 피격 시 방해받기 쉽다. 아군도 피해를 입는다.',
+    cost: 16, castTime: 3, cooldown: 16, range: 7, target: 'ground', radius: 2.3, affects: 'all',
+    effects: [
+      { kind: 'damage', element: 'fire', base: [16, 24], scale: 1.0 },
+      { kind: 'status', status: 'burn', duration: 5, chance: 0.8 },
+    ],
+    aiRole: 'damage',
+  },
+  {
+    id: 'frost_bolt', name: '서리 화살', icon: '서', color: '#66ccff', type: 'spell', schools: ['ice'], level: 2,
+    desc: '냉기 피해를 주고 확률적으로 감속시킨다. (냉기 스킬이 낮아 위력이 약하다)',
+    cost: 4, castTime: 0.5, cooldown: 3, range: 7, target: 'enemy',
+    projectile: { speed: 12, color: '#66ccff' },
+    effects: [
+      { kind: 'damage', element: 'cold', base: [5, 9], scale: 0.5 },
+      { kind: 'status', status: 'slow', duration: 3, chance: 0.5 },
+    ],
+    aiRole: 'damage',
+  },
+  // ── 사냥꾼 ──
+  {
+    id: 'aimed_shot', name: '조준 사격', icon: '조', color: '#e8d8a0', type: 'technique', schools: ['bow'],
+    desc: '1.2초 조준 후 강력한 한 발.',
+    cost: 0, castTime: 1.2, cooldown: 10, range: 7.5, target: 'enemy',
+    projectile: { speed: 20, color: '#fff2b0' },
+    effects: [{ kind: 'weapon', mult: 2.4 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'poison_arrow', name: '독화살', icon: '독', color: '#7dd35a', type: 'technique', schools: ['bow'],
+    desc: '중독 2중첩. 독 면역에게는 화살 피해만 들어간다.',
+    cost: 0, castTime: 0, cooldown: 6, range: 7, target: 'enemy',
+    projectile: { speed: 16, color: '#7dd35a' },
+    effects: [{ kind: 'weapon', mult: 0.6 }, { kind: 'status', status: 'poison', duration: 6, stacks: 2 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'pinning_shot', name: '속박 사격', icon: '속', color: '#66ccff', type: 'technique', schools: ['bow'],
+    desc: '맞은 적을 4초간 감속시킨다.',
+    cost: 0, castTime: 0, cooldown: 9, range: 7, target: 'enemy',
+    projectile: { speed: 16, color: '#66ccff' },
+    effects: [{ kind: 'weapon', mult: 0.8 }, { kind: 'status', status: 'slow', duration: 4 }],
+    aiRole: 'disable',
+  },
+  // ── 사제 ──
+  {
+    id: 'heal', name: '치유', icon: '치', color: '#88ff88', type: 'spell', schools: ['faith'], level: 2,
+    desc: '아군 하나의 체력을 회복한다.',
+    cost: 5, castTime: 0.6, cooldown: 2, range: 6, target: 'ally',
+    effects: [{ kind: 'heal', base: [10, 14], scale: 0.6 }],
+    aiRole: 'heal',
+  },
+  {
+    id: 'cleanse', name: '정화', icon: '정', color: '#ccffff', type: 'spell', schools: ['faith'], level: 2,
+    desc: '아군의 해로운 상태이상(기절, 중독, 화상, 감속)을 모두 제거한다.',
+    cost: 4, castTime: 0, cooldown: 6, range: 6, target: 'ally',
+    effects: [{ kind: 'cleanse' }],
+    aiRole: 'cleanse',
+  },
+  {
+    id: 'prayer', name: '보호의 기도', icon: '보', color: '#ffeeaa', type: 'spell', schools: ['faith'], level: 3,
+    desc: '주변 4칸 아군이 8초간 받는 피해 30% 감소.',
+    cost: 8, castTime: 0.8, cooldown: 15, range: 0, target: 'self', radius: 4, affects: 'allies',
+    effects: [{ kind: 'status', status: 'protected', duration: 8 }],
+    aiRole: 'buff',
+  },
+  // ── 몬스터 ──
+  {
+    id: 'lightning_bolt', name: '번개 화살', icon: '번', color: '#ffe14d', type: 'spell', level: 3,
+    desc: '전기 피해.', cost: 5, castTime: 1.0, cooldown: 4, range: 7, target: 'enemy',
+    projectile: { speed: 18, color: '#ffe14d' },
+    effects: [{ kind: 'damage', element: 'elec', base: [7, 11], scale: 0.4 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'slow_spell', name: '감속 저주', icon: '감', color: '#66ccff', type: 'spell', level: 3,
+    desc: '의지력 판정. 5초간 감속.', cost: 6, castTime: 0.8, cooldown: 10, range: 7, target: 'enemy',
+    effects: [{ kind: 'status', status: 'slow', duration: 5, will: true }],
+    aiRole: 'disable',
+  },
+  {
+    id: 'bless_ally', name: '전투 가호', icon: '가', color: '#ff9944', type: 'spell', level: 2,
+    desc: '아군 하나에게 괴력(피해 +30%).', cost: 5, castTime: 0.6, cooldown: 12, range: 6, target: 'ally',
+    effects: [{ kind: 'status', status: 'might', duration: 8 }],
+    aiRole: 'buff',
+  },
+  {
+    id: 'pounce', name: '돌진', icon: '돌', color: '#ffaa66', type: 'technique',
+    desc: '멀리 있는 대상에게 달려들어 물고 잠시 기절시킨다.',
+    cost: 0, castTime: 0, cooldown: 9, range: 7, minRange: 2.5, target: 'enemy', dash: true,
+    effects: [{ kind: 'weapon', mult: 1.0 }, { kind: 'status', status: 'stun', duration: 0.8 }],
+    aiRole: 'charge',
+  },
+  {
+    id: 'ground_slam', name: '내려찍기', icon: '찍', color: '#ff4444', type: 'technique',
+    desc: '1.2초 뒤 주변을 강타한다. 범위 표시를 보고 피하자.',
+    cost: 0, castTime: 1.2, cooldown: 8, range: 0, target: 'self', radius: 1.9, affects: 'enemies',
+    effects: [
+      { kind: 'damage', element: 'physical', base: [16, 24], scale: 0 },
+      { kind: 'status', status: 'stun', duration: 1.2, chance: 0.5 },
+    ],
+    aiRole: 'damage',
+  },
+  {
+    id: 'roar', name: '포효', icon: '포', color: '#ff9944', type: 'technique',
+    desc: '주변 아군에게 괴력.', cost: 0, castTime: 0, cooldown: 20, range: 0, target: 'self', radius: 6, affects: 'allies',
+    effects: [{ kind: 'status', status: 'might', duration: 10 }],
+    aiRole: 'buff',
+  },
+];
+
+export const ABILITIES: Record<string, AbilityDef> = Object.fromEntries(list.map((a) => [a.id, a]));
