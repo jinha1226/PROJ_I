@@ -7,14 +7,40 @@ import { genItem } from './items';
 import { attackDelay, avgWeaponDamage, computeStats, failChance } from './stats';
 import { Unit } from './unit';
 
-export function rewardChoices(rng: Rng, depth: number): Item[] {
-  const out: Item[] = [];
-  // 같은 칸만 셋 나오지 않게 한 번은 다시 뽑는다
-  for (let i = 0; i < 3; i++) {
+/** 파티에게 가장 좋은 비교 점수 */
+export function bestScore(heroes: Hero[], it: Item): number {
+  return heroes.reduce((m, h) => Math.max(m, compareItem(h, it).score), -Infinity);
+}
+
+/** 파티 누군가에게 확실히 좋은 장비 (몇 번 다시 뽑아 보고, 없으면 가장 나은 것) */
+export function usefulItem(rng: Rng, depth: number, heroes: Hero[], opts: Parameters<typeof genItem>[2] = {}): Item {
+  let best: Item | null = null, bs = -Infinity;
+  for (let i = 0; i < 8; i++) {
+    const it = genItem(rng, depth, opts);
+    const s = heroes.length ? bestScore(heroes, it) : 1;
+    if (s > 0) return it;
+    if (s > bs) { bs = s; best = it; }
+  }
+  return best!;
+}
+
+/** 층 보상 3택1: 첫째는 확실히 쓸모 있는 것, 나머지도 모두에게 손해인 것은 피한다. 같은 칸만 셋 나오지 않게 */
+export function rewardChoices(rng: Rng, depth: number, heroes: Hero[] = []): Item[] {
+  const out: Item[] = [usefulItem(rng, depth, heroes)];
+  for (let i = 1; i < 3; i++) {
     let it = genItem(rng, depth);
-    if (out.length === 2 && out.every((o) => o.base.slot === it.base.slot) && out[0].base.slot === out[1].base.slot)
+    for (let t = 0; t < 6; t++) {
+      const sameSlots = i === 2 && out.every((o) => o.base.slot === it.base.slot);
+      const useless = heroes.length > 0 && bestScore(heroes, it) < -5;
+      if (!sameSlots && !useless) break;
       it = genItem(rng, depth);
+    }
     out.push(it);
+  }
+  // 확실한 것이 늘 첫 칸이면 티가 나므로 섞는다
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = rng.int(0, i);
+    [out[i], out[j]] = [out[j], out[i]];
   }
   return out;
 }

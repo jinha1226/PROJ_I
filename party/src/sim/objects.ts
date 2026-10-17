@@ -5,7 +5,9 @@ import { CONSUMABLES, type ConsumableId } from '../data/consumables';
 import { ENCOUNTERS, FLOORS } from '../data/encounters';
 import type { ObjectKind } from '../data/maps';
 import { applyDamage, heal, tryApplyStatus } from './combat';
-import { genItem, itemTitle } from './items';
+import type { Hero } from './hero';
+import { itemTitle } from './items';
+import { usefulItem } from './reward';
 import { addToBelt } from './run';
 import { computeStats } from './stats';
 import type { Unit } from './unit';
@@ -25,6 +27,8 @@ export interface EventPrompt {
   text: string;
   choices: { id: string; label: string }[];
 }
+
+const heroesOf = (w: World): Hero[] => w.party.flatMap((p) => (p.hero ? [p.hero] : []));
 
 export const OBJECT_NAME: Record<ObjectKind, string> = {
   chest: '보물상자', mimic: '보물상자', fountain: '신비한 샘', altar: '피의 제단', prisoner: '갇힌 포로',
@@ -65,7 +69,8 @@ function openChest(w: World, by: Unit) {
     w.float(by, `${c.name}!`, c.color, 1.2);
     w.log(`상자에서 ${c.name}을(를) 찾았다 (벨트)`, c.color);
   } else {
-    const it = genItem(rng, w.depth);
+    // 상자는 최소 마법 등급, 파티 누군가에게 쓸모 있는 것으로
+    const it = usefulItem(rng, w.depth, heroesOf(w), { min: 'magic' });
     w.run.found.push(it);
     w.float(by, `${itemTitle(it)}!`, '#ffcc55', 1.2);
     w.log(`상자에서 ${itemTitle(it)}을(를) 찾았다 (층을 마치면 장착)`, '#ffcc55');
@@ -134,7 +139,7 @@ export function resolvePrompt(w: World, choice: string) {
     }
   } else if (choice === 'offer') {
     addPerkToParty(w, 'hp', -6);
-    const it = genItem(rng, w.depth + 1, 'artifact');
+    const it = usefulItem(rng, w.depth + 1, heroesOf(w), { force: 'artifact' });
     w.run.found.push(it);
     w.log(`피를 바치고 ${itemTitle(it)}을(를) 얻었다 (층을 마치면 장착)`, '#ffcc55');
   } else if (choice === 'free') {

@@ -4,8 +4,9 @@ import { DIFFICULTIES, type Difficulty, type DifficultyId } from '../data/diffic
 import { MONSTERS } from '../data/units';
 import { updateUnit } from './behavior';
 import { beginFloor, gainXp, newParty, type Hero } from './hero';
-import { genItem, itemTitle } from './items';
+import { itemTitle } from './items';
 import { checkObjects, type EventPrompt, type WorldObject } from './objects';
+import { usefulItem } from './reward';
 import { newRun, type RunState } from './run';
 import { GameMap } from './map';
 import { resolveCollisions } from './movement';
@@ -315,7 +316,8 @@ export class World {
     if (this.leader === u) this.leader = this.party.find((p) => p.alive) ?? null;
     if (u.faction === 'enemy') this.grantXp(u.def.xp ?? 0);
     if (u.def.id === 'mimic') {
-      const it = genItem(this.rng, this.depth + 1);
+      // 위험을 감수한 대가: 미믹은 아티팩트 확정
+      const it = usefulItem(this.rng, this.depth + 1, this.party.flatMap((p) => (p.hero ? [p.hero] : [])), { force: 'artifact' });
       this.run.found.push(it);
       this.log(`미믹이 삼키고 있던 ${itemTitle(it)}을(를) 얻었다`, '#ffcc55');
     }

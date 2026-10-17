@@ -40,6 +40,7 @@ export const ITEM_BASES: Record<string, ItemBase> = Object.fromEntries(list.map(
 export const ITEM_BASE_LIST = list;
 
 // ── 속성 풀 ──
+// 전술을 바꾸는 속성(저항, 적중 시 효과, 계열 위력, 시전 속도, 기절 면역)을 단순 수치보다 자주 뽑는다.
 // roll(depth) 로 수치를 정한다. slots 에 없는 칸에는 붙지 않는다.
 export interface PropRoll {
   w: number;
@@ -53,19 +54,19 @@ const n = (r: () => number, lo: number, hi: number) => lo + Math.floor(r() * (hi
 const POWER_SCHOOLS: SkillId[] = ['fire', 'ice', 'faith', 'bow', 'fighting'];
 
 export const GOOD_PROPS: PropRoll[] = [
-  { w: 6, slots: ['armour', 'jewel'], roll: (r) => ({ kind: 'resist', key: pick(r, RES), v: 1 }) },
-  { w: 4, roll: (r, d) => ({ kind: 'stat', stat: pick(r, ['str', 'dex', 'int'] as const), v: n(r, 2, 2 + Math.floor(d / 2)) }) },
-  { w: 3, slots: ['armour', 'jewel'], roll: (r, d) => ({ kind: 'ac', v: n(r, 2, 3 + Math.floor(d / 2)) }) },
-  { w: 3, roll: (r, d) => ({ kind: 'ev', v: n(r, 2, 3 + Math.floor(d / 2)) }) },
+  { w: 8, slots: ['armour', 'jewel'], roll: (r) => ({ kind: 'resist', key: pick(r, RES), v: 1 }) },
+  { w: 3, roll: (r, d) => ({ kind: 'stat', stat: pick(r, ['str', 'dex', 'int'] as const), v: n(r, 2, 2 + Math.floor(d / 2)) }) },
+  { w: 2, slots: ['armour', 'jewel'], roll: (r, d) => ({ kind: 'ac', v: n(r, 2, 3 + Math.floor(d / 2)) }) },
+  { w: 2, roll: (r, d) => ({ kind: 'ev', v: n(r, 2, 3 + Math.floor(d / 2)) }) },
   { w: 3, slots: ['armour', 'jewel'], roll: (r) => ({ kind: 'will', v: n(r, 6, 10) }) },
-  { w: 4, roll: (r, d) => ({ kind: 'hp', v: n(r, 8, 12 + d * 2) }) },
+  { w: 3, roll: (r, d) => ({ kind: 'hp', v: n(r, 8, 12 + d * 2) }) },
   { w: 2, slots: ['weapon', 'jewel'], roll: (r) => ({ kind: 'mp', v: n(r, 6, 10) }) },
-  { w: 4, slots: ['weapon', 'jewel'], roll: (r, d) => ({ kind: 'power', school: pick(r, POWER_SCHOOLS), v: n(r, 15, 20 + d * 3) }) },
-  { w: 2, slots: ['weapon', 'jewel'], roll: (r) => ({ kind: 'castSpeed', v: n(r, 15, 25) }) },
+  { w: 5, slots: ['weapon', 'jewel'], roll: (r, d) => ({ kind: 'power', school: pick(r, POWER_SCHOOLS), v: n(r, 15, 20 + d * 3) }) },
+  { w: 3, slots: ['weapon', 'jewel'], roll: (r) => ({ kind: 'castSpeed', v: n(r, 15, 25) }) },
   { w: 3, slots: ['weapon'], roll: (r, d) => ({ kind: 'weaponDmg', v: n(r, 10, 15 + d * 2) }) },
   { w: 2, slots: ['weapon'], roll: (r) => ({ kind: 'acc', v: n(r, 3, 5) }) },
   {
-    w: 2, slots: ['weapon'],
+    w: 4, slots: ['weapon'],
     roll: (r) => pick(r, [
       { kind: 'onHit', apply: { status: 'burn', duration: 3, chance: 0.3 } },
       { kind: 'onHit', apply: { status: 'poison', duration: 5, chance: 0.4 } },
@@ -77,7 +78,7 @@ export const GOOD_PROPS: PropRoll[] = [
 /** 아티팩트에만 붙는 강한 속성 */
 export const RARE_PROPS: PropRoll[] = [
   { w: 3, slots: ['armour', 'jewel'], roll: (r) => ({ kind: 'resist', key: pick(r, RES.filter((k) => k !== 'poison')), v: 2 }) },
-  { w: 1, slots: ['armour', 'jewel'], roll: () => ({ kind: 'tag', tag: 'unstunnable' }) },
+  { w: 2, slots: ['armour', 'jewel'], roll: () => ({ kind: 'tag', tag: 'unstunnable' }) },
 ];
 
 /** 아티팩트 단점 */

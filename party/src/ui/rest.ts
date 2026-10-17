@@ -36,7 +36,7 @@ export class RestScreen {
     this.foundNotes = [];
     this.depth = depth;
     this.rng = new Rng(seed);
-    this.rewards = rewardChoices(this.rng, depth);
+    this.rewards = rewardChoices(this.rng, depth, heroes);
     this.picked = null;
     this.rewardDone = null;
     for (const h of heroes) if (h.pending > 0 && !h.offer) h.offer = makeOffer(h, this.rng);

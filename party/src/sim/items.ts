@@ -108,16 +108,19 @@ function propKey(p: Prop): string {
   return p.kind;
 }
 
-/** 층 깊이에 맞는 무작위 장비 */
-export function genItem(rng: Rng, depth: number, force?: Item['rarity']): Item {
+const RARITY_RANK: Record<Item['rarity'], number> = { common: 0, magic: 1, artifact: 2 };
+
+/** 층 깊이에 맞는 무작위 장비. force = 등급 고정, min = 최소 등급 */
+export function genItem(rng: Rng, depth: number, opts: { force?: Item['rarity']; min?: Item['rarity'] } = {}): Item {
   const slotRoll = rng.next();
   const slot: ItemSlot = slotRoll < 0.36 ? 'weapon' : slotRoll < 0.68 ? 'armour' : 'jewel';
   const bases = ITEM_BASE_LIST.filter((b) => b.slot === slot).map((b) => ({ b, w: b.weightDrop ?? 1 }));
   const base = weighted(rng, bases).b;
 
   const r = rng.next();
-  let rarity: Item['rarity'] = force ?? (r < 0.06 + depth * 0.04 ? 'artifact' : r < 0.55 ? 'magic' : 'common');
+  let rarity: Item['rarity'] = opts.force ?? (r < 0.06 + depth * 0.04 ? 'artifact' : r < 0.55 ? 'magic' : 'common');
   if (slot === 'jewel' && rarity === 'common') rarity = 'magic';
+  if (opts.min && RARITY_RANK[rarity] < RARITY_RANK[opts.min]) rarity = opts.min;
 
   const plus = slot === 'jewel' ? 0 : rng.int(0, Math.min(4, depth));
   const props: Prop[] = [];

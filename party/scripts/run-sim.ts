@@ -33,7 +33,7 @@ function rest(heroes: Hero[], run: RunState, rng: Rng, depth: number, log: strin
   run.found.length = 0;
   // 보상: 모든 (장비, 영웅) 조합 중 점수 최고
   let best: { h: Hero; it: ReturnType<typeof rewardChoices>[0]; s: number } | null = null;
-  for (const it of rewardChoices(rng, depth))
+  for (const it of rewardChoices(rng, depth, heroes))
     for (const h of heroes) {
       const s = compareItem(h, it).score;
       if (!best || s > best.s) best = { h, it, s };
