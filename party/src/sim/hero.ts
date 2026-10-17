@@ -20,6 +20,9 @@ const BASIC_GROWTH = 0.5;
 const BASIC_SKILLS: SkillId[] = ['fighting', 'dodge', 'armour'];
 
 export interface Hero {
+  /** 명부 안의 고유 번호 (저장 · 원정대 편성) */
+  uid: number;
+  comp: HeroComp;
   def: UnitDef;
   cls: ClassId;
   xl: number;
@@ -46,6 +49,17 @@ export interface Hero {
   mood: MoodId | null;
   /** 쉬는 화면에 보일 스트레스 변화 */
   restNote: string;
+  /** 누적 처치 · 다녀온 원정 수 (묘지 · 명부 표시) */
+  kills: number;
+  expeditions: number;
+  /** 이번 원정에서 쓰러졌다면 사인 */
+  deathCause: string | null;
+}
+
+let nextHeroUid = 1;
+/** 저장에서 불러온 명부의 번호와 겹치지 않게 */
+export function reserveHeroUid(uid: number) {
+  nextHeroUid = Math.max(nextHeroUid, uid + 1);
 }
 
 export function xpToNext(xl: number): number {
@@ -59,8 +73,10 @@ export function newHero(def: UnitDef): Hero {
   const skills = Object.fromEntries(ALL_SKILLS.map((s) => [s, def.skills?.[s] ?? 0])) as Record<SkillId, number>;
   const gear: Hero['gear'] = {};
   for (const [slot, id] of Object.entries(def.gear ?? {})) gear[slot as ItemSlot] = makeItem(id);
+  const comp: HeroComp = { race: (def.race ?? 'human') as HeroComp['race'], cls: (def.cls ?? 'warrior') as ClassId, name: def.name };
   return {
-    def, cls: (def.cls ?? 'warrior') as ClassId, xl: 1, xp: 0, skills, gear, perks: [], talents: [], pending: 0,
+    uid: nextHeroUid++, comp, kills: 0, expeditions: 0, deathCause: null,
+    def, cls: comp.cls, xl: 1, xp: 0, skills, gear, perks: [], talents: [], pending: 0,
     abilities,
     tactic: def.tactic, row: defaultRow(def), autoMode: false,
     startXl: 1, stress: 0, mood: null, restNote: '',
@@ -135,7 +151,8 @@ function learnAbility(h: Hero, id: string) {
   manual.forEach((a, i) => (a.prio = h.abilities.length - i));
 }
 
-export function applyTalent(h: Hero, id: string) {
+/** withProps=false: 저장에서 되살릴 때 (능력치는 perks 에 이미 들어 있다) */
+export function applyTalent(h: Hero, id: string, withProps = true) {
   const t = TALENTS[id];
   if (!t || h.pending <= 0) return;
   if (t.learn && h.abilities.filter((a) => !a.hidden).length < MAX_ACTIVE) learnAbility(h, t.learn);
@@ -149,7 +166,7 @@ export function applyTalent(h: Hero, id: string) {
       st.def = patched;
     }
   }
-  if (t.props) h.perks.push(...t.props);
+  if (t.props && withProps) h.perks.push(...t.props);
   h.talents.push(id);
   h.pending--;
 }

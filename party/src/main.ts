@@ -12,9 +12,9 @@ import { newRun } from './sim/run';
 import { World } from './sim/world';
 import { Hud } from './ui/hud';
 import { RestScreen } from './ui/rest';
-import { SetupScreen } from './ui/setup';
+import { TownScreen } from './ui/town';
+import { buryFallen, finishExpedition, loadCompany, newCompany, resetCompany, saveCompany } from './sim/roster';
 import { CLASSES, type ClassId } from './data/classes';
-import type { HeroComp } from './data/party';
 import { RACES, type RaceId } from './data/races';
 import type { UnlockDef } from './data/unlocks';
 import { loadMeta, recordProgress, saveMeta } from './sim/meta';
@@ -52,8 +52,10 @@ try {
   // 저장소를 못 쓰면 기본값
 }
 
-// ── 런과 런 사이 기록 · 해금 ──
+// ── 런과 런 사이 기록 · 해금, 용병단(명부 · 금고 · 묘지) ──
 const meta = loadMeta();
+recordProgress(meta, {}, 0);
+let company = loadCompany(meta);
 let started = false;
 let outcomeRecorded = false;
 
@@ -100,6 +102,9 @@ function toast(text: string) {
 
 function startFloor() {
   world = new World(genFloor(runSeed, depth), runSeed * 31 + depth, heroes, difficulty, run);
+  // 층 시작 시점 저장 (도중에 끄면 이 층 처음부터)
+  company.current = { party: heroes.map((h) => h.uid), depth, seed: runSeed, run };
+  saveCompany(company);
   world.autoExplore = explore;
   announceUnlocks(recordProgress(meta, {}, depth));
   ui.selected = [];
@@ -111,32 +116,81 @@ function startFloor() {
   centerParty();
 }
 
-/** 새 런: 파티 구성 화면부터 */
-function restart() {
+/** 거점으로 (원정이 끝났거나 처음 시작) */
+function openTown(note = '') {
   rest.close();
   restOpen = false;
   ui.paused = true;
   $('outcome').classList.add('hidden');
-  recordProgress(meta, {}, 0);
-  setup.open(meta);
+  town.open(company, meta, note);
 }
 
-function startRun(comp: HeroComp[]) {
+function startExpedition(party: Hero[]) {
   runSeed = (Math.random() * 1e9) | 0;
-  heroes = newParty(comp);
+  heroes = party;
   run = newRun();
   depth = 1;
   started = true;
   outcomeRecorded = false;
+  company.expeditions++;
   meta.runs++;
   saveMeta(meta);
   startFloor();
 }
 
-const setup = new SetupScreen(startRun);
+/** 저장된 원정 이어하기 (층 처음부터) */
+function resumeExpedition(): boolean {
+  const cur = company.current;
+  if (!cur) return false;
+  const party = cur.party.map((uid) => company.roster.find((h) => h.uid === uid)).filter((h): h is Hero => !!h);
+  if (!party.length) {
+    company.current = null;
+    return false;
+  }
+  heroes = party;
+  run = cur.run;
+  runSeed = cur.seed;
+  depth = cur.depth;
+  started = true;
+  outcomeRecorded = false;
+  startFloor();
+  toast(`${depth}층부터 원정을 이어간다`);
+  return true;
+}
+
+/** 원정 끝: 승리 · 귀환은 골드를 챙기고, 전멸은 잃는다 */
+function endExpedition(kind: 'victory' | 'retreat' | 'defeat') {
+  const alive = new Set(world.party.filter((p) => p.alive && p.hero).map((p) => p.hero!));
+  const { fallen } = kind === 'retreat' ? { fallen: [] as Hero[] } : buryFallen(company, heroes, alive, depth);
+  const survivors = heroes.filter((h) => !fallen.includes(h));
+  const gold = run.gold;
+  finishExpedition(company, meta, survivors, run, kind !== 'defeat');
+  // 원정이 끝난 월드는 더 이상 결과를 처리하지 않는다 (거점 화면 위로 결과창이 다시 뜨지 않게)
+  started = false;
+  const head = kind === 'victory' ? '승리하고 돌아왔다!' : kind === 'retreat' ? '무사히 귀환했다.' : '원정대가 전멸했다…';
+  const lost = fallen.length ? ` 잃은 용병: ${fallen.map((h) => h.def.name).join(', ')}.` : '';
+  openTown(`${head} ${kind === 'defeat' ? `번 골드 ${gold}을(를) 잃었다.` : `골드 +${gold}.`}${lost}`);
+}
+
+const town = new TownScreen(
+  startExpedition,
+  (h, done) => sheet.open(h, null, done),
+  () => {
+    resetCompany();
+    company = newCompany(meta);
+    saveCompany(company);
+    openTown('새 용병단이 꾸려졌다.');
+  },
+);
 
 function floorCleared() {
   for (const p of world.party) saveFromUnit(p);
+  // 영구 사망: 쓰러진 용병은 묘지로
+  const alive = new Set(world.party.filter((p) => p.alive && p.hero).map((p) => p.hero!));
+  const { survivors, fallen } = buryFallen(company, heroes, alive, depth);
+  heroes = survivors;
+  for (const h of fallen) toast(`✝ ${h.def.name}을(를) 잃었다`);
+  run.gold += 40 * depth;
   for (const h of heroes) restRelief(h);
   announceUnlocks(recordProgress(meta, run.kills, depth));
   run.kills = {};
@@ -152,6 +206,7 @@ const rest = new RestScreen(
     startFloor();
   },
   (h, done) => sheet.open(h, null, done),
+  () => endExpedition('retreat'),
 );
 
 function toggleExplore() {
@@ -189,7 +244,9 @@ function toggleHelp() {
 
 const input = new Input(canvas, cam, ui, {
   getWorld: () => world,
-  restart,
+  restart: () => {
+    if (started && (world.outcome === 'victory' || world.outcome === 'defeat')) endExpedition(world.outcome);
+  },
   toggleHelp,
   togglePause,
   toggleAutoAll,
@@ -252,14 +309,14 @@ world.autoExplore = explore;
 $('btn-help').addEventListener('click', toggleHelp);
 $('btn-help-close').addEventListener('click', () => {
   $('help').classList.add('hidden');
-  // 처음이면 파티 구성부터
+  // 처음이면 저장된 원정을 이어가거나 거점부터
   if (!started) {
-    recordProgress(meta, {}, 0);
-    setup.open(meta);
-  }
-  else ui.paused = false;
+    if (!resumeExpedition()) openTown();
+  } else ui.paused = false;
 });
-$('btn-restart').addEventListener('click', restart);
+$('btn-restart').addEventListener('click', () => {
+  if (started && (world.outcome === 'victory' || world.outcome === 'defeat')) endExpedition(world.outcome);
+});
 $('btn-follow').addEventListener('click', () => (cam.follow = !cam.follow));
 // 위기 순간(보스 범위 공격 예고, 아군 체력 위험)에 잠깐 느려지거나 멈춘다
 type CrisisMode = 'slow' | 'pause' | 'off';
@@ -373,7 +430,7 @@ function frame(now: number) {
   last = now;
   handleCrises(dt);
   handleMoodBreaks(dt);
-  handleNewFoes(dt);
+  if (started) handleNewFoes(dt);
   if (foeCardTimer <= 0) $('newfoe').classList.add('hidden');
   for (const s of world.sfx.splice(0)) audio.play(s as Sfx);
   world.shake = Math.max(0, world.shake - dt * 40);
@@ -411,12 +468,15 @@ function frame(now: number) {
   const autoOn = world.party.every((u) => u.autoMode);
   $('btn-auto').textContent = `자동전투: ${autoOn ? '켜짐' : '꺼짐'}`;
   $('btn-auto').classList.toggle('on', autoOn);
-  if (world.outcome === 'cleared' && !restOpen && $('rest').classList.contains('hidden')) floorCleared();
+  if (started && world.outcome === 'cleared' && !restOpen && $('rest').classList.contains('hidden')) floorCleared();
   const out = $('outcome');
-  if (world.outcome === 'victory' || world.outcome === 'defeat') {
+  if (started && (world.outcome === 'victory' || world.outcome === 'defeat')) {
     if (!outcomeRecorded) {
       outcomeRecorded = true;
-      if (world.outcome === 'victory') meta.wins++;
+      if (world.outcome === 'victory') {
+        meta.wins++;
+        run.gold += 400;
+      }
       const fresh = recordProgress(meta, run.kills, depth);
       run.kills = {};
       announceUnlocks(fresh);
@@ -425,8 +485,10 @@ function frame(now: number) {
         : '';
     }
     out.classList.remove('hidden');
-    $('outcome-title').textContent = world.outcome === 'victory' ? '승리! 오우거 족장을 쓰러뜨렸다' : `${depth}층에서 파티 전멸`;
-    $('outcome-sub').textContent = heroes.map((h) => `${h.def.name} Lv${h.xl}`).join(' · ') + ` — ${depth}/${FLOORS}층`;
+    $('outcome-title').textContent = world.outcome === 'victory' ? '승리! 오우거 족장을 쓰러뜨렸다' : `${depth}층에서 원정대 전멸`;
+    $('outcome-sub').textContent =
+      world.party.map((p) => `${p.alive ? '' : '✝ '}${p.name} Lv${p.hero?.xl ?? 1}`).join(' · ') +
+      ` — ${depth}/${FLOORS}층 · ${world.outcome === 'victory' ? `골드 ${run.gold}` : `골드 ${run.gold} 잃음`}`;
   } else out.classList.add('hidden');
 
   requestAnimationFrame(frame);

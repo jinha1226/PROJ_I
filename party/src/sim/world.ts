@@ -392,7 +392,15 @@ export class World {
     this.log(`${u.name} 쓰러짐${by ? ` (${by.name})` : ''}`, u.faction === 'party' ? '#ff6666' : '#aaaaaa');
     if (this.focusTarget === u) this.focusTarget = null;
     if (this.leader === u) this.leader = this.party.find((p) => p.alive) ?? null;
-    if (u.faction === 'party') partyStress(this, 15, u);
+    if (u.faction === 'party') {
+      partyStress(this, 15, u);
+      if (u.hero) u.hero.deathCause = by ? `${by.name}에게 쓰러짐` : '쓰러짐';
+    }
+    if (u.faction === 'enemy') {
+      // 골드: 처치 경험치에 비례. 귀환해야 용병단 금고에 들어간다
+      this.run.gold += Math.round((u.def.xp ?? 0) * 0.6);
+      if (by?.hero) by.hero.kills++;
+    }
     else if (by?.hero) addStress(this, by, -1);
     // 피의 갈증 (오크 · 특성)
     const lust = by?.alive ? by.tagCount('bloodlust') : 0;

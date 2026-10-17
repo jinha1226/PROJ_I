@@ -255,36 +255,51 @@ button.on { border-color: var(--accent); color: var(--accent); }
   .bslot small { display: none; }
 }
 
-/* ── 파티 구성 ── */
-#setup .box { width: min(1000px, 96vw); }
-#setup h2 { margin-bottom: 4px; }
-#setup .dim { color: #8a8a99; }
-#setup .small { font-size: 11px; }
-#setup .slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
-#setup .slot { border: 1px solid #3a3a4a; border-radius: 7px; padding: 7px; background: #1a1a24; min-width: 0; }
-#setup .shd { display: flex; gap: 5px; align-items: center; }
-#setup .sg { width: 30px; height: 30px; flex-shrink: 0; border: 2px solid; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; }
-#setup .nm { min-width: 0; flex: 1; background: #22222e; color: var(--text); border: 1px solid #444; font: inherit; padding: 2px 4px; }
-#setup .dice { padding: 1px 5px; }
-#setup .sel { display: flex; gap: 4px; margin: 6px 0; }
-#setup .sel select { flex: 1; min-width: 0; background: #22222e; color: var(--text); border: 1px solid #555; font: inherit; padding: 2px; }
-#setup .sum div { margin-top: 2px; line-height: 1.4; }
-#setup .unlocks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; }
-#setup .unl { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; font-size: 12px; align-items: center; }
-#setup .unl .dim { grid-column: 1 / -1; }
-#setup .unl.done b { color: #7ddc7d; }
-#setup .pbar { height: 5px; background: #222; border-radius: 3px; overflow: hidden; }
-#setup .pbar i { display: block; height: 100%; background: #c8a84a; }
-#setup .go { text-align: right; margin-top: 10px; }
-#setup .go button { font-size: 16px; padding: 7px 24px; border-color: var(--accent); color: var(--accent); }
+/* ── 용병단 거점 ── */
+#town .box { width: min(1000px, 96vw); }
+#town h2 { margin-bottom: 2px; }
+#town .tstat { font-size: 13px; color: #ccc; margin-bottom: 6px; }
+#town .note { color: #ffe14d; }
+#town .dim { color: #8a8a99; }
+#town .small { font-size: 11px; }
+#town .roster { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: 6px; }
+#town .hcard { border: 2px solid #3a3a4a; border-radius: 7px; padding: 6px 7px; background: #1a1a24; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+#town .hcard.roster { cursor: pointer; }
+#town .hcard.on { background: #1a2a1e; }
+#town .hc1 { display: flex; gap: 6px; align-items: center; position: relative; }
+#town .hc1 .chk { position: absolute; right: 0; top: 0; color: #66ff88; font-weight: bold; }
+#town .sg { width: 30px; height: 30px; flex-shrink: 0; border: 2px solid; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; }
+#town .lv { color: #e8cf7a; font-size: 12px; }
+#town .hst { display: flex; flex-direction: column; gap: 1px; }
+#town .hst .bar { display: block; height: 4px; background: #1d1626; border-radius: 2px; overflow: hidden; margin: 0; }
+#town .hst .bar i { display: block; height: 100%; }
+#town .hbtn { display: flex; gap: 4px; margin-top: auto; }
+#town .hbtn button { flex: 1; font-size: 11px; padding: 2px 4px; }
+#town .hbtn .dismiss { flex: 0 0 auto; color: #c88; }
+#town .order { margin: 8px 0; font-size: 13px; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+#town .order select { background: #22222e; color: var(--text); border: 1px solid #555; font: inherit; padding: 2px; }
+#town details { margin-top: 10px; }
+#town summary { cursor: pointer; font-weight: bold; }
+#town .grave { font-size: 12px; margin: 3px 0; color: #bbb; }
+#town .unlocks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; margin-top: 4px; }
+#town .unl { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; font-size: 12px; align-items: center; }
+#town .unl .dim { grid-column: 1 / -1; }
+#town .unl.done b { color: #7ddc7d; }
+#town .pbar { height: 5px; background: #222; border-radius: 3px; overflow: hidden; }
+#town .pbar i { display: block; height: 100%; background: #c8a84a; }
+#town .go { display: flex; gap: 10px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+#town .go button { font-size: 16px; padding: 7px 24px; border-color: var(--accent); color: var(--accent); }
+#town .danger { margin-top: 14px; font-size: 11px; color: #c88; border-color: #644; }
+.gold { color: #ffd76a; }
+#rest .retreat { margin-right: 8px; border-color: #8a7a4a; color: #e8cf7a; }
 #outcome .unlock { color: #ffe14d; font-weight: bold; }
 #toast {
   position: fixed; top: 64px; left: 50%; transform: translateX(-50%); background: rgba(40, 32, 0, 0.92); color: #ffe14d;
   border: 1px solid #a88a2a; border-radius: 6px; padding: 6px 14px; font-weight: bold; pointer-events: none; z-index: 10;
 }
 @media (max-width: 900px), (max-height: 500px) {
-  #setup .slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  #setup .unlocks { grid-template-columns: 1fr; }
+  #town .roster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #town .unlocks { grid-template-columns: 1fr; }
 }
 
 /* 스트레스 */
@@ -309,8 +324,6 @@ button.on { border-color: var(--accent); color: var(--accent); }
 #sheet .tal { border: 1px solid #333; border-radius: 5px; padding: 4px 6px; display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
 #sheet .tal.on { border-color: #66ff88; background: #66ff8812; }
 #sheet .tal.off { opacity: 0.4; }
-#setup details { margin-top: 2px; }
-#setup details summary { cursor: pointer; }
 @media (max-width: 700px) { #sheet .tals { grid-template-columns: 1fr; } }
 
 /* 스트레스 경고 · 붕괴 연출 */

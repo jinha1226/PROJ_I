@@ -126,7 +126,7 @@ function useItems(w: World) {
 }
 
 function run(seed: number, verbose: boolean, skilled: boolean) {
-  const heroes = newParty(COMP);
+  let heroes = newParty(COMP);
   const runState = newRun();
   const rng = new Rng(seed);
   const floorLog: string[] = [];
@@ -168,6 +168,8 @@ function run(seed: number, verbose: boolean, skilled: boolean) {
     }
     for (const p of w.party) saveFromUnit(p);
     if (w.outcome === 'victory') break;
+    // 영구 사망: 쓰러진 용병은 다음 층에 오지 않는다
+    heroes = w.party.filter((p) => p.alive && p.hero).map((p) => p.hero!);
     rest(heroes, runState, rng, depth, floorLog);
   }
   if (verbose) console.log(floorLog.join('\n'));

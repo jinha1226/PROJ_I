@@ -7,7 +7,7 @@ import type { Item } from '../sim/defs';
 import { applyTalent, nextTier, tierOptions, type Hero } from '../sim/hero';
 import { RARITY_COLOR, SLOT_NAME, isBadProp, itemBaseLine, itemTitle, propText } from '../sim/items';
 import { compareItem, rewardChoices } from '../sim/reward';
-import type { RunState } from '../sim/run';
+import { newRun, type RunState } from '../sim/run';
 
 const $ = (id: string) => document.getElementById(id)!;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -20,12 +20,13 @@ export class RestScreen {
   /** 고른 카드: 보상(reward) 또는 찾은 장비(found) 의 몇 번째 */
   private picked: { src: 'reward' | 'found'; i: number } | null = null;
   private rewardDone: string | null = null;
-  private run: RunState = { belt: [], found: [], kills: {}, seen: [] };
+  private run: RunState = newRun();
   private foundNotes: string[] = [];
 
   constructor(
     private onNext: () => void,
     private onSheet: (h: Hero, done: () => void) => void,
+    private onRetreat: () => void,
   ) {
     $('rest').addEventListener('click', (e) => this.click(e));
   }
@@ -52,13 +53,14 @@ export class RestScreen {
     const box = $('rest').querySelector('.box')!;
     const pendingTotal = this.heroes.reduce((s, h) => s + h.pending, 0);
     box.innerHTML = `
-      <h2>${this.depth}층 돌파!</h2>
+      <h2>${this.depth}층 돌파! <span class="gold small">이번 원정 골드 ${this.run.gold}</span></h2>
       <div class="growth">${this.heroes.map((h) => this.growthRow(h)).join('')}</div>
       ${this.foundSection()}
       <h3>보상 — 하나를 골라 장착 ${this.rewardDone ? '<span class="done">✓</span>' : ''}</h3>
       ${this.rewardDone ? `<p class="note">${this.rewardDone}</p>` : this.rewardSection()}
       ${pendingTotal ? `<h3>특성 — 하나씩 고르기</h3>${this.heroes.map((h) => this.levelRow(h)).join('')}` : ''}
       <div class="next">
+        <button class="retreat" data-act="retreat" ${pendingTotal ? 'disabled' : ''}>거점으로 귀환 (골드 ${this.run.gold} 챙기기)</button>
         <button data-act="next" ${pendingTotal ? 'disabled' : ''}>${pendingTotal ? '특성 선택을 마쳐 주세요' : `${this.depth + 1}층으로 내려가기${this.depth + 1 === FLOORS ? ' (보스층)' : ''}`}</button>
       </div>`;
   }
@@ -170,6 +172,12 @@ export class RestScreen {
       applyTalent(this.heroes[Number(hi)], id);
     } else if (el.dataset.act === 'skip') {
       this.rewardDone = '보상을 받지 않았다';
+    } else if (el.dataset.act === 'retreat') {
+      if (!confirm('원정을 마치고 거점으로 돌아갈까요? 번 골드는 챙기지만 더 깊이 내려가지 못합니다.')) return;
+      this.run.found.length = 0;
+      this.close();
+      this.onRetreat();
+      return;
     } else if (el.dataset.act === 'next') {
       this.run.found.length = 0;
       this.close();

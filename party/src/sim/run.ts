@@ -11,10 +11,12 @@ export interface RunState {
   kills: Record<string, number>;
   /** 이번 런에서 이미 마주친 몬스터 종류 (첫 조우 카드용) */
   seen: string[];
+  /** 이번 원정에서 번 골드. 귀환하면 용병단 금고로, 전멸하면 잃는다 */
+  gold: number;
 }
 
 export function newRun(): RunState {
-  return { belt: ['heal_potion'], found: [], kills: {}, seen: [] };
+  return { belt: ['heal_potion'], found: [], kills: {}, seen: [], gold: 0 };
 }
 
 export function addToBelt(run: RunState, id: ConsumableId): boolean {
