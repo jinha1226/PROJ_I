@@ -194,3 +194,17 @@ export function itemBaseLine(it: Item): string {
   if (it.base.slot === 'armour') return `AC ${(it.base.ac ?? 0) + it.plus} · 무게 ${it.base.weight}`;
   return '';
 }
+
+/** 대장간 판매가: 등급 · 강화 · 속성 수 */
+export function itemValue(it: Item): number {
+  const base = it.rarity === 'artifact' ? 110 : it.rarity === 'magic' ? 45 : 15;
+  return base + it.plus * 15 + it.props.filter((p) => !isBadProp(p)).length * 10;
+}
+
+/** 강화 비용 (+1 → +2 …). 장신구는 강화할 수 없다 */
+export const MAX_PLUS = 3;
+export function upgradeCost(it: Item): number | null {
+  if (it.base.slot === 'jewel' || it.plus >= MAX_PLUS) return null;
+  const r = it.rarity === 'artifact' ? 1.6 : it.rarity === 'magic' ? 1.25 : 1;
+  return Math.round(70 * (it.plus + 1) * r);
+}

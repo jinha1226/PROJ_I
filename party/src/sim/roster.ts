@@ -9,7 +9,9 @@ import { DEFAULT_COMP, makeHeroDef, type HeroComp } from '../data/party';
 import { RACES, RACE_LIST, type RaceId } from '../data/races';
 import type { MetaProgress } from '../data/unlocks';
 import type { Item, ItemSlot, Prop, SkillId, TacticId } from './defs';
-import { applyTalent, newHero, reserveHeroUid, type Hero } from './hero';
+import { applyTalent, gainXp, newHero, reserveHeroUid, xpToNext, type Hero } from './hero';
+import { itemValue, upgradeCost } from './items';
+import { TALENT_LEVELS, TALENTS } from '../data/talents';
 import { isUnlocked } from './meta';
 import { newRun, type RunState } from './run';
 import { restRelief } from './stress';
@@ -42,6 +44,8 @@ export interface Company {
   /** 지금까지 떠난 원정 수 */
   expeditions: number;
   tavern: Hero[];
+  /** 보관함: 원정에서 들고 온 장비 · 벗은 장비 */
+  stash: Item[];
   /** 진행 중인 원정 (층 시작 시점) */
   current: { party: number[]; depth: number; seed: number; run: RunState } | null;
 }
@@ -80,6 +84,7 @@ interface SavedRun {
   belt: RunState['belt'];
   seen: string[];
   gold: number;
+  loot?: SavedItem[];
 }
 
 interface SaveData {
@@ -89,6 +94,7 @@ interface SaveData {
   graves: Grave[];
   expeditions: number;
   tavern: SavedHero[];
+  stash?: SavedItem[];
   current: { party: number[]; depth: number; seed: number; run: SavedRun } | null;
 }
 
@@ -144,10 +150,10 @@ export function loadHero(s: SavedHero): Hero {
 export function saveCompany(c: Company) {
   const data: SaveData = {
     v: 1, gold: c.gold, graves: c.graves, expeditions: c.expeditions,
-    roster: c.roster.map(saveHero), tavern: c.tavern.map(saveHero),
+    roster: c.roster.map(saveHero), tavern: c.tavern.map(saveHero), stash: c.stash.map(saveItem),
     current: c.current && {
       party: c.current.party, depth: c.current.depth, seed: c.current.seed,
-      run: { belt: c.current.run.belt, seen: c.current.run.seen, gold: c.current.run.gold },
+      run: { belt: c.current.run.belt, seen: c.current.run.seen, gold: c.current.run.gold, loot: c.current.run.loot.map(saveItem) },
     },
   };
   try {
@@ -165,10 +171,13 @@ export function loadCompany(meta: MetaProgress): Company {
       const c: Company = {
         gold: d.gold, graves: d.graves ?? [], expeditions: d.expeditions ?? 0,
         roster: d.roster.map(loadHero), tavern: (d.tavern ?? []).map(loadHero), current: null,
+        stash: (d.stash ?? []).map(loadItem).filter((x): x is Item => !!x),
       };
       if (d.current) {
         const run = newRun();
-        Object.assign(run, d.current.run);
+        const { loot, ...rest } = d.current.run;
+        Object.assign(run, rest);
+        run.loot = (loot ?? []).map(loadItem).filter((x): x is Item => !!x);
         c.current = { party: d.current.party, depth: d.current.depth, seed: d.current.seed, run };
       }
       if (c.roster.length || c.tavern.length) return c;
@@ -182,7 +191,7 @@ export function loadCompany(meta: MetaProgress): Company {
 /** 새 용병단: 기본 네 명과 약간의 골드 */
 export function newCompany(meta: MetaProgress): Company {
   const c: Company = {
-    gold: START_GOLD, graves: [], expeditions: 0, current: null,
+    gold: START_GOLD, graves: [], expeditions: 0, current: null, stash: [],
     roster: DEFAULT_COMP.map((comp) => newHero(makeHeroDef(comp))), tavern: [],
   };
   refreshTavern(c, meta, new Rng((Math.random() * 1e9) | 0));
@@ -245,7 +254,10 @@ export function buryFallen(c: Company, party: Hero[], alive: Set<Hero>, depth: n
 
 /** 원정이 끝났을 때: 골드 정산, 대기 인원 휴식, 선술집 새 얼굴 */
 export function finishExpedition(c: Company, meta: MetaProgress, party: Hero[], run: RunState, keepGold: boolean) {
-  if (keepGold) c.gold += run.gold;
+  if (keepGold) {
+    c.gold += run.gold;
+    c.stash.push(...run.loot);
+  }
   for (const h of party) {
     h.expeditions++;
     h.deathCause = null;
@@ -262,4 +274,102 @@ export function finishExpedition(c: Company, meta: MetaProgress, party: Hero[], 
   if (!c.roster.length && c.gold < HIRE_COST) c.roster.push(newHero(makeHeroDef(randomComp(meta, rng, undefined, undefined, takenNames(c)))));
   refreshTavern(c, meta, rng);
   saveCompany(c);
+}
+
+// ── 거점 시설 ──
+// 결과 문구를 돌려주고, 실패하면 이유를 돌려준다 (ok=false)
+export interface Done { ok: boolean; text: string }
+const fail = (text: string): Done => ({ ok: false, text });
+
+/** 치료소: 스트레스를 모두 덜고 붕괴 · 각성을 푼다 */
+export function treatCost(h: Hero): number {
+  return Math.round(h.stress * 1.2) + (h.mood ? 40 : 0);
+}
+export function treat(c: Company, h: Hero): Done {
+  const cost = treatCost(h);
+  if (cost <= 0) return fail('치료할 것이 없다');
+  if (c.gold < cost) return fail('골드가 부족하다');
+  c.gold -= cost;
+  h.stress = 0;
+  h.mood = null;
+  return { ok: true, text: `${h.def.name}이(가) 치료소에서 마음을 추슬렀다 (−${cost} 골드)` };
+}
+
+/** 대장간: 판매 · 강화 · 장착 */
+export function sell(c: Company, it: Item): Done {
+  const i = c.stash.indexOf(it);
+  if (i < 0) return fail('보관함에 없다');
+  c.stash.splice(i, 1);
+  const v = itemValue(it);
+  c.gold += v;
+  return { ok: true, text: `${it.name}을(를) ${v} 골드에 팔았다` };
+}
+
+export function upgrade(c: Company, it: Item): Done {
+  const cost = upgradeCost(it);
+  if (cost === null) return fail('더 강화할 수 없다');
+  if (c.gold < cost) return fail('골드가 부족하다');
+  c.gold -= cost;
+  it.plus++;
+  return { ok: true, text: `${it.name}을(를) +${it.plus}로 강화했다 (−${cost} 골드)` };
+}
+
+/** 보관함의 장비를 용병에게 끼운다. 원래 장비는 보관함으로 */
+export function equipFromStash(c: Company, it: Item, h: Hero): Done {
+  const i = c.stash.indexOf(it);
+  if (i < 0) return fail('보관함에 없다');
+  c.stash.splice(i, 1);
+  const old = h.gear[it.base.slot];
+  if (old) c.stash.push(old);
+  h.gear[it.base.slot] = it;
+  return { ok: true, text: `${h.def.name}에게 ${it.name} 장착${old ? ` (${old.name}은(는) 보관함으로)` : ''}` };
+}
+
+export function unequip(c: Company, h: Hero, slot: ItemSlot): Done {
+  const it = h.gear[slot];
+  if (!it) return fail('장착한 것이 없다');
+  delete h.gear[slot];
+  c.stash.push(it);
+  return { ok: true, text: `${h.def.name}의 ${it.name}을(를) 보관함에 넣었다` };
+}
+
+/** 훈련장: 특성 다시 고르기 (고른 특성을 모두 되돌리고 다음 원정의 쉬는 화면에서 다시 고른다) */
+export function retrainCost(h: Hero): number {
+  return 60 + 25 * h.talents.length;
+}
+export function retrain(c: Company, h: Hero): Done {
+  if (!h.talents.length) return fail('되돌릴 특성이 없다');
+  const cost = retrainCost(h);
+  if (c.gold < cost) return fail('골드가 부족하다');
+  c.gold -= cost;
+  const s = saveHero(h);
+  // 특성이 준 능력치를 하나씩 빼고 (이벤트로 얻은 능력치는 남긴다), 특성 목록을 비운다
+  const perks = s.perks.map((p) => JSON.stringify(p));
+  for (const id of s.talents)
+    for (const p of (TALENTS[id]?.props ?? [])) {
+      const k = perks.indexOf(JSON.stringify(p));
+      if (k >= 0) perks.splice(k, 1);
+    }
+  s.perks = perks.map((p) => JSON.parse(p) as Prop);
+  s.pending = TALENT_LEVELS.filter((l) => l <= s.xl).length;
+  s.talents = [];
+  const fresh = loadHero(s);
+  c.roster[c.roster.indexOf(h)] = fresh;
+  return { ok: true, text: `${h.def.name}의 특성을 되돌렸다 — 훈련장이나 쉬는 화면에서 다시 고른다 (−${cost} 골드)` };
+}
+
+/** 훈련장: 골드로 레벨 올리기. 명부 최고 레벨보다 1 낮은 데까지만 (신입 따라잡기용) */
+export function trainCap(c: Company): number {
+  return Math.max(3, Math.max(...c.roster.map((h) => h.xl), 1) - 1);
+}
+export function trainCost(h: Hero): number {
+  return 45 * h.xl;
+}
+export function train(c: Company, h: Hero): Done {
+  if (h.xl >= trainCap(c)) return fail(`훈련으로는 Lv${trainCap(c)}까지만 올릴 수 있다`);
+  const cost = trainCost(h);
+  if (c.gold < cost) return fail('골드가 부족하다');
+  c.gold -= cost;
+  gainXp(h, xpToNext(h.xl) - h.xp);
+  return { ok: true, text: `${h.def.name}이(가) 훈련으로 Lv${h.xl}이 되었다 (−${cost} 골드)${h.pending ? ' · 고를 특성이 생겼다' : ''}` };
 }

@@ -89,11 +89,11 @@ export class RestScreen {
     </div>`;
   }
 
-  /** 상자 · 제단 · 미믹에서 찾은 장비: 각각 누구에게 낄지 정하거나 버린다 (남기면 버려진다) */
+  /** 상자 · 제단 · 미믹에서 찾은 장비: 지금 누구에게 낄지 정하거나, 그냥 두면 들고 가서 거점 보관함으로 */
   private foundSection(): string {
     const f = this.run.found;
     if (!f.length && !this.foundNotes.length) return '';
-    let html = `<h3>찾은 장비 ${f.length ? `<span class="dim small">층을 떠나면 남은 것은 버려진다</span>` : '<span class="done">✓</span>'}</h3>`;
+    let html = `<h3>찾은 장비 ${f.length ? `<span class="dim small">끼지 않은 것은 들고 가서 귀환하면 보관함으로 (전멸하면 잃는다)</span>` : '<span class="done">✓</span>'}</h3>`;
     if (this.foundNotes.length) html += `<p class="note">${this.foundNotes.join('<br>')}</p>`;
     if (f.length) {
       html += `<div class="items">${f.map((it, i) => this.itemCard(it, i, 'found')).join('')}</div>`;
@@ -156,7 +156,8 @@ export class RestScreen {
       const it = src === 'reward' ? this.rewards[i] : this.run.found[i];
       const old = h.gear[it.base.slot];
       h.gear[it.base.slot] = it;
-      const note = `${h.def.name}에게 ${itemTitle(it)} 장착${old ? ` (${itemTitle(old)} 버림)` : ''}`;
+      if (old) this.run.loot.push(old);
+      const note = `${h.def.name}에게 ${itemTitle(it)} 장착${old ? ` (${itemTitle(old)}은(는) 짐으로)` : ''}`;
       if (src === 'reward') this.rewardDone = note;
       else {
         this.run.found.splice(i, 1);
@@ -174,12 +175,12 @@ export class RestScreen {
       this.rewardDone = '보상을 받지 않았다';
     } else if (el.dataset.act === 'retreat') {
       if (!confirm('원정을 마치고 거점으로 돌아갈까요? 번 골드는 챙기지만 더 깊이 내려가지 못합니다.')) return;
-      this.run.found.length = 0;
+      this.run.loot.push(...this.run.found.splice(0));
       this.close();
       this.onRetreat();
       return;
     } else if (el.dataset.act === 'next') {
-      this.run.found.length = 0;
+      this.run.loot.push(...this.run.found.splice(0));
       this.close();
       this.onNext();
       return;

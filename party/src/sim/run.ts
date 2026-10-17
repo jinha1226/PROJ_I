@@ -13,10 +13,12 @@ export interface RunState {
   seen: string[];
   /** 이번 원정에서 번 골드. 귀환하면 용병단 금고로, 전멸하면 잃는다 */
   gold: number;
+  /** 들고 돌아갈 장비 (장착하지 않은 것 · 교체로 벗은 것). 귀환하면 보관함으로 */
+  loot: Item[];
 }
 
 export function newRun(): RunState {
-  return { belt: ['heal_potion'], found: [], kills: {}, seen: [], gold: 0 };
+  return { belt: ['heal_potion'], found: [], kills: {}, seen: [], gold: 0, loot: [] };
 }
 
 export function addToBelt(run: RunState, id: ConsumableId): boolean {
