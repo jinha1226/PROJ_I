@@ -4,6 +4,7 @@
 //   auto    : 손을 놓은 플레이어 (수동 전용 기술 안 씀, 피하기·끊기 없음)
 //   skilled : 개입하는 플레이어 흉내 (수동 기술을 AI 가 대신 씀 + 예고 공격 피하기 + 방패 강타로 시전 끊기)
 import { dist, Rng } from '../src/core/rng';
+import type { DifficultyId } from '../src/data/difficulty';
 import { areaCenter } from '../src/sim/abilities';
 import type { Unit } from '../src/sim/unit';
 import { FLOORS } from '../src/data/encounters';
@@ -35,6 +36,9 @@ function rest(heroes: Hero[], rng: Rng, depth: number, log: string[]) {
 }
 
 /** 개입하는 플레이어 흉내: 매 틱 호출 */
+// 난이도: DIFF=easy|normal|hard (기본 easy)
+const DIFF = (process.env.DIFF ?? 'easy') as DifficultyId;
+
 // 개입 요소를 따로 켜고 끌 수 있다: ASSIST=learn,dodge,interrupt (기본 전부)
 const PARTS = (process.env.ASSIST ?? 'learn,dodge,interrupt').split(',');
 
@@ -78,7 +82,7 @@ function run(seed: number, verbose: boolean, skilled: boolean) {
   let result = 'victory';
   let time = 0;
   for (let depth = 1; depth <= FLOORS; depth++) {
-    const w = new World(genFloor(seed, depth), seed * 31 + depth, heroes);
+    const w = new World(genFloor(seed, depth), seed * 31 + depth, heroes, DIFF);
     w.autoExplore = true;
     if (skilled && PARTS.includes('learn')) for (const h of heroes) for (const a of h.abilities) if (a.manualOnly) a.auto = true;
     const dodging = new Map<Unit, number>();
@@ -114,7 +118,7 @@ function run(seed: number, verbose: boolean, skilled: boolean) {
 const seed = Number(process.argv[2] ?? 1);
 const runs = Number(process.argv[3] ?? 1);
 const skilled = process.argv[4] === 'skilled';
-console.log(skilled ? '[개입하는 플레이어 흉내]' : '[자동만]');
+console.log(skilled ? '[개입하는 플레이어 흉내]' : '[자동만]', DIFF);
 if (runs === 1) console.log(run(seed, true, skilled));
 else {
   const res: Record<string, number> = {};

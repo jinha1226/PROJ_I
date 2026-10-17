@@ -24,7 +24,6 @@
   <div id="party"></div>
   <div id="inspect" class="panel hidden"></div>
   <div id="log" class="panel"></div>
-  <div id="skillbar" class="panel hidden"></div>
   <div id="pause-banner" class="hidden">일시정지 · 명령을 입력하세요</div>
   <div id="targeting-hint" class="hidden"></div>
   <div id="crisis" class="hidden"></div>
@@ -78,6 +77,14 @@
         적에게 커서를 올리거나 탭하면 저항·면역을 볼 수 있습니다. 불의 정령에겐 화염이 거의 통하지 않고, 해골에겐 독이 통하지 않습니다.<br />
         전사의 <b>방패 강타</b>는 적 주술사의 시전을 끊습니다. 불의 정령에겐 <b>서리 화살</b>을 쓰세요. 좁은 통로에 전사를 세우면 적이 지나가지 못합니다.<br />
         빨간 원은 적의 범위 공격 예고입니다. 아군을 드래그해서 피하세요.
+      </p>
+      <p class="diff">난이도
+        <select id="difficulty">
+          <option value="easy">쉬움</option>
+          <option value="normal">보통</option>
+          <option value="hard">어려움</option>
+        </select>
+        <span class="dim">다음 층부터 적용 · 깊은 층 몬스터의 체력·피해</span>
       </p>
       <button id="btn-help-close">시작하기</button>
     </div>

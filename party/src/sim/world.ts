@@ -1,5 +1,6 @@
 import { dist, Rng } from '../core/rng';
 import type { MapDef } from '../data/maps';
+import { DIFFICULTIES, type Difficulty, type DifficultyId } from '../data/difficulty';
 import { MONSTERS } from '../data/units';
 import { updateUnit } from './behavior';
 import { beginFloor, gainXp, newParty, type Hero } from './hero';
@@ -57,8 +58,6 @@ export interface Crisis {
 }
 
 export const SIGHT = 8;
-const DEPTH_HP = 0.4;
-const DEPTH_DMG = 0.5;
 
 export class World {
   readonly map: GameMap;
@@ -96,7 +95,10 @@ export class World {
   private awareTimer = 0;
   private calmTimer = 0;
 
-  constructor(def: MapDef, seed: number, heroes: Hero[] = newParty()) {
+  readonly difficulty: Difficulty;
+
+  constructor(def: MapDef, seed: number, heroes: Hero[] = newParty(), difficulty: DifficultyId = 'easy') {
+    this.difficulty = DIFFICULTIES[difficulty];
     this.rng = new Rng(seed);
     this.map = GameMap.fromDef(def);
     this.depth = def.depth ?? 1;
@@ -120,8 +122,11 @@ export class World {
     const def = MONSTERS[id];
     if (!def) throw new Error(`unknown unit ${id}`);
     const u = new Unit(this.nextId++, def, faction, x, y);
-    // 깊은 층의 몬스터는 더 튼튼하고 아프다 (보스는 고정)
-    if (!def.boss) u.scale = { hp: 1 + (this.depth - 1) * DEPTH_HP, dmg: 1 + (this.depth - 1) * DEPTH_DMG };
+    // 깊은 층의 몬스터는 더 튼튼하고 아프다. 보스는 깊이 대신 난이도별 고정 배율
+    const d = this.difficulty;
+    u.scale = def.boss
+      ? { hp: d.boss, dmg: 1 + (d.boss - 1) * 0.5 }
+      : { hp: d.baseHp * (1 + (this.depth - 1) * d.perDepthHp), dmg: d.baseDmg * (1 + (this.depth - 1) * d.perDepthDmg) };
     return this.addUnit(u);
   }
 

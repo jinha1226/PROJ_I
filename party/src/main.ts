@@ -1,3 +1,4 @@
+import type { DifficultyId } from './data/difficulty';
 import { FLOORS } from './data/encounters';
 import { Input } from './input/input';
 import { Camera } from './render/camera';
@@ -20,7 +21,14 @@ const ui = createUiState();
 let runSeed = (Math.random() * 1e9) | 0;
 let heroes: Hero[] = newParty();
 let depth = 1;
-let world = new World(genFloor(runSeed, depth), runSeed * 31 + depth, heroes);
+let difficulty: DifficultyId = 'normal';
+try {
+  const d = localStorage.getItem('bh.difficulty');
+  if (d === 'easy' || d === 'normal' || d === 'hard') difficulty = d;
+} catch {
+  // 저장소를 못 쓰면 기본값
+}
+let world = new World(genFloor(runSeed, depth), runSeed * 31 + depth, heroes, difficulty);
 let restOpen = false;
 
 let explore = true;
@@ -31,7 +39,7 @@ try {
 }
 
 function startFloor() {
-  world = new World(genFloor(runSeed, depth), runSeed * 31 + depth, heroes);
+  world = new World(genFloor(runSeed, depth), runSeed * 31 + depth, heroes, difficulty);
   world.autoExplore = explore;
   ui.selected = [];
   ui.inspect = null;
@@ -113,6 +121,18 @@ $('btn-all').addEventListener('click', () => (ui.selected = world.party.filter((
 $('btn-auto').addEventListener('click', toggleAutoAll);
 $('btn-auto').classList.add('on');
 $('btn-explore').addEventListener('click', toggleExplore);
+const diffSel = $('difficulty') as HTMLSelectElement;
+diffSel.value = difficulty;
+diffSel.addEventListener('change', () => {
+  difficulty = diffSel.value as DifficultyId;
+  try {
+    localStorage.setItem('bh.difficulty', difficulty);
+  } catch {
+    // 무시
+  }
+  // 첫 층에서 아직 싸우기 전이면 바로 다시 만든다
+  if (depth === 1 && world.time < 1) startFloor();
+});
 world.autoExplore = explore;
 $('btn-help').addEventListener('click', toggleHelp);
 $('btn-help-close').addEventListener('click', () => {
@@ -169,7 +189,7 @@ $('btn-speed').addEventListener('click', () => {
   ui.speed = SPEEDS[(SPEEDS.indexOf(ui.speed) + 1) % SPEEDS.length];
   $('btn-speed').textContent = `속도 ${ui.speed}x`;
 });
-for (const id of ['top', 'party', 'skillbar', 'inspect']) $(id).addEventListener('contextmenu', (e) => e.preventDefault());
+for (const id of ['top', 'party', 'inspect']) $(id).addEventListener('contextmenu', (e) => e.preventDefault());
 
 window.addEventListener('resize', () => renderer.resize());
 renderer.resize();
@@ -189,6 +209,7 @@ function frame(now: number) {
       acc -= STEP;
     }
   }
+  cam.padBottom = $('party').offsetHeight + 8;
   input.update(dt);
   renderer.draw(world, ui);
   hud.update();

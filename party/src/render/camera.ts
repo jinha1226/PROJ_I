@@ -7,12 +7,14 @@ export class Camera {
   w = 800;
   h = 600;
   follow = true;
+  /** 하단 HUD 가 가리는 높이(px). 화면 중심을 그만큼 위로 올린다 */
+  padBottom = 0;
 
   toScreen(x: number, y: number): [number, number] {
-    return [(x - this.x) * this.zoom + this.w / 2, (y - this.y) * this.zoom + this.h / 2];
+    return [(x - this.x) * this.zoom + this.w / 2, (y - this.y) * this.zoom + (this.h - this.padBottom) / 2];
   }
 
   toWorld(sx: number, sy: number): { x: number; y: number } {
-    return { x: (sx - this.w / 2) / this.zoom + this.x, y: (sy - this.h / 2) / this.zoom + this.y };
+    return { x: (sx - this.w / 2) / this.zoom + this.x, y: (sy - (this.h - this.padBottom) / 2) / this.zoom + this.y };
   }
 }

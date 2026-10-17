@@ -1,4 +1,4 @@
-// DOM 기반 HUD: 파티 카드, 스킬바, 적 정보, 전투 로그.
+// DOM 기반 HUD: 하단 파티 패널(캐릭터별 스킬 버튼 + 상태창), 정보 창, 전투 로그.
 import { ELEMENT_NAME } from '../sim/combat';
 import { RESIST_KEYS, type SkillId, type TacticId } from '../sim/defs';
 import { abilityCooldown, attackDelay, avgWeaponDamage, failChance } from '../sim/stats';
@@ -46,9 +46,8 @@ function commandText(u: Unit): string {
 }
 
 export class Hud {
-  private cards: HTMLElement[] = [];
-  private skillFor: Unit | null = null;
-  private skillVersion = '';
+  private cols: HTMLElement[] = [];
+  private skillVersion: string[] = [];
   private inspectFor: Unit | null = null;
   private logCount = -1;
 
@@ -58,99 +57,157 @@ export class Hud {
     private onSkill: (slot: number) => void,
   ) {}
 
-  /** 월드가 바뀌면(재시작) 카드를 새로 만든다 */
+  /** 월드가 바뀌면(층 이동·재시작) 하단 파티 패널을 새로 만든다 */
   build() {
     const w = this.getWorld();
     const root = $('party');
     root.innerHTML = '';
-    this.cards = w.party.map((u, i) => {
-      const el = document.createElement('div');
-      el.className = 'card';
-      el.innerHTML = `
-        <div class="head"><span class="name" style="color:${u.def.color}">${i + 1}. ${u.name}<span class="lead"></span></span>
-        <span class="lv"></span><span class="title">${u.def.title}</span></div>
-        <div class="bar hp"><div></div></div>
-        ${u.stats.maxMp > 0 ? '<div class="bar mp"><div></div></div>' : ''}
-        <div class="bar xp"><div></div></div>
-        <div class="statuses"></div>
-        <div class="mskills"></div>
-        <div class="row">
-          <button class="rowbtn" title="진형: 전열은 앞장서고, 후열은 함께 이동할 때 전열 뒤를 따른다"></button>
-          <select>${TACTICS.map(([id, n]) => `<option value="${id}">${n}</option>`).join('')}</select>
-          <label><input type="checkbox" class="auto" /> 자동</label>
-          <span class="cmd"></span>
+    this.skillVersion = [];
+    this.cols = w.party.map((u, i) => {
+      const col = document.createElement('div');
+      col.className = 'pcol';
+      col.innerHTML = `
+        <div class="pskills"></div>
+        <div class="card">
+          <div class="head"><span class="name" style="color:${u.def.color}">${i + 1}. ${u.name}<span class="lead"></span></span>
+            <span class="lv"></span></div>
+          <div class="bar hp"><div></div><span class="bt"></span></div>
+          ${u.stats.maxMp > 0 ? '<div class="bar mp"><div></div></div>' : ''}
+          <div class="bar xp"><div></div></div>
+          <div class="statuses"></div>
+          <div class="row">
+            <button class="rowbtn" title="진형: 전열은 앞장서고, 후열은 함께 이동할 때 전열 뒤를 따른다"></button>
+            <select title="자동전투 전술">${TACTICS.map(([id, n]) => `<option value="${id}">${n}</option>`).join('')}</select>
+            <label title="자동전투"><input type="checkbox" class="auto" /> 자동</label>
+          </div>
         </div>`;
-      const sel = el.querySelector('select')!;
+      const card = col.querySelector<HTMLElement>('.card')!;
+      const sel = col.querySelector('select')!;
       sel.value = u.tactic;
       sel.addEventListener('change', () => (u.tactic = sel.value as TacticId));
       sel.addEventListener('pointerdown', (e) => e.stopPropagation());
-      const rowBtn = el.querySelector<HTMLButtonElement>('.rowbtn')!;
+      const rowBtn = col.querySelector<HTMLButtonElement>('.rowbtn')!;
       rowBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
       rowBtn.addEventListener('click', () => (u.row = u.row === 'front' ? 'back' : 'front'));
-      const auto = el.querySelector<HTMLInputElement>('input.auto')!;
+      const auto = col.querySelector<HTMLInputElement>('input.auto')!;
       auto.checked = u.autoMode;
       auto.addEventListener('change', () => (u.autoMode = auto.checked));
-      auto.addEventListener('pointerdown', (e) => e.stopPropagation());
-      el.addEventListener('pointerdown', (e) => {
+      auto.parentElement!.addEventListener('pointerdown', (e) => e.stopPropagation());
+      card.addEventListener('pointerdown', (e) => {
         if (!u.alive) return;
         if (e.shiftKey) this.ui.selected = this.ui.selected.includes(u) ? this.ui.selected : [...this.ui.selected, u];
         else this.ui.selected = [u];
       });
-      // 수동 전용 기술: 카드에서 바로 쓴다 (선택 + 대상 지정 시작)
-      const ms = el.querySelector<HTMLElement>('.mskills')!;
-      u.abilities.forEach((st, slot) => {
-        if (!st.manualOnly) return;
-        const b = document.createElement('button');
-        b.className = 'mskill';
-        b.dataset.slot = String(slot);
-        b.title = `${st.def.name} (수동 전용)`;
-        b.innerHTML = `<span style="color:${st.def.color}">${st.def.icon}</span> ${st.def.name}`;
-        b.addEventListener('pointerdown', (e) => {
-          e.stopPropagation();
-          if (!u.alive) return;
-          this.ui.selected = [u];
-          this.onSkill(slot);
-        });
-        ms.appendChild(b);
-      });
-      root.appendChild(el);
-      return el;
+      root.appendChild(col);
+      return col;
     });
-    this.skillFor = null;
     this.logCount = -1;
+  }
+
+  /** 캐릭터 위 스킬 버튼. 누르면 그 캐릭터로 사용, 길게 누르기/우클릭은 자동 사용 켜기·끄기 */
+  private buildSkills(u: Unit, col: HTMLElement) {
+    const box = col.querySelector<HTMLElement>('.pskills')!;
+    box.innerHTML = '';
+    u.abilities.forEach((st, slot) => {
+      if (st.hidden) return;
+      const ab = st.def;
+      const fail = failChance(u, ab);
+      const elem = ab.effects.find((e) => e.kind === 'damage');
+      const tip = [
+        `${ab.name}${st.rank ? ` +${st.rank}` : ''} (${ab.type === 'spell' ? '마법' : '기술'})`,
+        ab.desc,
+        `시전 ${ab.castTime ? ab.castTime + '초' : '즉시'} · 재사용 ${abilityCooldown(st).toFixed(1)}초 · 사거리 ${ab.range || '자신'}${ab.radius ? ` · 범위 ${ab.radius}` : ''}`,
+        elem && elem.kind === 'damage' ? `속성: ${ELEMENT_NAME[elem.element]}` : '',
+        ab.cost ? `마나 ${ab.cost}` : '',
+        ab.type === 'spell' ? `실패율 ${Math.round(fail * 100)}%` : '',
+        ab.affects === 'all' ? '⚠ 아군도 피해를 입음' : '',
+        st.manualOnly ? '수동 전용: AI 가 쓰지 않는다' : '길게 누르기 / 우클릭: 자동 사용 켜기·끄기',
+      ].filter(Boolean).join('\n');
+      const b = document.createElement('div');
+      b.className = `sk${st.manualOnly ? ' manual' : ''}`;
+      b.dataset.slot = String(slot);
+      b.title = tip;
+      b.innerHTML = `
+        <span class="icon" style="color:${ab.color}">${ab.icon}</span>
+        <span class="nm">${ab.name}${st.rank ? `<i>+${st.rank}</i>` : ''}</span>
+        ${fail > 0.005 ? `<span class="fail">${Math.round(fail * 100)}%</span>` : ''}
+        <span class="badge"></span>
+        <div class="cdmask"></div><span class="cdtext"></span>`;
+      let timer = 0, longPressed = false;
+      const toggleAuto = () => {
+        if (st.manualOnly) return;
+        st.auto = !st.auto;
+        longPressed = true;
+      };
+      b.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        if (e.button === 2) return;
+        longPressed = false;
+        timer = window.setTimeout(toggleAuto, 450);
+      });
+      b.addEventListener('pointerup', (e) => {
+        e.stopPropagation();
+        clearTimeout(timer);
+        if (e.button === 2 || longPressed || !u.alive) return;
+        this.ui.selected = [u];
+        this.onSkill(slot);
+      });
+      b.addEventListener('pointerleave', () => clearTimeout(timer));
+      b.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        toggleAuto();
+      });
+      box.appendChild(b);
+    });
   }
 
   update() {
     const w = this.getWorld(), ui = this.ui;
 
-    // 파티 카드
     w.party.forEach((u, i) => {
-      const el = this.cards[i];
-      el.classList.toggle('selected', ui.selected.includes(u));
-      el.classList.toggle('dead', !u.alive);
-      (el.querySelector('.bar.hp > div') as HTMLElement).style.width = `${Math.max(0, u.hpFrac) * 100}%`;
-      const mp = el.querySelector('.bar.mp > div') as HTMLElement | null;
+      const col = this.cols[i];
+      const ver = u.abilities.map((a) => `${a.def.id}${a.rank}`).join();
+      if (this.skillVersion[i] !== ver) {
+        this.skillVersion[i] = ver;
+        this.buildSkills(u, col);
+      }
+      col.classList.toggle('selected', ui.selected.includes(u));
+      col.classList.toggle('dead', !u.alive);
+      (col.querySelector('.bar.hp > div') as HTMLElement).style.width = `${Math.max(0, u.hpFrac) * 100}%`;
+      col.querySelector('.bar.hp .bt')!.textContent = `${Math.ceil(Math.max(0, u.hp))}/${u.stats.maxHp}`;
+      const mp = col.querySelector('.bar.mp > div') as HTMLElement | null;
       if (mp) mp.style.width = `${(u.mp / u.stats.maxMp) * 100}%`;
-      el.querySelector('.statuses')!.innerHTML =
-        `<span style="color:#aaa">${Math.ceil(Math.max(0, u.hp))}/${u.stats.maxHp}</span> ` +
-        u.statuses.map((s) => `<span class="chip" style="color:${s.def.color}">${s.def.name}${s.stacks > 1 ? '×' + s.stacks : ''}</span>`).join('');
-      el.querySelector('.cmd')!.textContent = commandText(u);
-      el.querySelector('.lead')!.textContent = w.leader === u ? ' ★' : '';
+      const cmd = commandText(u);
+      col.querySelector('.statuses')!.innerHTML =
+        u.statuses.map((s) => `<span class="chip" style="color:${s.def.color}">${s.def.name}${s.stacks > 1 ? '×' + s.stacks : ''}</span>`).join('') +
+        (cmd ? `<span class="cmd">${cmd}</span>` : '');
+      col.querySelector('.lead')!.textContent = w.leader === u ? ' ★' : '';
       if (u.hero) {
-        el.querySelector('.lv')!.textContent = `Lv${u.hero.xl}${u.hero.pending ? ' ▲' : ''}`;
-        (el.querySelector('.bar.xp > div') as HTMLElement).style.width = `${(u.hero.xp / xpToNext(u.hero.xl)) * 100}%`;
+        col.querySelector('.lv')!.textContent = `Lv${u.hero.xl}${u.hero.pending ? ' ▲' : ''}`;
+        (col.querySelector('.bar.xp > div') as HTMLElement).style.width = `${(u.hero.xp / xpToNext(u.hero.xl)) * 100}%`;
       }
-      const auto = el.querySelector<HTMLInputElement>('input.auto')!;
+      const auto = col.querySelector<HTMLInputElement>('input.auto')!;
       if (auto.checked !== u.autoMode) auto.checked = u.autoMode;
-      for (const b of el.querySelectorAll<HTMLElement>('.mskill')) {
-        const st = u.abilities[Number(b.dataset.slot)];
-        b.classList.toggle('ready', u.alive && st.cd <= 0 && u.mp >= st.def.cost);
-      }
-      const rowBtn = el.querySelector<HTMLElement>('.rowbtn')!;
+      const rowBtn = col.querySelector<HTMLElement>('.rowbtn')!;
       const rowText = u.row === 'front' ? '전열' : '후열';
       if (rowBtn.textContent !== rowText) {
         rowBtn.textContent = rowText;
         rowBtn.classList.toggle('front', u.row === 'front');
+      }
+      for (const b of col.querySelectorAll<HTMLElement>('.sk')) {
+        const st = u.abilities[Number(b.dataset.slot)];
+        const ready = u.alive && st.cd <= 0 && u.mp >= st.def.cost;
+        b.querySelector<HTMLElement>('.cdmask')!.style.height = st.cd > 0 ? `${Math.min(1, st.cd / abilityCooldown(st)) * 100}%` : '0';
+        b.querySelector('.cdtext')!.textContent = st.cd > 0 ? st.cd.toFixed(st.cd < 3 ? 1 : 0) : '';
+        b.classList.toggle('disabled', !u.alive || u.mp < st.def.cost);
+        b.classList.toggle('ready', !!st.manualOnly && ready);
+        b.classList.toggle('targeting', ui.targeting?.unit === u && ui.targeting.slot === Number(b.dataset.slot));
+        const badge = st.manualOnly ? '수동' : st.auto ? '자동' : '끔';
+        const bd = b.querySelector<HTMLElement>('.badge')!;
+        if (bd.textContent !== badge) {
+          bd.textContent = badge;
+          bd.className = `badge ${st.manualOnly ? 'm' : st.auto ? 'a' : 'off'}`;
+        }
       }
     });
 
@@ -165,118 +222,47 @@ export class Hud {
     if (ui.targeting) {
       const ab = ui.targeting.unit.abilities[ui.targeting.slot].def;
       const what = ab.target === 'ground' ? '지점을' : ab.target === 'ally' ? '아군을' : '적을';
-      hint.textContent = `${ui.targeting.unit.name}: ${ab.name} — ${what} 클릭하세요 (우클릭/Esc 취소, Shift 유지)`;
+      hint.textContent = `${ui.targeting.unit.name}: ${ab.name} — ${what} 누르세요 (우클릭/Esc 취소)`;
       hint.classList.remove('hidden');
     } else hint.classList.add('hidden');
 
-    this.updateSkillbar();
     this.updateInspect();
     this.updateLog();
   }
 
-  private updateSkillbar() {
-    const ui = this.ui;
-    const u = ui.selected.find((s) => s.alive) ?? null;
-    const bar = $('skillbar');
-    if (!u) {
-      bar.classList.add('hidden');
-      this.skillFor = null;
-      return;
-    }
-    bar.classList.remove('hidden');
-    const version = u.abilities.map((a) => `${a.def.id}${a.auto}${a.prio}${a.rank}`).join();
-    const shown = u.abilities.filter((a) => !a.hidden);
-    if (this.skillFor !== u || this.skillVersion !== version) {
-      this.skillFor = u;
-      this.skillVersion = version;
-      this.buildSkillbar(u);
-    }
-    // 매 프레임 갱신: 재사용 대기, 마나, 정보
-    const ranks = shown.filter((a) => !a.manualOnly).sort((a, b) => b.prio - a.prio);
-    shown.forEach((st, i) => {
-      const el = bar.querySelector<HTMLElement>(`.skill[data-slot="${i}"]`)!;
-      const mask = el.querySelector<HTMLElement>('.cdmask')!;
-      const cdt = el.querySelector<HTMLElement>('.cdtext')!;
-      mask.style.height = st.cd > 0 ? `${Math.min(1, st.cd / abilityCooldown(st)) * 100}%` : '0';
-      cdt.textContent = st.cd > 0 ? st.cd.toFixed(st.cd < 3 ? 1 : 0) : '';
-      const btn = el.querySelector<HTMLElement>('.btn')!;
-      btn.classList.toggle('disabled', u.mp < st.def.cost);
-      el.classList.toggle('manual-ready', !!st.manualOnly && st.cd <= 0 && u.mp >= st.def.cost);
-      btn.classList.toggle('targeting', ui.targeting?.unit === u && ui.targeting.slot === i);
-      const rank = el.querySelector('.rank');
-      if (rank) rank.textContent = `우선${ranks.indexOf(st) + 1}`;
-    });
+  /** 아군 한 명만 선택했을 때 정보 창 내용 */
+  private heroInfo(u: Unit): string {
     const s = u.stats;
     const skills = (Object.entries(u.skills) as [SkillId, number][])
       .filter(([, v]) => v > 0)
       .sort((a, b) => b[1] - a[1])
       .map(([k, v]) => `${SKILL_NAME[k]} ${v.toFixed(1)}`)
       .join(' · ');
-    bar.querySelector('.info')!.innerHTML =
-      `<b style="color:${u.def.color}">${u.name}</b> ${u.def.title}<br>` +
-      `HP ${Math.ceil(u.hp)}/${s.maxHp}${s.maxMp ? ` · MP ${Math.floor(u.mp)}/${s.maxMp}` : ''}<br>` +
-      `AC ${s.ac.toFixed(0)} · EV ${s.ev.toFixed(0)} · 의지 ${s.will}<br>` +
-      `${u.weapon.name}: 피해 ${avgWeaponDamage(u).toFixed(1)} / ${attackDelay(u).toFixed(2)}초<br>` +
-      `저항: ${resistText(u)}<br>` +
-      `<span style="color:#999">${skills}</span>`;
-  }
-
-  private buildSkillbar(u: Unit) {
-    const bar = $('skillbar');
-    const keys = ['Q', 'W', 'E', 'R'];
-    bar.innerHTML = '<div class="info"></div>';
-    u.abilities.filter((a) => !a.hidden).forEach((st, i) => {
-      const ab = st.def;
-      const fail = failChance(u, ab);
-      const el = document.createElement('div');
-      el.className = 'skill';
-      el.dataset.slot = String(i);
-      const elem = ab.effects.find((e) => e.kind === 'damage');
-      const tip = [
-        `${ab.name} (${ab.type === 'spell' ? '마법' : '기술'})`,
-        ab.desc,
-        `시전 ${ab.castTime ? ab.castTime + '초' : '즉시'} · 재사용 ${ab.cooldown}초 · 사거리 ${ab.range || '자신'}${ab.radius ? ` · 범위 ${ab.radius}` : ''}`,
-        elem && elem.kind === 'damage' ? `속성: ${ELEMENT_NAME[elem.element]}` : '',
-        ab.cost ? `마나 ${ab.cost}` : '',
-        ab.type === 'spell' ? `실패율 ${Math.round(fail * 100)}%` : '',
-        ab.affects === 'all' ? '⚠ 아군도 피해를 입음' : '',
-      ].filter(Boolean).join('\n');
-      el.innerHTML = `
-        <div class="btn" title="${tip}">
-          <span class="key">${keys[i] ?? ''}</span>
-          <span class="icon" style="color:${ab.color}">${ab.icon}</span>
-          ${ab.cost ? `<span class="cost">${ab.cost}</span>` : ''}
-          <div class="cdmask"></div><span class="cdtext"></span>
-        </div>
-        <div class="label">${ab.name}${st.rank ? `<span style="color:#e8cf7a"> +${st.rank}</span>` : ''}${fail > 0 ? ` <span style="color:#f88">${Math.round(fail * 100)}%</span>` : ''}</div>
-        <div class="ctl">${
-          st.manualOnly
-            ? '<span class="manual" title="AI 가 쓰지 않는 기술. 직접 눌러야 한다">수동 전용</span>'
-            : `<button class="auto ${st.auto ? 'on' : ''}" title="자동전투에서 사용">${st.auto ? '자동' : '수동'}</button>
-          <button class="up" title="자동 사용 우선순위 올리기">▲</button>
-          <span class="rank"></span>`
-        }</div>`;
-      el.querySelector('.btn')!.addEventListener('pointerdown', (e) => {
-        e.stopPropagation();
-        this.onSkill(i);
-      });
-      if (st.manualOnly) {
-        bar.appendChild(el);
-        return;
-      }
-      el.querySelector('.auto')!.addEventListener('click', () => (st.auto = !st.auto));
-      el.querySelector('.up')!.addEventListener('click', () => {
-        const higher = u.abilities.filter((a) => !a.hidden && !a.manualOnly && a.prio > st.prio).sort((a, b) => a.prio - b.prio)[0];
-        if (higher) [higher.prio, st.prio] = [st.prio, higher.prio];
-      });
-      bar.appendChild(el);
-    });
+    const gear = u.hero ? (['weapon', 'armour', 'jewel'] as const).map((k) => u.hero!.gear[k]?.name ?? '-').join(' · ') : '';
+    return `
+      <span>체력</span><span>${Math.ceil(u.hp)} / ${s.maxHp}${s.maxMp ? ` · 마나 ${Math.floor(u.mp)}/${s.maxMp}` : ''}</span>
+      <span>AC / EV</span><span>${s.ac.toFixed(0)} / ${s.ev.toFixed(0)} · 의지 ${s.will}</span>
+      <span>평타</span><span>${u.weapon.name} ${avgWeaponDamage(u).toFixed(1)} / ${attackDelay(u).toFixed(2)}초</span>
+      <span>저항</span><span>${resistText(u)}</span>
+      <span>장비</span><span>${gear}</span>
+      <span>스킬</span><span>${skills}</span>`;
   }
 
   private updateInspect() {
     const ui = this.ui, w = this.getWorld();
     const t = ui.hover && ui.hover.faction !== 'party' ? ui.hover : ui.inspect;
     const box = $('inspect');
+    const hero = !t && ui.selected.length === 1 ? ui.selected[0] : null;
+    box.classList.toggle('hero', !!hero && hero.alive);
+    if (hero && hero.alive) {
+      box.classList.remove('hidden');
+      if (this.inspectFor !== hero) {
+        this.inspectFor = hero;
+        box.innerHTML = `<h3 style="color:${hero.def.color}">${hero.name}</h3><div class="sub">${hero.def.title}</div><div class="kv"></div>`;
+      }
+      box.querySelector('.kv')!.innerHTML = this.heroInfo(hero);
+      return;
+    }
     if (!t || !t.alive) {
       box.classList.add('hidden');
       this.inspectFor = null;
