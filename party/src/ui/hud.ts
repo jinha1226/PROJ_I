@@ -1,11 +1,12 @@
 // DOM 기반 HUD: 하단 파티 패널(캐릭터별 스킬 버튼 + 상태창), 정보 창, 전투 로그.
 import { ELEMENT_NAME } from '../sim/combat';
-import { RESIST_KEYS, type SkillId, type TacticId } from '../sim/defs';
+import { RESIST_KEYS, type TacticId } from '../sim/defs';
 import { abilityCooldown, attackDelay, avgWeaponDamage, failChance } from '../sim/stats';
 import type { Unit } from '../sim/unit';
 import type { World } from '../sim/world';
 import type { UiState } from './state';
 import { RES_NAME, SKILL_NAME } from '../data/names';
+import { TALENTS } from '../data/talents';
 import { FLOORS } from '../data/encounters';
 import { xpToNext } from '../sim/hero';
 import { BELT_SIZE, CONSUMABLES } from '../data/consumables';
@@ -200,7 +201,7 @@ export class Hud {
         (cmd ? `<span class="cmd">${cmd}</span>` : '');
       col.querySelector('.lead')!.textContent = w.leader === u ? ' ★' : '';
       if (u.hero) {
-        col.querySelector('.lv')!.textContent = `Lv${u.hero.xl}${u.hero.pending ? ' ▲' : ''}`;
+        col.querySelector('.lv')!.textContent = `Lv${u.hero.xl}${u.hero.pending ? ' ★' : ''}`;
         (col.querySelector('.bar.xp > div') as HTMLElement).style.width = `${(u.hero.xp / xpToNext(u.hero.xl)) * 100}%`;
       }
       const auto = col.querySelector<HTMLInputElement>('input.auto')!;
@@ -285,11 +286,7 @@ export class Hud {
   /** 아군 한 명만 선택했을 때 정보 창 내용 */
   private heroInfo(u: Unit): string {
     const s = u.stats;
-    const skills = (Object.entries(u.skills) as [SkillId, number][])
-      .filter(([, v]) => v > 0)
-      .sort((a, b) => b[1] - a[1])
-      .map(([k, v]) => `${SKILL_NAME[k]} ${v.toFixed(1)}`)
-      .join(' · ');
+    const talents = u.hero ? u.hero.talents.map((id) => TALENTS[id].name).join(' · ') || '-' : '';
     const gear = u.hero ? (['weapon', 'armour', 'jewel'] as const).map((k) => u.hero!.gear[k]?.name ?? '-').join(' · ') : '';
     return `
       <span>체력</span><span>${Math.ceil(u.hp)} / ${s.maxHp}${s.maxMp ? ` · 마나 ${Math.floor(u.mp)}/${s.maxMp}` : ''}</span>
@@ -297,7 +294,7 @@ export class Hud {
       <span>평타</span><span>${u.weapon.name} ${avgWeaponDamage(u).toFixed(1)} / ${attackDelay(u).toFixed(2)}초</span>
       <span>저항</span><span>${resistText(u)}</span>
       <span>장비</span><span>${gear}</span>
-      <span>스킬</span><span>${skills}</span>`;
+      <span>특성</span><span>${talents}</span>`;
   }
 
   private updateInspect() {

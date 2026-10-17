@@ -126,6 +126,9 @@ export class Unit {
   obeyUntil = 0;
   refuseUntil = 0;
 
+  /** 불굴(undying) 특성을 이번 층에 썼는가 */
+  undyingUsed = false;
+
   aware = false;
   aggro = new Map<number, number>();
   lastTarget: Unit | null = null;
@@ -167,6 +170,7 @@ export class Unit {
     const b = emptyBonus();
     for (const it of Object.values(h.gear)) if (it) addItem(b, it);
     for (const p of h.perks) addProp(b, p);
+    for (const p of h.def.traits ?? []) addProp(b, p);
     this.bonus = b;
     this.weapon = h.gear.weapon ? weaponOf(h.gear.weapon) : this.def.weapon;
     if (b.onHit.length && !this.weapon.onHit) this.weapon = { ...this.weapon, onHit: b.onHit[0] };
@@ -188,6 +192,13 @@ export class Unit {
   /** 갑옷 무게: 영웅은 장착 갑옷, 몬스터는 정의값 */
   get armourWeight() {
     return this.hero ? this.bonus.weight : this.def.armourWeight ?? 0;
+  }
+
+  /** 특수 태그 개수 (종족 특성과 특성 선택이 겹치면 효과가 쌓이는 것들) */
+  tagCount(t: string): number {
+    let n = 0;
+    for (const x of this.tags) if (x === t) n++;
+    return n;
   }
 
   hasStatus(id: string): StatusInst | undefined {

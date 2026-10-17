@@ -120,7 +120,7 @@ export function compareItem(h: Hero, it: Item): Diff {
   }
   // 위력 % 등 수치 비교에 안 잡히는 속성은 대략 가산
   for (const p of it.props) {
-    if (p.kind === 'power') score += (h.def.learnable?.some((l) => l.skill === p.school) || h.skills[p.school] > 0 ? p.v * 0.3 : 0);
+    if (p.kind === 'power') score += h.skills[p.school] > 0 ? p.v * 0.3 : 0;
     if (p.kind === 'castSpeed' && (h.def.role === 'caster' || h.def.role === 'support')) score += p.v * 0.2;
     if (p.kind === 'tag') score += 6;
     if (p.kind === 'onHit') score += 3;

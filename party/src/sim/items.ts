@@ -1,5 +1,6 @@
 // 장비 생성과 장비 → 능력치 보너스 합산.
 // 장비 속성과 레벨업 보너스는 같은 Prop 형식이라 한 곳(Bonus)으로 모인다.
+import { TAG_TEXT } from '../data/talents';
 import type { Rng } from '../core/rng';
 import { ARTIFACT_PREFIX, ARTIFACT_SUFFIX, BAD_PROPS, GOOD_PROPS, ITEM_BASE_LIST, ITEM_BASES, RARE_PROPS, type PropRoll } from '../data/items';
 import { RES_NAME, SKILL_NAME } from '../data/names';
@@ -49,7 +50,7 @@ export function addProp(b: Bonus, p: Prop) {
       b.onHit.push(p.apply);
       break;
     case 'tag':
-      if (!b.tags.includes(p.tag)) b.tags.push(p.tag);
+      b.tags.push(p.tag);
       break;
     default:
       b[p.kind] += p.v;
@@ -169,7 +170,7 @@ export function propText(p: Prop): string {
     case 'onHit':
       return `적중 시 ${STATUSES[p.apply.status].name} (${Math.round((p.apply.chance ?? 1) * 100)}%)`;
     case 'tag':
-      return p.tag === 'unstunnable' ? '기절 면역' : p.tag;
+      return TAG_TEXT[p.tag] ?? p.tag;
   }
 }
 

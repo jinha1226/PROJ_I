@@ -89,14 +89,17 @@ function resolveAbility(w: World, u: Unit, slot: number, target: Unit | null, x:
   }
 
   const land = () => landAbility(w, u, ab, target, x, y, power, mult);
-  if (ab.projectile) {
-    w.spawnProjectile({
-      source: u, target: ab.target === 'enemy' || ab.target === 'ally' ? target : null,
-      x: u.x, y: u.y, tx: x, ty: y, speed: ab.projectile.speed, color: ab.projectile.color,
-      size: ab.radius ? 0.18 : 0.12, onHit: land,
-    });
-  } else {
-    land();
+  // 메아리 주문: 마법이 가끔 한 번 더 (마나 소모 없음)
+  const echo = ab.type === 'spell' && u.tags.includes('spell_echo') && w.rng.chance(0.25);
+  if (echo) w.float(u, '메아리!', ab.color);
+  for (let i = 0; i < (echo ? 2 : 1); i++) {
+    if (ab.projectile) {
+      w.spawnProjectile({
+        source: u, target: ab.target === 'enemy' || ab.target === 'ally' ? target : null,
+        x: u.x, y: u.y - i * 0.3, tx: x, ty: y, speed: ab.projectile.speed * (1 - i * 0.2), color: ab.projectile.color,
+        size: ab.radius ? 0.18 : 0.12, onHit: land,
+      });
+    } else land();
   }
 }
 
@@ -178,3 +181,4 @@ export function expectedHeal(u: Unit, ab: AbilityDef): number {
   for (const e of ab.effects) if (e.kind === 'heal') h += (e.base[0] + e.base[1]) / 2 + power * e.scale;
   return h * multFor(u, ab);
 }
+

@@ -300,3 +300,14 @@ button.on { border-color: var(--accent); color: var(--accent); }
   border: 2px solid #ffffff44; background: #ffffff11; pointer-events: none; z-index: 5; }
 #joy .knob { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px;
   border-radius: 50%; background: #ffffff44; border: 2px solid #ffffff88; }
+
+/* 특성 (상태창) */
+#sheet .tier { margin: 6px 0; }
+#sheet .tlv { font-weight: bold; color: #e8cf7a; font-size: 13px; }
+#sheet .tals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 3px; }
+#sheet .tal { border: 1px solid #333; border-radius: 5px; padding: 4px 6px; display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+#sheet .tal.on { border-color: #66ff88; background: #66ff8812; }
+#sheet .tal.off { opacity: 0.4; }
+#setup details { margin-top: 2px; }
+#setup details summary { cursor: pointer; }
+@media (max-width: 700px) { #sheet .tals { grid-template-columns: 1fr; } }

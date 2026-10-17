@@ -1,7 +1,7 @@
 // 파티 구성 화면: 해금된 종족 × 직업으로 4명을 직접 짠다. 아래에 해금 진행도.
 import { ABILITIES } from '../data/abilities';
 import { CLASSES, CLASS_LIST, type ClassId } from '../data/classes';
-import { SKILL_NAME } from '../data/names';
+import { CLASS_TALENTS, TALENT_LEVELS, TALENTS } from '../data/talents';
 import { DEFAULT_COMP, makeHeroDef, type HeroComp } from '../data/party';
 import { RACES, RACE_LIST, type RaceId } from '../data/races';
 import { UNLOCKS, type MetaProgress } from '../data/unlocks';
@@ -75,8 +75,9 @@ export class SetupScreen {
       return `<option value="${x.id}" ${x.id === c.cls ? 'selected' : ''} ${ok ? '' : 'disabled'}>${ok ? '' : '🔒 '}${x.name}</option>`;
     }).join('');
     const start = def.abilities.map((a) => ABILITIES[a].name).join(', ');
-    const learn = (def.learnable ?? []).map((l) => `${ABILITIES[l.ability].name}(${SKILL_NAME[l.skill]} ${l.level})`).join(', ');
-    const apt = c.race === 'human' ? '직업 스킬 전반' : r.apt.map((s) => SKILL_NAME[s]).join(', ');
+    const tree = CLASS_TALENTS[c.cls]
+      .map((opts, t) => `<div>Lv${TALENT_LEVELS[t]}: ${opts.map((id) => TALENTS[id].name).join(' · ')}</div>`)
+      .join('');
     return `<div class="slot" style="border-color:${k.color}55">
       <div class="shd"><span class="sg" style="color:${k.color};border-color:${k.color}">${k.glyph}</span>
         <input class="nm" data-i="${i}" maxlength="8" value="${esc(c.name)}" />
@@ -85,8 +86,8 @@ export class SetupScreen {
       <div class="sum small">
         <div>체력 ${def.hp}${def.mp ? ` · 마나 ${def.mp}` : ''} · 힘 ${def.str} 민 ${def.dex} 지 ${def.int} · 의지 ${def.will}</div>
         <div>시작 기술: <b>${start}</b></div>
-        <div class="dim">배울 기술: ${learn}</div>
-        <div class="dim">적성: ${apt}</div>
+        <div>종족 특성: <b>${r.trait.name}</b> <span class="dim">${r.trait.desc}</span></div>
+        <details class="dim"><summary>레벨별 특성 (셋 중 하나)</summary>${tree}</details>
         <div class="dim">${k.desc}</div>
       </div>
     </div>`;

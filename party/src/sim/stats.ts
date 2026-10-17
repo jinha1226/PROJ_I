@@ -29,6 +29,11 @@ export function computeStats(u: Unit) {
     if (mood.dmgTakenMult) dmgTakenMult *= mood.dmgTakenMult;
     if (mood.actionMult) actionMult *= mood.actionMult;
   }
+  // 배수진: 체력이 낮을 때
+  if (u.tags.includes('last_stand') && u.stats && u.hp < u.stats.maxHp * 0.35) {
+    dmgMult *= 1.3;
+    dmgTakenMult *= 0.8;
+  }
   const resists = {} as Record<ResistKey, number>;
   for (const k of RESIST_KEYS) resists[k] = clamp((d.resists?.[k] ?? 0) + (b.resists[k] ?? 0), -1, 3);
   const lv = u.level - 1;

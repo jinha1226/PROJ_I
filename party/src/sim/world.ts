@@ -350,6 +350,9 @@ export class World {
     if (this.leader === u) this.leader = this.party.find((p) => p.alive) ?? null;
     if (u.faction === 'party') partyStress(this, 15, u);
     else if (by?.hero) addStress(this, by, -1);
+    // 피의 갈증 (오크 · 특성)
+    const lust = by?.alive ? by.tagCount('bloodlust') : 0;
+    if (lust && u.faction !== by!.faction) by!.hp = Math.min(by!.stats.maxHp, by!.hp + by!.stats.maxHp * 0.08 * lust);
     if (u.faction === 'enemy') {
       this.grantXp(u.def.xp ?? 0);
       this.run.kills[u.def.id] = (this.run.kills[u.def.id] ?? 0) + 1;

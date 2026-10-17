@@ -1,4 +1,5 @@
-// 직업: 기본 능력치 · 시작 장비 · 시작 기술 2개 · 직업 스킬 · 배울 수 있는 기술.
+// 직업: 기본 능력치 · 시작 장비 · 시작 기술 2개 · 직업 스킬(내부 수치, 레벨마다 저절로 오름).
+// 레벨업 선택지는 data/talents.ts 의 CLASS_TALENTS.
 // 수치는 '인간' 기준. 종족 보정이 그 위에 더해진다.
 import type { Role, SkillId, TacticId, UnitDef } from '../sim/defs';
 
@@ -7,7 +8,7 @@ export type ClassId = 'warrior' | 'fire_mage' | 'hunter' | 'priest' | 'berserker
 export interface ClassDef extends Pick<
   UnitDef,
   'hp' | 'mp' | 'str' | 'dex' | 'int' | 'ac' | 'ev' | 'will' | 'speed' | 'radius' | 'mass' | 'levelHp' | 'levelMp' |
-  'skills' | 'gear' | 'classSkills' | 'learnable' | 'weapon' | 'abilities' | 'autoAbilities'
+  'skills' | 'gear' | 'classSkills' | 'weapon' | 'abilities' | 'autoAbilities'
 > {
   id: ClassId;
   name: string;
@@ -28,7 +29,6 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skills: { fighting: 3, sword: 3, armour: 3, shield: 3, dodge: 1 },
     gear: { weapon: 'long_sword', armour: 'chain_mail' },
     classSkills: ['fighting', 'shield', 'armour'],
-    learnable: [{ ability: 'whirlwind', skill: 'fighting', level: 5 }, { ability: 'war_cry', skill: 'shield', level: 6 }],
     weapon: UNARMED, abilities: ['shield_bash', 'taunt'],
   },
   fire_mage: {
@@ -38,11 +38,6 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skills: { spellcasting: 2, fire: 2, ice: 1, dodge: 2 },
     gear: { weapon: 'staff', armour: 'robe' },
     classSkills: ['fire', 'ice', 'spellcasting', 'dodge'],
-    learnable: [
-      { ability: 'fireball', skill: 'fire', level: 5 },
-      { ability: 'frost_nova', skill: 'ice', level: 5 },
-      { ability: 'fire_storm', skill: 'fire', level: 8 },
-    ],
     weapon: UNARMED, abilities: ['fire_bolt', 'frost_bolt'],
   },
   hunter: {
@@ -52,7 +47,6 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skills: { bow: 2, dodge: 2, fighting: 2, armour: 1 },
     gear: { weapon: 'short_bow', armour: 'leather' },
     classSkills: ['bow', 'dodge', 'fighting'],
-    learnable: [{ ability: 'pinning_shot', skill: 'bow', level: 5 }, { ability: 'volley', skill: 'bow', level: 8 }],
     weapon: UNARMED, abilities: ['aimed_shot', 'poison_arrow'],
   },
   priest: {
@@ -62,7 +56,6 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skills: { faith: 3, spellcasting: 2, bow: 1, armour: 1 },
     gear: { weapon: 'sling', armour: 'ring_mail' },
     classSkills: ['faith', 'spellcasting', 'armour'],
-    learnable: [{ ability: 'smite', skill: 'faith', level: 5 }, { ability: 'mass_heal', skill: 'faith', level: 8 }],
     weapon: UNARMED, abilities: ['heal', 'prayer'], autoAbilities: ['cleanse'],
   },
   berserker: {
@@ -72,7 +65,6 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skills: { fighting: 3, axe: 3, dodge: 2, armour: 1 },
     gear: { weapon: 'war_axe', armour: 'leather' },
     classSkills: ['fighting', 'axe', 'dodge'],
-    learnable: [{ ability: 'whirlwind', skill: 'fighting', level: 5 }, { ability: 'war_cry', skill: 'axe', level: 7 }],
     weapon: UNARMED, abilities: ['leap', 'berserk'],
   },
   frost_mage: {
@@ -82,7 +74,6 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skills: { spellcasting: 2, ice: 3, dodge: 2 },
     gear: { weapon: 'staff', armour: 'robe' },
     classSkills: ['ice', 'spellcasting', 'dodge'],
-    learnable: [{ ability: 'ice_lance', skill: 'ice', level: 5 }, { ability: 'blizzard', skill: 'ice', level: 8 }],
     weapon: UNARMED, abilities: ['frost_bolt', 'frost_nova'],
   },
 };

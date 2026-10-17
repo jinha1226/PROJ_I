@@ -31,7 +31,7 @@ const list: AbilityDef[] = [
   },
   {
     id: 'fireball', name: '화염구', icon: '구', color: '#ff9a3f', type: 'spell', schools: ['fire'], level: 4,
-    desc: '지점에서 크게 폭발한다. 아군도 피해를 입는다. (수동 전용)',
+    desc: '지점에서 크게 폭발한다. 아군도 피해를 입는다.',
     cost: 10, castTime: 1.0, cooldown: 10, range: 7, target: 'ground', radius: 1.8, affects: 'all',
     projectile: { speed: 10, color: '#ff9a3f' },
     effects: [
@@ -54,7 +54,7 @@ const list: AbilityDef[] = [
 
   {
     id: 'frost_bolt', name: '서리 화살', icon: '서', color: '#66ccff', type: 'spell', schools: ['ice'], level: 2,
-    desc: '냉기 피해를 주고 확률적으로 감속시킨다. (냉기 스킬이 낮아 위력이 약하다)',
+    desc: '냉기 피해를 주고 확률적으로 감속시킨다.',
     cost: 4, castTime: 0.5, cooldown: 3, range: 7, target: 'enemy',
     projectile: { speed: 12, color: '#66ccff' },
     effects: [
@@ -115,7 +115,7 @@ const list: AbilityDef[] = [
     effects: [{ kind: 'status', status: 'protected', duration: 8 }],
     aiRole: 'buff',
   },
-  // ── 성장으로 배우는 기술 ──
+  // ── 특성으로 배우는 기술 (기존) ──
   {
     id: 'whirlwind', name: '회전 베기', icon: '회', color: '#ffd080', type: 'technique', schools: ['fighting'],
     desc: '주변 적 모두를 크게 베고 잠시 기절시킨다.',
@@ -206,6 +206,45 @@ const list: AbilityDef[] = [
       { kind: 'status', status: 'stun', duration: 1.2, chance: 0.5 },
     ],
     aiRole: 'damage',
+  },
+  // ── 특성으로 배우는 기술 ──
+  {
+    id: 'shield_wall', name: '방벽', icon: '벽', color: '#c8c8ff', type: 'technique', schools: ['shield'],
+    desc: '주변 3칸 아군이 6초간 받는 피해 30% 감소. 자신은 방어 태세(AC+6).',
+    cost: 0, castTime: 0, cooldown: 18, range: 0, target: 'self', radius: 3, affects: 'allies',
+    effects: [{ kind: 'status', status: 'protected', duration: 6 }],
+    selfEffects: [{ kind: 'status', status: 'guarded', duration: 6 }],
+    aiRole: 'buff',
+  },
+  {
+    id: 'multishot', name: '산탄 사격', icon: '산', color: '#e8d8a0', type: 'technique', schools: ['bow'],
+    desc: '대상과 그 주변 적 모두에게 화살을 퍼붓는다.',
+    cost: 0, castTime: 0, cooldown: 8, range: 7, target: 'enemy', radius: 1.4, affects: 'enemies',
+    projectile: { speed: 18, color: '#e8d8a0' },
+    effects: [{ kind: 'weapon', mult: 0.9 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'deadeye', name: '명사수의 일격', icon: '명', color: '#ffffff', type: 'technique', schools: ['bow'],
+    desc: '2초 동안 숨을 고른 뒤 치명적인 한 발. 맞은 적은 2초간 기절.',
+    cost: 0, castTime: 2, cooldown: 20, range: 9, target: 'enemy',
+    projectile: { speed: 26, color: '#ffffff' },
+    effects: [{ kind: 'weapon', mult: 5 }, { kind: 'status', status: 'stun', duration: 2 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'divine_shield', name: '신성한 방패', icon: '방', color: '#fff6c0', type: 'spell', schools: ['faith'], level: 3,
+    desc: '아군 하나를 정화하고 6초간 보호(받는 피해 -30%)와 방어 태세(AC+6).',
+    cost: 7, castTime: 0.3, cooldown: 14, range: 6, target: 'ally',
+    effects: [{ kind: 'cleanse' }, { kind: 'status', status: 'protected', duration: 6 }, { kind: 'status', status: 'guarded', duration: 6 }],
+    aiRole: 'buff',
+  },
+  {
+    id: 'frost_armor', name: '서리 갑옷', icon: '갑', color: '#aee6ff', type: 'spell', schools: ['ice'], level: 3,
+    desc: '아군 하나에게 8초간 얼음 갑옷: 방어 태세(AC+6)와 보호(받는 피해 -30%).',
+    cost: 7, castTime: 0.4, cooldown: 16, range: 6, target: 'ally',
+    effects: [{ kind: 'status', status: 'guarded', duration: 8 }, { kind: 'status', status: 'protected', duration: 8 }],
+    aiRole: 'buff',
   },
   // ── 몬스터 ──
   {

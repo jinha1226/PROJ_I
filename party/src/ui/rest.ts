@@ -1,10 +1,10 @@
-// 층 사이 쉬는 화면: 성장 요약 → 찾은 장비 → 보상 3택1(누구에게 낄지) → 레벨업 3택1 → 다음 층.
+// 층 사이 쉬는 화면: 성장 요약 → 찾은 장비 → 보상 3택1(누구에게 낄지) → 특성 3택1 → 다음 층.
 import { Rng } from '../core/rng';
 import { ABILITIES } from '../data/abilities';
 import { FLOORS } from '../data/encounters';
-import { SKILL_NAME } from '../data/names';
-import type { Item, SkillId } from '../sim/defs';
-import { applyPerk, focusSkill, learnable, makeOffer, perkText, type Hero } from '../sim/hero';
+import { TALENT_LEVELS, TALENTS, TIER_NAME, type TalentDef } from '../data/talents';
+import type { Item } from '../sim/defs';
+import { applyTalent, nextTier, tierOptions, type Hero } from '../sim/hero';
 import { RARITY_COLOR, SLOT_NAME, isBadProp, itemBaseLine, itemTitle, propText } from '../sim/items';
 import { compareItem, rewardChoices } from '../sim/reward';
 import type { RunState } from '../sim/run';
@@ -39,7 +39,6 @@ export class RestScreen {
     this.rewards = rewardChoices(this.rng, depth, heroes);
     this.picked = null;
     this.rewardDone = null;
-    for (const h of heroes) if (h.pending > 0 && !h.offer) h.offer = makeOffer(h, this.rng);
     $('rest').classList.remove('hidden');
     this.render();
     $('rest').querySelector('.box')!.scrollTop = 0;
@@ -58,28 +57,23 @@ export class RestScreen {
       ${this.foundSection()}
       <h3>보상 — 하나를 골라 장착 ${this.rewardDone ? '<span class="done">✓</span>' : ''}</h3>
       ${this.rewardDone ? `<p class="note">${this.rewardDone}</p>` : this.rewardSection()}
-      ${pendingTotal ? `<h3>레벨업 — 하나씩 고르기</h3>${this.heroes.map((h) => this.levelRow(h)).join('')}` : ''}
+      ${pendingTotal ? `<h3>특성 — 하나씩 고르기</h3>${this.heroes.map((h) => this.levelRow(h)).join('')}` : ''}
       <div class="next">
-        <button data-act="next" ${pendingTotal ? 'disabled' : ''}>${pendingTotal ? '레벨업 선택을 마쳐 주세요' : `${this.depth + 1}층으로 내려가기${this.depth + 1 === FLOORS ? ' (보스층)' : ''}`}</button>
+        <button data-act="next" ${pendingTotal ? 'disabled' : ''}>${pendingTotal ? '특성 선택을 마쳐 주세요' : `${this.depth + 1}층으로 내려가기${this.depth + 1 === FLOORS ? ' (보스층)' : ''}`}</button>
       </div>`;
   }
 
   private growthRow(h: Hero): string {
-    const ups = (Object.keys(h.skills) as SkillId[])
-      .filter((k) => h.skills[k] - h.startSkills[k] >= 0.05)
-      .sort((a, b) => h.skills[b] - h.startSkills[b] - (h.skills[a] - h.startSkills[a]))
-      .slice(0, 4)
-      .map((k) => `${SKILL_NAME[k]} ${h.startSkills[k].toFixed(1)}→<b>${h.skills[k].toFixed(1)}</b>`)
-      .join(' · ');
-    const next = learnable(h).filter((l) => !l.ready).sort((a, b) => a.level - h.skills[a.skill] - (b.level - h.skills[b.skill]))[0];
+    const talents = h.talents.map((id) => TALENTS[id].name).join(' · ');
+    const nextLv = TALENT_LEVELS.find((l) => l > h.xl);
     const gear = (['weapon', 'armour', 'jewel'] as const)
       .map((s) => (h.gear[s] ? `<span style="color:${RARITY_COLOR[h.gear[s]!.rarity]}">${esc(itemTitle(h.gear[s]!))}</span>` : '<span class="dim">없음</span>'))
       .join(' · ');
     return `<div class="hrow">
       <div><button class="sheetbtn" data-sheet="${this.heroes.indexOf(h)}">상태창</button>
         <b style="color:${h.def.color}">${h.def.name}</b> Lv${h.startXl}${h.xl > h.startXl ? `→<b>${h.xl}</b>` : ''}
-        <span class="dim">${ups || '성장 없음'}</span>${h.restNote ? ` <span class="stress">${h.restNote}</span>` : ''}</div>
-      <div class="dim small">집중 ★ ${SKILL_NAME[focusSkill(h)]} · ${gear}${next ? ` · 다음 기술: ${ABILITIES[next.ability].name} (${SKILL_NAME[next.skill]} ${next.level})` : ''}</div>
+        <span class="dim">${talents || '특성 없음'}</span>${h.restNote ? ` <span class="stress">${h.restNote}</span>` : ''}</div>
+      <div class="dim small">${gear}${nextLv ? ` · 다음 특성: Lv${nextLv}` : ''}</div>
     </div>`;
   }
 
@@ -132,15 +126,13 @@ export class RestScreen {
   }
 
   private levelRow(h: Hero): string {
-    if (!h.pending || !h.offer) return '';
+    const tier = nextTier(h);
+    if (tier < 0) return '';
     return `<div class="lvrow">
-      <div><b style="color:${h.def.color}">${h.def.name}</b> <span class="dim">남은 선택 ${h.pending}</span></div>
-      <div class="perks">${h.offer
-        .map((p, i) => {
-          const t = perkText(h, p);
-          return `<button class="perk" data-perk="${this.heroes.indexOf(h)}:${i}">
-            <b style="color:${t.color}">${t.title}</b><span class="dim small">${t.desc}</span></button>`;
-        })
+      <div><b style="color:${h.def.color}">${h.def.name}</b> <span class="dim">Lv${TALENT_LEVELS[tier]} · ${TIER_NAME[tier]}${h.pending > 1 ? ` · 남은 선택 ${h.pending}` : ''}</span></div>
+      <div class="perks">${tierOptions(h, tier)
+        .map((t) => `<button class="perk" data-perk="${this.heroes.indexOf(h)}:${t.id}">
+            <b style="color:${talentColor(t)}">${t.name}</b><span class="dim small">${t.desc}</span></button>`)
         .join('')}</div>
     </div>`;
   }
@@ -149,13 +141,7 @@ export class RestScreen {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-item],[data-hero],[data-perk],[data-act],[data-sheet]');
     if (!el) return;
     if (el.dataset.sheet !== undefined) {
-      // 상태창에서 집중 스킬을 바꾸면 남은 레벨업 선택지를 새로 만든다
-      const h = this.heroes[Number(el.dataset.sheet)];
-      const before = h.focus;
-      this.onSheet(h, () => {
-        if (h.focus !== before && h.pending > 0) h.offer = makeOffer(h, this.rng);
-        this.render();
-      });
+      this.onSheet(this.heroes[Number(el.dataset.sheet)], () => this.render());
       return;
     }
     if (el.dataset.item !== undefined) {
@@ -180,11 +166,8 @@ export class RestScreen {
       this.foundNotes.push(`${itemTitle(it)} 버림`);
       this.picked = null;
     } else if (el.dataset.perk) {
-      const [hi, pi] = el.dataset.perk.split(':').map(Number);
-      const h = this.heroes[hi];
-      if (!h.offer) return;
-      applyPerk(h, h.offer[pi]);
-      if (h.pending > 0) h.offer = makeOffer(h, this.rng);
+      const [hi, id] = el.dataset.perk.split(':');
+      applyTalent(this.heroes[Number(hi)], id);
     } else if (el.dataset.act === 'skip') {
       this.rewardDone = '보상을 받지 않았다';
     } else if (el.dataset.act === 'next') {
@@ -195,4 +178,10 @@ export class RestScreen {
     }
     this.render();
   }
+}
+
+/** 특성 카드 색: 기술이면 그 기술 색, 아니면 특성 색 */
+export function talentColor(t: TalentDef): string {
+  const ab = t.learn ?? t.mod?.ability;
+  return ab ? ABILITIES[ab].color : '#9fd0ff';
 }

@@ -20,7 +20,6 @@ export const DEFAULT_COMP: HeroComp[] = [
 export function makeHeroDef(c: HeroComp, index = 0): UnitDef {
   const r = RACES[c.race], k = CLASSES[c.cls];
   const skills: Partial<Record<SkillId, number>> = { ...k.skills };
-  for (const sk of r.apt) skills[sk] = (skills[sk] ?? 0) + 1;
   return {
     id: `${c.race}_${c.cls}_${index}`,
     name: c.name,
@@ -45,10 +44,9 @@ export function makeHeroDef(c: HeroComp, index = 0): UnitDef {
     skills,
     gear: k.gear,
     classSkills: k.classSkills,
-    learnable: k.learnable,
-    aptitudes: r.apt,
-    // 인간은 특정 적성 대신 직업 스킬 모두가 조금씩 더 오른다
-    levelSkillBonus: c.race === 'human' ? 0.2 : 0,
+    cls: c.cls,
+    race: c.race,
+    traits: r.trait.props,
     weapon: k.weapon,
     abilities: k.abilities,
     autoAbilities: k.autoAbilities,

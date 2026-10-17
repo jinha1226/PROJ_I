@@ -27,6 +27,7 @@ export function addStress(w: World, u: Unit, amount: number) {
     if (isAfflicted(u)) return;
     amount *= clamp(1 - (u.stats.will - 12) * 0.015, 0.75, 1.15) * w.difficulty.stress;
     if (h.mood === 'stalwart') amount *= 0.5;
+    amount *= Math.pow(0.6, u.tagCount('stress_ward'));
     if (amount >= 5) w.float(u, `스트레스 +${Math.round(amount)}`, '#b98cff', 0.85);
   }
   h.stress = clamp(h.stress + amount, 0, MAX_STRESS);
@@ -70,9 +71,18 @@ function bark(w: World, u: Unit) {
 
 const moodTimer = new WeakMap<Unit, number>();
 
+const calmTimer = new WeakMap<Unit, number>();
+
 /** 0.2초마다: 전투 중 붕괴한 파티원은 동료를 불안하게, 각성한 파티원은 다독인다 */
 export function tickStress(w: World, dt: number) {
   if (!w.inCombat) return;
+  // 평온의 기도 (특성)
+  for (const u of w.party) {
+    if (!u.alive || !u.tags.includes('calming')) continue;
+    const t = (calmTimer.get(u) ?? 6) - dt;
+    calmTimer.set(u, t > 0 ? t : 6);
+    if (t <= 0) for (const p of w.party) if (p.alive && dist(p, u) < 7) addStress(w, p, -4);
+  }
   for (const u of w.party) {
     const mood = moodOf(u);
     if (!u.alive || !mood) continue;
@@ -109,7 +119,7 @@ export function restRelief(h: Hero) {
   h.stress = Math.max(0, h.stress - REST_RELIEF);
   const mood = h.mood ? MOODS[h.mood] : null;
   h.mood = null;
-  h.restNote =
+  h.restNote = before < 1 && !mood ? '' :
     `스트레스 ${Math.round(before)}→<b>${Math.round(h.stress)}</b>` +
     (mood ? ` · ${mood.name} ${mood.virtue ? '사라짐' : '해소'}` : '');
 }

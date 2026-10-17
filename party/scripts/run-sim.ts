@@ -12,9 +12,8 @@ import type { RaceId } from '../src/data/races';
 import { areaCenter } from '../src/sim/abilities';
 import type { Unit } from '../src/sim/unit';
 import { FLOORS } from '../src/data/encounters';
-import { SKILL_NAME } from '../src/data/names';
 import { genFloor } from '../src/sim/gen';
-import { applyPerk, makeOffer, newParty, saveFromUnit, type Hero } from '../src/sim/hero';
+import { applyTalent, newParty, nextTier, saveFromUnit, tierOptions, type Hero } from '../src/sim/hero';
 import { itemTitle } from '../src/sim/items';
 import { resolvePrompt, useConsumable } from '../src/sim/objects';
 import { compareItem, rewardChoices } from '../src/sim/reward';
@@ -48,11 +47,12 @@ function rest(heroes: Hero[], run: RunState, rng: Rng, depth: number, log: strin
     log.push(`  보상 ${itemTitle(best.it)} → ${best.h.def.name}`);
   }
   for (const h of heroes) restRelief(h);
+  // 특성: TALENT=0|1|2 면 그 번호만, 아니면 무작위
   for (const h of heroes)
     while (h.pending > 0) {
-      const offer = makeOffer(h, rng);
-      // 대개 집중 스킬(첫 선택지)에 투자한다
-      applyPerk(h, rng.chance(0.6) ? offer[0] : offer[rng.int(0, offer.length - 1)]);
+      const opts = tierOptions(h, nextTier(h));
+      const fixed = process.env.TALENT;
+      applyTalent(h, opts[fixed !== undefined ? Number(fixed) : rng.int(0, opts.length - 1)].id);
     }
 }
 
@@ -170,9 +170,7 @@ function run(seed: number, verbose: boolean, skilled: boolean) {
   }
   if (verbose) console.log(floorLog.join('\n'));
   const summary = heroes.map((h) => {
-    const top = (Object.entries(h.skills) as [keyof typeof SKILL_NAME, number][])
-      .filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 3)
-      .map(([k, v]) => `${SKILL_NAME[k]}${v.toFixed(1)}`).join(',');
+    const top = h.talents.join(',');
     const abil = h.abilities.filter((a) => !a.hidden).map((a) => a.def.name + (a.rank ? `+${a.rank}` : '')).join('/');
     return `${h.def.name} Lv${h.xl} [${top}] ${abil}`;
   });

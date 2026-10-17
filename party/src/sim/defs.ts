@@ -143,14 +143,13 @@ export interface UnitDef {
   levelMp?: number;
   /** 시작 장비의 기본 아이템 id (파티) */
   gear?: Partial<Record<ItemSlot, string>>;
-  /** 스킬 수치가 닿으면 저절로 익히는 기술 (파티, 직접 쓰는 기술 최대 4개) */
-  learnable?: { ability: string; skill: SkillId; level: number }[];
-  /** 직업 스킬: 레벨업 때 투자 선택지로 나온다 (장착 무기의 스킬도 추가된다) */
+  /** 직업 스킬: 레벨업마다 저절로 오른다 (장착 무기의 스킬도) */
   classSkills?: SkillId[];
-  /** 종족 적성 스킬: 레벨업마다 더 오른다 */
-  aptitudes?: SkillId[];
-  /** 레벨업마다 관련 스킬 전체에 더해지는 양 (인간) */
-  levelSkillBonus?: number;
+  /** 직업 · 종족 id (파티) — 특성 선택지 · 종족 특성 조회용 */
+  cls?: string;
+  race?: string;
+  /** 종족 특성 (파티) */
+  traits?: Prop[];
 }
 
 // ── 장비 ──

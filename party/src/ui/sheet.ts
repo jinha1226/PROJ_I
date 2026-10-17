@@ -1,11 +1,13 @@
 // 캐릭터 상태창: 능력치 · 스킬(집중 지정) · 기술 · 장비를 한 화면에.
 // 전투 중에는 파티 카드의 ⓘ, 쉬는 화면에서는 각 캐릭터의 「상태창」 버튼으로 연다.
-import { ABILITIES } from '../data/abilities';
 import { MOODS } from '../data/moods';
-import { RES_NAME, SKILL_NAME } from '../data/names';
+import { RES_NAME } from '../data/names';
 import { ELEMENT_NAME } from '../sim/combat';
-import { RESIST_KEYS, type SkillId } from '../sim/defs';
-import { focusSkill, learnable, MAX_ACTIVE, relatedSkills, SKILL_EFFECT, xpToNext, type Hero } from '../sim/hero';
+import { RESIST_KEYS } from '../sim/defs';
+import { MAX_ACTIVE, talentTiers, xpToNext, type Hero } from '../sim/hero';
+import { TALENT_LEVELS, TALENTS, TIER_NAME } from '../data/talents';
+import { RACES, type RaceId } from '../data/races';
+import { talentColor } from './rest';
 import { RARITY_COLOR, SLOT_NAME, isBadProp, itemBaseLine, itemTitle, propText } from '../sim/items';
 import { abilityCooldown, attackDelay, avgWeaponDamage, castTimeOf, computeStats, failChance } from '../sim/stats';
 import { Unit } from '../sim/unit';
@@ -20,13 +22,8 @@ export class CharacterSheet {
 
   constructor() {
     $('sheet').addEventListener('click', (e) => {
-      const el = (e.target as HTMLElement).closest<HTMLElement>('[data-focus],[data-act]');
+      const el = (e.target as HTMLElement).closest<HTMLElement>('[data-act]');
       if (e.target === $('sheet') || el?.dataset.act === 'close') return this.close();
-      if (el?.dataset.focus && this.hero) {
-        const sk = el.dataset.focus as SkillId;
-        this.hero.focus = this.hero.focus === sk ? null : sk;
-        this.render();
-      }
     });
   }
 
@@ -66,21 +63,23 @@ export class CharacterSheet {
       .join(' ') || '<span class="dim">없음</span>';
     const tags = u.tags.includes('unstunnable') ? ' <span class="good">기절 면역</span>' : '';
 
-    // 스킬: 관련 스킬(투자 가능) + 그 밖에 수치가 있는 스킬
-    const related = relatedSkills(h);
-    const focus = focusSkill(h);
-    const others = (Object.keys(h.skills) as SkillId[]).filter((k) => h.skills[k] > 0 && !related.includes(k));
-    const nexts = learnable(h).filter((l) => !l.ready);
-    const skillRow = (k: SkillId, canFocus: boolean) => {
-      const v = h.skills[k];
-      const next = nexts.filter((l) => l.skill === k).sort((a, b) => a.level - b.level)[0];
-      return `<div class="skrow ${canFocus ? 'rel' : ''}" ${canFocus ? `data-focus="${k}"` : ''}>
-        <span class="skn">${canFocus ? `<b class="star ${k === focus ? 'on' : ''}">★</b>` : ''}${SKILL_NAME[k]}</span>
-        <span class="skbar"><i style="width:${v * 10}%"></i>${next ? `<em style="left:${next.level * 10}%"></em>` : ''}</span>
-        <span class="skv">${v.toFixed(1)}</span>
-        <span class="skd dim">${next ? `${next.level}에 ${ABILITIES[next.ability].name}` : SKILL_EFFECT[k] ?? ''}</span>
-      </div>`;
-    };
+    // 특성: 단계별 세 선택지. 고른 것은 밝게, 고르지 않은 것은 흐리게, 아직 못 간 단계는 잠김
+    const tree = talentTiers(h)
+      .map((opts, t) => {
+        const picked = h.talents[t];
+        const reached = TALENT_LEVELS[t] <= h.xl;
+        const cards = opts
+          .map((id) => {
+            const td = TALENTS[id];
+            const cls = picked === id ? 'on' : picked || !reached ? 'off' : '';
+            return `<div class="tal ${cls}"><b style="color:${talentColor(td)}">${picked === id ? '✓ ' : ''}${td.name}</b><span class="dim small">${td.desc}</span></div>`;
+          })
+          .join('');
+        const state = picked ? '' : reached ? ' <span class="good small">선택 대기</span>' : '';
+        return `<div class="tier"><div class="tlv">Lv${TALENT_LEVELS[t]} <span class="dim small">${TIER_NAME[t]}</span>${state}</div><div class="tals">${cards}</div></div>`;
+      })
+      .join('');
+    const race = RACES[h.def.race as RaceId];
 
     const abil = h.abilities
       .map((st) => {
@@ -139,9 +138,9 @@ export class CharacterSheet {
           <h3>장비</h3>${gear}
         </section>
         <section>
-          <h3>스킬 <span class="dim small">★ 를 눌러 집중 스킬 지정 — 레벨업 첫 선택지로 항상 나온다</span></h3>
-          ${related.map((k) => skillRow(k, true)).join('')}
-          ${others.length ? `<div class="dim small" style="margin-top:4px">그 밖의 스킬</div>${others.map((k) => skillRow(k, false)).join('')}` : ''}
+          ${race ? `<h3>종족 특성</h3><div class="tal on"><b>${race.trait.name}</b><span class="dim small">${race.trait.desc}</span></div>` : ''}
+          <h3>특성 <span class="dim small">레벨마다 셋 중 하나 (쉬는 화면에서 고른다)</span></h3>
+          ${tree}
           <h3>기술 <span class="dim small">직접 쓰는 기술 칸 ${MAX_ACTIVE - slotsLeft}/${MAX_ACTIVE}</span></h3>
           ${abil}
         </section>

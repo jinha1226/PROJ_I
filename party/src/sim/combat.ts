@@ -1,5 +1,6 @@
 // 공통 전투 파이프라인.
 // 평타·마법·몬스터 능력·지속 피해 모두 applyDamage / tryApplyStatus 를 거친다.
+import { dist } from '../core/rng';
 import { STATUSES } from '../data/statuses';
 import type { Element, StatusApply } from './defs';
 import { addStress } from './stress';
@@ -39,11 +40,21 @@ export function applyDamage(
     return 0;
   }
   let dmg = amount * m * (source && !opts.dot ? source.stats.dmgMult : 1);
+  // 산산조각: 감속 · 기절한 적에게 냉기 피해 증가
+  if (element === 'cold' && source?.tags.includes('shatter') && (target.hasStatus('slow') || target.stats.stunned)) dmg *= 1.35;
   if (element === 'physical') dmg -= w.rng.int(0, Math.round(target.stats.ac * 0.6));
   dmg *= target.stats.dmgTakenMult;
   dmg = Math.max(0, Math.round(dmg));
 
   target.hp -= dmg;
+  // 불굴: 층마다 한 번 쓰러지지 않고 버틴다
+  if (target.hp <= 0 && target.tags.includes('undying') && !target.undyingUsed) {
+    target.undyingUsed = true;
+    target.hp = 1;
+    tryApplyStatus(w, target, { status: 'protected', duration: 4 }, target, 0);
+    w.float(target, '불굴!', '#ffe14d', 1.3);
+    w.log(`${target.name}이(가) 쓰러지지 않고 버텼다 (불굴)`, '#ffe14d');
+  }
   target.flash = 0.12;
   const suffix = m < 1 ? ' 저항' : m > 1 ? '!' : '';
   w.float(target, `${dmg}${suffix}`, ELEMENT_COLOR[element], opts.dot ? 0.8 : 1);
@@ -51,7 +62,7 @@ export function applyDamage(
   // 스트레스: 체력 대비 피해가 클수록. 한 방에 크게 맞으면 더
   if (target.faction === 'party' && dmg > 0) {
     const frac = dmg / target.stats.maxHp;
-    addStress(w, target, opts.dot ? frac * 10 : frac * 22 + (frac >= 0.22 ? 5 : 0));
+    addStress(w, target, opts.dot ? frac * 10 : frac * 26 + (frac >= 0.22 ? 5 : 0));
   }
 
   if (source && source.faction !== target.faction) {
@@ -68,6 +79,10 @@ export function applyDamage(
       if (w.rng.chance(p)) w.cancelCast(target, '시전 방해!');
     }
   }
+
+  // 반격: 붙어서 때린 적에게 피해 일부를 되돌린다
+  if (source && !opts.dot && dmg > 0 && target.tags.includes('retaliate') && source.faction !== target.faction && dist(source, target) < 1.8)
+    applyDamage(w, source, dmg * 0.3, 'physical', target, { dot: true });
 
   if (target.hp <= 0) w.kill(target, source);
   return dmg;
@@ -113,6 +128,7 @@ export function tryApplyStatus(w: World, t: Unit, ap: StatusApply, source: Unit 
   }
 
   const stacks = ap.stacks ?? 1;
+  if (def.stun && tags.includes('sturdy')) ap = { ...ap, duration: ap.duration * 0.5 };
   const ex = t.hasStatus(ap.status);
   if (ex) {
     ex.time = Math.max(ex.time, ap.duration);
@@ -150,6 +166,12 @@ export function cleanse(w: World, u: Unit) {
 export function performAttack(w: World, u: Unit, t: Unit) {
   u.attackCd = attackDelay(u);
   u.swing = 0.15;
+  // 연타: 가끔 한 번 더
+  const hits = u.tags.includes('double_strike') && w.rng.chance(0.25) ? 2 : 1;
+  for (let i = 0; i < hits; i++) weaponStrike(w, u, t);
+}
+
+function weaponStrike(w: World, u: Unit, t: Unit) {
   const wpn = u.weapon;
   if (wpn.projectile) {
     w.spawnProjectile({
@@ -169,8 +191,11 @@ export function resolveWeaponHit(w: World, u: Unit, t: Unit, mult: number, guara
     w.float(t, '빗나감', '#999999', 0.8);
     return;
   }
-  const dmg = w.rng.range(wpn.damage[0], wpn.damage[1]) * weaponDmgMult(u) * mult;
+  let dmg = w.rng.range(wpn.damage[0], wpn.damage[1]) * weaponDmgMult(u) * mult;
+  if (u.tags.includes('sniper') && dist(u, t) >= 4.5) dmg *= 1.25;
   if (!wpn.projectile) w.effect({ kind: 'slash', x: t.x, y: t.y - 0.3, r: 0.4, color: '#ffffff', dur: 0.15 });
-  applyDamage(w, t, dmg, wpn.element ?? 'physical', u, { attack: true });
+  const dealt = applyDamage(w, t, dmg, wpn.element ?? 'physical', u, { attack: true });
+  // 흡혈: 조용히 회복 (숫자가 너무 많이 뜨지 않게)
+  if (dealt > 0 && u.alive && u.tags.includes('vampiric')) u.hp = Math.min(u.stats.maxHp, u.hp + dealt * 0.15);
   if (wpn.onHit) tryApplyStatus(w, t, wpn.onHit, u, 0);
 }
