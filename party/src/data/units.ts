@@ -1,69 +1,8 @@
 import type { UnitDef } from '../sim/defs';
+import { DEFAULT_COMP, makeHeroDef } from './party';
 
-// ── 파티 (1단계: 고정 파티. 2단계부터 종족+직업 조합으로 생성) ──
-// 처음엔 직접 쓰는 기술 2개로 시작한다. 레벨업 때 직업 스킬(classSkills)에 투자해
-// learnable 의 조건을 채우면 그 기술을 저절로 익힌다 (최대 4개, 수동 전용).
-// 어느 스킬에 투자하느냐가 곧 빌드의 갈림길이다.
-// ac/ev 는 맨몸 수치이고 갑옷·무기는 gear 의 시작 장비가 준다.
-export const PARTY: UnitDef[] = [
-  {
-    id: 'warrior', name: '브론', title: '인간 전사', glyph: '전', color: '#e0b050', role: 'tank',
-    radius: 0.38, mass: 3, speed: 2.7, hp: 110, mp: 0, str: 16, dex: 11, int: 8,
-    ac: 2, ev: 3, will: 12, levelHp: 10,
-    skills: { fighting: 3, sword: 3, armour: 3, shield: 3, dodge: 1 },
-    gear: { weapon: 'long_sword', armour: 'chain_mail' },
-    classSkills: ['fighting', 'shield', 'armour'],
-    learnable: [{ ability: 'whirlwind', skill: 'fighting', level: 5 }, { ability: 'war_cry', skill: 'shield', level: 6 }],
-    weapon: { name: '장검', skill: 'sword', damage: [7, 11], delay: 1.1, range: 0.5 },
-    abilities: ['shield_bash', 'taunt'], tactic: 'defensive', targetPref: 'threat',
-  },
-  {
-    id: 'mage', name: '엘라', title: '딥엘프 화염술사', glyph: '화', color: '#ff6a3a', role: 'caster',
-    radius: 0.34, mass: 1, speed: 2.7, hp: 55, mp: 40, str: 7, dex: 12, int: 17,
-    ac: 0, ev: 9, will: 22, levelHp: 5, levelMp: 4,
-    skills: { spellcasting: 3, fire: 3, ice: 2, dodge: 2 },
-    gear: { weapon: 'staff', armour: 'robe' },
-    classSkills: ['fire', 'ice', 'spellcasting', 'dodge'],
-    learnable: [
-      { ability: 'fireball', skill: 'fire', level: 5 },
-      { ability: 'frost_nova', skill: 'ice', level: 5 },
-      { ability: 'fire_storm', skill: 'fire', level: 8 },
-    ],
-    weapon: {
-      name: '마력탄', skill: 'spellcasting', damage: [3, 5], delay: 1.2, range: 6,
-      projectile: { speed: 12, color: '#c9a0ff' },
-    },
-    abilities: ['fire_bolt', 'frost_bolt'], tactic: 'ranged', targetPref: 'threat',
-  },
-  {
-    id: 'archer', name: '카이', title: '하플링 사냥꾼', glyph: '궁', color: '#7fd06a', role: 'ranged',
-    radius: 0.32, mass: 1, speed: 2.9, hp: 70, mp: 0, str: 10, dex: 17, int: 10,
-    ac: 0, ev: 12, will: 14, levelHp: 7,
-    skills: { bow: 3, dodge: 3, fighting: 2, armour: 1 },
-    gear: { weapon: 'short_bow', armour: 'leather' },
-    classSkills: ['bow', 'dodge', 'fighting'],
-    learnable: [{ ability: 'pinning_shot', skill: 'bow', level: 5 }, { ability: 'volley', skill: 'bow', level: 8 }],
-    weapon: {
-      name: '단궁', skill: 'bow', damage: [5, 8], delay: 1.0, range: 7,
-      projectile: { speed: 16, color: '#e8d8a0' },
-    },
-    abilities: ['aimed_shot', 'poison_arrow'], tactic: 'ranged', targetPref: 'threat',
-  },
-  {
-    id: 'healer', name: '미라', title: '인간 사제', glyph: '치', color: '#f2f2ff', role: 'support',
-    radius: 0.34, mass: 1, speed: 2.7, hp: 70, mp: 40, str: 10, dex: 10, int: 14,
-    ac: 0, ev: 5, will: 20, levelHp: 6, levelMp: 4,
-    skills: { faith: 3, spellcasting: 2, bow: 1, armour: 1 },
-    gear: { weapon: 'sling', armour: 'ring_mail' },
-    classSkills: ['faith', 'spellcasting', 'armour'],
-    learnable: [{ ability: 'smite', skill: 'faith', level: 5 }, { ability: 'mass_heal', skill: 'faith', level: 8 }],
-    weapon: {
-      name: '투석구', skill: 'bow', damage: [3, 5], delay: 1.2, range: 6,
-      projectile: { speed: 14, color: '#bbbbbb' },
-    },
-    abilities: ['heal', 'prayer'], autoAbilities: ['cleanse'], tactic: 'support', targetPref: 'threat',
-  },
-];
+// ── 파티: 종족 + 직업 조합으로 만든다 (data/races.ts, data/classes.ts, data/party.ts) ──
+export const PARTY: UnitDef[] = DEFAULT_COMP.map((c, i) => makeHeroDef(c, i));
 
 // ── 몬스터 ──
 const monsterList: UnitDef[] = [

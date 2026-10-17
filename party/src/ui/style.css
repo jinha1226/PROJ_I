@@ -253,3 +253,35 @@ button.on { border-color: var(--accent); color: var(--accent); }
   .bslot span { font-size: 14px; }
   .bslot small { display: none; }
 }
+
+/* ── 파티 구성 ── */
+#setup .box { width: min(1000px, 96vw); }
+#setup h2 { margin-bottom: 4px; }
+#setup .dim { color: #8a8a99; }
+#setup .small { font-size: 11px; }
+#setup .slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+#setup .slot { border: 1px solid #3a3a4a; border-radius: 7px; padding: 7px; background: #1a1a24; min-width: 0; }
+#setup .shd { display: flex; gap: 5px; align-items: center; }
+#setup .sg { width: 30px; height: 30px; flex-shrink: 0; border: 2px solid; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; }
+#setup .nm { min-width: 0; flex: 1; background: #22222e; color: var(--text); border: 1px solid #444; font: inherit; padding: 2px 4px; }
+#setup .dice { padding: 1px 5px; }
+#setup .sel { display: flex; gap: 4px; margin: 6px 0; }
+#setup .sel select { flex: 1; min-width: 0; background: #22222e; color: var(--text); border: 1px solid #555; font: inherit; padding: 2px; }
+#setup .sum div { margin-top: 2px; line-height: 1.4; }
+#setup .unlocks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; }
+#setup .unl { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; font-size: 12px; align-items: center; }
+#setup .unl .dim { grid-column: 1 / -1; }
+#setup .unl.done b { color: #7ddc7d; }
+#setup .pbar { height: 5px; background: #222; border-radius: 3px; overflow: hidden; }
+#setup .pbar i { display: block; height: 100%; background: #c8a84a; }
+#setup .go { text-align: right; margin-top: 10px; }
+#setup .go button { font-size: 16px; padding: 7px 24px; border-color: var(--accent); color: var(--accent); }
+#outcome .unlock { color: #ffe14d; font-weight: bold; }
+#toast {
+  position: fixed; top: 64px; left: 50%; transform: translateX(-50%); background: rgba(40, 32, 0, 0.92); color: #ffe14d;
+  border: 1px solid #a88a2a; border-radius: 6px; padding: 6px 14px; font-weight: bold; pointer-events: none; z-index: 10;
+}
+@media (max-width: 900px), (max-height: 500px) {
+  #setup .slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #setup .unlocks { grid-template-columns: 1fr; }
+}

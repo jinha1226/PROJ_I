@@ -314,7 +314,10 @@ export class World {
     this.log(`${u.name} 쓰러짐${by ? ` (${by.name})` : ''}`, u.faction === 'party' ? '#ff6666' : '#aaaaaa');
     if (this.focusTarget === u) this.focusTarget = null;
     if (this.leader === u) this.leader = this.party.find((p) => p.alive) ?? null;
-    if (u.faction === 'enemy') this.grantXp(u.def.xp ?? 0);
+    if (u.faction === 'enemy') {
+      this.grantXp(u.def.xp ?? 0);
+      this.run.kills[u.def.id] = (this.run.kills[u.def.id] ?? 0) + 1;
+    }
     if (u.def.id === 'mimic') {
       // 위험을 감수한 대가: 미믹은 아티팩트 확정
       const it = usefulItem(this.rng, this.depth + 1, this.party.flatMap((p) => (p.hero ? [p.hero] : [])), { force: 'artifact' });

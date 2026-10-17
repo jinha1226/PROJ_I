@@ -169,6 +169,44 @@ const list: AbilityDef[] = [
     aiRole: 'damage',
   },
 
+  // ── 광전사 ──
+  {
+    id: 'leap', name: '도약 베기', icon: '도', color: '#ff8a5a', type: 'technique', schools: ['axe'],
+    desc: '멀리 있는 적에게 뛰어들어 베고 잠시 기절시킨다. (2.5칸 이상 떨어진 적)',
+    cost: 0, castTime: 0, cooldown: 9, range: 6, minRange: 2.5, target: 'enemy', dash: true,
+    effects: [{ kind: 'weapon', mult: 1.3 }, { kind: 'status', status: 'stun', duration: 0.8 }],
+    aiRole: 'charge',
+  },
+  {
+    id: 'berserk', name: '광폭화', icon: '광', color: '#ff4444', type: 'technique', schools: ['axe'],
+    desc: '8초간 괴력(피해 +30%). 바로 옆 아군도 함께.',
+    cost: 0, castTime: 0, cooldown: 16, range: 0, target: 'self', radius: 0.8, affects: 'allies',
+    effects: [{ kind: 'status', status: 'might', duration: 8 }],
+    aiRole: 'buff',
+  },
+  // ── 서리술사 ──
+  {
+    id: 'ice_lance', name: '얼음 창', icon: '창', color: '#aee6ff', type: 'spell', schools: ['ice'], level: 3,
+    desc: '큰 냉기 피해를 주는 얼음 창. 확률적으로 감속.',
+    cost: 7, castTime: 0.8, cooldown: 7, range: 7, target: 'enemy',
+    projectile: { speed: 16, color: '#aee6ff' },
+    effects: [
+      { kind: 'damage', element: 'cold', base: [16, 22], scale: 0.9 },
+      { kind: 'status', status: 'slow', duration: 3, chance: 0.6 },
+    ],
+    aiRole: 'damage',
+  },
+  {
+    id: 'blizzard', name: '눈보라', icon: '눈', color: '#d0f0ff', type: 'spell', schools: ['ice'], level: 5,
+    desc: '2초 집중 후 넓은 범위에 눈보라. 적만 맞고, 모두 감속되며 일부는 얼어붙는다.',
+    cost: 16, castTime: 2.0, cooldown: 18, range: 7, target: 'ground', radius: 2.4, affects: 'enemies',
+    effects: [
+      { kind: 'damage', element: 'cold', base: [18, 26], scale: 1.0 },
+      { kind: 'status', status: 'slow', duration: 4 },
+      { kind: 'status', status: 'stun', duration: 1.2, chance: 0.5 },
+    ],
+    aiRole: 'damage',
+  },
   // ── 몬스터 ──
   {
     id: 'lightning_bolt', name: '번개 화살', icon: '번', color: '#ffe14d', type: 'spell', level: 3,

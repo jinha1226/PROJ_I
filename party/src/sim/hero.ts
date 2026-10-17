@@ -1,12 +1,13 @@
 // 층을 넘어 이어지는 파티원 성장 데이터: 레벨, 스킬, 기술, 장비, 레벨업 선택.
 // 성장 규칙 (DCSS 단순화):
 //  - 처치 경험치는 살아 있는 파티원이 똑같이 받는다
-//  - 레벨이 오르면 관련 스킬이 모두 조금(+0.8) 오르고,
-//    세 선택지 중 하나를 고른다: ① 집중 스킬 투자(+2) ② 다른 관련 스킬 투자 ③ 기술 강화 / 능력치
+//  - 레벨이 오르면 기본기(전투·회피·갑옷·든 무기)가 조금(+0.5) 오르고, 계열 스킬(화염·신앙·방패 등)은 투자해야 오른다.
+//    세 선택지 중 하나를 고른다: ① 집중 스킬 투자(+1.5) ② 다른 관련 스킬 투자 ③ 기술 강화 / 능력치
 //  - 스킬이 learnable 조건에 닿으면 그 기술을 저절로 익힌다 → 어디에 투자하느냐가 빌드
 import type { Rng } from '../core/rng';
 import { ABILITIES } from '../data/abilities';
 import { SKILL_NAME } from '../data/names';
+import { makeHeroDef, type HeroComp } from '../data/party';
 import { PARTY } from '../data/units';
 import type { Item, ItemSlot, Prop, SkillId, TacticId, UnitDef } from './defs';
 import { makeItem, propText } from './items';
@@ -24,9 +25,13 @@ export const SKILL_EFFECT: Partial<Record<SkillId, string>> = {
 export const MAX_ACTIVE = 4;
 export const MAX_RANK = 3;
 /** 스킬 투자 1회 */
-export const SKILL_STEP = 2;
+export const SKILL_STEP = 1.5;
 /** 레벨업마다 관련 스킬 전체가 오르는 양 */
-const LEVEL_SKILL = 0.8;
+const LEVEL_SKILL = 0.5;
+/** 레벨업마다 저절로 오르는 기본기 */
+const BASIC_SKILLS: SkillId[] = ['fighting', 'dodge', 'armour'];
+/** 종족 적성 스킬이 레벨업마다 더 오르는 양 */
+const APT_SKILL = 0.3;
 
 export interface Hero {
   def: UnitDef;
@@ -73,8 +78,8 @@ export function newHero(def: UnitDef): Hero {
   };
 }
 
-export function newParty(): Hero[] {
-  return PARTY.map(newHero);
+export function newParty(comps?: HeroComp[]): Hero[] {
+  return comps ? comps.map((c, i) => newHero(makeHeroDef(c, i))) : PARTY.map(newHero);
 }
 
 /** 층 시작: 성장 기록 시점 갱신, 재사용 대기 초기화 */
@@ -101,7 +106,14 @@ export function gainXp(h: Hero, amount: number): boolean {
     h.xl++;
     h.pending++;
     leveled = true;
-    for (const sk of relatedSkills(h)) h.skills[sk] = Math.min(MAX_SKILL, h.skills[sk] + LEVEL_SKILL);
+    // 기본기(전투 · 회피 · 갑옷 · 든 무기)는 저절로 조금씩, 계열 스킬은 투자해야 오른다. 종족 적성은 더
+    const bonus = h.def.levelSkillBonus ?? 0;
+    const wpn = h.gear.weapon?.base.weapon?.skill ?? h.def.weapon.skill;
+    for (const sk of relatedSkills(h)) {
+      const basic = BASIC_SKILLS.includes(sk) || sk === wpn;
+      h.skills[sk] = Math.min(MAX_SKILL, h.skills[sk] + (basic ? LEVEL_SKILL : 0) + bonus);
+    }
+    for (const sk of h.def.aptitudes ?? []) h.skills[sk] = Math.min(MAX_SKILL, h.skills[sk] + APT_SKILL);
     checkLearn(h);
   }
   return leveled;

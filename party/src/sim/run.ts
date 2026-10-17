@@ -7,10 +7,12 @@ export interface RunState {
   belt: ConsumableId[];
   /** 이번 층에서 상자·제단 등으로 얻은 장비 — 쉬는 화면에서 장착하거나 버린다 */
   found: Item[];
+  /** 아직 기록에 넣지 않은 처치 수 (해금 진행용) */
+  kills: Record<string, number>;
 }
 
 export function newRun(): RunState {
-  return { belt: ['heal_potion'], found: [] };
+  return { belt: ['heal_potion'], found: [], kills: {} };
 }
 
 export function addToBelt(run: RunState, id: ConsumableId): boolean {

@@ -147,6 +147,10 @@ export interface UnitDef {
   learnable?: { ability: string; skill: SkillId; level: number }[];
   /** 직업 스킬: 레벨업 때 투자 선택지로 나온다 (장착 무기의 스킬도 추가된다) */
   classSkills?: SkillId[];
+  /** 종족 적성 스킬: 레벨업마다 더 오른다 */
+  aptitudes?: SkillId[];
+  /** 레벨업마다 관련 스킬 전체에 더해지는 양 (인간) */
+  levelSkillBonus?: number;
 }
 
 // ── 장비 ──

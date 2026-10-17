@@ -2,9 +2,13 @@
 // 자동 탐험 + 자동전투, 보상은 비교 점수가 가장 높은 장비를, 레벨업은 무작위로 고른다.
 // 사용: npm run sim -- [seed] [runs] [auto|skilled]
 //   auto    : 손을 놓은 플레이어 (수동 전용 기술 안 씀, 피하기·끊기 없음)
+//   COMP=race:class,...  DIFF=easy|normal|hard  ASSIST=learn,dodge,interrupt,items,explore
 //   skilled : 개입하는 플레이어 흉내 (수동 기술을 AI 가 대신 씀 + 예고 공격 피하기 + 방패 강타로 시전 끊기)
 import { dist, Rng } from '../src/core/rng';
+import type { ClassId } from '../src/data/classes';
 import type { DifficultyId } from '../src/data/difficulty';
+import type { HeroComp } from '../src/data/party';
+import type { RaceId } from '../src/data/races';
 import { areaCenter } from '../src/sim/abilities';
 import type { Unit } from '../src/sim/unit';
 import { FLOORS } from '../src/data/encounters';
@@ -51,6 +55,14 @@ function rest(heroes: Hero[], run: RunState, rng: Rng, depth: number, log: strin
 }
 
 /** 개입하는 플레이어 흉내: 매 틱 호출 */
+// 파티 구성: COMP=종족:직업,... (예: dwarf:warrior,orc:berserker,human:frost_mage,human:priest)
+const COMP: HeroComp[] | undefined = process.env.COMP
+  ? process.env.COMP.split(',').map((x, i) => {
+      const [race, cls] = x.split(':') as [RaceId, ClassId];
+      return { race, cls, name: `${i + 1}번` };
+    })
+  : undefined;
+
 // 난이도: DIFF=easy|normal|hard (기본 easy)
 const DIFF = (process.env.DIFF ?? 'easy') as DifficultyId;
 
@@ -110,7 +122,7 @@ function useItems(w: World) {
 }
 
 function run(seed: number, verbose: boolean, skilled: boolean) {
-  const heroes = newParty();
+  const heroes = newParty(COMP);
   const runState = newRun();
   const rng = new Rng(seed);
   const floorLog: string[] = [];

@@ -10,6 +10,12 @@ import { newRun } from './sim/run';
 import { World } from './sim/world';
 import { Hud } from './ui/hud';
 import { RestScreen } from './ui/rest';
+import { SetupScreen } from './ui/setup';
+import { CLASSES, type ClassId } from './data/classes';
+import type { HeroComp } from './data/party';
+import { RACES, type RaceId } from './data/races';
+import type { UnlockDef } from './data/unlocks';
+import { loadMeta, recordProgress, saveMeta } from './sim/meta';
 import { CharacterSheet } from './ui/sheet';
 import { createUiState } from './ui/state';
 
@@ -42,9 +48,32 @@ try {
   // 저장소를 못 쓰면 기본값
 }
 
+// ── 런과 런 사이 기록 · 해금 ──
+const meta = loadMeta();
+let started = false;
+let outcomeRecorded = false;
+
+function announceUnlocks(list: UnlockDef[]) {
+  for (const u of list) {
+    const name = u.kind === 'race' ? `종족 ${RACES[u.target as RaceId].name}` : `직업 ${CLASSES[u.target as ClassId].name}`;
+    world.log(`🔓 새로 해금: ${name} (다음 런부터)`, '#ffe14d');
+    toast(`🔓 새로 해금: ${name}`);
+  }
+}
+
+let toastTimer = 0;
+function toast(text: string) {
+  const el = $('toast');
+  el.textContent = text;
+  el.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => el.classList.add('hidden'), 3500);
+}
+
 function startFloor() {
   world = new World(genFloor(runSeed, depth), runSeed * 31 + depth, heroes, difficulty, run);
   world.autoExplore = explore;
+  announceUnlocks(recordProgress(meta, {}, depth));
   ui.selected = [];
   ui.inspect = null;
   ui.targeting = null;
@@ -54,18 +83,34 @@ function startFloor() {
   centerParty();
 }
 
+/** 새 런: 파티 구성 화면부터 */
 function restart() {
-  runSeed = (Math.random() * 1e9) | 0;
-  heroes = newParty();
-  run = newRun();
-  depth = 1;
   rest.close();
   restOpen = false;
+  ui.paused = true;
+  $('outcome').classList.add('hidden');
+  recordProgress(meta, {}, 0);
+  setup.open(meta);
+}
+
+function startRun(comp: HeroComp[]) {
+  runSeed = (Math.random() * 1e9) | 0;
+  heroes = newParty(comp);
+  run = newRun();
+  depth = 1;
+  started = true;
+  outcomeRecorded = false;
+  meta.runs++;
+  saveMeta(meta);
   startFloor();
 }
 
+const setup = new SetupScreen(startRun);
+
 function floorCleared() {
   for (const p of world.party) saveFromUnit(p);
+  announceUnlocks(recordProgress(meta, run.kills, depth));
+  run.kills = {};
   restOpen = true;
   rest.open(heroes, run, depth, runSeed + depth * 997);
 }
@@ -181,7 +226,12 @@ world.autoExplore = explore;
 $('btn-help').addEventListener('click', toggleHelp);
 $('btn-help-close').addEventListener('click', () => {
   $('help').classList.add('hidden');
-  ui.paused = false;
+  // 처음이면 파티 구성부터
+  if (!started) {
+    recordProgress(meta, {}, 0);
+    setup.open(meta);
+  }
+  else ui.paused = false;
 });
 $('btn-restart').addEventListener('click', restart);
 $('btn-follow').addEventListener('click', () => (cam.follow = !cam.follow));
@@ -266,6 +316,16 @@ function frame(now: number) {
   if (world.outcome === 'cleared' && !restOpen && $('rest').classList.contains('hidden')) floorCleared();
   const out = $('outcome');
   if (world.outcome === 'victory' || world.outcome === 'defeat') {
+    if (!outcomeRecorded) {
+      outcomeRecorded = true;
+      if (world.outcome === 'victory') meta.wins++;
+      const fresh = recordProgress(meta, run.kills, depth);
+      run.kills = {};
+      announceUnlocks(fresh);
+      $('outcome-unlock').textContent = fresh.length
+        ? `🔓 새로 해금: ${fresh.map((u) => (u.kind === 'race' ? RACES[u.target as RaceId].name : CLASSES[u.target as ClassId].name)).join(', ')}`
+        : '';
+    }
     out.classList.remove('hidden');
     $('outcome-title').textContent = world.outcome === 'victory' ? '승리! 오우거 족장을 쓰러뜨렸다' : `${depth}층에서 파티 전멸`;
     $('outcome-sub').textContent = heroes.map((h) => `${h.def.name} Lv${h.xl}`).join(' · ') + ` — ${depth}/${FLOORS}층`;
