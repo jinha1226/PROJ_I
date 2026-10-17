@@ -12,6 +12,7 @@ import { xpToNext } from '../sim/hero';
 import { BELT_SIZE, CONSUMABLES } from '../data/consumables';
 import { MOODS } from '../data/moods';
 import { WARN_STRESS } from '../sim/stress';
+import { skillCue } from '../sim/cues';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -138,7 +139,7 @@ export class Hud {
         ab.cost ? `마나 ${ab.cost}` : '',
         ab.type === 'spell' ? `실패율 ${Math.round(fail * 100)}%` : '',
         ab.affects === 'all' ? '⚠ 아군도 피해를 입음' : '',
-        st.manualOnly ? '수동 전용: AI 가 쓰지 않는다' : '길게 누르기 / 우클릭: 자동 사용 켜기·끄기',
+        st.manualOnly ? '수동 전용: AI 가 쓰지 않는다' : '길게 누르기 / 우클릭: AI 가 알아서 쓰게 하기 (자동) ↔ 직접 쓰기',
       ].filter(Boolean).join('\n');
       const b = document.createElement('div');
       b.className = `sk${st.manualOnly ? ' manual' : ''}`;
@@ -227,11 +228,12 @@ export class Hud {
         b.querySelector<HTMLElement>('.cdmask')!.style.height = st.cd > 0 ? `${Math.min(1, st.cd / abilityCooldown(st)) * 100}%` : '0';
         b.querySelector('.cdtext')!.textContent = st.cd > 0 ? st.cd.toFixed(st.cd < 3 ? 1 : 0) : '';
         b.classList.toggle('disabled', !u.alive || u.mp < st.def.cost);
-        b.classList.toggle('ready', (!!st.manualOnly || !u.autoMode) && ready && !(st.def.aiRole === 'heal' && !st.manualOnly && !u.autoMode));
+        // 플레이어가 쓸 기술: 준비되면 빛나고, 지금 쓰면 좋을 때(skillCue) 붉게 깜빡인다
+        const mine = !!st.manualOnly || (!u.autoMode && !st.auto);
+        b.classList.toggle('ready', mine && ready);
+        b.classList.toggle('urgent', mine && ready && skillCue(w, u, st));
         b.classList.toggle('targeting', ui.targeting?.unit === u && ui.targeting.slot === Number(b.dataset.slot));
-        // 자동전투를 끄면(기본) 기술은 모두 직접 쓴다 — 사제의 단일 치유만 자동
-        const basicHeal = st.def.aiRole === 'heal' && st.def.target === 'ally' && !st.manualOnly;
-        const badge = st.manualOnly ? '수동' : !u.autoMode && !basicHeal ? '' : st.auto ? '자동' : '끔';
+        const badge = st.manualOnly ? '수동' : st.auto ? '자동' : '';
         const bd = b.querySelector<HTMLElement>('.badge')!;
         if (bd.textContent !== badge) {
           bd.textContent = badge;

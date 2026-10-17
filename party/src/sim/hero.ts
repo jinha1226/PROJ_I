@@ -53,12 +53,15 @@ export function xpToNext(xl: number): number {
 }
 
 export function newHero(def: UnitDef): Hero {
+  const abilities = abilityStates(def.abilities, def.autoAbilities);
+  // 로테이션 기술만 처음부터 자동, 나머지는 플레이어가 쓴다 (기술 버튼 길게 누르기로 바꿀 수 있다)
+  for (const a of abilities) if (!a.hidden) a.auto = a.def.control === 'auto';
   const skills = Object.fromEntries(ALL_SKILLS.map((s) => [s, def.skills?.[s] ?? 0])) as Record<SkillId, number>;
   const gear: Hero['gear'] = {};
   for (const [slot, id] of Object.entries(def.gear ?? {})) gear[slot as ItemSlot] = makeItem(id);
   return {
     def, cls: (def.cls ?? 'warrior') as ClassId, xl: 1, xp: 0, skills, gear, perks: [], talents: [], pending: 0,
-    abilities: abilityStates(def.abilities, def.autoAbilities),
+    abilities,
     tactic: def.tactic, row: defaultRow(def), autoMode: false,
     startXl: 1, stress: 0, mood: null, restNote: '',
   };

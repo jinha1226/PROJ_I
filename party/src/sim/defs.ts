@@ -76,6 +76,8 @@ export interface AbilityDef {
   /** 시전자 자신에게 적용 */
   selfEffects?: Effect[];
   aiRole: AiRole;
+  /** 'auto' = 딜·힐 로테이션 기술: 직접 조종(기본)에서도 AI 가 알아서 쓴다. 나머지는 플레이어의 판단 */
+  control?: 'auto';
 }
 
 export interface StatusDef {

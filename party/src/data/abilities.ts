@@ -27,7 +27,7 @@ const list: AbilityDef[] = [
       { kind: 'damage', element: 'fire', base: [5, 9], scale: 0.5 },
       { kind: 'status', status: 'burn', duration: 3, chance: 0.35 },
     ],
-    aiRole: 'damage',
+    aiRole: 'damage', control: 'auto',
   },
   {
     id: 'fireball', name: '화염구', icon: '구', color: '#ff9a3f', type: 'spell', schools: ['fire'], level: 4,
@@ -61,7 +61,7 @@ const list: AbilityDef[] = [
       { kind: 'damage', element: 'cold', base: [5, 9], scale: 0.5 },
       { kind: 'status', status: 'slow', duration: 3, chance: 0.5 },
     ],
-    aiRole: 'damage',
+    aiRole: 'damage', control: 'auto',
   },
   // ── 사냥꾼 ──
   {
@@ -78,7 +78,7 @@ const list: AbilityDef[] = [
     cost: 0, castTime: 0, cooldown: 6, range: 7, target: 'enemy',
     projectile: { speed: 16, color: '#7dd35a' },
     effects: [{ kind: 'weapon', mult: 0.6 }, { kind: 'status', status: 'poison', duration: 6, stacks: 2 }],
-    aiRole: 'damage',
+    aiRole: 'damage', control: 'auto',
   },
   {
     id: 'pinning_shot', name: '속박 사격', icon: '속', color: '#66ccff', type: 'technique', schools: ['bow'],
@@ -99,7 +99,7 @@ const list: AbilityDef[] = [
     desc: '아군 하나의 체력을 회복한다.',
     cost: 5, castTime: 0.6, cooldown: 2, range: 6, target: 'ally',
     effects: [{ kind: 'heal', base: [10, 14], scale: 0.6 }],
-    aiRole: 'heal',
+    aiRole: 'heal', control: 'auto',
   },
   {
     id: 'cleanse', name: '정화', icon: '정', color: '#ccffff', type: 'spell', schools: ['faith'], level: 2,

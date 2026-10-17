@@ -60,9 +60,10 @@ export function think(w: World, u: Unit): Intent | null {
 
   {
     u.abilities.forEach((st, slot) => {
-      if (!st.auto || !abilityReady(u, st)) return;
-      // 수동 모드(기본): 기술은 플레이어가 쓴다. 사제의 단일 치유와 자동 전용(정화)만 기본 행동으로 남긴다
-      if (manual && !st.hidden && !(st.def.aiRole === 'heal' && st.def.target === 'ally' && !st.manualOnly)) return;
+      if (!abilityReady(u, st)) return;
+      // 직접 조종(기본): 자동으로 표시된 기술(로테이션 · 자동 전용)만 AI 가 쓴다.
+      // 자동전투를 켜면 수동 전용(특성으로 배운 기술)을 뺀 나머지도 쓴다
+      if (!(st.hidden || st.auto || (!manual && !st.manualOnly))) return;
       const prio = st.prio * 1.5;
       for (const c of evalAbility(w, u, st.def, slot, enemies)) {
         c.score += prio;

@@ -86,7 +86,7 @@ export class CharacterSheet {
         const ab = st.def;
         const fail = failChance(u!, ab);
         const elem = ab.effects.find((e) => e.kind === 'damage');
-        const mode = st.hidden ? '자동 전용' : st.manualOnly ? '수동 전용' : st.auto ? '자동 사용' : '자동 꺼짐';
+        const mode = st.hidden ? '자동 전용' : st.manualOnly ? '수동 전용' : st.auto ? '자동 사용' : '직접 사용';
         return `<div class="abil">
           <div><b style="color:${ab.color}">${ab.icon} ${ab.name}${st.rank ? ` +${st.rank}` : ''}</b>
             <span class="tag ${st.manualOnly ? 'm' : ''}">${mode}</span></div>
