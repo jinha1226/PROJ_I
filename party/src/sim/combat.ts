@@ -2,6 +2,7 @@
 // 평타·마법·몬스터 능력·지속 피해 모두 applyDamage / tryApplyStatus 를 거친다.
 import { STATUSES } from '../data/statuses';
 import type { Element, StatusApply } from './defs';
+import { addStress } from './stress';
 import { attackDelay, hitChance, RESIST_MULT, weaponDmgMult, willChance } from './stats';
 import type { Unit } from './unit';
 import type { World } from './world';
@@ -46,6 +47,12 @@ export function applyDamage(
   target.flash = 0.12;
   const suffix = m < 1 ? ' 저항' : m > 1 ? '!' : '';
   w.float(target, `${dmg}${suffix}`, ELEMENT_COLOR[element], opts.dot ? 0.8 : 1);
+
+  // 스트레스: 체력 대비 피해가 클수록. 한 방에 크게 맞으면 더
+  if (target.faction === 'party' && dmg > 0) {
+    const frac = dmg / target.stats.maxHp;
+    addStress(w, target, opts.dot ? frac * 10 : frac * 22 + (frac >= 0.22 ? 5 : 0));
+  }
 
   if (source && source.faction !== target.faction) {
     target.aggro.set(source.id, (target.aggro.get(source.id) ?? 0) + dmg);

@@ -6,6 +6,7 @@ import { Renderer } from './render/renderer';
 import { genFloor } from './sim/gen';
 import { newParty, saveFromUnit, type Hero } from './sim/hero';
 import { resolvePrompt } from './sim/objects';
+import { restRelief } from './sim/stress';
 import { newRun } from './sim/run';
 import { World } from './sim/world';
 import { Hud } from './ui/hud';
@@ -109,6 +110,7 @@ const setup = new SetupScreen(startRun);
 
 function floorCleared() {
   for (const p of world.party) saveFromUnit(p);
+  for (const h of heroes) restRelief(h);
   announceUnlocks(recordProgress(meta, run.kills, depth));
   run.kills = {};
   restOpen = true;

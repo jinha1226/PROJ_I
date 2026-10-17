@@ -1,5 +1,5 @@
 // 소모품: 파티가 함께 쓰는 벨트(4칸)에 들어간다. 효과는 sim/objects.ts 의 useConsumable.
-export type ConsumableId = 'heal_potion' | 'banish_scroll' | 'fear_scroll' | 'fire_bomb';
+export type ConsumableId = 'heal_potion' | 'banish_scroll' | 'fear_scroll' | 'fire_bomb' | 'calm_incense';
 
 export interface ConsumableDef {
   id: ConsumableId;
@@ -25,6 +25,10 @@ export const CONSUMABLES: Record<ConsumableId, ConsumableDef> = {
   fear_scroll: {
     id: 'fear_scroll', name: '공포 두루마리', icon: '공', color: '#c080ff', target: 'none', w: 2,
     desc: '파티 주변 6칸의 적이 5초간 겁에 질려 도망친다. (정신 없는 적은 면역)',
+  },
+  calm_incense: {
+    id: 'calm_incense', name: '진정 향초', icon: '향', color: '#b98cff', target: 'none', w: 3,
+    desc: '파티 전원의 스트레스를 30 낮춘다. 붕괴한 파티원은 정신을 추스른다.',
   },
   fire_bomb: {
     id: 'fire_bomb', name: '화염 폭탄', icon: '폭', color: '#ff7a2f', target: 'ground', w: 3,

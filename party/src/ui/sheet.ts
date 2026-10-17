@@ -1,6 +1,7 @@
 // 캐릭터 상태창: 능력치 · 스킬(집중 지정) · 기술 · 장비를 한 화면에.
 // 전투 중에는 파티 카드의 ⓘ, 쉬는 화면에서는 각 캐릭터의 「상태창」 버튼으로 연다.
 import { ABILITIES } from '../data/abilities';
+import { MOODS } from '../data/moods';
 import { RES_NAME, SKILL_NAME } from '../data/names';
 import { ELEMENT_NAME } from '../sim/combat';
 import { RESIST_KEYS, type SkillId } from '../sim/defs';
@@ -126,7 +127,10 @@ export class CharacterSheet {
             ${s.maxMp ? `<span>마나</span><span>${Math.floor(u.mp)} / ${s.maxMp}</span>` : ''}
             <span>AC</span><span>${s.ac.toFixed(1)} <span class="dim small">받는 물리 피해 감소</span></span>
             <span>회피</span><span>${s.ev.toFixed(1)}</span>
-            <span>의지력</span><span>${s.will} <span class="dim small">감속·저주 저항</span></span>
+            <span>의지력</span><span>${s.will} <span class="dim small">감속·저주 저항 · 스트레스를 덜 받음</span></span>
+            <span>스트레스</span><span>${Math.round(h.stress)} / 100${
+              h.mood ? ` · <b style="color:${MOODS[h.mood].color}">${MOODS[h.mood].virtue ? '각성' : '붕괴'}: ${MOODS[h.mood].name}</b><div class="dim small">${MOODS[h.mood].desc}</div>` : ' <span class="dim small">100 이 되면 붕괴(가끔 각성)</span>'
+            }</span>
             <span>힘 / 민첩 / 지능</span><span>${u.str} / ${u.dex} / ${u.int}</span>
             <span>평타</span><span>${esc(u.weapon.name)} · ${avgWeaponDamage(u).toFixed(1)} / ${attackDelay(u).toFixed(2)}초</span>
             <span>갑옷 무게</span><span>${u.armourWeight}${u.armourWeight ? ' <span class="dim small">회피↓ 실패율↑</span>' : ''}</span>

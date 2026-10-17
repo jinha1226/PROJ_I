@@ -5,6 +5,7 @@
 //    세 선택지 중 하나를 고른다: ① 집중 스킬 투자(+1.5) ② 다른 관련 스킬 투자 ③ 기술 강화 / 능력치
 //  - 스킬이 learnable 조건에 닿으면 그 기술을 저절로 익힌다 → 어디에 투자하느냐가 빌드
 import type { Rng } from '../core/rng';
+import type { MoodId } from '../data/moods';
 import { ABILITIES } from '../data/abilities';
 import { SKILL_NAME } from '../data/names';
 import { makeHeroDef, type HeroComp } from '../data/party';
@@ -54,6 +55,12 @@ export interface Hero {
   /** 층 시작 시점 기록 (쉬는 화면에서 성장 표시) */
   startSkills: Record<SkillId, number>;
   startXl: number;
+  /** 스트레스 0~100 (sim/stress.ts) */
+  stress: number;
+  /** 붕괴 또는 각성. 층 사이 휴식에서 풀린다 */
+  mood: MoodId | null;
+  /** 쉬는 화면에 보일 스트레스 변화 */
+  restNote: string;
 }
 
 export type Perk =
@@ -75,6 +82,7 @@ export function newHero(def: UnitDef): Hero {
     abilities: abilityStates(def.abilities, def.autoAbilities),
     tactic: def.tactic, row: defaultRow(def), autoMode: true,
     startSkills: { ...skills }, startXl: 1,
+    stress: 0, mood: null, restNote: '',
   };
 }
 

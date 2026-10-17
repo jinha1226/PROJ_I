@@ -20,6 +20,7 @@ import { resolvePrompt, useConsumable } from '../src/sim/objects';
 import { compareItem, rewardChoices } from '../src/sim/reward';
 import { newRun, type RunState } from '../src/sim/run';
 import { World } from '../src/sim/world';
+import { isAfflicted, restRelief } from '../src/sim/stress';
 
 function rest(heroes: Hero[], run: RunState, rng: Rng, depth: number, log: string[]) {
   // 찾은 장비: 점수가 양수인 영웅에게
@@ -46,6 +47,7 @@ function rest(heroes: Hero[], run: RunState, rng: Rng, depth: number, log: strin
     best.h.gear[best.it.base.slot] = best.it;
     log.push(`  보상 ${itemTitle(best.it)} → ${best.h.def.name}`);
   }
+  for (const h of heroes) restRelief(h);
   for (const h of heroes)
     while (h.pending > 0) {
       const offer = makeOffer(h, rng);
@@ -107,6 +109,8 @@ function useItems(w: World) {
   const avg = live.reduce((s, p) => s + p.hpFrac, 0) / live.length;
   const pot = w.run.belt.indexOf('heal_potion');
   if ((avg < 0.4 || live.some((p) => p.hpFrac < 0.2)) && pot >= 0) useConsumable(w, pot, null, 0, 0);
+  const calm = w.run.belt.indexOf('calm_incense');
+  if (calm >= 0 && live.some(isAfflicted)) useConsumable(w, calm, null, 0, 0);
   const fear = w.run.belt.indexOf('fear_scroll');
   if (avg < 0.35 && fear >= 0) useConsumable(w, fear, null, 0, 0);
   const bomb = w.run.belt.indexOf('fire_bomb');
@@ -129,6 +133,7 @@ function run(seed: number, verbose: boolean, skilled: boolean) {
   const deaths: Record<number, number> = {};
   const minHp: Record<number, number> = {};
   let result = 'victory';
+  const moods: string[] = [];
   let time = 0;
   for (let depth = 1; depth <= FLOORS; depth++) {
     const w = new World(genFloor(seed, depth), seed * 31 + depth, heroes, DIFF, runState);
@@ -150,6 +155,10 @@ function run(seed: number, verbose: boolean, skilled: boolean) {
     minHp[depth] = Math.round(low * 100);
     time += w.time;
     deaths[depth] = w.party.filter((p) => !p.alive).length;
+    for (const l of w.logs) {
+      const m = l.text.match(/(붕괴|각성) — ([^:]+):/);
+      if (m) moods.push(`${depth}${m[1] === '각성' ? '+' : '-'}${m[2]}`);
+    }
     if (verbose) for (const l of w.logs) floorLog.push(`[${depth}층 ${l.time.toFixed(1).padStart(5)}] ${l.text}`);
     if (w.outcome === 'defeat' || !w.outcome) {
       result = w.outcome ? `defeat@${depth}` : `timeout@${depth}`;
@@ -167,7 +176,7 @@ function run(seed: number, verbose: boolean, skilled: boolean) {
     const abil = h.abilities.filter((a) => !a.hidden).map((a) => a.def.name + (a.rank ? `+${a.rank}` : '')).join('/');
     return `${h.def.name} Lv${h.xl} [${top}] ${abil}`;
   });
-  return { result, time: Math.round(time), deaths, minHp, summary };
+  return { result, time: Math.round(time), deaths, minHp, summary, moods, stress: heroes.map((h) => Math.round(h.stress)) };
 }
 
 const seed = Number(process.argv[2] ?? 1);
@@ -177,6 +186,7 @@ console.log(skilled ? '[개입하는 플레이어 흉내]' : '[자동만]', DIFF
 if (runs === 1) console.log(run(seed, true, skilled));
 else {
   const res: Record<string, number> = {};
+  let moodTotal = 0;
   const deathByFloor: Record<number, number> = {};
   const lowByFloor: Record<number, number[]> = {};
   for (let i = 0; i < runs; i++) {
@@ -184,9 +194,11 @@ else {
     res[r.result] = (res[r.result] ?? 0) + 1;
     for (const [d, n] of Object.entries(r.deaths)) deathByFloor[+d] = (deathByFloor[+d] ?? 0) + n;
     for (const [d, n] of Object.entries(r.minHp)) (lowByFloor[+d] ??= []).push(n);
-    console.log(seed + i, r.result, `${r.time}s`, '사망', JSON.stringify(r.deaths), '최저체력%', JSON.stringify(r.minHp));
+    console.log(seed + i, r.result, `${r.time}s`, '사망', JSON.stringify(r.deaths), '최저체력%', JSON.stringify(r.minHp), '정신', r.moods.join(' ') || '-', '스트레스', r.stress.join('/'));
+    moodTotal += r.moods.length;
     if (i === 0) for (const s of r.summary) console.log('   ', s);
   }
   const avg = Object.fromEntries(Object.entries(lowByFloor).map(([d, a]) => [d, Math.round(a.reduce((x, y) => x + y, 0) / a.length)]));
+  console.log('판당 붕괴·각성', (moodTotal / runs).toFixed(2));
   console.log(res, '층별 사망:', deathByFloor, '층별 평균 최저체력%:', avg);
 }

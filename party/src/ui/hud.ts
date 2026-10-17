@@ -9,6 +9,7 @@ import { RES_NAME, SKILL_NAME } from '../data/names';
 import { FLOORS } from '../data/encounters';
 import { xpToNext } from '../sim/hero';
 import { BELT_SIZE, CONSUMABLES } from '../data/consumables';
+import { MOODS } from '../data/moods';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -77,6 +78,7 @@ export class Hud {
           <div class="bar hp"><div></div><span class="bt"></span></div>
           ${u.stats.maxMp > 0 ? '<div class="bar mp"><div></div></div>' : ''}
           <div class="bar xp"><div></div></div>
+          <div class="bar st" title="스트레스: 100 이 되면 붕괴(가끔 각성)"><div></div></div>
           <div class="statuses"></div>
           <div class="row">
             <button class="rowbtn" title="진형: 전열은 앞장서고, 후열은 함께 이동할 때 전열 뒤를 따른다"></button>
@@ -184,7 +186,16 @@ export class Hud {
       const mp = col.querySelector('.bar.mp > div') as HTMLElement | null;
       if (mp) mp.style.width = `${(u.mp / u.stats.maxMp) * 100}%`;
       const cmd = commandText(u);
+      const mood = u.hero?.mood ? MOODS[u.hero.mood] : null;
+      col.classList.toggle('afflicted', !!mood && !mood.virtue);
+      col.classList.toggle('virtue', !!mood?.virtue);
+      if (u.hero) {
+        const st = col.querySelector<HTMLElement>('.bar.st > div')!;
+        st.style.width = `${u.hero.stress}%`;
+        st.style.background = mood ? mood.color : u.hero.stress >= 70 ? '#d070ff' : '#8a5cc0';
+      }
       col.querySelector('.statuses')!.innerHTML =
+        (mood ? `<span class="chip mood" style="color:${mood.color}" title="${mood.desc}">${mood.virtue ? '★' : '!'}${mood.name}</span>` : '') +
         u.statuses.map((s) => `<span class="chip" style="color:${s.def.color}">${s.def.name}${s.stacks > 1 ? '×' + s.stacks : ''}</span>`).join('') +
         (cmd ? `<span class="cmd">${cmd}</span>` : '');
       col.querySelector('.lead')!.textContent = w.leader === u ? ' ★' : '';

@@ -1,6 +1,7 @@
 // 모든 수치 공식은 여기 모은다. 스킬·장비·상태이상이 같은 규칙으로 능력치에 반영된다.
 // DCSS 를 단순화: 능력치 3종, 스킬 0~10, 저항 -1~3 단계, 의지력 숫자 하나.
 import { clamp } from '../core/rng';
+import { MOODS } from '../data/moods';
 import { RESIST_KEYS, type AbilityDef, type ResistKey } from './defs';
 import type { AbilityState, Unit } from './unit';
 
@@ -21,6 +22,12 @@ export function computeStats(u: Unit) {
       if (m.dmgTakenMult) dmgTakenMult *= m.dmgTakenMult;
     }
     if (s.def.stun) stunned = true;
+  }
+  const mood = u.hero?.mood ? MOODS[u.hero.mood].mods : undefined;
+  if (mood) {
+    if (mood.dmgMult) dmgMult *= mood.dmgMult;
+    if (mood.dmgTakenMult) dmgTakenMult *= mood.dmgTakenMult;
+    if (mood.actionMult) actionMult *= mood.actionMult;
   }
   const resists = {} as Record<ResistKey, number>;
   for (const k of RESIST_KEYS) resists[k] = clamp((d.resists?.[k] ?? 0) + (b.resists[k] ?? 0), -1, 3);

@@ -17,7 +17,8 @@ export function updateUnit(w: World, u: Unit, dt: number) {
   u.moving = false;
   u.flash = Math.max(0, u.flash - dt);
   u.swing = Math.max(0, u.swing - dt);
-  for (const a of u.abilities) a.cd = Math.max(0, a.cd - dt);
+  const cdRate = u.hero?.mood === 'focused' ? 1.3 : 1;
+  for (const a of u.abilities) a.cd = Math.max(0, a.cd - dt * cdRate);
   u.attackCd -= dt * u.stats.actionMult;
 
   // 자원 회복

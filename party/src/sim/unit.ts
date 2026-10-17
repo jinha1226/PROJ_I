@@ -122,6 +122,10 @@ export class Unit {
   /** 플레이어가 지정한 위치 고수 지점 (전투 종료 시 해제) */
   holdPos: Pt | null = null;
 
+  /** 붕괴 상태의 명령 거부 판정 (sim/stress.ts obeys) */
+  obeyUntil = 0;
+  refuseUntil = 0;
+
   aware = false;
   aggro = new Map<number, number>();
   lastTarget: Unit | null = null;

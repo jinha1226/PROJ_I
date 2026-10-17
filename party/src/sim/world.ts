@@ -11,6 +11,8 @@ import { newRun, type RunState } from './run';
 import { GameMap } from './map';
 import { resolveCollisions } from './movement';
 import { computeStats } from './stats';
+import { addStress, obeys, partyStress, tickStress } from './stress';
+import { stopMoving } from './movement';
 import { Unit, type Intent } from './unit';
 
 export interface Projectile {
@@ -96,6 +98,10 @@ export class World {
   /** 자동 탐험이 곁가지 방의 상자·이벤트까지 들르는지 (시뮬레이션의 '개입하는 플레이어' 흉내용) */
   exploreSides = false;
   private exploreMove = false;
+  /** 조이스틱으로 직접 움직인 직후에는 자동 탐험이 끼어들지 않는다 */
+  private manualUntil = 0;
+  private steerAt = -1;
+  private steerGroup = 0;
   private groupSeq = 0;
   private groupFields = new Map<number, Float32Array>();
   readonly visible: Uint8Array;
@@ -171,21 +177,24 @@ export class World {
   }
 
   // ── 플레이어 명령 ──
-  private issue(u: Unit, intent: Intent) {
-    if (!u.alive) return;
+  /** 명령 하달. player = 플레이어의 명령 (붕괴한 파티원은 거부할 수 있다) */
+  private issue(u: Unit, intent: Intent, player = true): boolean {
+    if (!u.alive) return false;
+    if (player && !obeys(this, u)) return false;
     if (u.cast) this.cancelCast(u, '', false);
     u.command = { intent, bestDist: Infinity, lastProgress: this.time, issuedAt: this.time };
     u.intent = null;
+    return true;
   }
 
-  commandMove(units: Unit[], x: number, y: number) {
+  commandMove(units: Unit[], x: number, y: number, player = true) {
     this.exploreMove = false;
     const live = units.filter((u) => u.alive);
     if (!live.length) return;
     const hold = live.length === 1 || this.inCombat;
     if (live.length === 1) {
       const p = this.map.nearestFloor(x, y);
-      this.issue(live[0], { type: 'move', x: p.x, y: p.y });
+      if (!this.issue(live[0], { type: 'move', x: p.x, y: p.y }, player)) return;
       live[0].holdPos = p;
       this.leader = live[0];
       return;
@@ -211,7 +220,7 @@ export class World {
       if (this.groupFields.size > 6) this.groupFields.delete(this.groupFields.keys().next().value!);
     }
     const assign = (u: Unit, p: { x: number; y: number }) => {
-      this.issue(u, { type: 'move', x: p.x, y: p.y });
+      if (!this.issue(u, { type: 'move', x: p.x, y: p.y }, player)) return;
       u.command!.group = group;
       u.holdPos = hold ? p : null;
     };
@@ -232,14 +241,38 @@ export class World {
   }
 
   commandAttack(units: Unit[], target: Unit) {
-    for (const u of units) {
-      this.issue(u, { type: 'attack', target });
-      u.holdPos = null;
-    }
+    for (const u of units) if (this.issue(u, { type: 'attack', target })) u.holdPos = null;
   }
 
   commandAbility(u: Unit, slot: number, target: Unit | null, x: number, y: number) {
     this.issue(u, { type: 'ability', slot, target, x, y });
+  }
+
+  /**
+   * 조이스틱 (우르르 용병단식): 파티 전체를 한 방향으로 진형 이동시킨다. 손을 떼면 stopSteer.
+   * 매 프레임 불러도 되고, 명령은 0.2초마다 갱신된다
+   */
+  steer(dx: number, dy: number) {
+    const live = this.party.filter((p) => p.alive);
+    if (!live.length) return;
+    this.manualUntil = this.time + 4;
+    if (this.time - this.steerAt < 0.2 && this.steerAt >= 0) return;
+    this.steerAt = this.time;
+    const cx = live.reduce((s, u) => s + u.x, 0) / live.length, cy = live.reduce((s, u) => s + u.y, 0) / live.length;
+    this.commandMove(live, cx + dx * 3, cy + dy * 3);
+    this.steerGroup = this.groupSeq;
+  }
+
+  /** 조이스틱을 놓으면 그 자리에 선다 (전투 중이면 위치 고수) */
+  stopSteer() {
+    this.steerAt = -1;
+    this.manualUntil = this.time + 4;
+    for (const p of this.party) {
+      if (!p.alive || p.command?.group !== this.steerGroup) continue;
+      p.command = null;
+      stopMoving(p);
+      p.holdPos = this.inCombat ? { x: p.x, y: p.y } : null;
+    }
   }
 
   setFocus(t: Unit | null) {
@@ -266,6 +299,7 @@ export class World {
       if (!p.alive) continue;
       if (p.hpFrac < 0.35 && !this.lowHp.has(p)) {
         this.lowHp.add(p);
+        addStress(this, p, 5);
         this.crisis(`low:${p.id}`, `${p.name} 체력 위험!`, p.x, p.y, '#ff5555');
       } else if (p.hpFrac > 0.6) this.lowHp.delete(p);
     }
@@ -314,6 +348,8 @@ export class World {
     this.log(`${u.name} 쓰러짐${by ? ` (${by.name})` : ''}`, u.faction === 'party' ? '#ff6666' : '#aaaaaa');
     if (this.focusTarget === u) this.focusTarget = null;
     if (this.leader === u) this.leader = this.party.find((p) => p.alive) ?? null;
+    if (u.faction === 'party') partyStress(this, 15, u);
+    else if (by?.hero) addStress(this, by, -1);
     if (u.faction === 'enemy') {
       this.grantXp(u.def.xp ?? 0);
       this.run.kills[u.def.id] = (this.run.kills[u.def.id] ?? 0) + 1;
@@ -352,7 +388,14 @@ export class World {
     for (const p of this.party) {
       if (!p.alive) continue;
       this.rooms.forEach(([x, y, w, h], i) => {
-        if (p.x >= x && p.x < x + w && p.y >= y && p.y < y + h) this.visitedRooms[i] = true;
+        if (p.x >= x && p.x < x + w && p.y >= y && p.y < y + h && !this.visitedRooms[i]) {
+          this.visitedRooms[i] = true;
+          // 곁가지 방 탐험의 대가
+          if (this.roles[i] === 'side') {
+            partyStress(this, 5);
+            this.log('음산한 곁방에 들어섰다 (스트레스)', '#b98cff');
+          }
+        }
       });
     }
     // 계단: 전투 중이 아닐 때 파티원 하나라도 밟으면 다음 층
@@ -371,7 +414,7 @@ export class World {
 
   /** 자동 탐험 한 걸음: 아무도 명령이 없고 전투가 아니면 다음 미방문 방 → 계단 */
   private exploreStep() {
-    if (!this.autoExplore || this.inCombat || this.outcome) return;
+    if (!this.autoExplore || this.inCombat || this.outcome || this.time < this.manualUntil) return;
     const live = this.party.filter((p) => p.alive);
     if (!live.length || live.some((p) => p.command || p.cast)) return;
     // 곁가지 방은 들르지 않는다 (털지 말지는 플레이어가 정한다)
@@ -384,7 +427,7 @@ export class World {
     } else if (obj) target = obj;
     else if (this.stairs) target = this.stairs;
     if (!target) return;
-    this.commandMove(live, target.x, target.y);
+    this.commandMove(live, target.x, target.y, false);
     for (const p of live) p.holdPos = null;
     this.exploreMove = true;
   }
@@ -403,6 +446,7 @@ export class World {
       this.checkLowHp();
       this.updateRooms();
       checkObjects(this);
+      tickStress(this, 0.2);
       this.exploreStep();
     }
 
@@ -482,6 +526,7 @@ export class World {
         this.inCombat = false;
         for (const p of this.party) p.holdPos = null;
         this.log('전투 종료', '#88cc88');
+        partyStress(this, -3);
       }
     }
   }

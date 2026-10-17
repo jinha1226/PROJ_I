@@ -3,7 +3,9 @@ import type { Unit } from '../sim/unit';
 export type Drag =
   | { kind: 'unit'; unit: Unit; sx: number; sy: number; cx: number; cy: number; moved: boolean }
   | { kind: 'box'; sx: number; sy: number; cx: number; cy: number; moved: boolean }
-  | { kind: 'pan'; sx: number; sy: number; camX: number; camY: number; tap?: boolean };
+  | { kind: 'pan'; sx: number; sy: number; camX: number; camY: number; tap?: boolean }
+  /** 조이스틱: 빈 곳을 한 손가락으로 끌면 파티 전체 이동 (움직이기 전이면 탭) */
+  | { kind: 'joy'; sx: number; sy: number; cx: number; cy: number; active: boolean };
 
 export interface ClickMark {
   x: number;

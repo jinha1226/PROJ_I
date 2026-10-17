@@ -30,6 +30,17 @@ export function think(w: World, u: Unit): Intent | null {
   if (enemies.length === 0) return idle(w, u);
   if (u.hasStatus('fear')) return flee(w, u, enemies);
 
+  // 붕괴 (sim/stress.ts): 자동전투 행동이 망가진다
+  const mood = u.hero?.mood;
+  if (mood === 'afraid' && enemies.some((e) => dist(u, e) < 3.2)) return flee(w, u, enemies);
+  if (mood === 'hesitant' && w.rng.chance(0.25)) return null;
+  if (mood === 'reckless') {
+    u.holdPos = null;
+    let near = enemies[0];
+    for (const e of enemies) if (dist(u, e) < dist(u, near)) near = e;
+    return { type: 'attack', target: near };
+  }
+
   const manual = u.faction === 'party' && !u.autoMode;
   const cands: Cand[] = [];
 
@@ -144,7 +155,8 @@ function evalAbility(w: World, u: Unit, ab: AbilityDef, slot: number, enemies: U
   let risk = 1;
   if (ab.type === 'spell' && ab.castTime >= 0.8 && threatened(w, u)) risk = 0.3;
   const manaOk = ab.cost === 0 || u.mp - ab.cost >= u.stats.maxMp * 0.15 ? 1 : 0.6;
-  const allies = w.alliesOf(u);
+  // 이기적: 치유 · 강화를 자기에게만
+  const allies = u.hero?.mood === 'selfish' ? [u] : w.alliesOf(u);
   const mk = (target: Unit | null, x: number, y: number, score: number): Cand => ({
     intent: { type: 'ability', slot, target, x, y },
     score,
@@ -186,7 +198,7 @@ function evalAbility(w: World, u: Unit, ab: AbilityDef, slot: number, enemies: U
         // 범위 치유: 범위 안 아군의 회복량 합
         let val = 0;
         for (const a of unitsInArea(w, ab, u, u.x, u.y))
-          if (a.hpFrac < 0.85) val += Math.min(amount, a.stats.maxHp - a.hp) * (1 + (1 - a.hpFrac) * 3);
+          if (allies.includes(a) && a.hpFrac < 0.85) val += Math.min(amount, a.stats.maxHp - a.hp) * (1 + (1 - a.hpFrac) * 3);
         if (val > 0) out.push(mk(null, u.x, u.y, (val / time) * 0.6 * (u.tactic === 'support' ? 1.5 : 1) * manaOk));
         break;
       }
@@ -235,7 +247,7 @@ function evalAbility(w: World, u: Unit, ab: AbilityDef, slot: number, enemies: U
       const fighting = enemies.some((e) => allies.some((a) => dist(a, e) < 6));
       if (!fighting) break;
       if (ab.target === 'self') {
-        const n = unitsInArea(w, ab, u, u.x, u.y).filter((a) => !a.hasStatus(eff.status)).length;
+        const n = unitsInArea(w, ab, u, u.x, u.y).filter((a) => allies.includes(a) && !a.hasStatus(eff.status)).length;
         if (n > 0) out.push(mk(null, u.x, u.y, n * 6 * manaOk));
       } else {
         for (const a of allies) {

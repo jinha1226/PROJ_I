@@ -1,4 +1,5 @@
 // 마우스/터치 입력 (Pointer Events). 드래그 명령, 범위 선택, 스킬 대상 지정, 단축키.
+// 파티 전체 이동은 우르르 용병단식 조이스틱: 터치는 빈 곳을 끌기, PC 는 방향키.
 import { CONSUMABLES } from '../data/consumables';
 import type { Camera } from '../render/camera';
 import { useConsumable } from '../sim/objects';
@@ -7,6 +8,8 @@ import type { World } from '../sim/world';
 import type { UiState } from '../ui/state';
 
 const DRAG_PX = 8;
+/** 조이스틱 손잡이가 움직이는 반지름(px) */
+const JOY_R = 42;
 const SKILL_KEYS = ['q', 'w', 'e', 'r'];
 
 export interface InputHooks {
@@ -22,6 +25,10 @@ export class Input {
   /** 화면에 닿아 있는 손가락들 (두 손가락 확대/이동용) */
   private touches = new Map<number, { x: number; y: number }>();
   private pinch: { dist: number; mx: number; my: number } | null = null;
+  /** 누르고 있는 방향키 */
+  private arrows = new Set<string>();
+  private steering = false;
+  private joyEl: HTMLElement;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -35,6 +42,13 @@ export class Input {
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     canvas.addEventListener('wheel', (e) => this.wheel(e), { passive: false });
     window.addEventListener('keydown', (e) => this.key(e));
+    window.addEventListener('keyup', (e) => this.arrows.delete(e.key.toLowerCase()));
+    window.addEventListener('blur', () => this.arrows.clear());
+    this.joyEl = document.createElement('div');
+    this.joyEl.id = 'joy';
+    this.joyEl.className = 'hidden';
+    this.joyEl.innerHTML = '<div class="knob"></div>';
+    document.body.appendChild(this.joyEl);
   }
 
   private get w() {
@@ -63,6 +77,7 @@ export class Input {
       this.touches.set(e.pointerId, { x: sx, y: sy });
       if (this.touches.size === 2) {
         // 두 번째 손가락: 진행 중이던 드래그를 버리고 확대/이동으로 전환
+        if (ui.drag?.kind === 'joy' && ui.drag.active) this.w.stopSteer();
         ui.drag = null;
         this.pinch = this.pinchState();
         this.cam.follow = false;
@@ -102,8 +117,8 @@ export class Input {
       }
       ui.drag = { kind: 'unit', unit: u, sx, sy, cx: sx, cy: sy, moved: false };
     } else if (touch) {
-      // 터치: 빈 곳을 끌면 화면 이동, 떼지 않고 그대로면 탭
-      ui.drag = { kind: 'pan', sx, sy, camX: this.cam.x, camY: this.cam.y, tap: true };
+      // 터치: 빈 곳을 끌면 조이스틱(파티 전체 이동), 떼지 않고 그대로면 탭. 화면 이동은 두 손가락
+      ui.drag = { kind: 'joy', sx, sy, cx: sx, cy: sy, active: false };
     } else {
       ui.drag = { kind: 'box', sx, sy, cx: sx, cy: sy, moved: false };
     }
@@ -144,6 +159,13 @@ export class Input {
     }
     d.cx = e.clientX;
     d.cy = e.clientY;
+    if (d.kind === 'joy') {
+      if (!d.active && Math.hypot(d.cx - d.sx, d.cy - d.sy) > DRAG_PX * 1.5) {
+        d.active = true;
+        this.cam.follow = true;
+      }
+      return;
+    }
     if (Math.hypot(d.cx - d.sx, d.cy - d.sy) > DRAG_PX) d.moved = true;
   }
 
@@ -161,6 +183,11 @@ export class Input {
     const sx = e.clientX, sy = e.clientY;
     if (d.kind === 'pan') {
       if (d.tap) this.tap(sx, sy);
+      return;
+    }
+    if (d.kind === 'joy') {
+      if (d.active) this.w.stopSteer();
+      else this.tap(sx, sy);
       return;
     }
     if (d.kind === 'unit') {
@@ -341,13 +368,10 @@ export class Input {
     } else if (k === 'r' && (w.outcome === 'victory' || w.outcome === 'defeat' || e.shiftKey)) {
       this.hooks.restart();
     } else if (k.startsWith('arrow')) {
+      // 방향키 = 조이스틱 (파티 전체 이동)
       e.preventDefault();
-      this.cam.follow = false;
-      const s = 3;
-      if (k === 'arrowleft') this.cam.x -= s;
-      if (k === 'arrowright') this.cam.x += s;
-      if (k === 'arrowup') this.cam.y -= s;
-      if (k === 'arrowdown') this.cam.y += s;
+      this.arrows.add(k);
+      this.cam.follow = true;
     }
   }
 
@@ -366,8 +390,9 @@ export class Input {
     if (ui.inspect && !ui.inspect.alive) ui.inspect = null;
     if (ui.targeting && !ui.targeting.unit.alive) ui.targeting = null;
     ui.mouseWorld = this.cam.toWorld(ui.mouseScreen.x, ui.mouseScreen.y);
-    // 드래그 중에는 화면이 움직이지 않게 한다
-    if (this.cam.follow && !ui.drag) {
+    this.updateSteer();
+    // 드래그 중에는 화면이 움직이지 않게 한다 (조이스틱은 예외)
+    if (this.cam.follow && (!ui.drag || ui.drag.kind === 'joy')) {
       const pts = this.w.party.filter((u) => u.alive);
       if (pts.length) {
         const cx = pts.reduce((s, u) => s + u.x, 0) / pts.length;
@@ -376,6 +401,38 @@ export class Input {
         this.cam.x += (cx - this.cam.x) * k;
         this.cam.y += (cy - this.cam.y) * k;
       }
+    }
+  }
+
+  /** 조이스틱 · 방향키 → 파티 전체 이동 */
+  private updateSteer() {
+    const d = this.ui.drag;
+    let dx = 0, dy = 0;
+    const joy = d?.kind === 'joy' && d.active ? d : null;
+    if (joy) {
+      dx = joy.cx - joy.sx;
+      dy = joy.cy - joy.sy;
+      const len = Math.hypot(dx, dy);
+      const k = len > JOY_R ? JOY_R / len : 1;
+      this.joyEl.style.left = `${joy.sx}px`;
+      this.joyEl.style.top = `${joy.sy}px`;
+      (this.joyEl.firstElementChild as HTMLElement).style.transform = `translate(${dx * k}px, ${dy * k}px)`;
+      if (len < 10) dx = dy = 0;
+    } else {
+      if (this.arrows.has('arrowleft')) dx -= 1;
+      if (this.arrows.has('arrowright')) dx += 1;
+      if (this.arrows.has('arrowup')) dy -= 1;
+      if (this.arrows.has('arrowdown')) dy += 1;
+    }
+    this.joyEl.classList.toggle('hidden', !joy);
+    const len = Math.hypot(dx, dy);
+    if (len > 0) {
+      this.w.steer(dx / len, dy / len);
+      this.steering = true;
+    } else if (this.steering && !joy) {
+      // 방향키를 모두 뗐다 (터치 조이스틱은 손을 뗄 때 멈춘다)
+      this.w.stopSteer();
+      this.steering = false;
     }
   }
 }

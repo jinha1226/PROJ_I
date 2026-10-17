@@ -285,3 +285,18 @@ button.on { border-color: var(--accent); color: var(--accent); }
   #setup .slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #setup .unlocks { grid-template-columns: 1fr; }
 }
+
+/* 스트레스 */
+.bar.st { height: 3px; background: #1d1626; margin-top: 2px; }
+.bar.st > div { background: #8a5cc0; transition: width 0.3s; }
+.pcol.afflicted .card { border-color: #b04ad8; box-shadow: 0 0 8px #b04ad877; }
+.pcol.virtue .card { border-color: #e8cf7a; box-shadow: 0 0 8px #e8cf7a77; }
+.pcol.selected.afflicted .card, .pcol.selected.virtue .card { border-color: #66ff88; }
+.card .chip.mood { font-weight: bold; }
+#rest .stress { color: #b98cff; font-size: 12px; }
+
+/* 조이스틱 */
+#joy { position: fixed; width: 110px; height: 110px; margin: -55px 0 0 -55px; border-radius: 50%;
+  border: 2px solid #ffffff44; background: #ffffff11; pointer-events: none; z-index: 5; }
+#joy .knob { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px;
+  border-radius: 50%; background: #ffffff44; border: 2px solid #ffffff88; }

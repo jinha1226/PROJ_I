@@ -1,4 +1,5 @@
 // 3/4 탑다운 렌더러: 정사각 타일 + 세워서 그린 유닛, Y축 정렬.
+import { MOODS } from '../data/moods';
 import { dist } from '../core/rng';
 import { unitsInArea } from '../sim/abilities';
 import type { AbilityDef } from '../sim/defs';
@@ -442,11 +443,22 @@ export class Renderer {
       ctx.fillRect(barX, y + 5, (barW * u.mp) / u.stats.maxMp, 3);
     }
 
-    // 상태이상 아이콘
-    if (u.statuses.length) {
+    // 상태이상 아이콘 (붕괴 · 각성은 맨 앞에 테두리로)
+    const mood = u.hero?.mood ? MOODS[u.hero.mood] : null;
+    if (u.statuses.length || mood) {
       y -= 15;
       ctx.font = 'bold 10px sans-serif';
-      let x = sx - (u.statuses.length * 14) / 2;
+      let x = sx - ((u.statuses.length + (mood ? 1 : 0)) * 14) / 2;
+      if (mood) {
+        ctx.fillStyle = '#000c';
+        ctx.fillRect(x, y, 13, 13);
+        ctx.strokeStyle = mood.color;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x + 0.5, y + 0.5, 12, 12);
+        ctx.fillStyle = mood.color;
+        ctx.fillText(mood.icon, x + 6.5, y + 7);
+        x += 14;
+      }
       for (const s of u.statuses) {
         ctx.fillStyle = '#000c';
         ctx.fillRect(x, y, 13, 13);

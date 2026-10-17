@@ -78,7 +78,7 @@ export class RestScreen {
     return `<div class="hrow">
       <div><button class="sheetbtn" data-sheet="${this.heroes.indexOf(h)}">상태창</button>
         <b style="color:${h.def.color}">${h.def.name}</b> Lv${h.startXl}${h.xl > h.startXl ? `→<b>${h.xl}</b>` : ''}
-        <span class="dim">${ups || '성장 없음'}</span></div>
+        <span class="dim">${ups || '성장 없음'}</span>${h.restNote ? ` <span class="stress">${h.restNote}</span>` : ''}</div>
       <div class="dim small">집중 ★ ${SKILL_NAME[focusSkill(h)]} · ${gear}${next ? ` · 다음 기술: ${ABILITIES[next.ability].name} (${SKILL_NAME[next.skill]} ${next.level})` : ''}</div>
     </div>`;
   }
