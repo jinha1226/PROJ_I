@@ -101,8 +101,11 @@ export function abilityMult(u: Unit, st: AbilityState): number {
   return (1 + pct / 100) * (1 + (st.rank ?? 0) * 0.25);
 }
 
-export function abilityCooldown(st: AbilityState): number {
-  return st.def.cooldown * Math.pow(0.85, st.rank ?? 0);
+/** 파티 기술 재사용 대기 배율: 전투가 길어진 만큼 한 전투에 기술을 2~3번 쓰도록 */
+export const PARTY_COOLDOWN = 0.65;
+
+export function abilityCooldown(st: AbilityState, party = true): number {
+  return st.def.cooldown * Math.pow(0.85, st.rank ?? 0) * (party ? PARTY_COOLDOWN : 1);
 }
 
 export function castTimeOf(u: Unit, ab: AbilityDef): number {

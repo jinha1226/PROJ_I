@@ -83,7 +83,7 @@ src/
 - 난이도 목표: **손을 놓으면 대체로 지고, 개입하면 대체로 이긴다.** 4~5층에 오우거(내려찍기). 난이도 3단계(`data/difficulty.ts`, 시작 화면에서 선택).
   `npm run sim -- 시드 판수` (자동만) 와 `npm run sim -- 시드 판수 skilled` (수동 기술 · 예고 공격 피하기 · 붙은 적 시전 끊기 ·
   소모품 · 곁가지 방 털기를 흉내) 를 비교한다. `DIFF=easy|normal|hard`, `ASSIST=learn,dodge,interrupt,items,explore`.
-  보통 난이도 16판 기준: 자동만 0%, 개입 흉내 88%. `COMP=dwarf:warrior,orc:berserker,...` 로 파티 구성을 바꿔 돌릴 수 있다.
+  보통 난이도 기준: 자동전투만 약 33%, 개입 흉내 약 81%. 전투 템포: 적 체력 ×2 · 피해 ×0.85 (`world.ts` ENEMY_HP · ENEMY_DMG), 파티 재사용 대기 ×0.65 (`stats.ts` PARTY_COOLDOWN). `COMP=dwarf:warrior,orc:berserker,...` 로 파티 구성을 바꿔 돌릴 수 있다.
 
 ## 화면
 

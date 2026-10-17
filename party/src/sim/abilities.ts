@@ -64,13 +64,13 @@ function resolveAbility(w: World, u: Unit, slot: number, target: Unit | null, x:
   const fail = failChance(u, ab);
   if (fail > 0 && w.rng.chance(fail)) {
     u.mp -= ab.cost;
-    st.cd = abilityCooldown(st) * 0.5;
+    st.cd = abilityCooldown(st, u.faction === 'party') * 0.5;
     w.float(u, `${ab.name} 실패!`, '#ff8888');
     w.log(`${u.name}의 ${ab.name} 시전 실패 (실패율 ${Math.round(fail * 100)}%)`, '#ff8888');
     return;
   }
   u.mp -= ab.cost;
-  st.cd = abilityCooldown(st);
+  st.cd = abilityCooldown(st, u.faction === 'party');
   const power = abilityPower(u, ab);
   const mult = abilityMult(u, st);
   if (ab.castTime > 0 || ab.radius || u.def.boss) w.log(`${u.name}: ${ab.name}`, ab.color);

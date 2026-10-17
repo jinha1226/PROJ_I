@@ -83,6 +83,11 @@ export interface MoodBreak {
 
 export const SIGHT = 8;
 
+/** 전투 템포: 적은 더 튼튼하고 덜 아프게 → 전투 하나가 15~30초, 그동안 판단할 여유 */
+const ENEMY_HP = 2;
+const ENEMY_DMG = 0.85;
+const BOSS_HP = 1.5;
+
 export class World {
   readonly map: GameMap;
   readonly rng: Rng;
@@ -170,8 +175,8 @@ export class World {
     // 깊은 층의 몬스터는 더 튼튼하고 아프다. 보스는 깊이 대신 난이도별 고정 배율
     const d = this.difficulty;
     u.scale = def.boss
-      ? { hp: d.boss, dmg: 1 + (d.boss - 1) * 0.5 }
-      : { hp: d.baseHp * (1 + (this.depth - 1) * d.perDepthHp), dmg: d.baseDmg * (1 + (this.depth - 1) * d.perDepthDmg) };
+      ? { hp: d.boss * BOSS_HP, dmg: (1 + (d.boss - 1) * 0.5) * ENEMY_DMG }
+      : { hp: d.baseHp * ENEMY_HP * (1 + (this.depth - 1) * d.perDepthHp), dmg: d.baseDmg * ENEMY_DMG * (1 + (this.depth - 1) * d.perDepthDmg) };
     return this.addUnit(u);
   }
 
