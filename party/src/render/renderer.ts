@@ -38,6 +38,10 @@ export class Renderer {
     const ctx = this.ctx, cam = this.cam, z = cam.zoom;
     ctx.fillStyle = '#07070b';
     ctx.fillRect(0, 0, cam.w, cam.h);
+    // 화면 흔들림
+    const sh = w.shake;
+    ctx.save();
+    if (sh > 0.3) ctx.translate((Math.random() * 2 - 1) * sh, (Math.random() * 2 - 1) * sh);
 
     this.drawTiles(w);
     this.drawStairs(w);
@@ -163,6 +167,8 @@ export class Renderer {
       ctx.fillText(f.text, sx, sy);
       ctx.globalAlpha = 1;
     }
+
+    ctx.restore();
 
     // ── 말풍선 ──
     for (const b of w.bubbles) this.drawBubble(b.unit, b.text, b.color, b.t, b.dur);
@@ -446,7 +452,7 @@ export class Renderer {
 
   private drawUnit(w: World, u: Unit) {
     const ctx = this.ctx, z = this.cam.zoom;
-    const [sx, sy] = this.cam.toScreen(u.x, u.y);
+    const [sx, sy] = this.cam.toScreen(u.x + u.kickX, u.y + u.kickY);
     const r = u.radius * z;
     const bw = r * 1.8, bh = r * 2.3;
 

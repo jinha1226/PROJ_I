@@ -19,6 +19,7 @@ import type { UnlockDef } from './data/unlocks';
 import { loadMeta, recordProgress, saveMeta } from './sim/meta';
 import { CharacterSheet } from './ui/sheet';
 import { createUiState } from './ui/state';
+import { Audio, type Sfx } from './ui/audio';
 
 const STEP = 1 / 60;
 const $ = (id: string) => document.getElementById(id)!;
@@ -44,7 +45,8 @@ let restOpen = false;
 
 let explore = true;
 try {
-  explore = localStorage.getItem('bh.explore') !== 'off';
+  // 기본은 직접 조종 (조이스틱 · 방향키). 자동 탐험은 켜야 켜진다
+  explore = localStorage.getItem('bh.explore2') === 'on';
 } catch {
   // 저장소를 못 쓰면 기본값
 }
@@ -61,6 +63,30 @@ function announceUnlocks(list: UnlockDef[]) {
     toast(`🔓 새로 해금: ${name}`);
   }
 }
+
+// ── 효과음 ──
+const audio = new Audio();
+try {
+  audio.enabled = localStorage.getItem('bh.sound') !== 'off';
+} catch {
+  // 저장소를 못 쓰면 기본값
+}
+window.addEventListener('pointerdown', () => audio.unlock());
+window.addEventListener('keydown', () => audio.unlock());
+function updateSoundButton() {
+  $('btn-sound').textContent = `소리: ${audio.enabled ? '켜짐' : '꺼짐'}`;
+  $('btn-sound').classList.toggle('on', audio.enabled);
+}
+$('btn-sound').addEventListener('click', () => {
+  audio.enabled = !audio.enabled;
+  try {
+    localStorage.setItem('bh.sound', audio.enabled ? 'on' : 'off');
+  } catch {
+    // 무시
+  }
+  updateSoundButton();
+});
+updateSoundButton();
 
 let toastTimer = 0;
 function toast(text: string) {
@@ -131,7 +157,7 @@ function toggleExplore() {
   explore = !explore;
   world.autoExplore = explore;
   try {
-    localStorage.setItem('bh.explore', explore ? 'on' : 'off');
+    localStorage.setItem('bh.explore2', explore ? 'on' : 'off');
   } catch {
     // 무시
   }
@@ -151,8 +177,6 @@ function togglePause() {
 function toggleAutoAll() {
   const on = !world.party.every((u) => u.autoMode);
   for (const u of world.party) u.autoMode = on;
-  $('btn-auto').textContent = `자동전투: ${on ? '켜짐' : '꺼짐'}`;
-  $('btn-auto').classList.toggle('on', on);
 }
 
 function toggleHelp() {
@@ -210,7 +234,6 @@ function updatePrompt() {
 $('btn-pause').addEventListener('click', togglePause);
 $('btn-all').addEventListener('click', () => (ui.selected = world.party.filter((u) => u.alive)));
 $('btn-auto').addEventListener('click', toggleAutoAll);
-$('btn-auto').classList.add('on');
 $('btn-explore').addEventListener('click', toggleExplore);
 const diffSel = $('difficulty') as HTMLSelectElement;
 diffSel.value = difficulty;
@@ -318,6 +341,7 @@ renderer.resize();
 hud.build();
 centerParty();
 
+let stopCooldown = 0;
 let last = performance.now();
 let acc = 0;
 function frame(now: number) {
@@ -325,7 +349,20 @@ function frame(now: number) {
   last = now;
   handleCrises(dt);
   handleMoodBreaks(dt);
-  if (!ui.paused && !world.outcome && !restOpen && moodFreeze <= 0) {
+  for (const s of world.sfx.splice(0)) audio.play(s as Sfx);
+  world.shake = Math.max(0, world.shake - dt * 40);
+  // 히트스톱: 큰 타격 순간 아주 잠깐 멈춘다
+  // (연달아 걸리면 끊겨 보이므로 한 번 멈춘 뒤 잠깐은 무시)
+  if (stopCooldown > 0) {
+    stopCooldown -= dt;
+    world.hitstop = 0;
+  }
+  const stopped = world.hitstop > 0;
+  if (stopped) {
+    world.hitstop = Math.max(0, world.hitstop - dt);
+    if (world.hitstop === 0) stopCooldown = 0.15;
+  }
+  if (!ui.paused && !world.outcome && !restOpen && moodFreeze <= 0 && !stopped) {
     acc += dt * ui.speed * (slowTimer > 0 ? 0.3 : 1);
     while (acc >= STEP) {
       world.tick(STEP);
@@ -342,6 +379,9 @@ function frame(now: number) {
   $('btn-follow').textContent = `카메라 추적: ${cam.follow ? '켜짐' : '꺼짐'}`;
   $('btn-explore').textContent = `자동 탐험: ${explore ? '켜짐' : '꺼짐'}`;
   $('btn-explore').classList.toggle('on', explore);
+  const autoOn = world.party.every((u) => u.autoMode);
+  $('btn-auto').textContent = `자동전투: ${autoOn ? '켜짐' : '꺼짐'}`;
+  $('btn-auto').classList.toggle('on', autoOn);
   if (world.outcome === 'cleared' && !restOpen && $('rest').classList.contains('hidden')) floorCleared();
   const out = $('outcome');
   if (world.outcome === 'victory' || world.outcome === 'defeat') {

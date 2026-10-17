@@ -66,6 +66,7 @@ function resolve(w: World, u: Unit) {
   w.log(`${u.name}의 정신이 한계에 달했다… ${virtue ? '각성' : '붕괴'} — ${m.name}: ${m.desc}`, m.color);
   const line = m.barks[w.rng.int(0, m.barks.length - 1)];
   w.say(u, line, m.color, 3);
+  w.sound('break');
   w.moodBreaks.push({
     unit: u, color: m.color, line, desc: m.desc,
     title: virtue ? `${u.name}, 각성 — ${m.name}!` : `${u.name}이(가) 무너졌다 — ${m.name}!`,

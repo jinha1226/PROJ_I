@@ -74,6 +74,7 @@ function resolveAbility(w: World, u: Unit, slot: number, target: Unit | null, x:
   const power = abilityPower(u, ab);
   const mult = abilityMult(u, st);
   if (ab.castTime > 0 || ab.radius || u.def.boss) w.log(`${u.name}: ${ab.name}`, ab.color);
+  w.sound(ab.type === 'spell' ? 'magic' : 'swing');
   if (ab.selfEffects) applyEffects(w, u, ab.selfEffects, u, power, mult);
 
   if (ab.dash && target) {
@@ -108,6 +109,7 @@ function landAbility(w: World, u: Unit, ab: AbilityDef, target: Unit | null, x: 
   if (ab.radius) {
     const c = areaCenter(ab, u, x, y);
     w.effect({ kind: 'ring', x: c.x, y: c.y, r: ab.radius, color: ab.color, dur: 0.45 });
+    if (ab.radius >= 1.8) w.shake = Math.max(w.shake, 5);
     victims = unitsInArea(w, ab, u, x, y);
   } else {
     victims = target && target.alive ? [target] : [];

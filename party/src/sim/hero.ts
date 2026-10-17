@@ -59,7 +59,7 @@ export function newHero(def: UnitDef): Hero {
   return {
     def, cls: (def.cls ?? 'warrior') as ClassId, xl: 1, xp: 0, skills, gear, perks: [], talents: [], pending: 0,
     abilities: abilityStates(def.abilities, def.autoAbilities),
-    tactic: def.tactic, row: defaultRow(def), autoMode: true,
+    tactic: def.tactic, row: defaultRow(def), autoMode: false,
     startXl: 1, stress: 0, mood: null, restNote: '',
   };
 }

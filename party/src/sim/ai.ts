@@ -58,16 +58,18 @@ export function think(w: World, u: Unit): Intent | null {
     cands.push({ intent: { type: 'attack', target: e }, score: attackValue(w, u, e, d, reach) });
   }
 
-  if (!manual) {
+  {
     u.abilities.forEach((st, slot) => {
       if (!st.auto || !abilityReady(u, st)) return;
+      // 수동 모드(기본): 기술은 플레이어가 쓴다. 사제의 단일 치유와 자동 전용(정화)만 기본 행동으로 남긴다
+      if (manual && !st.hidden && !(st.def.aiRole === 'heal' && st.def.target === 'ally' && !st.manualOnly)) return;
       const prio = st.prio * 1.5;
       for (const c of evalAbility(w, u, st.def, slot, enemies)) {
         c.score += prio;
         cands.push(c);
       }
     });
-    const k = kite(w, u, enemies);
+    const k = manual ? null : kite(w, u, enemies);
     if (k) cands.push(k);
   }
 

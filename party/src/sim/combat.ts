@@ -47,6 +47,19 @@ export function applyDamage(
   dmg = Math.max(0, Math.round(dmg));
 
   target.hp -= dmg;
+  // 타격감: 큰 피해일수록 멈칫 · 흔들림 · 밀림
+  if (dmg > 0 && !opts.dot) {
+    const frac = dmg / target.stats.maxHp;
+    if (frac >= 0.1) w.hitstop = Math.max(w.hitstop, Math.min(0.09, 0.03 + frac * 0.15));
+    if (frac >= 0.15 && (target.faction === 'party' || w.isVisible(target))) w.shake = Math.max(w.shake, Math.min(8, frac * 18));
+    if (source) {
+      const d = dist(source, target) || 1;
+      const k = Math.min(0.28, 0.08 + frac * 0.6);
+      target.kickX += ((target.x - source.x) / d) * k;
+      target.kickY += ((target.y - source.y) / d) * k;
+    }
+    w.sound(target.faction === 'party' ? 'hurt' : frac >= 0.15 ? 'heavy' : 'hit');
+  }
   // 불굴: 층마다 한 번 쓰러지지 않고 버틴다
   if (target.hp <= 0 && target.tags.includes('undying') && !target.undyingUsed) {
     target.undyingUsed = true;
@@ -92,6 +105,7 @@ export function heal(w: World, target: Unit, amount: number) {
   if (!target.alive) return;
   const before = target.hp;
   target.hp = Math.min(target.stats.maxHp, target.hp + amount);
+  w.sound('heal');
   w.float(target, `+${Math.round(target.hp - before)}`, '#88ff88');
 }
 

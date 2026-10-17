@@ -138,6 +138,8 @@ function run(seed: number, verbose: boolean, skilled: boolean) {
   for (let depth = 1; depth <= FLOORS; depth++) {
     const w = new World(genFloor(seed, depth), seed * 31 + depth, heroes, DIFF, runState);
     w.autoExplore = true;
+    // 시뮬레이션은 예전처럼 AI 가 기본 기술을 쓴다 (skilled 는 수동 기술까지)
+    for (const p of w.party) p.autoMode = true;
     w.exploreSides = skilled && PARTS.includes('explore');
     if (skilled && PARTS.includes('learn')) for (const h of heroes) for (const a of h.abilities) if (a.manualOnly) a.auto = true;
     const dodging = new Map<Unit, number>();

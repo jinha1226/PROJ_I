@@ -108,6 +108,9 @@ export class Unit {
   tactic: TacticId;
   row: Row;
   autoMode = true;
+  /** 피격 밀림 (화면 표시만, 타일 단위) */
+  kickX = 0;
+  kickY = 0;
   command: Command | null = null;
   intent: Intent | null = null;
   aiTimer = 0;

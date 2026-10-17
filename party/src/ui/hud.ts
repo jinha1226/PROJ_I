@@ -220,9 +220,11 @@ export class Hud {
         b.querySelector<HTMLElement>('.cdmask')!.style.height = st.cd > 0 ? `${Math.min(1, st.cd / abilityCooldown(st)) * 100}%` : '0';
         b.querySelector('.cdtext')!.textContent = st.cd > 0 ? st.cd.toFixed(st.cd < 3 ? 1 : 0) : '';
         b.classList.toggle('disabled', !u.alive || u.mp < st.def.cost);
-        b.classList.toggle('ready', !!st.manualOnly && ready);
+        b.classList.toggle('ready', (!!st.manualOnly || !u.autoMode) && ready && !(st.def.aiRole === 'heal' && !st.manualOnly && !u.autoMode));
         b.classList.toggle('targeting', ui.targeting?.unit === u && ui.targeting.slot === Number(b.dataset.slot));
-        const badge = st.manualOnly ? '수동' : st.auto ? '자동' : '끔';
+        // 자동전투를 끄면(기본) 기술은 모두 직접 쓴다 — 사제의 단일 치유만 자동
+        const basicHeal = st.def.aiRole === 'heal' && st.def.target === 'ally' && !st.manualOnly;
+        const badge = st.manualOnly ? '수동' : !u.autoMode && !basicHeal ? '' : st.auto ? '자동' : '끔';
         const bd = b.querySelector<HTMLElement>('.badge')!;
         if (bd.textContent !== badge) {
           bd.textContent = badge;

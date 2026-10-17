@@ -50,6 +50,7 @@ export function checkObjects(w: World) {
     o.used = true;
     if (o.kind === 'chest') {
       openChest(w, toucher);
+      w.sound('chest');
       partyStress(w, -4);
     }
     else if (o.kind === 'mimic') {

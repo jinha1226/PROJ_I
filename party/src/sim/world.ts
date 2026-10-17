@@ -94,6 +94,10 @@ export class World {
   logs: LogLine[] = [];
   crises: Crisis[] = [];
   bubbles: Bubble[] = [];
+  /** 타격감: 히트스톱(초) · 화면 흔들림(px) · 효과음 이름. 화면 쪽이 소비한다 */
+  hitstop = 0;
+  shake = 0;
+  sfx: string[] = [];
   moodBreaks: MoodBreak[] = [];
   private crisisAt = new Map<string, number>();
   private lowHp = new Set<Unit>();
@@ -305,6 +309,10 @@ export class World {
     const stack = this.floaters.filter((f) => f.t < 0.25 && Math.abs(f.x - u.x) < 0.3).length;
     this.floaters.push({ x: u.x, y: u.y - 0.9 - stack * 0.28, text, color, t: 0, scale });
   }
+  sound(name: string) {
+    if (this.sfx.length < 16) this.sfx.push(name);
+  }
+
   /** 말풍선: 유닛마다 하나 (새 말이 이전 말을 덮는다) */
   say(u: Unit, text: string, color: string, dur = 2.4) {
     this.bubbles = this.bubbles.filter((b) => b.unit !== u);
@@ -374,6 +382,8 @@ export class World {
     u.command = null;
     u.intent = null;
     u.statuses = [];
+    this.sound('death');
+    if (u.def.boss || u.faction === 'party') this.shake = Math.max(this.shake, 10);
     this.log(`${u.name} 쓰러짐${by ? ` (${by.name})` : ''}`, u.faction === 'party' ? '#ff6666' : '#aaaaaa');
     if (this.focusTarget === u) this.focusTarget = null;
     if (this.leader === u) this.leader = this.party.find((p) => p.alive) ?? null;
@@ -411,6 +421,7 @@ export class World {
         computeStats(p);
         p.hp += p.stats.maxHp - maxHp;
         this.float(p, `레벨 ${p.hero.xl}!`, '#ffe14d', 1.3);
+        this.sound('level');
         this.log(`${p.name} 레벨 ${p.hero.xl} 달성 (층을 마치면 선택)`, '#ffe14d');
       }
     }
@@ -499,6 +510,11 @@ export class World {
       f.y -= dt * 0.8;
     }
     this.floaters = this.floaters.filter((f) => f.t < 1.1);
+    for (const u of this.units) {
+      const k = Math.exp(-dt * 14);
+      u.kickX *= k;
+      u.kickY *= k;
+    }
     for (const b of this.bubbles) b.t += dt;
     this.bubbles = this.bubbles.filter((b) => b.t < b.dur && b.unit.alive);
     this.units = this.units.filter((u) => u.alive || u.faction === 'party' || this.time - u.deathTime < 1.5);
