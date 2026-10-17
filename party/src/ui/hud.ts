@@ -61,7 +61,14 @@ export class Hud {
     private onSkill: (slot: number) => void,
     private onInfo: (u: Unit) => void,
     private onItem: (index: number) => void,
-  ) {}
+  ) {
+    // 대상 지정 안내를 누르면 취소
+    $('targeting-hint').addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      this.ui.targeting = null;
+      this.ui.itemTarget = null;
+    });
+  }
 
   /** 월드가 바뀌면(층 이동·재시작) 하단 파티 패널을 새로 만든다 */
   build() {
@@ -244,12 +251,12 @@ export class Hud {
     const hint = $('targeting-hint');
     if (ui.itemTarget !== null && w.run.belt[ui.itemTarget]) {
       const c = CONSUMABLES[w.run.belt[ui.itemTarget]];
-      hint.textContent = `${c.name} — ${c.target === 'enemy' ? '적을' : '지점을'} 누르세요 (우클릭/Esc 취소)`;
+      hint.innerHTML = `${c.name} — ${c.target === 'enemy' ? '적을' : '지점을'} 누르세요 <b class="x">✕ 취소</b>`;
       hint.classList.remove('hidden');
     } else if (ui.targeting) {
       const ab = ui.targeting.unit.abilities[ui.targeting.slot].def;
       const what = ab.target === 'ground' ? '지점을' : ab.target === 'ally' ? '아군을' : '적을';
-      hint.textContent = `${ui.targeting.unit.name}: ${ab.name} — ${what} 누르세요 (우클릭/Esc 취소)`;
+      hint.innerHTML = `${ui.targeting.unit.name}: ${ab.name} — ${what} 누르세요 <b class="x">✕ 취소</b>`;
       hint.classList.remove('hidden');
     } else hint.classList.add('hidden');
 

@@ -247,6 +247,11 @@ export class Input {
     const u = this.ui.selected.find((s) => s.alive);
     if (!u || slot >= u.abilities.length || u.abilities[slot].hidden) return;
     const ab = u.abilities[slot].def;
+    // 같은 기술 버튼을 다시 누르면 대상 지정 취소 (모바일에는 우클릭 · Esc 가 없다)
+    if (this.ui.targeting?.unit === u && this.ui.targeting.slot === slot) {
+      this.ui.targeting = null;
+      return;
+    }
     if (ab.target === 'self') {
       this.w.commandAbility(u, slot, null, u.x, u.y);
       this.ui.targeting = null;
@@ -293,10 +298,9 @@ export class Input {
     const ok = CONSUMABLES[id].target === 'enemy'
       ? !!t && t.faction !== 'party' && useConsumable(this.w, idx, t, t.x, t.y)
       : useConsumable(this.w, idx, null, p.x, p.y);
-    if (ok) {
-      this.mark(p.x, p.y, CONSUMABLES[id].color);
-      this.ui.itemTarget = null;
-    }
+    if (ok) this.mark(p.x, p.y, CONSUMABLES[id].color);
+    // 쓰지 못했으면(대상이 아닌 곳) 취소
+    this.ui.itemTarget = null;
   }
 
   private resolveTargeting(sx: number, sy: number, keep: boolean) {
@@ -312,7 +316,11 @@ export class Input {
       this.mark(p.x, p.y, ab.color);
     } else {
       const t = this.unitAt(sx, sy);
-      if (!t || !this.validTarget(tg.unit, tg.slot, t)) return; // 유효하지 않으면 대기 유지
+      // 대상이 아닌 곳을 누르면 취소
+      if (!t || !this.validTarget(tg.unit, tg.slot, t)) {
+        this.ui.targeting = null;
+        return;
+      }
       this.w.commandAbility(tg.unit, tg.slot, t, t.x, t.y);
       this.mark(t.x, t.y, ab.color);
     }

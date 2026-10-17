@@ -100,8 +100,9 @@ button.on { border-color: var(--accent); color: var(--accent); }
 @keyframes crisis-pulse { from { opacity: 1; } to { opacity: 0.7; } }
 #targeting-hint {
   position: fixed; bottom: 170px; left: 50%; transform: translateX(-50%); color: var(--accent);
-  background: var(--panel); padding: 4px 10px; border-radius: 4px; pointer-events: none;
+  background: var(--panel); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--accent); cursor: pointer; z-index: 6;
 }
+#targeting-hint .x { margin-left: 8px; padding: 1px 8px; border-radius: 4px; background: #ff666633; color: #ff9999; }
 
 .overlay, #outcome { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; }
 .box { background: #16161f; border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; max-width: 640px; }
