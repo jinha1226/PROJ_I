@@ -219,7 +219,8 @@ function evalAbility(w: World, u: Unit, ab: AbilityDef, slot: number, enemies: U
         if (eff.will) p *= e.tags.includes('mindless') ? 0 : willChance(abilityPower(u, ab), e.stats.will);
         if (p <= 0.05) continue;
         let val = threatOf(e) * eff.duration * 0.6;
-        if (e.cast) val += 25; // 시전 끊기
+        // 시전 끊기: 몬스터만 노린다. 파티 쪽 끊기는 플레이어의 몫
+        if (e.cast && u.faction !== 'party') val += 25;
         if (sdef.stun) val += 5;
         val += expectedDamage(u, ab, e) * 0.5;
         const score = ((val * p * targetWeight(w, u, e)) / time) * manaOk - distPenalty(u, ab, dist(u, e));

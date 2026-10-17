@@ -46,6 +46,10 @@ button.on { border-color: var(--accent); color: var(--accent); }
 .chip { display: inline-block; padding: 0 3px; margin-right: 2px; border-radius: 3px; background: #333; }
 .card .cmd { color: var(--accent); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .card label { white-space: nowrap; }
+.card .mskills { display: flex; gap: 3px; flex-wrap: wrap; }
+.card .mskills:empty { display: none; }
+.card .mskill { padding: 1px 5px; font-size: 11px; opacity: 0.5; margin-top: 3px; }
+.card .mskill.ready { opacity: 1; border-color: #ffcc66; box-shadow: 0 0 5px #ffcc6688; }
 .card .rowbtn { padding: 0 5px; font-size: 11px; color: #9ab; flex-shrink: 0; }
 .card .rowbtn.front { color: #ffcc66; border-color: #8a6a2a; }
 
@@ -80,6 +84,8 @@ button.on { border-color: var(--accent); color: var(--accent); }
 .skill .ctl > * { flex-shrink: 0; }
 .skill .ctl button { padding: 0 4px; font-size: 10px; white-space: nowrap; }
 .skill .rank { white-space: nowrap; color: var(--dim); }
+.skill .manual { color: #ffcc66; font-size: 10px; white-space: nowrap; }
+.skill.manual-ready .btn { border-color: #ffcc66; box-shadow: 0 0 6px #ffcc6688; }
 
 #pause-banner {
   position: fixed; top: 50px; left: 50%; transform: translateX(-50%); color: var(--accent);

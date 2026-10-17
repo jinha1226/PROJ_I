@@ -13,6 +13,7 @@ export interface Command {
   intent: Intent;
   bestDist: number;
   lastProgress: number;
+  issuedAt: number;
   /** 여럿이 함께 받은 이동 명령의 묶음 번호 (진형 유지용) */
   group?: number;
 }
@@ -35,6 +36,8 @@ export interface AbilityState {
   hidden?: boolean;
   /** 강화 단계 (레벨업 선택). 단계마다 위력 +25%, 재사용 대기 -15% */
   rank?: number;
+  /** 수동 전용: AI 가 쓰지 않는다 (레벨업으로 배운 강한 기술 = 플레이어의 몫) */
+  manualOnly?: boolean;
 }
 
 export interface StatusInst {

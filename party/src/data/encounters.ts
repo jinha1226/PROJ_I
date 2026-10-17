@@ -24,12 +24,15 @@ export const ENCOUNTERS: Record<number, string[][]> = {
     ['skeleton', 'skeleton', 'goblin_archer', 'goblin_archer'],
     ['orc', 'orc', 'orc_shaman', 'goblin'],
     ['hyena', 'hyena', 'orc', 'orc'],
+    ['ogre', 'goblin_archer', 'goblin_archer'],
   ],
   5: [
     ['fire_elemental', 'fire_elemental', 'skeleton', 'skeleton'],
     ['orc', 'orc', 'orc_shaman', 'hyena', 'hyena'],
     ['skeleton', 'skeleton', 'orc_shaman', 'orc_shaman'],
     ['fire_elemental', 'fire_elemental', 'fire_elemental', 'goblin_archer'],
+    ['ogre', 'orc_shaman', 'orc'],
+    ['ogre', 'ogre'],
   ],
 };
 

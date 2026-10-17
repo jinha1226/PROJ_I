@@ -117,8 +117,15 @@ const monsterList: UnitDef[] = [
     abilities: [], tactic: 'aggressive', targetPref: 'nearest',
   },
   {
+    id: 'ogre', xp: 40, name: '오우거', title: '내려찍기', glyph: 'O', color: '#c08050', role: 'tank',
+    radius: 0.46, mass: 4, speed: 2.3, hp: 110, mp: 0, str: 18, dex: 7, int: 5, ac: 3, ev: 2, will: 12,
+    skills: { mace: 4, fighting: 4 },
+    weapon: { name: '곤봉', skill: 'mace', damage: [9, 14], delay: 1.6, range: 0.6 },
+    abilities: ['ground_slam'], tactic: 'aggressive', targetPref: 'nearest',
+  },
+  {
     id: 'ogre_chief', xp: 150, name: '오우거 족장', title: '보스', glyph: 'O', color: '#e05050', role: 'tank',
-    radius: 0.5, mass: 5, speed: 2.4, hp: 520, mp: 0, str: 20, dex: 8, int: 6, ac: 4, ev: 2, will: 18,
+    radius: 0.5, mass: 5, speed: 2.4, hp: 650, mp: 0, str: 20, dex: 8, int: 6, ac: 4, ev: 2, will: 18,
     skills: { mace: 5, fighting: 6 },
     weapon: { name: '거대 곤봉', skill: 'mace', damage: [13, 20], delay: 1.7, range: 0.6 },
     abilities: ['ground_slam', 'roar'], tactic: 'aggressive', targetPref: 'threat', boss: true,

@@ -142,6 +142,8 @@ function fail(w: World, u: Unit, cmd: Command | null): Res {
 /** 명령이 일정 시간 진척이 없으면 포기하고 AI 로 돌아간다 */
 function progress(w: World, u: Unit, cmd: Command | null, d: number, notify = true): Res {
   if (!cmd) return 'running';
+  // 서로 밀며 맴도는 경우를 대비한 상한
+  if (w.time - cmd.issuedAt > 30) return 'failed';
   if (d < cmd.bestDist - 0.1) {
     cmd.bestDist = d;
     cmd.lastProgress = w.time;

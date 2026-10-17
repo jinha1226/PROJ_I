@@ -163,6 +163,8 @@ export function makeOffer(h: Hero, rng: Rng): Perk[] {
 export function applyPerk(h: Hero, p: Perk) {
   if (p.kind === 'learn') {
     const st = abilityStates([p.ability])[0];
+    st.auto = false;
+    st.manualOnly = true;
     const firstHidden = h.abilities.findIndex((a) => a.hidden);
     h.abilities.splice(firstHidden < 0 ? h.abilities.length : firstHidden, 0, st);
     // 우선순위는 목록 순서대로 다시 매긴다 (새 기술이 마지막)

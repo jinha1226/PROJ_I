@@ -57,8 +57,8 @@ export interface Crisis {
 }
 
 export const SIGHT = 8;
-const DEPTH_HP = 0.3;
-const DEPTH_DMG = 0.3;
+const DEPTH_HP = 0.4;
+const DEPTH_DMG = 0.5;
 
 export class World {
   readonly map: GameMap;
@@ -154,7 +154,7 @@ export class World {
   private issue(u: Unit, intent: Intent) {
     if (!u.alive) return;
     if (u.cast) this.cancelCast(u, '', false);
-    u.command = { intent, bestDist: Infinity, lastProgress: this.time };
+    u.command = { intent, bestDist: Infinity, lastProgress: this.time, issuedAt: this.time };
     u.intent = null;
   }
 
@@ -172,7 +172,7 @@ export class World {
     }
     // 진형: 목표 주변 바닥 칸을 '다가오는 방향 기준 앞쪽' 순으로 세우고,
     // 전열은 가장 앞 칸들, 후열은 가장 뒤 칸들을 맡는다.
-    // 같은 줄 안에서는 목표에 가까운 유닛이 더 앞 칸을 맡아 서로 엇갈려 지나가지 않게 한다.
+    // 같은 줄 안에서는 지금 더 앞에 있는 유닛이 더 앞 칸을 맡아 서로 엇갈려 지나가지 않게 한다.
     const dest = this.map.nearestFloor(x, y);
     const slots = this.map.nearbyFloorSlots(x, y, live.length + 2);
     slots[0] = dest;
@@ -181,9 +181,9 @@ export class World {
     const dir = { x: (c.x - dest.x) / dl, y: (c.y - dest.y) / dl };
     const behind = (p: { x: number; y: number }) => (p.x - dest.x) * dir.x + (p.y - dest.y) * dir.y;
     slots.sort((a, b) => behind(a) - behind(b));
-    const byDist = (a: Unit, b: Unit) => dist(a, dest) - dist(b, dest);
-    const front = live.filter((u) => u.row === 'front').sort(byDist);
-    const back = live.filter((u) => u.row === 'back').sort(byDist);
+    const order = (a: Unit, b: Unit) => behind(a) - behind(b);
+    const front = live.filter((u) => u.row === 'front').sort(order);
+    const back = live.filter((u) => u.row === 'back').sort(order);
     const backSlots = slots.slice(Math.max(front.length, slots.length - back.length));
     const group = ++this.groupSeq;
     if (front.length && back.length) {
@@ -327,7 +327,14 @@ export class World {
       });
     }
     // 계단: 전투 중이 아닐 때 파티원 하나라도 밟으면 다음 층
-    if (this.stairs && !this.inCombat && !this.outcome && this.party.some((p) => p.alive && !p.command && dist(p, this.stairs!) < 0.8)) {
+    // (지나가다 밟은 것은 제외: 명령이 없거나 계단으로 가던 중이어야 한다)
+    const st = this.stairs;
+    const onStairs = (p: Unit) => {
+      if (!p.alive || dist(p, st!) > 1.2) return false;
+      const it = p.command?.intent;
+      return !it || (it.type === 'move' && dist(it, st!) < 1.6);
+    };
+    if (st && !this.inCombat && !this.outcome && this.party.some(onStairs)) {
       this.outcome = 'cleared';
       this.log(`${this.depth}층을 벗어났다`, '#88ccff');
     }

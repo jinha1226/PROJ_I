@@ -73,6 +73,7 @@ export class Hud {
         ${u.stats.maxMp > 0 ? '<div class="bar mp"><div></div></div>' : ''}
         <div class="bar xp"><div></div></div>
         <div class="statuses"></div>
+        <div class="mskills"></div>
         <div class="row">
           <button class="rowbtn" title="진형: 전열은 앞장서고, 후열은 함께 이동할 때 전열 뒤를 따른다"></button>
           <select>${TACTICS.map(([id, n]) => `<option value="${id}">${n}</option>`).join('')}</select>
@@ -94,6 +95,23 @@ export class Hud {
         if (!u.alive) return;
         if (e.shiftKey) this.ui.selected = this.ui.selected.includes(u) ? this.ui.selected : [...this.ui.selected, u];
         else this.ui.selected = [u];
+      });
+      // 수동 전용 기술: 카드에서 바로 쓴다 (선택 + 대상 지정 시작)
+      const ms = el.querySelector<HTMLElement>('.mskills')!;
+      u.abilities.forEach((st, slot) => {
+        if (!st.manualOnly) return;
+        const b = document.createElement('button');
+        b.className = 'mskill';
+        b.dataset.slot = String(slot);
+        b.title = `${st.def.name} (수동 전용)`;
+        b.innerHTML = `<span style="color:${st.def.color}">${st.def.icon}</span> ${st.def.name}`;
+        b.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+          if (!u.alive) return;
+          this.ui.selected = [u];
+          this.onSkill(slot);
+        });
+        ms.appendChild(b);
       });
       root.appendChild(el);
       return el;
@@ -124,6 +142,10 @@ export class Hud {
       }
       const auto = el.querySelector<HTMLInputElement>('input.auto')!;
       if (auto.checked !== u.autoMode) auto.checked = u.autoMode;
+      for (const b of el.querySelectorAll<HTMLElement>('.mskill')) {
+        const st = u.abilities[Number(b.dataset.slot)];
+        b.classList.toggle('ready', u.alive && st.cd <= 0 && u.mp >= st.def.cost);
+      }
       const rowBtn = el.querySelector<HTMLElement>('.rowbtn')!;
       const rowText = u.row === 'front' ? '전열' : '후열';
       if (rowBtn.textContent !== rowText) {
@@ -170,7 +192,7 @@ export class Hud {
       this.buildSkillbar(u);
     }
     // 매 프레임 갱신: 재사용 대기, 마나, 정보
-    const ranks = [...shown].sort((a, b) => b.prio - a.prio);
+    const ranks = shown.filter((a) => !a.manualOnly).sort((a, b) => b.prio - a.prio);
     shown.forEach((st, i) => {
       const el = bar.querySelector<HTMLElement>(`.skill[data-slot="${i}"]`)!;
       const mask = el.querySelector<HTMLElement>('.cdmask')!;
@@ -179,8 +201,10 @@ export class Hud {
       cdt.textContent = st.cd > 0 ? st.cd.toFixed(st.cd < 3 ? 1 : 0) : '';
       const btn = el.querySelector<HTMLElement>('.btn')!;
       btn.classList.toggle('disabled', u.mp < st.def.cost);
+      el.classList.toggle('manual-ready', !!st.manualOnly && st.cd <= 0 && u.mp >= st.def.cost);
       btn.classList.toggle('targeting', ui.targeting?.unit === u && ui.targeting.slot === i);
-      el.querySelector('.rank')!.textContent = `우선${ranks.indexOf(st) + 1}`;
+      const rank = el.querySelector('.rank');
+      if (rank) rank.textContent = `우선${ranks.indexOf(st) + 1}`;
     });
     const s = u.stats;
     const skills = (Object.entries(u.skills) as [SkillId, number][])
@@ -225,18 +249,24 @@ export class Hud {
           <div class="cdmask"></div><span class="cdtext"></span>
         </div>
         <div class="label">${ab.name}${st.rank ? `<span style="color:#e8cf7a"> +${st.rank}</span>` : ''}${fail > 0 ? ` <span style="color:#f88">${Math.round(fail * 100)}%</span>` : ''}</div>
-        <div class="ctl">
-          <button class="auto ${st.auto ? 'on' : ''}" title="자동전투에서 사용">${st.auto ? '자동' : '수동'}</button>
+        <div class="ctl">${
+          st.manualOnly
+            ? '<span class="manual" title="AI 가 쓰지 않는 기술. 직접 눌러야 한다">수동 전용</span>'
+            : `<button class="auto ${st.auto ? 'on' : ''}" title="자동전투에서 사용">${st.auto ? '자동' : '수동'}</button>
           <button class="up" title="자동 사용 우선순위 올리기">▲</button>
-          <span class="rank"></span>
-        </div>`;
+          <span class="rank"></span>`
+        }</div>`;
       el.querySelector('.btn')!.addEventListener('pointerdown', (e) => {
         e.stopPropagation();
         this.onSkill(i);
       });
+      if (st.manualOnly) {
+        bar.appendChild(el);
+        return;
+      }
       el.querySelector('.auto')!.addEventListener('click', () => (st.auto = !st.auto));
       el.querySelector('.up')!.addEventListener('click', () => {
-        const higher = u.abilities.filter((a) => !a.hidden && a.prio > st.prio).sort((a, b) => a.prio - b.prio)[0];
+        const higher = u.abilities.filter((a) => !a.hidden && !a.manualOnly && a.prio > st.prio).sort((a, b) => a.prio - b.prio)[0];
         if (higher) [higher.prio, st.prio] = [st.prio, higher.prio];
       });
       bar.appendChild(el);
