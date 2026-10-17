@@ -332,3 +332,24 @@ button.on { border-color: var(--accent); color: var(--accent); }
 @media (max-height: 500px) { #moodbanner { top: 12%; } #moodbanner .mt { font-size: 18px; } }
 .sk.urgent { border-color: #ff5544; animation: skurgent 0.5s ease-in-out infinite alternate; }
 @keyframes skurgent { from { box-shadow: 0 0 4px #ff554488; } to { box-shadow: 0 0 14px #ff5544; background: #3a1a1a; } }
+
+/* 몬스터 정보 */
+#inspect .hpline { font-size: 12px; margin-bottom: 4px; }
+#inspect .tip { font-size: 12px; color: #f0e6c0; background: #2a2618; border-radius: 4px; padding: 4px 6px; margin: 4px 0; line-height: 1.4; }
+#inspect .nt { font-size: 10px; color: var(--dim); margin-top: 4px; }
+#inspect .chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+#inspect .nc { font-size: 11px; padding: 1px 6px; border-radius: 9px; line-height: 1.5; }
+#inspect .nc.good { background: #1e3a24; color: #8ef0a0; }
+#inspect .nc.bad { background: #3a1e1e; color: #ff9c8c; }
+#inspect .nc.warn { background: #3a3218; color: #ffd27a; }
+#newfoe { position: fixed; top: 54px; left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none;
+  background: #14121aee; border: 2px solid #e8cf7a; border-radius: 8px; padding: 8px 14px; max-width: 92vw; text-align: center;
+  animation: newfoe 5s ease-out forwards; }
+#newfoe .nf1 { font-weight: bold; font-size: 15px; }
+#newfoe .nf2 { font-size: 12px; color: #ccc; margin-top: 2px; }
+#newfoe .nf3 { font-size: 12px; color: #f0e6c0; margin-top: 3px; }
+@keyframes newfoe { 0% { opacity: 0; transform: translateX(-50%) translateY(-10px); } 6% { opacity: 1; transform: translateX(-50%); } 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (max-width: 900px) { #inspect .nc, #inspect .tip { font-size: 10px; } #newfoe .nf1 { font-size: 13px; } #newfoe .nf2, #newfoe .nf3 { font-size: 10px; } }
+@media (max-height: 500px) { #newfoe { left: 8px; transform: none; max-width: 52vw; text-align: left; padding: 5px 9px; animation-name: newfoeL; } }
+@keyframes newfoeL { 0% { opacity: 0; } 6% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (max-height: 500px) { #inspect .sub { display: none; } #inspect .tip { padding: 2px 5px; margin: 2px 0; } #inspect h3 { font-size: 12px; } }

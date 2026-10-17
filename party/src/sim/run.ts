@@ -9,10 +9,12 @@ export interface RunState {
   found: Item[];
   /** 아직 기록에 넣지 않은 처치 수 (해금 진행용) */
   kills: Record<string, number>;
+  /** 이번 런에서 이미 마주친 몬스터 종류 (첫 조우 카드용) */
+  seen: string[];
 }
 
 export function newRun(): RunState {
-  return { belt: ['heal_potion'], found: [], kills: {} };
+  return { belt: ['heal_potion'], found: [], kills: {}, seen: [] };
 }
 
 export function addToBelt(run: RunState, id: ConsumableId): boolean {

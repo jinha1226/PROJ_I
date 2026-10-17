@@ -13,6 +13,7 @@ import { BELT_SIZE, CONSUMABLES } from '../data/consumables';
 import { MOODS } from '../data/moods';
 import { WARN_STRESS } from '../sim/stress';
 import { skillCue } from '../sim/cues';
+import { foeNotes, type Chip } from '../sim/notes';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -55,6 +56,7 @@ export class Hud {
   private skillVersion: string[] = [];
   private inspectFor: Unit | null = null;
   private logCount = -1;
+  private notesAt = -1;
 
   constructor(
     private ui: UiState,
@@ -333,23 +335,28 @@ export class Hud {
     box.classList.remove('hidden');
     if (this.inspectFor !== t) {
       this.inspectFor = t;
-      box.innerHTML = `<h3 style="color:${t.def.color}"></h3><div class="sub"></div><div class="kv"></div>
+      this.notesAt = -1;
+      box.innerHTML = `<h3 style="color:${t.def.color}"></h3><div class="sub"></div><div class="hpline"></div><div class="notes"></div>
         <button class="focus"></button>`;
       box.querySelector('.focus')!.addEventListener('click', () => w.setFocus(w.focusTarget === t ? null : t));
     }
     const s = t.stats;
     box.querySelector('h3')!.textContent = `${t.def.glyph}  ${t.name}`;
     box.querySelector('.sub')!.textContent = `${t.def.title}${t.aware ? '' : ' · 아직 눈치채지 못함'}`;
-    const abil = t.abilities.map((a) => a.def.name).join(', ') || '-';
-    box.querySelector('.kv')!.innerHTML = `
-      <span>체력</span><span>${Math.ceil(t.hp)} / ${s.maxHp}</span>
-      <span>AC / EV</span><span>${s.ac.toFixed(0)} / ${s.ev.toFixed(0)}</span>
-      <span>의지력</span><span>${t.tags.includes('mindless') ? '∞' : s.will}</span>
-      <span>공격</span><span>${t.weapon.name} (${t.weapon.element ? ELEMENT_NAME[t.weapon.element] : '물리'})</span>
-      <span>능력</span><span>${abil}</span>
-      <span>저항</span><span>${resistText(t)}</span>
-      <span>상태</span><span>${t.statuses.map((x) => `<span style="color:${x.def.color}">${x.def.name}</span>`).join(' ') || '-'}</span>
-      ${t.cast ? `<span>시전 중</span><span style="color:#ff9933">${t.abilities[t.cast.slot].def.name}</span>` : ''}`;
+    box.querySelector('.hpline')!.innerHTML =
+      `체력 ${Math.ceil(t.hp)} / ${s.maxHp}` +
+      (t.statuses.length ? ` · ${t.statuses.map((x) => `<span style="color:${x.def.color}">${x.def.name}</span>`).join(' ')}` : '') +
+      (t.cast ? ` · <span style="color:#ff9933">시전 중: ${t.abilities[t.cast.slot].def.name}</span>` : '');
+    // 상성 정보는 자주 바뀌지 않으니 0.5초마다
+    if (w.time - this.notesAt > 0.5 || this.notesAt < 0) {
+      this.notesAt = w.time;
+      const n = foeNotes(t, w.party);
+      const chips = (title: string, list: Chip[]) =>
+        list.length ? `<div class="nt">${title}</div><div class="chips">${list.map((c) => `<span class="nc ${c.kind}">${c.text}</span>`).join('')}</div>` : '';
+      box.querySelector('.notes')!.innerHTML =
+        (n.tip ? `<div class="tip">💡 ${n.tip}</div>` : '') +
+        chips('약점', n.weak) + chips('강함', n.strong) + chips('조심', n.danger) + chips('우리 파티', n.vs);
+    }
     box.querySelector('.focus')!.textContent = w.focusTarget === t ? '집중 공격 해제 (F)' : '집중 공격 (F)';
   }
 

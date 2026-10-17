@@ -7,6 +7,7 @@ import { genFloor } from './sim/gen';
 import { newParty, saveFromUnit, type Hero } from './sim/hero';
 import { resolvePrompt } from './sim/objects';
 import { restRelief } from './sim/stress';
+import { foeNotes, foeSummary } from './sim/notes';
 import { newRun } from './sim/run';
 import { World } from './sim/world';
 import { Hud } from './ui/hud';
@@ -314,6 +315,29 @@ function handleMoodBreaks(dt: number) {
   if (moodShown <= 0) $('moodbanner').classList.add('hidden');
 }
 
+/** 첫 조우 카드: 이번 런에서 처음 보는 몬스터면 약점 · 강함 · 대처법을 잠깐 띄운다 */
+let foeCardTimer = 0;
+function handleNewFoes(dt: number) {
+  foeCardTimer = Math.max(0, foeCardTimer - dt);
+  if (foeCardTimer > 2.5) return; // 앞 카드를 조금은 읽을 시간
+  const t = world.units.find((u) => u.alive && u.faction === 'enemy' && world.isVisible(u) && !run.seen.includes(u.def.id));
+  if (!t) return;
+  run.seen.push(t.def.id);
+  const n = foeNotes(t, world.party);
+  const summary = foeSummary(t, world.party);
+  const card = $('newfoe');
+  card.innerHTML =
+    `<div class="nf1" style="color:${t.def.color}">새로운 적 — ${t.def.glyph} ${t.name}</div>` +
+    (summary ? `<div class="nf2">${summary}</div>` : '') +
+    (n.tip ? `<div class="nf3">💡 ${n.tip}</div>` : '');
+  // 애니메이션 다시 시작
+  card.classList.add('hidden');
+  void card.offsetWidth;
+  card.classList.remove('hidden');
+  foeCardTimer = 5;
+  world.log(`새로운 적: ${t.name}${summary ? ` — ${summary}` : ''}`, '#e8cf7a');
+}
+
 function handleCrises(dt: number) {
   const list = world.crises.splice(0);
   if (list.length && crisisMode !== 'off') {
@@ -349,6 +373,8 @@ function frame(now: number) {
   last = now;
   handleCrises(dt);
   handleMoodBreaks(dt);
+  handleNewFoes(dt);
+  if (foeCardTimer <= 0) $('newfoe').classList.add('hidden');
   for (const s of world.sfx.splice(0)) audio.play(s as Sfx);
   world.shake = Math.max(0, world.shake - dt * 40);
   // 히트스톱: 큰 타격 순간 아주 잠깐 멈춘다
@@ -371,6 +397,9 @@ function frame(now: number) {
   }
   cam.padBottom = $('party').offsetHeight + 8;
   $('belt').style.bottom = `${cam.padBottom + 4}px`;
+  // 정보 창은 소모품 벨트 위까지만 (작은 화면에서 겹치지 않게)
+  const insp = $('inspect');
+  insp.style.maxHeight = `${Math.max(120, window.innerHeight - cam.padBottom - insp.offsetTop - ($('belt').offsetHeight + 12))}px`;
   updatePrompt();
   input.update(dt);
   renderer.draw(world, ui);
@@ -405,4 +434,4 @@ function frame(now: number) {
 requestAnimationFrame(frame);
 
 // 개발 서버에서만: 브라우저 자동 테스트용 접근점
-if (import.meta.env.DEV) (window as unknown as { __bh: object }).__bh = { get world() { return world; }, get heroes() { return heroes; } };
+if (import.meta.env.DEV) (window as unknown as { __bh: object }).__bh = { get world() { return world; }, get heroes() { return heroes; }, ui };

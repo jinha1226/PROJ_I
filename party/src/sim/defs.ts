@@ -138,6 +138,8 @@ export interface UnitDef {
   targetPref: TargetPref;
   sight?: number;
   boss?: boolean;
+  /** 대처법 한 줄 (몬스터 정보 창 · 첫 조우 카드) */
+  tip?: string;
   /** 처치 경험치 (몬스터) */
   xp?: number;
   /** 레벨당 체력/마나 증가 (파티) */

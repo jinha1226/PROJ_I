@@ -20,7 +20,7 @@ export class RestScreen {
   /** 고른 카드: 보상(reward) 또는 찾은 장비(found) 의 몇 번째 */
   private picked: { src: 'reward' | 'found'; i: number } | null = null;
   private rewardDone: string | null = null;
-  private run: RunState = { belt: [], found: [], kills: {} };
+  private run: RunState = { belt: [], found: [], kills: {}, seen: [] };
   private foundNotes: string[] = [];
 
   constructor(

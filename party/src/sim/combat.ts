@@ -69,7 +69,7 @@ export function applyDamage(
     w.log(`${target.name}이(가) 쓰러지지 않고 버텼다 (불굴)`, '#ffe14d');
   }
   target.flash = 0.12;
-  const suffix = m < 1 ? ' 저항' : m > 1 ? '!' : '';
+  const suffix = m < 1 ? ' 저항' : m > 1 ? ' 약점!' : '';
   w.float(target, `${dmg}${suffix}`, ELEMENT_COLOR[element], opts.dot ? 0.8 : 1);
 
   // 스트레스: 체력 대비 피해가 클수록. 한 방에 크게 맞으면 더
