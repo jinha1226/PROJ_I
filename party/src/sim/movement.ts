@@ -49,7 +49,8 @@ export function face(u: Unit, t: { x: number }) {
 
 /**
  * 유닛 간 충돌. 적-아군 사이는 단단하게 밀어내 길목 차단이 가능하고,
- * 같은 진영끼리는 부드럽게 밀어내 좁은 통로에서도 서로 비켜 지나간다.
+ * 같은 진영끼리는 움직이는 동안 부드럽게 밀어내 좁은 통로에서도 서로 비켜 지나간다.
+ * 둘 다 멈춰 있으면 더 세게, 조금 더 떨어지게 밀어 겹쳐 보이지 않게 한다 (개인 공간).
  */
 export function resolveCollisions(w: World) {
   const us = w.units.filter((u) => u.alive);
@@ -58,13 +59,14 @@ export function resolveCollisions(w: World) {
     for (let j = i + 1; j < us.length; j++) {
       const b = us[j];
       const dx = b.x - a.x, dy = b.y - a.y;
-      const rr = a.radius + b.radius;
+      const same = a.faction === b.faction;
+      const settled = same && !a.moving && !b.moving;
+      const rr = (a.radius + b.radius) * (settled ? PERSONAL_SPACE : 1);
       const d2 = dx * dx + dy * dy;
       if (d2 >= rr * rr) continue;
       const d = Math.sqrt(d2) || 0.001;
       const overlap = rr - d;
-      const same = a.faction === b.faction;
-      const k = same ? 0.25 : 1;
+      const k = !same ? 1 : settled ? 0.5 : 0.25;
       const ma = mass(a), mb = mass(b);
       const nx = d2 > 1e-8 ? dx / d : 1, ny = d2 > 1e-8 ? dy / d : 0;
       const pa = (overlap * k * mb) / (ma + mb);
@@ -75,6 +77,9 @@ export function resolveCollisions(w: World) {
   }
   for (const u of us) resolveWalls(w, u);
 }
+
+/** 멈춰 선 같은 편끼리의 거리 배율 */
+const PERSONAL_SPACE = 1.3;
 
 function mass(u: Unit) {
   let m = u.def.mass;

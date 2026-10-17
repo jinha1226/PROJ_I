@@ -87,7 +87,7 @@ function idle(w: World, u: Unit): Intent | null {
   const party = w.party.filter((p) => p.alive && p !== L);
   const idx = party.indexOf(u);
   const ang = Math.PI + (idx - (party.length - 1) / 2) * 0.9;
-  const p = w.map.nearestFloor(L.x + Math.cos(ang) * L.facing * 1.2, L.y + Math.sin(ang) * 1.2);
+  const p = w.map.nearestFloor(L.x + Math.cos(ang) * L.facing * 1.5, L.y + Math.sin(ang) * 1.5);
   return { type: 'move', x: p.x, y: p.y };
 }
 

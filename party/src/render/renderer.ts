@@ -454,7 +454,7 @@ export class Renderer {
     const ctx = this.ctx, z = this.cam.zoom;
     const [sx, sy] = this.cam.toScreen(u.x + u.kickX, u.y + u.kickY);
     const r = u.radius * z;
-    const bw = r * 1.8, bh = r * 2.3;
+    const bw = r * 1.75, bh = r * 2.1;
 
     if (!u.alive) {
       const fade = u.faction === 'party' ? 0.6 : Math.max(0, 1 - (w.time - u.deathTime) / 1.5);
