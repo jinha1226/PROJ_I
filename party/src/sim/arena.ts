@@ -36,7 +36,9 @@ function poolAt(depth: number): Record<FoeKind, string[]> {
 function budgetAt(depth: number): number {
   const groups = ENCOUNTERS[Math.min(FLOORS, Math.max(1, depth))];
   const sum = groups.reduce((s, g) => s + g.reduce((a, id) => a + xpOf(id), 0), 0);
-  return (sum / groups.length) * 0.9 * (depth > FLOORS ? 1 + (depth - FLOORS) * 0.25 : 1);
+  // 얕은 층은 무리가 작아 금방 끝나니 머릿수를 더 (1층 ×1.6, 2층 ×1.3)
+  const shallow = 1 + Math.max(0, 3 - depth) * 0.3;
+  return (sum / groups.length) * 0.9 * shallow * (depth > FLOORS ? 1 + (depth - FLOORS) * 0.25 : 1);
 }
 
 function buildWave(rng: Rng, depth: number, kind: WaveKindDef, theme: string[] | undefined, scale: number): ArenaWave | null {

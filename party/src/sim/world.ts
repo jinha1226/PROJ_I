@@ -4,6 +4,7 @@ import type { ArenaWave, MapDef } from '../data/maps';
 import { DIFFICULTIES, type Difficulty, type DifficultyId } from '../data/difficulty';
 import { MONSTERS } from '../data/units';
 import { synergyProps } from '../data/synergy';
+import { CONTRACTS } from '../data/contracts';
 import { updateUnit } from './behavior';
 import { beginFloor, gainXp, newParty, type Hero } from './hero';
 import { itemTitle } from './items';
@@ -223,7 +224,16 @@ export class World {
       : { hp: d.baseHp * ENEMY_HP * (1 + (this.depth - 1) * d.perDepthHp), dmg: d.baseDmg * ENEMY_DMG * (1 + (this.depth - 1) * d.perDepthDmg) };
     // 전장: 적이 다가오기도 전에 녹지 않게 더 튼튼하다 (대신 웨이브 예산은 그대로)
     // 얕은 깊이는 적이 너무 약해 한 번 더 (1층 ×1.4, 2층 ×1.2)
-    if (this.arena && faction === 'enemy' && !def.boss) u.scale.hp *= ARENA_HP * (1 + Math.max(0, 3 - this.depth) * 0.2);
+    // 계약별 적 위력
+    const power = faction === 'enemy' && this.run.contract ? CONTRACTS[this.run.contract.kind].power ?? 1 : 1;
+    u.scale.hp *= power;
+    u.scale.dmg *= power;
+    if (this.arena && faction === 'enemy' && !def.boss) {
+      const shallow = Math.max(0, 3 - this.depth);
+      u.scale.hp *= ARENA_HP * (1 + shallow * 0.2);
+      // 얕은 층 적도 아프게 (1층 ×1.5, 2층 ×1.25): 쉬운 계약도 손 놓으면 다친다
+      u.scale.dmg *= 1 + shallow * 0.25;
+    }
     return this.addUnit(u);
   }
 
@@ -385,14 +395,14 @@ export class World {
   }
 
   /** 주장 돌진 · 구르기: 진행 방향 앞에 적이 있으면 돌진 강타, 없으면 그 방향으로 구른다 */
-  captainDash(): boolean {
+  captainDash(rollOnly = false): boolean {
     const c = this.captain;
     if (!c?.alive || c.dashCd > 0 || c.dashT > 0 || c.stats.stunned) return false;
     const dir = this.capDir ?? (c.lastTarget?.alive ? null : { x: c.facing, y: 0 });
     if (c.cast) this.cancelCast(c, '', false);
     c.command = null;
     c.intent = null;
-    if (!c.isRanged) {
+    if (!c.isRanged && !rollOnly) {
       // 근접: 바라보는 쪽 6칸 안의 적 (방향이 없으면 가장 가까운 적)
       let best: Unit | null = null, bestScore = Infinity;
       for (const e of this.hostilesOf(c)) {

@@ -2,7 +2,7 @@
 // 전술 유형(tactic)과 대상 선호(targetPref)가 점수 가중치만 바꾼다.
 import { dist } from '../core/rng';
 import { STATUSES } from '../data/statuses';
-import { abilityReady, expectedDamage, expectedHeal, unitsInArea } from './abilities';
+import { abilityReady, areaCenter, expectedDamage, expectedHeal, unitsInArea } from './abilities';
 import type { AbilityDef } from './defs';
 import { resistMult } from './combat';
 import { attackDelay, attackReach, avgWeaponDamage, hitChance, willChance, abilityPower } from './stats';
@@ -45,6 +45,12 @@ export function think(w: World, u: Unit): Intent | null {
     let far = enemies[0];
     for (const e of enemies) if (dist(u, e) > dist(u, far)) far = e;
     return { type: 'attack', target: far };
+  }
+
+  // 동료(자동)는 적의 예고 범위(빨간 원)를 스스로 피한다. 주장은 플레이어 몫
+  if (u.faction === 'party' && u.autoMode) {
+    const out = dodgeTelegraph(w, u);
+    if (out) return out;
   }
 
   const manual = u.faction === 'party' && !u.autoMode;
@@ -102,7 +108,12 @@ function targetWeight(w: World, u: Unit, e: Unit): number {
   const d = dist(u, e);
   let wt = 1 + (1 - e.hpFrac) * 0.6 + threatOf(e) / 25;
   if (u.faction === 'party') {
-    if (w.focusTarget === e) wt *= 3;
+    // 집중 공격: 방어형(탱커)은 앞을 지키느라 따르지 않는다. 가까운 집중 대상만 조금 더.
+    // 원거리도 사거리 밖 집중 대상을 쫓아 적진으로 들어가지 않는다 (주장은 플레이어가 고른 대로)
+    if (w.focusTarget === e) {
+      const inReach = d <= attackReach(u, e) + 1;
+      wt *= u === w.captain ? 2.5 : u.tactic === 'defensive' ? (d < 2.5 ? 1.5 : 1) : inReach ? 2.5 : 1;
+    }
     switch (u.tactic) {
       case 'defensive': {
         // 아군(자신 제외)을 노리는 적, 아군 가까이 붙은 적 우선
@@ -299,6 +310,26 @@ function evalAbility(w: World, u: Unit, ab: AbilityDef, slot: number, enemies: U
     }
   }
   return out;
+}
+
+/** 예고 범위 공격 안에 있으면 범위 밖으로 */
+function dodgeTelegraph(w: World, u: Unit): Intent | null {
+  for (const e of w.units) {
+    if (!e.alive || e.faction === u.faction || !e.cast) continue;
+    const ab = e.abilities[e.cast.slot].def;
+    if (!ab.radius || ab.affects === 'allies') continue;
+    const c = areaCenter(ab, e, e.cast.x, e.cast.y);
+    const d = dist(u, c);
+    if (d > ab.radius + u.radius + 0.2) continue;
+    const k = d || 1;
+    const ax = d ? (u.x - c.x) / k : 1, ay = d ? (u.y - c.y) / k : 0;
+    for (const rot of [0, 0.8, -0.8, 1.6, -1.6, Math.PI]) {
+      const cs = Math.cos(rot), sn = Math.sin(rot);
+      const tx = c.x + (ax * cs - ay * sn) * (ab.radius + 1.2), ty = c.y + (ax * sn + ay * cs) * (ab.radius + 1.2);
+      if (!w.map.isWallAt(tx, ty)) return { type: 'move', x: tx, y: ty };
+    }
+  }
+  return null;
 }
 
 /** 공포: 가장 가까운 적에게서 멀어진다 (공격하지 않음) */

@@ -94,4 +94,4 @@ export function reachable(ex: Expedition): number[] {
 }
 
 /** 방을 정리하면 숨을 돌려 최대 체력의 이만큼 회복 */
-export const ROOM_HEAL = 0.3;
+export const ROOM_HEAL = 0.15;

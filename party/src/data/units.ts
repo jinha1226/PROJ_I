@@ -162,14 +162,14 @@ const monsterList: UnitDef[] = [
   // ── 보스 ──
   {
     id: 'lich', tip: '해골 졸개를 계속 일으키고, 주변을 얼린다(빨간 원). 졸개보다 리치 본체를 노리고, 냉기 범위는 피하자.', xp: 150, name: '리치', title: '보스', glyph: 'L', color: '#9fe0ff', role: 'caster',
-    radius: 0.46, mass: 4, speed: 2.1, hp: 520, mp: 0, str: 10, dex: 10, int: 18, ac: 3, ev: 4, will: 30,
+    radius: 0.46, mass: 4, speed: 2.1, hp: 440, mp: 0, str: 10, dex: 10, int: 18, ac: 3, ev: 4, will: 30,
     resists: { cold: 2, neg: 3, poison: 1 }, tags: ['unstunnable'], skills: { spellcasting: 6 },
     weapon: { name: '그림자 구슬', skill: 'spellcasting', damage: [8, 12], delay: 1.5, range: 6, element: 'neg', projectile: { speed: 13, color: '#b07cff' } },
     abilities: ['raise_legion', 'grave_chill'], tactic: 'ranged', targetPref: 'threat', boss: true,
   },
   {
     id: 'spider_queen', tip: '새끼를 낳고 거미줄을 터뜨린다(빨간 원). 새끼는 범위 공격으로 정리하고, 화염으로 여왕을 태우자.', xp: 150, name: '거미 여왕', title: '보스', glyph: 'S', color: '#c890f0', role: 'tank',
-    radius: 0.52, mass: 5, speed: 2.6, hp: 600, mp: 0, str: 16, dex: 12, int: 6, ac: 3, ev: 5, will: 18,
+    radius: 0.52, mass: 5, speed: 2.6, hp: 500, mp: 0, str: 16, dex: 12, int: 6, ac: 3, ev: 5, will: 18,
     resists: { poison: 1, fire: -1 }, skills: { fighting: 6 },
     weapon: { name: '거대 독니', skill: 'fighting', damage: [11, 16], delay: 1.4, range: 0.6, onHit: { status: 'poison', duration: 6, chance: 0.6, stacks: 2 } },
     abilities: ['spawn_brood', 'web_burst'], tactic: 'aggressive', targetPref: 'threat', boss: true,
