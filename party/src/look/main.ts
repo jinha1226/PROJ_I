@@ -100,6 +100,10 @@ interface Look {
   weapon?: string;
   /** 왼손 (방패 · 책) */
   offhand?: string;
+  /** IdleOn 풍: 머리 크게 · 다리 짧게 + 점 눈 + 모자 */
+  chibi?: { hat?: 'helmet' | 'wizard' | 'hood' | 'mitre' | 'bandana'; color: string };
+  /** 무기 색을 살린다 (흰색으로 칠하지 않음) */
+  colorWeapon?: boolean;
   /** 이 유닛만의 대기 · 이동 애니메이션 (좀비 걸음 등) */
   idle?: string;
   run?: string;
@@ -144,10 +148,25 @@ const LOOKS_U: Record<string, Look> = {
   skeleton_mage: { model: 'ual/ual', show: [], height: 2.0, attack: 'Spell_Simple_Shoot', ranged: '#b07cff' },
   brute: { model: 'ual/ual', show: [], height: 3.3, attack: 'Punch_Cross', idle: 'Idle_Loop' },
 };
-let pack: 'kaykit' | 'quat' | 'mix' | 'ual' = 'kaykit';
+/** IdleOn 풍: 흰 치비 영웅(UAL 마네킹 변형) + 색 모자 · 무기, 적은 Quaternius 의 귀여운 몬스터 */
+const LOOKS_I: Record<string, Look> = {
+  warrior: { ...LOOKS_U.warrior, height: 1.7, chibi: { hat: 'helmet', color: '#9aa4b8' }, colorWeapon: true },
+  berserker: { ...LOOKS_U.berserker, height: 1.8, chibi: { hat: 'bandana', color: '#e04a3a' }, colorWeapon: true },
+  fire_mage: { ...LOOKS_U.fire_mage, height: 1.6, chibi: { hat: 'wizard', color: '#ff7a2f' }, colorWeapon: true },
+  hunter: { ...LOOKS_U.hunter, height: 1.6, chibi: { hat: 'hood', color: '#5cae4a' }, colorWeapon: true },
+  priest: { ...LOOKS_U.priest, height: 1.6, chibi: { hat: 'mitre', color: '#f0d870' }, colorWeapon: true },
+  skeleton: { model: 'quaternius/Orc', show: [], height: 1.7, attack: 'Weapon' },
+  skeleton_mage: { model: 'quaternius/Demon', show: [], height: 1.7, attack: 'Punch', ranged: '#ff7a2f' },
+  ghost: { model: 'quaternius/Ghost', show: [], height: 1.5, attack: 'Headbutt' },
+  wolf: { model: 'quaternius/Wolf', show: [], height: 1.2, attack: 'Attack' },
+  slime: { model: 'quaternius/Glub', show: [], height: 1.2, attack: 'Headbutt' },
+  brute: { model: 'quaternius/Yeti', show: [], height: 2.6, attack: 'Punch' },
+};
+let pack: 'kaykit' | 'quat' | 'mix' | 'ual' | 'idleon' = 'kaykit';
 const HERO_KINDS = ['warrior', 'berserker', 'fire_mage', 'hunter', 'priest'];
 const lookOf = (kind: string) => {
   if (pack === 'ual') return LOOKS_U[kind] ?? LOOKS_U.skeleton;
+  if (pack === 'idleon') return LOOKS_I[kind] ?? LOOKS_I.skeleton;
   const q = pack === 'quat' || (pack === 'mix' && !HERO_KINDS.includes(kind));
   return q ? LOOKS_Q[kind] ?? LOOKS_Q.skeleton : LOOKS_K[kind] ?? LOOKS_K.skeleton;
 };
@@ -187,17 +206,66 @@ interface Actor {
 const actors: Actor[] = [];
 
 /** 손 뼈에 무기를 붙인다. 뼈의 월드 배율을 되돌려 무기 크기를 일정하게 */
-async function attach(root: THREE.Object3D, bone: string, model: string, side: Actor['side']) {
+async function attach(root: THREE.Object3D, bone: string, model: string, side: Actor['side'], color = false) {
   const hand = root.getObjectByName(bone);
   if (!hand) return;
   const w = (await load(model)).scene.clone();
-  toonify(w, undefined, true, true, side === 'foe' ? [0.5, 0.06, 0.06] : undefined);
+  toonify(w, undefined, true, !color, side === 'foe' ? [0.5, 0.06, 0.06] : undefined);
   root.updateMatrixWorld(true);
   const s = new THREE.Vector3();
   hand.getWorldScale(s);
   w.scale.setScalar(0.85 / (s.x || 1));
   w.rotation.set(Math.PI / 2, 0, Math.PI / 2);
   hand.add(w);
+}
+
+/** IdleOn 풍 체형: 머리 크게, 다리 · 팔 짧게. 점 눈과 모자를 머리 뼈에 붙인다 */
+const CHIBI = { head: 1.8, leg: 0.8, arm: 0.88, eyeUp: 0.1, eyeFwd: 0.12, eyeGap: 0.045, eye: 0.022 };
+/** 애니메이션이 뼈 배율을 매 프레임 1로 되돌리므로, 갱신 뒤에 다시 입힌다 */
+function chibiPose(root: THREE.Object3D) {
+  const bone = (n: string) => root.getObjectByName(n);
+  bone('Head')?.scale.setScalar(CHIBI.head);
+  for (const n of ['thigh_l', 'thigh_r']) bone(n)?.scale.setScalar(CHIBI.leg);
+  for (const n of ['upperarm_l', 'upperarm_r']) bone(n)?.scale.setScalar(CHIBI.arm);
+}
+
+function chibify(root: THREE.Object3D, c: NonNullable<Look['chibi']>) {
+  const bone = (n: string) => root.getObjectByName(n);
+  chibiPose(root);
+  const head = bone('Head');
+  if (!head) return;
+  root.updateMatrixWorld(true);
+  // 머리 뼈 기준이 아니라 캐릭터 기준(앞 = +Z)으로 자리를 잡고 머리에 옮겨 붙인다
+  const h = new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3()).y;
+  const hp = new THREE.Vector3();
+  head.getWorldPosition(hp);
+  const local = root.worldToLocal(hp.clone());
+  const s = root.scale.x;
+  const at = (dx: number, dy: number, dz: number) => root.localToWorld(local.clone().add(new THREE.Vector3(dx, dy, dz).multiplyScalar(h / s)));
+  const ink = new THREE.MeshBasicMaterial({ color: 0x15121c });
+  for (const side of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(CHIBI.eye * h, 10, 8), ink);
+    eye.position.copy(at(side * CHIBI.eyeGap, CHIBI.eyeUp, CHIBI.eyeFwd));
+    scene.add(eye);
+    head.attach(eye);
+  }
+  if (!c.hat) return;
+  const mat = new THREE.MeshToonMaterial({ color: c.color, gradientMap });
+  mat.userData.outlineParameters = { thickness: settings.outline, color: [0.04, 0.02, 0.06], visible: true };
+  toonMats.push(mat);
+  let geo: THREE.BufferGeometry;
+  let pos = at(0, 0.17, 0.0);
+  const r = 0.13 * h;
+  if (c.hat === 'wizard') { geo = new THREE.ConeGeometry(r * 1.05, r * 2.6, 12); pos = at(0, 0.27, -0.01); }
+  else if (c.hat === 'mitre') { geo = new THREE.ConeGeometry(r * 0.8, r * 1.8, 4); pos = at(0, 0.24, 0); }
+  else if (c.hat === 'hood') { geo = new THREE.SphereGeometry(r * 1.12, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.62); pos = at(0, 0.12, -0.012); }
+  else if (c.hat === 'helmet') { geo = new THREE.SphereGeometry(r * 1.08, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.5); pos = at(0, 0.13, -0.005); }
+  else { geo = new THREE.TorusGeometry(r * 0.95, r * 0.18, 8, 16); pos = at(0, 0.14, 0); }
+  const hat = new THREE.Mesh(geo, mat);
+  if (c.hat === 'bandana') hat.rotation.x = Math.PI / 2;
+  hat.position.copy(pos);
+  scene.add(hat);
+  head.attach(hat);
 }
 
 async function spawn(kind: string, side: Actor['side'], x: number, z: number, name: string): Promise<Actor> {
@@ -214,8 +282,9 @@ async function spawn(kind: string, side: Actor['side'], x: number, z: number, na
   });
   const ual = look.model === 'ual/ual';
   toonify(root, look.tint, true, ual, side === 'foe' && ual ? [0.5, 0.06, 0.06] : undefined);
-  if (look.weapon) await attach(root, 'hand_r', look.weapon, side);
-  if (look.offhand) await attach(root, 'hand_l', look.offhand, side);
+  if (look.weapon) await attach(root, 'hand_r', look.weapon, side, look.colorWeapon);
+  if (look.offhand) await attach(root, 'hand_l', look.offhand, side, look.colorWeapon);
+  if (look.chibi) chibify(root, look.chibi);
   if (look.scale) root.scale.multiplyScalar(look.scale);
   root.position.set(x, 0, z);
   scene.add(root);
@@ -304,7 +373,7 @@ async function spawnWave() {
   wave++;
   const n = 3 + (wave % 2);
   for (let i = 0; i < n; i++) {
-    const melee = pack !== 'kaykit' ? ['skeleton', 'wolf', 'ghost', 'slime'][(i + wave) % 4] : 'skeleton';
+    const melee = pack !== 'kaykit' && pack !== 'ual' ? ['skeleton', 'wolf', 'ghost', 'slime'][(i + wave) % 4] : 'skeleton';
     const kind = i === 0 && wave % 3 === 0 ? 'brute' : i === n - 1 ? 'skeleton_mage' : melee;
     await spawn(kind, 'foe', 9 + Math.random() * 1.5, -3 + i * 2, kind);
   }
@@ -342,6 +411,7 @@ function hit(target: Actor, dmg: number, color: string) {
 function update(dt: number) {
   for (const a of actors) {
     a.mixer.update(dt);
+    if (a.look.chibi) chibiPose(a.root);
     if (a.hp <= 0) {
       a.dead -= dt;
       if (a.dead <= 0 && a.side === 'foe') {
@@ -494,7 +564,7 @@ const flatBtn = button(() => `2D 느낌: ${settings.flat ? '켜짐' : '꺼짐'}`
   for (const b of ui.querySelectorAll('button')) b.dispatchEvent(new Event('refresh'));
 });
 flatBtn.classList.add('on');
-button(() => `모델: ${({ kaykit: 'KayKit', quat: 'Quaternius', mix: '혼합(영웅 KayKit)', ual: '흰 마네킹(UAL)' } as const)[pack]}`, () => {
+button(() => `모델: ${({ kaykit: 'KayKit', quat: 'Quaternius', mix: '혼합(영웅 KayKit)', ual: '흰 마네킹(UAL)', idleon: 'IdleOn 풍' } as const)[pack]}`, () => {
   void switchPack();
 }).addEventListener('click', () => setTimeout(() => ui.querySelectorAll('button').forEach((b) => b.dispatchEvent(new Event('refresh'))), 50));
 button(() => `흰 던전: ${whiteWorld ? '켜짐' : '꺼짐'}`, () => {
@@ -608,7 +678,8 @@ async function spawnAll() {
 
 /** 모델 팩 바꾸기: 지금 있는 유닛을 모두 치우고 다시 부른다 */
 async function switchPack() {
-  pack = pack === 'kaykit' ? 'quat' : pack === 'quat' ? 'mix' : pack === 'mix' ? 'ual' : 'kaykit';
+  const order = ['kaykit', 'quat', 'mix', 'ual', 'idleon'] as const;
+  pack = order[(order.indexOf(pack) + 1) % order.length];
   for (const a of actors) scene.remove(a.root);
   actors.length = 0;
   for (const s of shots) scene.remove(s.mesh);
