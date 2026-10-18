@@ -57,9 +57,12 @@ export function computeStats(u: Unit) {
 export const RESIST_MULT = (lvl: number) =>
   lvl <= -1 ? 1.5 : lvl === 0 ? 1 : lvl === 1 ? 0.5 : lvl === 2 ? 0.33 : 0.2;
 
+/** 전투 템포: 평타 간격 배율 (배틀하트처럼 한 대 한 대가 보이게. 기사 1.1초 · 마법사 1.5초 정도) */
+export const TEMPO = 1.35;
+
 export function attackDelay(u: Unit): number {
   const w = u.weapon;
-  return (w.delay * Math.max(0.6, 1 - u.skills[w.skill] * 0.025)) / u.stats.actionMult;
+  return (TEMPO * w.delay * Math.max(0.6, 1 - u.skills[w.skill] * 0.025)) / u.stats.actionMult;
 }
 
 export function weaponDmgMult(u: Unit): number {

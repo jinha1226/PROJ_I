@@ -205,7 +205,7 @@ export function performAttack(w: World, u: Unit, t: Unit) {
   const combo = u.faction === 'party' && !u.isRanged;
   if (combo) {
     // 잠깐 쉬었거나 대상이 바뀌면 처음부터
-    if (w.time - u.comboAt > 2 || u.comboTarget !== t) u.combo = 0;
+    if (w.time - u.comboAt > 3 || u.comboTarget !== t) u.combo = 0;
     const step = COMBO[u.combo];
     u.swingStep = u.combo;
     mult = step.mult;
