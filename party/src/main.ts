@@ -463,11 +463,10 @@ world.autoExplore = explore;
 $('btn-help').addEventListener('click', toggleHelp);
 $('btn-help-close').addEventListener('click', () => {
   $('help').classList.add('hidden');
-  // 처음이면 저장된 원정을 이어가거나 거점부터
-  if (!started) {
-    if (!resumeExpedition()) openTown();
-  } else ui.paused = false;
+  if (started) ui.paused = false;
 });
+// 시작 설명 없이 바로: 저장된 원정을 이어가거나 거점부터 (도움말은 ⚙ 안에)
+if (!resumeExpedition()) openTown();
 $('btn-restart').addEventListener('click', () => {
   if (started && (world.outcome === 'victory' || world.outcome === 'defeat')) endExpedition(world.outcome);
 });
