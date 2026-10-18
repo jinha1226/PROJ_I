@@ -95,3 +95,44 @@ export function heroColors(cls: string, race: string, uid: number): BodyColors {
   // 광전사 팔은 맨살
   return { ...c, sleeve: c.sleeve === '#f0c8a8' ? skin : c.sleeve, skin, hair: HAIR[(uid * 7 + 3) % HAIR.length] };
 }
+
+/**
+ * 얼굴: 머리 뼈 앞쪽에 눈 두 점. 쉬는 자세(= 바인드 자세)에서 얼굴 앞면 위치를 잡아 머리 뼈 자식으로 붙인다.
+ * 모델 크기를 정한 뒤(스케일 적용 후) 불러야 한다
+ */
+export function addEyes(root: THREE.Object3D, color = '#1a1220') {
+  root.updateMatrixWorld(true);
+  root.traverse((o) => {
+    const mesh = o as THREE.SkinnedMesh;
+    if (!mesh.isSkinnedMesh) return;
+    const head = mesh.skeleton.bones.find((b) => b.name === 'Head');
+    if (!head) return;
+    const geo = mesh.geometry;
+    const pos = geo.getAttribute('position'), si = geo.getAttribute('skinIndex'), sw = geo.getAttribute('skinWeight');
+    const hi = mesh.skeleton.bones.indexOf(head);
+    const box = new THREE.Box3();
+    for (let i = 0; i < pos.count; i++) {
+      let best = 0, bw = -1;
+      for (let k = 0; k < 4; k++) {
+        const w = sw.getComponent(i, k);
+        if (w > bw) { bw = w; best = si.getComponent(i, k); }
+      }
+      if (best === hi) box.expandByPoint(new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i)));
+    }
+    if (box.isEmpty()) return;
+    const c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
+    const toWorld = (p: THREE.Vector3) => p.applyMatrix4(mesh.matrixWorld);
+    const inv = new THREE.Matrix4().copy(head.matrixWorld).invert();
+    const headW = toWorld(new THREE.Vector3(box.min.x, c.y, c.z)).distanceTo(toWorld(new THREE.Vector3(box.max.x, c.y, c.z)));
+    const bs = head.getWorldScale(new THREE.Vector3());
+    const mat = new THREE.MeshBasicMaterial({ color });
+    for (const side of [-1, 1]) {
+      const p = toWorld(new THREE.Vector3(c.x + side * sz.x * 0.2, box.min.y + sz.y * 0.5, box.max.z - sz.z * 0.04)).applyMatrix4(inv);
+      const eye = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat);
+      eye.position.copy(p);
+      // 세로로 긴 눈 (도트 한두 칸)
+      eye.scale.set((headW * 0.13) / bs.x, (headW * 0.2) / bs.y, (headW * 0.16) / bs.z);
+      head.add(eye);
+    }
+  });
+}

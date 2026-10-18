@@ -219,10 +219,11 @@ function startRoom(id: number) {
   // 작은 화면(폰 가로): 방 전체를 넣으면 캐릭터가 손톱만 해지므로, 가로를 채우고 위아래는 주장을 따라간다
   const small = window.innerHeight < 520;
   const vh = window.innerHeight - cam.padBottom - (small ? 30 : 60);
-  const fitW = window.innerWidth / (map.width + 1), fitH = vh / (map.height * 0.85 * (small ? 0.7 : 1) + 1);
+  // 뒷벽(높이 약 1.5칸)까지 화면에 들어오게 위쪽 여유를 더 둔다
+  const fitW = window.innerWidth / (map.width + 1), fitH = vh / (map.height * 0.85 * (small ? 0.7 : 1) + 2.2);
   cam.zoom = Math.max(24, Math.min(64, fitW, fitH));
   cam.x = map.width / 2;
-  cam.y = map.height / 2;
+  cam.y = map.height / 2 - 0.6;
   cam.follow = small;
 }
 

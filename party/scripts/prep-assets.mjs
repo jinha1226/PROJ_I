@@ -3,7 +3,7 @@
 // 사용: node scripts/prep-assets.mjs
 import { NodeIO } from '@gltf-transform/core';
 import { prune, dedup } from '@gltf-transform/functions';
-import { copyFileSync, mkdirSync, statSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const CHAR_SRC = '/mnt/d/PROJ_I/public/assets/kaykit';
@@ -20,6 +20,10 @@ const KEEP_ANIMS = new Set([
 const DUNGEON = [
   'floor_tile_large', 'floor_tile_small', 'floor_dirt_large', 'wall', 'wall_corner', 'wall_half', 'pillar', 'column',
   'torch_mounted', 'torch_lit', 'chest', 'chest_gold', 'stairs', 'barrel_small', 'box_small', 'rubble_half', 'banner_red',
+  // 전장 (배틀하트식 방): 바닥 변형 · 벽 · 소품
+  'floor_tile_small_broken_A', 'floor_tile_small_broken_B', 'floor_tile_small_decorated', 'floor_tile_small_weeds_A',
+  'floor_dirt_small_A', 'floor_dirt_small_B', 'wall_cracked', 'wall_arched', 'barrel_large', 'crates_stacked', 'box_stacked',
+  'banner_patternA_red', 'banner_patternB_blue', 'candle_triple', 'rubble_large', 'sword_shield_broken', 'trunk_small_A',
 ];
 
 mkdirSync(OUT, { recursive: true });
@@ -88,3 +92,13 @@ console.log('ual + weapons');
 
 copyFileSync('/mnt/d/PROJ_E/public/assets/kaykit/Skeleton_Minion.glb', join(OUT, 'Skeleton_Minion.glb'));
 console.log('extra monsters');
+
+// ── 전장 꾸미기: SigilsVault Modular Dungeon Kit (CC0, 손으로 칠한 돌) · Quaternius Dungeon (CC0, 소품 한 파일) ──
+const PUBLIC = 'public/assets';
+const SIGILS_SRC = '/mnt/d/PROJ_A/public/assets/models/sigils';
+const QDUNGEON_SRC = '/mnt/d/PROJ_A/public/assets/models/qpack';
+mkdirSync(join(PUBLIC, 'sigils'), { recursive: true });
+for (const f of readdirSync(SIGILS_SRC)) if (f.endsWith('.glb') || f === 'LICENSE.txt') copyFileSync(join(SIGILS_SRC, f), join(PUBLIC, 'sigils', f));
+copyFileSync(join(QDUNGEON_SRC, 'dungeon.glb'), join(PUBLIC, 'quaternius', 'dungeon.glb'));
+copyFileSync(join(QDUNGEON_SRC, 'LICENSE.txt'), join(PUBLIC, 'quaternius', 'LICENSE-dungeon.txt'));
+console.log('arena kits copied');

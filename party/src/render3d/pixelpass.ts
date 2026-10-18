@@ -3,7 +3,7 @@
 // - 바깥 외곽선: 이 칸이 뒤(배경)이고 이웃 칸이 충분히 앞(물체)이면, 그 이웃 색을 어둡게 해서 칠한다
 // - 안쪽 면 경계: 법선이 꺾이는 곳을 살짝 밝게 (입체감)
 import {
-  type Camera, DepthTexture, HalfFloatType, MeshNormalMaterial, NearestFilter, OrthographicCamera, PerspectiveCamera, ShaderMaterial,
+  type Camera, Color, DepthTexture, HalfFloatType, MeshBasicMaterial, MeshNormalMaterial, NearestFilter, OrthographicCamera, PerspectiveCamera, ShaderMaterial,
   Vector4, WebGLRenderTarget, type Scene, type WebGLRenderer,
 } from 'three';
 import { FullScreenQuad, Pass } from 'three/examples/jsm/postprocessing/Pass.js';
@@ -12,6 +12,9 @@ export class PixelPass extends Pass {
   private beauty = new WebGLRenderTarget();
   private normals = new WebGLRenderTarget();
   private normalMat = new MeshNormalMaterial();
+  /** 적 마스크: 레이어 1(적)만 흰색으로 — 적의 외곽선은 붉은 색조 */
+  private mask = new WebGLRenderTarget();
+  private maskMat = new MeshBasicMaterial({ color: 0xffffff });
   private quad: FullScreenQuad;
   private mat: ShaderMaterial;
   private w = 1;
@@ -19,14 +22,14 @@ export class PixelPass extends Pass {
 
   constructor(public pixelSize: number, private scene: Scene, public camera: Camera) {
     super();
-    for (const t of [this.beauty, this.normals]) {
+    for (const t of [this.beauty, this.normals, this.mask]) {
       t.texture.minFilter = t.texture.magFilter = NearestFilter;
       t.texture.type = HalfFloatType;
     }
     this.beauty.depthTexture = new DepthTexture(1, 1);
     this.mat = new ShaderMaterial({
       uniforms: {
-        tDiffuse: { value: null }, tDepth: { value: null }, tNormal: { value: null },
+        tDiffuse: { value: null }, tDepth: { value: null }, tNormal: { value: null }, tMask: { value: null },
         resolution: { value: new Vector4() },
         near: { value: 0.1 }, far: { value: 100 },
         /** 바깥 외곽선이 생기는 깊이 차 (월드 단위) */
@@ -39,7 +42,7 @@ export class PixelPass extends Pass {
         varying vec2 vUv;
         void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
       fragmentShader: /* glsl */ `
-        uniform sampler2D tDiffuse; uniform sampler2D tDepth; uniform sampler2D tNormal;
+        uniform sampler2D tDiffuse; uniform sampler2D tDepth; uniform sampler2D tNormal; uniform sampler2D tMask;
         uniform vec4 resolution; uniform float near; uniform float far; uniform float edge; uniform float ink; uniform float normalLight;
         varying vec2 vUv;
         // 직교 카메라 깊이는 선형: 월드 단위로 바꾼다
@@ -58,7 +61,8 @@ export class PixelPass extends Pass {
           }
           if (best > edge) {
             vec3 nc = texture2D(tDiffuse, vUv + bo * resolution.zw).rgb;
-            gl_FragColor = vec4(nc * ink, 1.0);
+            float foe = texture2D(tMask, vUv + bo * resolution.zw).r;
+            gl_FragColor = vec4(mix(nc * ink, vec3(0.2, 0.01, 0.02), foe * 0.75), 1.0);
             return;
           }
           // 안쪽 면 경계: 법선이 크게 꺾이고 내가 더 앞이면 살짝 밝게
@@ -81,6 +85,7 @@ export class PixelPass extends Pass {
     const x = Math.max(1, (width / this.pixelSize) | 0), y = Math.max(1, (height / this.pixelSize) | 0);
     this.beauty.setSize(x, y);
     this.normals.setSize(x, y);
+    this.mask.setSize(x, y);
     this.mat.uniforms.resolution.value.set(x, y, 1 / x, 1 / y);
   }
 
@@ -100,7 +105,22 @@ export class PixelPass extends Pass {
     this.scene.overrideMaterial = this.normalMat;
     renderer.setRenderTarget(this.normals);
     renderer.render(this.scene, this.camera);
+    // 적 마스크
+    const layers = this.camera.layers.mask;
+    const bg = this.scene.background;
+    this.scene.background = null;
+    this.camera.layers.set(1);
+    this.scene.overrideMaterial = this.maskMat;
+    renderer.setRenderTarget(this.mask);
+    const cc = renderer.getClearColor(new Color()), ca = renderer.getClearAlpha();
+    renderer.setClearColor(0x000000, 1);
+    renderer.clear();
+    renderer.render(this.scene, this.camera);
+    renderer.setClearColor(cc, ca);
+    this.camera.layers.mask = layers;
+    this.scene.background = bg;
     this.scene.overrideMaterial = old;
+    u.tMask.value = this.mask.texture;
     u.tDiffuse.value = this.beauty.texture;
     u.tDepth.value = this.beauty.depthTexture;
     u.tNormal.value = this.normals.texture;
@@ -112,6 +132,8 @@ export class PixelPass extends Pass {
   dispose() {
     this.beauty.dispose();
     this.normals.dispose();
+    this.mask.dispose();
+    this.maskMat.dispose();
     this.mat.dispose();
     this.normalMat.dispose();
     this.quad.dispose();

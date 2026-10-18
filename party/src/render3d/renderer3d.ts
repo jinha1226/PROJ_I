@@ -6,7 +6,8 @@ import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { PixelPass } from './pixelpass';
-import { heroColors, paintMannequin } from './paint';
+import { addEyes, heroColors, paintMannequin } from './paint';
+import { buildArena, flicker, type ArenaEnv } from './arenakit';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { PALETTES } from '../render/renderer';
 import type { WorldObject } from '../sim/objects';
@@ -76,6 +77,10 @@ export class Renderer3D {
   private pending = new Set<Unit>();
   private world: World | null = null;
   private env = new THREE.Group();
+  private hemi: THREE.HemisphereLight;
+  private sun: THREE.DirectionalLight;
+  /** 전장 꾸미기 (횃불 일렁임용) */
+  private arenaEnv: ArenaEnv | null = null;
   private floorMesh: THREE.InstancedMesh | null = null;
   private wallMesh: THREE.InstancedMesh | null = null;
   private floorTiles: number[] = [];
@@ -101,9 +106,11 @@ export class Renderer3D {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.effect = new OutlineEffect(this.renderer, { defaultThickness: 0.007, defaultColor: INK_HERO });
     this.scene.background = new THREE.Color('#07070b');
-    this.scene.add(new THREE.HemisphereLight(0xc8d8ff, 0x3a2c22, 1.0));
+    this.hemi = new THREE.HemisphereLight(0xc8d8ff, 0x3a2c22, 1.0);
+    this.scene.add(this.hemi);
     const sun = new THREE.DirectionalLight(0xfff0dd, 1.7);
     sun.position.set(-4, 10, 6);
+    this.sun = sun;
     this.scene.add(sun);
     this.scene.add(this.env, this.sparks.points, this.glows.points);
     this.fx = new Transients(this.scene);
@@ -181,6 +188,10 @@ export class Renderer3D {
     if (isUal && look.white && u.hero) paintMannequin(root, heroColors(u.hero.cls, u.hero.comp.race, u.hero.uid));
     if (isUal && look.weapon) await this.attach(root, 'hand_r', look.weapon, ink, mats, height);
     if (isUal && look.offhand) await this.attach(root, 'hand_l', look.offhand, ink, mats, height);
+    // 적은 레이어 1 에도: 픽셀 패스가 적의 외곽선을 붉게 칠한다
+    if (u.faction !== 'party') root.traverse((o) => o.layers.enable(1));
+    // 영웅 얼굴: 눈 두 점
+    if (isUal && u.hero) addEyes(root);
     const ringMat = additive('#66ff88', 0.9);
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.85, 1, 40), ringMat);
     ring.rotation.x = -Math.PI / 2;
@@ -256,6 +267,24 @@ export class Renderer3D {
     const m = w.map, P = PALETTES[w.palette];
     this.floorTiles = [];
     this.wallTiles = [];
+    this.arenaEnv = null;
+    // 전장: 던전 키트로 꾸민다 (상자 바닥 · 벽 대신). 횃불이 빛이라 전체 조명은 어둡게
+    this.hemi.intensity = w.arena ? 0.5 : 1.0;
+    this.sun.intensity = w.arena ? 0.75 : 1.7;
+    if (w.arena) {
+      this.floorMesh = this.wallMesh = null;
+      void buildArena(w, (n) => this.load(n), (map) => {
+        const mat = new THREE.MeshToonMaterial({ map, gradientMap: GRADIENT });
+        mat.userData.outlineParameters = { visible: false };
+        return mat;
+      }).then((env) => {
+        if (this.world !== w) return;
+        this.env.add(env.group);
+        this.arenaEnv = env;
+      });
+      for (const o of w.objects) void this.makeObject(o);
+      return;
+    }
     for (let y = 0; y < m.h; y++)
       for (let x = 0; x < m.w; x++) {
         if (!m.isWall(x, y)) this.floorTiles.push(y * m.w + x);
@@ -376,6 +405,7 @@ export class Renderer3D {
       obj.visible = !!w.seen[Math.floor(o.y) * w.map.w + Math.floor(o.x)] && !(o.kind === 'mimic' && o.used);
       if (o.used && o.kind !== 'mimic') obj.traverse((x) => ((x as THREE.Mesh).material as THREE.MeshToonMaterial | undefined)?.color?.setScalar?.(0.45));
     }
+    if (this.arenaEnv) flicker(this.arenaEnv, this.time);
     const sr = this.env.getObjectByName('stairs-ring');
     if (sr) sr.rotation.z = Math.PI / 4 + this.time;
 
