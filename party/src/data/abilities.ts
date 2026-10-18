@@ -86,7 +86,7 @@ const list: AbilityDef[] = [
   {
     id: 'sanctuary', name: '성역', icon: '역', color: '#ffeeaa', type: 'spell', schools: ['faith'], level: 3,
     desc: '주변 아군 모두를 조금 회복하고 4초간 보호(받는 피해 -30%). 웨이브가 몰려올 때.',
-    cost: 10, castTime: 0.5, cooldown: 24, range: 0, target: 'self', radius: 3.5, affects: 'allies',
+    cost: 10, castTime: 0.5, cooldown: 20, range: 0, target: 'self', radius: 3.5, affects: 'allies',
     effects: [{ kind: 'heal', base: [6, 10], scale: 0.4 }, { kind: 'status', status: 'protected', duration: 4 }],
     aiRole: 'heal',
   },
