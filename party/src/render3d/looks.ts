@@ -39,6 +39,7 @@ export const HERO_LOOKS: Record<string, Look3D> = {
 export const MONSTER_LOOKS: Record<string, Look3D> = {
   goblin: { model: 'quaternius/Tribal', h: 1.1, attack: ['Weapon'] },
   goblin_archer: { model: 'quaternius/Ninja', h: 1.1, attack: ['Weapon'] },
+  goblin_bomber: { model: 'quaternius/Tribal', h: 1.0, tint: '#ffc890', attack: ['Weapon'], cast: 'Wave', shoot: 'Punch' },
   orc: { model: 'quaternius/Orc', h: 1.05, attack: ['Weapon', 'Punch'] },
   orc_shaman: { model: 'quaternius/Orc_Skull', h: 1.05, attack: ['Punch'], cast: 'Wave', shoot: 'Punch' },
   hyena: { model: 'quaternius/Wolf', h: 0.85, attack: ['Attack'] },

@@ -15,6 +15,7 @@ export const ENCOUNTERS: Record<number, string[][]> = {
     ['imp', 'imp', 'goblin'],
     ['slime', 'slime'],
     ['goblin', 'goblin', 'goblin', 'goblin_archer'],
+    ['goblin', 'goblin', 'goblin_bomber'],
     ['hyena', 'hyena', 'goblin'],
     ['orc', 'goblin', 'goblin'],
     ['goblin_archer', 'goblin_archer', 'goblin', 'goblin'],
@@ -26,6 +27,7 @@ export const ENCOUNTERS: Record<number, string[][]> = {
     ['troll', 'goblin_archer'],
     ['cultist', 'orc', 'orc'],
     ['orc', 'orc', 'goblin_archer'],
+    ['orc', 'goblin_bomber', 'goblin_bomber'],
     ['orc', 'orc_shaman', 'goblin', 'goblin'],
     ['hyena', 'hyena', 'goblin_archer', 'goblin_archer'],
     ['skeleton', 'skeleton', 'goblin'],
@@ -42,6 +44,7 @@ export const ENCOUNTERS: Record<number, string[][]> = {
     ['orc', 'orc', 'orc_shaman', 'goblin'],
     ['hyena', 'hyena', 'orc', 'orc'],
     ['ogre', 'goblin_archer', 'goblin_archer'],
+    ['ogre', 'goblin_bomber', 'goblin_bomber'],
   ],
   5: [
     ['troll', 'cultist', 'orc', 'orc'],

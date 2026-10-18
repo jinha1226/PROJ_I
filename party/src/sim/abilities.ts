@@ -35,7 +35,8 @@ export function beginCast(w: World, u: Unit, slot: number, target: Unit | null, 
   }
   u.cast = { slot, target, x, y, time: 0, total: castTimeOf(u, ab) };
   // 적의 범위 공격 예고: 아군이 범위 근처에 있으면 플레이어에게 알린다
-  if (u.faction === 'enemy' && ab.radius && w.isVisible(u)) {
+  // 배너는 보스만 (일반 적은 바닥의 빨간 원으로 충분하다)
+  if (u.faction === 'enemy' && u.def.boss && ab.radius && w.isVisible(u)) {
     const c = areaCenter(ab, u, x, y);
     if (w.party.some((p) => p.alive && dist(p, c) <= ab.radius! + 1.2))
       w.crisis(`aoe:${u.id}`, `${u.name}: ${ab.name}! 피하세요`, c.x, c.y);
@@ -150,6 +151,10 @@ function landAbility(w: World, u: Unit, ab: AbilityDef, target: Unit | null, x: 
     w.effect({ kind: 'ring', x: c.x, y: c.y, r: ab.radius, color: ab.color, dur: 0.45 });
     if (ab.radius >= 1.8) w.shake = Math.max(w.shake, 5);
     victims = unitsInArea(w, ab, u, x, y);
+    if (ab.maxTargets && victims.length > ab.maxTargets) {
+      const c = areaCenter(ab, u, x, y);
+      victims = victims.sort((p, q) => dist(p, c) - dist(q, c)).slice(0, ab.maxTargets);
+    }
   } else {
     victims = target && target.alive ? [target] : [];
     if (target) w.effect({ kind: 'ring', x: target.x, y: target.y, r: 0.5, color: ab.color, dur: 0.25 });
@@ -177,6 +182,11 @@ function applyEffects(w: World, u: Unit, effects: Effect[], v: Unit, power: numb
         cleanse(w, v);
         break;
       case 'taunt':
+        // 사냥개(후열을 노리는 근접)는 도발에 끌리지 않는다
+        if (!v.isRanged && (v.def.targetPref === 'backline' || v.def.targetPref === 'weakest')) {
+          w.float(v, '무시', '#aaaaaa', 0.8);
+          break;
+        }
         if (tryApplyStatus(w, v, { status: 'taunted', duration: e.duration }, u, power)) tauntThreat(v, u);
         break;
     }

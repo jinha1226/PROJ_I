@@ -101,8 +101,8 @@ const list: AbilityDef[] = [
   },
   {
     id: 'taunt', name: '도발', icon: '도', color: '#ff5555', type: 'technique',
-    desc: '주변 4칸의 적이 4초간 자신만 공격하게 만들고, 방어 태세(AC+6)에 들어간다.',
-    cost: 0, castTime: 0, cooldown: 12, range: 0, target: 'self', radius: 4, affects: 'enemies',
+    desc: '주변 4칸에서 가장 가까운 적 3마리가 4초간 자신만 공격하게 만들고, 방어 태세(AC+6)에 들어간다. 사냥개(하이에나 · 거미 · 망령)는 끌리지 않는다.',
+    cost: 0, castTime: 0, cooldown: 12, range: 0, target: 'self', radius: 4, affects: 'enemies', maxTargets: 3,
     effects: [{ kind: 'taunt', duration: 4 }],
     selfEffects: [{ kind: 'status', status: 'guarded', duration: 6 }],
     aiRole: 'taunt',
@@ -434,6 +434,13 @@ const list: AbilityDef[] = [
       { kind: 'damage', element: 'physical', base: [26, 36], scale: 0 },
       { kind: 'status', status: 'stun', duration: 1.2, chance: 0.5 },
     ],
+    aiRole: 'damage',
+  },
+  {
+    id: 'bomb_throw', name: '폭탄 투척', icon: '폭', color: '#ff8a3a', type: 'technique',
+    desc: '뭉쳐 있는 적 머리 위로 폭탄을 던진다. 1.3초 뒤 터진다 — 흩어지거나 피하자.',
+    cost: 0, castTime: 1.3, cooldown: 8, range: 7, target: 'ground', radius: 1.5, affects: 'enemies',
+    effects: [{ kind: 'damage', element: 'fire', base: [9, 13], scale: 0 }, { kind: 'status', status: 'burn', duration: 3, chance: 0.5 }],
     aiRole: 'damage',
   },
   // ── 오우거 족장 (레이드 보스 스크립트) ──

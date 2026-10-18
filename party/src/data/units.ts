@@ -21,6 +21,14 @@ const monsterList: UnitDef[] = [
     abilities: [], tactic: 'ranged', targetPref: 'weakest',
   },
   {
+    id: 'goblin_bomber', tip: '뭉쳐 있는 쪽에 폭탄을 던진다(빨간 원). 후열이 붙어 있으면 같이 맞는다 — 흩어지거나 먼저 잡자.', xp: 14,
+    name: '고블린 폭탄병', title: '폭탄', glyph: 'g', color: '#ff9a4a', role: 'ranged',
+    radius: 0.3, mass: 1, speed: 2.5, hp: 24, mp: 0, str: 7, dex: 11, int: 7, ac: 0, ev: 8, will: 8,
+    skills: { fighting: 2 },
+    weapon: { name: '단검', skill: 'sword', damage: [2, 4], delay: 1.2, range: 0.5 },
+    abilities: ['bomb_throw'], tactic: 'ranged', targetPref: 'weakest',
+  },
+  {
     id: 'orc', tip: '단단하고 아프다. 전사가 막는 동안 뒤에서 집중 공격.', xp: 20, name: '오크 전사', title: '근접', glyph: 'o', color: '#d07050', role: 'melee',
     radius: 0.36, mass: 2, speed: 2.4, hp: 60, mp: 0, str: 14, dex: 10, int: 7, ac: 4, ev: 4, will: 12,
     skills: { axe: 4, fighting: 3 },

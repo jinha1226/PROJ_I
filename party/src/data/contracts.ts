@@ -37,7 +37,7 @@ export interface ContractDef {
   power?: number;
 }
 
-const GREENSKIN = ['goblin', 'goblin_archer', 'orc', 'orc_shaman', 'hyena'];
+const GREENSKIN = ['goblin', 'goblin_archer', 'goblin_bomber', 'orc', 'orc_shaman', 'hyena'];
 const UNDEAD = ['skeleton', 'zombie', 'wraith', 'necromancer', 'skeleton_minion'];
 const SPIDERS = ['spider', 'spiderling', 'slime'];
 
@@ -63,7 +63,7 @@ export const CONTRACTS: Record<ContractKind, ContractDef> = {
     desc: '좀비 · 망령 · 강령술사가 들끓는 깊은 묘지. 독과 냉기가 잘 통하지 않고 공포가 서린다. 화염과 신성이 답이다. 보상이 크다.',
   },
   nest: {
-    kind: 'nest', power: 1.05, name: '거미굴 소각', danger: 2, floors: 3, startDepth: 1, boss: false, reward: 230,
+    kind: 'nest', power: 1.15, name: '거미굴 소각', danger: 2, floors: 3, startDepth: 1, boss: false, reward: 230,
     theme: SPIDERS, themeName: '거미 · 슬라임', palette: 'nest',
     desc: '마을 아래 동굴에 거미가 알을 슬었다. 독과 거미줄을 조심하라. 거미는 불에 약하다.',
   },

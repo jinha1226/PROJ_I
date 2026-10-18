@@ -78,6 +78,8 @@ export interface AbilityDef {
   aiRole: AiRole;
   /** 소환: 시전자 주변에 몬스터를 불러낸다 (살아 있는 소환수가 max 이상이면 쓰지 않는다) */
   summon?: { id: string; count: number; max: number };
+  /** 범위 효과가 걸리는 최대 수 (가까운 순) */
+  maxTargets?: number;
   /** 보스 스크립트가 직접 쓰는 기술 (AI 가 고르지 않는다) */
   scripted?: boolean;
   /** 시전이 끝나면 시전자가 지점으로 뛰어든다 */
