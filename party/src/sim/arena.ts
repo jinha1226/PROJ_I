@@ -35,13 +35,13 @@ export function genArena(seed: number, depth: number, o: ArenaOpts): MapDef {
   switch (o.kind) {
     case 'battle':
       wave(depth);
-      wave(Math.max(1, depth - 1));
+      wave(depth);
       break;
     case 'elite':
     case 'goal':
-      wave(Math.max(1, depth - 1));
       wave(depth);
       wave(depth);
+      wave(depth + 1);
       if (o.captive) objects.push({ kind: 'captive', x: cx + 3, y: 2 });
       break;
     case 'boss':

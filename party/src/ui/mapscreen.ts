@@ -72,7 +72,7 @@ export class MapScreen {
       const mood = h.mood ? MOODS[h.mood] : null;
       const hp = Math.round((h.hpFrac ?? 1) * 100);
       return `<button class="mh" data-hero="${i}" style="border-color:${k.color}66">
-        <span style="color:${k.color}">${k.glyph} ${esc(h.def.name)}</span> <span class="lv">Lv${h.xl}</span>${h.pending ? ' <span class="gold">★</span>' : ''}
+        <span style="color:${k.color}">${run.captain === h.uid || (run.captain === undefined && i === 0) ? '★ ' : ''}${k.glyph} ${esc(h.def.name)}</span> <span class="lv">Lv${h.xl}</span>${h.pending ? ' <span class="gold">★</span>' : ''}
         <span class="mbar hp"><i style="width:${hp}%"></i></span>
         <span class="mbar st"><i style="width:${h.stress}%;background:${mood ? mood.color : '#8a5cc0'}"></i></span></button>`;
     }).join('');

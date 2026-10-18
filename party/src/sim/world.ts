@@ -121,6 +121,10 @@ export class World {
   time = 0;
   focusTarget: Unit | null = null;
   leader: Unit | null = null;
+  /** 주장: 플레이어가 직접 조작하는 한 명. 나머지는 작전대로 AI 가 싸운다 */
+  captain: Unit | null = null;
+  /** 주장 조이스틱 방향 (없으면 AI 가 근처 적을 친다) */
+  capDir: { x: number; y: number } | null = null;
   inCombat = false;
   /** victory = 보스 처치(런 승리), cleared = 계단 도착(다음 층) */
   outcome: 'victory' | 'defeat' | 'cleared' | null = null;
@@ -191,7 +195,7 @@ export class World {
       unit.hp = Math.max(1, Math.round(unit.stats.maxHp * (h.hpFrac ?? 1)));
       this.party.push(unit);
     });
-    this.leader = this.party[0];
+    this.setCaptain(this.party.find((p) => p.hero && p.hero.uid === run.captain) ?? this.party[0], false);
     for (const s of def.spawns) this.spawn(s.id, 'enemy', s.x + 0.5, s.y + 0.5);
     this.updateVisibility();
     if (this.arena) this.log(this.waves.length ? `적이 몰려온다! (웨이브 ${this.waves.length})` : '조용한 방이다', '#cccccc');
@@ -336,6 +340,83 @@ export class World {
     }
   }
 
+  /** 주장을 바꾼다. 새 주장은 이전 주장의 자동 여부를 이어받고, 나머지는 자동전투 */
+  setCaptain(u: Unit, announce = true) {
+    if (!u.alive || u.faction !== 'party') return;
+    const prev = this.captain;
+    const auto = prev ? prev.autoMode : u.autoMode;
+    for (const p of this.party) if (p !== u) p.autoMode = true;
+    u.autoMode = auto;
+    u.command = null;
+    u.intent = null;
+    u.holdPos = null;
+    this.captain = u;
+    this.leader = u;
+    this.capDir = null;
+    if (u.hero) this.run.captain = u.hero.uid;
+    if (announce && prev !== u) this.say(u, '내가 맡는다!', '#ffcc66', 1.2);
+  }
+
+  /** 주장 조이스틱: 방향 (길이 1) 또는 null(손을 뗐다) */
+  steerCaptain(dx: number, dy: number) {
+    const c = this.captain;
+    if (!c?.alive) return;
+    this.capDir = { x: dx, y: dy };
+    this.manualUntil = this.time + 4;
+  }
+
+  stopCaptain() {
+    this.capDir = null;
+    const c = this.captain;
+    if (c?.alive) stopMoving(c);
+  }
+
+  /** 주장 돌진 · 구르기: 진행 방향 앞에 적이 있으면 돌진 강타, 없으면 그 방향으로 구른다 */
+  captainDash(): boolean {
+    const c = this.captain;
+    if (!c?.alive || c.dashCd > 0 || c.dashT > 0 || c.stats.stunned) return false;
+    const dir = this.capDir ?? (c.lastTarget?.alive ? null : { x: c.facing, y: 0 });
+    if (c.cast) this.cancelCast(c, '', false);
+    c.command = null;
+    c.intent = null;
+    if (!c.isRanged) {
+      // 근접: 바라보는 쪽 6칸 안의 적 (방향이 없으면 가장 가까운 적)
+      let best: Unit | null = null, bestScore = Infinity;
+      for (const e of this.hostilesOf(c)) {
+        if (!e.alive) continue;
+        const d = dist(c, e);
+        if (d > 6) continue;
+        const along = dir ? ((e.x - c.x) * dir.x + (e.y - c.y) * dir.y) / (d || 1) : 1;
+        if (along < 0.4) continue;
+        const score = d * (1.6 - along);
+        if (score < bestScore) { best = e; bestScore = score; }
+      }
+      if (best) {
+        c.dashT = 0.4;
+        c.dashTarget = best;
+        c.dashDir = null;
+        c.dashCd = 4;
+        this.sound('swing');
+        return true;
+      }
+    }
+    // 구르기: 원거리면 적에게서 멀어지는 쪽이 기본
+    let d = dir;
+    if (!d) {
+      const near = this.hostilesOf(c).filter((e) => e.alive).sort((a, b) => dist(c, a) - dist(c, b))[0];
+      if (near) {
+        const l = dist(c, near) || 1;
+        d = { x: (c.x - near.x) / l, y: (c.y - near.y) / l };
+      } else d = { x: c.facing, y: 0 };
+    }
+    c.dashT = 0.25;
+    c.dashTarget = null;
+    c.dashDir = d;
+    c.dashCd = 2.5;
+    this.sound('swing');
+    return true;
+  }
+
   setFocus(t: Unit | null) {
     this.focusTarget = t && t.alive ? t : null;
     if (this.focusTarget) this.log(`집중 공격: ${this.focusTarget.name}`, '#ff6666');
@@ -428,6 +509,13 @@ export class World {
     if (u.def.boss || u.faction === 'party') this.shake = Math.max(this.shake, 10);
     this.log(`${u.name} 쓰러짐${by ? ` (${by.name})` : ''}`, u.faction === 'party' ? '#ff6666' : '#aaaaaa');
     if (this.focusTarget === u) this.focusTarget = null;
+    if (this.captain === u) {
+      const next = this.party.find((p) => p.alive);
+      if (next) {
+        this.setCaptain(next);
+        this.log(`주장 교대 → ${next.name}`, '#ffcc66');
+      }
+    }
     if (this.leader === u) this.leader = this.party.find((p) => p.alive) ?? null;
     if (u.faction === 'party') {
       partyStress(this, 15, u);

@@ -367,9 +367,10 @@ function togglePause() {
   ui.paused = !ui.paused;
 }
 
+/** 자동전투: 주장도 AI 에게 맡긴다 (동료는 늘 자동) */
 function toggleAutoAll() {
-  const on = !world.party.every((u) => u.autoMode);
-  for (const u of world.party) u.autoMode = on;
+  const c = world.captain;
+  if (c) c.autoMode = !c.autoMode;
 }
 
 function toggleHelp() {
@@ -427,7 +428,6 @@ function updatePrompt() {
 }
 
 $('btn-pause').addEventListener('click', togglePause);
-$('btn-all').addEventListener('click', () => (ui.selected = world.party.filter((u) => u.alive)));
 $('btn-auto').addEventListener('click', toggleAutoAll);
 $('btn-explore').addEventListener('click', toggleExplore);
 const diffSel = $('difficulty') as HTMLSelectElement;
@@ -618,8 +618,8 @@ function frame(now: number) {
   $('btn-follow').textContent = `카메라 추적: ${cam.follow ? '켜짐' : '꺼짐'}`;
   $('btn-explore').textContent = `자동 탐험: ${explore ? '켜짐' : '꺼짐'}`;
   $('btn-explore').classList.toggle('on', explore);
-  const autoOn = world.party.every((u) => u.autoMode);
-  $('btn-auto').textContent = `자동전투: ${autoOn ? '켜짐' : '꺼짐'}`;
+  const autoOn = !!world.captain?.autoMode;
+  $('btn-auto').textContent = `주장 자동: ${autoOn ? '켜짐' : '꺼짐'}`;
   $('btn-auto').classList.toggle('on', autoOn);
   if (started && roomNode !== null && world.outcome === 'cleared' && !restOpen) roomCleared();
   const out = $('outcome');

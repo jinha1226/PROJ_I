@@ -1,6 +1,8 @@
-// 마우스/터치 입력 (Pointer Events). 드래그 명령, 범위 선택, 스킬 대상 지정, 단축키.
-// 파티 전체 이동은 우르르 용병단식 조이스틱: 터치는 빈 곳을 끌기, PC 는 방향키.
+// 마우스/터치 입력 (Pointer Events). 주장 한 명을 직접 조작한다 (에스라봉 · 레이드 매니저식).
+// 이동: 터치는 화면을 끌기(조이스틱), PC 는 WASD · 방향키. 탭/클릭: 적 = 공격, 바닥 = 이동, 아군 = 주장 교대.
+// 기술: Q E R F (또는 1~6), 돌진/구르기: Shift.
 import { CONSUMABLES } from '../data/consumables';
+import { dist } from '../core/rng';
 import type { Camera } from '../render/camera';
 import { useConsumable } from '../sim/objects';
 import type { Unit } from '../sim/unit';
@@ -10,7 +12,10 @@ import type { UiState } from '../ui/state';
 const DRAG_PX = 8;
 /** 조이스틱 손잡이가 움직이는 반지름(px) */
 const JOY_R = 42;
-const SKILL_KEYS = ['q', 'w', 'e', 'r'];
+const SKILL_KEYS = ['q', 'e', 'r', 'f'];
+const MOVE_KEYS: Record<string, [number, number]> = {
+  arrowleft: [-1, 0], a: [-1, 0], arrowright: [1, 0], d: [1, 0], arrowup: [0, -1], w: [0, -1], arrowdown: [0, 1], s: [0, 1],
+};
 
 export interface InputHooks {
   getWorld(): World;
@@ -25,8 +30,10 @@ export class Input {
   /** 화면에 닿아 있는 손가락들 (두 손가락 확대/이동용) */
   private touches = new Map<number, { x: number; y: number }>();
   private pinch: { dist: number; mx: number; my: number } | null = null;
-  /** 누르고 있는 방향키 */
+  /** 누르고 있는 이동 키 */
   private arrows = new Set<string>();
+  /** 마지막 입력이 마우스였는가 (지점 기술을 커서 위치에 바로 쓰기) */
+  private mouse = false;
   private steering = false;
   private joyEl: HTMLElement;
 
@@ -111,20 +118,10 @@ export class Input {
       this.resolveTargeting(sx, sy, e.shiftKey);
       return;
     }
-    const u = this.unitAt(sx, sy);
-    if (u && u.faction === 'party') {
-      if (e.shiftKey) {
-        ui.selected = ui.selected.includes(u) ? ui.selected.filter((s) => s !== u) : [...ui.selected, u];
-      } else if (!ui.selected.includes(u) || ui.selected.length > 1) {
-        ui.selected = [u];
-      }
-      ui.drag = { kind: 'unit', unit: u, sx, sy, cx: sx, cy: sy, moved: false };
-    } else if (touch) {
-      // 터치: 빈 곳을 끌면 조이스틱(파티 전체 이동), 떼지 않고 그대로면 탭. 화면 이동은 두 손가락
-      ui.drag = { kind: 'joy', sx, sy, cx: sx, cy: sy, active: false };
-    } else {
-      ui.drag = { kind: 'box', sx, sy, cx: sx, cy: sy, moved: false };
-    }
+    this.mouse = !touch;
+    // 터치: 끌면 조이스틱(주장 이동), 그대로 떼면 탭. 마우스: 클릭 = 탭
+    if (touch) ui.drag = { kind: 'joy', sx, sy, cx: sx, cy: sy, active: false };
+    else this.tap(sx, sy, false);
   }
 
   private pinchState() {
@@ -163,10 +160,7 @@ export class Input {
     d.cx = e.clientX;
     d.cy = e.clientY;
     if (d.kind === 'joy') {
-      if (!d.active && Math.hypot(d.cx - d.sx, d.cy - d.sy) > DRAG_PX * 1.5) {
-        d.active = true;
-        this.cam.follow = true;
-      }
+      if (!d.active && Math.hypot(d.cx - d.sx, d.cy - d.sy) > DRAG_PX * 1.5) d.active = true;
       return;
     }
     if (Math.hypot(d.cx - d.sx, d.cy - d.sy) > DRAG_PX) d.moved = true;
@@ -189,54 +183,37 @@ export class Input {
       return;
     }
     if (d.kind === 'joy') {
-      if (d.active) this.w.stopSteer();
+      if (d.active) this.w.stopCaptain();
       else this.tap(sx, sy);
-      return;
-    }
-    if (d.kind === 'unit') {
-      if (!d.moved) return; // 단순 선택
-      ui.selected = [d.unit];
-      this.commandAt(sx, sy, [d.unit]);
-      return;
-    }
-    // box
-    if (d.moved) {
-      const a = this.cam.toWorld(Math.min(d.sx, sx), Math.min(d.sy, sy));
-      const b = this.cam.toWorld(Math.max(d.sx, sx), Math.max(d.sy, sy));
-      const inBox = this.w.party.filter((u) => u.alive && u.x >= a.x && u.x <= b.x && u.y >= a.y - 0.6 && u.y <= b.y + 0.3);
-      if (inBox.length) ui.selected = e.shiftKey ? [...new Set([...ui.selected, ...inBox])] : inBox;
       return;
     }
     this.tap(sx, sy, touch);
   }
 
-  /** 클릭/탭: 선택된 아군이 있으면 명령, 없으면 적 정보 보기 */
+  /** 탭/클릭: 적 = 주장이 공격(정보도 띄움), 아군 = 주장 교대, 바닥 = 주장 이동 */
   private tap(sx: number, sy: number, touch = true) {
-    const ui = this.ui;
+    const ui = this.ui, w = this.w;
     const t = this.unitAt(sx, sy);
-    if (t && t.faction !== 'party') {
-      // 터치는 커서를 올려 정보를 볼 수 없으니 탭한 적을 항상 정보 창에 띄운다
-      if (!ui.selected.length) {
-        ui.inspect = ui.inspect === t ? null : t;
-        return;
-      }
-      if (touch) ui.inspect = t;
+    if (t && t.faction === 'party') {
+      w.setCaptain(t);
+      return;
     }
-    if (ui.selected.length) this.commandAt(sx, sy);
+    if (t && touch) ui.inspect = t;
+    this.commandAt(sx, sy);
   }
 
-  /** 선택된(또는 지정된) 유닛에게 해당 지점의 이동/공격 명령 */
-  private commandAt(sx: number, sy: number, units = this.ui.selected) {
-    const live = units.filter((u) => u.alive);
-    if (!live.length) return;
+  /** 주장에게 해당 지점의 이동/공격 명령 */
+  private commandAt(sx: number, sy: number) {
+    const c = this.w.captain;
+    if (!c?.alive) return;
     const t = this.unitAt(sx, sy);
     const p = this.cam.toWorld(sx, sy);
     if (t && t.faction !== 'party') {
-      this.w.commandAttack(live, t);
+      this.w.commandAttack([c], t);
       this.mark(t.x, t.y, '#ff5555');
     } else {
       const dest = this.w.map.nearestFloor(p.x, p.y);
-      this.w.commandMove(live, dest.x, dest.y);
+      this.w.commandMove([c], dest.x, dest.y);
       this.mark(dest.x, dest.y, '#66ff88');
     }
   }
@@ -245,30 +222,57 @@ export class Input {
     this.ui.marks.push({ x, y, color, t: 0 });
   }
 
-  /** 스킬 사용 시작. 적/아군 대상 스킬은 커서 아래 유효 대상이 있으면 즉시 사용 */
+  /**
+   * 주장 기술 사용. 대상은 알아서 고른다 (모바일 한 손 조작):
+   * 적 대상 = 커서 아래 → 지금 치는 적 → 집중 대상 → 가장 가까운 적, 지점 = 마우스 커서 또는 그 적의 자리,
+   * 아군 대상 = 커서 아래 → 체력 비율이 가장 낮은 아군. 마땅한 대상이 없으면 대상 지정 모드
+   */
   useSkill(slot: number, quick: boolean) {
-    const u = this.ui.selected.find((s) => s.alive);
-    if (!u || slot >= u.abilities.length || u.abilities[slot].hidden) return;
+    const u = this.w.captain;
+    if (!u?.alive || slot >= u.abilities.length || u.abilities[slot].hidden) return;
     const ab = u.abilities[slot].def;
     // 같은 기술 버튼을 다시 누르면 대상 지정 취소 (모바일에는 우클릭 · Esc 가 없다)
     if (this.ui.targeting?.unit === u && this.ui.targeting.slot === slot) {
       this.ui.targeting = null;
       return;
     }
+    this.ui.targeting = null;
     if (ab.target === 'self') {
       this.w.commandAbility(u, slot, null, u.x, u.y);
-      this.ui.targeting = null;
       return;
     }
-    if (quick) {
-      const h = this.ui.hover;
-      if (h && h.alive && this.validTarget(u, slot, h)) {
-        this.w.commandAbility(u, slot, h, h.x, h.y);
-        this.mark(h.x, h.y, ab.color);
-        return;
-      }
+    const h = this.ui.hover;
+    if (quick && h?.alive && this.validTarget(u, slot, h)) {
+      this.w.commandAbility(u, slot, h, h.x, h.y);
+      this.mark(h.x, h.y, ab.color);
+      return;
+    }
+    if (ab.target === 'ground' && quick && this.mouse) {
+      const p = this.ui.mouseWorld;
+      this.w.commandAbility(u, slot, null, p.x, p.y);
+      this.mark(p.x, p.y, ab.color);
+      return;
+    }
+    const auto = this.autoTarget(u, slot);
+    if (auto) {
+      this.w.commandAbility(u, slot, ab.target === 'ground' ? null : auto, auto.x, auto.y);
+      this.mark(auto.x, auto.y, ab.color);
+      return;
     }
     this.ui.targeting = { unit: u, slot };
+  }
+
+  private autoTarget(u: Unit, slot: number): Unit | null {
+    const ab = u.abilities[slot].def;
+    const w = this.w;
+    if (ab.target === 'ally') {
+      const hurt = w.party.filter((p) => p.alive && p.hpFrac < 0.97).sort((a, b) => a.hpFrac - b.hpFrac);
+      return hurt[0] ?? null;
+    }
+    const foes = w.hostilesOf(u).filter((e) => e.alive && w.isVisible(e));
+    const cur = u.command?.intent.type === 'attack' ? u.command.intent.target : u.intent?.type === 'attack' ? u.intent.target : u.lastTarget;
+    for (const c of [cur, w.focusTarget]) if (c?.alive && foes.includes(c) && dist(u, c) <= ab.range + 4) return c;
+    return foes.sort((a, b) => dist(u, a) - dist(u, b))[0] ?? null;
   }
 
   private validTarget(u: Unit, slot: number, t: Unit) {
@@ -339,8 +343,6 @@ export class Input {
     this.cam.y += before.y - after.y;
   }
 
-  private lastNumKey = { k: '', t: 0 };
-
   private key(e: KeyboardEvent) {
     if ((e.target as HTMLElement)?.tagName === 'SELECT') return;
     const ui = this.ui, w = this.w;
@@ -348,20 +350,13 @@ export class Input {
     if (k === ' ') {
       e.preventDefault();
       this.hooks.togglePause();
-    } else if (k >= '1' && k <= '4') {
-      const u = w.party[Number(k) - 1];
-      if (!u?.alive) return;
-      if (e.shiftKey) ui.selected = ui.selected.includes(u) ? ui.selected : [...ui.selected, u];
-      else ui.selected = [u];
-      const now = performance.now();
-      if (this.lastNumKey.k === k && now - this.lastNumKey.t < 350) this.centerOn(u);
-      this.lastNumKey = { k, t: now };
-    } else if (k === '`' || (k === 'a' && (e.ctrlKey || e.metaKey))) {
-      e.preventDefault();
-      ui.selected = w.party.filter((u) => u.alive);
-    } else if (SKILL_KEYS.includes(k) && !e.ctrlKey) {
+    } else if (k >= '1' && k <= '6') {
+      this.useSkill(Number(k) - 1, true);
+    } else if (SKILL_KEYS.includes(k) && !e.ctrlKey && !(k === 'r' && (w.outcome === 'victory' || w.outcome === 'defeat'))) {
       this.useSkill(SKILL_KEYS.indexOf(k), true);
-    } else if (k === 'f') {
+    } else if (k === 'shift') {
+      w.captainDash();
+    } else if (k === 'g') {
       const t = ui.hover && ui.hover.faction !== 'party' ? ui.hover : ui.inspect;
       if (t) w.setFocus(w.focusTarget === t ? null : t);
     } else if (k === 't') {
@@ -376,13 +371,12 @@ export class Input {
       if (ui.itemTarget !== null) ui.itemTarget = null;
       else if (ui.targeting) ui.targeting = null;
       else ui.selected = [];
-    } else if (k === 'r' && (w.outcome === 'victory' || w.outcome === 'defeat' || e.shiftKey)) {
+    } else if (k === 'r') {
       this.hooks.restart();
-    } else if (k.startsWith('arrow')) {
-      // 방향키 = 조이스틱 (파티 전체 이동)
+    } else if (MOVE_KEYS[k]) {
+      // WASD · 방향키 = 주장 이동
       e.preventDefault();
       this.arrows.add(k);
-      this.cam.follow = true;
     }
   }
 
@@ -400,11 +394,13 @@ export class Input {
     ui.selected = ui.selected.filter((u) => u.alive);
     if (ui.inspect && !ui.inspect.alive) ui.inspect = null;
     if (ui.targeting && !ui.targeting.unit.alive) ui.targeting = null;
+    const cap = this.w.captain;
+    ui.selected = cap?.alive ? [cap] : [];
     ui.mouseWorld = this.cam.toWorld(ui.mouseScreen.x, ui.mouseScreen.y);
     this.updateSteer();
     // 드래그 중에는 화면이 움직이지 않게 한다 (조이스틱은 예외)
     if (this.cam.follow && (!ui.drag || ui.drag.kind === 'joy')) {
-      const pts = this.w.party.filter((u) => u.alive);
+      const pts = cap?.alive ? [cap] : this.w.party.filter((u) => u.alive);
       if (pts.length) {
         const cx = pts.reduce((s, u) => s + u.x, 0) / pts.length;
         const cy = pts.reduce((s, u) => s + u.y, 0) / pts.length;
@@ -415,7 +411,7 @@ export class Input {
     }
   }
 
-  /** 조이스틱 · 방향키 → 파티 전체 이동 */
+  /** 조이스틱 · WASD → 주장 이동 */
   private updateSteer() {
     const d = this.ui.drag;
     let dx = 0, dy = 0;
@@ -430,19 +426,18 @@ export class Input {
       (this.joyEl.firstElementChild as HTMLElement).style.transform = `translate(${dx * k}px, ${dy * k}px)`;
       if (len < 10) dx = dy = 0;
     } else {
-      if (this.arrows.has('arrowleft')) dx -= 1;
-      if (this.arrows.has('arrowright')) dx += 1;
-      if (this.arrows.has('arrowup')) dy -= 1;
-      if (this.arrows.has('arrowdown')) dy += 1;
+      for (const k of this.arrows) {
+        dx += MOVE_KEYS[k][0];
+        dy += MOVE_KEYS[k][1];
+      }
     }
     this.joyEl.classList.toggle('hidden', !joy);
     const len = Math.hypot(dx, dy);
     if (len > 0) {
-      this.w.steer(dx / len, dy / len);
+      this.w.steerCaptain(dx / len, dy / len);
       this.steering = true;
-    } else if (this.steering && !joy) {
-      // 방향키를 모두 뗐다 (터치 조이스틱은 손을 뗄 때 멈춘다)
-      this.w.stopSteer();
+    } else if (this.steering) {
+      this.w.stopCaptain();
       this.steering = false;
     }
   }

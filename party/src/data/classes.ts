@@ -1,4 +1,4 @@
-// 직업: 기본 능력치 · 시작 장비 · 시작 기술 2개 · 직업 스킬(내부 수치, 레벨마다 저절로 오름).
+// 직업: 기본 능력치 · 시작 장비 · 시작 기술 4개(주장으로 직접 쓸 거리) · 직업 스킬(내부 수치, 레벨마다 저절로 오름).
 // 레벨업 선택지는 data/talents.ts 의 CLASS_TALENTS.
 // 수치는 '인간' 기준. 종족 보정이 그 위에 더해진다.
 import type { Role, SkillId, TacticId, UnitDef } from '../sim/defs';
@@ -29,7 +29,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skills: { fighting: 3, sword: 3, armour: 3, shield: 3, dodge: 1 },
     gear: { weapon: 'long_sword', armour: 'chain_mail' },
     classSkills: ['fighting', 'shield', 'armour'],
-    weapon: UNARMED, abilities: ['shield_bash', 'taunt'],
+    weapon: UNARMED, abilities: ['shield_bash', 'taunt', 'shield_charge', 'second_wind'],
   },
   fire_mage: {
     id: 'fire_mage', name: '화염술사', glyph: '화', color: '#ff6a3a', role: 'caster', tactic: 'ranged',
@@ -38,7 +38,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skills: { spellcasting: 2, fire: 2, ice: 1, dodge: 2 },
     gear: { weapon: 'staff', armour: 'robe' },
     classSkills: ['fire', 'ice', 'spellcasting', 'dodge'],
-    weapon: UNARMED, abilities: ['fire_bolt', 'frost_bolt'],
+    weapon: UNARMED, abilities: ['fire_bolt', 'frost_bolt', 'flame_wave', 'combust'],
   },
   hunter: {
     id: 'hunter', name: '사냥꾼', glyph: '궁', color: '#7fd06a', role: 'ranged', tactic: 'ranged',
@@ -47,7 +47,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skills: { bow: 2, dodge: 2, fighting: 2, armour: 1 },
     gear: { weapon: 'short_bow', armour: 'leather' },
     classSkills: ['bow', 'dodge', 'fighting'],
-    weapon: UNARMED, abilities: ['aimed_shot', 'poison_arrow'],
+    weapon: UNARMED, abilities: ['aimed_shot', 'poison_arrow', 'quick_shot', 'snare_trap'],
   },
   priest: {
     id: 'priest', name: '사제', glyph: '치', color: '#f2f2ff', role: 'support', tactic: 'support',
@@ -56,7 +56,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skills: { faith: 3, spellcasting: 2, bow: 1, armour: 1 },
     gear: { weapon: 'sling', armour: 'ring_mail' },
     classSkills: ['faith', 'spellcasting', 'armour'],
-    weapon: UNARMED, abilities: ['heal', 'prayer'], autoAbilities: ['cleanse'],
+    weapon: UNARMED, abilities: ['heal', 'prayer', 'holy_light', 'sanctuary'], autoAbilities: ['cleanse'],
   },
   berserker: {
     id: 'berserker', name: '광전사', glyph: '광', color: '#e05a3a', role: 'melee', tactic: 'aggressive',
@@ -65,7 +65,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skills: { fighting: 3, axe: 3, dodge: 2, armour: 1 },
     gear: { weapon: 'war_axe', armour: 'leather' },
     classSkills: ['fighting', 'axe', 'dodge'],
-    weapon: UNARMED, abilities: ['leap', 'berserk'],
+    weapon: UNARMED, abilities: ['leap', 'berserk', 'cleave', 'war_stomp'],
   },
   frost_mage: {
     id: 'frost_mage', name: '서리술사', glyph: '빙', color: '#7fd0ff', role: 'caster', tactic: 'ranged',
@@ -74,7 +74,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
     skills: { spellcasting: 2, ice: 3, dodge: 2 },
     gear: { weapon: 'staff', armour: 'robe' },
     classSkills: ['ice', 'spellcasting', 'dodge'],
-    weapon: UNARMED, abilities: ['frost_bolt', 'frost_nova'],
+    weapon: UNARMED, abilities: ['frost_bolt', 'frost_nova', 'ice_shards', 'freeze'],
   },
 };
 

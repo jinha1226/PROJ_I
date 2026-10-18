@@ -23,6 +23,8 @@ export interface RunState {
   rescued: boolean;
   /** 원정 지도 (방 고르기) */
   expedition: Expedition | null;
+  /** 직접 조작하는 주장 (영웅 uid) */
+  captain?: number;
 }
 
 /** 지금 몇 번째 층 / 모두 몇 층 (계약의 시작 깊이를 뺀 값) */

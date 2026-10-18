@@ -1,14 +1,12 @@
-// DOM 기반 HUD: 하단 파티 패널(캐릭터별 스킬 버튼 + 상태창), 정보 창, 전투 로그.
+// DOM 기반 HUD: 하단 패널(파티 카드 4장 + 주장 기술 버튼), 정보 창, 전투 로그.
 import { ELEMENT_NAME } from '../sim/combat';
-import { RESIST_KEYS, type TacticId } from '../sim/defs';
-import { abilityCooldown, attackDelay, avgWeaponDamage, failChance } from '../sim/stats';
+import type { TacticId } from '../sim/defs';
+import { abilityCooldown, failChance } from '../sim/stats';
 import type { Unit } from '../sim/unit';
 import type { World } from '../sim/world';
 import type { UiState } from './state';
-import { RES_NAME, SKILL_NAME } from '../data/names';
-import { TALENTS } from '../data/talents';
+import { SKILL_NAME } from '../data/names';
 import { floorInfo } from '../sim/run';
-import { xpToNext } from '../sim/hero';
 import { BELT_SIZE, CONSUMABLES } from '../data/consumables';
 import { MOODS } from '../data/moods';
 import { WARN_STRESS } from '../sim/stress';
@@ -26,34 +24,10 @@ const TACTICS: [TacticId, string][] = [
 
 export { SKILL_NAME };
 
-function resistText(u: Unit): string {
-  const parts: string[] = [];
-  for (const k of RESIST_KEYS) {
-    const v = u.stats.resists[k];
-    if (!v) continue;
-    if (k === 'poison') parts.push(`<span class="res-good">독 면역</span>`);
-    else if (v >= 3) parts.push(`<span class="res-good">${RES_NAME[k]} 면역급(+++)</span>`);
-    else if (v > 0) parts.push(`<span class="res-good">${RES_NAME[k]} ${'+'.repeat(v)}</span>`);
-    else parts.push(`<span class="res-bad">${RES_NAME[k]} 취약</span>`);
-  }
-  const tags = u.tags;
-  if (tags.includes('mindless')) parts.push('<span class="res-good">정신 없음(의지 판정 면역)</span>');
-  if (tags.includes('unstunnable')) parts.push('<span class="res-good">기절 면역</span>');
-  return parts.join(', ') || '없음';
-}
 
-function commandText(u: Unit): string {
-  if (u.cast) return `시전: ${u.abilities[u.cast.slot].def.name}`;
-  const c = u.command?.intent;
-  if (!c) return u.holdPos ? '위치 고수' : u.autoMode ? '' : '수동';
-  if (c.type === 'move') return '명령: 이동';
-  if (c.type === 'attack') return `명령: ${c.target.name} 공격`;
-  return `명령: ${u.abilities[c.slot].def.name}`;
-}
 
 export class Hud {
   private cols: HTMLElement[] = [];
-  private skillVersion: string[] = [];
   private inspectFor: Unit | null = null;
   private logCount = -1;
   private notesAt = -1;
@@ -73,60 +47,55 @@ export class Hud {
     });
   }
 
-  /** 월드가 바뀌면(층 이동·재시작) 하단 파티 패널을 새로 만든다 */
+  /** 월드가 바뀌면(방 이동·재시작) 하단 패널을 새로 만든다: 왼쪽 파티 카드 4장, 오른쪽 주장 기술 */
   build() {
     const w = this.getWorld();
     const root = $('party');
-    root.innerHTML = '';
-    this.skillVersion = [];
-    this.cols = w.party.map((u, i) => {
+    root.innerHTML = '<div class="mates"></div><div class="capbar"></div>';
+    this.capVersion = '';
+    const mates = root.querySelector<HTMLElement>('.mates')!;
+    this.cols = w.party.map((u) => {
       const col = document.createElement('div');
-      col.className = 'pcol';
+      col.className = 'mate';
       col.innerHTML = `
-        <div class="pskills"></div>
-        <div class="card">
-          <div class="head"><span class="name" style="color:${u.def.color}">${i + 1}. ${u.name}<span class="lead"></span></span>
-            <span class="lv"></span><button class="info" title="상태창">ⓘ</button></div>
-          <div class="bar hp"><div></div><span class="bt"></span></div>
-          ${u.stats.maxMp > 0 ? '<div class="bar mp"><div></div></div>' : ''}
-          <div class="bar xp"><div></div></div>
-          <div class="bar st" title="스트레스: 100 이 되면 붕괴(가끔 각성)"><div></div></div>
-          <div class="statuses"></div>
-          <div class="row">
-            <button class="rowbtn" title="진형: 전열은 앞장서고, 후열은 함께 이동할 때 전열 뒤를 따른다"></button>
-            <select title="자동전투 전술">${TACTICS.map(([id, n]) => `<option value="${id}">${n}</option>`).join('')}</select>
-            <label title="자동전투"><input type="checkbox" class="auto" /> 자동</label>
-          </div>
-        </div>`;
-      const card = col.querySelector<HTMLElement>('.card')!;
+        <div class="head"><span class="name" style="color:${u.def.color}"><span class="lead"></span>${u.name}</span>
+          <span class="lv"></span><button class="info" title="상태창">ⓘ</button></div>
+        <div class="bar hp"><div></div><span class="bt"></span></div>
+        ${u.stats.maxMp > 0 ? '<div class="bar mp"><div></div></div>' : ''}
+        <div class="bar st" title="스트레스: 100 이 되면 붕괴(가끔 각성)"><div></div></div>
+        <div class="foot"><span class="statuses"></span><button class="tac" title="작전 (누르면 바뀜)"></button></div>`;
       const info = col.querySelector<HTMLButtonElement>('.info')!;
       info.addEventListener('pointerdown', (e) => e.stopPropagation());
       info.addEventListener('click', () => this.onInfo(u));
-      const sel = col.querySelector('select')!;
-      sel.value = u.tactic;
-      sel.addEventListener('change', () => (u.tactic = sel.value as TacticId));
-      sel.addEventListener('pointerdown', (e) => e.stopPropagation());
-      const rowBtn = col.querySelector<HTMLButtonElement>('.rowbtn')!;
-      rowBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
-      rowBtn.addEventListener('click', () => (u.row = u.row === 'front' ? 'back' : 'front'));
-      const auto = col.querySelector<HTMLInputElement>('input.auto')!;
-      auto.checked = u.autoMode;
-      auto.addEventListener('change', () => (u.autoMode = auto.checked));
-      auto.parentElement!.addEventListener('pointerdown', (e) => e.stopPropagation());
-      card.addEventListener('pointerdown', (e) => {
-        if (!u.alive) return;
-        if (e.shiftKey) this.ui.selected = this.ui.selected.includes(u) ? this.ui.selected : [...this.ui.selected, u];
-        else this.ui.selected = [u];
+      const tac = col.querySelector<HTMLButtonElement>('.tac')!;
+      tac.addEventListener('pointerdown', (e) => e.stopPropagation());
+      tac.addEventListener('click', () => {
+        const i = TACTICS.findIndex(([id]) => id === u.tactic);
+        u.tactic = TACTICS[(i + 1) % TACTICS.length][0];
       });
-      root.appendChild(col);
+      // 카드 누르기: 아군 대상 기술을 고르는 중이면 그 아군에게(레이드 매니저식), 아니면 주장 교대
+      col.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        if (!u.alive) return;
+        const tg = this.ui.targeting;
+        if (tg && tg.unit.abilities[tg.slot].def.target === 'ally') {
+          w.commandAbility(tg.unit, tg.slot, u, u.x, u.y);
+          this.ui.targeting = null;
+          return;
+        }
+        w.setCaptain(u);
+      });
+      mates.appendChild(col);
       return col;
     });
     this.logCount = -1;
   }
 
-  /** 캐릭터 위 스킬 버튼. 누르면 그 캐릭터로 사용, 길게 누르기/우클릭은 자동 사용 켜기·끄기 */
-  private buildSkills(u: Unit, col: HTMLElement) {
-    const box = col.querySelector<HTMLElement>('.pskills')!;
+  private capVersion = '';
+
+  /** 주장 기술 버튼 (+ 돌진/구르기). 누르면 사용, 길게 누르기/우클릭은 자동 사용 켜기·끄기 */
+  private buildCapbar(u: Unit) {
+    const box = $('party').querySelector<HTMLElement>('.capbar')!;
     box.innerHTML = '';
     u.abilities.forEach((st, slot) => {
       if (st.hidden) return;
@@ -134,28 +103,26 @@ export class Hud {
       const fail = failChance(u, ab);
       const elem = ab.effects.find((e) => e.kind === 'damage');
       const tip = [
-        `${ab.name}${st.rank ? ` +${st.rank}` : ''} (${ab.type === 'spell' ? '마법' : '기술'})`,
+        `${ab.name}${st.rank ? ` +${st.rank}` : ''} (${ab.type === 'spell' ? '마법' : '기술'}) [${['Q', 'E', 'R', 'F', '5', '6'][slot] ?? ''}]`,
         ab.desc,
         `시전 ${ab.castTime ? ab.castTime + '초' : '즉시'} · 재사용 ${abilityCooldown(st).toFixed(1)}초 · 사거리 ${ab.range || '자신'}${ab.radius ? ` · 범위 ${ab.radius}` : ''}`,
         elem && elem.kind === 'damage' ? `속성: ${ELEMENT_NAME[elem.element]}` : '',
         ab.cost ? `마나 ${ab.cost}` : '',
         ab.type === 'spell' ? `실패율 ${Math.round(fail * 100)}%` : '',
         ab.affects === 'all' ? '⚠ 아군도 피해를 입음' : '',
-        st.manualOnly ? '수동 전용: AI 가 쓰지 않는다' : '길게 누르기 / 우클릭: AI 가 알아서 쓰게 하기 (자동) ↔ 직접 쓰기',
+        '길게 누르기 / 우클릭: 자동 사용 켜기 ↔ 끄기',
       ].filter(Boolean).join('\n');
       const b = document.createElement('div');
-      b.className = `sk${st.manualOnly ? ' manual' : ''}`;
+      b.className = 'sk';
       b.dataset.slot = String(slot);
       b.title = tip;
       b.innerHTML = `
         <span class="icon" style="color:${ab.color}">${ab.icon}</span>
         <span class="nm">${ab.name}${st.rank ? `<i>+${st.rank}</i>` : ''}</span>
-        ${fail > 0.005 ? `<span class="fail">${Math.round(fail * 100)}%</span>` : ''}
         <span class="badge"></span>
         <div class="cdmask"></div><span class="cdtext"></span>`;
       let timer = 0, longPressed = false;
       const toggleAuto = () => {
-        if (st.manualOnly) return;
         st.auto = !st.auto;
         longPressed = true;
       };
@@ -169,7 +136,6 @@ export class Hud {
         e.stopPropagation();
         clearTimeout(timer);
         if (e.button === 2 || longPressed || !u.alive) return;
-        this.ui.selected = [u];
         this.onSkill(slot);
       });
       b.addEventListener('pointerleave', () => clearTimeout(timer));
@@ -179,70 +145,82 @@ export class Hud {
       });
       box.appendChild(b);
     });
+    const dash = document.createElement('div');
+    dash.className = 'sk dash';
+    dash.title = u.isRanged ? '구르기 [Shift]: 짧게 굴러 공격을 피한다' : '돌진 [Shift]: 앞의 적에게 뛰어들어 강타. 적이 없으면 구르기';
+    dash.innerHTML = `<span class="icon">${u.isRanged ? '↯' : '»'}</span><span class="nm">${u.isRanged ? '구르기' : '돌진'}</span><div class="cdmask"></div>`;
+    dash.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      this.getWorld().captainDash();
+    });
+    box.appendChild(dash);
   }
 
   update() {
     const w = this.getWorld(), ui = this.ui;
+    const cap = w.captain;
 
     w.party.forEach((u, i) => {
       const col = this.cols[i];
-      const ver = u.abilities.map((a) => `${a.def.id}${a.rank}`).join();
-      if (this.skillVersion[i] !== ver) {
-        this.skillVersion[i] = ver;
-        this.buildSkills(u, col);
-      }
-      col.classList.toggle('selected', ui.selected.includes(u));
+      col.classList.toggle('captain', cap === u);
       col.classList.toggle('dead', !u.alive);
       (col.querySelector('.bar.hp > div') as HTMLElement).style.width = `${Math.max(0, u.hpFrac) * 100}%`;
       col.querySelector('.bar.hp .bt')!.textContent = `${Math.ceil(Math.max(0, u.hp))}/${u.stats.maxHp}`;
       const mp = col.querySelector('.bar.mp > div') as HTMLElement | null;
       if (mp) mp.style.width = `${(u.mp / u.stats.maxMp) * 100}%`;
-      const cmd = commandText(u);
       const mood = u.hero?.mood ? MOODS[u.hero.mood] : null;
       col.classList.toggle('afflicted', !!mood && !mood.virtue);
       col.classList.toggle('virtue', !!mood?.virtue);
+      col.classList.toggle('low', u.alive && u.hpFrac < 0.35);
       if (u.hero) {
         const st = col.querySelector<HTMLElement>('.bar.st > div')!;
         st.style.width = `${u.hero.stress}%`;
         st.style.background = mood ? mood.color : u.hero.stress >= WARN_STRESS ? '#d070ff' : '#8a5cc0';
         col.classList.toggle('stress-warn', !mood && u.hero.stress >= WARN_STRESS);
+        col.querySelector('.lv')!.textContent = `Lv${u.hero.xl}${u.hero.pending ? '★' : ''}`;
       }
       col.querySelector('.statuses')!.innerHTML =
         (mood ? `<span class="chip mood" style="color:${mood.color}" title="${mood.desc}">${mood.virtue ? '★' : '!'}${mood.name}</span>` : '') +
-        u.statuses.map((s) => `<span class="chip" style="color:${s.def.color}">${s.def.name}${s.stacks > 1 ? '×' + s.stacks : ''}</span>`).join('') +
-        (cmd ? `<span class="cmd">${cmd}</span>` : '');
-      col.querySelector('.lead')!.textContent = w.leader === u ? ' ★' : '';
-      if (u.hero) {
-        col.querySelector('.lv')!.textContent = `Lv${u.hero.xl}${u.hero.pending ? ' ★' : ''}`;
-        (col.querySelector('.bar.xp > div') as HTMLElement).style.width = `${(u.hero.xp / xpToNext(u.hero.xl)) * 100}%`;
+        u.statuses.map((s) => `<span class="chip" style="color:${s.def.color}">${s.def.name}</span>`).join('');
+      col.querySelector('.lead')!.textContent = cap === u ? '★ ' : '';
+      const tac = col.querySelector<HTMLElement>('.tac')!;
+      const tacText = cap === u ? (u.autoMode ? '자동' : '조작') : TACTICS.find(([id]) => id === u.tactic)?.[1] ?? '';
+      if (tac.textContent !== tacText) tac.textContent = tacText;
+      tac.style.visibility = cap === u ? 'hidden' : '';
+    });
+
+    // 주장 기술 줄
+    if (cap) {
+      const ver = `${cap.id}:${cap.abilities.map((a) => `${a.def.id}${a.rank}`).join()}`;
+      if (this.capVersion !== ver) {
+        this.capVersion = ver;
+        this.buildCapbar(cap);
       }
-      const auto = col.querySelector<HTMLInputElement>('input.auto')!;
-      if (auto.checked !== u.autoMode) auto.checked = u.autoMode;
-      const rowBtn = col.querySelector<HTMLElement>('.rowbtn')!;
-      const rowText = u.row === 'front' ? '전열' : '후열';
-      if (rowBtn.textContent !== rowText) {
-        rowBtn.textContent = rowText;
-        rowBtn.classList.toggle('front', u.row === 'front');
-      }
-      for (const b of col.querySelectorAll<HTMLElement>('.sk')) {
-        const st = u.abilities[Number(b.dataset.slot)];
-        const ready = u.alive && st.cd <= 0 && u.mp >= st.def.cost;
+      const box = $('party').querySelector<HTMLElement>('.capbar')!;
+      for (const b of box.querySelectorAll<HTMLElement>('.sk')) {
+        if (b.classList.contains('dash')) {
+          const max = cap.isRanged ? 2.5 : 4;
+          b.querySelector<HTMLElement>('.cdmask')!.style.height = cap.dashCd > 0 ? `${Math.min(1, cap.dashCd / max) * 100}%` : '0';
+          b.classList.toggle('ready', cap.alive && cap.dashCd <= 0);
+          continue;
+        }
+        const st = cap.abilities[Number(b.dataset.slot)];
+        const ready = cap.alive && st.cd <= 0 && cap.mp >= st.def.cost;
         b.querySelector<HTMLElement>('.cdmask')!.style.height = st.cd > 0 ? `${Math.min(1, st.cd / abilityCooldown(st)) * 100}%` : '0';
         b.querySelector('.cdtext')!.textContent = st.cd > 0 ? st.cd.toFixed(st.cd < 3 ? 1 : 0) : '';
-        b.classList.toggle('disabled', !u.alive || u.mp < st.def.cost);
-        // 플레이어가 쓸 기술: 준비되면 빛나고, 지금 쓰면 좋을 때(skillCue) 붉게 깜빡인다
-        const mine = !!st.manualOnly || (!u.autoMode && !st.auto);
+        b.classList.toggle('disabled', !cap.alive || cap.mp < st.def.cost);
+        const mine = !cap.autoMode && !st.auto;
         b.classList.toggle('ready', mine && ready);
-        b.classList.toggle('urgent', mine && ready && skillCue(w, u, st));
-        b.classList.toggle('targeting', ui.targeting?.unit === u && ui.targeting.slot === Number(b.dataset.slot));
-        const badge = st.manualOnly ? '수동' : st.auto ? '자동' : '';
+        b.classList.toggle('urgent', mine && ready && skillCue(w, cap, st));
+        b.classList.toggle('targeting', ui.targeting?.unit === cap && ui.targeting.slot === Number(b.dataset.slot));
+        const badge = st.auto || cap.autoMode ? '자동' : '';
         const bd = b.querySelector<HTMLElement>('.badge')!;
         if (bd.textContent !== badge) {
           bd.textContent = badge;
-          bd.className = `badge ${st.manualOnly ? 'm' : st.auto ? 'a' : 'off'}`;
+          bd.className = `badge ${badge ? 'a' : 'off'}`;
         }
       }
-    });
+    }
 
     $('combat-state').innerHTML =
       (w.arena
@@ -300,35 +278,12 @@ export class Hud {
     box.querySelectorAll<HTMLElement>('.bslot').forEach((b, i) => b.classList.toggle('targeting', this.ui.itemTarget === i));
   }
 
-  /** 아군 한 명만 선택했을 때 정보 창 내용 */
-  private heroInfo(u: Unit): string {
-    const s = u.stats;
-    const talents = u.hero ? u.hero.talents.map((id) => TALENTS[id].name).join(' · ') || '-' : '';
-    const gear = u.hero ? (['weapon', 'armour', 'jewel'] as const).map((k) => u.hero!.gear[k]?.name ?? '-').join(' · ') : '';
-    return `
-      <span>체력</span><span>${Math.ceil(u.hp)} / ${s.maxHp}${s.maxMp ? ` · 마나 ${Math.floor(u.mp)}/${s.maxMp}` : ''}</span>
-      <span>AC / EV</span><span>${s.ac.toFixed(0)} / ${s.ev.toFixed(0)} · 의지 ${s.will}</span>
-      <span>평타</span><span>${u.weapon.name} ${avgWeaponDamage(u).toFixed(1)} / ${attackDelay(u).toFixed(2)}초</span>
-      <span>저항</span><span>${resistText(u)}</span>
-      <span>장비</span><span>${gear}</span>
-      <span>특성</span><span>${talents}</span>`;
-  }
-
   private updateInspect() {
     const ui = this.ui, w = this.getWorld();
     const t = ui.hover && ui.hover.faction !== 'party' ? ui.hover : ui.inspect;
     const box = $('inspect');
-    const hero = !t && ui.selected.length === 1 ? ui.selected[0] : null;
-    box.classList.toggle('hero', !!hero && hero.alive);
-    if (hero && hero.alive) {
-      box.classList.remove('hidden');
-      if (this.inspectFor !== hero) {
-        this.inspectFor = hero;
-        box.innerHTML = `<h3 style="color:${hero.def.color}">${hero.name}</h3><div class="sub">${hero.def.title}</div><div class="kv"></div>`;
-      }
-      box.querySelector('.kv')!.innerHTML = this.heroInfo(hero);
-      return;
-    }
+    // 주장이 늘 선택돼 있으니 아군 정보는 카드의 ⓘ 로만 본다
+    box.classList.remove('hero');
     if (!t || !t.alive) {
       box.classList.add('hidden');
       this.inspectFor = null;

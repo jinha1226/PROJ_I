@@ -35,7 +35,22 @@ export function updateUnit(w: World, u: Unit, dt: number) {
   }
   // 돌진 중: 빠르게 붙고, 닿으면 강타 (짧은 경직)
   if (u.dashT > 0) {
-    dashStep(w, u, dt);
+    if (u.dashDir) rollStep(u, dt);
+    else dashStep(w, u, dt);
+    return;
+  }
+  // 주장: 조이스틱 방향으로 바로 움직인다 (시전은 끊긴다). 벽은 충돌 처리가 밀어낸다
+  if (u === w.captain && w.capDir) {
+    if (u.cast) w.cancelCast(u, '', false);
+    u.command = null;
+    u.intent = null;
+    u.holdPos = null;
+    u.path = [];
+    const step = u.stats.moveSpeed * dt;
+    u.x += w.capDir.x * step;
+    u.y += w.capDir.y * step;
+    u.moving = true;
+    if (Math.abs(w.capDir.x) > 0.05) u.facing = w.capDir.x > 0 ? 1 : -1;
     return;
   }
   if (u.cast) {
@@ -182,6 +197,19 @@ function dashStep(w: World, u: Unit, dt: number) {
     resolveWeaponHit(w, u, t, 1.2, true);
     if (t.alive) finisher(w, u, t);
   }
+}
+
+const ROLL_SPEED = 12;
+
+/** 구르기: 짧고 빠르게 미끄러진다 (그동안 공격을 피한다) */
+function rollStep(u: Unit, dt: number) {
+  const d = u.dashDir!;
+  u.dashT -= dt;
+  u.x += d.x * ROLL_SPEED * dt;
+  u.y += d.y * ROLL_SPEED * dt;
+  u.moving = true;
+  if (Math.abs(d.x) > 0.05) u.facing = d.x > 0 ? 1 : -1;
+  if (u.dashT <= 0) u.dashDir = null;
 }
 
 function fail(w: World, u: Unit, cmd: Command | null): Res {

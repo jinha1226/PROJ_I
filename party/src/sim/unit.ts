@@ -140,6 +140,8 @@ export class Unit {
   /** 돌진: 남은 시간 · 대상 · 다시 쓰기까지 */
   dashT = 0;
   dashTarget: Unit | null = null;
+  /** 대상 없는 돌진 = 구르기 (주장 회피) 방향 */
+  dashDir: { x: number; y: number } | null = null;
   dashCd = 0;
   /** 소환한 유닛 (소환수 수 제한용) */
   summoner: Unit | null = null;

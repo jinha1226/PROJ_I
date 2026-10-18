@@ -34,6 +34,11 @@ export function applyDamage(
   w: World, target: Unit, amount: number, element: Element, source: Unit | null, opts: DamageOpts = {},
 ): number {
   if (!target.alive) return 0;
+  // 구르는 중에는 맞지 않는다 (주장 회피)
+  if (target.dashDir && target.dashT > 0 && source && amount > 0) {
+    w.float(target, '회피', '#aaddff', 0.8);
+    return 0;
+  }
   const m = resistMult(target, element);
   if (m === 0) {
     w.float(target, '면역', ELEMENT_COLOR[element]);

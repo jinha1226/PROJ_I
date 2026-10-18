@@ -48,12 +48,14 @@ export function think(w: World, u: Unit): Intent | null {
   }
 
   const manual = u.faction === 'party' && !u.autoMode;
+  // 주장은 손을 떼면 가까운 적에게 조금 다가가 친다 (배틀하트식)
+  const chase = u === w.captain ? (u.isRanged ? 1 : 3) : 0;
   const cands: Cand[] = [];
 
   for (const e of enemies) {
     const reach = attackReach(u, e);
     const d = dist(u, e);
-    if (manual && (d > reach || (u.isRanged && !w.map.los(u.x, u.y, e.x, e.y)))) continue;
+    if (manual && (d > reach + chase || (u.isRanged && d <= reach && !w.map.los(u.x, u.y, e.x, e.y)))) continue;
     if (leashed(u, e, reach)) continue;
     cands.push({ intent: { type: 'attack', target: e }, score: attackValue(w, u, e, d, reach) });
   }
@@ -63,7 +65,8 @@ export function think(w: World, u: Unit): Intent | null {
       if (!abilityReady(u, st)) return;
       // 직접 조종(기본): 자동으로 표시된 기술(로테이션 · 자동 전용)만 AI 가 쓴다.
       // 자동전투를 켜면 수동 전용(특성으로 배운 기술)을 뺀 나머지도 쓴다
-      if (!(st.hidden || st.auto || (!manual && !st.manualOnly))) return;
+      // 동료(자동)는 특성으로 배운 기술까지 다 쓴다
+      if (!(st.hidden || st.auto || !manual)) return;
       const prio = st.prio * 1.5;
       for (const c of evalAbility(w, u, st.def, slot, enemies)) {
         c.score += prio;
@@ -251,10 +254,15 @@ function evalAbility(w: World, u: Unit, ab: AbilityDef, slot: number, enemies: U
       break;
     }
     case 'buff': {
-      const eff = ab.effects.find((e) => e.kind === 'status');
-      if (!eff || eff.kind !== 'status') break;
       const fighting = enemies.some((e) => allies.some((a) => dist(a, e) < 6));
       if (!fighting) break;
+      // 스스로 회복하는 기술 (재정비): 많이 다쳤을 때
+      if (ab.selfEffects?.some((e) => e.kind === 'heal')) {
+        if (u.hpFrac < 0.5) out.push(mk(null, u.x, u.y, 15 + (1 - u.hpFrac) * 40));
+        break;
+      }
+      const eff = ab.effects.find((e) => e.kind === 'status');
+      if (!eff || eff.kind !== 'status') break;
       if (ab.target === 'self') {
         const n = unitsInArea(w, ab, u, u.x, u.y).filter((a) => allies.includes(a) && !a.hasStatus(eff.status)).length;
         if (n > 0) out.push(mk(null, u.x, u.y, n * 6 * manaOk));

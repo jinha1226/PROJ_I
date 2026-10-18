@@ -1,6 +1,96 @@
 import type { AbilityDef } from '../sim/defs';
 
 const list: AbilityDef[] = [
+  // ── 주장 조작용 기본 기술 (직업마다 2개씩 추가: 직접 쓸 거리를 늘린다) ──
+  {
+    id: 'shield_charge', name: '방패 돌격', icon: '돌', color: '#ffd27a', type: 'technique', schools: ['shield'],
+    desc: '멀리 있는 적에게 방패를 앞세워 돌격해 1초 기절. 후열을 노리는 적에게 달려갈 때.',
+    cost: 0, castTime: 0, cooldown: 10, range: 6, minRange: 2, target: 'enemy', dash: true,
+    effects: [{ kind: 'weapon', mult: 0.8 }, { kind: 'status', status: 'stun', duration: 1 }],
+    aiRole: 'charge',
+  },
+  {
+    id: 'second_wind', name: '재정비', icon: '재', color: '#9cff9c', type: 'technique', schools: ['fighting'],
+    desc: '숨을 고르며 최대 체력의 일부를 회복하고 4초간 방어 태세.',
+    cost: 0, castTime: 0, cooldown: 22, range: 0, target: 'self',
+    effects: [],
+    selfEffects: [{ kind: 'heal', base: [18, 24], scale: 1.0 }, { kind: 'status', status: 'guarded', duration: 4 }],
+    aiRole: 'buff',
+  },
+  {
+    id: 'cleave', name: '휩쓸기', icon: '휩', color: '#ffb08a', type: 'technique', schools: ['axe'],
+    desc: '도끼를 크게 휘둘러 주변 적 모두를 벤다.',
+    cost: 0, castTime: 0, cooldown: 5, range: 0, target: 'self', radius: 1.7, affects: 'enemies',
+    effects: [{ kind: 'weapon', mult: 0.9 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'war_stomp', name: '발구르기', icon: '발', color: '#d8a070', type: 'technique', schools: ['fighting'],
+    desc: '땅을 굴러 주변 적을 4초간 감속시킨다. 둘러싸였을 때.',
+    cost: 0, castTime: 0, cooldown: 12, range: 0, target: 'self', radius: 2.3, affects: 'enemies',
+    effects: [{ kind: 'weapon', mult: 0.4 }, { kind: 'status', status: 'slow', duration: 4 }],
+    aiRole: 'disable',
+  },
+  {
+    id: 'flame_wave', name: '화염 파도', icon: '파', color: '#ff8a3a', type: 'spell', schools: ['fire'], level: 2,
+    desc: '자기 주변으로 불길을 내뿜는다. 적만 맞고, 화상. 붙은 적을 떼어낼 때.',
+    cost: 6, castTime: 0, cooldown: 9, range: 0, target: 'self', radius: 2.2, affects: 'enemies',
+    effects: [{ kind: 'damage', element: 'fire', base: [7, 11], scale: 0.5 }, { kind: 'status', status: 'burn', duration: 3, chance: 0.6 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'combust', name: '연소', icon: '연', color: '#ff5522', type: 'spell', schools: ['fire'], level: 3,
+    desc: '1.2초 집중해 적 하나를 크게 태운다. 맞으면 끊기기 쉽다.',
+    cost: 9, castTime: 1.2, cooldown: 11, range: 7, target: 'enemy',
+    projectile: { speed: 14, color: '#ff5522' },
+    effects: [{ kind: 'damage', element: 'fire', base: [20, 28], scale: 1.1 }, { kind: 'status', status: 'burn', duration: 4 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'ice_shards', name: '얼음 파편', icon: '편', color: '#a8e8ff', type: 'spell', schools: ['ice'], level: 2,
+    desc: '지점에 얼음 파편을 쏟아 적들에게 냉기 피해와 감속. 아군은 맞지 않는다.',
+    cost: 6, castTime: 0.5, cooldown: 7, range: 7, target: 'ground', radius: 1.5, affects: 'enemies',
+    effects: [{ kind: 'damage', element: 'cold', base: [7, 11], scale: 0.6 }, { kind: 'status', status: 'slow', duration: 3 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'freeze', name: '빙결', icon: '결', color: '#d0f4ff', type: 'spell', schools: ['ice'], level: 3,
+    desc: '적 하나를 얼려 2.5초 기절. 시전을 끊거나 덩치를 묶을 때.',
+    cost: 7, castTime: 0.3, cooldown: 14, range: 7, target: 'enemy',
+    effects: [{ kind: 'damage', element: 'cold', base: [4, 6], scale: 0.3 }, { kind: 'status', status: 'stun', duration: 2.5 }],
+    aiRole: 'disable',
+  },
+  {
+    id: 'quick_shot', name: '속사', icon: '속', color: '#d8f0a0', type: 'technique', schools: ['bow'],
+    desc: '조준 없이 바로 한 발. 피해가 크고 재사용이 짧다.',
+    cost: 0, castTime: 0, cooldown: 4, range: 7, target: 'enemy',
+    projectile: { speed: 20, color: '#eaffc0' },
+    effects: [{ kind: 'weapon', mult: 1.5 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'snare_trap', name: '올가미', icon: '올', color: '#c8a870', type: 'technique', schools: ['bow'],
+    desc: '지점에 올가미를 던져 적들을 1.5초 묶고 감속. 몰려오는 웨이브 앞에.',
+    cost: 0, castTime: 0.3, cooldown: 14, range: 6, target: 'ground', radius: 1.4, affects: 'enemies',
+    effects: [{ kind: 'status', status: 'stun', duration: 1.5 }, { kind: 'status', status: 'slow', duration: 4 }],
+    aiRole: 'disable',
+  },
+  {
+    id: 'holy_light', name: '성광', icon: '성', color: '#fff6b0', type: 'spell', schools: ['faith'], level: 2,
+    desc: '적 하나에게 신성 피해. 언데드 · 악마에게 특히 아프다.',
+    cost: 4, castTime: 0.4, cooldown: 4, range: 7, target: 'enemy',
+    projectile: { speed: 14, color: '#fff6b0' },
+    effects: [{ kind: 'damage', element: 'holy', base: [7, 11], scale: 0.6 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'sanctuary', name: '성역', icon: '역', color: '#ffeeaa', type: 'spell', schools: ['faith'], level: 3,
+    desc: '주변 아군 모두를 조금 회복하고 4초간 보호(받는 피해 -30%). 웨이브가 몰려올 때.',
+    cost: 10, castTime: 0.5, cooldown: 18, range: 0, target: 'self', radius: 3.5, affects: 'allies',
+    effects: [{ kind: 'heal', base: [6, 10], scale: 0.4 }, { kind: 'status', status: 'protected', duration: 4 }],
+    aiRole: 'heal',
+  },
+
   // ── 전사 ──
   {
     id: 'shield_bash', name: '방패 강타', icon: '강', color: '#ffe14d', type: 'technique', schools: ['shield'],

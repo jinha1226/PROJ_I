@@ -488,3 +488,40 @@ button.on { border-color: var(--accent); color: var(--accent); }
 #map .go { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
 #map .retreat { border-color: #8a7a4a; color: #e8cf7a; }
 @media (max-width: 900px), (max-height: 500px) { #map .mparty { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ── 주장 조작 HUD: 왼쪽 파티 카드 4장, 오른쪽 주장 기술 ── */
+#party { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; width: min(1180px, calc(100vw - 16px)); }
+#party .mates { display: grid; grid-template-columns: repeat(4, minmax(0, 150px)); gap: 6px; flex: 0 1 auto; min-width: 0; }
+.mate { background: var(--panel); border: 2px solid var(--border); border-radius: 6px; padding: 4px 6px; cursor: pointer; min-width: 0; touch-action: none; }
+.mate.captain { border-color: #ffcc66; box-shadow: 0 0 8px #ffcc6655; }
+.mate.dead { opacity: 0.4; }
+.mate.low .bar.hp > div { background: #e05545; }
+.mate.afflicted { border-color: #c04040; }
+.mate.virtue { border-color: #e8cf7a; }
+.mate .head { display: flex; align-items: baseline; gap: 4px; }
+.mate .name { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mate .lv { color: #e8cf7a; font-size: 12px; margin-left: auto; white-space: nowrap; }
+.mate .info { padding: 0 4px; font-size: 12px; line-height: 14px; flex-shrink: 0; }
+.mate .bar.mp { height: 3px; }
+.mate .bar.st { height: 3px; }
+.mate .foot { display: flex; align-items: center; gap: 4px; height: 16px; margin-top: 2px; }
+.mate .statuses { flex: 1 1 auto; min-width: 0; font-size: 12px; white-space: nowrap; overflow: hidden; }
+.mate .tac { padding: 0 4px; font-size: 12px; line-height: 14px; color: #9ab; flex-shrink: 0; }
+#party .capbar { display: flex; gap: 6px; align-items: flex-end; flex: 0 0 auto; }
+#party .capbar .sk { flex: none; width: 66px; height: 66px; border-radius: 12px; }
+#party .capbar .sk.dash { width: 54px; height: 54px; border-color: #5a7a9a; border-radius: 50%; }
+#party .capbar .sk.dash .icon { color: #9cd0ff; }
+#party .capbar .sk.dash.ready { border-color: #9cd0ff; box-shadow: 0 0 7px #9cd0ff88; }
+#belt { bottom: 92px; }
+#targeting-hint { bottom: 100px; }
+@media (max-width: 900px), (max-height: 500px) {
+  #party { gap: 4px; }
+  #party .mates { grid-template-columns: repeat(2, minmax(0, 118px)); gap: 3px; }
+  .mate { padding: 2px 4px; border-width: 1px; }
+  .mate .foot { display: none; }
+  #party .capbar { gap: 4px; }
+  #party .capbar .sk { width: 52px; height: 52px; border-radius: 9px; }
+  #party .capbar .sk.dash { width: 44px; height: 44px; }
+  #belt { bottom: 62px; }
+  #targeting-hint { bottom: 120px; }
+}
