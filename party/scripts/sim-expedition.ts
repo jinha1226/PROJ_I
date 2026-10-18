@@ -19,7 +19,12 @@ const DIFF = (process.env.DIFF ?? 'normal') as DifficultyId;
 const def = CONTRACTS[(process.env.CONTRACT ?? 'hunt') as ContractKind];
 const LV = Number(process.env.LV ?? 1);
 if (process.env.POWER) def.power = Number(process.env.POWER);
-const SKILLED = (process.env.MODE ?? 'auto') === 'skilled';
+const MODE = process.env.MODE ?? 'auto';
+const SKILLED = MODE === 'skilled';
+/** lazy: 주장은 움직이기만 하고 기술 버튼을 안 누른다 (자동 표시 기술만 AI 가 쓴다) */
+const LAZY = MODE === 'lazy';
+/** 주장 직업 */
+const CAPTAIN = process.env.CAPTAIN;
 const PARTS = (process.env.ASSIST ?? 'focus,dodge,interrupt,kite,items,route').split(',');
 
 /** 잘하는 주장: 매 틱 */
@@ -48,7 +53,7 @@ function captainPlay(w: World, rng: Rng) {
     }
     // 시전 끊기: 기절 기술
     if (PARTS.includes('interrupt') && ab.type === 'spell' && !c.cast) {
-      const slot = c.abilities.findIndex((a) => a.cd <= 0 && c.mp >= a.def.cost && a.def.target === 'enemy' &&
+      const slot = c.abilities.findIndex((a) => a.cd <= 0 && c.mp >= a.def.cost && (a.def.target === 'enemy' || a.def.target === 'ground') &&
         a.def.effects.some((x) => x.kind === 'status' && x.status === 'stun') && dist(c, e) <= a.def.range + c.radius + e.radius + (a.def.dash ? 0 : 0.5));
       if (slot >= 0) w.commandAbility(c, slot, e, e.x, e.y);
     }
@@ -80,6 +85,7 @@ function run(seed: number) {
   pick();
   const r = newRun();
   r.contract = { kind: def.kind, seed };
+  if (CAPTAIN) r.captain = heroes.find((h) => h.cls === CAPTAIN)?.uid;
   const ex = genExpedition(rng, def);
   r.expedition = ex;
   const path: string[] = [];
@@ -110,7 +116,7 @@ function run(seed: number) {
     const map = genArena(seed * 31 + id, depth, { kind: node.kind, theme: def.theme, bossId: def.bossId, captive: def.kind === 'rescue' && node.kind === 'goal' });
     const w = new World(map, seed + id, heroes, DIFF, r);
     // 주장도 AI (skilled 는 그 위에 주장 조작을 얹는다)
-    for (const p of w.party) p.autoMode = true;
+    for (const p of w.party) p.autoMode = !(LAZY && p === w.captain);
     while (!w.outcome && w.time < 300) {
       if (w.prompt) resolvePrompt(w, w.prompt.choices[0].id);
       const obj = w.objects.find((o) => !o.used);
@@ -144,4 +150,4 @@ for (let i = 0; i < runs; i++) {
   alive += r.alive;
   if (!process.env.QUIET) console.log(seed + i, r.result, r.path, `${Math.round(r.time)}s`, `생존 ${r.alive}`);
 }
-console.log(def.kind, DIFF, `LV${LV}`, SKILLED ? 'skilled' : 'auto', tally, '평균 생존', (alive / runs).toFixed(1));
+console.log(def.kind, DIFF, `LV${LV}`, CAPTAIN ?? '', MODE, tally, '평균 생존', (alive / runs).toFixed(1));

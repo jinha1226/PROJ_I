@@ -58,7 +58,7 @@ export const CONTRACTS: Record<ContractKind, ContractDef> = {
     desc: '곁방이 많고 상자가 많다. 미믹도 많다. 어둠 속을 오래 헤매야 해서 스트레스가 더 쌓인다. 완수하면 아티팩트 하나.',
   },
   crypt: {
-    kind: 'crypt', power: 1.05, name: '저주받은 지하묘지 정화', danger: 3, floors: 3, startDepth: 2, boss: false, reward: 380,
+    kind: 'crypt', power: 1.0, name: '저주받은 지하묘지 정화', danger: 3, floors: 3, startDepth: 2, boss: false, reward: 380,
     theme: UNDEAD, themeName: '망자 · 강령술사', stress: 1.35, minExpeditions: 1, palette: 'crypt',
     desc: '좀비 · 망령 · 강령술사가 들끓는 깊은 묘지. 독과 냉기가 잘 통하지 않고 공포가 서린다. 화염과 신성이 답이다. 보상이 크다.',
   },
