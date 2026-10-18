@@ -229,9 +229,11 @@ interface Actor {
 
 // 타격감: 멈칫(히트스톱) · 화면 흔들림
 let hitstop = 0;
+let hitstopCd = 0;
 let shake = 0;
 
 const actors: Actor[] = [];
+(window as unknown as { __look: object }).__look = { actors };
 
 /** 손 뼈에 무기를 붙인다. 뼈의 월드 배율을 되돌려 무기 크기를 일정하게 */
 async function attach(root: THREE.Object3D, bone: string, model: string, side: Actor['side'], color = false) {
@@ -433,14 +435,19 @@ function hit(target: Actor, dmg: number, color: string, heavy = false, from?: Ac
   target.hp -= dmg;
   floaters.push({ pos: target.root.position.clone().setY(2.6 * (target.look.scale ?? 1)), text: heavy ? `${dmg}!` : String(dmg), color: heavy ? '#ffd040' : color, t: 0 });
   if (heavy) {
-    hitstop = Math.max(hitstop, 0.08);
+    // 히트스톱은 한 번 걸리면 잠깐 쉰다 (여럿이 동시에 강타하면 계속 멈춰 보이므로)
+    if (hitstopCd <= 0) {
+      hitstop = 0.08;
+      hitstopCd = 0.35;
+    }
     shake = Math.max(shake, 0.25);
     if (from) target.push.copy(target.root.position).sub(from.root.position).setY(0).normalize().multiplyScalar(7 / (target.look.scale ?? 1));
   }
   if (target.hp <= 0) {
     target.dead = 2.2;
     play(target, anim(target, 'death'), true);
-  } else if (target.busy <= 0) {
+  } else if (target.busy <= 0 && target.side === 'foe') {
+    // 움찔은 적만: 영웅은 맞아도 콤보가 끊기지 않는다 (슈퍼 아머)
     play(target, anim(target, 'hit'), true);
     target.busy = 0.35;
   }
@@ -450,6 +457,7 @@ function update(realDt: number) {
   // 히트스톱: 큰 타격 순간 세상이 거의 멈춘다
   const dt = hitstop > 0 ? realDt * 0.06 : realDt;
   hitstop = Math.max(0, hitstop - realDt);
+  hitstopCd = Math.max(0, hitstopCd - realDt);
   shake = Math.max(0, shake - realDt);
   for (const a of actors) {
     a.mixer.update(dt);
