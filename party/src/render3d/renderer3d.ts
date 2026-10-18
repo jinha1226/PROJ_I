@@ -5,7 +5,8 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPixelatedPass } from 'three/examples/jsm/postprocessing/RenderPixelatedPass.js';
+import { PixelPass } from './pixelpass';
+import { heroColors, paintMannequin } from './paint';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { PALETTES } from '../render/renderer';
 import type { WorldObject } from '../sim/objects';
@@ -92,7 +93,7 @@ export class Renderer3D {
   private time = 0;
   /** 픽셀 모드: 낮은 해상도로 그린 뒤 키우고 1픽셀 윤곽 */
   private composer: EffectComposer;
-  private pixelPass: RenderPixelatedPass;
+  private pixelPass: PixelPass;
 
   constructor(canvas: HTMLCanvasElement, private cam: Camera3D) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -107,7 +108,7 @@ export class Renderer3D {
     this.scene.add(this.env, this.sparks.points, this.glows.points);
     this.fx = new Transients(this.scene);
     this.composer = new EffectComposer(this.renderer);
-    this.pixelPass = new RenderPixelatedPass(cam.pixel, this.scene, cam.three, { normalEdgeStrength: 0.25, depthEdgeStrength: 1.0 });
+    this.pixelPass = new PixelPass(cam.pixel, this.scene, cam.three);
     this.composer.addPass(this.pixelPass);
     this.composer.addPass(new OutputPass());
   }
@@ -168,13 +169,16 @@ export class Renderer3D {
     const look = this.lookOf(u);
     const model = await this.load(look.model);
     const root = SkeletonUtils.clone(model.gltf.scene);
-    const height = u.radius * 4 * (look.h ?? 1);
+    // 배틀하트처럼 캐릭터를 큼직하게 (도트를 넉넉히 써서 부위 · 무기가 읽히게)
+    const height = u.radius * 4 * 1.2 * (look.h ?? 1);
     const box = new THREE.Box3().setFromObject(root);
     root.scale.setScalar(height / Math.max(0.01, box.max.y - box.min.y));
     const mats: THREE.MeshToonMaterial[] = [];
     const ink = u.faction === 'party' ? INK_HERO : INK_FOE;
     this.toon(root, look, ink, mats);
     const isUal = look.model === 'ual/ual';
+    // 영웅 마네킹: 부위별로 칠한다 (머리카락 · 피부 · 직업 옷 · 바지 · 신발)
+    if (isUal && look.white && u.hero) paintMannequin(root, heroColors(u.hero.cls, u.hero.comp.race, u.hero.uid));
     if (isUal && look.weapon) await this.attach(root, 'hand_r', look.weapon, ink, mats, height);
     if (isUal && look.offhand) await this.attach(root, 'hand_l', look.offhand, ink, mats, height);
     const ringMat = additive('#66ff88', 0.9);
@@ -514,14 +518,9 @@ export class Renderer3D {
         a.aura.delete(k);
       }
     const pulse = 0.5 + 0.5 * Math.sin(this.time * 5);
-    if (want.has('protected')) {
-      // 픽셀 모드에선 구체가 몸을 덮어 보이므로 발밑 금빛 링으로
-      if (this.cam.ortho) {
-        const o = ensure('protected', () => new THREE.Mesh(new THREE.RingGeometry(0.8, 1, 24), additive('#ffd75a', 0.75)));
-        o.rotation.x = -Math.PI / 2;
-        o.position.y = 0.05;
-        o.scale.setScalar(u.radius * 1.6);
-      } else {
+    // 픽셀 모드: 보호는 따로 표시하지 않는다 (발밑 링이 몸을 가린다)
+    if (want.has('protected') && !this.cam.ortho) {
+      {
         const o = ensure('protected', () => new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), additive('#ffd75a', 0.08)));
         o.scale.set(h * 0.36, h * 0.55, h * 0.36);
         o.position.y = h * 0.5;

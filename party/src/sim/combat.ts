@@ -164,7 +164,8 @@ export function tryApplyStatus(w: World, t: Unit, ap: StatusApply, source: Unit 
     t.statuses.push({ def, time: ap.duration, stacks: def.stacking === 'intensity' ? stacks : 1, source, tick: 0 });
   }
   if (def.stun && t.cast) w.cancelCast(t, '');
-  w.float(t, def.name, def.color);
+  // 이로운 상태(보호 · 괴력 등)는 글자를 띄우지 않는다 (화면이 난잡해진다)
+  if (def.harmful) w.float(t, def.name, def.color);
   w.emit({ type: 'status', unit: t, status: ap.status });
   return true;
 }

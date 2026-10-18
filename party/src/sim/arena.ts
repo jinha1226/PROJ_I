@@ -7,7 +7,7 @@ import { MONSTERS } from '../data/units';
 import { WAVE_KINDS, foeKind, type FoeKind, type WaveKindDef } from '../data/waves';
 import type { NodeKind } from './expedition';
 
-export const ARENA_W = 20, ARENA_H = 11;
+export const ARENA_W = 18, ARENA_H = 10;
 
 export interface ArenaOpts {
   kind: NodeKind;

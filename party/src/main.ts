@@ -52,9 +52,9 @@ function applyGfx() {
   // 3D 는 캐릭터가 서 있어서 조금 더 당겨 본다
   // 3D 는 캐릭터가 서 있어서 조금 더 당겨 보고, 픽셀은 팀파이트 매니저처럼 작게
   // 픽셀: 캐릭터가 도트를 넉넉히 쓰도록 크게 (키 약 28도트)
-  // 작은 화면(폰): 도트를 잘게(2px) 하고 캐릭터를 조금 크게 — 손톱만 한 캐릭터가 깍두기처럼 보이지 않게
+  // 도트는 2px: 캐릭터가 도트를 넉넉히 써서 부위 · 무기가 읽히게. 작은 화면(폰)은 캐릭터를 조금 크게
   const small = window.innerHeight < 520;
-  cam.pixel = small ? 2 : 3;
+  cam.pixel = 2;
   cam.zoom = gfx === 'pixel' ? Math.round(Math.min(60, Math.max(small ? 46 : 40, window.innerHeight / (small ? 8 : 11)))) : gfx3d ? Math.max(cam.zoom, 64) : Math.min(cam.zoom, 48);
   cam.enabled = gfx3d;
   cam.ortho = gfx === 'pixel';
@@ -216,11 +216,14 @@ function startRoom(id: number) {
   slowTimer = 0;
   hud.build();
   // 한 화면 전장: 방 전체가 보이게 맞추고 카메라는 고정
-  const vh = window.innerHeight - cam.padBottom - 60;
-  cam.zoom = Math.max(24, Math.min(64, Math.min(window.innerWidth / (map.width + 1), vh / (map.height * 0.85 + 1))));
+  // 작은 화면(폰 가로): 방 전체를 넣으면 캐릭터가 손톱만 해지므로, 가로를 채우고 위아래는 주장을 따라간다
+  const small = window.innerHeight < 520;
+  const vh = window.innerHeight - cam.padBottom - (small ? 30 : 60);
+  const fitW = window.innerWidth / (map.width + 1), fitH = vh / (map.height * 0.85 * (small ? 0.7 : 1) + 1);
+  cam.zoom = Math.max(24, Math.min(64, fitW, fitH));
   cam.x = map.width / 2;
   cam.y = map.height / 2;
-  cam.follow = false;
+  cam.follow = small;
 }
 
 /** 방 정리: 쓰러진 용병은 묘지로, 체력 · 보상 정리 후 지도로 (정예 · 보물 · 이벤트는 전리품 화면) */
