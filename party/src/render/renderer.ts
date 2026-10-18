@@ -170,7 +170,7 @@ export class Renderer {
       // 3D: 바닥에서 머리 위 높이로 올려 찍고, 떠오르는 만큼 위로
       const [sx, sy] = this.overlay ? (([a, b]) => [a, b - f.t * 28])(cam.toScreenH(f.x, f.y + 0.9, 1.75)) : cam.toScreen(f.x, f.y);
       ctx.globalAlpha = Math.min(1, 1.6 - f.t * 1.4);
-      ctx.font = `bold ${Math.round(13 * f.scale * Math.min(1.2, z / 40))}px sans-serif`;
+      ctx.font = `${f.scale >= 1.25 ? 24 : 12}px Tessella, sans-serif`;
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#000';
       ctx.strokeText(f.text, sx, sy);
@@ -379,7 +379,7 @@ export class Renderer {
       }
       if (dist(u, p) > ab.range) {
         ctx.fillStyle = '#ff8888';
-        ctx.font = 'bold 12px sans-serif';
+        ctx.font = '12px Tessella, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('사거리 밖: 다가가서 시전', sx, sy - ab.radius * z - 8);
       }
@@ -440,7 +440,7 @@ export class Renderer {
     const r = u.radius * this.cam.zoom;
     // 3D: 머리 꼭대기 위로
     const [sx, sy] = this.overlay ? this.cam.toScreenH(u.x, u.y, u.radius * 4.3) : this.cam.toScreen(u.x, u.y);
-    ctx.font = 'bold 12px sans-serif';
+    ctx.font = '12px Tessella, sans-serif';
     const tw = ctx.measureText(text).width + 14;
     const by = (this.overlay ? sy - 56 : sy - r * 2.3 - 62) - Math.min(1, t * 6) * 4;
     const bx = sx - tw / 2;
@@ -556,7 +556,7 @@ export class Renderer {
     if (mood) {
       y -= 15;
       const label = `${mood.virtue ? '★' : '!'} ${mood.name}`;
-      ctx.font = 'bold 11px sans-serif';
+      ctx.font = '12px Tessella, sans-serif';
       const tw = ctx.measureText(label).width + 8;
       ctx.globalAlpha = mood.virtue ? 1 : 0.65 + 0.35 * Math.sin(w.time * 8);
       ctx.fillStyle = '#000d';
@@ -573,7 +573,7 @@ export class Renderer {
     // 상태이상 아이콘 (3D 에선 몸에 오라 · 파티클로 보이므로 생략)
     if (u.statuses.length && !this.overlay) {
       y -= 15;
-      ctx.font = 'bold 10px sans-serif';
+      ctx.font = '12px Tessella, sans-serif';
       let x = sx - (u.statuses.length * 14) / 2;
       for (const s of u.statuses) {
         ctx.fillStyle = '#000c';
@@ -581,10 +581,10 @@ export class Renderer {
         ctx.fillStyle = s.def.color;
         ctx.fillText(s.def.icon, x + 6.5, y + 7);
         if (s.stacks > 1) {
-          ctx.font = 'bold 8px sans-serif';
+          ctx.font = '12px Tessella, sans-serif';
           ctx.fillStyle = '#fff';
           ctx.fillText(String(s.stacks), x + 11, y + 11);
-          ctx.font = 'bold 10px sans-serif';
+          ctx.font = '12px Tessella, sans-serif';
         }
         x += 14;
       }
@@ -602,7 +602,7 @@ export class Renderer {
       ctx.fillRect(cx - 1, y - 1, cw + 2, ch + 2);
       ctx.fillStyle = u.faction === 'enemy' ? '#ff9933' : ab.color;
       ctx.fillRect(cx, y, cw * k, ch);
-      ctx.font = `bold ${slimCast ? 10 : 11}px sans-serif`;
+      ctx.font = '12px Tessella, sans-serif';
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#000';
       ctx.strokeText(ab.name, sx, y - 7);

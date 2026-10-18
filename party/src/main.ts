@@ -50,7 +50,7 @@ function applyGfx() {
   gfx3d = gfx !== '2d';
   // 3D 는 캐릭터가 서 있어서 조금 더 당겨 본다
   // 3D 는 캐릭터가 서 있어서 조금 더 당겨 보고, 픽셀은 팀파이트 매니저처럼 작게
-  cam.zoom = gfx === 'pixel' ? 46 : gfx3d ? Math.max(cam.zoom, 64) : Math.min(cam.zoom, 48);
+  cam.zoom = gfx === 'pixel' ? Math.round(Math.min(46, Math.max(30, window.innerHeight / 14))) : gfx3d ? Math.max(cam.zoom, 64) : Math.min(cam.zoom, 48);
   cam.enabled = gfx3d;
   cam.ortho = gfx === 'pixel';
   renderer.overlay = gfx3d;
