@@ -63,9 +63,9 @@ const list: AbilityDef[] = [
   {
     id: 'quick_shot', name: '속사', icon: '속', color: '#d8f0a0', type: 'technique', schools: ['bow'],
     desc: '조준 없이 바로 한 발. 피해가 크고 재사용이 짧다.',
-    cost: 0, castTime: 0, cooldown: 4, range: 7, target: 'enemy',
+    cost: 0, castTime: 0, cooldown: 6, range: 6, target: 'enemy',
     projectile: { speed: 20, color: '#eaffc0' },
-    effects: [{ kind: 'weapon', mult: 1.5 }],
+    effects: [{ kind: 'weapon', mult: 1.2 }],
     aiRole: 'damage',
   },
   {
@@ -111,7 +111,7 @@ const list: AbilityDef[] = [
   {
     id: 'fire_bolt', name: '화염 화살', icon: '화', color: '#ff7a2f', type: 'spell', schools: ['fire'], level: 2,
     desc: '화염 피해를 주는 화살. 확률적으로 화상.',
-    cost: 4, castTime: 0.5, cooldown: 2.5, range: 7, target: 'enemy',
+    cost: 4, castTime: 0.6, cooldown: 3.5, range: 6, target: 'enemy',
     projectile: { speed: 12, color: '#ff7a2f' },
     effects: [
       { kind: 'damage', element: 'fire', base: [5, 9], scale: 0.5 },
@@ -145,7 +145,7 @@ const list: AbilityDef[] = [
   {
     id: 'frost_bolt', name: '서리 화살', icon: '서', color: '#66ccff', type: 'spell', schools: ['ice'], level: 2,
     desc: '냉기 피해를 주고 확률적으로 감속시킨다.',
-    cost: 4, castTime: 0.5, cooldown: 3, range: 7, target: 'enemy',
+    cost: 4, castTime: 0.6, cooldown: 3.5, range: 6, target: 'enemy',
     projectile: { speed: 12, color: '#66ccff' },
     effects: [
       { kind: 'damage', element: 'cold', base: [5, 9], scale: 0.5 },

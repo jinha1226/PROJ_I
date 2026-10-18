@@ -102,6 +102,9 @@ const ENEMY_HP = 2;
 const ENEMY_DMG = 0.85;
 const BOSS_HP = 1.5;
 
+/** 전장 몬스터 체력 배율 */
+const ARENA_HP = 1.2;
+
 export class World {
   readonly map: GameMap;
   readonly rng: Rng;
@@ -222,6 +225,9 @@ export class World {
     u.scale = def.boss
       ? { hp: d.boss * BOSS_HP, dmg: (1 + (d.boss - 1) * 0.5) * ENEMY_DMG }
       : { hp: d.baseHp * ENEMY_HP * (1 + (this.depth - 1) * d.perDepthHp), dmg: d.baseDmg * ENEMY_DMG * (1 + (this.depth - 1) * d.perDepthDmg) };
+    // 전장: 적이 다가오기도 전에 녹지 않게 더 튼튼하다 (대신 웨이브 예산은 그대로)
+    // 얕은 깊이는 적이 너무 약해 한 번 더 (1층 ×1.4, 2층 ×1.2)
+    if (this.arena && faction === 'enemy' && !def.boss) u.scale.hp *= ARENA_HP * (1 + Math.max(0, 3 - this.depth) * 0.2);
     return this.addUnit(u);
   }
 
