@@ -104,6 +104,12 @@ interface Look {
   chibi?: { hat?: 'helmet' | 'wizard' | 'hood' | 'mitre' | 'bandana'; color: string };
   /** 무기 색을 살린다 (흰색으로 칠하지 않음) */
   colorWeapon?: boolean;
+  /** 근접 콤보: 차례로 이어서 휘두르고, 마지막 타가 강하다 (밀쳐내기 · 멈칫) */
+  combo?: string[];
+  /** 멀리 있는 적에게 돌진 */
+  dash?: string;
+  /** 애니메이션 · 이동 속도 배율 (빠른 손맛) */
+  speed?: number;
   /** 이 유닛만의 대기 · 이동 애니메이션 (좀비 걸음 등) */
   idle?: string;
   run?: string;
@@ -139,11 +145,17 @@ const LOOKS_Q: Record<string, Look> = {
 /** mix = 영웅은 KayKit, 몬스터는 Quaternius */
 /** UAL 마네킹: 전부 흰색. 영웅은 무기로, 적은 붉은 외곽선 · 크기 · 걸음새로 구분 */
 const LOOKS_U: Record<string, Look> = {
-  warrior: { model: 'ual/ual', show: [], height: 2.2, weapon: 'kaykit/w_sword_1handed', offhand: 'kaykit/w_shield_round', attack: 'Sword_Attack', idle: 'Sword_Idle' },
-  berserker: { model: 'ual/ual', show: [], height: 2.3, weapon: 'kaykit/w_axe_2handed', attack: 'Sword_Regular_A', idle: 'Sword_Idle' },
-  fire_mage: { model: 'ual/ual', show: [], height: 2.1, weapon: 'kaykit/w_staff', attack: 'Spell_Simple_Shoot', ranged: '#ff7a2f' },
-  hunter: { model: 'ual/ual', show: [], height: 2.1, weapon: 'kaykit/w_crossbow_2handed', attack: 'Bow_Shoot', ranged: '#e8d8a0' },
-  priest: { model: 'ual/ual', show: [], height: 2.1, weapon: 'kaykit/w_wand', offhand: 'kaykit/w_spellbook_open', attack: 'Spell_Simple_Shoot', ranged: '#ffeeaa' },
+  warrior: {
+    model: 'ual/ual', show: [], height: 2.2, weapon: 'kaykit/w_sword_1handed', offhand: 'kaykit/w_shield_round', colorWeapon: true,
+    attack: 'Sword_Attack', idle: 'Sword_Idle', combo: ['Sword_Regular_A', 'Sword_Regular_B', 'Sword_Regular_C'], dash: 'Shield_Dash_RM', speed: 1.35,
+  },
+  berserker: {
+    model: 'ual/ual', show: [], height: 2.3, weapon: 'kaykit/w_axe_2handed', colorWeapon: true,
+    attack: 'Sword_Attack', idle: 'Sword_Idle', combo: ['Sword_Regular_A', 'Sword_Regular_C', 'Sword_Attack'], dash: 'Sword_Dash_RM', speed: 1.45,
+  },
+  fire_mage: { model: 'ual/ual', show: [], height: 2.1, weapon: 'kaykit/w_staff', colorWeapon: true, attack: 'Spell_Simple_Shoot', ranged: '#ff7a2f', speed: 1.3 },
+  hunter: { model: 'ual/ual', show: [], height: 2.1, weapon: 'kaykit/w_crossbow_2handed', colorWeapon: true, attack: 'Bow_Shoot', ranged: '#e8d8a0', speed: 1.4 },
+  priest: { model: 'ual/ual', show: [], height: 2.1, weapon: 'kaykit/w_wand', offhand: 'kaykit/w_spellbook_open', colorWeapon: true, attack: 'Spell_Simple_Shoot', ranged: '#ffeeaa', speed: 1.3 },
   skeleton: { model: 'ual/ual', show: [], height: 2.1, attack: 'Zombie_Scratch', idle: 'Zombie_Idle_Loop', run: 'Zombie_Walk_Fwd_Loop' },
   skeleton_mage: { model: 'ual/ual', show: [], height: 2.0, attack: 'Spell_Simple_Shoot', ranged: '#b07cff' },
   brute: { model: 'ual/ual', show: [], height: 3.3, attack: 'Punch_Cross', idle: 'Idle_Loop' },
@@ -162,7 +174,7 @@ const LOOKS_I: Record<string, Look> = {
   slime: { model: 'quaternius/Glub', show: [], height: 1.2, attack: 'Headbutt' },
   brute: { model: 'quaternius/Yeti', show: [], height: 2.6, attack: 'Punch' },
 };
-let pack: 'kaykit' | 'quat' | 'mix' | 'ual' | 'idleon' = 'kaykit';
+let pack: 'kaykit' | 'quat' | 'mix' | 'ual' | 'idleon' = 'ual';
 const HERO_KINDS = ['warrior', 'berserker', 'fire_mage', 'hunter', 'priest'];
 const lookOf = (kind: string) => {
   if (pack === 'ual') return LOOKS_U[kind] ?? LOOKS_U.skeleton;
@@ -201,7 +213,17 @@ interface Actor {
   dead: number;
   home: THREE.Vector3;
   name: string;
+  /** 다음 콤보 단계 */
+  combo: number;
+  /** 밀려나는 속도 (넉백) */
+  push: THREE.Vector3;
+  /** 돌진 중 남은 시간 */
+  dashT: number;
 }
+
+// 타격감: 멈칫(히트스톱) · 화면 흔들림
+let hitstop = 0;
+let shake = 0;
 
 const actors: Actor[] = [];
 
@@ -295,6 +317,7 @@ async function spawn(kind: string, side: Actor['side'], x: number, z: number, na
     root, mixer, clips, current: null, look, side, name,
     hp: 0, maxHp: look.scale ? 200 : side === 'hero' ? 120 : 60, cd: Math.random(), busy: 0, dead: 0,
     home: new THREE.Vector3(x, 0, z),
+    combo: 0, push: new THREE.Vector3(), dashT: 0,
   };
   a.hp = a.maxHp;
   play(a, anim(a, 'idle'));
@@ -306,6 +329,7 @@ function play(a: Actor, name: string, once = false) {
   const act = a.clips.get(name) ?? a.clips.get('Idle');
   if (!act || (act === a.current && !once)) return;
   act.reset();
+  act.timeScale = a.look.speed ?? 1;
   act.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
   act.clampWhenFinished = once;
   act.fadeIn(0.15).play();
@@ -395,10 +419,18 @@ function face(a: Actor, dx: number, dz: number) {
   a.root.rotation.y = settings.flat ? (dx >= 0 ? 1 : -1) * (Math.PI / 2 - 0.45) : Math.atan2(dx, dz);
 }
 
-function hit(target: Actor, dmg: number, color: string) {
+/** 클립 길이 (배속 반영) */
+const clipLen = (a: Actor, name: string) => (a.clips.get(name)?.getClip().duration ?? 0.8) / (a.look.speed ?? 1);
+
+function hit(target: Actor, dmg: number, color: string, heavy = false, from?: Actor) {
   if (target.hp <= 0) return;
   target.hp -= dmg;
-  floaters.push({ pos: target.root.position.clone().setY(2.6 * (target.look.scale ?? 1)), text: String(dmg), color, t: 0 });
+  floaters.push({ pos: target.root.position.clone().setY(2.6 * (target.look.scale ?? 1)), text: heavy ? `${dmg}!` : String(dmg), color: heavy ? '#ffd040' : color, t: 0 });
+  if (heavy) {
+    hitstop = Math.max(hitstop, 0.08);
+    shake = Math.max(shake, 0.25);
+    if (from) target.push.copy(target.root.position).sub(from.root.position).setY(0).normalize().multiplyScalar(7 / (target.look.scale ?? 1));
+  }
   if (target.hp <= 0) {
     target.dead = 2.2;
     play(target, anim(target, 'death'), true);
@@ -408,9 +440,21 @@ function hit(target: Actor, dmg: number, color: string) {
   }
 }
 
-function update(dt: number) {
+function update(realDt: number) {
+  // 히트스톱: 큰 타격 순간 세상이 거의 멈춘다
+  const dt = hitstop > 0 ? realDt * 0.06 : realDt;
+  hitstop = Math.max(0, hitstop - realDt);
+  shake = Math.max(0, shake - realDt);
   for (const a of actors) {
     a.mixer.update(dt);
+    // 넉백
+    if (a.push.lengthSq() > 0.01) {
+      a.root.position.addScaledVector(a.push, dt);
+      a.push.multiplyScalar(Math.exp(-dt * 9));
+    }
+    // 방 밖으로 밀려나지 않게
+    a.root.position.x = THREE.MathUtils.clamp(a.root.position.x, -9.2, 9.2);
+    a.root.position.z = THREE.MathUtils.clamp(a.root.position.z, -6.8, 7.2);
     if (a.look.chibi) chibiPose(a.root);
     if (a.hp <= 0) {
       a.dead -= dt;
@@ -437,14 +481,45 @@ function update(dt: number) {
     tmp.copy(t.root.position).sub(a.root.position);
     face(a, tmp.x, tmp.z);
     const reach = a.look.ranged ? 9 : 1.6 * (a.look.scale ?? 1);
+    const spd = a.look.speed ?? 1;
+    // 돌진 중: 빠르게 붙고, 닿으면 한 대
+    if (a.dashT > 0) {
+      a.dashT -= dt;
+      a.root.position.addScaledVector(tmp.clone().normalize(), dt * 13);
+      if (d <= reach) {
+        a.dashT = 0;
+        hit(t, 12 + Math.floor(Math.random() * 6), '#ffffff', true, a);
+        a.cd = 0.25;
+      }
+      continue;
+    }
+    if (a.look.dash && d > reach + 1 && d < 7 && a.cd <= 0 && a.busy <= 0) {
+      a.dashT = 0.45;
+      a.cd = 2.5;
+      play(a, a.look.dash, true);
+      continue;
+    }
     if (d > reach) {
       if (a.busy <= 0) {
-        a.root.position.addScaledVector(tmp.normalize(), dt * (a.side === 'foe' ? 2.4 : 2.8));
+        a.root.position.addScaledVector(tmp.normalize(), dt * (a.side === 'foe' ? 2.4 : 2.8 * spd));
         play(a, anim(a, 'run'));
       }
+    } else if (a.cd <= 0 && a.look.combo) {
+      // 근접 콤보: 1타 · 2타는 짧게 이어지고, 마지막 타는 강하게 (넉백 · 히트스톱)
+      const seq = a.look.combo;
+      const step = a.combo % seq.length;
+      const last = step === seq.length - 1;
+      const name = seq[step];
+      const len = clipLen(a, name);
+      play(a, name, true);
+      a.combo++;
+      a.busy = len * (last ? 0.8 : 0.5);
+      a.cd = last ? len * 0.85 + 0.35 : len * 0.5;
+      const dmg = (last ? 14 : 7) + Math.floor(Math.random() * 5);
+      setTimeout(() => hit(t, dmg, '#ffffff', last, a), len * 0.38 * 1000);
     } else if (a.cd <= 0) {
-      a.cd = a.look.ranged ? 1.6 : 1.2;
-      a.busy = 0.6;
+      a.cd = (a.look.ranged ? 1.6 : 1.2) / spd;
+      a.busy = 0.6 / spd;
       play(a, a.look.attack, true);
       const dmg = 8 + Math.floor(Math.random() * 10);
       if (a.look.ranged) {
@@ -453,7 +528,10 @@ function update(dt: number) {
         scene.add(m);
         shots.push({ mesh: m, from: a, to: t, t: 0 });
       } else setTimeout(() => hit(t, dmg, '#ffffff'), 250);
-    } else if (a.busy <= 0) play(a, anim(a, 'combat'));
+    } else if (a.busy <= 0) {
+      play(a, anim(a, 'combat'));
+      if (a.look.combo && a.cd > 0.6) a.combo = 0; // 쉬었다 치면 콤보가 처음부터
+    }
   }
   for (const s of [...shots]) {
     s.t += dt;
@@ -678,7 +756,7 @@ async function spawnAll() {
 
 /** 모델 팩 바꾸기: 지금 있는 유닛을 모두 치우고 다시 부른다 */
 async function switchPack() {
-  const order = ['kaykit', 'quat', 'mix', 'ual', 'idleon'] as const;
+  const order = ['ual', 'idleon', 'kaykit', 'quat', 'mix'] as const;
   pack = order[(order.indexOf(pack) + 1) % order.length];
   for (const a of actors) scene.remove(a.root);
   actors.length = 0;
@@ -700,9 +778,13 @@ async function main() {
   renderer.setAnimationLoop(() => {
     const dt = Math.min(0.05, clock.getDelta());
     update(dt);
+    const shook = shake > 0;
+    const off = new THREE.Vector3((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake, 0);
+    if (shook) camera.position.add(off);
     if (settings.pixel > 0) composer.render();
     else if (settings.outline > 0) effect.render(scene, camera);
     else renderer.render(scene, camera);
+    if (shook) camera.position.sub(off);
     drawHud();
     frames++;
     acc += dt;
