@@ -70,6 +70,8 @@ export function think(w: World, u: Unit): Intent | null {
     if (manual && (d > reach + chase || (u.isRanged && d <= reach && !w.map.los(u.x, u.y, e.x, e.y)))) continue;
     if (u !== w.captain && leashed(u, e, reach)) continue;
     if (tank && e !== tank) continue;
+    // 동료 딜러는 알아서 어그로를 조절한다: 전사가 잡고 있는 적에게 위협이 전사의 85% 가까이 되면 다른 적을 친다
+    if (u.faction === 'party' && u !== w.captain && u.hero?.cls !== 'warrior' && pullsAggro(e, u)) continue;
     // 배틀하트식: 동료는 주장 곁에서 싸운다 (아군을 노리는 적은 예외) — 적이 우리 쪽으로 온다
     if (anchor && dist(anchor, e) > 5.5 && !(e.intent?.type === 'attack' && e.intent.target.faction === u.faction)) continue;
     cands.push({ intent: { type: 'attack', target: e }, score: attackValue(w, u, e, d, reach) });
@@ -320,6 +322,14 @@ function evalAbility(w: World, u: Unit, ab: AbilityDef, slot: number, enemies: U
     }
   }
   return out;
+}
+
+/** 이 적의 어그로를 전사에게서 뺏기 직전인가 */
+function pullsAggro(e: Unit, u: Unit): boolean {
+  const holder = e.aggroTarget;
+  if (!holder?.alive || holder === u || holder.hero?.cls !== 'warrior') return false;
+  const mine = e.aggro.get(u.id) ?? 0, his = e.aggro.get(holder.id) ?? 0;
+  return his > 0 && mine > his * 0.85;
 }
 
 /** 예고 범위 공격 안에 있으면 범위 밖으로 */

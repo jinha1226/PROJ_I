@@ -61,7 +61,9 @@ export function resolveCollisions(w: World) {
       const dx = b.x - a.x, dy = b.y - a.y;
       const same = a.faction === b.faction;
       const settled = same && !a.moving && !b.moving;
-      const rr = (a.radius + b.radius) * (settled ? PERSONAL_SPACE : 1);
+      // 파티 원거리 · 지원끼리는 더 넓게 선다 (폭탄 한 방에 같이 맞지 않게 — 자동 산개)
+      const spread = settled && a.faction === 'party' && (a.isRanged || a.tactic === 'support') && (b.isRanged || b.tactic === 'support');
+      const rr = (a.radius + b.radius) * (spread ? SPREAD_SPACE : settled ? PERSONAL_SPACE : 1);
       const d2 = dx * dx + dy * dy;
       if (d2 >= rr * rr) continue;
       const d = Math.sqrt(d2) || 0.001;
@@ -80,6 +82,7 @@ export function resolveCollisions(w: World) {
 
 /** 멈춰 선 같은 편끼리의 거리 배율 */
 const PERSONAL_SPACE = 1.3;
+const SPREAD_SPACE = 2.4;
 
 function mass(u: Unit) {
   let m = u.def.mass;
