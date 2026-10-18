@@ -1,4 +1,5 @@
 // 용병단 거점 (탭): 원정대 편성 · 선술집 · 치료소 · 대장간 · 훈련장 · 기록(묘지 · 해금).
+import { synergyChips } from './synergyview';
 import { Rng } from '../core/rng';
 import { CLASSES, CLASS_LIST, type ClassId } from '../data/classes';
 import { MOODS } from '../data/moods';
@@ -120,6 +121,7 @@ export class TownScreen {
       <div class="board">${boardHtml || '<p class="dim">걸린 계약이 없다</p>'}</div>
       ${sel ? `<p class="cdesc">${sel.desc}</p>` : ''}
       <div class="slots4">${slots}</div>
+      ${synergyChips(party)}
       <div class="rgrid">${bench.map((h) => this.card(h, 'roster')).join('') || (c.roster.length ? '' : '<p class="dim">명부가 비었다 — 선술집에서 고용</p>')}</div>
       <div class="go"><button data-act="depart" ${party.length && this.contract ? '' : 'disabled'}>출발 ▶</button></div>`;
   }

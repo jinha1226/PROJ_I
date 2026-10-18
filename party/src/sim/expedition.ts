@@ -39,11 +39,14 @@ export function genExpedition(rng: Rng, def: ContractDef): Expedition {
   const byCol: ExNode[][] = [];
   for (let c = 0; c < cols; c++) {
     const last = c === cols - 1;
-    const n = c === 0 || last ? 1 : rng.int(2, 3);
+    // 보스 바로 앞 열은 야영 하나뿐 (숨 고르고 보스로)
+    const preBoss = def.boss && cols >= 5 && c === cols - 2;
+    const n = c === 0 || last || preBoss ? 1 : rng.int(2, 3);
     byCol[c] = [];
     for (let r = 0; r < n; r++) {
       let kind: NodeKind;
       if (c === 0) kind = 'battle';
+      else if (preBoss) kind = 'camp';
       else if (last) kind = def.boss ? 'boss' : 'goal';
       else {
         const roll = rng.next();
@@ -54,11 +57,6 @@ export function genExpedition(rng: Rng, def: ContractDef): Expedition {
       nodes.push(node);
       byCol[c].push(node);
     }
-  }
-  // 보스 직전 열에는 야영 하나 (숨 고르고 보스로)
-  if (def.boss && cols >= 5) {
-    const pre = byCol[cols - 2];
-    pre[rng.int(0, pre.length - 1)].kind = 'camp';
   }
   // 긴 원정이면 중간쯤에 야영 하나는 보장
   if (cols >= 7 && !nodes.some((n) => n.kind === 'camp')) {

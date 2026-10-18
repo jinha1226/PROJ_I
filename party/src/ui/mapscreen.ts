@@ -1,4 +1,5 @@
 // 원정 지도 화면: 열을 따라 이어진 방들. 갈 수 있는 방을 눌러 들어간다. 파티 체력 · 스트레스와 귀환 버튼.
+import { synergyChips } from './synergyview';
 import { CLASSES } from '../data/classes';
 import { CONTRACTS } from '../data/contracts';
 import { MOODS } from '../data/moods';
@@ -82,6 +83,7 @@ export class MapScreen {
       <div class="mapwrap"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${lines}${nodes}</svg></div>
       <div class="legend">${Object.values(NODE_INFO).map((i) => `<span style="color:${i.color}">${i.icon} ${i.name}</span>`).join('')}</div>
       <div class="mparty">${party}</div>
+      ${synergyChips(heroes)}
       <div class="go"><button class="retreat" data-act="retreat">거점으로 귀환</button><span class="dim">빛나는 방을 눌러 나아간다</span></div>`;
     $('map').classList.remove('hidden');
   }

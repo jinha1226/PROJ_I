@@ -145,6 +145,21 @@ export class Hud {
       });
       box.appendChild(b);
     });
+    // 합동기: 주장 + 동료 짝. 게이지가 차면 빛난다
+    this.getWorld().combos().forEach((cb, i) => {
+      const ab = cb.def.ability;
+      const b = document.createElement('div');
+      b.className = 'sk combo';
+      b.dataset.combo = String(i);
+      b.title = `합동기 [${'ZXV'[i]}] — ${ab.name} (${cb.a.name} + ${cb.b.name})\n${ab.desc}\n합동 게이지 100 을 쓴다 (적에게 피해를 주면 찬다)`;
+      b.innerHTML = `<span class="icon" style="color:${ab.color}">${ab.icon}</span><span class="nm">${ab.name}</span>
+        <span class="pair">${cb.a.name[0]}+${cb.b.name[0]}</span><div class="cdmask"></div>`;
+      b.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        this.getWorld().useCombo(i);
+      });
+      box.appendChild(b);
+    });
     const dash = document.createElement('div');
     dash.className = 'sk dash';
     dash.title = u.isRanged ? '구르기 [Shift]: 짧게 굴러 공격을 피한다' : '돌진 [Shift]: 앞의 적에게 뛰어들어 강타. 적이 없으면 구르기';
@@ -191,13 +206,19 @@ export class Hud {
 
     // 주장 기술 줄
     if (cap) {
-      const ver = `${cap.id}:${cap.abilities.map((a) => `${a.def.id}${a.rank}`).join()}`;
+      const ver = `${cap.id}:${cap.abilities.map((a) => `${a.def.id}${a.rank}`).join()}:${w.combos().map((c) => c.def.id).join()}`;
       if (this.capVersion !== ver) {
         this.capVersion = ver;
         this.buildCapbar(cap);
       }
       const box = $('party').querySelector<HTMLElement>('.capbar')!;
       for (const b of box.querySelectorAll<HTMLElement>('.sk')) {
+        if (b.classList.contains('combo')) {
+          const g = w.comboGauge / 100;
+          b.querySelector<HTMLElement>('.cdmask')!.style.height = `${(1 - g) * 100}%`;
+          b.classList.toggle('ready', g >= 1);
+          continue;
+        }
         if (b.classList.contains('dash')) {
           const max = cap.isRanged ? 2.5 : 4;
           b.querySelector<HTMLElement>('.cdmask')!.style.height = cap.dashCd > 0 ? `${Math.min(1, cap.dashCd / max) * 100}%` : '0';
@@ -224,7 +245,7 @@ export class Hud {
 
     $('combat-state').innerHTML =
       (w.arena
-        ? `<span style="color:#9ab">웨이브 ${w.waveIndex}/${w.waves.length}</span> <span class="gold">${w.run.gold}G</span> `
+        ? `<span style="color:#9ab">웨이브 ${w.waveIndex}/${w.waves.length}${w.waveName ? ` · ${w.waveName}` : ''}</span> <span class="gold">${w.run.gold}G</span> `
         : `<span style="color:#9ab">${floorInfo(w.run, w.depth).floor}/${floorInfo(w.run, w.depth).floors}층</span> <span class="gold">${w.run.gold}G</span> `) +
       (w.inCombat ? '<span style="color:#ff8866">전투 중</span>' : '<span style="color:#88cc88">탐험</span>');
     $('pause-banner').classList.toggle('hidden', !ui.paused || !!w.outcome);

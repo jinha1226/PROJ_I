@@ -21,9 +21,18 @@ export interface MapDef {
   objects?: { kind: ObjectKind; x: number; y: number }[];
   /** 전장(배틀하트식 한 화면 방): 시야 제한 없음, 적은 웨이브로 문에서 들어온다 */
   arena?: boolean;
-  waves?: string[][];
+  waves?: ArenaWave[];
   /** 적이 들어오는 문 (타일 좌표) */
   gates?: [number, number][];
+}
+
+/** 전장 웨이브: 몬스터 목록 + 성격(이름 · 요령) */
+export interface ArenaWave {
+  ids: string[];
+  name?: string;
+  hint?: string;
+  color?: string;
+  sides?: 'both' | 'one';
 }
 
 export type Palette = 'cave' | 'crypt' | 'nest' | 'ruins';

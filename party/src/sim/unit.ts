@@ -1,5 +1,5 @@
 import { ABILITIES } from '../data/abilities';
-import type { AbilityDef, Faction, ResistKey, SkillId, StatusDef, TacticId, UnitDef, WeaponDef } from './defs';
+import type { AbilityDef, Faction, Prop, ResistKey, SkillId, StatusDef, TacticId, UnitDef, WeaponDef } from './defs';
 import type { Hero } from './hero';
 import { addItem, addProp, emptyBonus, weaponOf, type Bonus } from './items';
 import type { Pt } from './map';
@@ -142,6 +142,8 @@ export class Unit {
   dashTarget: Unit | null = null;
   /** 대상 없는 돌진 = 구르기 (주장 회피) 방향 */
   dashDir: { x: number; y: number } | null = null;
+  /** 파티 시너지 보너스 (방에 들어설 때 정해진다) */
+  synergy: Prop[] = [];
   dashCd = 0;
   /** 소환한 유닛 (소환수 수 제한용) */
   summoner: Unit | null = null;
@@ -190,6 +192,7 @@ export class Unit {
     for (const it of Object.values(h.gear)) if (it) addItem(b, it);
     for (const p of h.perks) addProp(b, p);
     for (const p of h.def.traits ?? []) addProp(b, p);
+    for (const p of this.synergy) addProp(b, p);
     this.bonus = b;
     this.weapon = h.gear.weapon ? weaponOf(h.gear.weapon) : this.def.weapon;
     if (b.onHit.length && !this.weapon.onHit) this.weapon = { ...this.weapon, onHit: b.onHit[0] };

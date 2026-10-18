@@ -117,6 +117,37 @@ function resolveAbility(w: World, u: Unit, slot: number, target: Unit | null, x:
   }
 }
 
+/**
+ * 합동기 발동: 시전 · 실패 · 마나 없이 바로. lead = 위력의 주인, (x, y) = 중심 또는 대상 위치.
+ * 자기 중심 기술은 지정된 중심(x, y)에서 터진다
+ */
+export function castCombo(w: World, lead: Unit, ab: AbilityDef, target: Unit | null, x: number, y: number) {
+  const power = abilityPower(lead, ab);
+  let mult = 1;
+  for (const s of ab.schools ?? []) mult += (lead.bonus.power[s] ?? 0) / 100;
+  w.log(`합동기: ${ab.name}`, ab.color);
+  w.sound('magic');
+  const def: AbilityDef = ab.target === 'self' ? { ...ab, target: 'ground' } : ab;
+  if (def.dash && target) {
+    const d = dist(lead, target);
+    const stop = lead.radius + target.radius + 0.05;
+    if (d > stop) {
+      const t = (d - stop) / d;
+      const fx = lead.x, fy = lead.y;
+      lead.x += (target.x - lead.x) * t;
+      lead.y += (target.y - lead.y) * t;
+      w.effect({ kind: 'trail', x: fx, y: fy, x2: lead.x, y2: lead.y, r: 0, color: ab.color, dur: 0.3 });
+    }
+  }
+  const land = () => landAbility(w, lead, def, target, x, y, power, mult);
+  if (def.projectile)
+    w.spawnProjectile({
+      source: lead, target: def.target === 'enemy' ? target : null, x: lead.x, y: lead.y, tx: x, ty: y,
+      speed: def.projectile.speed, color: def.projectile.color, size: 0.2, onHit: land, ...projectileLook(def, lead),
+    });
+  else land();
+}
+
 /** 화면용 발사체 모양: 속성 피해면 그 속성, 무기 기술이면 무기 모양 */
 function projectileLook(ab: AbilityDef, u: Unit): { style: 'arrow' | 'bolt' | 'shard' | 'orb'; element?: Element } {
   const dmg = ab.effects.find((e) => e.kind === 'damage');
