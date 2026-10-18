@@ -459,3 +459,32 @@ button.on { border-color: var(--accent); color: var(--accent); }
 
 /* 좁은 하단 파티 패널 · 벨트 · 정보 창: 10px 그리드 판 (같은 12px 크기에 더 좁은 글자) */
 #party, #party *, #belt, #belt *, #inspect, #inspect *, #log { font-family: 'Tessella10', 'Tessella', sans-serif; }
+
+/* ── 원정 지도 ── */
+#map .box { width: min(1000px, 96vw); }
+#map .thead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+#map .thead h2 { margin: 0; }
+#map .tstat { color: #bbb; }
+#map .note { color: #ffe14d; margin: 6px 0; }
+#map .mapwrap { overflow-x: auto; margin: 8px 0; background: #14131b; border: 1px solid #2a2a38; border-radius: 6px; }
+#map svg { display: block; margin: 0 auto; }
+#map line { stroke: #3a3a4a; stroke-width: 2; }
+#map line.walked { stroke: #8a7a4a; }
+#map line.open { stroke: #ffcc66; stroke-dasharray: 5 4; }
+#map .node circle { fill: #1c1b26; stroke-width: 2; }
+#map .node text { font-family: 'Tessella', sans-serif; font-size: 12px; text-anchor: middle; }
+#map .node.done circle { fill: #2a2618; opacity: 0.6; }
+#map .node.done text { opacity: 0.5; }
+#map .node.here circle { stroke: #66ff88 !important; stroke-width: 3; }
+#map .node.can { cursor: pointer; }
+#map .node.can circle { fill: #2a2618; animation: nodepulse 1s ease-in-out infinite alternate; }
+@keyframes nodepulse { from { stroke-width: 2; } to { stroke-width: 4; } }
+#map .legend { display: flex; gap: 10px; flex-wrap: wrap; color: #888; }
+#map .mparty { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+#map .mh { display: flex; flex-direction: column; align-items: stretch; gap: 3px; text-align: left; padding: 6px 8px; border: 1px solid; border-radius: 6px; background: #1a1a24; }
+#map .mbar { display: block; height: 3px; background: #222; border-radius: 2px; overflow: hidden; }
+#map .mbar i { display: block; height: 100%; }
+#map .mbar.hp i { background: #4caf50; }
+#map .go { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+#map .retreat { border-color: #8a7a4a; color: #e8cf7a; }
+@media (max-width: 900px), (max-height: 500px) { #map .mparty { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

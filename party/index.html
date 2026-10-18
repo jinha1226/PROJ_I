@@ -14,7 +14,7 @@
     <button id="btn-pause" title="Space">⏸ 일시정지</button>
     <button id="btn-all" title="` 또는 Ctrl+A">전체 선택</button>
     <button id="btn-auto" title="T · 켜면 AI 가 기본 기술까지 쓴다">자동전투: 꺼짐</button>
-    <button id="btn-explore" title="X · 전투가 없을 때 다음 방 → 계단으로 이동">자동 탐험: 꺼짐</button>
+    <button id="btn-explore" style="display:none" title="X · 전투가 없을 때 다음 방 → 계단으로 이동">자동 탐험: 꺼짐</button>
     <button id="btn-speed" title="게임 속도">속도 1x</button>
     <button id="btn-crisis" title="보스 범위 공격 예고 · 아군 체력 위험 때">위기 시: 감속</button>
     <button id="btn-follow" title="C">카메라 추적: 켜짐</button>
@@ -38,6 +38,7 @@
   <div id="rest" class="overlay hidden"><div class="box"></div></div>
   <div id="sheet" class="overlay hidden"><div class="box"></div></div>
   <div id="town" class="overlay hidden"><div class="box"></div></div>
+  <div id="map" class="overlay hidden"><div class="box"></div></div>
   <div id="toast" class="hidden"></div>
 
   <div id="outcome" class="hidden">
@@ -52,8 +53,10 @@
   <div id="help" class="overlay">
     <div class="box">
       <h2>파티 던전 — 5층 런</h2>
-      <p class="tip"><b>용병단 거점</b>에서 명부의 용병 중 <b>최대 4명</b>을 골라 원정을 떠납니다. 선술집에서 새 용병을 고용할 수 있습니다.
-        <b>쓰러진 용병은 영구히 묘지로 갑니다.</b> 층을 마칠 때마다 번 골드를 챙겨 <b>귀환</b>할 수 있고, 전멸하면 골드를 잃습니다. 진행은 층마다 자동 저장됩니다.<br />
+      <p class="tip"><b>용병단 거점</b>에서 계약을 고르고 명부의 용병 <b>최대 4명</b>으로 원정을 떠납니다.
+        원정은 <b>지도</b>에서 방을 골라 나아갑니다 — ⚔ 전투 · 정예 · 보물 · 이벤트 · 야영 · 보스. 방에 들어가면 <b>한 화면 전장</b>에서
+        양옆 문으로 몰려오는 <b>웨이브</b>를 막아 냅니다. 체력은 방을 넘어 이어지고(방을 정리하면 조금 회복), 야영에서 크게 쉽니다.
+        <b>쓰러진 용병은 영구히 묘지로 갑니다.</b> 지도에서 언제든 귀환할 수 있고, 전멸하면 번 골드를 잃습니다.<br />
         층마다 방을 정리하고 <b>계단(▼)</b>에 도착하면 다음 층으로 내려갑니다. 5층의 오우거 족장을 쓰러뜨리면 승리.<br />
         층을 마치면 <b>보상 장비 하나</b>를 고릅니다. 레벨이 오르면 체력과 위력은 저절로 오르고,
         <b>Lv 3 · 5 · 7 · 8</b>에는 직업별 <b>특성 셋 중 하나</b>(기술 변형 · 새 기술 · 특성 · 궁극기)를 고릅니다 — 이것이 빌드입니다.

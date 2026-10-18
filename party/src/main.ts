@@ -3,9 +3,8 @@ import { Input } from './input/input';
 import { Camera3D } from './render3d/camera3d';
 import { Renderer3D } from './render3d/renderer3d';
 import { Renderer } from './render/renderer';
-import { genFloor, type FloorOpts } from './sim/gen';
+import { genFloor } from './sim/gen';
 import { CONTRACTS, type Contract } from './data/contracts';
-import { floorInfo } from './sim/run';
 import { usefulItem } from './sim/reward';
 import { itemTitle } from './sim/items';
 import { Rng } from './core/rng';
@@ -20,6 +19,9 @@ import { World } from './sim/world';
 import { Hud } from './ui/hud';
 import { RestScreen } from './ui/rest';
 import { TownScreen } from './ui/town';
+import { MapScreen } from './ui/mapscreen';
+import { ROOM_HEAL, genExpedition, nodeDepth } from './sim/expedition';
+import { genArena } from './sim/arena';
 import { ROSTER_MAX, buryFallen, finishExpedition, loadCompany, newCompany, randomComp, resetCompany, saveCompany, takenNames } from './sim/roster';
 import { CLASSES, type ClassId } from './data/classes';
 import { RACES, type RaceId } from './data/races';
@@ -134,30 +136,6 @@ function toast(text: string) {
   toastTimer = window.setTimeout(() => el.classList.add('hidden'), 3500);
 }
 
-/** 계약에 맞는 층 생성 옵션 (계약이 없으면 예전처럼 5층 토벌) */
-function floorOpts(): FloorOpts {
-  const def = CONTRACTS[run.contract?.kind ?? 'hunt'];
-  const { floor, floors } = floorInfo(run, depth);
-  const last = floor >= floors;
-  return { boss: def.boss && last, bossId: def.bossId, theme: def.theme, sides: def.sides, captive: def.kind === 'rescue' && last, palette: def.palette };
-}
-
-function startFloor() {
-  world = new World(genFloor(runSeed, depth, floorOpts()), runSeed * 31 + depth, heroes, difficulty, run);
-  // 층 시작 시점 저장 (도중에 끄면 이 층 처음부터)
-  company.current = { party: heroes.map((h) => h.uid), depth, seed: runSeed, run };
-  saveCompany(company);
-  world.autoExplore = explore;
-  announceUnlocks(recordProgress(meta, {}, depth));
-  ui.selected = [];
-  ui.inspect = null;
-  ui.targeting = null;
-  ui.paused = false;
-  slowTimer = 0;
-  hud.build();
-  centerParty();
-}
-
 /** 거점으로 (원정이 끝났거나 처음 시작) */
 function openTown(note = '') {
   rest.close();
@@ -170,8 +148,10 @@ function openTown(note = '') {
 function startExpedition(party: Hero[], contract: Contract) {
   runSeed = (Math.random() * 1e9) | 0;
   heroes = party;
+  for (const h of heroes) h.hpFrac = h.hpFrac ?? 1;
   run = newRun();
   run.contract = contract;
+  run.expedition = genExpedition(new Rng(runSeed), CONTRACTS[contract.kind]);
   depth = CONTRACTS[contract.kind].startDepth;
   company.board = company.board.filter((c) => c !== contract);
   started = true;
@@ -179,13 +159,107 @@ function startExpedition(party: Hero[], contract: Contract) {
   company.expeditions++;
   meta.runs++;
   saveMeta(meta);
-  startFloor();
+  openMap();
 }
 
-/** 저장된 원정 이어하기 (층 처음부터) */
+// ── 원정 지도 · 방 (다키스트 던전식 지도 + 배틀하트식 전장) ──
+let roomNode: number | null = null;
+
+/** 지도 화면: 방과 방 사이. 여기서 저장한다 (방 도중에 끄면 지도부터 다시) */
+function openMap(note = '') {
+  roomNode = null;
+  ui.paused = true;
+  rest.close();
+  restOpen = false;
+  company.current = { party: heroes.map((h) => h.uid), depth, seed: runSeed, run };
+  saveCompany(company);
+  mapScreen.open(run.expedition!, run, heroes, note);
+}
+
+function enterNode(id: number) {
+  const ex = run.expedition!;
+  const node = ex.nodes[id];
+  const def = CONTRACTS[run.contract?.kind ?? 'hunt'];
+  ex.at = id;
+  depth = nodeDepth(def, ex, node);
+  // 어둠 속을 나아가는 부담 (다키스트 던전의 횃불처럼)
+  for (const h of heroes) if (!h.mood) h.stress = Math.min(99, h.stress + 2);
+  if (node.kind === 'camp') {
+    // 야영: 체력 회복 · 스트레스 크게 감소 · 특성 · 장비 정리
+    for (const h of heroes) {
+      h.hpFrac = 1;
+      restRelief(h);
+    }
+    ex.done.push(id);
+    restOpen = true;
+    rest.open(heroes, run, depth, runSeed + id * 997, '야영 — 모닥불 곁에서 쉰다', false);
+    return;
+  }
+  startRoom(id);
+}
+
+function startRoom(id: number) {
+  const ex = run.expedition!;
+  const node = ex.nodes[id];
+  const def = CONTRACTS[run.contract?.kind ?? 'hunt'];
+  roomNode = id;
+  const seed = runSeed * 31 + id * 7919;
+  const map = genArena(seed, depth, {
+    kind: node.kind, theme: def.theme, bossId: def.bossId, palette: def.palette, captive: def.kind === 'rescue' && node.kind === 'goal',
+  });
+  world = new World(map, seed, heroes, difficulty, run);
+  world.autoExplore = false;
+  announceUnlocks(recordProgress(meta, {}, depth));
+  ui.selected = [];
+  ui.inspect = null;
+  ui.targeting = null;
+  ui.paused = false;
+  slowTimer = 0;
+  hud.build();
+  // 한 화면 전장: 방 전체가 보이게 맞추고 카메라는 고정
+  const vh = window.innerHeight - cam.padBottom - 60;
+  cam.zoom = Math.max(24, Math.min(64, Math.min(window.innerWidth / (map.width + 1), vh / (map.height * 0.85 + 1))));
+  cam.x = map.width / 2;
+  cam.y = map.height / 2;
+  cam.follow = false;
+}
+
+/** 방 정리: 쓰러진 용병은 묘지로, 체력 · 보상 정리 후 지도로 (정예 · 보물 · 이벤트는 전리품 화면) */
+function roomCleared() {
+  const ex = run.expedition!;
+  const node = ex.nodes[roomNode!];
+  for (const p of world.party) {
+    saveFromUnit(p);
+    if (p.hero) p.hero.hpFrac = p.alive ? Math.min(1, Math.max(0.05, p.hp / p.stats.maxHp) + ROOM_HEAL) : 1;
+  }
+  const alive = new Set(world.party.filter((p) => p.alive && p.hero).map((p) => p.hero!));
+  const { survivors, fallen } = buryFallen(company, heroes, alive, depth);
+  heroes = survivors;
+  for (const h of fallen) toast(`✝ ${h.def.name}을(를) 잃었다`);
+  const bonus = node.kind === 'elite' ? 40 * depth : node.kind === 'battle' ? 12 * depth : 0;
+  run.gold += bonus;
+  announceUnlocks(recordProgress(meta, run.kills, depth));
+  run.kills = {};
+  ex.done.push(node.id);
+  roomNode = null;
+  if ((node.kind === 'boss' || node.kind === 'goal') && heroes.length) {
+    completeContract();
+    return;
+  }
+  const loot = run.found.length > 0 || heroes.some((h) => h.pending > 0) || node.kind === 'elite';
+  if (loot) {
+    restOpen = true;
+    rest.open(heroes, run, depth, runSeed + node.id * 997, node.kind === 'elite' ? '정예를 쓰러뜨렸다 — 전리품' : '방을 정리했다', node.kind === 'elite');
+  } else openMap(bonus ? `방을 정리했다 · 골드 +${bonus}` : '방을 정리했다');
+}
+
+/** 저장된 원정 이어하기 (지도부터) */
 function resumeExpedition(): boolean {
   const cur = company.current;
-  if (!cur) return false;
+  if (!cur || !cur.run.expedition) {
+    if (cur) company.current = null;
+    return false;
+  }
   const party = cur.party.map((uid) => company.roster.find((h) => h.uid === uid)).filter((h): h is Hero => !!h);
   if (!party.length) {
     company.current = null;
@@ -197,8 +271,7 @@ function resumeExpedition(): boolean {
   depth = cur.depth;
   started = true;
   outcomeRecorded = false;
-  startFloor();
-  toast(`${depth}층부터 원정을 이어간다`);
+  openMap('원정을 이어간다');
   return true;
 }
 
@@ -231,7 +304,9 @@ function completeContract() {
 
 /** 원정 끝: 승리 · 귀환은 골드를 챙기고, 전멸은 잃는다 */
 function endExpedition(kind: 'victory' | 'retreat' | 'defeat', extra = '') {
-  const alive = new Set(world.party.filter((p) => p.alive && p.hero).map((p) => p.hero!));
+  mapScreen.close();
+  // 방 밖(지도 · 쉬는 화면)에서 끝나면 지금 명단이 곧 생존자
+  const alive = roomNode !== null || kind === 'defeat' ? new Set(world.party.filter((p) => p.alive && p.hero).map((p) => p.hero!)) : new Set(heroes);
   const { fallen } = kind === 'retreat' ? { fallen: [] as Hero[] } : buryFallen(company, heroes, alive, depth);
   const survivors = heroes.filter((h) => !fallen.includes(h));
   const gold = run.gold;
@@ -255,33 +330,17 @@ const town = new TownScreen(
   () => saveCompany(company),
 );
 
-function floorCleared() {
-  for (const p of world.party) saveFromUnit(p);
-  // 영구 사망: 쓰러진 용병은 묘지로
-  const alive = new Set(world.party.filter((p) => p.alive && p.hero).map((p) => p.hero!));
-  const { survivors, fallen } = buryFallen(company, heroes, alive, depth);
-  heroes = survivors;
-  for (const h of fallen) toast(`✝ ${h.def.name}을(를) 잃었다`);
-  run.gold += 40 * depth;
-  for (const h of heroes) restRelief(h);
-  announceUnlocks(recordProgress(meta, run.kills, depth));
-  run.kills = {};
-  // 마지막 층을 끝냈다: 계약 완수 (보스 계약은 보스 처치로 끝난다)
-  const { floor, floors } = floorInfo(run, depth);
-  if (floor >= floors && heroes.length) {
-    completeContract();
-    return;
-  }
-  restOpen = true;
-  rest.open(heroes, run, depth, runSeed + depth * 997);
-}
 
 const sheet = new CharacterSheet();
+const mapScreen = new MapScreen(
+  enterNode,
+  () => endExpedition('retreat'),
+  (h) => sheet.open(h, null, () => mapScreen.open(run.expedition!, run, heroes)),
+);
 const rest = new RestScreen(
   () => {
     restOpen = false;
-    depth++;
-    startFloor();
+    openMap();
   },
   (h, done) => sheet.open(h, null, done),
   () => endExpedition('retreat'),
@@ -381,7 +440,6 @@ diffSel.addEventListener('change', () => {
     // 무시
   }
   // 첫 층에서 아직 싸우기 전이면 바로 다시 만든다
-  if (depth === 1 && world.time < 1) startFloor();
 });
 world.autoExplore = explore;
 $('btn-help').addEventListener('click', toggleHelp);
@@ -563,7 +621,7 @@ function frame(now: number) {
   const autoOn = world.party.every((u) => u.autoMode);
   $('btn-auto').textContent = `자동전투: ${autoOn ? '켜짐' : '꺼짐'}`;
   $('btn-auto').classList.toggle('on', autoOn);
-  if (started && world.outcome === 'cleared' && !restOpen && $('rest').classList.contains('hidden')) floorCleared();
+  if (started && roomNode !== null && world.outcome === 'cleared' && !restOpen) roomCleared();
   const out = $('outcome');
   if (started && (world.outcome === 'victory' || world.outcome === 'defeat')) {
     if (!outcomeRecorded) {
@@ -583,7 +641,7 @@ function frame(now: number) {
     $('outcome-title').textContent = world.outcome === 'victory' ? `승리! ${world.bossName}을(를) 쓰러뜨렸다` : `${depth}층에서 원정대 전멸`;
     $('outcome-sub').textContent =
       world.party.map((p) => `${p.alive ? '' : '✝ '}${p.name} Lv${p.hero?.xl ?? 1}`).join(' · ') +
-      ` — ${floorInfo(run, depth).floor}/${floorInfo(run, depth).floors}층 · ${world.outcome === 'victory' ? `골드 ${run.gold}` : `골드 ${run.gold} 잃음`}`;
+      ` — 깊이 ${depth} · ${world.outcome === 'victory' ? `골드 ${run.gold}` : `골드 ${run.gold} 잃음`}`;
   } else out.classList.add('hidden');
 
   requestAnimationFrame(frame);

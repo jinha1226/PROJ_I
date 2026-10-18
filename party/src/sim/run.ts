@@ -1,6 +1,7 @@
 // 한 런 동안 층을 넘어 이어지는 파티 공용 상태 (영웅 데이터 외)
 import { BELT_SIZE, type ConsumableId } from '../data/consumables';
 import type { Item } from './defs';
+import type { Expedition } from './expedition';
 import { CONTRACTS, type Contract } from '../data/contracts';
 
 export interface RunState {
@@ -20,6 +21,8 @@ export interface RunState {
   contract: Contract | null;
   /** 구출 계약: 포로를 풀어 주었는가 */
   rescued: boolean;
+  /** 원정 지도 (방 고르기) */
+  expedition: Expedition | null;
 }
 
 /** 지금 몇 번째 층 / 모두 몇 층 (계약의 시작 깊이를 뺀 값) */
@@ -29,7 +32,7 @@ export function floorInfo(run: RunState, depth: number): { floor: number; floors
 }
 
 export function newRun(): RunState {
-  return { belt: ['heal_potion'], found: [], kills: {}, seen: [], gold: 0, loot: [], contract: null, rescued: false };
+  return { belt: ['heal_potion'], found: [], kills: {}, seen: [], gold: 0, loot: [], contract: null, rescued: false, expedition: null };
 }
 
 export function addToBelt(run: RunState, id: ConsumableId): boolean {

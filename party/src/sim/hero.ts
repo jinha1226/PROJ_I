@@ -54,6 +54,8 @@ export interface Hero {
   expeditions: number;
   /** 이번 원정에서 쓰러졌다면 사인 */
   deathCause: string | null;
+  /** 방을 넘어 이어지는 체력 비율 (원정 지도) */
+  hpFrac?: number;
 }
 
 let nextHeroUid = 1;

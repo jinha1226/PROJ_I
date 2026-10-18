@@ -6,14 +6,13 @@ import type { Item } from '../sim/defs';
 import { applyTalent, nextTier, tierOptions, type Hero } from '../sim/hero';
 import { RARITY_COLOR, SLOT_NAME, isBadProp, itemBaseLine, itemTitle, propText } from '../sim/items';
 import { compareItem, rewardChoices } from '../sim/reward';
-import { floorInfo, newRun, type RunState } from '../sim/run';
+import { newRun, type RunState } from '../sim/run';
 
 const $ = (id: string) => document.getElementById(id)!;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 export class RestScreen {
   private heroes: Hero[] = [];
-  private depth = 1;
   private rng = new Rng(1);
   private rewards: Item[] = [];
   /** 고른 카드: 보상(reward) 또는 찾은 장비(found) 의 몇 번째 */
@@ -30,11 +29,16 @@ export class RestScreen {
     $('rest').addEventListener('click', (e) => this.click(e));
   }
 
-  open(heroes: Hero[], run: RunState, depth: number, seed: number) {
+  private title = '';
+  private withReward = true;
+
+  /** title: 화면 제목 (야영 · 전리품), reward: 장비 보상 3택1을 줄지 */
+  open(heroes: Hero[], run: RunState, depth: number, seed: number, title = '휴식', reward = true) {
+    this.title = title;
+    this.withReward = reward;
     this.heroes = heroes;
     this.run = run;
     this.foundNotes = [];
-    this.depth = depth;
     this.rng = new Rng(seed);
     this.rewards = rewardChoices(this.rng, depth, heroes);
     this.picked = null;
@@ -51,17 +55,16 @@ export class RestScreen {
   private render() {
     const box = $('rest').querySelector('.box')!;
     const pendingTotal = this.heroes.reduce((s, h) => s + h.pending, 0);
-    const nextFloor = floorInfo(this.run, this.depth + 1);
     box.innerHTML = `
-      <h2>${floorInfo(this.run, this.depth).floor}층 돌파! <span class="gold small">이번 원정 골드 ${this.run.gold}</span></h2>
+      <h2>${this.title} <span class="gold small">이번 원정 골드 ${this.run.gold}</span></h2>
       <div class="growth">${this.heroes.map((h) => this.growthRow(h)).join('')}</div>
       ${this.foundSection()}
-      <h3>보상 — 하나를 골라 장착 ${this.rewardDone ? '<span class="done">✓</span>' : ''}</h3>
-      ${this.rewardDone ? `<p class="note">${this.rewardDone}</p>` : this.rewardSection()}
+      ${this.withReward ? `<h3>보상 — 하나를 골라 장착 ${this.rewardDone ? '<span class="done">✓</span>' : ''}</h3>
+      ${this.rewardDone ? `<p class="note">${this.rewardDone}</p>` : this.rewardSection()}` : ''}
       ${pendingTotal ? `<h3>특성 — 하나씩 고르기</h3>${this.heroes.map((h) => this.levelRow(h)).join('')}` : ''}
       <div class="next">
         <button class="retreat" data-act="retreat" ${pendingTotal ? 'disabled' : ''}>거점으로 귀환 (골드 ${this.run.gold} 챙기기)</button>
-        <button data-act="next" ${pendingTotal ? 'disabled' : ''}>${pendingTotal ? '특성 선택을 마쳐 주세요' : `${nextFloor.floor}층으로 내려가기${nextFloor.floor === nextFloor.floors ? (this.run.contract?.kind === 'hunt' || !this.run.contract ? ' (보스층)' : ' (마지막 층)') : ''}`}</button>
+        <button data-act="next" ${pendingTotal ? 'disabled' : ''}>${pendingTotal ? '특성 선택을 마쳐 주세요' : '지도로 ▶'}</button>
       </div>`;
   }
 

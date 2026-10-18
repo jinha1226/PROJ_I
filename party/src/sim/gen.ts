@@ -181,3 +181,13 @@ export function genFloor(seed: number, depth: number, opts: FloorOpts = { boss: 
     depth,
   };
 }
+
+/** 무리 하나 고르기 (전장 웨이브용): 깊이의 무리 중에서, 테마가 있으면 테마 몬스터가 많은 무리일수록 자주 */
+export function pickEncounter(rng: Rng, depth: number, theme?: string[]): string[] {
+  const pool = ENCOUNTERS[Math.min(FLOORS, Math.max(1, depth))];
+  if (!theme) return pool[rng.int(0, pool.length - 1)];
+  const weights = pool.map((g) => 0.15 + (g.filter((id) => theme.includes(id)).length / g.length) ** 2 * 4);
+  let r = rng.next() * weights.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < pool.length; i++) if ((r -= weights[i]) <= 0) return pool[i];
+  return pool[pool.length - 1];
+}

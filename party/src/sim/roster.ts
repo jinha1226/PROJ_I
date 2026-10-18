@@ -81,6 +81,7 @@ interface SavedHero {
   auto: Record<string, boolean>;
   kills: number;
   expeditions: number;
+  hpFrac?: number;
 }
 
 interface SavedRun {
@@ -90,6 +91,7 @@ interface SavedRun {
   loot?: SavedItem[];
   contract?: Contract | null;
   rescued?: boolean;
+  expedition?: RunState['expedition'];
 }
 
 interface SaveData {
@@ -120,7 +122,7 @@ export function saveHero(h: Hero): SavedHero {
     uid: h.uid, comp: h.comp, xl: h.xl, xp: h.xp, skills: h.skills, talents: h.talents, pending: h.pending,
     perks: h.perks, gear, stress: h.stress, mood: h.mood, tactic: h.tactic, row: h.row, autoMode: h.autoMode,
     auto: Object.fromEntries(h.abilities.filter((a) => !a.hidden).map((a) => [a.def.id, a.auto])),
-    kills: h.kills, expeditions: h.expeditions,
+    kills: h.kills, expeditions: h.expeditions, hpFrac: h.hpFrac,
   };
 }
 
@@ -150,6 +152,7 @@ export function loadHero(s: SavedHero): Hero {
   for (const a of h.abilities) if (s.auto[a.def.id] !== undefined) a.auto = s.auto[a.def.id];
   h.kills = s.kills;
   h.expeditions = s.expeditions;
+  h.hpFrac = s.hpFrac;
   return h;
 }
 
@@ -161,7 +164,7 @@ export function saveCompany(c: Company) {
       party: c.current.party, depth: c.current.depth, seed: c.current.seed,
       run: {
         belt: c.current.run.belt, seen: c.current.run.seen, gold: c.current.run.gold, loot: c.current.run.loot.map(saveItem),
-        contract: c.current.run.contract, rescued: c.current.run.rescued,
+        contract: c.current.run.contract, rescued: c.current.run.rescued, expedition: c.current.run.expedition,
       },
     },
   };
@@ -287,6 +290,7 @@ export function finishExpedition(c: Company, meta: MetaProgress, party: Hero[], 
   for (const h of party) {
     h.expeditions++;
     h.deathCause = null;
+    h.hpFrac = 1;
     restRelief(h);
   }
   for (const h of c.roster) {

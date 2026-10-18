@@ -19,6 +19,11 @@ export interface MapDef {
   palette?: Palette;
   /** 상자 · 이벤트 */
   objects?: { kind: ObjectKind; x: number; y: number }[];
+  /** 전장(배틀하트식 한 화면 방): 시야 제한 없음, 적은 웨이브로 문에서 들어온다 */
+  arena?: boolean;
+  waves?: string[][];
+  /** 적이 들어오는 문 (타일 좌표) */
+  gates?: [number, number][];
 }
 
 export type Palette = 'cave' | 'crypt' | 'nest' | 'ruins';

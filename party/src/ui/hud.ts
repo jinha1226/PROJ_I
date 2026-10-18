@@ -245,7 +245,9 @@ export class Hud {
     });
 
     $('combat-state').innerHTML =
-      `<span style="color:#9ab">${floorInfo(w.run, w.depth).floor}/${floorInfo(w.run, w.depth).floors}층</span> <span class="gold">${w.run.gold}G</span> ` +
+      (w.arena
+        ? `<span style="color:#9ab">웨이브 ${w.waveIndex}/${w.waves.length}</span> <span class="gold">${w.run.gold}G</span> `
+        : `<span style="color:#9ab">${floorInfo(w.run, w.depth).floor}/${floorInfo(w.run, w.depth).floors}층</span> <span class="gold">${w.run.gold}G</span> `) +
       (w.inCombat ? '<span style="color:#ff8866">전투 중</span>' : '<span style="color:#88cc88">탐험</span>');
     $('pause-banner').classList.toggle('hidden', !ui.paused || !!w.outcome);
     $('btn-pause').textContent = ui.paused ? '▶ 재개' : '⏸ 일시정지';

@@ -159,10 +159,19 @@ export class World {
   readonly palette: NonNullable<MapDef['palette']>;
   /** 쓰러뜨린 보스 이름 (결과 화면) */
   bossName = '';
+  /** 전장 모드: 한 화면 방, 웨이브 */
+  readonly arena: boolean;
+  readonly waves: string[][];
+  readonly gates: [number, number][];
+  waveIndex = 0;
+  private waveTimer = 1.2;
 
   constructor(def: MapDef, seed: number, heroes: Hero[] = newParty(), difficulty: DifficultyId = 'easy', run: RunState = newRun()) {
     this.difficulty = DIFFICULTIES[difficulty];
     this.palette = def.palette ?? 'cave';
+    this.arena = !!def.arena;
+    this.waves = def.waves ?? [];
+    this.gates = def.gates ?? [];
     this.run = run;
     this.roles = def.roles ?? def.rooms.map((_, i) => (i === 0 ? 'start' : 'main'));
     this.objects = (def.objects ?? []).map((o, i) => ({ id: i, kind: o.kind, x: o.x + 0.5, y: o.y + 0.5, used: false }));
@@ -177,12 +186,16 @@ export class World {
     heroes.forEach((h, i) => {
       const [x, y] = def.partyStart[i % def.partyStart.length];
       beginFloor(h);
-      this.party.push(this.addUnit(new Unit(this.nextId++, h.def, 'party', x + 0.5, y + 0.5, h)));
+      const unit = this.addUnit(new Unit(this.nextId++, h.def, 'party', x + 0.5, y + 0.5, h));
+      // 체력은 방을 넘어 이어진다 (야영 · 물약으로 회복)
+      unit.hp = Math.max(1, Math.round(unit.stats.maxHp * (h.hpFrac ?? 1)));
+      this.party.push(unit);
     });
     this.leader = this.party[0];
     for (const s of def.spawns) this.spawn(s.id, 'enemy', s.x + 0.5, s.y + 0.5);
     this.updateVisibility();
-    this.log(this.depth === 1 ? '던전에 들어섰다. [Space] 일시정지 · [H] 도움말' : `${this.depth}층에 내려왔다${this.stairs ? '' : ' — 족장의 기척이 느껴진다'}`, '#cccccc');
+    if (this.arena) this.log(this.waves.length ? `적이 몰려온다! (웨이브 ${this.waves.length})` : '조용한 방이다', '#cccccc');
+    else this.log(this.depth === 1 ? '던전에 들어섰다. [Space] 일시정지 · [H] 도움말' : `${this.depth}층에 내려왔다${this.stairs ? '' : ' — 족장의 기척이 느껴진다'}`, '#cccccc');
   }
 
   spawn(id: string, faction: 'party' | 'enemy', x: number, y: number): Unit {
@@ -217,9 +230,11 @@ export class World {
   }
   /** AI 가 인지하고 있는 적 목록 */
   knownEnemies(u: Unit): Unit[] {
-    if (u.faction === 'party') return this.hostilesOf(u).filter((e) => this.isVisible(e) && dist(u, e) < 10);
+    // 전장은 한 화면이라 거리와 상관없이 서로 안다
+    const range = this.arena ? 99 : u.faction === 'party' ? 10 : 14;
+    if (u.faction === 'party') return this.hostilesOf(u).filter((e) => this.isVisible(e) && dist(u, e) < range);
     if (!u.aware) return [];
-    return this.hostilesOf(u).filter((e) => dist(u, e) < 14);
+    return this.hostilesOf(u).filter((e) => dist(u, e) < range);
   }
 
   // ── 플레이어 명령 ──
@@ -428,7 +443,8 @@ export class World {
     const lust = by?.alive ? by.tagCount('bloodlust') : 0;
     if (lust && u.faction !== by!.faction) by!.hp = Math.min(by!.stats.maxHp, by!.hp + by!.stats.maxHp * 0.08 * lust);
     if (u.faction === 'enemy') {
-      this.grantXp(u.def.xp ?? 0);
+      // 전장(원정 지도)은 방 수가 적어 처치 수도 적으니 경험치를 더 준다
+      this.grantXp(Math.round((u.def.xp ?? 0) * (this.arena ? 1.6 : 1)));
       this.run.kills[u.def.id] = (this.run.kills[u.def.id] ?? 0) + 1;
     }
     if (u.def.splitInto) {
@@ -501,6 +517,44 @@ export class World {
     }
   }
 
+  /** 전장: 적이 다 쓰러지면 잠깐 뒤 다음 웨이브가 문으로 들어온다. 웨이브 · 오브젝트를 다 마치면 방 정리 */
+  private arenaStep(dt: number) {
+    if (this.outcome) return;
+    const enemies = this.units.some((u) => u.alive && u.faction === 'enemy');
+    if (enemies) {
+      this.waveTimer = 2.2;
+      return;
+    }
+    if (this.waveIndex < this.waves.length) {
+      this.waveTimer -= dt;
+      if (this.waveTimer > 0) return;
+      this.spawnWave(this.waves[this.waveIndex]);
+      this.waveIndex++;
+      return;
+    }
+    if (this.prompt || this.objects.some((o) => !o.used && o.kind !== 'mimic')) return;
+    if (this.party.some((p) => p.alive)) {
+      this.outcome = 'cleared';
+      this.log('방을 정리했다', '#88ccff');
+    }
+  }
+
+  private spawnWave(group: string[]) {
+    const n = this.waveIndex + 1, total = this.waves.length;
+    const boss = group.some((id) => MONSTERS[id]?.boss);
+    this.crisis(`wave:${n}`, boss ? '보스 등장!' : `웨이브 ${n} / ${total}`, this.map.w / 2, this.map.h / 2, boss ? '#ff4444' : '#ffcc66');
+    this.log(boss ? '보스가 나타났다!' : `웨이브 ${n} / ${total}`, boss ? '#ff4444' : '#ffcc66');
+    // 문을 번갈아: 짝수 웨이브는 양쪽에서, 홀수는 한쪽에서
+    const left = this.gates.filter(([x]) => x === 0), right = this.gates.filter(([x]) => x > 0);
+    const both = n % 2 === 0 || group.length >= 4;
+    group.forEach((id, i) => {
+      const side = both ? (i % 2 ? left : right) : n % 4 === 1 ? right : left;
+      const [gx, gy] = side[i % side.length] ?? this.gates[0];
+      const m = this.spawn(id, 'enemy', gx + 0.5 + (gx === 0 ? -0.3 : 0.3), gy + 0.5 + (this.rng.next() - 0.5) * 0.6);
+      m.aware = true;
+    });
+  }
+
   /** 자동 탐험 한 걸음: 아무도 명령이 없고 전투가 아니면 다음 미방문 방 → 계단 */
   private exploreStep() {
     if (!this.autoExplore || this.inCombat || this.outcome || this.time < this.manualUntil) return;
@@ -537,6 +591,7 @@ export class World {
       this.updateRooms();
       checkObjects(this);
       tickStress(this, 0.2);
+      if (this.arena) this.arenaStep(0.2);
       this.exploreStep();
     }
 
@@ -639,6 +694,14 @@ export class World {
 
   updateVisibility() {
     const { w, h } = this.map;
+    if (this.arena) {
+      // 전장은 한눈에 다 보인다
+      this.visible.fill(1);
+      this.seen.fill(1);
+      this.seenUnits.clear();
+      for (const e of this.units) if (e.alive && e.faction !== 'party') this.seenUnits.add(e);
+      return;
+    }
     this.visible.fill(0);
     for (const u of this.party) {
       if (!u.alive) continue;
