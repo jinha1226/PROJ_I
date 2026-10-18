@@ -56,6 +56,8 @@ interface Actor {
   vx: number;
   vy: number;
   movedAt: number;
+  /** 픽셀 모드: 애니메이션을 초당 12장으로 끊어 돌리기 위한 누적 시간 */
+  animAcc: number;
   height: number;
   dying: boolean;
   mats: THREE.MeshToonMaterial[];
@@ -105,7 +107,7 @@ export class Renderer3D {
     this.scene.add(this.env, this.sparks.points, this.glows.points);
     this.fx = new Transients(this.scene);
     this.composer = new EffectComposer(this.renderer);
-    this.pixelPass = new RenderPixelatedPass(cam.pixel, this.scene, cam.three, { normalEdgeStrength: 0.35, depthEdgeStrength: 0.7 });
+    this.pixelPass = new RenderPixelatedPass(cam.pixel, this.scene, cam.three, { normalEdgeStrength: 0.25, depthEdgeStrength: 1.0 });
     this.composer.addPass(this.pixelPass);
     this.composer.addPass(new OutputPass());
   }
@@ -195,7 +197,7 @@ export class Renderer3D {
     const a: Actor = {
       unit: u, root: holder, model: root, mixer: clips.size ? new THREE.AnimationMixer(root) : null, actions: new Map(), clips, look,
       cur: null, busyUntil: 0, lastSwing: 0, lastCast: false, yaw: u.facing > 0 ? Math.PI / 2 : -Math.PI / 2,
-      px: u.x, py: u.y, vx: 0, vy: 0, movedAt: -9, height, dying: false, mats, ring, aura: new Map(),
+      px: u.x, py: u.y, vx: 0, vy: 0, movedAt: -9, animAcc: 0, height, dying: false, mats, ring, aura: new Map(),
     };
     this.actors.set(u, a);
     this.play(a, this.animName(a, 'idle'));
@@ -270,7 +272,7 @@ export class Renderer3D {
     this.floorMesh = mk(this.floorTiles.length, new THREE.BoxGeometry(1, 0.1, 1));
     this.wallMesh = mk(this.wallTiles.length, new THREE.BoxGeometry(1, WALL_H, 1));
     const M = new THREE.Matrix4();
-    const fa = new THREE.Color(P.floorA), fb = new THREE.Color(P.floorB), wt = new THREE.Color(P.wallFront).lerp(new THREE.Color(P.wallTop), 0.45);
+    const fa = new THREE.Color(P.floorA), fb = new THREE.Color(P.floorB), wt = new THREE.Color(P.wallFront).lerp(new THREE.Color(P.wallTop), 0.25);
     this.floorBase = this.floorTiles.map((i, k) => {
       const x = i % m.w, y = (i / m.w) | 0;
       this.floorMesh!.setMatrixAt(k, M.makeTranslation(x + 0.5, -0.05, y + 0.5));
@@ -337,7 +339,7 @@ export class Renderer3D {
     const apply = (mesh: THREE.InstancedMesh, tiles: number[], base: THREE.Color[]) => {
       tiles.forEach((i, k) => {
         if (!w.seen[i]) c.setRGB(0, 0, 0);
-        else c.copy(base[k]).multiplyScalar(w.visible[i] ? 1 : 0.42);
+        else c.copy(base[k]).multiplyScalar((w.visible[i] ? 1 : 0.42) * (this.cam.ortho ? 0.72 : 1));
         mesh.setColorAt(k, c);
       });
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
@@ -437,9 +439,18 @@ export class Renderer3D {
         a.yaw += d * Math.min(1, dt * 14);
       }
       this.cam.snap(a.root.position.set(x, 0, y));
-      a.model.rotation.y = a.yaw;
+      // 픽셀 모드: 8방향으로만 돌린다 (조금씩 돌 때마다 테두리 픽셀이 바뀌어 자글거리므로)
+      a.model.rotation.y = this.cam.ortho ? Math.round(a.yaw / (Math.PI / 4)) * (Math.PI / 4) : a.yaw;
       this.animate(a, u, w);
-      a.mixer?.update(dt * (u.stats?.stunned ? 0.15 : 1));
+      const adt = dt * (u.stats?.stunned ? 0.15 : 1);
+      if (this.cam.ortho) {
+        // 도트 애니메이션처럼 초당 12장으로 끊어서 (포즈가 또렷하고 픽셀이 덜 출렁인다)
+        a.animAcc += adt;
+        if (a.animAcc >= 1 / 12) {
+          a.mixer?.update(a.animAcc);
+          a.animAcc = 0;
+        }
+      } else a.mixer?.update(adt);
       // 피격 번쩍임
       const f = u.flash > 0 ? 0.55 : 0;
       for (const m of a.mats) m.emissive.setScalar(f);
@@ -504,10 +515,18 @@ export class Renderer3D {
       }
     const pulse = 0.5 + 0.5 * Math.sin(this.time * 5);
     if (want.has('protected')) {
-      const o = ensure('protected', () => new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), additive('#ffd75a', 0.08)));
-      o.scale.set(h * 0.36, h * 0.55, h * 0.36);
-      o.position.y = h * 0.5;
-      ((o as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = 0.04 + pulse * 0.05;
+      // 픽셀 모드에선 구체가 몸을 덮어 보이므로 발밑 금빛 링으로
+      if (this.cam.ortho) {
+        const o = ensure('protected', () => new THREE.Mesh(new THREE.RingGeometry(0.8, 1, 24), additive('#ffd75a', 0.75)));
+        o.rotation.x = -Math.PI / 2;
+        o.position.y = 0.05;
+        o.scale.setScalar(u.radius * 1.6);
+      } else {
+        const o = ensure('protected', () => new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), additive('#ffd75a', 0.08)));
+        o.scale.set(h * 0.36, h * 0.55, h * 0.36);
+        o.position.y = h * 0.5;
+        ((o as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = 0.04 + pulse * 0.05;
+      }
     }
     if (want.has('guarded')) {
       const o = ensure('guarded', () => new THREE.Mesh(new THREE.RingGeometry(0.75, 1, 6), additive('#8ac8ff', 0.6)));
