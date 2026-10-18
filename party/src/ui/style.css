@@ -5,6 +5,11 @@
   src: url('./fonts/tessella12-ko.woff2') format('woff2');
   font-display: swap;
 }
+@font-face {
+  font-family: 'Tessella10';
+  src: url('./fonts/tessella10-ko.woff2') format('woff2');
+  font-display: swap;
+}
 b, strong, h1, h2, h3, h4, th { font-weight: normal; }
 h1, h2 { font-size: 24px; }
 h3 { font-size: 12px; color: var(--accent); }
@@ -451,3 +456,6 @@ button.on { border-color: var(--accent); color: var(--accent); }
   #town .rgrid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 }
 #town .rgrid.tav { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+
+/* 좁은 하단 파티 패널 · 벨트 · 정보 창: 10px 그리드 판 (같은 12px 크기에 더 좁은 글자) */
+#party, #party *, #belt, #belt *, #inspect, #inspect *, #log { font-family: 'Tessella10', 'Tessella', sans-serif; }

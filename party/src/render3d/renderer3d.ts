@@ -39,6 +39,8 @@ interface Model {
 interface Actor {
   unit: Unit;
   root: THREE.Object3D;
+  /** 회전시킬 모델 (root 아래, 그림자 · 링과 따로) */
+  model: THREE.Object3D;
   mixer: THREE.AnimationMixer | null;
   actions: Map<string, THREE.AnimationAction>;
   clips: Map<string, THREE.AnimationClip>;
@@ -50,6 +52,10 @@ interface Actor {
   yaw: number;
   px: number;
   py: number;
+  /** 부드럽게 한 이동 속도 · 마지막으로 움직인 시각 (잠깐 멈췄다 가는 걸 걷기로 이어 보이게) */
+  vx: number;
+  vy: number;
+  movedAt: number;
   height: number;
   dying: boolean;
   mats: THREE.MeshToonMaterial[];
@@ -184,9 +190,9 @@ export class Renderer3D {
     this.scene.add(holder);
     const clips = model.clips;
     const a: Actor = {
-      unit: u, root: holder, mixer: clips.size ? new THREE.AnimationMixer(root) : null, actions: new Map(), clips, look,
+      unit: u, root: holder, model: root, mixer: clips.size ? new THREE.AnimationMixer(root) : null, actions: new Map(), clips, look,
       cur: null, busyUntil: 0, lastSwing: 0, lastCast: false, yaw: u.facing > 0 ? Math.PI / 2 : -Math.PI / 2,
-      px: u.x, py: u.y, height, dying: false, mats, ring, aura: new Map(),
+      px: u.x, py: u.y, vx: 0, vy: 0, movedAt: -9, height, dying: false, mats, ring, aura: new Map(),
     };
     this.actors.set(u, a);
     this.play(a, this.animName(a, 'idle'));
@@ -402,24 +408,32 @@ export class Renderer3D {
       a.root.visible = visible;
       if (!visible) continue;
       const x = u.x + u.kickX, y = u.y + u.kickY;
-      // 바라보는 방향: 움직이면 진행 방향, 아니면 대상
+      // 바라보는 방향: 걷는 중(잠깐 멈춘 것도 포함)엔 진행 방향, 서서 싸울 때만 대상 쪽
       const mx = u.x - a.px, my = u.y - a.py;
       a.px = u.x;
       a.py = u.y;
-      let want: number | null = null;
-      if (mx * mx + my * my > 1e-5 && u.alive) want = Math.atan2(mx, my);
-      else {
-        const t = u.cast?.target ?? (u.intent?.type === 'attack' ? u.intent.target : null) ?? (u.command?.intent.type === 'attack' ? u.command.intent.target : null) ?? u.lastTarget;
-        if (t && t.alive) want = Math.atan2(t.x - u.x, t.y - u.y);
-        else if (u.cast) want = Math.atan2(u.cast.x - u.x, u.cast.y - u.y);
+      const k = Math.min(1, dt * 10);
+      if (dt > 0) {
+        a.vx += (mx / dt - a.vx) * k;
+        a.vy += (my / dt - a.vy) * k;
       }
+      if (u.moving) a.movedAt = this.time;
+      let want: number | null = null;
+      const walking = this.time - a.movedAt < 0.35 && a.vx * a.vx + a.vy * a.vy > 0.04;
+      const t = u.cast?.target ?? (u.intent?.type === 'attack' ? u.intent.target : null) ?? (u.command?.intent.type === 'attack' ? u.command.intent.target : null);
+      if (u.alive && (u.swing > 0 || u.cast || u.dashT > 0) && t && t.alive) want = Math.atan2(t.x - u.x, t.y - u.y);
+      else if (u.alive && u.cast && !t) want = Math.atan2(u.cast.x - u.x, u.cast.y - u.y);
+      else if (walking && u.alive) want = Math.atan2(a.vx, a.vy);
+      // 진형을 맞추느라 잠깐 기다리는 중: 가려는 쪽을 본다
+      else if (u.alive && u.command?.intent.type === 'move') want = Math.atan2(u.command.intent.x - u.x, u.command.intent.y - u.y);
+      else if (u.alive && w.inCombat && t && t.alive) want = Math.atan2(t.x - u.x, t.y - u.y);
       if (want !== null) {
         let d = want - a.yaw;
         d = Math.atan2(Math.sin(d), Math.cos(d));
         a.yaw += d * Math.min(1, dt * 14);
       }
       a.root.position.set(x, 0, y);
-      a.root.children[0].rotation.y = a.yaw;
+      a.model.rotation.y = a.yaw;
       this.animate(a, u, w);
       a.mixer?.update(dt * (u.stats?.stunned ? 0.15 : 1));
       // 피격 번쩍임
@@ -459,7 +473,7 @@ export class Renderer3D {
     if (this.time < a.busyUntil) return;
     if (u.dashT > 0) this.play(a, a.look.dash ?? this.animName(a, 'run'));
     else if (u.cast && a.look.cast) this.play(a, a.look.cast);
-    else if (u.moving) this.play(a, this.animName(a, 'run'));
+    else if (this.time - a.movedAt < 0.25) this.play(a, this.animName(a, 'run'));
     else this.play(a, this.animName(a, 'idle'));
     void w;
   }

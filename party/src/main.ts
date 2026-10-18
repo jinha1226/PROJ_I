@@ -586,4 +586,4 @@ function frame(now: number) {
 requestAnimationFrame(frame);
 
 // 개발 서버에서만: 브라우저 자동 테스트용 접근점
-if (import.meta.env.DEV) (window as unknown as { __bh: object }).__bh = { get world() { return world; }, get heroes() { return heroes; }, get company() { return company; }, ui };
+if (import.meta.env.DEV) (window as unknown as { __bh: object }).__bh = { get world() { return world; }, get heroes() { return heroes; }, get company() { return company; }, ui, r3 };
