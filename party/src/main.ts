@@ -37,19 +37,25 @@ const canvas = $('game') as HTMLCanvasElement;
 const cam = new Camera3D();
 const renderer = new Renderer(canvas, cam);
 const r3 = new Renderer3D($('gl') as HTMLCanvasElement, cam);
-let gfx3d = true;
+type Gfx = 'pixel' | '3d' | '2d';
+let gfx: Gfx = 'pixel';
 try {
-  gfx3d = localStorage.getItem('bh.gfx') !== '2d';
+  const g = localStorage.getItem('bh.gfx2');
+  if (g === 'pixel' || g === '3d' || g === '2d') gfx = g;
 } catch {
   // 저장소를 못 쓰면 기본값
 }
+let gfx3d = gfx !== '2d';
 function applyGfx() {
+  gfx3d = gfx !== '2d';
   // 3D 는 캐릭터가 서 있어서 조금 더 당겨 본다
-  cam.zoom = gfx3d ? Math.max(cam.zoom, 64) : Math.min(cam.zoom, 48);
+  // 3D 는 캐릭터가 서 있어서 조금 더 당겨 보고, 픽셀은 팀파이트 매니저처럼 작게
+  cam.zoom = gfx === 'pixel' ? 46 : gfx3d ? Math.max(cam.zoom, 64) : Math.min(cam.zoom, 48);
   cam.enabled = gfx3d;
+  cam.ortho = gfx === 'pixel';
   renderer.overlay = gfx3d;
   $('gl').style.display = gfx3d ? 'block' : 'none';
-  $('btn-gfx').textContent = `그래픽: ${gfx3d ? '3D' : '2D'}`;
+  $('btn-gfx').textContent = `그래픽: ${({ pixel: '픽셀', '3d': '3D', '2d': '2D' } as const)[gfx]}`;
 }
 const ui = createUiState();
 // ── 런: 5층. 층마다 새 World 를 만들고 영웅(성장 데이터)만 이어진다 ──
@@ -491,9 +497,10 @@ window.addEventListener('resize', () => {
 renderer.resize();
 r3.resize();
 $('btn-gfx').addEventListener('click', () => {
-  gfx3d = !gfx3d;
+  const order: Gfx[] = ['pixel', '3d', '2d'];
+  gfx = order[(order.indexOf(gfx) + 1) % order.length];
   try {
-    localStorage.setItem('bh.gfx', gfx3d ? '3d' : '2d');
+    localStorage.setItem('bh.gfx2', gfx);
   } catch {
     // 무시
   }

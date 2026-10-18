@@ -470,7 +470,7 @@ export class Renderer {
       // 3D: 몸체는 3D 가 그리므로 머리 위 표시만 (머리 높이 = 반지름 × 4)
       if (!u.alive) return;
       const [hx, hy] = this.cam.toScreenH(u.x + u.kickX, u.y + u.kickY, u.radius * 4.6);
-      this.drawUnitHud(w, u, hx, hy, u.def.boss ? 40 : 24);
+      this.drawUnitHud(w, u, hx, hy, u.def.boss ? 36 : 20);
       return;
     }
     const [sx, sy] = this.cam.toScreen(u.x + u.kickX, u.y + u.kickY);
@@ -540,7 +540,7 @@ export class Renderer {
     const slim = this.overlay;
     const showHp = !slim || u.faction === 'party' || u.hpFrac < 0.999 || u.def.boss || this.lastHover === u;
     if (showHp) {
-      const hh = slim ? 2.5 : 4, mh = slim ? 1.5 : 3;
+      const hh = slim ? 2 : 4, mh = slim ? 1 : 3;
       const hasMp = u.stats.maxMp > 0 && u.faction === 'party';
       ctx.fillStyle = '#000a';
       ctx.fillRect(barX - 1, y - 1, barW + 2, hh + 2 + (hasMp ? mh + 1 : 0));

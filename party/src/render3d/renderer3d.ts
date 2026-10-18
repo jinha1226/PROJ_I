@@ -4,6 +4,9 @@ import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPixelatedPass } from 'three/examples/jsm/postprocessing/RenderPixelatedPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { PALETTES } from '../render/renderer';
 import type { WorldObject } from '../sim/objects';
 import type { Unit } from '../sim/unit';
@@ -79,6 +82,9 @@ export class Renderer3D {
   private glows = new Particles(500, 0.55);
   private fx: Transients;
   private time = 0;
+  /** 픽셀 모드: 낮은 해상도로 그린 뒤 키우고 1픽셀 윤곽 */
+  private composer: EffectComposer;
+  private pixelPass: RenderPixelatedPass;
 
   constructor(canvas: HTMLCanvasElement, private cam: Camera3D) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -92,17 +98,26 @@ export class Renderer3D {
     this.scene.add(sun);
     this.scene.add(this.env, this.sparks.points, this.glows.points);
     this.fx = new Transients(this.scene);
+    this.composer = new EffectComposer(this.renderer);
+    this.pixelPass = new RenderPixelatedPass(cam.pixel, this.scene, cam.three, { normalEdgeStrength: 0.35, depthEdgeStrength: 0.7 });
+    this.composer.addPass(this.pixelPass);
+    this.composer.addPass(new OutputPass());
   }
 
   resize() {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.composer.setSize(window.innerWidth, window.innerHeight);
   }
 
   // ── 에셋 ──
 
+  /** 모델은 하나씩 차례로 불러온다 (한꺼번에 불러오면 일부 텍스처 디코딩이 실패하는 기기가 있다) */
+  private queue: Promise<unknown> = Promise.resolve();
+
   private load(name: string): Promise<Model> {
     if (!this.models.has(name))
-      this.models.set(name, this.loader.loadAsync(`${BASE}${name}.glb`).then((gltf) => {
+      this.models.set(name, (this.queue = this.queue.then(() => this.loader.loadAsync(`${BASE}${name}.glb`))).then((g) => {
+        const gltf = g as GLTF;
         const clips = new Map<string, THREE.AnimationClip>();
         // 루트 모션 제거: 위치 이동은 시뮬레이션이 한다 (3타 · 돌진이 적을 뚫고 나가지 않게)
         for (const c of gltf.animations) {
@@ -157,6 +172,12 @@ export class Renderer3D {
     ring.position.y = 0.03;
     ring.visible = false;
     const holder = new THREE.Group();
+    // 발밑 그림자: 적은 붉게 (픽셀 모드에선 외곽선 색이 사라지므로 편 구분용)
+    const shadow = new THREE.Mesh(new THREE.CircleGeometry(1, 24), new THREE.MeshBasicMaterial({ color: u.faction === 'party' ? '#000000' : '#5a0808', transparent: true, opacity: u.faction === 'party' ? 0.4 : 0.55, depthWrite: false }));
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = 0.02;
+    shadow.scale.set(u.radius * 1.15, u.radius * 1.15, 1);
+    holder.add(shadow);
     holder.add(root);
     holder.add(ring);
     ring.scale.setScalar(u.radius * 1.5);
@@ -356,7 +377,11 @@ export class Renderer3D {
     const c = this.cam.three;
     const off = new THREE.Vector3((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake, 0);
     c.position.add(off);
-    this.effect.render(this.scene, c);
+    if (this.cam.ortho) {
+      this.pixelPass.camera = c;
+      this.pixelPass.setPixelSize(this.cam.pixel);
+      this.composer.render();
+    } else this.effect.render(this.scene, c);
     c.position.sub(off);
   }
 
@@ -461,10 +486,10 @@ export class Renderer3D {
       }
     const pulse = 0.5 + 0.5 * Math.sin(this.time * 5);
     if (want.has('protected')) {
-      const o = ensure('protected', () => new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), additive('#ffd75a', 0.16)));
-      o.scale.set(h * 0.42, h * 0.62, h * 0.42);
+      const o = ensure('protected', () => new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), additive('#ffd75a', 0.08)));
+      o.scale.set(h * 0.36, h * 0.55, h * 0.36);
       o.position.y = h * 0.5;
-      ((o as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = 0.1 + pulse * 0.1;
+      ((o as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = 0.04 + pulse * 0.05;
     }
     if (want.has('guarded')) {
       const o = ensure('guarded', () => new THREE.Mesh(new THREE.RingGeometry(0.75, 1, 6), additive('#8ac8ff', 0.6)));
@@ -474,8 +499,8 @@ export class Renderer3D {
     }
     if (want.has('might')) {
       const o = ensure('might', () => new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: '#ff5a2a', blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })));
-      o.position.y = h * 0.35;
-      o.scale.setScalar(h * (0.9 + pulse * 0.2));
+      o.position.y = h * 0.3;
+      o.scale.setScalar(h * (0.6 + pulse * 0.15));
       if (Math.random() < 0.25) this.sparks.emit(u.x, h * 0.2, u.y, '#ff6a3a', 1, { speed: 0.5, up: 1.6, life: 0.6, grav: 0.5 });
     }
     if (want.has('stun')) {
