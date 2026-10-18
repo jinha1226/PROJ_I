@@ -1,6 +1,7 @@
 // 한 런 동안 층을 넘어 이어지는 파티 공용 상태 (영웅 데이터 외)
 import { BELT_SIZE, type ConsumableId } from '../data/consumables';
 import type { Item } from './defs';
+import { CONTRACTS, type Contract } from '../data/contracts';
 
 export interface RunState {
   /** 소모품 벨트 (파티 공용) */
@@ -15,10 +16,20 @@ export interface RunState {
   gold: number;
   /** 들고 돌아갈 장비 (장착하지 않은 것 · 교체로 벗은 것). 귀환하면 보관함으로 */
   loot: Item[];
+  /** 이번 원정의 계약 (없으면 예전처럼 5층 토벌) */
+  contract: Contract | null;
+  /** 구출 계약: 포로를 풀어 주었는가 */
+  rescued: boolean;
+}
+
+/** 지금 몇 번째 층 / 모두 몇 층 (계약의 시작 깊이를 뺀 값) */
+export function floorInfo(run: RunState, depth: number): { floor: number; floors: number } {
+  const def = run.contract ? CONTRACTS[run.contract.kind] : null;
+  return def ? { floor: depth - def.startDepth + 1, floors: def.floors } : { floor: depth, floors: 5 };
 }
 
 export function newRun(): RunState {
-  return { belt: ['heal_potion'], found: [], kills: {}, seen: [], gold: 0, loot: [] };
+  return { belt: ['heal_potion'], found: [], kills: {}, seen: [], gold: 0, loot: [], contract: null, rescued: false };
 }
 
 export function addToBelt(run: RunState, id: ConsumableId): boolean {

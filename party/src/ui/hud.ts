@@ -7,7 +7,7 @@ import type { World } from '../sim/world';
 import type { UiState } from './state';
 import { RES_NAME, SKILL_NAME } from '../data/names';
 import { TALENTS } from '../data/talents';
-import { FLOORS } from '../data/encounters';
+import { floorInfo } from '../sim/run';
 import { xpToNext } from '../sim/hero';
 import { BELT_SIZE, CONSUMABLES } from '../data/consumables';
 import { MOODS } from '../data/moods';
@@ -245,7 +245,7 @@ export class Hud {
     });
 
     $('combat-state').innerHTML =
-      `<span style="color:#9ab">${w.depth}/${FLOORS}층</span> <span class="gold">${w.run.gold}G</span> ` +
+      `<span style="color:#9ab">${floorInfo(w.run, w.depth).floor}/${floorInfo(w.run, w.depth).floors}층</span> <span class="gold">${w.run.gold}G</span> ` +
       (w.inCombat ? '<span style="color:#ff8866">전투 중</span>' : '<span style="color:#88cc88">탐험</span>');
     $('pause-banner').classList.toggle('hidden', !ui.paused || !!w.outcome);
     $('btn-pause').textContent = ui.paused ? '▶ 재개' : '⏸ 일시정지';

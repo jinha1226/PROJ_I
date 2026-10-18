@@ -387,3 +387,9 @@ button.on { border-color: var(--accent); color: var(--accent); }
 #town .trow .frow { border-bottom: none; }
 #town .bad { color: #ff8877; }
 #town button:disabled { opacity: 0.4; cursor: default; }
+#town .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+#town .ccard { border: 2px solid #3a3a4a; border-radius: 7px; padding: 7px 9px; background: #1a1a24; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
+#town .ccard.on { border-color: var(--accent); background: #2a2618; box-shadow: 0 0 8px #ffcc6655; }
+#town .ccard .c1 { display: flex; justify-content: space-between; gap: 6px; }
+#town .danger-stars { color: #ff8866; white-space: nowrap; }
+@media (max-width: 900px), (max-height: 500px) { #town .board { grid-template-columns: 1fr; } }

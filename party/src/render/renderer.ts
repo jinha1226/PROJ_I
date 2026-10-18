@@ -239,8 +239,8 @@ export class Renderer {
         ctx.fillRect(sx - bw / 2, sy - bh * 0.62, bw, z * 0.06);
         ctx.fillRect(sx - z * 0.05, sy - bh * 0.75, z * 0.1, z * 0.14);
       } else {
-        const col = o.kind === 'fountain' ? '#4aa8ff' : o.kind === 'altar' ? '#c03838' : '#c8c8c8';
-        const txt = o.kind === 'fountain' ? '샘' : o.kind === 'altar' ? '제' : '포';
+        const col = o.kind === 'fountain' ? '#4aa8ff' : o.kind === 'altar' ? '#c03838' : o.kind === 'captive' ? '#ffe14d' : '#c8c8c8';
+        const txt = o.kind === 'fountain' ? '샘' : o.kind === 'altar' ? '제' : o.kind === 'captive' ? '구' : '포';
         ctx.fillStyle = '#1a1a24';
         ctx.strokeStyle = col;
         ctx.lineWidth = 2;

@@ -1,9 +1,15 @@
 import type { DifficultyId } from './data/difficulty';
-import { FLOORS } from './data/encounters';
 import { Input } from './input/input';
 import { Camera } from './render/camera';
 import { Renderer } from './render/renderer';
-import { genFloor } from './sim/gen';
+import { genFloor, type FloorOpts } from './sim/gen';
+import { CONTRACTS, type Contract } from './data/contracts';
+import { floorInfo } from './sim/run';
+import { usefulItem } from './sim/reward';
+import { itemTitle } from './sim/items';
+import { Rng } from './core/rng';
+import { makeHeroDef } from './data/party';
+import { gainXp, newHero, xpToNext } from './sim/hero';
 import { newParty, saveFromUnit, type Hero } from './sim/hero';
 import { resolvePrompt } from './sim/objects';
 import { restRelief } from './sim/stress';
@@ -13,7 +19,7 @@ import { World } from './sim/world';
 import { Hud } from './ui/hud';
 import { RestScreen } from './ui/rest';
 import { TownScreen } from './ui/town';
-import { buryFallen, finishExpedition, loadCompany, newCompany, resetCompany, saveCompany } from './sim/roster';
+import { ROSTER_MAX, buryFallen, finishExpedition, loadCompany, newCompany, randomComp, resetCompany, saveCompany, takenNames } from './sim/roster';
 import { CLASSES, type ClassId } from './data/classes';
 import { RACES, type RaceId } from './data/races';
 import type { UnlockDef } from './data/unlocks';
@@ -100,8 +106,16 @@ function toast(text: string) {
   toastTimer = window.setTimeout(() => el.classList.add('hidden'), 3500);
 }
 
+/** 계약에 맞는 층 생성 옵션 (계약이 없으면 예전처럼 5층 토벌) */
+function floorOpts(): FloorOpts {
+  const def = CONTRACTS[run.contract?.kind ?? 'hunt'];
+  const { floor, floors } = floorInfo(run, depth);
+  const last = floor >= floors;
+  return { boss: def.boss && last, theme: def.theme, sides: def.sides, captive: def.kind === 'rescue' && last };
+}
+
 function startFloor() {
-  world = new World(genFloor(runSeed, depth), runSeed * 31 + depth, heroes, difficulty, run);
+  world = new World(genFloor(runSeed, depth, floorOpts()), runSeed * 31 + depth, heroes, difficulty, run);
   // 층 시작 시점 저장 (도중에 끄면 이 층 처음부터)
   company.current = { party: heroes.map((h) => h.uid), depth, seed: runSeed, run };
   saveCompany(company);
@@ -125,11 +139,13 @@ function openTown(note = '') {
   town.open(company, meta, note);
 }
 
-function startExpedition(party: Hero[]) {
+function startExpedition(party: Hero[], contract: Contract) {
   runSeed = (Math.random() * 1e9) | 0;
   heroes = party;
   run = newRun();
-  depth = 1;
+  run.contract = contract;
+  depth = CONTRACTS[contract.kind].startDepth;
+  company.board = company.board.filter((c) => c !== contract);
   started = true;
   outcomeRecorded = false;
   company.expeditions++;
@@ -158,8 +174,35 @@ function resumeExpedition(): boolean {
   return true;
 }
 
+/** 계약 완수: 보상 골드 + 추가 보상(아티팩트 · 구출한 용병) */
+function completeContract() {
+  const def = CONTRACTS[run.contract?.kind ?? 'hunt'];
+  const notes: string[] = [];
+  if (def.kind === 'rescue' && !run.rescued) {
+    notes.push('붙잡힌 용병을 구하지 못했다 — 계약 보상 없음.');
+  } else {
+    run.gold += def.reward;
+    notes.push(`계약 「${def.name}」 완수! 보상 ${def.reward} 골드.`);
+    if (def.bonus === 'artifact') {
+      const it = usefulItem(new Rng(runSeed), depth + 1, heroes, { force: 'artifact' });
+      run.loot.push(it);
+      notes.push(`추가 보상: ${itemTitle(it)} (보관함).`);
+    }
+    if (def.bonus === 'recruit') {
+      const lv = Math.max(1, Math.round(heroes.reduce((s, h) => s + h.xl, 0) / heroes.length) - 1);
+      const h = newHero(makeHeroDef(randomComp(meta, new Rng(runSeed), undefined, undefined, takenNames(company))));
+      while (h.xl < lv) gainXp(h, xpToNext(h.xl) - h.xp);
+      if (company.roster.length < ROSTER_MAX) {
+        company.roster.push(h);
+        notes.push(`구출한 ${h.def.name}(${h.def.title} Lv${h.xl})이(가) 용병단에 합류했다.`);
+      } else notes.push(`구출한 ${h.def.name}은(는) 명부가 가득 차 떠났다.`);
+    }
+  }
+  endExpedition('victory', notes.join(' '));
+}
+
 /** 원정 끝: 승리 · 귀환은 골드를 챙기고, 전멸은 잃는다 */
-function endExpedition(kind: 'victory' | 'retreat' | 'defeat') {
+function endExpedition(kind: 'victory' | 'retreat' | 'defeat', extra = '') {
   const alive = new Set(world.party.filter((p) => p.alive && p.hero).map((p) => p.hero!));
   const { fallen } = kind === 'retreat' ? { fallen: [] as Hero[] } : buryFallen(company, heroes, alive, depth);
   const survivors = heroes.filter((h) => !fallen.includes(h));
@@ -169,7 +212,7 @@ function endExpedition(kind: 'victory' | 'retreat' | 'defeat') {
   started = false;
   const head = kind === 'victory' ? '승리하고 돌아왔다!' : kind === 'retreat' ? '무사히 귀환했다.' : '원정대가 전멸했다…';
   const lost = fallen.length ? ` 잃은 용병: ${fallen.map((h) => h.def.name).join(', ')}.` : '';
-  openTown(`${head} ${kind === 'defeat' ? `번 골드 ${gold}을(를) 잃었다.` : `골드 +${gold}.`}${lost}`);
+  openTown(`${head} ${extra ? `${extra} ` : ''}${kind === 'defeat' ? `번 골드 ${gold}을(를) 잃었다.` : `골드 +${gold}.`}${lost}`);
 }
 
 const town = new TownScreen(
@@ -195,6 +238,12 @@ function floorCleared() {
   for (const h of heroes) restRelief(h);
   announceUnlocks(recordProgress(meta, run.kills, depth));
   run.kills = {};
+  // 마지막 층을 끝냈다: 계약 완수 (보스 계약은 보스 처치로 끝난다)
+  const { floor, floors } = floorInfo(run, depth);
+  if (floor >= floors && heroes.length) {
+    completeContract();
+    return;
+  }
   restOpen = true;
   rest.open(heroes, run, depth, runSeed + depth * 997);
 }
@@ -476,7 +525,7 @@ function frame(now: number) {
       outcomeRecorded = true;
       if (world.outcome === 'victory') {
         meta.wins++;
-        run.gold += 400;
+        run.gold += CONTRACTS[run.contract?.kind ?? 'hunt'].reward;
       }
       const fresh = recordProgress(meta, run.kills, depth);
       run.kills = {};
@@ -489,7 +538,7 @@ function frame(now: number) {
     $('outcome-title').textContent = world.outcome === 'victory' ? '승리! 오우거 족장을 쓰러뜨렸다' : `${depth}층에서 원정대 전멸`;
     $('outcome-sub').textContent =
       world.party.map((p) => `${p.alive ? '' : '✝ '}${p.name} Lv${p.hero?.xl ?? 1}`).join(' · ') +
-      ` — ${depth}/${FLOORS}층 · ${world.outcome === 'victory' ? `골드 ${run.gold}` : `골드 ${run.gold} 잃음`}`;
+      ` — ${floorInfo(run, depth).floor}/${floorInfo(run, depth).floors}층 · ${world.outcome === 'victory' ? `골드 ${run.gold}` : `골드 ${run.gold} 잃음`}`;
   } else out.classList.add('hidden');
 
   requestAnimationFrame(frame);

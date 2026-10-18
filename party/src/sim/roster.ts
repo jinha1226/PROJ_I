@@ -2,6 +2,7 @@
 // 원정대는 명부에서 최대 4명. 원정에서 쓰러진 용병은 영구히 묘지로 간다.
 // 저장은 층 시작 시점 기준이다 (층 도중에 끄면 그 층 처음부터 다시).
 import { Rng } from '../core/rng';
+import { CONTRACTS, type Contract, type ContractDef, type ContractKind } from '../data/contracts';
 import { CLASS_LIST, type ClassId } from '../data/classes';
 import { ITEM_BASES } from '../data/items';
 import type { MoodId } from '../data/moods';
@@ -46,6 +47,8 @@ export interface Company {
   tavern: Hero[];
   /** 보관함: 원정에서 들고 온 장비 · 벗은 장비 */
   stash: Item[];
+  /** 계약 게시판 (원정을 다녀올 때마다 새로 걸린다) */
+  board: Contract[];
   /** 진행 중인 원정 (층 시작 시점) */
   current: { party: number[]; depth: number; seed: number; run: RunState } | null;
 }
@@ -85,6 +88,8 @@ interface SavedRun {
   seen: string[];
   gold: number;
   loot?: SavedItem[];
+  contract?: Contract | null;
+  rescued?: boolean;
 }
 
 interface SaveData {
@@ -95,6 +100,7 @@ interface SaveData {
   expeditions: number;
   tavern: SavedHero[];
   stash?: SavedItem[];
+  board?: Contract[];
   current: { party: number[]; depth: number; seed: number; run: SavedRun } | null;
 }
 
@@ -150,10 +156,13 @@ export function loadHero(s: SavedHero): Hero {
 export function saveCompany(c: Company) {
   const data: SaveData = {
     v: 1, gold: c.gold, graves: c.graves, expeditions: c.expeditions,
-    roster: c.roster.map(saveHero), tavern: c.tavern.map(saveHero), stash: c.stash.map(saveItem),
+    roster: c.roster.map(saveHero), tavern: c.tavern.map(saveHero), stash: c.stash.map(saveItem), board: c.board,
     current: c.current && {
       party: c.current.party, depth: c.current.depth, seed: c.current.seed,
-      run: { belt: c.current.run.belt, seen: c.current.run.seen, gold: c.current.run.gold, loot: c.current.run.loot.map(saveItem) },
+      run: {
+        belt: c.current.run.belt, seen: c.current.run.seen, gold: c.current.run.gold, loot: c.current.run.loot.map(saveItem),
+        contract: c.current.run.contract, rescued: c.current.run.rescued,
+      },
     },
   };
   try {
@@ -172,7 +181,9 @@ export function loadCompany(meta: MetaProgress): Company {
         gold: d.gold, graves: d.graves ?? [], expeditions: d.expeditions ?? 0,
         roster: d.roster.map(loadHero), tavern: (d.tavern ?? []).map(loadHero), current: null,
         stash: (d.stash ?? []).map(loadItem).filter((x): x is Item => !!x),
+        board: d.board ?? [],
       };
+      if (!c.board.length) refreshBoard(c, new Rng((Math.random() * 1e9) | 0));
       if (d.current) {
         const run = newRun();
         const { loot, ...rest } = d.current.run;
@@ -191,11 +202,23 @@ export function loadCompany(meta: MetaProgress): Company {
 /** 새 용병단: 기본 네 명과 약간의 골드 */
 export function newCompany(meta: MetaProgress): Company {
   const c: Company = {
-    gold: START_GOLD, graves: [], expeditions: 0, current: null, stash: [],
+    gold: START_GOLD, graves: [], expeditions: 0, current: null, stash: [], board: [],
     roster: DEFAULT_COMP.map((comp) => newHero(makeHeroDef(comp))), tavern: [],
   };
-  refreshTavern(c, meta, new Rng((Math.random() * 1e9) | 0));
+  const rng = new Rng((Math.random() * 1e9) | 0);
+  refreshTavern(c, meta, rng);
+  refreshBoard(c, rng);
   return c;
+}
+
+/** 계약 게시판: 토벌은 늘 걸려 있고, 나머지 둘은 무작위 (조건이 되는 것 중) */
+export function refreshBoard(c: Company, rng: Rng) {
+  const pool = (Object.values(CONTRACTS) as ContractDef[])
+    .filter((d) => d.kind !== 'hunt' && (d.minExpeditions ?? 0) <= c.expeditions)
+    .map((d) => d.kind);
+  const picks: ContractKind[] = [];
+  while (picks.length < 2 && pool.length) picks.push(pool.splice(rng.int(0, pool.length - 1), 1)[0]);
+  c.board = [...picks, 'hunt' as const].map((kind) => ({ kind, seed: rng.int(1, 1e9) }));
 }
 
 export function resetCompany() {
@@ -273,6 +296,7 @@ export function finishExpedition(c: Company, meta: MetaProgress, party: Hero[], 
   // 다 잃고 고용할 돈도 없으면 떠돌이 용병 하나가 찾아온다 (막히지 않게)
   if (!c.roster.length && c.gold < HIRE_COST) c.roster.push(newHero(makeHeroDef(randomComp(meta, rng, undefined, undefined, takenNames(c)))));
   refreshTavern(c, meta, rng);
+  refreshBoard(c, rng);
   saveCompany(c);
 }
 

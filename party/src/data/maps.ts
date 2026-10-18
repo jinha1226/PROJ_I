@@ -20,7 +20,8 @@ export interface MapDef {
 }
 
 export type RoomRole = 'start' | 'main' | 'side' | 'end';
-export type ObjectKind = 'chest' | 'mimic' | 'fountain' | 'altar' | 'prisoner';
+/** captive = 구출 계약의 목표 (마지막 방) */
+export type ObjectKind = 'chest' | 'mimic' | 'fountain' | 'altar' | 'prisoner' | 'captive';
 
 export const MAP1: MapDef = {
   width: 48,

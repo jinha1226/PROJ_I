@@ -32,7 +32,7 @@ export interface EventPrompt {
 const heroesOf = (w: World): Hero[] => w.party.flatMap((p) => (p.hero ? [p.hero] : []));
 
 export const OBJECT_NAME: Record<ObjectKind, string> = {
-  chest: '보물상자', mimic: '보물상자', fountain: '신비한 샘', altar: '피의 제단', prisoner: '갇힌 포로',
+  chest: '보물상자', mimic: '보물상자', fountain: '신비한 샘', altar: '피의 제단', prisoner: '갇힌 포로', captive: '붙잡힌 용병',
 };
 
 /** 전투가 없을 때: 오브젝트 위에 멈춘(또는 그리로 가던) 파티원이 있으면 작동 */
@@ -97,6 +97,12 @@ function makePrompt(o: WorldObject): EventPrompt {
         text: '제단 위에 무언가가 놓여 있다. 피를 바치면 가져갈 수 있을 것 같다. (파티 전원 최대 체력 -6 영구, 스트레스)',
         choices: [{ id: 'offer', label: '피를 바치고 아티팩트를 얻는다' }, { id: 'leave', label: '지나친다' }],
       };
+    case 'captive':
+      return {
+        obj: o, title: '붙잡힌 용병',
+        text: '쇠사슬에 묶인 용병이 고개를 든다. "살려 줘… 이 은혜는 칼로 갚겠다." (구출 계약의 목표)',
+        choices: [{ id: 'rescue', label: '사슬을 끊고 데려간다' }],
+      };
     default:
       return {
         obj: o, title: '갇힌 포로',
@@ -152,6 +158,10 @@ export function resolvePrompt(w: World, choice: string) {
     w.run.found.push(it);
     w.log(`피를 바치고 ${itemTitle(it)}을(를) 얻었다 (층을 마치면 장착)`, '#ffcc55');
     partyStress(w, 6);
+  } else if (choice === 'rescue') {
+    w.run.rescued = true;
+    partyStress(w, -10);
+    w.log('붙잡힌 용병을 구했다! 계약을 마치면 용병단에 합류한다', '#ffe14d');
   } else if (choice === 'free') {
     const xp = 25 + 15 * w.depth;
     w.grantXp(xp);

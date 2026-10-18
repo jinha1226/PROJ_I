@@ -1,13 +1,12 @@
 // 층 사이 쉬는 화면: 성장 요약 → 찾은 장비 → 보상 3택1(누구에게 낄지) → 특성 3택1 → 다음 층.
 import { Rng } from '../core/rng';
 import { ABILITIES } from '../data/abilities';
-import { FLOORS } from '../data/encounters';
 import { TALENT_LEVELS, TALENTS, TIER_NAME, type TalentDef } from '../data/talents';
 import type { Item } from '../sim/defs';
 import { applyTalent, nextTier, tierOptions, type Hero } from '../sim/hero';
 import { RARITY_COLOR, SLOT_NAME, isBadProp, itemBaseLine, itemTitle, propText } from '../sim/items';
 import { compareItem, rewardChoices } from '../sim/reward';
-import { newRun, type RunState } from '../sim/run';
+import { floorInfo, newRun, type RunState } from '../sim/run';
 
 const $ = (id: string) => document.getElementById(id)!;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -52,8 +51,9 @@ export class RestScreen {
   private render() {
     const box = $('rest').querySelector('.box')!;
     const pendingTotal = this.heroes.reduce((s, h) => s + h.pending, 0);
+    const nextFloor = floorInfo(this.run, this.depth + 1);
     box.innerHTML = `
-      <h2>${this.depth}층 돌파! <span class="gold small">이번 원정 골드 ${this.run.gold}</span></h2>
+      <h2>${floorInfo(this.run, this.depth).floor}층 돌파! <span class="gold small">이번 원정 골드 ${this.run.gold}</span></h2>
       <div class="growth">${this.heroes.map((h) => this.growthRow(h)).join('')}</div>
       ${this.foundSection()}
       <h3>보상 — 하나를 골라 장착 ${this.rewardDone ? '<span class="done">✓</span>' : ''}</h3>
@@ -61,7 +61,7 @@ export class RestScreen {
       ${pendingTotal ? `<h3>특성 — 하나씩 고르기</h3>${this.heroes.map((h) => this.levelRow(h)).join('')}` : ''}
       <div class="next">
         <button class="retreat" data-act="retreat" ${pendingTotal ? 'disabled' : ''}>거점으로 귀환 (골드 ${this.run.gold} 챙기기)</button>
-        <button data-act="next" ${pendingTotal ? 'disabled' : ''}>${pendingTotal ? '특성 선택을 마쳐 주세요' : `${this.depth + 1}층으로 내려가기${this.depth + 1 === FLOORS ? ' (보스층)' : ''}`}</button>
+        <button data-act="next" ${pendingTotal ? 'disabled' : ''}>${pendingTotal ? '특성 선택을 마쳐 주세요' : `${nextFloor.floor}층으로 내려가기${nextFloor.floor === nextFloor.floors ? (this.run.contract?.kind === 'hunt' || !this.run.contract ? ' (보스층)' : ' (마지막 층)') : ''}`}</button>
       </div>`;
   }
 

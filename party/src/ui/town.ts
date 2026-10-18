@@ -5,6 +5,7 @@ import { MOODS } from '../data/moods';
 import { makeHeroDef } from '../data/party';
 import { RACES, RACE_LIST, type RaceId } from '../data/races';
 import { CLASS_TALENTS, TALENT_LEVELS, TALENTS, TIER_NAME } from '../data/talents';
+import { CONTRACTS, type Contract } from '../data/contracts';
 import { UNLOCKS, type MetaProgress } from '../data/unlocks';
 import type { Item, ItemSlot } from '../sim/defs';
 import { applyTalent, newHero, nextTier, tierOptions, type Hero } from '../sim/hero';
@@ -35,9 +36,11 @@ export class TownScreen {
   private note = '';
   /** 대장간에서 고른 보관함 장비 */
   private item: Item | null = null;
+  /** 게시판에서 고른 계약 */
+  private contract: Contract | null = null;
 
   constructor(
-    private onDepart: (party: Hero[]) => void,
+    private onDepart: (party: Hero[], contract: Contract) => void,
     private onSheet: (h: Hero, done: () => void) => void,
     private onReset: () => void,
     private onChange: () => void,
@@ -53,6 +56,7 @@ export class TownScreen {
     this.note = note;
     this.item = null;
     this.tab = 'party';
+    if (!this.contract || !c.board.includes(this.contract)) this.contract = c.board[0] ?? null;
     // 지난 원정대가 살아 있으면 그대로, 아니면 스트레스가 낮은 순으로 채운다
     this.picked = new Set([...this.picked].filter((uid) => c.roster.some((h) => h.uid === uid)));
     if (!this.picked.size)
@@ -90,11 +94,24 @@ export class TownScreen {
   private partyTab(): string {
     const c = this.c;
     const party = c.roster.filter((h) => this.picked.has(h.uid));
+    if (this.contract && !c.board.includes(this.contract)) this.contract = c.board[0] ?? null;
+    const boardHtml = c.board.map((k, i) => {
+      const d = CONTRACTS[k.kind];
+      const on = this.contract === k;
+      return `<div class="ccard ${on ? 'on' : ''}" data-contract="${i}">
+        <div class="c1"><b>${d.name}</b> <span class="danger-stars">${'★'.repeat(d.danger)}${'☆'.repeat(3 - d.danger)}</span></div>
+        <div class="small">${d.floors}층${d.boss ? ' · 보스' : ''}${d.themeName ? ` · ${d.themeName}` : ''}${d.stress && d.stress > 1 ? ' · <span class="bad">스트레스↑</span>' : ''}</div>
+        <div class="dim small">${d.desc}</div>
+        <div class="small">보상 <b class="gold">${d.reward} 골드</b>${d.bonus === 'recruit' ? ' + 용병 합류' : d.bonus === 'artifact' ? ' + 아티팩트' : ''}</div>
+      </div>`;
+    }).join('');
     return `
+      <h3>계약 게시판 <span class="dim small">하나를 골라 떠난다 · 원정을 다녀오면 새 계약이 걸린다</span></h3>
+      <div class="board">${boardHtml || '<p class="dim">걸린 계약이 없다.</p>'}</div>
       <h3>원정대 편성 <span class="dim small">눌러서 넣고 빼기 · 최대 ${PARTY_SIZE}명</span></h3>
       <div class="roster">${c.roster.map((h) => this.card(h, 'roster')).join('') || '<p class="dim">명부가 비었다. 선술집에서 고용하자.</p>'}</div>
       <div class="go">
-        <button data-act="depart" ${party.length ? '' : 'disabled'}>원정 출발 (${party.length}명)</button>
+        <button data-act="depart" ${party.length && this.contract ? '' : 'disabled'}>${this.contract ? `「${CONTRACTS[this.contract.kind].name}」 출발 (${party.length}명)` : '계약을 고르세요'}</button>
         <span class="dim small">쓰러진 용병은 돌아오지 않는다. 층을 마칠 때마다 귀환할 수 있다.</span>
       </div>`;
   }
@@ -270,12 +287,14 @@ export class TownScreen {
 
   private click(e: Event) {
     const el = (e.target as HTMLElement).closest<HTMLElement>(
-      '[data-act],[data-tab],[data-pick],[data-sheet],[data-hire],[data-dismiss],[data-treat],[data-stash],[data-equip],[data-gup],[data-gun],[data-train],[data-retrain],[data-talent]',
+      '[data-act],[data-tab],[data-contract],[data-pick],[data-sheet],[data-hire],[data-dismiss],[data-treat],[data-stash],[data-equip],[data-gup],[data-gun],[data-train],[data-retrain],[data-talent]',
     );
     if (!el) return;
     const c = this.c, d = el.dataset;
     this.note = '';
-    if (d.tab) {
+    if (d.contract !== undefined) {
+      this.contract = c.board[Number(d.contract)] ?? null;
+    } else if (d.tab) {
       this.tab = d.tab as Tab;
       this.item = null;
     } else if (d.sheet) {
@@ -349,9 +368,9 @@ export class TownScreen {
       }
     } else if (d.act === 'depart') {
       const party = c.roster.filter((h) => this.picked.has(h.uid));
-      if (!party.length) return;
+      if (!party.length || !this.contract) return;
       this.close();
-      this.onDepart(party);
+      this.onDepart(party, this.contract);
       return;
     } else if (d.act === 'reset') {
       if (confirm('용병단을 처음부터 다시 시작할까요? 명부 · 골드 · 묘지 · 보관함이 모두 지워집니다. (해금은 남습니다)')) this.onReset();

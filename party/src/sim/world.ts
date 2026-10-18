@@ -476,7 +476,8 @@ export class World {
     // 곁가지 방은 들르지 않는다 (털지 말지는 플레이어가 정한다)
     const next = this.visitedRooms.findIndex((v, i) => !v && this.roles[i] !== 'side');
     let target: { x: number; y: number } | null = null;
-    const obj = this.exploreSides ? this.objects.find((o) => !o.used) : undefined;
+    // 구출 계약의 포로는 자동 탐험도 들른다
+    const obj = this.objects.find((o) => !o.used && (this.exploreSides || o.kind === 'captive'));
     if (next >= 0) {
       const [x, y, w, h] = this.rooms[next];
       target = this.map.nearestFloor(x + w / 2, y + h / 2);

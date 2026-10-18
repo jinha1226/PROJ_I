@@ -4,6 +4,7 @@
 //  - 100 이 되면 판정: 대개 붕괴(자동전투 행동이 망가짐), 가끔 각성(강해짐)
 import { clamp, dist } from '../core/rng';
 import { AFFLICTIONS, MOODS, VIRTUES, type MoodId } from '../data/moods';
+import { CONTRACTS } from '../data/contracts';
 import type { Hero } from './hero';
 import type { Unit } from './unit';
 import type { World } from './world';
@@ -27,7 +28,8 @@ export function addStress(w: World, u: Unit, amount: number) {
   if (amount > 0) {
     // 이미 무너졌으면 더 쌓이지 않는다
     if (isAfflicted(u)) return;
-    amount *= clamp(1 - (u.stats.will - 12) * 0.015, 0.75, 1.15) * w.difficulty.stress;
+    const contract = w.run.contract ? CONTRACTS[w.run.contract.kind].stress ?? 1 : 1;
+    amount *= clamp(1 - (u.stats.will - 12) * 0.015, 0.75, 1.15) * w.difficulty.stress * contract;
     if (h.mood === 'stalwart') amount *= 0.5;
     amount *= Math.pow(0.6, u.tagCount('stress_ward'));
     if (amount >= 5) w.float(u, `스트레스 +${Math.round(amount)}`, '#b98cff', 0.85);

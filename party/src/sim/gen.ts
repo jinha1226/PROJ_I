@@ -7,9 +7,20 @@ import type { MapDef, ObjectKind, RoomRole } from '../data/maps';
 
 const COLS = 4, ROWS = 3, CW = 13, CH = 10;
 
-export function genFloor(seed: number, depth: number): MapDef {
+export interface FloorOpts {
+  /** 보스층 (계단 없음) */
+  boss: boolean;
+  /** 자주 나올 몬스터 */
+  theme?: string[];
+  /** 곁가지 방 수 범위 */
+  sides?: [number, number];
+  /** 마지막 방에 구출할 포로 */
+  captive?: boolean;
+}
+
+export function genFloor(seed: number, depth: number, opts: FloorOpts = { boss: depth >= FLOORS }): MapDef {
   const rng = new Rng(seed * 7919 + depth * 104729);
-  const final = depth >= FLOORS;
+  const final = opts.boss;
   const nRooms = final ? 5 : 6;
 
   // 격자 위 무작위 경로 (막히면 다시)
@@ -43,8 +54,8 @@ export function genFloor(seed: number, depth: number): MapDef {
   // 곁가지 방: 경로 중간 방 옆의 빈 칸에 붙인다. 자동 탐험은 들르지 않고, 털지 말지는 플레이어가 정한다
   const sideOf: number[] = [];
   const used = new Set(path.map(([x, y]) => `${x},${y}`));
-  const wantSide = rng.int(1, 2);
-  for (let tries = 0; tries < 20 && sideOf.length < wantSide; tries++) {
+  const wantSide = rng.int(...(opts.sides ?? [1, 2]));
+  for (let tries = 0; tries < 40 && sideOf.length < wantSide; tries++) {
     const from = rng.int(1, nMain - 2);
     const [cx, cy] = path[from];
     const free = ([[1, 0], [-1, 0], [0, 1], [0, -1]] as const)
@@ -104,6 +115,15 @@ export function genFloor(seed: number, depth: number): MapDef {
   const spawns: MapDef['spawns'] = [];
   const objects: NonNullable<MapDef['objects']> = [];
   const table = (d: number) => ENCOUNTERS[Math.min(FLOORS, Math.max(1, d))];
+  /** 무리 고르기: 테마 몬스터가 많은 무리일수록 자주 */
+  const pickGroup = (pool: string[][]) => {
+    const theme = opts.theme;
+    if (!theme) return pool[rng.int(0, pool.length - 1)];
+    const weights = pool.map((g) => 0.15 + (g.filter((id) => theme.includes(id)).length / g.length) ** 2 * 4);
+    let r = rng.next() * weights.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < pool.length; i++) if ((r -= weights[i]) <= 0) return pool[i];
+    return pool[pool.length - 1];
+  };
   const place = (room: number[], ids: string[], usedTiles: Set<number>, centerFirst = false) => {
     const [x, y, w, h] = room;
     ids.forEach((id, k) => {
@@ -132,14 +152,16 @@ export function genFloor(seed: number, depth: number): MapDef {
       objects.push({ kind, x: cx, y: cy });
       if (kind === 'chest') {
         const pool = table(depth + 1);
-        place(room, pool[rng.int(0, pool.length - 1)], usedTiles);
+        place(room, pickGroup(pool), usedTiles);
       }
       return;
     }
     const last = role === 'end';
     const pool = last && !final ? table(depth + 1) : final ? table(depth - 1) : table(depth);
-    const group = last && final ? BOSS_GROUP : pool[rng.int(0, pool.length - 1)];
+    const group = last && final ? BOSS_GROUP : pickGroup(pool);
     place(room, group, usedTiles, last && final);
+    // 구출 계약: 마지막 방 구석에 포로 (지키는 무리를 쓰러뜨린 뒤 풀어 준다)
+    if (last && opts.captive) objects.push({ kind: 'captive', x: room[0] + 1, y: room[1] + 1 });
   });
   // 가끔 길 위의 방에도 상자 하나
   if (rng.chance(0.35) && nMain > 3) {

@@ -4,6 +4,9 @@ import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPixelatedPass } from 'three/examples/jsm/postprocessing/RenderPixelatedPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
 const BASE = './assets/kaykit/';
 
@@ -31,7 +34,7 @@ Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, n
 scene.add(sun);
 
 // ── 셀 셰이딩 · 외곽선 설정 (화면 버튼으로 바꿀 수 있다) ──
-const settings = { outline: 0.008, steps: 3, shadows: true, pitch: 45, dist: 28, flat: false };
+const settings = { outline: 0.008, steps: 3, shadows: true, pitch: 45, dist: 28, flat: false, pixel: 0 };
 
 function gradient(steps: number): THREE.DataTexture {
   const data = new Uint8Array(steps);
@@ -61,6 +64,12 @@ function toonify(root: THREE.Object3D, tint?: THREE.ColorRepresentation, outline
 }
 
 const effect = new OutlineEffect(renderer, { defaultThickness: settings.outline, defaultColor: [0.04, 0.02, 0.06] });
+
+// 픽셀 모드: 낮은 해상도로 그린 뒤 키우고, 가장자리에 1픽셀 윤곽 (3D 로 만든 픽셀아트 느낌)
+const composer = new EffectComposer(renderer);
+const pixelPass = new RenderPixelatedPass(4, scene, persp, { normalEdgeStrength: 0.35, depthEdgeStrength: 0.6 });
+composer.addPass(pixelPass);
+composer.addPass(new OutputPass());
 
 // ── 에셋 ──
 const loader = new GLTFLoader();
@@ -395,6 +404,11 @@ const flatBtn = button(() => `2D 느낌: ${settings.flat ? '켜짐' : '꺼짐'}`
   for (const b of ui.querySelectorAll('button')) b.dispatchEvent(new Event('refresh'));
 });
 flatBtn.classList.add('on');
+const PIXELS = [0, 3, 4, 6];
+button(() => `픽셀: ${settings.pixel ? `${settings.pixel}px` : '끔'}`, () => {
+  settings.pixel = PIXELS[(PIXELS.indexOf(settings.pixel) + 1) % PIXELS.length];
+  if (settings.pixel) pixelPass.setPixelSize(settings.pixel);
+});
 button(() => '확대 +', () => zoom(1 / 1.15));
 button(() => '축소 −', () => zoom(1.15));
 
@@ -453,6 +467,7 @@ const focus = new THREE.Vector3(1, 0.8, 0);
 
 function placeCamera() {
   camera = settings.flat ? ortho : persp;
+  pixelPass.camera = camera;
   const p = THREE.MathUtils.degToRad(settings.pitch);
   camera.position.set(focus.x, focus.y + Math.sin(p) * settings.dist, focus.z + Math.cos(p) * settings.dist);
   camera.lookAt(focus);
@@ -466,6 +481,7 @@ function placeCamera() {
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setSize(w, h);
+  composer.setSize(w, h);
   persp.aspect = w / h;
   persp.updateProjectionMatrix();
   placeCamera();
@@ -495,7 +511,8 @@ async function main() {
   renderer.setAnimationLoop(() => {
     const dt = Math.min(0.05, clock.getDelta());
     update(dt);
-    if (settings.outline > 0) effect.render(scene, camera);
+    if (settings.pixel > 0) composer.render();
+    else if (settings.outline > 0) effect.render(scene, camera);
     else renderer.render(scene, camera);
     drawHud();
     frames++;
