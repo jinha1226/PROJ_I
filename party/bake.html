@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="UTF-8" /><title>스프라이트 굽기 (개발용)</title></head>
+<body style="background:#222;color:#eee">
+  <p>개발용: scripts 의 굽기 스크립트가 window.bakeAll() 을 부른다.</p>
+  <script type="module">
+    import { bake, SPECS } from '/src/bake/bake.ts';
+    window.bakeAll = async () => {
+      const out = [];
+      for (const s of SPECS) {
+        const { sheet, meta } = await bake(s);
+        document.body.appendChild(sheet);
+        out.push({ id: s.id, png: sheet.toDataURL('image/png'), meta });
+      }
+      return out;
+    };
+    window.bakeReady = true;
+  </script>
+</body></html>

@@ -1,0 +1,1 @@
+{"id":"goblin","cell":48,"fps":12,"dirs":8,"anims":{"idle":{"row":0,"frames":8,"loop":true},"run":{"row":8,"frames":7,"loop":true},"atk1":{"row":16,"frames":8,"loop":false},"hit":{"row":24,"frames":4,"loop":false},"death":{"row":32,"frames":9,"loop":false}},"cols":9,"rows":40}

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <title>스프라이트 비교</title>
+  <style>
+    html, body { margin: 0; background: #12111a; color: #eee; font-family: system-ui, sans-serif; }
+    #wrap { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px; justify-content: center; }
+    .panel { background: #1c1b26; border: 1px solid #333; border-radius: 8px; padding: 8px; text-align: center; }
+    .panel h3 { margin: 4px 0 8px; font-size: 14px; color: #ffcc66; }
+    canvas { image-rendering: pixelated; background: #2a2620; display: block; margin: 0 auto; }
+    #ui { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; padding: 8px; }
+    button { background: #22212e; color: #eee; border: 1px solid #555; border-radius: 6px; padding: 6px 10px; font: inherit; }
+    button.on { border-color: #ffcc66; color: #ffcc66; }
+    p { text-align: center; color: #999; font-size: 13px; margin: 4px 12px; }
+  </style>
+</head>
+<body>
+  <p>왼쪽 = 미리 구운 스프라이트, 오른쪽 = 지금 게임의 실시간 픽셀 렌더. 같은 크기(48도트 칸 · 4배 확대)로 비교.</p>
+  <div id="ui"></div>
+  <div id="wrap"></div>
+  <script type="module" src="/src/bake/viewer.ts"></script>
+</body>
+</html>
