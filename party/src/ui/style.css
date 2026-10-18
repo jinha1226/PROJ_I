@@ -526,9 +526,5 @@ button.on { border-color: var(--accent); color: var(--accent); }
   #targeting-hint { bottom: 120px; }
 }
 #crisis { white-space: pre-line; text-align: center; }
-#party .capbar .sk.combo { border-color: #8a6aaa; }
-#party .capbar .sk.combo.ready { border-color: #e0a0ff; box-shadow: 0 0 10px #e0a0ffcc; animation: nodepulse 0.8s ease-in-out infinite alternate; }
-#party .capbar .sk.combo .pair { position: absolute; top: 1px; right: 4px; font-size: 12px; color: #c8a8e8; }
 .synrow { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
 .syn { padding: 1px 6px; border: 1px solid #555; border-radius: 10px; background: #1a1a24; cursor: help; }
-.syn.combo { border-color: #6a4a8a; }

@@ -4,8 +4,6 @@ import type { ArenaWave, MapDef } from '../data/maps';
 import { DIFFICULTIES, type Difficulty, type DifficultyId } from '../data/difficulty';
 import { MONSTERS } from '../data/units';
 import { synergyProps } from '../data/synergy';
-import { COMBOS, COMBO_COST, COMBO_PER_KILL, type ComboDef } from '../data/combos';
-import { castCombo } from './abilities';
 import { updateUnit } from './behavior';
 import { beginFloor, gainXp, newParty, type Hero } from './hero';
 import { itemTitle } from './items';
@@ -129,8 +127,6 @@ export class World {
   leader: Unit | null = null;
   /** 주장: 플레이어가 직접 조작하는 한 명. 나머지는 작전대로 AI 가 싸운다 */
   captain: Unit | null = null;
-  /** 합동 게이지 (0~100). 파티가 적에게 피해를 주면 찬다 */
-  comboGauge = 0;
   /** 주장 조이스틱 방향 (없으면 AI 가 근처 적을 친다) */
   capDir: { x: number; y: number } | null = null;
   inCombat = false;
@@ -434,82 +430,6 @@ export class World {
     return true;
   }
 
-  addCombo(killFrac: number) {
-    this.comboGauge = Math.min(COMBO_COST, this.comboGauge + killFrac * COMBO_PER_KILL);
-  }
-
-  /** 지금 주장이 쓸 수 있는 합동기: 주장 + 살아 있는 동료 한 명의 직업 짝 */
-  combos(): { def: ComboDef; a: Unit; b: Unit }[] {
-    const c = this.captain;
-    if (!c?.alive || !c.hero) return [];
-    const out: { def: ComboDef; a: Unit; b: Unit }[] = [];
-    for (const p of this.party) {
-      if (p === c || !p.alive || !p.hero) continue;
-      for (const def of COMBOS) {
-        const [x, y] = def.pair;
-        if (x === c.hero.cls && y === p.hero.cls) out.push({ def, a: c, b: p });
-        else if (y === c.hero.cls && x === p.hero.cls) out.push({ def, a: p, b: c });
-        else continue;
-        break;
-      }
-    }
-    // 같은 짝이 두 번 들어가지 않게
-    return out.filter((o, i) => out.findIndex((q) => q.def === o.def) === i).slice(0, 3);
-  }
-
-  /** 합동기 사용. 대상은 주장의 공격 대상 → 집중 대상 → 가장 많이 맞힐 수 있는 적 */
-  useCombo(i: number): boolean {
-    const list = this.combos();
-    const cb = list[i];
-    if (!cb || this.comboGauge < COMBO_COST) return false;
-    if (cb.a.stats.stunned || cb.b.stats.stunned) {
-      this.float(this.captain!, '둘 다 움직일 수 있어야 한다', '#aaaaaa');
-      return false;
-    }
-    const ab = cb.def.ability;
-    const lead = cb.def.lead === 0 ? cb.a : cb.b;
-    const anchor = (cb.def.at ?? cb.def.lead) === 0 ? cb.a : cb.b;
-    let target: Unit | null = null;
-    let x = anchor.x, y = anchor.y;
-    if (ab.target !== 'self') {
-      const foes = this.hostilesOf(lead).filter((e) => e.alive);
-      if (!foes.length) return false;
-      const cap = this.captain!;
-      const cur = cap.command?.intent.type === 'attack' ? cap.command.intent.target : cap.intent?.type === 'attack' ? cap.intent.target : null;
-      if (ab.target === 'ground') {
-        // 범위: 가장 많이 맞는 자리
-        let best = foes[0], bestN = -1;
-        for (const e of foes) {
-          const n = foes.filter((f) => dist(f, e) <= (ab.radius ?? 1)).length + (e === this.focusTarget ? 0.5 : 0);
-          if (n > bestN) { best = e; bestN = n; }
-        }
-        target = best;
-      } else target = [this.focusTarget, cur].find((t) => t?.alive && foes.includes(t)) ?? foes.sort((p, q) => q.hp - p.hp)[0];
-      x = target.x;
-      y = target.y;
-    }
-    this.comboGauge -= COMBO_COST;
-    for (const u of [cb.a, cb.b]) {
-      if (u.cast) this.cancelCast(u, '', false);
-      if (target) u.facing = target.x > u.x ? 1 : -1;
-    }
-    this.say(cb.a, cb.def.shout[0], ab.color, 1.4);
-    this.say(cb.b, cb.def.shout[1], ab.color, 1.4);
-    this.crisis(`combo:${this.time}`, `합동기 — ${ab.name}!`, x, y, ab.color);
-    this.hitstop = Math.max(this.hitstop, 0.12);
-    this.shake = Math.max(this.shake, 8);
-    // 동료도 함께 뛰어든다 (협공)
-    const partner = lead === cb.a ? cb.b : cb.a;
-    if (ab.dash && target) {
-      const d = dist(partner, target) || 1;
-      const k = Math.max(0, (d - partner.radius - target.radius - 0.3) / d);
-      partner.x += (target.x - partner.x) * k;
-      partner.y += (target.y - partner.y) * k + 0.3;
-    }
-    castCombo(this, lead, ab, target, x, y);
-    return true;
-  }
-
   setFocus(t: Unit | null) {
     this.focusTarget = t && t.alive ? t : null;
     if (this.focusTarget) this.log(`집중 공격: ${this.focusTarget.name}`, '#ff6666');
@@ -778,8 +698,6 @@ export class World {
       checkObjects(this);
       tickStress(this, 0.2);
       if (this.arena) this.arenaStep(0.2);
-      // 주장 자동: 게이지가 차면 합동기도 알아서
-      if (this.captain?.autoMode && this.comboGauge >= COMBO_COST && this.inCombat) this.useCombo(0);
       this.exploreStep();
     }
 

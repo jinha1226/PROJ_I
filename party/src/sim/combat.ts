@@ -106,9 +106,6 @@ export function applyDamage(
   if (source && !opts.dot && dmg > 0 && target.tags.includes('retaliate') && source.faction !== target.faction && dist(source, target) < 1.8)
     applyDamage(w, source, dmg * 0.3, 'physical', target, { dot: true });
 
-  // 합동 게이지: 파티가 적에게 준 피해 (적 체력 비율만큼)
-  if (dmg > 0 && target.faction === 'enemy' && source && source.faction === 'party')
-    w.addCombo(Math.min(dmg, target.hp + dmg) / target.stats.maxHp);
   if (target.hp <= 0) w.kill(target, source);
   return dmg;
 }

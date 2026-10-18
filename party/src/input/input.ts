@@ -1,6 +1,6 @@
 // 마우스/터치 입력 (Pointer Events). 주장 한 명을 직접 조작한다 (에스라봉 · 레이드 매니저식).
 // 이동: 터치는 화면을 끌기(조이스틱), PC 는 WASD · 방향키. 탭/클릭: 적 = 공격, 바닥 = 이동, 아군 = 주장 교대.
-// 기술: Q E R F (또는 1~6), 돌진/구르기: Shift, 합동기: Z X V.
+// 기술: Q E R F (또는 1~6), 돌진/구르기: Shift.
 import { CONSUMABLES } from '../data/consumables';
 import { dist } from '../core/rng';
 import type { Camera } from '../render/camera';
@@ -361,8 +361,6 @@ export class Input {
       if (t) w.setFocus(w.focusTarget === t ? null : t);
     } else if (k === 't') {
       this.hooks.toggleAutoAll();
-    } else if (k === 'z' || k === 'x' || k === 'v') {
-      w.useCombo(['z', 'x', 'v'].indexOf(k));
     } else if (k === 'c') {
       this.cam.follow = !this.cam.follow;
     } else if (k === 'h') {
