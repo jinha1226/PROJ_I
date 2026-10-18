@@ -46,3 +46,25 @@ for (const name of DUNGEON) {
   }
 }
 console.log('dungeon pieces copied');
+
+// ── Quaternius (CC0): .gltf(base64 내장) → .glb ──
+const Q = '/mnt/d/PROJ_SV/art3d/vendor';
+const QOUT = 'public/assets/quaternius';
+mkdirSync(QOUT, { recursive: true });
+const QUAT = [
+  ['quaternius_rpgchars/glTF/Warrior.gltf', 'Warrior'], ['quaternius_rpgchars/glTF/Cleric.gltf', 'Cleric'],
+  ['quaternius_rpgchars/glTF/Ranger.gltf', 'Ranger'], ['quaternius_rpgchars/glTF/Wizard.gltf', 'Wizard'],
+  ['quaternius_rpgchars/glTF/Monk.gltf', 'Monk'], ['quaternius_rpgchars/glTF/Rogue.gltf', 'Rogue'],
+  ['quaternius_monsters/Big/glTF/Orc.gltf', 'Orc'], ['quaternius_monsters/Big/glTF/Orc_Skull.gltf', 'Orc_Skull'],
+  ['quaternius_monsters/Big/glTF/Demon.gltf', 'Demon'], ['quaternius_monsters/Big/glTF/Yeti.gltf', 'Yeti'],
+  ['quaternius_monsters/Big/glTF/MushroomKing.gltf', 'MushroomKing'],
+  ['quaternius_monsters/Flying/glTF/Ghost.gltf', 'Ghost'], ['quaternius_monsters/Flying/glTF/Glub.gltf', 'Glub'],
+  ['quaternius_animals/glTF/Wolf.gltf', 'Wolf'],
+];
+for (const [src, name] of QUAT) {
+  const doc = await io.read(join(Q, src));
+  await doc.transform(prune(), dedup());
+  const out = join(QOUT, `${name}.glb`);
+  await io.write(out, doc);
+  console.log('Q', name, `${(statSync(out).size / 1e6).toFixed(2)}MB`);
+}

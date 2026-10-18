@@ -8,7 +8,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPixelatedPass } from 'three/examples/jsm/postprocessing/RenderPixelatedPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
-const BASE = './assets/kaykit/';
+const BASE = './assets/';
 
 // ── 렌더러 · 장면 ──
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -81,23 +81,58 @@ const load = (name: string) => {
 
 /** 클래스별 겉모습: 어떤 모델에 어떤 소품을 보이고 무슨 색을 입히나 */
 interface Look {
+  /** 'kaykit/Knight' · 'quaternius/Warrior' */
   model: string;
   show: string[];
+  /** 모델 키를 이 높이로 맞춘다 (팩마다 크기가 달라서) */
+  height?: number;
   tint?: string;
   attack: string;
   ranged?: string;
   scale?: number;
 }
-const LOOKS: Record<string, Look> = {
-  warrior: { model: 'Knight', show: ['1H_Sword', 'Round_Shield', 'Knight_Helmet', 'Knight_Cape'], attack: '1H_Melee_Attack_Chop' },
-  berserker: { model: 'Barbarian', show: ['2H_Axe', 'Barbarian_Hat', 'Barbarian_Cape'], attack: '2H_Melee_Attack_Chop' },
-  fire_mage: { model: 'Mage', show: ['2H_Staff', 'Mage_Hat', 'Mage_Cape'], attack: 'Spellcast_Shoot', ranged: '#ff7a2f' },
-  hunter: { model: 'Rogue_Hooded', show: ['2H_Crossbow', 'Rogue_Cape'], attack: '2H_Ranged_Shoot', ranged: '#e8d8a0' },
-  priest: { model: 'Mage', show: ['1H_Wand', 'Spellbook', 'Mage_Cape'], tint: '#fff4d8', attack: 'Spellcast_Shoot', ranged: '#ffeeaa' },
-  skeleton: { model: 'Skeleton_Warrior', show: [], attack: '1H_Melee_Attack_Chop' },
-  skeleton_mage: { model: 'Skeleton_Mage', show: [], attack: 'Spellcast_Shoot', ranged: '#b07cff' },
-  brute: { model: 'Skeleton_Warrior', show: [], tint: '#b8d8a0', attack: '1H_Melee_Attack_Chop', scale: 1.5 },
+const LOOKS_K: Record<string, Look> = {
+  warrior: { model: 'kaykit/Knight', show: ['1H_Sword', 'Round_Shield', 'Knight_Helmet', 'Knight_Cape'], attack: '1H_Melee_Attack_Chop' },
+  berserker: { model: 'kaykit/Barbarian', show: ['2H_Axe', 'Barbarian_Hat', 'Barbarian_Cape'], attack: '2H_Melee_Attack_Chop' },
+  fire_mage: { model: 'kaykit/Mage', show: ['2H_Staff', 'Mage_Hat', 'Mage_Cape'], attack: 'Spellcast_Shoot', ranged: '#ff7a2f' },
+  hunter: { model: 'kaykit/Rogue_Hooded', show: ['2H_Crossbow', 'Rogue_Cape'], attack: '2H_Ranged_Shoot', ranged: '#e8d8a0' },
+  priest: { model: 'kaykit/Mage', show: ['1H_Wand', 'Spellbook', 'Mage_Cape'], tint: '#fff4d8', attack: 'Spellcast_Shoot', ranged: '#ffeeaa' },
+  skeleton: { model: 'kaykit/Skeleton_Warrior', show: [], attack: '1H_Melee_Attack_Chop' },
+  skeleton_mage: { model: 'kaykit/Skeleton_Mage', show: [], attack: 'Spellcast_Shoot', ranged: '#b07cff' },
+  brute: { model: 'kaykit/Skeleton_Warrior', show: [], tint: '#b8d8a0', attack: '1H_Melee_Attack_Chop', scale: 1.5 },
 };
+/** Quaternius (CC0): 영웅 · 몬스터가 한 화풍. 키는 KayKit 영웅에 맞춘다 */
+const LOOKS_Q: Record<string, Look> = {
+  warrior: { model: 'quaternius/Warrior', show: [], height: 2.3, attack: 'Sword_Attack' },
+  berserker: { model: 'quaternius/Monk', show: [], height: 2.3, attack: 'Attack' },
+  fire_mage: { model: 'quaternius/Wizard', show: [], height: 2.3, attack: 'Spell1', ranged: '#ff7a2f' },
+  hunter: { model: 'quaternius/Ranger', show: [], height: 2.3, attack: 'Bow_Shoot', ranged: '#e8d8a0' },
+  priest: { model: 'quaternius/Cleric', show: [], height: 2.3, attack: 'Spell1', ranged: '#ffeeaa' },
+  skeleton: { model: 'quaternius/Orc', show: [], height: 2.1, attack: 'Weapon' },
+  skeleton_mage: { model: 'quaternius/Demon', show: [], height: 2.1, attack: 'Punch', ranged: '#ff7a2f' },
+  ghost: { model: 'quaternius/Ghost', show: [], height: 1.8, attack: 'Headbutt' },
+  wolf: { model: 'quaternius/Wolf', show: [], height: 1.4, attack: 'Attack' },
+  slime: { model: 'quaternius/Glub', show: [], height: 1.4, attack: 'Headbutt' },
+  brute: { model: 'quaternius/Yeti', show: [], height: 3.2, attack: 'Punch' },
+};
+/** mix = 영웅은 KayKit, 몬스터는 Quaternius */
+let pack: 'kaykit' | 'quat' | 'mix' = 'kaykit';
+const HERO_KINDS = ['warrior', 'berserker', 'fire_mage', 'hunter', 'priest'];
+const lookOf = (kind: string) => {
+  const q = pack === 'quat' || (pack === 'mix' && !HERO_KINDS.includes(kind));
+  return q ? LOOKS_Q[kind] ?? LOOKS_Q.skeleton : LOOKS_K[kind] ?? LOOKS_K.skeleton;
+};
+
+/** 팩마다 애니메이션 이름이 달라서 후보 중 있는 것을 쓴다 */
+const ANIMS = {
+  idle: ['Idle_Weapon', 'Idle', 'Flying_Idle'],
+  combat: ['Idle_Combat', 'Idle_Attacking', 'Attacking_Idle', 'Idle_Weapon', 'Idle', 'Flying_Idle'],
+  run: ['Running_A', 'Run_Weapon', 'Run', 'Fast_Flying', 'Gallop', 'Walk'],
+  hit: ['Hit_A', 'RecieveHit', 'HitReact', 'HitRecieve', 'Idle_HitReact1'],
+  death: ['Death_A', 'Death'],
+};
+const anim = (a: Actor, k: keyof typeof ANIMS) => ANIMS[k].find((n) => a.clips.has(n)) ?? 'Idle';
+
 const ACCESSORIES = /(Sword|Shield|Axe|Mug|Hat|Helmet|Cape|Wand|Staff|Spellbook|Crossbow|Knife|Throwable)/;
 
 interface Actor {
@@ -119,15 +154,19 @@ interface Actor {
 const actors: Actor[] = [];
 
 async function spawn(kind: string, side: Actor['side'], x: number, z: number, name: string): Promise<Actor> {
-  const look = LOOKS[kind];
+  const look = lookOf(kind);
   const gltf = await load(look.model);
   const root = SkeletonUtils.clone(gltf.scene);
+  if (look.height) {
+    const h = new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3()).y || 1;
+    root.scale.setScalar(look.height / h);
+  }
   root.traverse((o) => {
     if (!(o as THREE.Mesh).isMesh) return;
     if (ACCESSORIES.test(o.name) && !look.show.includes(o.name) && !o.name.startsWith('Skeleton')) o.visible = false;
   });
   toonify(root, look.tint);
-  if (look.scale) root.scale.setScalar(look.scale);
+  if (look.scale) root.scale.multiplyScalar(look.scale);
   root.position.set(x, 0, z);
   scene.add(root);
   const mixer = new THREE.AnimationMixer(root);
@@ -139,7 +178,7 @@ async function spawn(kind: string, side: Actor['side'], x: number, z: number, na
     home: new THREE.Vector3(x, 0, z),
   };
   a.hp = a.maxHp;
-  play(a, 'Idle');
+  play(a, anim(a, 'idle'));
   actors.push(a);
   return a;
 }
@@ -158,7 +197,7 @@ function play(a: Actor, name: string, once = false) {
 // ── 던전 방 ──
 let TILE = 4;
 async function buildRoom() {
-  const floor = (await load('floor_tile_large')).scene;
+  const floor = (await load('kaykit/'+'floor_tile_large')).scene;
   const box = new THREE.Box3().setFromObject(floor);
   TILE = Math.round(box.max.x - box.min.x) || 4;
   const W = 5, H = 4;
@@ -170,8 +209,8 @@ async function buildRoom() {
       f.position.set(ox + i * TILE, 0, oz + j * TILE);
       scene.add(f);
     }
-  const wall = (await load('wall')).scene;
-  const torch = (await load('torch_mounted')).scene;
+  const wall = (await load('kaykit/'+'wall')).scene;
+  const torch = (await load('kaykit/'+'torch_mounted')).scene;
   for (let i = 0; i < W; i++) {
     const w = wall.clone();
     toonify(w);
@@ -195,11 +234,11 @@ async function buildRoom() {
       w.position.set(side * (W * TILE) / 2, 0, oz + j * TILE);
       scene.add(w);
     }
-  const chest = (await load('chest_gold')).scene.clone();
+  const chest = (await load('kaykit/'+'chest_gold')).scene.clone();
   toonify(chest);
   chest.position.set(ox, 0, oz + 0.3);
   scene.add(chest);
-  const barrel = (await load('barrel_small')).scene.clone();
+  const barrel = (await load('kaykit/'+'barrel_small')).scene.clone();
   toonify(barrel);
   barrel.position.set(-ox, 0, oz + 0.2);
   scene.add(barrel);
@@ -215,7 +254,8 @@ async function spawnWave() {
   wave++;
   const n = 3 + (wave % 2);
   for (let i = 0; i < n; i++) {
-    const kind = i === 0 && wave % 3 === 0 ? 'brute' : i === n - 1 ? 'skeleton_mage' : 'skeleton';
+    const melee = pack !== 'kaykit' ? ['skeleton', 'wolf', 'ghost', 'slime'][(i + wave) % 4] : 'skeleton';
+    const kind = i === 0 && wave % 3 === 0 ? 'brute' : i === n - 1 ? 'skeleton_mage' : melee;
     await spawn(kind, 'foe', 9 + Math.random() * 1.5, -3 + i * 2, kind);
   }
 }
@@ -242,9 +282,9 @@ function hit(target: Actor, dmg: number, color: string) {
   floaters.push({ pos: target.root.position.clone().setY(2.6 * (target.look.scale ?? 1)), text: String(dmg), color, t: 0 });
   if (target.hp <= 0) {
     target.dead = 2.2;
-    play(target, 'Death_A', true);
+    play(target, anim(target, 'death'), true);
   } else if (target.busy <= 0) {
-    play(target, 'Hit_A', true);
+    play(target, anim(target, 'hit'), true);
     target.busy = 0.35;
   }
 }
@@ -270,8 +310,8 @@ function update(dt: number) {
       if (back.length() > 0.2) {
         a.root.position.addScaledVector(back.normalize(), dt * 3);
         face(a, back.x, back.z);
-        play(a, 'Running_A');
-      } else play(a, 'Idle');
+        play(a, anim(a, 'run'));
+      } else play(a, anim(a, 'idle'));
       continue;
     }
     tmp.copy(t.root.position).sub(a.root.position);
@@ -280,7 +320,7 @@ function update(dt: number) {
     if (d > reach) {
       if (a.busy <= 0) {
         a.root.position.addScaledVector(tmp.normalize(), dt * (a.side === 'foe' ? 2.4 : 2.8));
-        play(a, 'Running_A');
+        play(a, anim(a, 'run'));
       }
     } else if (a.cd <= 0) {
       a.cd = a.look.ranged ? 1.6 : 1.2;
@@ -293,7 +333,7 @@ function update(dt: number) {
         scene.add(m);
         shots.push({ mesh: m, from: a, to: t, t: 0 });
       } else setTimeout(() => hit(t, dmg, '#ffffff'), 250);
-    } else if (a.busy <= 0) play(a, a.clips.has('Idle_Combat') ? 'Idle_Combat' : 'Idle');
+    } else if (a.busy <= 0) play(a, anim(a, 'combat'));
   }
   for (const s of [...shots]) {
     s.t += dt;
@@ -308,7 +348,7 @@ function update(dt: number) {
   for (const a of actors)
     if (a.side === 'hero' && a.hp <= 0 && a.dead <= 0) {
       a.hp = a.maxHp;
-      play(a, 'Idle');
+      play(a, anim(a, 'idle'));
     }
   if (!actors.some((a) => a.side === 'foe' && a.hp > 0) && !spawning) {
     spawning = true;
@@ -404,6 +444,9 @@ const flatBtn = button(() => `2D 느낌: ${settings.flat ? '켜짐' : '꺼짐'}`
   for (const b of ui.querySelectorAll('button')) b.dispatchEvent(new Event('refresh'));
 });
 flatBtn.classList.add('on');
+button(() => `모델: ${pack === 'kaykit' ? 'KayKit' : pack === 'quat' ? 'Quaternius' : '혼합(영웅 KayKit)'}`, () => {
+  void switchPack();
+}).addEventListener('click', () => setTimeout(() => ui.querySelectorAll('button').forEach((b) => b.dispatchEvent(new Event('refresh'))), 50));
 const PIXELS = [0, 3, 4, 6];
 button(() => `픽셀: ${settings.pixel ? `${settings.pixel}px` : '끔'}`, () => {
   settings.pixel = PIXELS[(PIXELS.indexOf(settings.pixel) + 1) % PIXELS.length];
@@ -495,16 +538,32 @@ function resize() {
 window.addEventListener('resize', resize);
 
 // ── 시작 ──
+const PARTY: [string, number, number, string][] = [
+  ['warrior', -2, 0, '브론'], ['berserker', -2, 2.4, '그롬'], ['hunter', -5, -1.5, '카이'],
+  ['fire_mage', -5.5, 1.2, '엘라'], ['priest', -6.5, 3, '미라'],
+];
+async function spawnAll() {
+  for (const [k, x, z, n] of PARTY) await spawn(k, 'hero', x, z, n);
+  await spawnWave();
+}
+
+/** 모델 팩 바꾸기: 지금 있는 유닛을 모두 치우고 다시 부른다 */
+async function switchPack() {
+  pack = pack === 'kaykit' ? 'quat' : pack === 'quat' ? 'mix' : 'kaykit';
+  for (const a of actors) scene.remove(a.root);
+  actors.length = 0;
+  for (const s of shots) scene.remove(s.mesh);
+  shots.length = 0;
+  spawning = true;
+  await spawnAll();
+  spawning = false;
+}
+
 async function main() {
   resize();
   placeCamera();
   await buildRoom();
-  const party: [string, number, number, string][] = [
-    ['warrior', -2, 0, '브론'], ['berserker', -2, 2.4, '그롬'], ['hunter', -5, -1.5, '카이'],
-    ['fire_mage', -5.5, 1.2, '엘라'], ['priest', -6.5, 3, '미라'],
-  ];
-  for (const [k, x, z, n] of party) await spawn(k, 'hero', x, z, n);
-  await spawnWave();
+  await spawnAll();
   document.getElementById('loading')!.remove();
   const clock = new THREE.Clock();
   let frames = 0, acc = 0;
