@@ -85,7 +85,13 @@ composer.addPass(new OutputPass());
 const loader = new GLTFLoader();
 const cache = new Map<string, Promise<GLTF>>();
 const load = (name: string) => {
-  if (!cache.has(name)) cache.set(name, loader.loadAsync(`${BASE}${name}.glb`));
+  if (!cache.has(name))
+    cache.set(name, loader.loadAsync(`${BASE}${name}.glb`).then((g) => {
+      // 루트 모션 제거: UAL 의 일부 공격(3타 · 돌진)은 root 뼈를 앞으로 옮겨 적을 뚫고 지나간다.
+      // 위치 이동은 게임이 직접 하므로 애니메이션의 root 이동은 버린다
+      for (const clip of g.animations) clip.tracks = clip.tracks.filter((t) => t.name !== 'root.position');
+      return g;
+    }));
   return cache.get(name)!;
 };
 
