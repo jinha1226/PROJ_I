@@ -11,7 +11,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       // look.html: 3D 룩 테스트 (KayKit + 셀 셰이딩 + 외곽선)
-      input: { main: resolve(__dirname, 'index.html'), look: resolve(__dirname, 'look.html'), sprites: resolve(__dirname, 'sprites.html') },
+      input: { main: resolve(__dirname, 'index.html'), look: resolve(__dirname, 'look.html'), sprites: resolve(__dirname, 'sprites.html'), chars: resolve(__dirname, 'chars.html') },
     },
   },
 });
