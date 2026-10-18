@@ -275,7 +275,7 @@ button.on { border-color: var(--accent); color: var(--accent); }
 #town .note { color: #ffe14d; }
 #town .dim { color: #8a8a99; }
 #town .small { font-size: 12px; }
-#town .roster { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: 6px; }
+#town .rgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: 6px; }
 #town .hcard { border: 2px solid #3a3a4a; border-radius: 7px; padding: 6px 7px; background: #1a1a24; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 #town .hcard.roster { cursor: pointer; }
 #town .hcard.on { background: #1a2a1e; }
@@ -311,7 +311,7 @@ button.on { border-color: var(--accent); color: var(--accent); }
   border: 1px solid #a88a2a; border-radius: 6px; padding: 6px 14px; font-weight: bold; pointer-events: none; z-index: 10;
 }
 @media (max-width: 900px), (max-height: 500px) {
-  #town .roster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #town .rgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #town .unlocks { grid-template-columns: 1fr; }
 }
 
@@ -412,3 +412,42 @@ button.on { border-color: var(--accent); color: var(--accent); }
   #top::-webkit-scrollbar { display: none; }
   #top > * { flex-shrink: 0; }
 }
+
+/* ── 거점 (정리판): 글은 줄이고 카드 · 칩 · 슬롯으로 ── */
+#town .thead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+#town .thead h2 { margin: 0; }
+#town .tstat { margin: 0; color: #bbb; }
+#town .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+#town .ccard { text-align: left; display: grid; grid-template-columns: 1fr auto; gap: 4px 6px; padding: 8px 10px; border: 2px solid #3a3a4a; border-radius: 6px; background: #1a1a24; cursor: pointer; }
+#town .ccard.on { border-color: var(--accent); background: #2a2618; }
+#town .ccard .cname { color: #f0e8d0; }
+#town .ccard .danger-stars { color: #ff8866; }
+#town .ccard .danger-stars i { color: #444; font-style: normal; }
+#town .ccard .chips { grid-column: 1 / -1; display: flex; gap: 4px; flex-wrap: wrap; }
+#town .ccard .reward { grid-column: 1 / -1; color: #ffd76a; }
+#town .chip { display: inline-block; padding: 0 6px; border-radius: 3px; background: #2a2a38; color: #c8c8d8; }
+#town .chip.boss { background: #4a1e1e; color: #ff9c8c; }
+#town .chip.warn { background: #3a2a48; color: #d0a0ff; }
+#town .cdesc { color: #9a9aab; margin: 6px 2px 0; }
+#town .slots4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 10px 0 6px; }
+#town .slot { height: 44px; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 2px solid #66ff88; border-radius: 6px; background: #1a2a1e; cursor: pointer; text-align: left; }
+#town .slot.empty { justify-content: center; border: 2px dashed #3a3a4a; background: transparent; color: #555; cursor: default; }
+#town .slot .sn { color: #eee; flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#town .rgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; margin-top: 6px; }
+#town .hcard { flex-direction: row; align-items: center; gap: 8px; padding: 6px 8px; border-width: 1px; }
+#town .hcard.roster:hover { background: #22222e; }
+#town .hinfo { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+#town .hinfo > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#town .sbar { display: block; height: 3px; background: #1d1626; border-radius: 2px; overflow: hidden; }
+#town .sbar i { display: block; height: 100%; }
+#town .ib { padding: 0 6px; border-color: #444; color: #aaa; flex-shrink: 0; }
+#town .buy { border-color: #8a7a4a; color: #ffd76a; padding: 4px 10px; flex-shrink: 0; }
+#town .go { justify-content: flex-end; }
+#town .go button { padding: 8px 32px; }
+#town .order { margin-top: 10px; }
+@media (max-width: 900px), (max-height: 500px) {
+  #town .board { grid-template-columns: 1fr; }
+  #town .slots4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #town .rgrid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}
+#town .rgrid.tav { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }

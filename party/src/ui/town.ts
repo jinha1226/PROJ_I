@@ -4,7 +4,7 @@ import { CLASSES, CLASS_LIST, type ClassId } from '../data/classes';
 import { MOODS } from '../data/moods';
 import { makeHeroDef } from '../data/party';
 import { RACES, RACE_LIST, type RaceId } from '../data/races';
-import { CLASS_TALENTS, TALENT_LEVELS, TALENTS, TIER_NAME } from '../data/talents';
+import { TALENT_LEVELS, TALENTS, TIER_NAME } from '../data/talents';
 import { CONTRACTS, type Contract } from '../data/contracts';
 import { UNLOCKS, type MetaProgress } from '../data/unlocks';
 import type { Item, ItemSlot } from '../sim/defs';
@@ -83,14 +83,14 @@ export class TownScreen {
       return '';
     };
     $('town').querySelector('.box')!.innerHTML = `
-      <h2>용병단 거점</h2>
-      <div class="tstat">원정 ${c.expeditions}회 · <b class="gold">${c.gold} 골드</b> · 명부 ${c.roster.length}/${ROSTER_MAX} · 묘지 ${c.graves.length}</div>
+      <div class="thead"><h2>용병단 거점</h2>
+        <span class="tstat"><b class="gold">${c.gold}G</b> · 명부 ${c.roster.length}/${ROSTER_MAX} · 원정 ${c.expeditions} · ✝${c.graves.length}</span></div>
       <div class="tabs">${TABS.map(([t, n]) => `<button class="${this.tab === t ? 'on' : ''}" data-tab="${t}">${n}${badge(t)}</button>`).join('')}</div>
       ${this.note ? `<p class="note">${this.note}</p>` : ''}
       ${body[this.tab]()}`;
   }
 
-  // ── 원정대 ──
+  // ── 원정대: 계약 고르기 → 4칸 채우기 → 출발 ──
   private partyTab(): string {
     const c = this.c;
     const party = c.roster.filter((h) => this.picked.has(h.uid));
@@ -98,22 +98,30 @@ export class TownScreen {
     const boardHtml = c.board.map((k, i) => {
       const d = CONTRACTS[k.kind];
       const on = this.contract === k;
-      return `<div class="ccard ${on ? 'on' : ''}" data-contract="${i}">
-        <div class="c1"><b>${d.name}</b> <span class="danger-stars">${'★'.repeat(d.danger)}${'☆'.repeat(3 - d.danger)}</span></div>
-        <div class="small">${d.floors}층${d.boss ? ' · 보스' : ''}${d.themeName ? ` · ${d.themeName}` : ''}${d.stress && d.stress > 1 ? ' · <span class="bad">스트레스↑</span>' : ''}</div>
-        <div class="dim small">${d.desc}</div>
-        <div class="small">보상 <b class="gold">${d.reward} 골드</b>${d.bonus === 'recruit' ? ' + 용병 합류' : d.bonus === 'artifact' ? ' + 아티팩트' : ''}</div>
-      </div>`;
+      const bonus = d.bonus === 'recruit' ? ' +용병' : d.bonus === 'artifact' ? ' +아티팩트' : '';
+      return `<button class="ccard ${on ? 'on' : ''}" data-contract="${i}">
+        <span class="cname">${d.name}</span>
+        <span class="danger-stars">${'★'.repeat(d.danger)}<i>${'★'.repeat(3 - d.danger)}</i></span>
+        <span class="chips"><span class="chip">${d.floors}층</span>${d.boss ? '<span class="chip boss">보스</span>' : ''}${d.themeName ? `<span class="chip">${d.themeName}</span>` : ''}${d.stress && d.stress > 1 ? '<span class="chip warn">스트레스↑</span>' : ''}</span>
+        <span class="reward">${d.reward}G${bonus}</span>
+      </button>`;
     }).join('');
+    const sel = this.contract ? CONTRACTS[this.contract.kind] : null;
+    const slots = Array.from({ length: PARTY_SIZE }, (_, i) => {
+      const h = party[i];
+      if (!h) return '<div class="slot empty">+</div>';
+      const k = CLASSES[h.cls];
+      return `<button class="slot" data-pick="${h.uid}" style="border-color:${k.color}">
+        <span class="sg" style="color:${k.color};border-color:${k.color}">${k.glyph}</span>
+        <span class="sn">${esc(h.def.name)}</span><span class="lv">Lv${h.xl}</span></button>`;
+    }).join('');
+    const bench = c.roster.filter((h) => !this.picked.has(h.uid));
     return `
-      <h3>계약 게시판 <span class="dim small">하나를 골라 떠난다 · 원정을 다녀오면 새 계약이 걸린다</span></h3>
-      <div class="board">${boardHtml || '<p class="dim">걸린 계약이 없다.</p>'}</div>
-      <h3>원정대 편성 <span class="dim small">눌러서 넣고 빼기 · 최대 ${PARTY_SIZE}명</span></h3>
-      <div class="roster">${c.roster.map((h) => this.card(h, 'roster')).join('') || '<p class="dim">명부가 비었다. 선술집에서 고용하자.</p>'}</div>
-      <div class="go">
-        <button data-act="depart" ${party.length && this.contract ? '' : 'disabled'}>${this.contract ? `「${CONTRACTS[this.contract.kind].name}」 출발 (${party.length}명)` : '계약을 고르세요'}</button>
-        <span class="dim small">쓰러진 용병은 돌아오지 않는다. 층을 마칠 때마다 귀환할 수 있다.</span>
-      </div>`;
+      <div class="board">${boardHtml || '<p class="dim">걸린 계약이 없다</p>'}</div>
+      ${sel ? `<p class="cdesc">${sel.desc}</p>` : ''}
+      <div class="slots4">${slots}</div>
+      <div class="rgrid">${bench.map((h) => this.card(h, 'roster')).join('') || (c.roster.length ? '' : '<p class="dim">명부가 비었다 — 선술집에서 고용</p>')}</div>
+      <div class="go"><button data-act="depart" ${party.length && this.contract ? '' : 'disabled'}>출발 ▶</button></div>`;
   }
 
   // ── 선술집 ──
@@ -124,11 +132,10 @@ export class TownScreen {
     const clsOpts = CLASS_LIST.filter((k) => isUnlocked(m, `class:${k.id}`))
       .map((k) => `<option value="${k.id}" ${k.id === this.order.cls ? 'selected' : ''}>${k.name}</option>`).join('');
     return `
-      <h3>선술집 <span class="dim small">새 얼굴은 원정을 다녀올 때마다 바뀐다</span></h3>
-      <div class="roster">${c.tavern.map((h) => this.card(h, 'tavern')).join('') || '<p class="dim">오늘은 손님이 없다.</p>'}</div>
-      <div class="order">원하는 용병 부르기:
+      <div class="rgrid tav">${c.tavern.map((h) => this.card(h, 'tavern')).join('') || '<p class="dim">오늘은 손님이 없다</p>'}</div>
+      <div class="order"><span class="dim">지정 고용</span>
         <select data-order="race">${raceOpts}</select><select data-order="cls">${clsOpts}</select>
-        <button data-act="order" ${c.gold < ORDER_COST ? 'disabled' : ''}>부르기 (${ORDER_COST} 골드)</button>
+        <button class="buy" data-act="order" ${c.gold < ORDER_COST ? 'disabled' : ''}>${ORDER_COST}G</button>
       </div>`;
   }
 
@@ -199,7 +206,8 @@ export class TownScreen {
       return `<div class="trow"><div class="frow">${this.who(h)}
         <span class="fmid small">${h.talents.map((id) => TALENTS[id].name).join(' · ') || '<span class="dim">특성 없음</span>'}</span>
         <button data-train="${h.uid}" ${h.xl >= cap || c.gold < tcost ? 'disabled' : ''}>${h.xl >= cap ? `Lv${cap} 한계` : `레벨 +1 (${tcost})`}</button>
-        <button data-retrain="${h.uid}" ${!h.talents.length || c.gold < rcost ? 'disabled' : ''}>특성 되돌리기 (${rcost})</button></div>
+        <button data-retrain="${h.uid}" ${!h.talents.length || c.gold < rcost ? 'disabled' : ''}>특성 되돌리기 (${rcost})</button>
+        <button class="dismiss" data-dismiss="${h.uid}">내보내기</button></div>
         ${tier >= 0 ? `<div class="small" style="margin:2px 0 0 4px">Lv${TALENT_LEVELS[tier]} · ${TIER_NAME[tier]} — 하나를 고르세요</div>${picks}` : ''}
       </div>`;
     });
@@ -247,26 +255,20 @@ export class TownScreen {
       ${props ? `<ul>${props}</ul>` : ''}</div>`;
   }
 
+  /** 영웅 카드: 아이콘 · 이름 · 레벨 · 종족 직업 · 얇은 스트레스 줄. 자세한 건 ⓘ */
   private card(h: Hero, where: 'roster' | 'tavern'): string {
     const k = CLASSES[h.cls], r = RACES[h.comp.race];
     const mood = h.mood ? MOODS[h.mood] : null;
-    const on = where === 'roster' && this.picked.has(h.uid);
-    const talents = h.talents.map((id) => TALENTS[id].name).join(' · ');
-    const next = CLASS_TALENTS[h.cls][h.talents.length];
     const i = where === 'roster' ? this.c.roster.indexOf(h) : this.c.tavern.indexOf(h);
-    return `<div class="hcard ${on ? 'on' : ''} ${where}" ${where === 'roster' ? `data-pick="${h.uid}"` : ''} style="border-color:${on ? '#66ff88' : k.color + '55'}">
-      <div class="hc1"><span class="sg" style="color:${k.color};border-color:${k.color}">${k.glyph}</span>
-        <div><b style="color:${k.color}">${esc(h.def.name)}</b> <span class="lv">Lv${h.xl}</span>${h.pending ? ' <span class="gold">★특성</span>' : ''}
-        <div class="dim small">${r.name} ${k.name}${h.expeditions ? ` · 원정 ${h.expeditions}회 · 처치 ${h.kills}` : ''}</div></div>
-        ${on ? '<span class="chk">✓</span>' : ''}</div>
-      <div class="hst">${this.stressBar(h)}${mood ? ` <b class="small" style="color:${mood.color}">${mood.name}</b>` : ''}</div>
-      <div class="small dim">${talents ? `특성: ${talents}` : `종족 특성: ${r.trait.name}`}${!talents && next ? ` · Lv${TALENT_LEVELS[0]}부터 특성` : ''}</div>
-      <div class="hbtn">
-        <button data-sheet="${where}:${i}">상태창</button>
-        ${where === 'roster'
-          ? `<button class="dismiss" data-dismiss="${h.uid}">내보내기</button>`
-          : `<button data-hire="${i}" ${this.c.gold < HIRE_COST ? 'disabled' : ''}>고용 (${HIRE_COST})</button>`}
-      </div>
+    const stress = h.stress > 0 || mood
+      ? `<span class="sbar"><i style="width:${h.stress}%;background:${mood ? mood.color : h.stress >= WARN_STRESS ? '#d070ff' : '#8a5cc0'}"></i></span>`
+      : '';
+    return `<div class="hcard ${where}" ${where === 'roster' ? `data-pick="${h.uid}"` : ''} style="border-color:${k.color}66">
+      <span class="sg" style="color:${k.color};border-color:${k.color}">${k.glyph}</span>
+      <span class="hinfo"><span><b style="color:${k.color}">${esc(h.def.name)}</b> <span class="lv">Lv${h.xl}</span>${h.pending ? ' <span class="gold">★</span>' : ''}${mood ? ` <span style="color:${mood.color}">!</span>` : ''}</span>
+        <span class="dim">${r.name} ${k.name}</span>${where === 'tavern' ? `<span class="chip">${r.trait.name}</span>` : ''}${stress}</span>
+      <button class="ib" data-sheet="${where}:${i}" title="상태창">ⓘ</button>
+      ${where === 'tavern' ? `<button class="buy" data-hire="${i}" ${this.c.gold < HIRE_COST ? 'disabled' : ''}>${HIRE_COST}G</button>` : ''}
     </div>`;
   }
 
