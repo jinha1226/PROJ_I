@@ -23,6 +23,8 @@ export function updateUnit(w: World, u: Unit, dt: number) {
 
   // 자원 회복
   if (u.stats.maxMp > 0) u.mp = Math.min(u.stats.maxMp, u.mp + (0.9 + u.int * 0.045) * (1 + 0.6 * u.tagCount('mana_flow')) * dt);
+  // 재생 (트롤): 불타는 동안은 멈춘다
+  if (u.def.regen && !u.hasStatus('burn')) u.hp = Math.min(u.stats.maxHp, u.hp + u.def.regen * (1 + (u.scale.hp - 1) * 0.5) * dt);
   if (u.faction === 'party' && !w.inCombat) u.hp = Math.min(u.stats.maxHp, u.hp + u.stats.maxHp * 0.04 * dt);
 
   if (u.stats.stunned) {

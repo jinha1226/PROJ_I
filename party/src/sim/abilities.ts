@@ -89,6 +89,19 @@ function resolveAbility(w: World, u: Unit, slot: number, target: Unit | null, x:
     }
   }
 
+  if (ab.summon) {
+    // 소환: 시전자 주변 빈 바닥에. 소환수는 바로 싸움에 낀다
+    for (let i = 0; i < ab.summon.count; i++) {
+      const a = (Math.PI * 2 * i) / ab.summon.count + w.rng.next();
+      const p = w.map.nearestFloor(u.x + Math.cos(a) * 1.3, u.y + Math.sin(a) * 1.3);
+      const m = w.spawn(ab.summon.id, u.faction, p.x, p.y);
+      m.aware = true;
+      m.summoner = u;
+      w.effect({ kind: 'ring', x: p.x, y: p.y, r: 0.6, color: ab.color, dur: 0.5 });
+    }
+    w.float(u, ab.name, ab.color, 1.1);
+    return;
+  }
   const land = () => landAbility(w, u, ab, target, x, y, power, mult);
   // 메아리 주문: 마법이 가끔 한 번 더 (마나 소모 없음)
   const echo = ab.type === 'spell' && u.tags.includes('spell_echo') && w.rng.chance(0.25);

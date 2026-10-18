@@ -111,7 +111,7 @@ function floorOpts(): FloorOpts {
   const def = CONTRACTS[run.contract?.kind ?? 'hunt'];
   const { floor, floors } = floorInfo(run, depth);
   const last = floor >= floors;
-  return { boss: def.boss && last, theme: def.theme, sides: def.sides, captive: def.kind === 'rescue' && last };
+  return { boss: def.boss && last, bossId: def.bossId, theme: def.theme, sides: def.sides, captive: def.kind === 'rescue' && last, palette: def.palette };
 }
 
 function startFloor() {
@@ -535,7 +535,7 @@ function frame(now: number) {
         : '';
     }
     out.classList.remove('hidden');
-    $('outcome-title').textContent = world.outcome === 'victory' ? '승리! 오우거 족장을 쓰러뜨렸다' : `${depth}층에서 원정대 전멸`;
+    $('outcome-title').textContent = world.outcome === 'victory' ? `승리! ${world.bossName}을(를) 쓰러뜨렸다` : `${depth}층에서 원정대 전멸`;
     $('outcome-sub').textContent =
       world.party.map((p) => `${p.alive ? '' : '✝ '}${p.name} Lv${p.hero?.xl ?? 1}`).join(' · ') +
       ` — ${floorInfo(run, depth).floor}/${floorInfo(run, depth).floors}층 · ${world.outcome === 'victory' ? `골드 ${run.gold}` : `골드 ${run.gold} 잃음`}`;

@@ -2,8 +2,8 @@
 // 방 순서 = 경로 순서 (첫 방이 시작, 마지막 방이 계단 또는 보스).
 // 1단계의 수동 맵과 같은 MapDef 를 만들어 내므로 나머지 시스템은 그대로 쓴다.
 import { Rng } from '../core/rng';
-import { BOSS_GROUP, ENCOUNTERS, FLOORS } from '../data/encounters';
-import type { MapDef, ObjectKind, RoomRole } from '../data/maps';
+import { BOSS_GROUP, BOSS_GROUPS, ENCOUNTERS, FLOORS } from '../data/encounters';
+import type { MapDef, ObjectKind, Palette, RoomRole } from '../data/maps';
 
 const COLS = 4, ROWS = 3, CW = 13, CH = 10;
 
@@ -16,6 +16,9 @@ export interface FloorOpts {
   sides?: [number, number];
   /** 마지막 방에 구출할 포로 */
   captive?: boolean;
+  /** 보스 (BOSS_GROUPS 키) */
+  bossId?: string;
+  palette?: Palette;
 }
 
 export function genFloor(seed: number, depth: number, opts: FloorOpts = { boss: depth >= FLOORS }): MapDef {
@@ -158,7 +161,7 @@ export function genFloor(seed: number, depth: number, opts: FloorOpts = { boss: 
     }
     const last = role === 'end';
     const pool = last && !final ? table(depth + 1) : final ? table(depth - 1) : table(depth);
-    const group = last && final ? BOSS_GROUP : pickGroup(pool);
+    const group = last && final ? BOSS_GROUPS[opts.bossId ?? 'ogre_chief'] ?? BOSS_GROUP : pickGroup(pool);
     place(room, group, usedTiles, last && final);
     // 구출 계약: 마지막 방 구석에 포로 (지키는 무리를 쓰러뜨린 뒤 풀어 준다)
     if (last && opts.captive) objects.push({ kind: 'captive', x: room[0] + 1, y: room[1] + 1 });
@@ -174,6 +177,7 @@ export function genFloor(seed: number, depth: number, opts: FloorOpts = { boss: 
     height: ROWS * CH + 1,
     rooms, corridors, pillars, partyStart, spawns, roles, objects,
     stairs: final ? undefined : center(rooms[nMain - 1]),
+    palette: opts.palette,
     depth,
   };
 }

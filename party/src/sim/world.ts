@@ -143,9 +143,14 @@ export class World {
   private calmTimer = 0;
 
   readonly difficulty: Difficulty;
+  /** 바닥 · 벽 색 (계약의 던전 종류) */
+  readonly palette: NonNullable<MapDef['palette']>;
+  /** 쓰러뜨린 보스 이름 (결과 화면) */
+  bossName = '';
 
   constructor(def: MapDef, seed: number, heroes: Hero[] = newParty(), difficulty: DifficultyId = 'easy', run: RunState = newRun()) {
     this.difficulty = DIFFICULTIES[difficulty];
+    this.palette = def.palette ?? 'cave';
     this.run = run;
     this.roles = def.roles ?? def.rooms.map((_, i) => (i === 0 ? 'start' : 'main'));
     this.objects = (def.objects ?? []).map((o, i) => ({ id: i, kind: o.kind, x: o.x + 0.5, y: o.y + 0.5, used: false }));
@@ -409,6 +414,16 @@ export class World {
       this.grantXp(u.def.xp ?? 0);
       this.run.kills[u.def.id] = (this.run.kills[u.def.id] ?? 0) + 1;
     }
+    if (u.def.splitInto) {
+      // 분열 (슬라임)
+      const s = u.def.splitInto;
+      for (let i = 0; i < s.count; i++) {
+        const p = this.map.nearestFloor(u.x + (i - (s.count - 1) / 2) * 0.7, u.y + 0.2);
+        const m = this.spawn(s.id, u.faction, p.x, p.y);
+        m.aware = true;
+      }
+      this.float(u, '분열!', u.def.color, 1.1);
+    }
     if (u.def.id === 'mimic') {
       // 위험을 감수한 대가: 미믹은 아티팩트 확정
       const it = usefulItem(this.rng, this.depth + 1, this.party.flatMap((p) => (p.hero ? [p.hero] : [])), { force: 'artifact' });
@@ -416,6 +431,7 @@ export class World {
       this.log(`미믹이 삼키고 있던 ${itemTitle(it)}을(를) 얻었다`, '#ffcc55');
     }
     if (u.def.boss) {
+      this.bossName = u.name;
       this.outcome = 'victory';
       this.log(`${u.name}을(를) 쓰러뜨렸다! 승리!`, '#ffe14d');
     }

@@ -11,14 +11,14 @@ import type { HeroComp } from '../src/data/party';
 import type { RaceId } from '../src/data/races';
 import { areaCenter } from '../src/sim/abilities';
 import type { Unit } from '../src/sim/unit';
-import { FLOORS } from '../src/data/encounters';
 import { genFloor } from '../src/sim/gen';
-import { applyTalent, newParty, nextTier, saveFromUnit, tierOptions, type Hero } from '../src/sim/hero';
+import { applyTalent, gainXp, newParty, nextTier, saveFromUnit, tierOptions, xpToNext, type Hero } from '../src/sim/hero';
 import { itemTitle } from '../src/sim/items';
 import { resolvePrompt, useConsumable } from '../src/sim/objects';
 import { compareItem, rewardChoices } from '../src/sim/reward';
 import { newRun, type RunState } from '../src/sim/run';
 import { World } from '../src/sim/world';
+import { CONTRACTS, type ContractKind } from '../src/data/contracts';
 import { isAfflicted, restRelief } from '../src/sim/stress';
 
 function rest(heroes: Hero[], run: RunState, rng: Rng, depth: number, log: string[]) {
@@ -127,6 +127,15 @@ function useItems(w: World) {
 
 function run(seed: number, verbose: boolean, skilled: boolean) {
   let heroes = newParty(COMP);
+  const rng0 = new Rng(seed + 7);
+  // 이미 키운 용병단 흉내: LV=4 면 Lv4 로 시작 (특성은 rest 처럼 무작위로 고른다)
+  const startLv = Number(process.env.LV ?? 1);
+  for (const h of heroes) while (h.xl < startLv) gainXp(h, xpToNext(h.xl) - h.xp);
+  for (const h of heroes)
+    while (h.pending > 0) {
+      const opts = tierOptions(h, nextTier(h));
+      applyTalent(h, opts[rng0.int(0, opts.length - 1)].id);
+    }
   const runState = newRun();
   const rng = new Rng(seed);
   const floorLog: string[] = [];
@@ -135,8 +144,14 @@ function run(seed: number, verbose: boolean, skilled: boolean) {
   let result = 'victory';
   const moods: string[] = [];
   let time = 0;
-  for (let depth = 1; depth <= FLOORS; depth++) {
-    const w = new World(genFloor(seed, depth), seed * 31 + depth, heroes, DIFF, runState);
+  // 계약: CONTRACT=purge|rescue|treasure|crypt|nest|hunt|lich|queen (기본 hunt)
+  const cdef = CONTRACTS[(process.env.CONTRACT ?? 'hunt') as ContractKind];
+  runState.contract = { kind: cdef.kind, seed };
+  const lastDepth = cdef.startDepth + cdef.floors - 1;
+  for (let depth = cdef.startDepth; depth <= lastDepth; depth++) {
+    const last = depth === lastDepth;
+    const opts = { boss: cdef.boss && last, bossId: cdef.bossId, theme: cdef.theme, sides: cdef.sides, captive: cdef.kind === 'rescue' && last };
+    const w = new World(genFloor(seed, depth, opts), seed * 31 + depth, heroes, DIFF, runState);
     w.autoExplore = true;
     // 시뮬레이션은 예전처럼 AI 가 기본 기술을 쓴다 (skilled 는 수동 기술까지)
     for (const p of w.party) p.autoMode = true;
@@ -167,7 +182,7 @@ function run(seed: number, verbose: boolean, skilled: boolean) {
       break;
     }
     for (const p of w.party) saveFromUnit(p);
-    if (w.outcome === 'victory') break;
+    if (w.outcome === 'victory' || last) break;
     // 영구 사망: 쓰러진 용병은 다음 층에 오지 않는다
     heroes = w.party.filter((p) => p.alive && p.hero).map((p) => p.hero!);
     rest(heroes, runState, rng, depth, floorLog);

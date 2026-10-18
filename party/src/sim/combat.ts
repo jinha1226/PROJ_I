@@ -93,6 +93,9 @@ export function applyDamage(
     }
   }
 
+  // 흡혈 (망령)
+  if (source?.def.lifesteal && !opts.dot && dmg > 0 && source.alive)
+    source.hp = Math.min(source.stats.maxHp, source.hp + dmg * source.def.lifesteal);
   // 반격: 붙어서 때린 적에게 피해 일부를 되돌린다
   if (source && !opts.dot && dmg > 0 && target.tags.includes('retaliate') && source.faction !== target.faction && dist(source, target) < 1.8)
     applyDamage(w, source, dmg * 0.3, 'physical', target, { dot: true });

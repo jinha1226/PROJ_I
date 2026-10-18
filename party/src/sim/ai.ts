@@ -274,6 +274,13 @@ function evalAbility(w: World, u: Unit, ab: AbilityDef, slot: number, enemies: U
       if (n > 0) out.push(mk(null, u.x, u.y, n * 8 * (u.tactic === 'defensive' ? 1.5 : 1)));
       break;
     }
+    case 'summon': {
+      const s = ab.summon;
+      if (!s) break;
+      const mine = w.units.filter((v) => v.alive && v.summoner === u).length;
+      if (mine < s.max) out.push(mk(null, u.x, u.y, 30 + (s.max - mine) * 8));
+      break;
+    }
     case 'charge': {
       for (const e of enemies) {
         const d = dist(u, e);

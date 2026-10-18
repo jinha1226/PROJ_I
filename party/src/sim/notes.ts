@@ -52,6 +52,10 @@ export function foeNotes(t: Unit, party: Unit[]): FoeNotes {
   if (w.range > 1.5) danger.push({ text: '원거리 공격', kind: 'warn' });
   if (t.def.speed >= 3.2) danger.push({ text: '매우 빠름', kind: 'warn' });
   if (t.def.targetPref === 'backline') danger.push({ text: '후열을 노림', kind: 'warn' });
+  if (t.def.regen) danger.push({ text: '빠르게 재생 — 불을 붙이면 멈춘다', kind: 'warn' });
+  if (t.def.lifesteal) danger.push({ text: '때리면 체력을 빨아들인다', kind: 'warn' });
+  if (t.def.splitInto) danger.push({ text: '쓰러지면 둘로 갈라진다', kind: 'warn' });
+  if (t.def.regen) weak.push({ text: '화상에 약함 (재생 멈춤)', kind: 'good' });
   for (const a of t.abilities) danger.push({ text: `${a.def.name}: ${a.def.desc}`, kind: 'warn' });
 
   // 우리 파티: 원소 피해 기술 · 원소 평타 · 독 · 정신 효과

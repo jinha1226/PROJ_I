@@ -46,7 +46,7 @@ export type Effect =
   | { kind: 'taunt'; duration: number };
 
 export type AbilityTarget = 'enemy' | 'ally' | 'self' | 'ground';
-export type AiRole = 'damage' | 'heal' | 'cleanse' | 'disable' | 'buff' | 'taunt' | 'charge';
+export type AiRole = 'damage' | 'heal' | 'cleanse' | 'disable' | 'buff' | 'taunt' | 'charge' | 'summon';
 
 export interface AbilityDef {
   id: string;
@@ -76,6 +76,8 @@ export interface AbilityDef {
   /** 시전자 자신에게 적용 */
   selfEffects?: Effect[];
   aiRole: AiRole;
+  /** 소환: 시전자 주변에 몬스터를 불러낸다 (살아 있는 소환수가 max 이상이면 쓰지 않는다) */
+  summon?: { id: string; count: number; max: number };
   /** 'auto' = 딜·힐 로테이션 기술: 직접 조종(기본)에서도 AI 가 알아서 쓴다. 나머지는 플레이어의 판단 */
   control?: 'auto';
 }
@@ -138,6 +140,12 @@ export interface UnitDef {
   targetPref: TargetPref;
   sight?: number;
   boss?: boolean;
+  /** 초당 체력 재생. 화상 중에는 멈춘다 (트롤) */
+  regen?: number;
+  /** 준 피해의 이 비율만큼 체력 회복 (망령) */
+  lifesteal?: number;
+  /** 쓰러지면 이 몬스터로 갈라진다 (슬라임) */
+  splitInto?: { id: string; count: number };
   /** 대처법 한 줄 (몬스터 정보 창 · 첫 조우 카드) */
   tip?: string;
   /** 처치 경험치 (몬스터) */

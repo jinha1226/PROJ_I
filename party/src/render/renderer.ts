@@ -8,15 +8,14 @@ import type { World } from '../sim/world';
 import type { UiState } from '../ui/state';
 import type { Camera } from './camera';
 
-const C = {
-  floorA: '#433d36',
-  floorB: '#48413a',
-  floorLine: 'rgba(0,0,0,0.18)',
-  wallTop: '#6b6a78',
-  wallEdge: '#8a899a',
-  wallFront: '#3b3a46',
-  fog: 'rgba(5,5,9,0.5)',
+/** 던전 종류별 색 (계약의 palette) */
+const PALETTES = {
+  cave: { floorA: '#433d36', floorB: '#48413a', wallTop: '#6b6a78', wallEdge: '#8a899a', wallFront: '#3b3a46' },
+  crypt: { floorA: '#33384a', floorB: '#373d50', wallTop: '#5a6276', wallEdge: '#7f8aa2', wallFront: '#2c3140' },
+  nest: { floorA: '#3a3030', floorB: '#3f3434', wallTop: '#5e4a5e', wallEdge: '#836a86', wallFront: '#32253a' },
+  ruins: { floorA: '#4a4433', floorB: '#504938', wallTop: '#7a705a', wallEdge: '#9c917a', wallFront: '#433c2c' },
 };
+let C = { ...PALETTES.cave, floorLine: 'rgba(0,0,0,0.18)', fog: 'rgba(5,5,9,0.5)' };
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -181,6 +180,7 @@ export class Renderer {
   }
 
   private drawTiles(w: World) {
+    C = { ...C, ...PALETTES[w.palette] };
     const ctx = this.ctx, cam = this.cam, z = cam.zoom, m = w.map;
     const tl = cam.toWorld(0, 0), br = cam.toWorld(cam.w, cam.h);
     const x0 = Math.max(0, Math.floor(tl.x)), x1 = Math.min(m.w - 1, Math.ceil(br.x));

@@ -213,12 +213,15 @@ export function newCompany(meta: MetaProgress): Company {
 
 /** 계약 게시판: 토벌은 늘 걸려 있고, 나머지 둘은 무작위 (조건이 되는 것 중) */
 export function refreshBoard(c: Company, rng: Rng) {
-  const pool = (Object.values(CONTRACTS) as ContractDef[])
-    .filter((d) => d.kind !== 'hunt' && (d.minExpeditions ?? 0) <= c.expeditions)
-    .map((d) => d.kind);
+  const ok = (d: ContractDef) => (d.minExpeditions ?? 0) <= c.expeditions;
+  const all = Object.values(CONTRACTS) as ContractDef[];
+  const pool = all.filter((d) => !d.boss && ok(d)).map((d) => d.kind);
+  const bosses = all.filter((d) => d.boss && ok(d)).map((d) => d.kind);
   const picks: ContractKind[] = [];
   while (picks.length < 2 && pool.length) picks.push(pool.splice(rng.int(0, pool.length - 1), 1)[0]);
-  c.board = [...picks, 'hunt' as const].map((kind) => ({ kind, seed: rng.int(1, 1e9) }));
+  // 보스 토벌은 늘 하나 걸려 있다
+  picks.push(bosses[rng.int(0, bosses.length - 1)]);
+  c.board = picks.map((kind) => ({ kind, seed: rng.int(1, 1e9) }));
 }
 
 export function resetCompany() {

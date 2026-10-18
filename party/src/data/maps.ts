@@ -15,10 +15,13 @@ export interface MapDef {
   depth?: number;
   /** 방의 역할. side = 곁가지 방 (자동 탐험이 들르지 않는다) */
   roles?: RoomRole[];
+  /** 바닥 · 벽 색 */
+  palette?: Palette;
   /** 상자 · 이벤트 */
   objects?: { kind: ObjectKind; x: number; y: number }[];
 }
 
+export type Palette = 'cave' | 'crypt' | 'nest' | 'ruins';
 export type RoomRole = 'start' | 'main' | 'side' | 'end';
 /** captive = 구출 계약의 목표 (마지막 방) */
 export type ObjectKind = 'chest' | 'mimic' | 'fountain' | 'altar' | 'prisoner' | 'captive';

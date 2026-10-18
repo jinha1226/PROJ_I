@@ -129,6 +129,8 @@ export class Unit {
   obeyUntil = 0;
   refuseUntil = 0;
 
+  /** 소환한 유닛 (소환수 수 제한용) */
+  summoner: Unit | null = null;
   /** 불굴(undying) 특성을 이번 층에 썼는가 */
   undyingUsed = false;
 
