@@ -21,6 +21,7 @@ export class Renderer {
   private ctx: CanvasRenderingContext2D;
   /** 3D 모드: 던전 · 몸체 · 링 · 예고 범위는 3D 가 그리고, 여기서는 체력바 · 숫자 · 말풍선 같은 겹침만 */
   overlay = false;
+  private lastHover: Unit | null = null;
 
   constructor(private canvas: HTMLCanvasElement, private cam: Camera) {
     this.ctx = canvas.getContext('2d')!;
@@ -37,6 +38,7 @@ export class Renderer {
 
   draw(w: World, ui: UiState) {
     const ctx = this.ctx, cam = this.cam, z = cam.zoom;
+    this.lastHover = ui.hover;
     if (this.overlay) ctx.clearRect(0, 0, cam.w, cam.h);
     else {
       ctx.fillStyle = '#07070b';
@@ -467,8 +469,8 @@ export class Renderer {
     if (this.overlay) {
       // 3D: 몸체는 3D 가 그리므로 머리 위 표시만 (머리 높이 = 반지름 × 4)
       if (!u.alive) return;
-      const [hx, hy] = this.cam.toScreenH(u.x + u.kickX, u.y + u.kickY, u.radius * 4.3);
-      this.drawUnitHud(w, u, hx, hy + 2, 34);
+      const [hx, hy] = this.cam.toScreenH(u.x + u.kickX, u.y + u.kickY, u.radius * 4.6);
+      this.drawUnitHud(w, u, hx, hy, u.def.boss ? 40 : 24);
       return;
     }
     const [sx, sy] = this.cam.toScreen(u.x + u.kickX, u.y + u.kickY);
@@ -532,18 +534,22 @@ export class Renderer {
   private drawUnitHud(w: World, u: Unit, sx: number, by: number, barW: number) {
     const ctx = this.ctx;
     const mood = u.hero?.mood ? MOODS[u.hero.mood] : null;
-    // 체력/마나 바
+    // 체력/마나 바. 3D 에선 캐릭터를 가리지 않게 가늘게, 마나는 아주 얇게. 적은 다쳤을 때만
     const barX = sx - barW / 2;
     let y = by - 7;
-    ctx.fillStyle = '#000a';
-    ctx.fillRect(barX - 1, y - 1, barW + 2, 6);
-    ctx.fillStyle = u.faction === 'party' ? '#4caf50' : u.def.boss ? '#ff3030' : '#d04040';
-    ctx.fillRect(barX, y, barW * Math.max(0, u.hpFrac), 4);
-    if (u.stats.maxMp > 0 && u.faction === 'party') {
+    const slim = this.overlay;
+    const showHp = !slim || u.faction === 'party' || u.hpFrac < 0.999 || u.def.boss || this.lastHover === u;
+    if (showHp) {
+      const hh = slim ? 2.5 : 4, mh = slim ? 1.5 : 3;
+      const hasMp = u.stats.maxMp > 0 && u.faction === 'party';
       ctx.fillStyle = '#000a';
-      ctx.fillRect(barX - 1, y + 5, barW + 2, 4);
-      ctx.fillStyle = '#4a7cff';
-      ctx.fillRect(barX, y + 5, (barW * u.mp) / u.stats.maxMp, 3);
+      ctx.fillRect(barX - 1, y - 1, barW + 2, hh + 2 + (hasMp ? mh + 1 : 0));
+      ctx.fillStyle = u.faction === 'party' ? '#4caf50' : u.def.boss ? '#ff3030' : '#d04040';
+      ctx.fillRect(barX, y, barW * Math.max(0, u.hpFrac), hh);
+      if (hasMp) {
+        ctx.fillStyle = '#4a7cff';
+        ctx.fillRect(barX, y + hh + 1, (barW * u.mp) / u.stats.maxMp, mh);
+      }
     }
 
     // 붕괴 · 각성 이름 (상시, 붕괴는 깜빡임)
@@ -564,8 +570,8 @@ export class Renderer {
       ctx.globalAlpha = 1;
     }
 
-    // 상태이상 아이콘
-    if (u.statuses.length) {
+    // 상태이상 아이콘 (3D 에선 몸에 오라 · 파티클로 보이므로 생략)
+    if (u.statuses.length && !this.overlay) {
       y -= 15;
       ctx.font = 'bold 10px sans-serif';
       let x = sx - (u.statuses.length * 14) / 2;
@@ -584,16 +590,19 @@ export class Renderer {
       }
     }
 
-    // 시전 바
-    if (u.cast) {
+    // 시전 바 (3D 에선 아군은 발밑 마법진으로 충분하니 적만, 가늘게 — 끊을지 판단용)
+    if (u.cast && !(this.overlay && u.faction === 'party')) {
       const ab = u.abilities[u.cast.slot].def;
-      y -= 16;
+      const slimCast = this.overlay;
+      y -= slimCast ? 10 : 16;
       const k = u.cast.time / u.cast.total;
+      const ch = slimCast ? 3 : 5;
+      const cw = slimCast ? Math.max(barW, 30) : barW, cx = sx - cw / 2;
       ctx.fillStyle = '#000c';
-      ctx.fillRect(barX - 1, y - 1, barW + 2, 7);
+      ctx.fillRect(cx - 1, y - 1, cw + 2, ch + 2);
       ctx.fillStyle = u.faction === 'enemy' ? '#ff9933' : ab.color;
-      ctx.fillRect(barX, y, barW * k, 5);
-      ctx.font = 'bold 11px sans-serif';
+      ctx.fillRect(cx, y, cw * k, ch);
+      ctx.font = `bold ${slimCast ? 10 : 11}px sans-serif`;
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#000';
       ctx.strokeText(ab.name, sx, y - 7);

@@ -145,7 +145,7 @@ export class Transients {
     this.add(m, dur, (k, o) => {
       const s = r * (0.35 + 0.65 * Math.sqrt(k));
       o.scale.set(s, s, s);
-      ((o as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - k);
+      ((o as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = 0.75 * (1 - k);
     });
   }
 
@@ -156,7 +156,7 @@ export class Transients {
     m.position.set(x, 0.03, z);
     this.add(m, dur, (k, o) => {
       o.scale.setScalar(r * (0.6 + 0.4 * k));
-      ((o as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = 0.55 * (1 - k);
+      ((o as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = 0.32 * (1 - k);
     });
   }
 

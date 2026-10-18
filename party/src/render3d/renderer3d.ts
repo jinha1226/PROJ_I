@@ -672,8 +672,8 @@ export class Renderer3D {
       if (v.type === 'impact') {
         const [core, outer] = elementColors(v.element, v.color);
         const big = v.radius >= 1;
-        this.fx.flash(v.x, 0.8, v.y, big ? v.radius * 1.6 : 1.1, outer, big ? 0.35 : 0.22);
-        this.fx.flash(v.x, 0.8, v.y, big ? v.radius * 0.8 : 0.5, core, 0.18);
+        this.fx.flash(v.x, 0.8, v.y, big ? v.radius * 1.0 : 0.9, outer, big ? 0.3 : 0.2);
+        this.fx.flash(v.x, 0.8, v.y, big ? v.radius * 0.5 : 0.4, core, 0.16);
         const n = big ? 30 + v.radius * 14 : 14;
         const el = v.element;
         if (el === 'fire') {
@@ -692,7 +692,7 @@ export class Renderer3D {
         } else {
           this.sparks.emit(v.x, 0.7, v.y, outer, n, { speed: 3, up: 1.5, life: 0.5, grav: -3 });
         }
-        if (big) this.fx.disc(v.x, v.y, v.radius, outer, 0.35);
+        if (big) this.fx.disc(v.x, v.y, v.radius, outer, 0.3);
       } else if (v.type === 'heal') {
         const u = v.unit;
         this.fx.disc(u.x, u.y, u.radius * 2.2, '#5aff7a', 0.5);

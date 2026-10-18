@@ -131,7 +131,8 @@ function projectileLook(ab: AbilityDef, u: Unit): { style: 'arrow' | 'bolt' | 's
 function landAbility(w: World, u: Unit, ab: AbilityDef, target: Unit | null, x: number, y: number, power: number, mult: number) {
   const dmg = ab.effects.find((e) => e.kind === 'damage');
   const at = ab.radius ? areaCenter(ab, u, x, y) : target ?? { x, y };
-  if (ab.aiRole === 'damage' || ab.aiRole === 'disable' || ab.radius)
+  // 착탄 이펙트는 공격 기술만 (도발 · 축복 같은 넓은 버프는 링과 오라로 충분)
+  if (ab.aiRole === 'damage' || ab.aiRole === 'disable')
     w.emit({ type: 'impact', x: at.x, y: at.y, color: ab.color, element: dmg && dmg.kind === 'damage' ? dmg.element : undefined, radius: ab.radius ?? 0.5 });
   let victims: Unit[];
   if (ab.radius) {
