@@ -51,7 +51,10 @@ function applyGfx() {
   // 3D 는 캐릭터가 서 있어서 조금 더 당겨 본다
   // 3D 는 캐릭터가 서 있어서 조금 더 당겨 보고, 픽셀은 팀파이트 매니저처럼 작게
   // 픽셀: 캐릭터가 도트를 넉넉히 쓰도록 크게 (키 약 28도트)
-  cam.zoom = gfx === 'pixel' ? Math.round(Math.min(60, Math.max(40, window.innerHeight / 11))) : gfx3d ? Math.max(cam.zoom, 64) : Math.min(cam.zoom, 48);
+  // 작은 화면(폰): 도트를 잘게(2px) 하고 캐릭터를 조금 크게 — 손톱만 한 캐릭터가 깍두기처럼 보이지 않게
+  const small = window.innerHeight < 520;
+  cam.pixel = small ? 2 : 3;
+  cam.zoom = gfx === 'pixel' ? Math.round(Math.min(60, Math.max(small ? 46 : 40, window.innerHeight / (small ? 8 : 11)))) : gfx3d ? Math.max(cam.zoom, 64) : Math.min(cam.zoom, 48);
   cam.enabled = gfx3d;
   cam.ortho = gfx === 'pixel';
   renderer.overlay = gfx3d;
@@ -494,7 +497,7 @@ for (const id of ['top', 'party', 'inspect']) $(id).addEventListener('contextmen
 
 window.addEventListener('resize', () => {
   renderer.resize();
-  r3.resize();
+  applyGfx();
 });
 renderer.resize();
 r3.resize();
