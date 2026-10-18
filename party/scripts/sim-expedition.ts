@@ -128,9 +128,10 @@ function run(seed: number) {
       w.tick(1 / 60);
     }
     time += w.time;
-    for (const p of w.party) { saveFromUnit(p); if (p.hero) p.hero.hpFrac = p.alive ? Math.min(1, Math.max(0.05, p.hp / p.stats.maxHp) + ROOM_HEAL) : 1; }
-    const lost = w.party.filter((p) => !p.alive).length;
-    heroes = w.party.filter((p) => p.alive && p.hero).map((p) => p.hero!);
+    const { up } = w.outcome && w.outcome !== 'defeat' ? w.resolveDowned() : { up: [] as typeof w.party };
+    for (const p of w.party) { saveFromUnit(p); if (p.hero) p.hero.hpFrac = p.alive ? Math.min(1, Math.max(0.05, p.hp / p.stats.maxHp) + ROOM_HEAL) : up.includes(p) ? 0.15 : 1; }
+    const lost = w.party.filter((p) => !p.alive && !up.includes(p)).length;
+    heroes = w.party.filter((p) => (p.alive || up.includes(p)) && p.hero).map((p) => p.hero!);
     if (process.env.DEBUG) console.log(`  ${node.kind} d${depth} ${Math.round(w.time)}s hp ${heroes.map((h) => `${Math.round((h.hpFrac ?? 1) * 100)}`).join('/')} lost ${lost}`);
     if (w.outcome === 'defeat' || !w.outcome || !heroes.length) return { result: `defeat@${ex.done.length + 1}/${ex.cols}(${node.kind})`, path: path.join(''), time, alive: heroes.length };
     ex.done.push(id);

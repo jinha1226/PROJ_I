@@ -43,12 +43,12 @@ const SPIDERS = ['spider', 'spiderling', 'slime'];
 
 export const CONTRACTS: Record<ContractKind, ContractDef> = {
   purge: {
-    kind: 'purge', power: 1.3, name: '고블린 소굴 소탕', danger: 1, floors: 2, startDepth: 1, boss: false, reward: 160,
+    kind: 'purge', power: 1.1, name: '고블린 소굴 소탕', danger: 1, floors: 2, startDepth: 1, boss: false, reward: 160,
     theme: GREENSKIN, themeName: '고블린 · 오크',
     desc: '마을 근처 굴에 고블린이 들끓는다. 짧고 비교적 안전하다 — 신입을 데려가기 좋다.',
   },
   rescue: {
-    kind: 'rescue', power: 1.35, name: '실종된 용병 구출', danger: 2, floors: 3, startDepth: 1, boss: false, reward: 180, bonus: 'recruit',
+    kind: 'rescue', power: 1.15, name: '실종된 용병 구출', danger: 2, floors: 3, startDepth: 1, boss: false, reward: 180, bonus: 'recruit',
     theme: GREENSKIN, themeName: '고블린 · 오크',
     desc: '다른 용병단의 생존자가 깊은 곳에 붙잡혀 있다. 마지막 층에서 구해 오면 우리 용병단에 합류한다.',
   },
@@ -63,7 +63,7 @@ export const CONTRACTS: Record<ContractKind, ContractDef> = {
     desc: '좀비 · 망령 · 강령술사가 들끓는 깊은 묘지. 독과 냉기가 잘 통하지 않고 공포가 서린다. 화염과 신성이 답이다. 보상이 크다.',
   },
   nest: {
-    kind: 'nest', power: 1.2, name: '거미굴 소각', danger: 2, floors: 3, startDepth: 1, boss: false, reward: 230,
+    kind: 'nest', power: 1.05, name: '거미굴 소각', danger: 2, floors: 3, startDepth: 1, boss: false, reward: 230,
     theme: SPIDERS, themeName: '거미 · 슬라임', palette: 'nest',
     desc: '마을 아래 동굴에 거미가 알을 슬었다. 독과 거미줄을 조심하라. 거미는 불에 약하다.',
   },

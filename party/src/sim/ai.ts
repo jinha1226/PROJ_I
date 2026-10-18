@@ -24,6 +24,7 @@ export function threatOf(e: Unit): number {
 }
 
 export function think(w: World, u: Unit): Intent | null {
+  if (u.entering) return { type: 'move', x: u.entering.x, y: u.entering.y };
   const taunt = u.hasStatus('taunted');
   if (taunt?.source?.alive) return { type: 'attack', target: taunt.source };
 
@@ -57,17 +58,20 @@ export function think(w: World, u: Unit): Intent | null {
   // 위협 수치로 싸우는 적: 어그로 대상만 친다 (기술은 그대로 고른다)
   const tank = usesThreat(u) ? aggroTarget(w, u) : null;
 
+  const anchor = u.faction === 'party' && u !== w.captain && w.captain?.alive ? w.captain : null;
   const manual = u.faction === 'party' && !u.autoMode;
-  // 주장은 손을 떼면 가까운 적에게 조금 다가가 친다 (배틀하트식)
-  const chase = u === w.captain ? (u.isRanged ? 1 : 3) : 0;
+  // 주장은 손을 떼면 근처 적에게 알아서 다가가 평타를 친다 (배틀하트식). 기술 버튼만 플레이어 몫
+  const chase = u === w.captain ? (u.isRanged ? 2.5 : 6) : 0;
   const cands: Cand[] = [];
 
   for (const e of enemies) {
     const reach = attackReach(u, e);
     const d = dist(u, e);
     if (manual && (d > reach + chase || (u.isRanged && d <= reach && !w.map.los(u.x, u.y, e.x, e.y)))) continue;
-    if (leashed(u, e, reach)) continue;
+    if (u !== w.captain && leashed(u, e, reach)) continue;
     if (tank && e !== tank) continue;
+    // 배틀하트식: 동료는 주장 곁에서 싸운다 (아군을 노리는 적은 예외) — 적이 우리 쪽으로 온다
+    if (anchor && dist(anchor, e) > 5.5 && !(e.intent?.type === 'attack' && e.intent.target.faction === u.faction)) continue;
     cands.push({ intent: { type: 'attack', target: e }, score: attackValue(w, u, e, d, reach) });
   }
 

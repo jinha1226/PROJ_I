@@ -94,8 +94,9 @@ export function genArena(seed: number, depth: number, o: ArenaOpts): MapDef {
   const rng = new Rng(seed);
   const W = ARENA_W, H = ARENA_H;
   const midY = Math.floor(H / 2);
-  // 문: 왼쪽 · 오른쪽 벽 가운데 두 칸 (적이 들어오는 곳)
-  const gates: [number, number][] = [[0, midY - 1], [0, midY], [W - 1, midY - 1], [W - 1, midY]];
+  // 배틀하트식: 양옆이 다 열려 있다. 맨 바깥 열은 무대 밖(어둠) — 적이 여러 높이에서 걸어 들어온다
+  const gates: [number, number][] = [];
+  for (let y = 1; y < H - 1; y++) gates.push([0, y], [W - 1, y]);
   const pillars: [number, number][] = [];
   for (let k = rng.int(0, 2); k > 0; k--) {
     const px = rng.int(6, W - 7), py = rng.chance(0.5) ? rng.int(2, 3) : rng.int(H - 4, H - 3);

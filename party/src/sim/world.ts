@@ -264,7 +264,8 @@ export class World {
   knownEnemies(u: Unit): Unit[] {
     // 전장은 한 화면이라 거리와 상관없이 서로 안다
     const range = this.arena ? 99 : u.faction === 'party' ? 10 : 14;
-    if (u.faction === 'party') return this.hostilesOf(u).filter((e) => this.isVisible(e) && dist(u, e) < range);
+    // 등장 중인 적(무대 밖)은 아직 노리지 않는다
+    if (u.faction === 'party') return this.hostilesOf(u).filter((e) => !e.entering && this.isVisible(e) && dist(u, e) < range);
     if (!u.aware) return [];
     return this.hostilesOf(u).filter((e) => dist(u, e) < range);
   }
@@ -288,7 +289,8 @@ export class World {
     if (live.length === 1) {
       const p = this.map.nearestFloor(x, y);
       if (!this.issue(live[0], { type: 'move', x: p.x, y: p.y }, player)) return;
-      live[0].holdPos = p;
+      // 주장은 자리에 묶이지 않는다 (도착하면 다시 근처 적을 친다)
+      live[0].holdPos = live[0] === this.captain ? null : p;
       this.leader = live[0];
       return;
     }
@@ -559,6 +561,8 @@ export class World {
     }
     if (this.leader === u) this.leader = this.party.find((p) => p.alive) ?? null;
     if (u.faction === 'party') {
+      u.downed = true;
+      this.float(u, '쓰러짐!', '#ff6666', 1.2);
       partyStress(this, 15, u);
       if (u.hero) u.hero.deathCause = by ? `${by.name}에게 쓰러짐` : '쓰러짐';
     }
@@ -601,6 +605,23 @@ export class World {
       this.outcome = 'defeat';
       this.log('파티가 전멸했다...', '#ff4444');
     }
+  }
+
+  /**
+   * 죽음의 문턱 (다키스트 던전식): 방을 정리하면 쓰러진 용병이 일어날 수도 있다.
+   * 70% (사제가 서 있으면 85%) — 일어나면 체력 15%, 스트레스 +20. 못 일어나면 영구 사망
+   */
+  resolveDowned(): { up: Unit[]; dead: Unit[] } {
+    const up: Unit[] = [], dead: Unit[] = [];
+    const priest = this.party.some((p) => p.alive && p.hero?.cls === 'priest');
+    for (const p of this.party) {
+      if (p.alive || !p.downed || !p.hero) continue;
+      if (this.rng.chance(priest ? 0.85 : 0.7)) {
+        up.push(p);
+        p.hero.stress = Math.min(99, p.hero.stress + 20);
+      } else dead.push(p);
+    }
+    return { up, dead };
   }
 
   /** 처치 경험치: 살아 있는 파티원이 똑같이 받는다 */
@@ -649,7 +670,7 @@ export class World {
   /** 전장: 적이 다 쓰러지면 잠깐 뒤 다음 웨이브가 문으로 들어온다. 웨이브 · 오브젝트를 다 마치면 방 정리 */
   private arenaStep(dt: number) {
     if (this.outcome) return;
-    const enemies = this.units.some((u) => u.alive && u.faction === 'enemy');
+    const enemies = this.units.some((u) => u.alive && u.faction === 'enemy') || this.entryQueue.length > 0;
     if (enemies) {
       this.waveTimer = 2.2;
       return;
@@ -678,15 +699,36 @@ export class World {
     this.crisis(`wave:${n}`, boss ? title : `웨이브 ${n}/${total}`, this.map.w / 2, this.map.h / 2, color);
     this.log(title, color);
     this.waveName = wave.name ?? '';
-    // 한쪽 문 성격이면 웨이브마다 번갈아, 양쪽이면 나눠서
-    const left = this.gates.filter(([x]) => x === 0), right = this.gates.filter(([x]) => x > 0);
+    // 화면 밖에서 하나씩 걸어 들어온다 (한쪽 성격이면 웨이브마다 번갈아, 양쪽이면 나눠서)
     const both = wave.sides ? wave.sides === 'both' : n % 2 === 0 || group.length >= 4;
+    const rows = this.gates.filter(([x]) => x === 0).map(([, y]) => y);
+    const order = [...rows].sort(() => this.rng.next() - 0.5);
     group.forEach((id, i) => {
-      const side = both ? (i % 2 ? left : right) : n % 4 === 1 ? right : left;
-      const [gx, gy] = side[i % side.length] ?? this.gates[0];
-      const m = this.spawn(id, 'enemy', gx + 0.5 + (gx === 0 ? -0.3 : 0.3), gy + 0.5 + (this.rng.next() - 0.5) * 0.6);
-      m.aware = true;
+      const leftSide = both ? i % 2 === 1 : n % 4 !== 1;
+      const y = order[i % order.length] + 0.5 + (this.rng.next() - 0.5) * 0.4;
+      this.entryQueue.push({ id, left: leftSide, y, at: this.time + i * 0.45 });
     });
+  }
+
+  /** 웨이브 등장 대기열: 시간이 되면 무대 밖에 나타나 안으로 걸어 들어온다 */
+  private entryQueue: { id: string; left: boolean; y: number; at: number }[] = [];
+  private stepEntries() {
+    const W = this.map.w;
+    while (this.entryQueue.length && this.entryQueue[0].at <= this.time) {
+      const e = this.entryQueue.shift()!;
+      const m = this.spawn(e.id, 'enemy', e.left ? 0.4 : W - 0.4, e.y);
+      m.aware = true;
+      m.entering = { x: e.left ? 2.4 : W - 2.4, y: e.y };
+      m.facing = e.left ? 1 : -1;
+    }
+    // 무대 안으로 들어서면 싸움에 낀다
+    for (const u of this.units)
+      if (u.entering && (!u.alive || (u.x > 1.7 && u.x < W - 1.7))) u.entering = null;
+  }
+
+  /** 아직 등장 중인 적이 있는가 (웨이브 끝 판정용) */
+  get arriving() {
+    return this.entryQueue.length > 0 || this.units.some((u) => u.alive && u.entering);
   }
 
   /** 자동 탐험 한 걸음: 아무도 명령이 없고 전투가 아니면 다음 미방문 방 → 계단 */
@@ -731,6 +773,7 @@ export class World {
       this.exploreStep();
     }
 
+    if (this.arena) this.stepEntries();
     for (const u of this.units) if (u.alive) updateUnit(this, u, dt);
     // 넉백: 밀려나는 속도를 줄여 가며 움직인다 (벽은 resolveCollisions 가 막는다)
     for (const u of this.units) {

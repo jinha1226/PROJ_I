@@ -75,8 +75,8 @@ export async function buildArena(w: World, load: Load, toonBase: (map: THREE.Tex
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
       const inside = x >= x0 && x < x1 && y >= y0 && y < y1;
-      // 방 안 기둥 칸에도 바닥을 깐다 (기둥 둘레가 검게 비지 않게)
-      if (w.map.isWall(x, y) && !inside) continue;
+      // 무대 밖(양옆 맨 바깥 열)은 어둠 — 적이 거기서 걸어 나온다. 방 안 기둥 칸에는 바닥을 깐다
+      if (!inside) continue;
       const top = y === y0, bot = y === y1 - 1, left = x === x0, right = x === x1 - 1;
       const inRoom = x >= x0 && x < x1 && y >= y0 && y < y1;
       let n = 'floor_small_01';
@@ -90,27 +90,15 @@ export async function buildArena(w: World, load: Load, toonBase: (map: THREE.Tex
     }
   for (const [n, m] of Object.entries(floors)) jobs.push(place(group, load, toon, S(n), m));
 
-  // 벽 (한 조각 = 1칸): 뒷벽은 높게, 옆벽은 문 자리에 아치문, 앞은 낮은 턱 (캐릭터를 가리지 않게)
-  const gateRows = (gx: number) => w.gates.filter(([x]) => x === gx).map(([, y]) => y).sort((p, q) => p - q);
-  const wallA: THREE.Matrix4[] = [], wallB: THREE.Matrix4[] = [], doors: THREE.Matrix4[] = [];
+  // 벽 (한 조각 = 1칸): 뒷벽만 높게, 앞은 낮은 턱. 양옆은 열려 있다 (배틀하트식 무대)
+  const wallA: THREE.Matrix4[] = [], wallB: THREE.Matrix4[] = [];
   for (let x = x0; x < x1; x++) ((hash(x, 1) % 3) ? wallA : wallB).push(at(x, 0, y0 - 0.12));
-  for (const [gx, side] of [[0, 1], [W - 1, -1]] as const) {
-    const rows = gateRows(gx);
-    const wx = side > 0 ? x0 - 0.12 : x1 + 0.12;
-    for (let y = y0; y < y1; y++) {
-      if (rows.includes(y)) continue;
-      // wall_small 은 원점에서 +x 로 2단위 → 옆벽은 90° 돌려 z 방향으로
-      wallA.push(side > 0 ? at(wx, 0, y + 1, Math.PI / 2) : at(wx, 0, y, -Math.PI / 2));
-    }
-    if (rows.length) doors.push(side > 0 ? at(wx, 0, rows[rows.length - 1] + 1, Math.PI / 2) : at(wx, 0, rows[0], -Math.PI / 2));
-  }
   const ledge: THREE.Matrix4[] = [];
   for (let x = x0; x < x1; x++) ledge.push(at(x, 0, y1 + 0.12, 0, K, 0.07));
   jobs.push(place(group, load, toon, S('wall_small_01'), [...wallA, ...ledge]));
   jobs.push(place(group, load, toon, S('wall_small_02'), wallB));
-  jobs.push(place(group, load, toon, S('door_arched_01_001'), doors));
   // 모서리 기둥 · 방 안 기둥
-  jobs.push(place(group, load, toon, S('pillar_01'), [at(x0, 0, y0), at(x1, 0, y0), at(x0, 0, y1, 0, K, 0.1), at(x1, 0, y1, 0, K, 0.1)]));
+  jobs.push(place(group, load, toon, S('pillar_01'), [at(x0, 0, y0), at(x1, 0, y0)]));
   const inner: THREE.Matrix4[] = [];
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) if (w.map.isWall(x, y)) inner.push(at(x + 0.5, 0, y + 0.5, 0, K));
   jobs.push(place(group, load, toon, S('pillar_02'), inner));
@@ -146,3 +134,27 @@ export async function buildArena(w: World, load: Load, toonBase: (map: THREE.Tex
 export function flicker(env: ArenaEnv, t: number) {
   for (const l of env.lights) l.light.intensity = l.base * (0.85 + 0.1 * Math.sin(t * 7 + l.seed) + 0.05 * Math.sin(t * 17.3 + l.seed * 3));
 }
+
+/** 전장에서 쓰는 파일 (지도 화면에서 미리 불러 둔다) */
+export const ARENA_FILES = [
+  'sigils/Brazier',
+  'sigils/coffin',
+  'sigils/floor_small_01',
+  'sigils/floor_small_cornertrim_BL_01',
+  'sigils/floor_small_cornertrim_BR_01',
+  'sigils/floor_small_cornertrim_TL_01',
+  'sigils/floor_small_cornertrim_TR_01',
+  'sigils/floor_small_trim_B_01',
+  'sigils/floor_small_trim_L_01',
+  'sigils/floor_small_trim_R_01',
+  'sigils/floor_small_trim_T_01',
+  'sigils/pillar_01',
+  'sigils/pillar_02',
+  'sigils/pot',
+  'sigils/wall_small_01',
+  'sigils/wall_small_02',
+  'kaykit/barrel_large',
+  'kaykit/crates_stacked',
+  'kaykit/torch_mounted',
+  'quaternius/dungeon',
+];

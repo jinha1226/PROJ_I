@@ -7,7 +7,7 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { PixelPass } from './pixelpass';
 import { addEyes, heroColors, paintMannequin } from './paint';
-import { buildArena, flicker, type ArenaEnv } from './arenakit';
+import { ARENA_FILES, buildArena, flicker, type ArenaEnv } from './arenakit';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { PALETTES } from '../render/renderer';
 import type { WorldObject } from '../sim/objects';
@@ -256,6 +256,11 @@ export class Renderer3D {
     if (a.cur && a.cur !== act) a.cur.fadeOut(0.1);
     a.cur = act;
     if (once) a.busyUntil = this.time + (clip.duration / (a.look.speed ?? 1)) * 0.85;
+  }
+
+  /** 전장 꾸미기 파일을 미리 불러 둔다 (방에 들어가자마자 바닥 · 벽이 보이게) */
+  preloadArena() {
+    for (const f of ARENA_FILES) void this.load(f);
   }
 
   // ── 던전 ──

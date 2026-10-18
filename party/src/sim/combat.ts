@@ -249,7 +249,7 @@ export function resolveWeaponHit(w: World, u: Unit, t: Unit, mult: number, guara
   if (!t.alive) return;
   const wpn = u.weapon;
   if (!guaranteed && !w.rng.chance(hitChance(u, t))) {
-    w.float(t, '빗나감', '#999999', 0.8);
+    // '빗나감' 글자는 띄우지 않는다 (화면이 난잡해진다)
     return;
   }
   let dmg = w.rng.range(wpn.damage[0], wpn.damage[1]) * weaponDmgMult(u) * mult;

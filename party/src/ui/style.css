@@ -538,3 +538,10 @@ button.on { border-color: var(--accent); color: var(--accent); }
 #bossbar .bhp > b { position: absolute; top: 0; bottom: 0; width: 1px; background: #ffe0a0; }
 #bossbar .bsub { color: #ccc; }
 @media (max-width: 900px), (max-height: 500px) { #bossbar { top: 64px; } }
+
+/* ── 위쪽 줄: 꼭 필요한 것만, 나머지는 ⚙ ── */
+#top { gap: 4px; }
+#top > button { min-width: 36px; }
+#topmenu { position: absolute; top: calc(100% + 4px); right: 0; display: flex; flex-direction: column; gap: 4px; padding: 6px; z-index: 20; }
+#topmenu button { text-align: left; white-space: nowrap; }
+@media (max-width: 900px), (max-height: 500px) { #top { overflow: visible; flex-wrap: nowrap; left: 50%; right: auto; transform: translateX(-50%); width: max-content; } }

@@ -11,16 +11,19 @@
   <canvas id="game"></canvas>
 
   <div id="top" class="panel">
-    <button id="btn-pause" title="Space">⏸ 일시정지</button>
-    <button id="btn-auto" title="T · 켜면 주장도 AI 가 싸운다">주장 자동: 꺼짐</button>
-    <button id="btn-explore" style="display:none" title="X · 전투가 없을 때 다음 방 → 계단으로 이동">자동 탐험: 꺼짐</button>
-    <button id="btn-speed" title="게임 속도">속도 1x</button>
-    <button id="btn-crisis" title="보스 범위 공격 예고 · 아군 체력 위험 때">위기 시: 감속</button>
-    <button id="btn-follow" title="C">카메라 추적: 켜짐</button>
-    <button id="btn-gfx">그래픽: 3D</button>
-    <button id="btn-sound">소리: 켜짐</button>
-    <button id="btn-help" title="H">도움말</button>
+    <button id="btn-pause" title="일시정지 (Space)">⏸</button>
+    <button id="btn-auto" title="T · 켜면 주장도 AI 가 싸운다">자동 끔</button>
+    <button id="btn-speed" title="게임 속도">1x</button>
     <span id="combat-state"></span>
+    <button id="btn-menu" title="설정">⚙</button>
+    <div id="topmenu" class="panel hidden">
+      <button id="btn-explore" style="display:none" title="X">자동 탐험: 꺼짐</button>
+      <button id="btn-crisis" title="보스 범위 공격 예고 · 아군 체력 위험 때">위기 시: 감속</button>
+      <button id="btn-follow" title="C">카메라 추적: 켜짐</button>
+      <button id="btn-gfx">그래픽: 3D</button>
+      <button id="btn-sound">소리: 켜짐</button>
+      <button id="btn-help" title="H">도움말</button>
+    </div>
   </div>
 
   <div id="bossbar" class="hidden"><div class="bn"></div><div class="bhp"><i></i></div><div class="bsub"></div></div>

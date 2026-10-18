@@ -229,7 +229,7 @@ export class Hud {
         : `<span style="color:#9ab">${floorInfo(w.run, w.depth).floor}/${floorInfo(w.run, w.depth).floors}층</span> <span class="gold">${w.run.gold}G</span> `) +
       (w.inCombat ? '<span style="color:#ff8866">전투 중</span>' : '<span style="color:#88cc88">탐험</span>');
     $('pause-banner').classList.toggle('hidden', !ui.paused || !!w.outcome);
-    $('btn-pause').textContent = ui.paused ? '▶ 재개' : '⏸ 일시정지';
+    $('btn-pause').textContent = ui.paused ? '▶' : '⏸';
     $('btn-pause').classList.toggle('on', ui.paused);
 
     this.updateBoss();

@@ -143,6 +143,10 @@ export class Unit {
   dashTarget: Unit | null = null;
   /** 대상 없는 돌진 = 구르기 (주장 회피) 방향 */
   dashDir: { x: number; y: number } | null = null;
+  /** 전장 등장 중: 이 지점까지 걸어 들어온다 (그동안 싸우지 않고, 파티도 노리지 않는다) */
+  entering: { x: number; y: number } | null = null;
+  /** 쓰러짐 (죽음의 문턱): 방을 정리하면 일어날 수도 있다 */
+  downed = false;
   /** 파티 시너지 보너스 (방에 들어설 때 정해진다) */
   synergy: Prop[] = [];
   dashCd = 0;

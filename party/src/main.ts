@@ -167,6 +167,7 @@ let roomNode: number | null = null;
 /** 지도 화면: 방과 방 사이. 여기서 저장한다 (방 도중에 끄면 지도부터 다시) */
 function openMap(note = '') {
   roomNode = null;
+  r3.preloadArena();
   ui.paused = true;
   rest.close();
   restOpen = false;
@@ -231,11 +232,14 @@ function startRoom(id: number) {
 function roomCleared() {
   const ex = run.expedition!;
   const node = ex.nodes[roomNode!];
+  // 죽음의 문턱: 쓰러진 용병이 일어날 수도 있다
+  const { up } = world.resolveDowned();
   for (const p of world.party) {
     saveFromUnit(p);
-    if (p.hero) p.hero.hpFrac = p.alive ? Math.min(1, Math.max(0.05, p.hp / p.stats.maxHp) + ROOM_HEAL) : 1;
+    if (p.hero) p.hero.hpFrac = p.alive ? Math.min(1, Math.max(0.05, p.hp / p.stats.maxHp) + ROOM_HEAL) : up.includes(p) ? 0.15 : 1;
   }
-  const alive = new Set(world.party.filter((p) => p.alive && p.hero).map((p) => p.hero!));
+  for (const p of up) toast(`${p.name}이(가) 죽음의 문턱에서 일어났다`);
+  const alive = new Set(world.party.filter((p) => (p.alive || up.includes(p)) && p.hero).map((p) => p.hero!));
   const { survivors, fallen } = buryFallen(company, heroes, alive, depth);
   heroes = survivors;
   for (const h of fallen) toast(`✝ ${h.def.name}을(를) 잃었다`);
@@ -309,7 +313,10 @@ function completeContract() {
 function endExpedition(kind: 'victory' | 'retreat' | 'defeat', extra = '') {
   mapScreen.close();
   // 방 밖(지도 · 쉬는 화면)에서 끝나면 지금 명단이 곧 생존자
-  const alive = roomNode !== null || kind === 'defeat' ? new Set(world.party.filter((p) => p.alive && p.hero).map((p) => p.hero!)) : new Set(heroes);
+  // 보스를 잡고 끝났으면 쓰러진 용병도 일어날 기회가 있다 (죽음의 문턱)
+  const up = kind === 'victory' && roomNode !== null ? world.resolveDowned().up : [];
+  for (const p of up) if (p.hero) p.hero.hpFrac = 0.15;
+  const alive = roomNode !== null || kind === 'defeat' ? new Set(world.party.filter((p) => (p.alive || up.includes(p)) && p.hero).map((p) => p.hero!)) : new Set(heroes);
   const { fallen } = kind === 'retreat' ? { fallen: [] as Hero[] } : buryFallen(company, heroes, alive, depth);
   const survivors = heroes.filter((h) => !fallen.includes(h));
   const gold = run.gold;
@@ -431,6 +438,14 @@ function updatePrompt() {
 }
 
 $('btn-pause').addEventListener('click', togglePause);
+// 설정 메뉴: 잘 안 쓰는 버튼은 ⚙ 안으로
+$('btn-menu').addEventListener('click', (e) => {
+  e.stopPropagation();
+  $('topmenu').classList.toggle('hidden');
+});
+document.addEventListener('click', (e) => {
+  if (!(e.target as HTMLElement).closest('#topmenu')) $('topmenu').classList.add('hidden');
+});
 $('btn-auto').addEventListener('click', toggleAutoAll);
 $('btn-explore').addEventListener('click', toggleExplore);
 const diffSel = $('difficulty') as HTMLSelectElement;
@@ -529,7 +544,7 @@ function handleCrises(dt: number) {
 const SPEEDS = [1, 1.5, 0.5];
 $('btn-speed').addEventListener('click', () => {
   ui.speed = SPEEDS[(SPEEDS.indexOf(ui.speed) + 1) % SPEEDS.length];
-  $('btn-speed').textContent = `속도 ${ui.speed}x`;
+  $('btn-speed').textContent = `${ui.speed}x`;
 });
 for (const id of ['top', 'party', 'inspect']) $(id).addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -599,7 +614,9 @@ function frame(now: number) {
   $('btn-explore').textContent = `자동 탐험: ${explore ? '켜짐' : '꺼짐'}`;
   $('btn-explore').classList.toggle('on', explore);
   const autoOn = !!world.captain?.autoMode;
-  $('btn-auto').textContent = `주장 자동: ${autoOn ? '켜짐' : '꺼짐'}`;
+  $('btn-auto').textContent = `자동 ${autoOn ? '켬' : '끔'}`;
+  // 전투 중에는 로그를 숨긴다 (배틀하트처럼 화면을 깨끗하게). 멈추면 보인다
+  $('log').classList.toggle('hidden', started && roomNode !== null && !ui.paused);
   $('btn-auto').classList.toggle('on', autoOn);
   if (started && roomNode !== null && world.outcome === 'cleared' && !restOpen) roomCleared();
   const out = $('outcome');
