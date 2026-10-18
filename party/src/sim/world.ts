@@ -720,9 +720,9 @@ export class World {
     const boss = group.some((id) => MONSTERS[id]?.boss);
     const color = wave.color ?? (boss ? '#ff4444' : '#ffcc66');
     const title = boss ? '보스 등장!' : `웨이브 ${n}/${total}${wave.name ? ` — ${wave.name}` : ''}`;
-    this.crisis(`wave:${n}`, wave.hint ? `${title}\n${wave.hint}` : title, this.map.w / 2, this.map.h / 2, color);
+    // 웨이브 요령은 띄우지 않는다: 짧은 제목만
+    this.crisis(`wave:${n}`, boss ? title : `웨이브 ${n}/${total}`, this.map.w / 2, this.map.h / 2, color);
     this.log(title, color);
-    if (wave.hint) this.log(`  ${wave.hint}`, color);
     this.waveName = wave.name ?? '';
     // 한쪽 문 성격이면 웨이브마다 번갈아, 양쪽이면 나눠서
     const left = this.gates.filter(([x]) => x === 0), right = this.gates.filter(([x]) => x > 0);

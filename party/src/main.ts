@@ -13,7 +13,6 @@ import { gainXp, newHero, xpToNext } from './sim/hero';
 import { newParty, saveFromUnit, type Hero } from './sim/hero';
 import { resolvePrompt } from './sim/objects';
 import { restRelief } from './sim/stress';
-import { foeNotes, foeSummary } from './sim/notes';
 import { newRun } from './sim/run';
 import { World } from './sim/world';
 import { Hud } from './ui/hud';
@@ -508,29 +507,6 @@ function handleMoodBreaks(dt: number) {
   if (moodShown <= 0) $('moodbanner').classList.add('hidden');
 }
 
-/** 첫 조우 카드: 이번 런에서 처음 보는 몬스터면 약점 · 강함 · 대처법을 잠깐 띄운다 */
-let foeCardTimer = 0;
-function handleNewFoes(dt: number) {
-  foeCardTimer = Math.max(0, foeCardTimer - dt);
-  if (foeCardTimer > 2.5) return; // 앞 카드를 조금은 읽을 시간
-  const t = world.units.find((u) => u.alive && u.faction === 'enemy' && world.isVisible(u) && !run.seen.includes(u.def.id));
-  if (!t) return;
-  run.seen.push(t.def.id);
-  const n = foeNotes(t, world.party);
-  const summary = foeSummary(t, world.party);
-  const card = $('newfoe');
-  card.innerHTML =
-    `<div class="nf1" style="color:${t.def.color}">새로운 적 — ${t.def.glyph} ${t.name}</div>` +
-    (summary ? `<div class="nf2">${summary}</div>` : '') +
-    (n.tip ? `<div class="nf3">💡 ${n.tip}</div>` : '');
-  // 애니메이션 다시 시작
-  card.classList.add('hidden');
-  void card.offsetWidth;
-  card.classList.remove('hidden');
-  foeCardTimer = 5;
-  world.log(`새로운 적: ${t.name}${summary ? ` — ${summary}` : ''}`, '#e8cf7a');
-}
-
 function handleCrises(dt: number) {
   const list = world.crises.splice(0);
   if (list.length && crisisMode !== 'off') {
@@ -581,8 +557,8 @@ function frame(now: number) {
   last = now;
   handleCrises(dt);
   handleMoodBreaks(dt);
-  if (started) handleNewFoes(dt);
-  if (foeCardTimer <= 0) $('newfoe').classList.add('hidden');
+  // 새 몬스터 카드는 띄우지 않는다 (몬스터 정보는 적을 눌러 정보 창에서)
+  $('newfoe').classList.add('hidden');
   for (const s of world.sfx.splice(0)) audio.play(s as Sfx);
   world.shake = Math.max(0, world.shake - dt * 40);
   // 히트스톱: 큰 타격 순간 아주 잠깐 멈춘다
