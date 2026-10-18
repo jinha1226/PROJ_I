@@ -56,6 +56,7 @@ function applyGfx() {
   renderer.overlay = gfx3d;
   $('gl').style.display = gfx3d ? 'block' : 'none';
   $('btn-gfx').textContent = `그래픽: ${({ pixel: '픽셀', '3d': '3D', '2d': '2D' } as const)[gfx]}`;
+  r3?.resize();
 }
 const ui = createUiState();
 // ── 런: 5층. 층마다 새 World 를 만들고 영웅(성장 데이터)만 이어진다 ──

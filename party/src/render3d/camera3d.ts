@@ -18,6 +18,24 @@ export class Camera3D extends Camera {
   private ray = new THREE.Raycaster();
   private ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private v = new THREE.Vector3();
+  private right = new THREE.Vector3(1, 0, 0);
+  private up = new THREE.Vector3(0, 1, 0);
+
+  /** 픽셀 모드: 월드 위치를 카메라와 같은 픽셀 격자에 맞춘다 (배경과 따로 꿈틀거리지 않게) */
+  snap(p: THREE.Vector3): THREE.Vector3 {
+    if (!this.enabled || !this.ortho) return p;
+    const pw = this.pixel / this.zoom;
+    const r = p.dot(this.right), u = p.dot(this.up);
+    return p.addScaledVector(this.right, Math.round(r / pw) * pw - r).addScaledVector(this.up, Math.round(u / pw) * pw - u);
+  }
+
+  /** 실제 그리는 화면 크기: 픽셀 모드에선 픽셀 크기의 배수로 내림 (캔버스도 그 크기) */
+  get vw() {
+    return this.ortho ? Math.floor(this.w / this.pixel) * this.pixel : this.w;
+  }
+  get vh() {
+    return this.ortho ? Math.floor(this.h / this.pixel) * this.pixel : this.h;
+  }
 
   get three(): THREE.Camera {
     return this.ortho ? this.orthoCam : this.persp;
@@ -34,20 +52,20 @@ export class Camera3D extends Camera {
     const target = new THREE.Vector3(this.x, 0, this.y);
     if (this.ortho) {
       const c = this.orthoCam;
-      const hw = this.w / (2 * this.zoom), hh = this.h / (2 * this.zoom);
+      const hw = this.vw / (2 * this.zoom), hh = this.vh / (2 * this.zoom);
       Object.assign(c, { left: -hw, right: hw, top: hh, bottom: -hh });
       // 픽셀 격자에 맞추기: 카메라 평면의 좌우 · 상하 성분을 (픽셀 크기 / zoom) 단위로 반올림
       c.position.copy(target).addScaledVector(dir, 60);
       c.lookAt(target);
       c.updateMatrixWorld();
-      const right = new THREE.Vector3().setFromMatrixColumn(c.matrixWorld, 0);
-      const up = new THREE.Vector3().setFromMatrixColumn(c.matrixWorld, 1);
+      const right = this.right.setFromMatrixColumn(c.matrixWorld, 0);
+      const up = this.up.setFromMatrixColumn(c.matrixWorld, 1);
       const pw = this.pixel / this.zoom;
       const r = target.dot(right), u = target.dot(up);
       const snapped = target.clone().addScaledVector(right, Math.round(r / pw) * pw - r).addScaledVector(up, Math.round(u / pw) * pw - u);
       c.position.copy(snapped).addScaledVector(dir, 60);
       c.lookAt(snapped);
-      c.setViewOffset(this.w, this.h, 0, Math.round(this.padBottom / 2 / this.pixel) * this.pixel, this.w, this.h);
+      c.setViewOffset(this.vw, this.vh, 0, Math.round(this.padBottom / 2 / this.pixel) * this.pixel, this.vw, this.vh);
       c.updateProjectionMatrix();
       c.updateMatrixWorld();
       return;
@@ -70,12 +88,12 @@ export class Camera3D extends Camera {
   toScreenH(x: number, y: number, h: number): [number, number] {
     if (!this.enabled) return super.toScreenH(x, y, h);
     this.v.set(x, h, y).project(this.three);
-    return [((this.v.x + 1) / 2) * this.w, ((1 - this.v.y) / 2) * this.h];
+    return [((this.v.x + 1) / 2) * this.vw, ((1 - this.v.y) / 2) * this.vh];
   }
 
   toWorld(sx: number, sy: number): { x: number; y: number } {
     if (!this.enabled) return super.toWorld(sx, sy);
-    this.ray.setFromCamera(new THREE.Vector2((sx / this.w) * 2 - 1, -((sy / this.h) * 2 - 1)), this.three);
+    this.ray.setFromCamera(new THREE.Vector2((sx / this.vw) * 2 - 1, -((sy / this.vh) * 2 - 1)), this.three);
     const hit = this.ray.ray.intersectPlane(this.ground, this.v);
     return hit ? { x: hit.x, y: hit.z } : { x: this.x, y: this.y };
   }

@@ -111,8 +111,11 @@ export class Renderer3D {
   }
 
   resize() {
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.composer.setSize(window.innerWidth, window.innerHeight);
+    // 픽셀 모드: 캔버스를 픽셀 크기의 배수로 맞춰야 저해상도 화면이 정확히 정수배로 커진다 (안 그러면 줄이 꿈틀거린다)
+    const px = this.cam.ortho ? this.cam.pixel : 1;
+    const w = Math.floor(window.innerWidth / px) * px, h = Math.floor(window.innerHeight / px) * px;
+    this.renderer.setSize(w, h);
+    this.composer.setSize(w, h);
   }
 
   // ── 에셋 ──
@@ -385,7 +388,8 @@ export class Renderer3D {
     c.position.add(off);
     if (this.cam.ortho) {
       this.pixelPass.camera = c;
-      this.pixelPass.setPixelSize(this.cam.pixel);
+      // 고해상도 화면(devicePixelRatio 2)에서도 도트 한 칸이 같은 크기로 보이게
+      this.pixelPass.setPixelSize(this.cam.pixel * this.renderer.getPixelRatio());
       this.composer.render();
     } else this.effect.render(this.scene, c);
     c.position.sub(off);
@@ -432,7 +436,7 @@ export class Renderer3D {
         d = Math.atan2(Math.sin(d), Math.cos(d));
         a.yaw += d * Math.min(1, dt * 14);
       }
-      a.root.position.set(x, 0, y);
+      this.cam.snap(a.root.position.set(x, 0, y));
       a.model.rotation.y = a.yaw;
       this.animate(a, u, w);
       a.mixer?.update(dt * (u.stats?.stunned ? 0.15 : 1));
@@ -568,7 +572,7 @@ export class Renderer3D {
         this.shots.set(p, o);
       }
       const prev = o.position.clone();
-      o.position.set(p.x, 0.85, p.y);
+      this.cam.snap(o.position.set(p.x, 0.85, p.y));
       if (prev.distanceToSquared(o.position) > 1e-6 && o.userData.orient) o.lookAt(prev.clone().lerp(o.position, 2));
       // 꼬리
       const [core, outer] = elementColors(p.element, p.color);
