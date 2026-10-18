@@ -55,16 +55,19 @@ export class Input {
     return this.hooks.getWorld();
   }
 
-  /** 화면 좌표의 유닛. 세워 그린 몸체 영역으로 판정하고, 겹치면 앞(아래)쪽 우선. */
+  /** 화면 좌표의 유닛. 화면에 보이는 몸(발 ~ 머리)으로 판정하고, 겹치면 앞(아래)쪽 우선. 2D · 3D 공통 */
   unitAt(sx: number, sy: number): Unit | null {
-    const p = this.cam.toWorld(sx, sy);
-    let best: Unit | null = null;
+    let best: Unit | null = null, bestY = -Infinity;
     for (const u of this.w.units) {
       if (!u.alive) continue;
       if (u.faction !== 'party' && !this.w.isVisible(u)) continue;
-      const cy = u.y - u.radius * 1.1;
-      const dx = (p.x - u.x) / (u.radius * 1.2), dy = (p.y - cy) / (u.radius * 1.6);
-      if (dx * dx + dy * dy <= 1 && (!best || u.y > best.y)) best = u;
+      const [fx, fy] = this.cam.toScreen(u.x, u.y);
+      const [, hy] = this.cam.toScreenH(u.x, u.y, u.radius * this.cam.bodyH);
+      const half = Math.max(12, (fy - hy) * 0.38);
+      if (sx >= fx - half && sx <= fx + half && sy >= hy - 4 && sy <= fy + half * 0.5 && fy > bestY) {
+        best = u;
+        bestY = fy;
+      }
     }
     return best;
   }

@@ -60,6 +60,11 @@ const QUAT = [
   ['quaternius_monsters/Big/glTF/MushroomKing.gltf', 'MushroomKing'],
   ['quaternius_monsters/Flying/glTF/Ghost.gltf', 'Ghost'], ['quaternius_monsters/Flying/glTF/Glub.gltf', 'Glub'],
   ['quaternius_animals/glTF/Wolf.gltf', 'Wolf'],
+  // 본 게임 몬스터용
+  ['quaternius_monsters/Big/glTF/Tribal.gltf', 'Tribal'], ['quaternius_monsters/Big/glTF/Ninja.gltf', 'Ninja'],
+  ['quaternius_monsters/Flying/glTF/Hywirl.gltf', 'Hywirl'], ['quaternius_monsters/Flying/glTF/Armabee.gltf', 'Armabee'],
+  ['quaternius_monsters/Flying/glTF/Armabee_Evolved.gltf', 'Armabee_Evolved'], ['quaternius_monsters/Flying/glTF/Ghost_Skull.gltf', 'Ghost_Skull'],
+  ['quaternius_monsters/Blob/glTF/GreenBlob.gltf', 'GreenBlob'],
 ];
 for (const [src, name] of QUAT) {
   const doc = await io.read(join(Q, src));
@@ -80,3 +85,6 @@ for (const w of ['sword_1handed', 'axe_2handed', 'staff', 'crossbow_2handed', 's
   await io.write(join(OUT, `w_${w}.glb`), doc);
 }
 console.log('ual + weapons');
+
+copyFileSync('/mnt/d/PROJ_E/public/assets/kaykit/Skeleton_Minion.glb', join(OUT, 'Skeleton_Minion.glb'));
+console.log('extra monsters');

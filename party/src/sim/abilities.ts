@@ -1,6 +1,6 @@
 import { dist } from '../core/rng';
 import { STATUSES } from '../data/statuses';
-import type { AbilityDef, Effect } from './defs';
+import type { AbilityDef, Effect, Element } from './defs';
 import { applyDamage, cleanse, heal, resistMult, resolveWeaponHit, tryApplyStatus } from './combat';
 import { abilityCooldown, abilityMult, abilityPower, avgWeaponDamage, castTimeOf, failChance, hitChance } from './stats';
 import type { AbilityState, Unit } from './unit';
@@ -111,13 +111,28 @@ function resolveAbility(w: World, u: Unit, slot: number, target: Unit | null, x:
       w.spawnProjectile({
         source: u, target: ab.target === 'enemy' || ab.target === 'ally' ? target : null,
         x: u.x, y: u.y - i * 0.3, tx: x, ty: y, speed: ab.projectile.speed * (1 - i * 0.2), color: ab.projectile.color,
-        size: ab.radius ? 0.18 : 0.12, onHit: land,
+        size: ab.radius ? 0.18 : 0.12, onHit: land, ...projectileLook(ab, u),
       });
     } else land();
   }
 }
 
+/** 화면용 발사체 모양: 속성 피해면 그 속성, 무기 기술이면 무기 모양 */
+function projectileLook(ab: AbilityDef, u: Unit): { style: 'arrow' | 'bolt' | 'shard' | 'orb'; element?: Element } {
+  const dmg = ab.effects.find((e) => e.kind === 'damage');
+  const el = dmg && dmg.kind === 'damage' ? dmg.element : undefined;
+  if (el === 'fire') return { style: 'bolt', element: el };
+  if (el === 'cold') return { style: 'shard', element: el };
+  if (el) return { style: 'orb', element: el };
+  if (ab.effects.some((e) => e.kind === 'weapon') && u.weapon.skill === 'bow') return { style: 'arrow' };
+  return { style: 'orb' };
+}
+
 function landAbility(w: World, u: Unit, ab: AbilityDef, target: Unit | null, x: number, y: number, power: number, mult: number) {
+  const dmg = ab.effects.find((e) => e.kind === 'damage');
+  const at = ab.radius ? areaCenter(ab, u, x, y) : target ?? { x, y };
+  if (ab.aiRole === 'damage' || ab.aiRole === 'disable' || ab.radius)
+    w.emit({ type: 'impact', x: at.x, y: at.y, color: ab.color, element: dmg && dmg.kind === 'damage' ? dmg.element : undefined, radius: ab.radius ?? 0.5 });
   let victims: Unit[];
   if (ab.radius) {
     const c = areaCenter(ab, u, x, y);

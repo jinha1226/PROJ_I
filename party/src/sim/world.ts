@@ -1,4 +1,5 @@
 import { dist, Rng } from '../core/rng';
+import type { Element } from './defs';
 import type { MapDef } from '../data/maps';
 import { DIFFICULTIES, type Difficulty, type DifficultyId } from '../data/difficulty';
 import { MONSTERS } from '../data/units';
@@ -26,7 +27,17 @@ export interface Projectile {
   color: string;
   size: number;
   onHit: () => void;
+  /** 화면용: 모양 · 속성 (화살 · 불덩이 · 얼음 조각 · 구슬) */
+  style?: 'arrow' | 'bolt' | 'shard' | 'orb';
+  element?: Element;
 }
+
+/** 화면용 이펙트 사건. 시뮬레이션은 일어난 일만 알리고, 그리는 쪽이 꺼내 쓴다 (헤드리스에서는 쌓이다 버려진다) */
+export type Vfx =
+  | { type: 'impact'; x: number; y: number; color: string; element?: Element; radius: number }
+  | { type: 'heal'; unit: Unit }
+  | { type: 'status'; unit: Unit; status: string }
+  | { type: 'hit'; unit: Unit; heavy: boolean; from: Unit | null };
 
 export interface Fx {
   kind: 'ring' | 'slash' | 'trail';
@@ -103,6 +114,7 @@ export class World {
   hitstop = 0;
   shake = 0;
   sfx: string[] = [];
+  vfx: Vfx[] = [];
   moodBreaks: MoodBreak[] = [];
   private crisisAt = new Map<string, number>();
   private lowHp = new Set<Unit>();
@@ -319,6 +331,11 @@ export class World {
     const stack = this.floaters.filter((f) => f.t < 0.25 && Math.abs(f.x - u.x) < 0.3).length;
     this.floaters.push({ x: u.x, y: u.y - 0.9 - stack * 0.28, text, color, t: 0, scale });
   }
+  emit(v: Vfx) {
+    this.vfx.push(v);
+    if (this.vfx.length > 96) this.vfx.shift();
+  }
+
   sound(name: string) {
     if (this.sfx.length < 16) this.sfx.push(name);
   }
@@ -524,6 +541,15 @@ export class World {
     }
 
     for (const u of this.units) if (u.alive) updateUnit(this, u, dt);
+    // 넉백: 밀려나는 속도를 줄여 가며 움직인다 (벽은 resolveCollisions 가 막는다)
+    for (const u of this.units) {
+      if (!u.alive || (Math.abs(u.vx) < 0.01 && Math.abs(u.vy) < 0.01)) continue;
+      u.x += u.vx * dt;
+      u.y += u.vy * dt;
+      const k = Math.exp(-dt * 9);
+      u.vx *= k;
+      u.vy *= k;
+    }
     resolveCollisions(this);
     this.updateProjectiles(dt);
 

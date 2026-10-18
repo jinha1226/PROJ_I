@@ -9,7 +9,7 @@ import type { UiState } from '../ui/state';
 import type { Camera } from './camera';
 
 /** 던전 종류별 색 (계약의 palette) */
-const PALETTES = {
+export const PALETTES = {
   cave: { floorA: '#433d36', floorB: '#48413a', wallTop: '#6b6a78', wallEdge: '#8a899a', wallFront: '#3b3a46' },
   crypt: { floorA: '#33384a', floorB: '#373d50', wallTop: '#5a6276', wallEdge: '#7f8aa2', wallFront: '#2c3140' },
   nest: { floorA: '#3a3030', floorB: '#3f3434', wallTop: '#5e4a5e', wallEdge: '#836a86', wallFront: '#32253a' },
@@ -19,6 +19,8 @@ let C = { ...PALETTES.cave, floorLine: 'rgba(0,0,0,0.18)', fog: 'rgba(5,5,9,0.5)
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
+  /** 3D 모드: 던전 · 몸체 · 링 · 예고 범위는 3D 가 그리고, 여기서는 체력바 · 숫자 · 말풍선 같은 겹침만 */
+  overlay = false;
 
   constructor(private canvas: HTMLCanvasElement, private cam: Camera) {
     this.ctx = canvas.getContext('2d')!;
@@ -35,19 +37,24 @@ export class Renderer {
 
   draw(w: World, ui: UiState) {
     const ctx = this.ctx, cam = this.cam, z = cam.zoom;
-    ctx.fillStyle = '#07070b';
-    ctx.fillRect(0, 0, cam.w, cam.h);
+    if (this.overlay) ctx.clearRect(0, 0, cam.w, cam.h);
+    else {
+      ctx.fillStyle = '#07070b';
+      ctx.fillRect(0, 0, cam.w, cam.h);
+    }
     // 화면 흔들림
     const sh = w.shake;
     ctx.save();
-    if (sh > 0.3) ctx.translate((Math.random() * 2 - 1) * sh, (Math.random() * 2 - 1) * sh);
+    if (sh > 0.3 && !this.overlay) ctx.translate((Math.random() * 2 - 1) * sh, (Math.random() * 2 - 1) * sh);
 
-    this.drawTiles(w);
-    this.drawStairs(w);
-    this.drawObjects(w);
+    if (!this.overlay) {
+      this.drawTiles(w);
+      this.drawStairs(w);
+      this.drawObjects(w);
+    }
 
     // ── 바닥 표시 (예고 범위, 고수 지점, 선택 원) ──
-    for (const u of w.units) if (u.alive && u.cast) this.drawCastArea(w, u);
+    if (!this.overlay) for (const u of w.units) if (u.alive && u.cast) this.drawCastArea(w, u);
     for (const u of w.party) {
       if (!u.alive || !u.holdPos) continue;
       const [sx, sy] = cam.toScreen(u.holdPos.x, u.holdPos.y);
@@ -58,9 +65,11 @@ export class Renderer {
       ctx.moveTo(sx + 5, sy - 5); ctx.lineTo(sx - 5, sy + 5);
       ctx.stroke();
     }
-    for (const u of ui.selected) if (u.alive) this.ring(u, '#66ff88', 2);
-    if (ui.hover && ui.hover.alive) this.ring(ui.hover, ui.hover.faction === 'party' ? '#ffffffaa' : '#ff6666aa', 1.5);
-    if (w.focusTarget) this.drawFocus(w, w.focusTarget);
+    if (!this.overlay) {
+      for (const u of ui.selected) if (u.alive) this.ring(u, '#66ff88', 2);
+      if (ui.hover && ui.hover.alive) this.ring(ui.hover, ui.hover.faction === 'party' ? '#ffffffaa' : '#ff6666aa', 1.5);
+      if (w.focusTarget) this.drawFocus(w, w.focusTarget);
+    }
     if (ui.targeting) this.drawTargeting(w, ui);
 
     // ── 명령선: 선택된 유닛, 또는 일시정지 중엔 모든 파티원 ──
@@ -156,7 +165,8 @@ export class Renderer {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (const f of w.floaters) {
-      const [sx, sy] = cam.toScreen(f.x, f.y);
+      // 3D: 바닥에서 머리 위 높이로 올려 찍고, 떠오르는 만큼 위로
+      const [sx, sy] = this.overlay ? (([a, b]) => [a, b - f.t * 28])(cam.toScreenH(f.x, f.y + 0.9, 1.75)) : cam.toScreen(f.x, f.y);
       ctx.globalAlpha = Math.min(1, 1.6 - f.t * 1.4);
       ctx.font = `bold ${Math.round(13 * f.scale * Math.min(1.2, z / 40))}px sans-serif`;
       ctx.lineWidth = 3;
@@ -425,11 +435,13 @@ export class Renderer {
 
   private drawBubble(u: Unit, text: string, color: string, t: number, dur: number) {
     const ctx = this.ctx;
-    const [sx, sy] = this.cam.toScreen(u.x, u.y);
     const r = u.radius * this.cam.zoom;
+    // 3D: 머리 꼭대기 위로
+    const [sx, sy] = this.overlay ? this.cam.toScreenH(u.x, u.y, u.radius * 4.3) : this.cam.toScreen(u.x, u.y);
     ctx.font = 'bold 12px sans-serif';
     const tw = ctx.measureText(text).width + 14;
-    const bx = sx - tw / 2, by = sy - r * 2.3 - 62 - Math.min(1, t * 6) * 4;
+    const by = (this.overlay ? sy - 56 : sy - r * 2.3 - 62) - Math.min(1, t * 6) * 4;
+    const bx = sx - tw / 2;
     ctx.globalAlpha = Math.min(1, (dur - t) * 3, t * 8);
     ctx.fillStyle = '#f4f1ea';
     roundRect(ctx, bx, by, tw, 20, 8);
@@ -452,6 +464,13 @@ export class Renderer {
 
   private drawUnit(w: World, u: Unit) {
     const ctx = this.ctx, z = this.cam.zoom;
+    if (this.overlay) {
+      // 3D: 몸체는 3D 가 그리므로 머리 위 표시만 (머리 높이 = 반지름 × 4)
+      if (!u.alive) return;
+      const [hx, hy] = this.cam.toScreenH(u.x + u.kickX, u.y + u.kickY, u.radius * 4.3);
+      this.drawUnitHud(w, u, hx, hy + 2, 34);
+      return;
+    }
     const [sx, sy] = this.cam.toScreen(u.x + u.kickX, u.y + u.kickY);
     const r = u.radius * z;
     const bw = r * 1.75, bh = r * 2.1;
@@ -506,8 +525,15 @@ export class Renderer {
     ctx.textBaseline = 'middle';
     ctx.fillText(u.def.glyph, sx + lunge, by + bh * 0.5);
 
+    this.drawUnitHud(w, u, sx, by, Math.max(bw * 1.25, 26));
+  }
+
+  /** 머리 위 표시: 체력 · 마나 바, 붕괴 이름, 상태이상, 시전 바. top = 머리 꼭대기 화면 y */
+  private drawUnitHud(w: World, u: Unit, sx: number, by: number, barW: number) {
+    const ctx = this.ctx;
+    const mood = u.hero?.mood ? MOODS[u.hero.mood] : null;
     // 체력/마나 바
-    const barW = Math.max(bw * 1.25, 26), barX = sx - barW / 2;
+    const barX = sx - barW / 2;
     let y = by - 7;
     ctx.fillStyle = '#000a';
     ctx.fillRect(barX - 1, y - 1, barW + 2, 6);

@@ -1,6 +1,7 @@
 import type { DifficultyId } from './data/difficulty';
 import { Input } from './input/input';
-import { Camera } from './render/camera';
+import { Camera3D } from './render3d/camera3d';
+import { Renderer3D } from './render3d/renderer3d';
 import { Renderer } from './render/renderer';
 import { genFloor, type FloorOpts } from './sim/gen';
 import { CONTRACTS, type Contract } from './data/contracts';
@@ -32,8 +33,24 @@ const STEP = 1 / 60;
 const $ = (id: string) => document.getElementById(id)!;
 
 const canvas = $('game') as HTMLCanvasElement;
-const cam = new Camera();
+// 그래픽: 3D(흰 마네킹 · 기본) 또는 2D(글자 토큰). 3D 에선 2D 렌더러가 겹침만 그린다
+const cam = new Camera3D();
 const renderer = new Renderer(canvas, cam);
+const r3 = new Renderer3D($('gl') as HTMLCanvasElement, cam);
+let gfx3d = true;
+try {
+  gfx3d = localStorage.getItem('bh.gfx') !== '2d';
+} catch {
+  // 저장소를 못 쓰면 기본값
+}
+function applyGfx() {
+  // 3D 는 캐릭터가 서 있어서 조금 더 당겨 본다
+  cam.zoom = gfx3d ? Math.max(cam.zoom, 64) : Math.min(cam.zoom, 48);
+  cam.enabled = gfx3d;
+  renderer.overlay = gfx3d;
+  $('gl').style.display = gfx3d ? 'block' : 'none';
+  $('btn-gfx').textContent = `그래픽: ${gfx3d ? '3D' : '2D'}`;
+}
 const ui = createUiState();
 // ── 런: 5층. 층마다 새 World 를 만들고 영웅(성장 데이터)만 이어진다 ──
 let runSeed = (Math.random() * 1e9) | 0;
@@ -467,8 +484,22 @@ $('btn-speed').addEventListener('click', () => {
 });
 for (const id of ['top', 'party', 'inspect']) $(id).addEventListener('contextmenu', (e) => e.preventDefault());
 
-window.addEventListener('resize', () => renderer.resize());
+window.addEventListener('resize', () => {
+  renderer.resize();
+  r3.resize();
+});
 renderer.resize();
+r3.resize();
+$('btn-gfx').addEventListener('click', () => {
+  gfx3d = !gfx3d;
+  try {
+    localStorage.setItem('bh.gfx', gfx3d ? '3d' : '2d');
+  } catch {
+    // 무시
+  }
+  applyGfx();
+});
+applyGfx();
 hud.build();
 centerParty();
 
@@ -509,6 +540,8 @@ function frame(now: number) {
   insp.style.maxHeight = `${Math.max(120, window.innerHeight - cam.padBottom - insp.offsetTop - ($('belt').offsetHeight + 12))}px`;
   updatePrompt();
   input.update(dt);
+  if (gfx3d) r3.draw(world, ui, dt);
+  else world.vfx.length = 0;
   renderer.draw(world, ui);
   hud.update();
 

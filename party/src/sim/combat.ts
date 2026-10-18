@@ -59,6 +59,7 @@ export function applyDamage(
       target.kickY += ((target.y - source.y) / d) * k;
     }
     w.sound(target.faction === 'party' ? 'hurt' : frac >= 0.15 ? 'heavy' : 'hit');
+    w.emit({ type: 'hit', unit: target, heavy: frac >= 0.15, from: source });
   }
   // 불굴: 층마다 한 번 쓰러지지 않고 버틴다
   if (target.hp <= 0 && target.tags.includes('undying') && !target.undyingUsed) {
@@ -109,6 +110,7 @@ export function heal(w: World, target: Unit, amount: number) {
   const before = target.hp;
   target.hp = Math.min(target.stats.maxHp, target.hp + amount);
   w.sound('heal');
+  w.emit({ type: 'heal', unit: target });
   w.float(target, `+${Math.round(target.hp - before)}`, '#88ff88');
 }
 
@@ -156,6 +158,7 @@ export function tryApplyStatus(w: World, t: Unit, ap: StatusApply, source: Unit 
   }
   if (def.stun && t.cast) w.cancelCast(t, '');
   w.float(t, def.name, def.color);
+  w.emit({ type: 'status', unit: t, status: ap.status });
   return true;
 }
 
@@ -180,24 +183,57 @@ export function cleanse(w: World, u: Unit) {
 }
 
 /** 평타 */
+/** 근접 콤보 (파티 근접): 1타 · 2타는 빠르고 약하게, 3타(마무리)는 강하게 + 넉백 · 짧은 경직 */
+export const COMBO = [
+  { mult: 0.8, delay: 0.7 },
+  { mult: 0.9, delay: 0.7 },
+  { mult: 1.55, delay: 1.35 },
+];
+
 export function performAttack(w: World, u: Unit, t: Unit) {
   u.attackCd = attackDelay(u);
   u.swing = 0.15;
+  let mult = 1;
+  const combo = u.faction === 'party' && !u.isRanged;
+  if (combo) {
+    // 잠깐 쉬었거나 대상이 바뀌면 처음부터
+    if (w.time - u.comboAt > 2 || u.comboTarget !== t) u.combo = 0;
+    const step = COMBO[u.combo];
+    u.swingStep = u.combo;
+    mult = step.mult;
+    u.attackCd *= step.delay;
+    u.comboAt = w.time;
+    u.comboTarget = t;
+    u.combo = (u.combo + 1) % COMBO.length;
+  }
   // 연타: 가끔 한 번 더
   const hits = u.tags.includes('double_strike') && w.rng.chance(0.25) ? 2 : 1;
-  for (let i = 0; i < hits; i++) weaponStrike(w, u, t);
+  for (let i = 0; i < hits; i++) weaponStrike(w, u, t, mult);
+  if (combo && u.swingStep === COMBO.length - 1 && t.alive) finisher(w, u, t);
 }
 
-function weaponStrike(w: World, u: Unit, t: Unit) {
+/** 마무리 타: 밀쳐내기 · 짧은 경직 · 화면 흔들림 (보스 · 덩치 큰 적은 덜 밀린다) */
+export function finisher(w: World, u: Unit, t: Unit) {
+  const d = dist(u, t) || 1;
+  const k = (t.def.boss ? 0.25 : 1) * (3 / Math.max(1, t.def.mass)) * 2.2;
+  t.vx += ((t.x - u.x) / d) * k;
+  t.vy += ((t.y - u.y) / d) * k;
+  if (!t.def.boss) tryApplyStatus(w, t, { status: 'stun', duration: 0.35 }, u, 0);
+  w.shake = Math.max(w.shake, 4);
+  w.hitstop = Math.max(w.hitstop, 0.05);
+}
+
+function weaponStrike(w: World, u: Unit, t: Unit, mult = 1) {
   const wpn = u.weapon;
   if (wpn.projectile) {
     w.spawnProjectile({
       source: u, target: t, x: u.x, y: u.y, tx: t.x, ty: t.y,
       speed: wpn.projectile.speed, color: wpn.projectile.color, size: 0.08,
-      onHit: () => resolveWeaponHit(w, u, t, 1, false),
+      style: wpn.skill === 'bow' ? 'arrow' : 'orb', element: wpn.element,
+      onHit: () => resolveWeaponHit(w, u, t, mult, false),
     });
   } else {
-    resolveWeaponHit(w, u, t, 1, false);
+    resolveWeaponHit(w, u, t, mult, false);
   }
 }
 

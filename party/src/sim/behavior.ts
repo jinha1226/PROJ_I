@@ -2,7 +2,7 @@
 import { dist } from '../core/rng';
 import { beginCast, updateCast } from './abilities';
 import { think } from './ai';
-import { performAttack, tickStatuses } from './combat';
+import { finisher, performAttack, resolveWeaponHit, tickStatuses } from './combat';
 import { computeStats, attackReach } from './stats';
 import { face, moveTo, stopMoving } from './movement';
 import type { Command, Intent, Unit } from './unit';
@@ -27,8 +27,15 @@ export function updateUnit(w: World, u: Unit, dt: number) {
   if (u.def.regen && !u.hasStatus('burn')) u.hp = Math.min(u.stats.maxHp, u.hp + u.def.regen * (1 + (u.scale.hp - 1) * 0.5) * dt);
   if (u.faction === 'party' && !w.inCombat) u.hp = Math.min(u.stats.maxHp, u.hp + u.stats.maxHp * 0.04 * dt);
 
+  u.dashCd -= dt;
   if (u.stats.stunned) {
     if (u.cast) w.cancelCast(u, '');
+    u.dashT = 0;
+    return;
+  }
+  // 돌진 중: 빠르게 붙고, 닿으면 강타 (짧은 경직)
+  if (u.dashT > 0) {
+    dashStep(w, u, dt);
     return;
   }
   if (u.cast) {
@@ -90,6 +97,15 @@ function execute(w: World, u: Unit, it: Intent, dt: number, cmd: Command | null)
         return 'running';
       }
       if (!cmd && u.holdPos && dist(u.holdPos, t) > reach + 1.2) return 'failed';
+      // 근접 파티원: 조금 떨어진 적에게는 돌진
+      if (u.faction === 'party' && !u.isRanged && u.dashCd <= 0 && d > reach + 1.2 && d <= DASH_RANGE && w.map.clearPath(u.x, u.y, t.x, t.y, u.radius * 0.8)) {
+        u.dashT = 0.4;
+        u.dashTarget = t;
+        u.dashCd = DASH_CD;
+        face(u, t);
+        w.sound('swing');
+        return 'running';
+      }
       if (!moveTo(w, u, t.x, t.y, dt, u.isRanged ? 0 : reach * 0.9)) return fail(w, u, cmd);
       return progress(w, u, cmd, d);
     }
@@ -134,6 +150,37 @@ function execute(w: World, u: Unit, it: Intent, dt: number, cmd: Command | null)
       if (!moveTo(w, u, it.x, it.y, dt, stopAt)) return fail(w, u, cmd);
       return progress(w, u, cmd, d);
     }
+  }
+}
+
+const DASH_RANGE = 6;
+const DASH_CD = 5;
+const DASH_SPEED = 13;
+
+function dashStep(w: World, u: Unit, dt: number) {
+  const t = u.dashTarget;
+  u.dashT -= dt;
+  if (!t || !t.alive) {
+    u.dashT = 0;
+    return;
+  }
+  face(u, t);
+  u.moving = true;
+  const reach = attackReach(u, t);
+  const d = dist(u, t);
+  const step = Math.min(DASH_SPEED * dt, Math.max(0, d - reach * 0.8));
+  if (d > 0.01) {
+    u.x += ((t.x - u.x) / d) * step;
+    u.y += ((t.y - u.y) / d) * step;
+  }
+  if (d - step <= reach) {
+    u.dashT = 0;
+    u.combo = 0;
+    u.swingStep = 2;
+    u.swing = 0.15;
+    u.attackCd = 0.35;
+    resolveWeaponHit(w, u, t, 1.2, true);
+    if (t.alive) finisher(w, u, t);
   }
 }
 

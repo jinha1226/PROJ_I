@@ -129,6 +129,18 @@ export class Unit {
   obeyUntil = 0;
   refuseUntil = 0;
 
+  /** 근접 콤보: 다음 타 번호 (0 · 1 · 2, 2 = 마무리 타). 화면은 swingStep 으로 동작을 고른다 */
+  combo = 0;
+  comboAt = -9;
+  comboTarget: Unit | null = null;
+  swingStep = 0;
+  /** 넉백 속도 (타일/초) */
+  vx = 0;
+  vy = 0;
+  /** 돌진: 남은 시간 · 대상 · 다시 쓰기까지 */
+  dashT = 0;
+  dashTarget: Unit | null = null;
+  dashCd = 0;
   /** 소환한 유닛 (소환수 수 제한용) */
   summoner: Unit | null = null;
   /** 불굴(undying) 특성을 이번 층에 썼는가 */

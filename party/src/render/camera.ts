@@ -14,6 +14,17 @@ export class Camera {
     return [(x - this.x) * this.zoom + this.w / 2, (y - this.y) * this.zoom + (this.h - this.padBottom) / 2];
   }
 
+  /** 유닛 몸 높이 (반지름 배수). 클릭 판정용 */
+  get bodyH() {
+    return 2.2;
+  }
+
+  /** 바닥에서 h(타일) 높이에 있는 점의 화면 좌표. 2D 에선 위로 h 타일만큼 */
+  toScreenH(x: number, y: number, h: number): [number, number] {
+    const [sx, sy] = this.toScreen(x, y);
+    return [sx, sy - h * this.zoom];
+  }
+
   toWorld(sx: number, sy: number): { x: number; y: number } {
     return { x: (sx - this.w / 2) / this.zoom + this.x, y: (sy - (this.h - this.padBottom) / 2) / this.zoom + this.y };
   }
