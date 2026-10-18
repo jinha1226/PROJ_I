@@ -240,6 +240,11 @@ export class Unit {
     return this.hp / this.stats.maxHp;
   }
 
+  /** 평타를 하는가 (사제는 배틀하트 성직자처럼 치유 · 보호에만 집중한다) */
+  get attacks() {
+    return this.hero?.cls !== 'priest';
+  }
+
   get isRanged() {
     return this.weapon.range > 1.5;
   }

@@ -99,7 +99,7 @@ function execute(w: World, u: Unit, it: Intent, dt: number, cmd: Command | null)
     }
     case 'attack': {
       const t = it.target;
-      if (!t.alive) return 'done';
+      if (!t.alive || !u.attacks) return 'done';
       if (!cmd && u.faction === 'party' && !w.isVisible(t)) return 'failed';
       const reach = attackReach(u, t);
       const d = dist(u, t);

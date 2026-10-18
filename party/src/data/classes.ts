@@ -51,7 +51,7 @@ export const CLASSES: Record<ClassId, ClassDef> = {
   },
   priest: {
     id: 'priest', name: '사제', glyph: '치', color: '#f2f2ff', role: 'support', tactic: 'support',
-    desc: '치유와 보호. 해로운 상태는 알아서 정화한다.',
+    desc: '평타 없이 치유와 보호에만 집중한다. 해로운 상태는 알아서 정화한다.',
     radius: 0.34, mass: 1, speed: 2.7, hp: 70, mp: 40, str: 10, dex: 10, int: 14, ac: 0, ev: 5, will: 20, levelHp: 6, levelMp: 4,
     skills: { faith: 3, spellcasting: 2, bow: 1, armour: 1 },
     gear: { weapon: 'sling', armour: 'ring_mail' },

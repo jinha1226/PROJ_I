@@ -64,7 +64,7 @@ export function think(w: World, u: Unit): Intent | null {
   const chase = u === w.captain ? (u.isRanged ? 2.5 : 6) : 0;
   const cands: Cand[] = [];
 
-  for (const e of enemies) {
+  for (const e of u.attacks ? enemies : []) {
     const reach = attackReach(u, e);
     const d = dist(u, e);
     if (manual && (d > reach + chase || (u.isRanged && d <= reach && !w.map.los(u.x, u.y, e.x, e.y)))) continue;

@@ -187,7 +187,7 @@ const list: AbilityDef[] = [
   {
     id: 'heal', name: '치유', icon: '치', color: '#88ff88', type: 'spell', schools: ['faith'], level: 2,
     desc: '아군 하나의 체력을 회복한다.',
-    cost: 5, castTime: 0.7, cooldown: 3, range: 6, target: 'ally',
+    cost: 5, castTime: 0.7, cooldown: 2.2, range: 6, target: 'ally',
     effects: [{ kind: 'heal', base: [10, 14], scale: 0.6 }],
     aiRole: 'heal', control: 'auto',
   },
