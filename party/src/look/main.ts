@@ -47,15 +47,25 @@ function gradient(steps: number): THREE.DataTexture {
 let gradientMap = gradient(settings.steps);
 const toonMats: THREE.MeshToonMaterial[] = [];
 
-/** 원래 재질의 텍스처 · 색을 살려 툰 재질로 바꾼다 */
-function toonify(root: THREE.Object3D, tint?: THREE.ColorRepresentation, outline = true) {
+const envMats: THREE.MeshToonMaterial[] = [];
+let whiteWorld = false;
+/** 원래 재질의 텍스처 · 색을 살려 툰 재질로 바꾼다. white = 텍스처를 버리고 흰색으로 */
+function toonify(root: THREE.Object3D, tint?: THREE.ColorRepresentation, outline = true, white = false, ink: number[] = [0.04, 0.02, 0.06], env = false) {
   root.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;
     const src = mesh.material as THREE.MeshStandardMaterial;
-    const mat = new THREE.MeshToonMaterial({ map: src.map ?? null, color: src.color?.clone() ?? new THREE.Color(1, 1, 1), gradientMap });
+    const mat = new THREE.MeshToonMaterial({
+      map: white ? null : src.map ?? null,
+      color: white ? new THREE.Color('#f4f1ea') : src.color?.clone() ?? new THREE.Color(1, 1, 1),
+      gradientMap,
+    });
     if (tint) mat.color.multiply(new THREE.Color(tint));
-    mat.userData.outlineParameters = { thickness: settings.outline, color: [0.04, 0.02, 0.06], visible: outline };
+    mat.userData.outlineParameters = { thickness: settings.outline, color: ink, visible: outline };
+    if (env) {
+      mat.userData.orig = { map: mat.map, color: mat.color.clone() };
+      envMats.push(mat);
+    }
     toonMats.push(mat);
     mesh.material = mat;
     mesh.castShadow = true;
@@ -86,6 +96,13 @@ interface Look {
   show: string[];
   /** 모델 키를 이 높이로 맞춘다 (팩마다 크기가 달라서) */
   height?: number;
+  /** 오른손에 쥐여 줄 무기 (UAL 마네킹) */
+  weapon?: string;
+  /** 왼손 (방패 · 책) */
+  offhand?: string;
+  /** 이 유닛만의 대기 · 이동 애니메이션 (좀비 걸음 등) */
+  idle?: string;
+  run?: string;
   tint?: string;
   attack: string;
   ranged?: string;
@@ -116,22 +133,38 @@ const LOOKS_Q: Record<string, Look> = {
   brute: { model: 'quaternius/Yeti', show: [], height: 3.2, attack: 'Punch' },
 };
 /** mix = 영웅은 KayKit, 몬스터는 Quaternius */
-let pack: 'kaykit' | 'quat' | 'mix' = 'kaykit';
+/** UAL 마네킹: 전부 흰색. 영웅은 무기로, 적은 붉은 외곽선 · 크기 · 걸음새로 구분 */
+const LOOKS_U: Record<string, Look> = {
+  warrior: { model: 'ual/ual', show: [], height: 2.2, weapon: 'kaykit/w_sword_1handed', offhand: 'kaykit/w_shield_round', attack: 'Sword_Attack', idle: 'Sword_Idle' },
+  berserker: { model: 'ual/ual', show: [], height: 2.3, weapon: 'kaykit/w_axe_2handed', attack: 'Sword_Regular_A', idle: 'Sword_Idle' },
+  fire_mage: { model: 'ual/ual', show: [], height: 2.1, weapon: 'kaykit/w_staff', attack: 'Spell_Simple_Shoot', ranged: '#ff7a2f' },
+  hunter: { model: 'ual/ual', show: [], height: 2.1, weapon: 'kaykit/w_crossbow_2handed', attack: 'Bow_Shoot', ranged: '#e8d8a0' },
+  priest: { model: 'ual/ual', show: [], height: 2.1, weapon: 'kaykit/w_wand', offhand: 'kaykit/w_spellbook_open', attack: 'Spell_Simple_Shoot', ranged: '#ffeeaa' },
+  skeleton: { model: 'ual/ual', show: [], height: 2.1, attack: 'Zombie_Scratch', idle: 'Zombie_Idle_Loop', run: 'Zombie_Walk_Fwd_Loop' },
+  skeleton_mage: { model: 'ual/ual', show: [], height: 2.0, attack: 'Spell_Simple_Shoot', ranged: '#b07cff' },
+  brute: { model: 'ual/ual', show: [], height: 3.3, attack: 'Punch_Cross', idle: 'Idle_Loop' },
+};
+let pack: 'kaykit' | 'quat' | 'mix' | 'ual' = 'kaykit';
 const HERO_KINDS = ['warrior', 'berserker', 'fire_mage', 'hunter', 'priest'];
 const lookOf = (kind: string) => {
+  if (pack === 'ual') return LOOKS_U[kind] ?? LOOKS_U.skeleton;
   const q = pack === 'quat' || (pack === 'mix' && !HERO_KINDS.includes(kind));
   return q ? LOOKS_Q[kind] ?? LOOKS_Q.skeleton : LOOKS_K[kind] ?? LOOKS_K.skeleton;
 };
 
 /** 팩마다 애니메이션 이름이 달라서 후보 중 있는 것을 쓴다 */
 const ANIMS = {
-  idle: ['Idle_Weapon', 'Idle', 'Flying_Idle'],
-  combat: ['Idle_Combat', 'Idle_Attacking', 'Attacking_Idle', 'Idle_Weapon', 'Idle', 'Flying_Idle'],
-  run: ['Running_A', 'Run_Weapon', 'Run', 'Fast_Flying', 'Gallop', 'Walk'],
-  hit: ['Hit_A', 'RecieveHit', 'HitReact', 'HitRecieve', 'Idle_HitReact1'],
-  death: ['Death_A', 'Death'],
+  idle: ['Idle_Weapon', 'Idle', 'Flying_Idle', 'Idle_Loop'],
+  combat: ['Idle_Combat', 'Idle_Attacking', 'Attacking_Idle', 'Idle_Weapon', 'Idle', 'Flying_Idle', 'Idle_Loop'],
+  run: ['Running_A', 'Run_Weapon', 'Run', 'Fast_Flying', 'Gallop', 'Jog_Fwd_Loop', 'Walk', 'Walk_Loop'],
+  hit: ['Hit_A', 'RecieveHit', 'HitReact', 'HitRecieve', 'Idle_HitReact1', 'Hit_Chest'],
+  death: ['Death_A', 'Death', 'Death01'],
 };
-const anim = (a: Actor, k: keyof typeof ANIMS) => ANIMS[k].find((n) => a.clips.has(n)) ?? 'Idle';
+const anim = (a: Actor, k: keyof typeof ANIMS) => {
+  if ((k === 'idle' || k === 'combat') && a.look.idle) return a.look.idle;
+  if (k === 'run' && a.look.run) return a.look.run;
+  return ANIMS[k].find((n) => a.clips.has(n)) ?? 'Idle';
+};
 
 const ACCESSORIES = /(Sword|Shield|Axe|Mug|Hat|Helmet|Cape|Wand|Staff|Spellbook|Crossbow|Knife|Throwable)/;
 
@@ -153,6 +186,20 @@ interface Actor {
 
 const actors: Actor[] = [];
 
+/** 손 뼈에 무기를 붙인다. 뼈의 월드 배율을 되돌려 무기 크기를 일정하게 */
+async function attach(root: THREE.Object3D, bone: string, model: string, side: Actor['side']) {
+  const hand = root.getObjectByName(bone);
+  if (!hand) return;
+  const w = (await load(model)).scene.clone();
+  toonify(w, undefined, true, true, side === 'foe' ? [0.5, 0.06, 0.06] : undefined);
+  root.updateMatrixWorld(true);
+  const s = new THREE.Vector3();
+  hand.getWorldScale(s);
+  w.scale.setScalar(0.85 / (s.x || 1));
+  w.rotation.set(Math.PI / 2, 0, Math.PI / 2);
+  hand.add(w);
+}
+
 async function spawn(kind: string, side: Actor['side'], x: number, z: number, name: string): Promise<Actor> {
   const look = lookOf(kind);
   const gltf = await load(look.model);
@@ -165,7 +212,10 @@ async function spawn(kind: string, side: Actor['side'], x: number, z: number, na
     if (!(o as THREE.Mesh).isMesh) return;
     if (ACCESSORIES.test(o.name) && !look.show.includes(o.name) && !o.name.startsWith('Skeleton')) o.visible = false;
   });
-  toonify(root, look.tint);
+  const ual = look.model === 'ual/ual';
+  toonify(root, look.tint, true, ual, side === 'foe' && ual ? [0.5, 0.06, 0.06] : undefined);
+  if (look.weapon) await attach(root, 'hand_r', look.weapon, side);
+  if (look.offhand) await attach(root, 'hand_l', look.offhand, side);
   if (look.scale) root.scale.multiplyScalar(look.scale);
   root.position.set(x, 0, z);
   scene.add(root);
@@ -205,7 +255,7 @@ async function buildRoom() {
   for (let i = 0; i < W; i++)
     for (let j = 0; j < H; j++) {
       const f = floor.clone();
-      toonify(f, '#8f8580', false);
+      toonify(f, '#8f8580', false, false, undefined, true);
       f.position.set(ox + i * TILE, 0, oz + j * TILE);
       scene.add(f);
     }
@@ -229,7 +279,7 @@ async function buildRoom() {
   for (const side of [-1, 1])
     for (let j = 0; j < H; j++) {
       const w = wall.clone();
-      toonify(w);
+      toonify(w, undefined, true, false, undefined, true);
       w.rotation.y = Math.PI / 2;
       w.position.set(side * (W * TILE) / 2, 0, oz + j * TILE);
       scene.add(w);
@@ -444,9 +494,18 @@ const flatBtn = button(() => `2D 느낌: ${settings.flat ? '켜짐' : '꺼짐'}`
   for (const b of ui.querySelectorAll('button')) b.dispatchEvent(new Event('refresh'));
 });
 flatBtn.classList.add('on');
-button(() => `모델: ${pack === 'kaykit' ? 'KayKit' : pack === 'quat' ? 'Quaternius' : '혼합(영웅 KayKit)'}`, () => {
+button(() => `모델: ${({ kaykit: 'KayKit', quat: 'Quaternius', mix: '혼합(영웅 KayKit)', ual: '흰 마네킹(UAL)' } as const)[pack]}`, () => {
   void switchPack();
 }).addEventListener('click', () => setTimeout(() => ui.querySelectorAll('button').forEach((b) => b.dispatchEvent(new Event('refresh'))), 50));
+button(() => `흰 던전: ${whiteWorld ? '켜짐' : '꺼짐'}`, () => {
+  whiteWorld = !whiteWorld;
+  for (const m of envMats) {
+    m.map = whiteWorld ? null : m.userData.orig.map;
+    m.color.copy(whiteWorld ? new THREE.Color('#d8d4cc') : m.userData.orig.color);
+    m.needsUpdate = true;
+  }
+  scene.background = new THREE.Color(whiteWorld ? '#e8e4dc' : '#15131c');
+});
 const PIXELS = [0, 3, 4, 6];
 button(() => `픽셀: ${settings.pixel ? `${settings.pixel}px` : '끔'}`, () => {
   settings.pixel = PIXELS[(PIXELS.indexOf(settings.pixel) + 1) % PIXELS.length];
@@ -549,7 +608,7 @@ async function spawnAll() {
 
 /** 모델 팩 바꾸기: 지금 있는 유닛을 모두 치우고 다시 부른다 */
 async function switchPack() {
-  pack = pack === 'kaykit' ? 'quat' : pack === 'quat' ? 'mix' : 'kaykit';
+  pack = pack === 'kaykit' ? 'quat' : pack === 'quat' ? 'mix' : pack === 'mix' ? 'ual' : 'kaykit';
   for (const a of actors) scene.remove(a.root);
   actors.length = 0;
   for (const s of shots) scene.remove(s.mesh);

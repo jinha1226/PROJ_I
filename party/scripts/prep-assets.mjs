@@ -68,3 +68,15 @@ for (const [src, name] of QUAT) {
   await io.write(out, doc);
   console.log('Q', name, `${(statSync(out).size / 1e6).toFixed(2)}MB`);
 }
+
+// ── UAL (Quaternius Universal Animation Library, CC0): 마네킹 + 애니메이션 51종 ──
+mkdirSync('public/assets/ual', { recursive: true });
+copyFileSync('/mnt/d/PROJ_A/public/assets/models/ual/ual.glb', 'public/assets/ual/ual.glb');
+copyFileSync('/mnt/d/PROJ_A/public/assets/models/ual/LICENSE.txt', 'public/assets/ual/LICENSE.txt');
+// 마네킹 손에 쥐여 줄 KayKit 무기
+const WSRC = '/mnt/d/PROJ_SV/art3d/vendor/kaykit_adventurers/addons/kaykit_character_pack_adventures/Assets/gltf';
+for (const w of ['sword_1handed', 'axe_2handed', 'staff', 'crossbow_2handed', 'shield_round', 'wand', 'spellbook_open']) {
+  const doc = await io.read(join(WSRC, `${w}.gltf`));
+  await io.write(join(OUT, `w_${w}.glb`), doc);
+}
+console.log('ual + weapons');
