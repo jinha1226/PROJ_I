@@ -9,7 +9,7 @@ export type SkillId =
   | 'armour' | 'dodge' | 'shield'
   | 'spellcasting' | 'fire' | 'ice' | 'earth' | 'necro' | 'summon' | 'faith';
 
-export type StatusId = 'burn' | 'poison' | 'slow' | 'stun' | 'taunted' | 'guarded' | 'protected' | 'might' | 'fear';
+export type StatusId = 'burn' | 'poison' | 'slow' | 'stun' | 'taunted' | 'guarded' | 'protected' | 'might' | 'fear' | 'warded' | 'enraged' | 'frenzy';
 export type TacticId = 'aggressive' | 'defensive' | 'ranged' | 'support';
 export type TargetPref = 'nearest' | 'threat' | 'backline' | 'weakest';
 export type Role = 'tank' | 'melee' | 'ranged' | 'caster' | 'support';
@@ -78,6 +78,10 @@ export interface AbilityDef {
   aiRole: AiRole;
   /** 소환: 시전자 주변에 몬스터를 불러낸다 (살아 있는 소환수가 max 이상이면 쓰지 않는다) */
   summon?: { id: string; count: number; max: number };
+  /** 보스 스크립트가 직접 쓰는 기술 (AI 가 고르지 않는다) */
+  scripted?: boolean;
+  /** 시전이 끝나면 시전자가 지점으로 뛰어든다 */
+  leap?: boolean;
   /** 'auto' = 딜·힐 로테이션 기술: 직접 조종(기본)에서도 AI 가 알아서 쓴다. 나머지는 플레이어의 판단 */
   control?: 'auto';
 }

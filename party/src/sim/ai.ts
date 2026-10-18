@@ -1,5 +1,6 @@
 // 유틸리티 점수 기반 AI. 파티원·몬스터·소환수가 같은 함수를 쓰고,
 // 전술 유형(tactic)과 대상 선호(targetPref)가 점수 가중치만 바꾼다.
+import { aggroTarget, usesThreat } from './threat';
 import { dist } from '../core/rng';
 import { STATUSES } from '../data/statuses';
 import { abilityReady, areaCenter, expectedDamage, expectedHeal, unitsInArea } from './abilities';
@@ -53,6 +54,9 @@ export function think(w: World, u: Unit): Intent | null {
     if (out) return out;
   }
 
+  // 위협 수치로 싸우는 적: 어그로 대상만 친다 (기술은 그대로 고른다)
+  const tank = usesThreat(u) ? aggroTarget(w, u) : null;
+
   const manual = u.faction === 'party' && !u.autoMode;
   // 주장은 손을 떼면 가까운 적에게 조금 다가가 친다 (배틀하트식)
   const chase = u === w.captain ? (u.isRanged ? 1 : 3) : 0;
@@ -63,12 +67,13 @@ export function think(w: World, u: Unit): Intent | null {
     const d = dist(u, e);
     if (manual && (d > reach + chase || (u.isRanged && d <= reach && !w.map.los(u.x, u.y, e.x, e.y)))) continue;
     if (leashed(u, e, reach)) continue;
+    if (tank && e !== tank) continue;
     cands.push({ intent: { type: 'attack', target: e }, score: attackValue(w, u, e, d, reach) });
   }
 
   {
     u.abilities.forEach((st, slot) => {
-      if (!abilityReady(u, st)) return;
+      if (!abilityReady(u, st) || st.def.scripted) return;
       // 직접 조종(기본): 자동으로 표시된 기술(로테이션 · 자동 전용)만 AI 가 쓴다.
       // 자동전투를 켜면 수동 전용(특성으로 배운 기술)을 뺀 나머지도 쓴다
       // 동료(자동)는 특성으로 배운 기술까지 다 쓴다
@@ -111,7 +116,8 @@ function targetWeight(w: World, u: Unit, e: Unit): number {
     // 집중 공격: 방어형(탱커)은 앞을 지키느라 따르지 않는다. 가까운 집중 대상만 조금 더.
     // 원거리도 사거리 밖 집중 대상을 쫓아 적진으로 들어가지 않는다 (주장은 플레이어가 고른 대로)
     if (w.focusTarget === e) {
-      const inReach = d <= attackReach(u, e) + 1;
+      // 원거리는 사거리 + 4칸 안이면 따라간다 (쫄 먼저!), 더 멀면 적진을 가로지르지 않는다
+      const inReach = d <= attackReach(u, e) + (u.isRanged ? 4 : 1);
       wt *= u === w.captain ? 2.5 : u.tactic === 'defensive' ? (d < 2.5 ? 1.5 : 1) : inReach ? 2.5 : 1;
     }
     switch (u.tactic) {

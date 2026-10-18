@@ -32,6 +32,18 @@ export const STATUSES: Record<StatusId, StatusDef> = {
     id: 'protected', name: '보호', icon: '보', color: '#ffeeaa', harmful: false, stacking: 'refresh',
     mods: { dmgTakenMult: 0.7 }, severity: 0,
   },
+  warded: {
+    id: 'warded', name: '주술 보호막', icon: '막', color: '#c890ff', harmful: false, stacking: 'refresh',
+    mods: { dmgTakenMult: 0.35 }, severity: 0,
+  },
+  enraged: {
+    id: 'enraged', name: '광폭화', icon: '광', color: '#ff4444', harmful: false, stacking: 'refresh',
+    mods: { actionMult: 1.35, dmgMult: 1.15 }, severity: 0,
+  },
+  frenzy: {
+    id: 'frenzy', name: '광란', icon: '란', color: '#ff0000', harmful: false, stacking: 'refresh',
+    mods: { actionMult: 1.6, dmgMult: 3 }, severity: 0,
+  },
   might: {
     id: 'might', name: '괴력', icon: '힘', color: '#ff9944', harmful: false, stacking: 'refresh',
     mods: { dmgMult: 1.3 }, severity: 0,

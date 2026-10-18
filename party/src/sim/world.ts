@@ -1,9 +1,12 @@
 import { dist, Rng } from '../core/rng';
-import type { Element } from './defs';
+import type { Element, StatusId } from './defs';
+import { STATUSES } from '../data/statuses';
 import type { ArenaWave, MapDef } from '../data/maps';
 import { DIFFICULTIES, type Difficulty, type DifficultyId } from '../data/difficulty';
 import { MONSTERS } from '../data/units';
 import { synergyProps } from '../data/synergy';
+import { bossStep, initBoss } from './boss';
+import { proximityThreat } from './threat';
 import { CONTRACTS } from '../data/contracts';
 import { updateUnit } from './behavior';
 import { beginFloor, gainXp, newParty, type Hero } from './hero';
@@ -234,7 +237,9 @@ export class World {
       // 얕은 층 적도 아프게 (1층 ×1.5, 2층 ×1.25): 쉬운 계약도 손 놓으면 다친다
       u.scale.dmg *= 1 + shallow * 0.25;
     }
-    return this.addUnit(u);
+    const added = this.addUnit(u);
+    initBoss(this, added);
+    return added;
   }
 
   private addUnit(u: Unit): Unit {
@@ -361,6 +366,19 @@ export class World {
       stopMoving(p);
       p.holdPos = this.inCombat ? { x: p.x, y: p.y } : null;
     }
+  }
+
+  /** 판정 없이 상태를 걸거나 늘린다 (보스 스크립트용). 처음 걸릴 때만 글자를 띄운다 */
+  applyStatus(u: Unit, id: StatusId, duration: number) {
+    const ex = u.hasStatus(id);
+    if (ex) {
+      ex.time = Math.max(ex.time, duration);
+      return;
+    }
+    const def = STATUSES[id];
+    u.statuses.push({ def, time: duration, stacks: 1, source: null, tick: 0 });
+    this.float(u, def.name, def.color);
+    this.emit({ type: 'status', unit: u, status: id });
   }
 
   /** 주장을 바꾼다. 새 주장은 이전 주장의 자동 여부를 이어받고, 나머지는 자동전투 */
@@ -708,6 +726,8 @@ export class World {
       checkObjects(this);
       tickStress(this, 0.2);
       if (this.arena) this.arenaStep(0.2);
+      proximityThreat(this, 0.2);
+      bossStep(this, 0.2);
       this.exploreStep();
     }
 

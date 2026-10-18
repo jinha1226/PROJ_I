@@ -7,14 +7,12 @@ import { dist, Rng } from '../src/core/rng';
 import { CONTRACTS, type ContractKind } from '../src/data/contracts';
 import type { DifficultyId } from '../src/data/difficulty';
 import { areaCenter } from '../src/sim/abilities';
-import { threatOf } from '../src/sim/ai';
 import { genArena } from '../src/sim/arena';
 import { ROOM_HEAL, genExpedition, nodeDepth, reachable } from '../src/sim/expedition';
 import { applyTalent, gainXp, newParty, nextTier, saveFromUnit, tierOptions, xpToNext } from '../src/sim/hero';
 import { resolvePrompt, useConsumable } from '../src/sim/objects';
 import { newRun } from '../src/sim/run';
 import { restRelief } from '../src/sim/stress';
-import type { Unit } from '../src/sim/unit';
 import { World } from '../src/sim/world';
 
 const DIFF = (process.env.DIFF ?? 'normal') as DifficultyId;
@@ -22,17 +20,17 @@ const def = CONTRACTS[(process.env.CONTRACT ?? 'hunt') as ContractKind];
 const LV = Number(process.env.LV ?? 1);
 if (process.env.POWER) def.power = Number(process.env.POWER);
 const SKILLED = (process.env.MODE ?? 'auto') === 'skilled';
-const PARTS = (process.env.ASSIST ?? 'dodge,interrupt,kite,items,route').split(',');
+const PARTS = (process.env.ASSIST ?? 'focus,dodge,interrupt,kite,items,route').split(',');
 
 /** 잘하는 주장: 매 틱 */
 function captainPlay(w: World, rng: Rng) {
   const c = w.captain;
   if (!c?.alive) return;
   const foes = w.units.filter((e) => e.alive && e.faction === 'enemy');
-  // 집중 공격: 시전자 · 원거리 · 위협 높은 적
-  if (PARTS.includes('focus') && foes.length && (!w.focusTarget || !w.focusTarget.alive)) {
-    const prio = (e: Unit) => threatOf(e) + (e.def.role === 'caster' || e.def.role === 'support' ? 20 : 0) + (e.isRanged ? 8 : 0) - e.hpFrac * 4;
-    w.setFocus(foes.sort((a, b) => prio(b) - prio(a))[0]);
+  // 공대장 콜: 치유사(보스 쫄 주술사 · 광신도)가 있으면 그쪽을 집중 공격
+  if (PARTS.includes('focus') && (!w.focusTarget || !w.focusTarget.alive)) {
+    const healer = foes.find((e) => e.def.role === 'support');
+    if (healer) w.setFocus(healer);
   }
   // 예고 범위 안이면 구른다
   for (const e of foes) {

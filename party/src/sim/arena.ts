@@ -117,7 +117,7 @@ export function genArena(seed: number, depth: number, o: ArenaOpts): MapDef {
       if (o.captive) objects.push({ kind: 'captive', x: cx + 3, y: 2 });
       break;
     case 'boss':
-      waves = planWaves(rng, depth, 2, o.theme);
+      waves = planWaves(rng, depth, 1, o.theme);
       waves.push({ ids: BOSS_GROUPS[o.bossId ?? 'ogre_chief'] ?? BOSS_GROUPS.ogre_chief, name: '보스', hint: '보스의 예고(빨간 원)를 피하고 졸개부터', color: '#ff4444', sides: 'both' });
       break;
     case 'treasure':

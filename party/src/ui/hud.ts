@@ -9,6 +9,7 @@ import { SKILL_NAME } from '../data/names';
 import { floorInfo } from '../sim/run';
 import { BELT_SIZE, CONSUMABLES } from '../data/consumables';
 import { MOODS } from '../data/moods';
+import { BOSS_SCRIPTS } from '../sim/boss';
 import { WARN_STRESS } from '../sim/stress';
 import { skillCue } from '../sim/cues';
 import { foeNotes, type Chip } from '../sim/notes';
@@ -231,6 +232,7 @@ export class Hud {
     $('btn-pause').textContent = ui.paused ? '▶ 재개' : '⏸ 일시정지';
     $('btn-pause').classList.toggle('on', ui.paused);
 
+    this.updateBoss();
     this.updateBelt();
     const hint = $('targeting-hint');
     if (ui.itemTarget !== null && w.run.belt[ui.itemTarget]) {
@@ -246,6 +248,38 @@ export class Hud {
 
     this.updateInspect();
     this.updateLog();
+  }
+
+  /** 레이드 보스 체력바: 페이즈 경계 · 어그로 대상 · 다음 기믹 · 광폭화까지 */
+  private bossFor: Unit | null = null;
+  private updateBoss() {
+    const w = this.getWorld();
+    const b = w.units.find((u) => u.alive && u.script) ?? null;
+    const box = $('bossbar');
+    box.classList.toggle('hidden', !b);
+    if (!b || !b.script) {
+      this.bossFor = null;
+      return;
+    }
+    const sc = BOSS_SCRIPTS[b.def.id];
+    if (this.bossFor !== b) {
+      this.bossFor = b;
+      box.querySelector('.bhp')!.innerHTML = '<i></i>' + sc.marks.map((m) => `<b style="left:${m * 100}%"></b>`).join('');
+    }
+    const s = b.script;
+    const warded = b.hasStatus('warded'), enraged = b.hasStatus('enraged'), frenzy = b.hasStatus('frenzy');
+    box.querySelector('.bn')!.innerHTML = `${b.name} <span class="ph">${s.phase}페이즈</span>` +
+      (warded ? ' <span class="st" style="color:#c890ff">보호막</span>' : '') +
+      (frenzy ? ' <span class="st" style="color:#ff0000">광란</span>' : enraged ? ' <span class="st" style="color:#ff4444">광폭화</span>' : '');
+    (box.querySelector('.bhp > i') as HTMLElement).style.width = `${b.hpFrac * 100}%`;
+    const tgt = b.aggroTarget?.alive ? b.aggroTarget : null;
+    const next = Object.entries(s.timers).filter(([k, t]) => sc.names[k] && t > 0).sort((p, q) => p[1] - q[1])[0];
+    const left = Math.max(0, sc.enrage - (w.time - s.pullAt));
+    const tank = tgt && tgt.hero?.cls === 'warrior';
+    box.querySelector('.bsub')!.innerHTML =
+      (tgt ? `<span style="color:${tank ? '#9cd0ff' : '#ff6666'}">▶ ${tgt.name}</span>` : '') +
+      (next ? ` · ${sc.names[next[0]]} ${Math.ceil(next[1])}초` : '') +
+      ` · <span style="color:${left < 30 ? '#ff6666' : '#aaa'}">광란까지 ${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}</span>`;
   }
 
   /** 소모품 벨트 (4칸, 파티 공용) */

@@ -436,6 +436,28 @@ const list: AbilityDef[] = [
     ],
     aiRole: 'damage',
   },
+  // ── 오우거 족장 (레이드 보스 스크립트) ──
+  {
+    id: 'chief_leap', name: '족장의 도약', icon: '도', color: '#ff5533', type: 'technique', scripted: true, leap: true,
+    desc: '가장 멀리 있는 대상에게 뛰어올라 내려찍는다. 빨간 원에서 벗어나자.',
+    cost: 0, castTime: 1.6, cooldown: 0, range: 30, target: 'ground', radius: 1.9, affects: 'enemies',
+    effects: [{ kind: 'damage', element: 'physical', base: [24, 32], scale: 0 }, { kind: 'status', status: 'stun', duration: 1 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'rage_roar', name: '분노의 포효', icon: '분', color: '#ff2222', type: 'technique', scripted: true,
+    desc: '파티 전원에게 피해. 피할 수 없다 — 치유로 버텨라.',
+    cost: 0, castTime: 1.5, cooldown: 0, range: 0, target: 'self', radius: 40, affects: 'enemies',
+    effects: [{ kind: 'damage', element: 'physical', base: [9, 13], scale: 0 }],
+    aiRole: 'damage',
+  },
+  {
+    id: 'mending_drum', name: '치유의 북', icon: '북', color: '#a0ff80', type: 'spell', level: 3,
+    desc: '족장을 크게 치유한다. 시전 막대가 보이면 끊어라.',
+    cost: 0, castTime: 2.2, cooldown: 7, range: 9, target: 'ally',
+    effects: [{ kind: 'heal', base: [40, 50], scale: 0 }],
+    aiRole: 'heal',
+  },
   {
     id: 'roar', name: '포효', icon: '포', color: '#ff9944', type: 'technique',
     desc: '주변 아군에게 괴력.', cost: 0, castTime: 0, cooldown: 20, range: 0, target: 'self', radius: 6, affects: 'allies',

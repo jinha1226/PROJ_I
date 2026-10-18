@@ -1,3 +1,4 @@
+import { tauntThreat } from './threat';
 import { dist } from '../core/rng';
 import { STATUSES } from '../data/statuses';
 import type { AbilityDef, Effect, Element } from './defs';
@@ -89,6 +90,15 @@ function resolveAbility(w: World, u: Unit, slot: number, target: Unit | null, x:
     }
   }
 
+  // 도약: 지점으로 뛰어든다 (보스 기믹)
+  if (ab.leap) {
+    const p = w.map.nearestFloor(x, y);
+    w.effect({ kind: 'trail', x: u.x, y: u.y, x2: p.x, y2: p.y, r: 0, color: ab.color, dur: 0.35 });
+    u.x = p.x;
+    u.y = p.y;
+    w.shake = Math.max(w.shake, 10);
+  }
+
   if (ab.summon) {
     // 소환: 시전자 주변 빈 바닥에. 소환수는 바로 싸움에 낀다
     for (let i = 0; i < ab.summon.count; i++) {
@@ -158,7 +168,7 @@ function applyEffects(w: World, u: Unit, effects: Effect[], v: Unit, power: numb
         resolveWeaponHit(w, u, v, e.mult * mult, true);
         break;
       case 'heal':
-        heal(w, v, (w.rng.range(e.base[0], e.base[1]) + power * e.scale) * mult);
+        heal(w, v, (w.rng.range(e.base[0], e.base[1]) + power * e.scale) * mult, u);
         break;
       case 'status':
         tryApplyStatus(w, v, e, u, power);
@@ -167,7 +177,7 @@ function applyEffects(w: World, u: Unit, effects: Effect[], v: Unit, power: numb
         cleanse(w, v);
         break;
       case 'taunt':
-        tryApplyStatus(w, v, { status: 'taunted', duration: e.duration }, u, power);
+        if (tryApplyStatus(w, v, { status: 'taunted', duration: e.duration }, u, power)) tauntThreat(v, u);
         break;
     }
   }

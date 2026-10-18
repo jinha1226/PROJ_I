@@ -75,11 +75,19 @@ const monsterList: UnitDef[] = [
     abilities: ['ground_slam'], tactic: 'aggressive', targetPref: 'nearest',
   },
   {
-    id: 'ogre_chief', tip: '내려찍기와 포효(동료 강화). 빨간 원이 뜨면 바로 피하고, 졸개부터 정리하자.', xp: 150, name: '오우거 족장', title: '보스', glyph: 'O', color: '#e05050', role: 'tank',
-    radius: 0.5, mass: 5, speed: 2.4, hp: 650, mp: 0, str: 20, dex: 8, int: 6, ac: 4, ev: 2, will: 18,
+    id: 'ogre_chief', tip: '레이드 보스. 탱커가 어그로를 잡고, 도약(빨간 원)은 피하고, 70%에 나오는 주술사를 먼저, 30%부터 광폭화. 3분 안에 잡아라.', xp: 150, name: '오우거 족장', title: '보스', glyph: 'O', color: '#e05050', role: 'tank',
+    radius: 0.5, mass: 5, speed: 2.4, hp: 2800, mp: 0, str: 20, dex: 8, int: 6, ac: 4, ev: 2, will: 18,
     skills: { mace: 5, fighting: 6 },
     weapon: { name: '거대 곤봉', skill: 'mace', damage: [13, 20], delay: 1.7, range: 0.6 },
-    abilities: ['ground_slam', 'roar'], tactic: 'aggressive', targetPref: 'threat', boss: true,
+    abilities: ['ground_slam', 'chief_leap', 'rage_roar'], tactic: 'aggressive', targetPref: 'threat', boss: true,
+  },
+  {
+    id: 'tribal_shaman', tip: '족장을 치유의 북으로 회복시키고, 살아 있는 동안 족장에게 보호막을 건다. 먼저 쓰러뜨리거나 시전을 끊어라.', xp: 20,
+    name: '부족 주술사', title: '족장의 치유사', glyph: 'o', color: '#a0ff80', role: 'support',
+    radius: 0.34, mass: 1, speed: 2.4, hp: 46, mp: 0, str: 8, dex: 10, int: 13, ac: 1, ev: 6, will: 16,
+    skills: { spellcasting: 4 },
+    weapon: { name: '북채', skill: 'mace', damage: [2, 4], delay: 1.2, range: 0.5 },
+    abilities: ['mending_drum', 'lightning_bolt'], tactic: 'support', targetPref: 'nearest',
   },
   // ── 확장: 거미 · 망자 · 슬라임 · 트롤 · 광신도 · 임프 ──
   {

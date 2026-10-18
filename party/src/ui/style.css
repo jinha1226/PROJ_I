@@ -528,3 +528,13 @@ button.on { border-color: var(--accent); color: var(--accent); }
 #crisis { white-space: pre-line; text-align: center; }
 .synrow { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
 .syn { padding: 1px 6px; border: 1px solid #555; border-radius: 10px; background: #1a1a24; cursor: help; }
+
+/* ── 레이드 보스 체력바 ── */
+#bossbar { position: fixed; top: 52px; left: 50%; transform: translateX(-50%); width: min(520px, 70vw); pointer-events: none; text-align: center; text-shadow: 0 0 3px #000; }
+#bossbar .bn { color: #ffdddd; }
+#bossbar .bn .ph { color: #e8cf7a; }
+#bossbar .bhp { position: relative; height: 10px; margin: 2px 0; background: #2a1414; border: 1px solid #7a3030; border-radius: 3px; overflow: hidden; }
+#bossbar .bhp > i { display: block; height: 100%; background: linear-gradient(#e05050, #a02828); }
+#bossbar .bhp > b { position: absolute; top: 0; bottom: 0; width: 1px; background: #ffe0a0; }
+#bossbar .bsub { color: #ccc; }
+@media (max-width: 900px), (max-height: 500px) { #bossbar { top: 64px; } }

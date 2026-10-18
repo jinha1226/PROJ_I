@@ -1,3 +1,4 @@
+import type { BossState } from './boss';
 import { ABILITIES } from '../data/abilities';
 import type { AbilityDef, Faction, Prop, ResistKey, SkillId, StatusDef, TacticId, UnitDef, WeaponDef } from './defs';
 import type { Hero } from './hero';
@@ -151,7 +152,11 @@ export class Unit {
   undyingUsed = false;
 
   aware = false;
+  /** 적: 파티원 id → 위협 수치 (sim/threat.ts) */
   aggro = new Map<number, number>();
+  aggroTarget: Unit | null = null;
+  /** 레이드 보스 스크립트 상태 (sim/boss.ts) */
+  script: BossState | null = null;
   lastTarget: Unit | null = null;
   flash = 0;
   swing = 0;

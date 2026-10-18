@@ -1,5 +1,6 @@
 // 공통 전투 파이프라인.
 // 평타·마법·몬스터 능력·지속 피해 모두 applyDamage / tryApplyStatus 를 거친다.
+import { addThreat, healThreat, threatMult } from './threat';
 import { dist } from '../core/rng';
 import { STATUSES } from '../data/statuses';
 import type { Element, StatusApply } from './defs';
@@ -85,7 +86,7 @@ export function applyDamage(
   }
 
   if (source && source.faction !== target.faction) {
-    target.aggro.set(source.id, (target.aggro.get(source.id) ?? 0) + dmg);
+    addThreat(target, source, dmg * threatMult(source));
     w.alert(target);
   }
 
@@ -110,10 +111,11 @@ export function applyDamage(
   return dmg;
 }
 
-export function heal(w: World, target: Unit, amount: number) {
+export function heal(w: World, target: Unit, amount: number, healer: Unit | null = null) {
   if (!target.alive) return;
   const before = target.hp;
   target.hp = Math.min(target.stats.maxHp, target.hp + amount);
+  if (healer && healer.faction === 'party') healThreat(w, healer, target.hp - before);
   w.sound('heal');
   w.emit({ type: 'heal', unit: target });
   w.float(target, `+${Math.round(target.hp - before)}`, '#88ff88');

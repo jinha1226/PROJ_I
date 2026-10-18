@@ -60,7 +60,7 @@ export const ENCOUNTERS: Record<number, string[][]> = {
 /** 마지막 층 마지막 방 (계약마다 보스가 다르다) */
 export const BOSS_GROUP = ['ogre_chief', 'orc', 'orc_shaman', 'hyena'];
 export const BOSS_GROUPS: Record<string, string[]> = {
-  ogre_chief: BOSS_GROUP,
+  ogre_chief: ['ogre_chief'],
   lich: ['lich', 'skeleton', 'skeleton', 'wraith'],
   spider_queen: ['spider_queen', 'spider', 'spider'],
 };
