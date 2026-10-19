@@ -125,10 +125,23 @@ G.MapView = function (canvas) {
     }
     if (e.label) text(e.label, cx, cy - size / 2 - 10, '#ffd9a0', 11);
   }
+  // 굵은 잉크 붓질 초승달 (베기 그림이 없을 때)
+  function inkSlash(x, y, r, rot, p, crit) {
+    const sweep = Math.min(1, p * 4);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot - 0.6);
+    const a0 = -1.9, a1 = a0 + 2.6 * sweep;
+    ctx.beginPath(); ctx.arc(0, 0, r, a0, a1); ctx.arc(r * 0.18, r * 0.22, r * 0.78, a1, a0, true); ctx.closePath();
+    ctx.fillStyle = '#000'; ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.94, a0 + 0.1, a1 - 0.05); ctx.arc(r * 0.16, r * 0.2, r * 0.84, a1 - 0.05, a0 + 0.1, true); ctx.closePath();
+    ctx.fillStyle = crit ? '#e0262a' : '#f4efe2'; ctx.fill();
+    ctx.restore();
+  }
+  // 숫자는 굵은 세리프 + 두꺼운 검은 테두리 (다크스트 던전의 묵직한 숫자)
   function text(s, x, y, col, px, bold) {
-    ctx.font = `${bold ? 800 : 700} ${px}px "Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif`;
+    ctx.font = bold ? `900 ${px}px "Noto Serif KR","Nanum Myeongjo",Georgia,serif` : `700 ${px}px "Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif`;
     ctx.textAlign = 'center';
-    ctx.lineWidth = Math.max(3, px / 6); ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = Math.max(3, px / (bold ? 4 : 6)); ctx.strokeStyle = 'rgba(0,0,0,0.9)';
     ctx.strokeText(s, x, y);
     ctx.fillStyle = col; ctx.fillText(s, x, y);
   }
@@ -154,8 +167,41 @@ G.MapView = function (canvas) {
       ctx.fillStyle = f.col; ctx.globalAlpha = a * 0.35;
       ctx.beginPath(); ctx.arc(x, y, TS * 0.7, 0, 7); ctx.fill();
     } else if (f.k === 'slash') {
-      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.arc(sx(f.x), sy(f.y), TS * 0.45, -2.4 + p * 1.2, -0.6 + p * 1.2); ctx.stroke();
+      // 다크스트 던전식 베기: 대상 위를 가로지르는 굵은 붓질. 그림(fx_slash)이 있으면 그것을 돌려 찍는다.
+      const x = sx(f.x), y = sy(f.y), key = f.crit ? 'fx_slash_crit' : 'fx_slash';
+      const pop = 1 + 0.35 * Math.max(0, 1 - p / 0.25), sz = TS * (f.crit ? 2 : 1.5) * pop;
+      ctx.globalAlpha = Math.min(1, (1 - p) * 2.5);
+      if (G.ARTSET[key]) {
+        const im = G.T.image(key, 0);
+        if (G.T.ready(im)) {
+          ctx.save(); ctx.translate(x, y); ctx.rotate(f.rot || 0); if (f.flip) ctx.scale(-1, 1);
+          ctx.imageSmoothingEnabled = true; ctx.drawImage(im, -sz / 2, -sz / 2, sz, sz); ctx.restore();
+        }
+      } else inkSlash(x, y, sz * 0.5, f.rot || 0, p, f.crit);
+    } else if (f.k === 'splat') {
+      // 피(잉크) 튀김: 맞은 반대쪽으로 방울이 튀고 떨어진다. 그림(fx_blood·fx_ichor)이 있으면 그것.
+      const x = sx(f.x), y = sy(f.y), key = f.ichor ? 'fx_ichor' : 'fx_blood';
+      if (G.ARTSET[key]) {
+        const im = G.T.image(key, 0), sz = TS * (0.9 + 0.6 * Math.min(1, p * 4)) * (f.s || 1);
+        if (G.T.ready(im)) { ctx.save(); ctx.translate(x + (f.dx || 0) * TS * 0.3 * p, y); ctx.rotate(Math.atan2(f.dy || 0, f.dx || 1)); ctx.imageSmoothingEnabled = true; ctx.drawImage(im, -sz / 2, -sz / 2, sz, sz); ctx.restore(); }
+      } else {
+        if (!f._d) f._d = Array.from({ length: f.n || 6 }, () => ({ a: (f.dx || f.dy ? Math.atan2(f.dy, f.dx) : Math.random() * 6.3) + (Math.random() - 0.5) * 1.6, v: 0.6 + Math.random() * 1.2, r: 0.04 + Math.random() * 0.06 }));
+        ctx.fillStyle = f.ichor ? '#3f6b2a' : '#8a1010'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+        for (const d of f._d) {
+          const k = p * d.v, px = x + Math.cos(d.a) * k * TS, py = y + Math.sin(d.a) * k * TS + p * p * TS * 0.6;
+          ctx.beginPath(); ctx.arc(px, py, TS * d.r * (1 - p * 0.4), 0, 7); ctx.fill(); ctx.stroke();
+        }
+      }
+    } else if (f.k === 'impact') {
+      // 치명타·강타: 들쭉날쭉한 별 모양 충격
+      const x = sx(f.x), y = sy(f.y), sz = TS * (f.s || 1.4) * (0.6 + 0.6 * Math.min(1, p * 5));
+      ctx.globalAlpha = Math.min(1, (1 - p) * 2);
+      if (G.ARTSET.fx_impact && G.T.ready(G.T.image('fx_impact', 0))) { ctx.imageSmoothingEnabled = true; ctx.drawImage(G.T.image('fx_impact', 0), x - sz / 2, y - sz / 2, sz, sz); }
+      else {
+        ctx.beginPath();
+        for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, r = (i % 2 ? 0.22 : 0.5) * sz; i ? ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r) : ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r); }
+        ctx.closePath(); ctx.fillStyle = f.col || '#fff3b0'; ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 2.5; ctx.stroke();
+      }
     } else if (f.k === 'mote') {
       // 영기 알갱이: 살짝 휘며 목적지로 빨려 든다
       const e = p * p, x = f.x + (f.x2 - f.x) * e + Math.sin(p * 3.1) * 0.4, y = f.y + (f.y2 - f.y) * e - Math.sin(p * 3.1) * 0.6;

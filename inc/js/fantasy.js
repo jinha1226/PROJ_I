@@ -144,6 +144,10 @@ G.Fantasy = (() => {
       const big = src !== 'hit';
       G.fx(rt, { k: 'text', x: m.x, y: m.y - 0.6, s: U.fmt(dmg) + (src === 'crit' ? '!' : ''), col: src === 'crit' ? '#ffd24a' : src === 'smite' ? '#bfe8ff' : '#fff', t: 0.8, sz: (big ? 1.3 : 0.85) + 0.5 * Math.min(1, dmg / m.max), pop: big });
       G.J.hit('fantasy', m, src === 'smite' ? 0.5 : src === 'crit' ? 0.25 : 0, from);
+      // 피 튀김(맞은 반대쪽으로), 치명타·벼락은 별 모양 충격
+      const dx = from ? m.x - from.x : 0, dy = from ? m.y - from.y : 0;
+      G.fx(rt, { k: 'splat', x: m.x, y: m.y, dx, dy, n: big ? 9 : 5, s: big ? 1.3 : 0.9, t: 0.5 });
+      if (big) G.fx(rt, { k: 'impact', x: m.x, y: m.y - 0.1, s: src === 'smite' ? 1.8 : 1.4, col: src === 'smite' ? '#d8f0ff' : '#fff3b0', t: 0.22 });
       if (src === 'crit') G.J.sfx('fantasy', 'crit');
       if (m.hp <= 0) F.kill(f, rt, m);
     },
@@ -307,6 +311,8 @@ G.Fantasy = (() => {
           tg.hp -= dmg;
           G.J.lunge('fantasy', mo, tg);
           G.J.hit('fantasy', tg, 0, mo);
+          G.fx(rt, { k: 'splat', x: tg.x, y: tg.y, dx: tg.x - mo.x, dy: tg.y - mo.y, n: 4, s: 0.8, t: 0.45 });
+          G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.22, rot: Math.random() - 0.5, flip: mo.x > tg.x });
           G.fx(rt, { k: 'text', x: tg.x, y: tg.y - 0.6, s: '-' + U.fmt(dmg), col: '#ff6b6b', t: 0.7 });
           if (tg === hero) G.J.sfx('fantasy', 'hurt');
           if (tg.hp <= 0) {
@@ -334,7 +340,7 @@ G.Fantasy = (() => {
           if ((hero.atkT -= dt * aspd) <= 0) {
             hero.atkT = 1;
             const c = U.chance(F.crit());
-            G.fx(rt, { k: 'slash', x: target.x, y: target.y, t: 0.18 });
+            G.fx(rt, { k: 'slash', x: target.x, y: target.y, t: 0.3, crit: c, rot: Math.random() - 0.5, flip: hero.x > target.x });
             G.J.lunge('fantasy', hero, target);
             if (!c) G.J.sfx('fantasy', 'tap');
             F.hurt(f, rt, target, F.heroAtk(f) * (c ? F.critD() : 1), c ? 'crit' : 'hit', hero);
@@ -382,7 +388,7 @@ G.Fantasy = (() => {
             a.atkT = def.cd;
             const dmg = F.heroAtk(f) * def.atk * 0.5 * tm('allyAtk');
             if (def.proj) G.fx(rt, { k: 'proj', key: def.proj, x: a.x, y: a.y, x2: tg.x, y2: tg.y, t: 0.25 });
-            else { G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.18 }); G.J.lunge('fantasy', a, tg); }
+            else { G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.25, rot: Math.random() - 0.5, flip: a.x > tg.x }); G.J.lunge('fantasy', a, tg); }
             if (def.splash) { for (const mo of [...rt.mons]) if (GR.dist(mo, tg) <= def.splash) F.hurt(f, rt, mo, dmg, 'hit', a); }
             else if (def.chain) {
               const hit = rt.mons.slice().sort((p, q) => GR.dist(p, tg) - GR.dist(q, tg)).slice(0, def.chain);

@@ -162,6 +162,8 @@ G.Cthulhu = (() => {
       for (const o of rt.tents) if (Math.hypot(o.x - x, o.y - y) < 1.1) {
         o.hp--;
         G.J.hit('cthulhu', o, 0.4, rt.hook);
+        G.fx(rt, { k: 'splat', x: o.x, y: o.y, n: 8, ichor: true, s: 1.3, t: 0.5 });
+        G.fx(rt, { k: 'impact', x: o.x, y: o.y, s: 1.5, col: '#e8d48a', t: 0.22 });
         G.fx(rt, { k: 'beam', x: rt.boat.x, y: SURF - 1, x2: o.x, y2: o.y, col: '#e8d48a', w: 2, t: 0.15 });
         G.J.sfx('cthulhu', 'hit');
         if (o.hp <= 0) {

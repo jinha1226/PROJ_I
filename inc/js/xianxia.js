@@ -145,6 +145,8 @@ G.Xianxia = (() => {
       b.hp -= dmg;
       G.fx(rt, { k: 'text', x: b.x, y: b.y - 0.6, s: U.fmt(dmg), col: '#cfe9ff', t: 0.7, sz: (power ? 1.3 : 0.85) + 0.5 * Math.min(1, dmg / b.max), pop: power > 0 });
       G.J.hit('xianxia', b, power, from);
+      G.fx(rt, { k: 'splat', x: b.x, y: b.y, dx: from ? b.x - from.x : 0, dy: from ? b.y - from.y : 0, n: power ? 8 : 4, ichor: !!b.demon, t: 0.5 });
+      if (power) G.fx(rt, { k: 'impact', x: b.x, y: b.y - 0.1, s: 1.4, col: '#d8f0ff', t: 0.22 });
       if (b.hp > 0) return;
       G.fx(rt, { k: 'die', spr: b.t, x: b.x, y: b.y, s: b.s, flip: b.flip, t: 0.45 });
       if (b.demon) {

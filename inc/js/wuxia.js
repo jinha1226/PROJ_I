@@ -249,7 +249,8 @@ G.Wuxia = (() => {
               rt.atkT = 0.7;
               const dmg = W.power(w);
               foe.hp -= dmg;
-              G.fx(rt, { k: 'slash', x: foe.x, y: foe.y, t: 0.18 });
+              G.fx(rt, { k: 'slash', x: foe.x, y: foe.y, t: 0.3, rot: Math.random() - 0.5, flip: h.x > foe.x });
+              G.fx(rt, { k: 'splat', x: foe.x, y: foe.y, dx: foe.x - h.x, dy: foe.y - h.y, n: 5, t: 0.5 });
               G.fx(rt, { k: 'text', x: foe.x, y: foe.y - 0.6, s: U.fmt(dmg), col: '#fff', t: 0.7, sz: 0.85 + 0.5 * Math.min(1, dmg / foe.max) });
               G.J.hit('wuxia', foe, foe.hp <= 0 ? 0.45 : 0);
               G.J.sfx('wuxia', foe.hp <= 0 ? 'hit' : 'tap');

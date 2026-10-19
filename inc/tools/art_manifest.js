@@ -92,6 +92,11 @@ for (const [key, w, use] of CHAR) {
   const icon = key === 'w_wuxia';
   assets.push({ key, world: w, kind: icon ? 'icon' : 'sprite', priority: /^(knight|cultivator|c_fisher|wx_hero0|w_wuxia)$/.test(key) ? 1 : 2, size: icon ? 128 : 256, transparent: true, variants: 1, use, subject: use, view: (icon ? SPEC.icon : SPEC.sprite).view, ref: '' });
 }
+// 타격 이펙트 (다크스트 던전식). 없으면 render.js가 붓질·방울로 그린다
+for (const [key, use] of [['fx_slash', '베기: 굵은 초승달 붓질, 흰 심, 검은 잉크 가장자리, 오른쪽 위→왼쪽 아래'], ['fx_slash_crit', '치명타 베기: 핏빛 심, 노란 테두리, 더 크고 거칠게'],
+  ['fx_blood', '피 튀김: 가운데서 바깥으로 터지는 검붉은 방울'], ['fx_ichor', '체액 튀김: 병든 녹흑색 방울 (괴이한 것들)'], ['fx_impact', '충격: 들쭉날쭉한 별 모양 섬광, 옅은 노랑, 검은 외곽선']]) {
+  assets.push({ key, world: 'shared', kind: 'fx', priority: 1, size: 256, transparent: true, variants: 1, use, subject: use, view: SPEC.fx.view, ref: '' });
+}
 // 참고 타일 경로를 실제 파일로
 const tiles = fs.readdirSync(path.join(ROOT, 'assets', 'tiles'));
 for (const a of assets) { const f = tiles.filter(t => t === a.key + '.png' || t.startsWith(a.key + '_')).sort(); a.ref = f.length ? 'assets/tiles/' + f[0] : ''; }
