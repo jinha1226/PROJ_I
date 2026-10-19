@@ -136,45 +136,41 @@ G.D.WX = {
   ],
 };
 
-// ───────── 수선: 구천등선 (선문 산) ─────────
-// 지형: M 바위 . 풀 d 숲 T 소나무 t 숲속 소나무 : 돌길 c 동굴 ~ 연못 l 연꽃 W 전각 벽 m 전각 바닥 h 영초밭
-// 장소: V 영맥(좌선) F 단로 G 산문 p 정상(천겁) B 요수 출몰 Q 제자 숙소
+// ───────── 수선: 구천등선 (동부 진법) ─────────
+// 지형: M 바위 c 동굴 바닥 o 진법 칸 v 영맥 위 진법 칸(효과 ×2) V 좌선대 h 영초밭 F 단로 Q 제자 숙소 G 동부 입구(요수가 들어온다)
 G.D.X = {
   map: [
-    'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
-    'MMMMMMMMMMMMMM::::::MMMMMMMMMMMMMMMM',
-    'MMMMMMMMMMMMM:::p::::MMMMMddddddddMM',
-    'MMcccccMMMMMM::::::::MMMddtdBddtdddM',
-    'MMcccccMMMMMMMM::::MMMMdddddddddtddM',
-    'MMccVcccccc::::::::::::ddtdddBddddMM',
-    'MMcccccMMM.T...:..T...ddddddtdddBddM',
-    'MMMMMMMMMM.....:.....dddBdddddtddddM',
-    'M.T.......WWWWWmWWWW..ddddtdddddddtM',
-    'M...hhh...WmmmmmmmmW...ddddddBddddMM',
-    'M...hhh...WmmmQmmmmW....dddtddddddMM',
-    'M...hhh...mmmmmmmmmm.............T.M',
-    'M..T......WmmFmmmmmW..~~~~~~~...T..M',
-    'M.........WWWWmWWWWW..~~lll~~......M',
-    'M.T..T.........:......~~~~~~~..T...M',
-    'M......T.......:.................T.M',
-    'MMMMMMMM.......:.......T.......MMMMM',
-    'MMMMMMMMMMM....G....MMMMMMMMMMMMMMMM',
+    'MMMMMMMMMMMMMMMMMMMMMMMMMMM',
+    'MMMMMMMMcccccccccccMMMMMMMM',
+    'MMMMMcccccccccccccccccMMMMM',
+    'MMMMQccoooooovoooooocccMMMM',
+    'MMMccccoovooooooovooccccMMM',
+    'MMchhccooooooooooooocccccMM',
+    'MMchhccvoooooVooooovcccFcMM',
+    'MMchhccooooooooooooocccccMM',
+    'MMMccccooovooooovoooccccMMM',
+    'MMMMcccoooooovoooooocccMMMM',
+    'MMMMMcccccccccccccccccMMMMM',
+    'MMMMMMMMcccccccccccMMMMMMMM',
+    'MMMMMMMMMMMMMcMMMMMMMMMMMMM',
+    'MMMMMMMMMMMMMcMMMMMMMMMMMMM',
+    'MMMMMMMMMMMMMGMMMMMMMMMMMMM',
   ],
-  pass: '.d:cmhVFGpBQ',
+  pass: 'covVhFQG',
   tiles: {
-    'M': ['q_rock'], '.': ['v_grass'], 'd': ['q_dark'], 'T': ['v_grass', 'q_tree'], 't': ['q_dark', 'q_tree'], ':': ['v_path'],
-    'c': ['q_cave'], '~': ['v_water'], 'l': ['v_water', 'q_lotus'], 'W': ['v_mwall'], 'm': ['v_marble'], 'h': ['q_herbplot'],
-    'V': ['q_cave', 'q_vein'], 'F': ['v_marble', 'q_furnace'], 'G': ['v_path', 'q_gate'], 'p': ['v_path', 'q_peak'],
-    'B': ['q_dark'], 'Q': ['v_marble'],
+    'M': ['q_rock'], 'c': ['q_cavefloor'], 'o': ['q_cave'], 'v': ['q_veinfloor'], 'V': ['q_cave', 'q_vein'],
+    'h': ['q_cavefloor', 'q_herbplot'], 'F': ['q_cavefloor', 'q_furnace'], 'Q': ['q_cavefloor'], 'G': ['q_cavefloor', 'q_gate'],
+  },
+  // 오행: 상생 순서(목→화→토→금→수→목). 상극: 목→토, 토→수, 수→화, 화→금, 금→목
+  els: ['wood', 'fire', 'earth', 'metal', 'water'],
+  el: {
+    wood: { n: '목', t: 'e_wood', col: '#6fe39a', d: '영초 성장' },
+    fire: { n: '화', t: 'e_fire', col: '#ff6a4a', d: '연단 속도' },
+    earth: { n: '토', t: 'e_earth', col: '#f2c84b', d: '요수 방어 · 천겁' },
+    metal: { n: '금', t: 'e_metal', col: '#e8eef5', d: '영석' },
+    water: { n: '수', t: 'e_water', col: '#4fb4ff', d: '영기' },
   },
   realms: ['연기', '축기', '결단', '원영', '화신', '연허', '합체', '대승', '도겁', '진선'],
-  sects: ['청운문', '천음사', '만검종', '태현종', '소요곡', '합환파', '귀왕종', '현천궁', '천검산', '봉래각',
-    '영허전', '자소궁', '태을문', '혈신교', '마라종', '북명해', '곤륜선궁', '서천불국', '유리궁', '천기각'],
-  sur: ['한', '육', '소', '엽', '진', '임', '백', '능', '고', '단목', '상관', '남궁', '공손', '구양', '동방', '서문', '화', '설', '운', '초'],
-  giv: ['립', '무쌍', '염', '범', '청', '소요', '천', '월화', '진', '현', '운', '령', '하', '선', '명', '현천', '무기', '청선', '혼', '장생', '유', '자'],
-  titles: [[20, '외문 제자'], [40, '내문 제자'], [60, '진전 제자'], [80, '성자'], [100, '장로'], [120, '태상장로'],
-    [140, '노괴'], [160, '선존'], [1e9, '선제']],
-  beasts: ['적염랑', '뇌수', '견귀', '수정 고슴도치', '천마', '빙백수'],
 };
 
 // ───────── SF: 최후의 방어선 (경로형 타워디펜스) ─────────

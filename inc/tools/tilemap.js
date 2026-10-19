@@ -146,6 +146,10 @@ module.exports = {
   q_cave: ['dngn/floor/crystal_floor[0-3]'], q_vein: ['dngn/vaults/orb_dais'], q_herbplot: ['dngn/decor/garden_patch'],
   q_herb: ['mon/fungi_plants/plant_0[5-8]'], q_furnace: ['dngn/vaults/fiery_conduit_[0-3]'], q_gate: ['dngn/gateways/enter_temple'],
   q_dark: ['dngn/floor/grass/grass-dark[0-5]'], q_peak: ['dngn/floor/sigil_circle'],
+  // 동부 진법: 오행 진기(보석), 영맥 칸, 동굴 바닥, 심마
+  e_wood: ['item/gem/snake_found_whole'], e_fire: ['item/gem/tomb_found_whole'], e_earth: ['item/gem/orc_found_whole'],
+  e_metal: ['item/gem/spider_found_whole'], e_water: ['item/gem/shoals_found_whole'],
+  q_veinfloor: ['dngn/floor/runelight[0-3]'], q_cavefloor: ['dngn/floor/pebble_brown[0-8]'], q_demon: ['mon/undead/shadow_wraith'],
   q_beast: ['mon/animals/sky_beast', 'mon/animals/raiju', 'mon/animals/inugami', 'mon/animals/crystal_echidna', 'mon/animals/hippogriff', 'mon/animals/ice_beast'],
   q_disciple: ['player/body/robe_white_blue'],
   // SF 기지

@@ -552,3 +552,18 @@ details.card summary { cursor: pointer; font-weight: 700; }
 @media (max-width: 760px) {
   .mapbox.fit.cam { aspect-ratio: 4 / 5 !important; max-height: 70vh; }
 }
+
+/* ── 수선: 오행 팔레트, 경맥도 몸 ── */
+.el-pal { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin: 6px 0; }
+.el-pick { display: flex; flex-direction: column; align-items: center; padding: 3px 2px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); }
+.el-pick span { display: flex; gap: 3px; align-items: baseline; font-size: 11px; }
+.el-pick small { color: var(--ec); font-weight: 800; }
+.el-pick.on { border-color: var(--ec, #fff); box-shadow: 0 0 0 2px var(--ec, #fff), 0 0 12px var(--ec, #fff); }
+.el-pick.erase { font-size: 18px; color: var(--dim); justify-content: center; }
+.el-eff { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 10px; font-size: 12px; color: var(--dim); }
+.el-eff span { display: flex; align-items: center; gap: 2px; }
+.el-eff b { color: var(--text); margin-left: auto; font-variant-numeric: tabular-nums; }
+.tree-edges .body polyline, .tree-edges .body polygon { fill: #ffffff07; stroke: #ffffff12; stroke-width: 46; stroke-linecap: round; stroke-linejoin: round; }
+.tree-edges .body polygon { stroke-width: 30; }
+.tree-edges .body circle { fill: #ffffff0a; stroke: #ffffff14; stroke-width: 2; }
+.tree-edges .body circle.dantian { fill: #ffd24a14; stroke: #ffd24a55; }

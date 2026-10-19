@@ -81,7 +81,7 @@ for (let t = 0; t < MIN * 60; t++) {
     console.log(`${String(m).padStart(3)}분 | 정수 ${U.fmt(S.ess).padStart(6)} (누적 ${U.fmt(S.runEss)}) 인장 ${S.signs} 유물 ${Object.keys(S.relics).length} | ` +
       `던전 ${f.maxFloor}층 노드${nodes('fantasy')} | ` +
       (S.unlocked.wuxia ? `무협 ${w.lives + 1}생 ${G.Wuxia.status(w)} 깨달음${U.fmt(w.ins)} | ` : '') +
-      (S.unlocked.xianxia ? `수선 ${G.Xianxia.realmName(x.realm)} k${x.k} | ` : '') +
+      (S.unlocked.xianxia ? `수선 ${G.Xianxia.realmName(x.realm)} 진기${G.Xianxia.slotCount()} | ` : '') +
       (S.unlocked.scifi ? `SF W${s.maxWave} 포탑${Object.keys(s.towers).length} | ` : '') +
       (S.unlocked.cthulhu ? `크툴루 ${U.fmt(c.coins)} 광신도${G.Cthulhu.cultCount()} | ` : '') +
       `붕괴 ${G.Prestige.can() ? G.Prestige.gain() : '-'}`);

@@ -149,6 +149,12 @@ G.MapView = function (canvas) {
     } else if (f.k === 'slash') {
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.arc(sx(f.x), sy(f.y), TS * 0.45, -2.4 + p * 1.2, -0.6 + p * 1.2); ctx.stroke();
+    } else if (f.k === 'mote') {
+      // 영기 알갱이: 살짝 휘며 목적지로 빨려 든다
+      const e = p * p, x = f.x + (f.x2 - f.x) * e + Math.sin(p * 3.1) * 0.4, y = f.y + (f.y2 - f.y) * e - Math.sin(p * 3.1) * 0.6;
+      ctx.fillStyle = f.col; ctx.shadowColor = f.col; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(sx(x), sy(y), Math.max(1.5, TS * 0.07), 0, 7); ctx.fill();
+      ctx.shadowBlur = 0;
     } else if (f.k === 'die') {
       // 쓰러짐: 번쩍인 뒤 납작해지며 사라진다
       const size = TS * (f.s || 1), cx = sx(f.x), cy = sy(f.y);
@@ -275,7 +281,21 @@ G.MapView = function (canvas) {
       const fog = view.fog;
       const hidden = e => fog && e.kind === 'mon' && !fog.seen[Math.round(e.y) * m.w + Math.round(e.x)];
       const ents = view.ents.filter(e => !hidden(e)).sort((a, b) => (b.under ? 1 : 0) - (a.under ? 1 : 0) || a._ry - b._ry);
-      for (const e of ents) drawEnt(e, t, now);
+      // 바닥에 깔린 것(진기 등) → 오행 선 → 나머지
+      for (const e of ents) if (e.under) drawEnt(e, t, now);
+      // 오행 상생(빛나는 흐름)·상극(붉은 금) 선
+      if (view.links) for (const l of view.links) {
+        ctx.strokeStyle = l.good ? l.col : 'rgba(255,70,70,0.75)';
+        ctx.lineWidth = l.good ? Math.max(2, TS * 0.08) : 2;
+        ctx.globalAlpha = l.good ? 0.55 + 0.25 * Math.sin(t / 250) : 0.8;
+        ctx.setLineDash(l.good ? [TS * 0.18, TS * 0.12] : [3, 4]);
+        ctx.lineDashOffset = l.good ? -t / 40 : 0;
+        if (l.good) { ctx.shadowColor = l.col; ctx.shadowBlur = 6; }
+        ctx.beginPath(); ctx.moveTo(sx(l.x), sy(l.y)); ctx.lineTo(sx(l.x2), sy(l.y2)); ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+      for (const e of ents) if (!e.under) drawEnt(e, t, now);
       if (fog) drawFog(view);
       if (view.labels) for (const l of view.labels) text(l.s, sx(l.x), sy(l.y) - TS * 0.7, l.on ? '#ffe08a' : 'rgba(255,255,255,0.75)', Math.max(10, TS * 0.32));
       for (const f of view.fx) drawFx(f, t);

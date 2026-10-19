@@ -7,10 +7,12 @@ G.Tree = {
   defs: {},   // 트리 id → 노드 배열
   idx: {},    // 트리 id → { 노드 id → 노드 }
   wallet: {}, // 트리 id → { get(), spend(n), tile, name }
-  define(id, nodes, wallet) {
+  opts: {},   // 트리 id → { bg(P, unit): 배경 SVG 문자열 }
+  define(id, nodes, wallet, opts) {
     G.Tree.defs[id] = nodes;
     G.Tree.idx[id] = Object.fromEntries(nodes.map(n => [n.id, n]));
     if (wallet) G.Tree.wallet[id] = wallet;
+    G.Tree.opts[id] = opts || {};
   },
   init(id) {
     const st = {};

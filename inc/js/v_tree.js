@@ -14,6 +14,12 @@ G.UI.tree = function (treeId, getSt) {
   const px = n => (n.x - minX) * UNIT, py = n => (n.y - minY) * UNIT;
   svg.setAttribute('width', (maxX - minX) * UNIT); svg.setAttribute('height', (maxY - minY) * UNIT);
 
+  // 배경 그림 (수선의 경맥도는 사람 몸)
+  if (T.opts[treeId].bg) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.innerHTML = T.opts[treeId].bg((x, y) => [(x - minX) * UNIT, (y - minY) * UNIT], UNIT);
+    svg.append(g);
+  }
   // 선
   const edges = [];
   for (const n of nodes) for (const r of n.req || []) {
@@ -104,7 +110,7 @@ G.UI.tree = function (treeId, getSt) {
       e.ln.setAttribute('class', T.lv(st, e.a.id) > 0 && T.lv(st, e.b.id) > 0 ? 'on' : T.open(treeId, st, e.b.id) ? 'open' : '');
     }
     setText(moneyEl, U.fmt(wallet.get()));
-    setText(avail, n2buy ? ` · 배울 수 있는 노드 ${n2buy}` : '');
+    setText(avail, n2buy ? ` · ✦${n2buy}` : '');
     tog(info, 'hidden', !sel);
     if (sel) {
       const n = sel, lv = T.lv(st, n.id), max = n.max || 1, open = T.open(treeId, st, n.id);
