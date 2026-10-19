@@ -22,27 +22,27 @@ G.D.UNLOCK_COST = [15, 120, 800, 4000];
 G.D.F = {
   // 몬스터 그림은 0x72 DungeonTileset II (tools/art72.js에서 키 → 원본)
   bands: [
-    { to: 5, mons: [{ n: '꼬마 좀비', e: '🧟', t: 'm_rat' }, { n: '늪 점액', e: '🟢', t: 'm_slime' }] },
-    { to: 15, mons: [{ n: '고블린', e: '👺', t: 'm_goblin' }, { n: '임프', e: '😈', t: 'm_shroom' }, { n: '해골', e: '💀', t: 'm_bat' }] },
-    { to: 30, mons: [{ n: '오크 전사', e: '👹', t: 'm_skeleton' }, { n: '가면 오크', e: '👺', t: 'm_warg' }, { n: '오크 주술사', e: '🧙', t: 'm_mandrake' }] },
-    { to: 50, mons: [{ n: '얼음 좀비', e: '🧊', t: 'm_troll' }, { n: '진흙 점액', e: '🟤', t: 'm_phantom' }, { n: '좀비', e: '🧟', t: 'm_ghoul' }] },
-    { to: 80, mons: [{ n: '워골', e: '👹', t: 'm_ogre' }, { n: '초트', e: '👿', t: 'm_spider' }, { n: '강령술사', e: '🧙', t: 'm_lich' }] },
-    { to: 1e9, mons: [{ n: '대악마', e: '😈', t: 'm_demon' }, { n: '오우거', e: '🗿', t: 'm_golem' }, { n: '호박 망령', e: '🎃', t: 'm_spell' }] },
+    { to: 5, mons: [{ n: '꼬마 좀비', t: 'm_rat' }, { n: '늪 점액', t: 'm_slime' }, { n: '작은 버섯', t: 'm_mush' }, { n: '숲 늑대', t: 'm_wolf' }] },
+    { to: 15, mons: [{ n: '고블린', t: 'm_goblin', wpn: 'w_knife' }, { n: '임프', t: 'm_shroom' }, { n: '해골', t: 'm_bat', wpn: 'w_rusty' }, { n: '산적', t: 'm_bandit' }] },
+    { to: 30, mons: [{ n: '오크 전사', t: 'm_skeleton', wpn: 'w_axe' }, { n: '가면 오크', t: 'm_warg', wpn: 'w_waraxe' }, { n: '오크 주술사', t: 'm_mandrake', wpn: 'w_gstaff' }, { n: '놀 정찰병', t: 'm_gnoll' }] },
+    { to: 50, mons: [{ n: '얼음 좀비', t: 'm_troll' }, { n: '진흙 점액', t: 'm_phantom' }, { n: '좀비', t: 'm_ghoul', wpn: 'w_cleaver' }, { n: '놀 전사', t: 'm_gnollb' }, { n: '버섯 거인', t: 'm_lmush' }] },
+    { to: 80, mons: [{ n: '워골', t: 'm_ogre', wpn: 'w_mace' }, { n: '초트', t: 'm_spider' }, { n: '강령술사', t: 'm_lich' }, { n: '놀 주술사', t: 'm_gshaman' }, { n: '트롤', t: 'm_troll2' }, { n: '동굴 곰', t: 'm_bear' }] },
+    { to: 1e9, mons: [{ n: '대악마', t: 'm_demon' }, { n: '오우거', t: 'm_golem' }, { n: '호박 망령', t: 'm_spell' }, { n: '고목 엔트', t: 'm_ent' }, { n: '돌 골렘', t: 'm_golem2' }] },
   ],
   // 보스: 큰 그림(32px)은 s를 작게 — 그림 자체가 이미 두 칸이다
   bosses: [
-    { n: '늪의 군주', e: '👑', t: 'b_slimeking', s: 2 }, { n: '고블린 족장', e: '👺', t: 'b_goblinchief' }, { n: '해골 기사', e: '💀', t: 'b_bat' },
-    { n: '거대 좀비', e: '🧟', t: 'b_skeleton', s: 1.1 }, { n: '피의 오크', e: '👹', t: 'b_wolf' }, { n: '오우거 대장', e: '🗿', t: 'b_troll', s: 1.1 },
+    { n: '늪의 군주', e: '👑', t: 'b_slimeking', s: 2 }, { n: '놀 감독관', e: '👺', t: 'b_goblinchief' }, { n: '해골 기사', e: '💀', t: 'b_bat' },
+    { n: '거대 좀비', e: '🧟', t: 'b_skeleton', s: 1.1 }, { n: '숲의 수호자', e: '🛡️', t: 'b_wolf' }, { n: '오우거 대장', e: '🗿', t: 'b_troll', s: 1.1 },
     { n: '심연의 초트', e: '👿', t: 'b_spider' }, { n: '역병 거인', e: '🧟', t: 'b_ogre', s: 1.1 }, { n: '강령술사 군주', e: '🧙', t: 'b_lich' }, { n: '황금 대악마', e: '😈', t: 'b_dragon', s: 1.1 },
   ],
   // 동료: 영웅 기본 공격력 대비 배율, 사거리(칸), 공격 간격(초)
   allies: {
-    archer: { n: '엘프 궁수', t: 'u_archer', atk: 0.6, hp: 0.5, range: 5, cd: 1.0, proj: 'fx_arrow' },
+    archer: { n: '레인저', t: 'u_archer', atk: 0.6, hp: 0.5, range: 5, cd: 1.0, proj: 'fx_arrow' },
     cleric: { n: '수도사', t: 'u_cleric', atk: 0.2, hp: 0.6, range: 4, cd: 2.0, heal: 0.08, proj: 'fx_holy' },
     bard: { n: '음유시인', t: 'u_bard', atk: 0.3, hp: 0.6, range: 4, cd: 1.5, proj: 'fx_ice', song: true },
-    mage: { n: '화염 마법사', t: 'u_mage', atk: 1.4, hp: 0.5, range: 5, cd: 1.8, splash: 1.4, proj: 'fx_flame' },
-    paladin: { n: '성기사', t: 'u_paladin', atk: 0.8, hp: 1.6, range: 1.3, cd: 1.0 },
-    dragoon: { n: '용기병', t: 'u_dragoon', atk: 3, hp: 1.2, range: 1.5, cd: 1.4 },
+    mage: { n: '화염 마법사', t: 'u_mage', wpn: 'w_staff', atk: 1.4, hp: 0.5, range: 5, cd: 1.8, splash: 1.4, proj: 'fx_flame' },
+    paladin: { n: '성기사', t: 'u_paladin', wpn: 'w_hammer', atk: 0.8, hp: 1.6, range: 1.3, cd: 1.0 },
+    dragoon: { n: '용기병', t: 'u_dragoon', wpn: 'w_spear', atk: 3, hp: 1.2, range: 1.5, cd: 1.4 },
     archmage: { n: '대현자', t: 'u_archmage', atk: 2.5, hp: 0.7, range: 6, cd: 1.6, chain: 4, proj: 'fx_zap' },
   },
   // 버프: 음유시인의 노래, 성직자의 축복, 기술 「전투 함성」. dmg는 모든 피해 배율.

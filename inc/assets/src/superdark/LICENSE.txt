@@ -1,0 +1,3 @@
+16x16 Enchanted Forest Characters / 16x16 Free NPC Pack by Superdark — https://superdark.itch.io
+"This asset is completely free ... you can use them however you like, in free or commercial projects, you can modify the sprites and no credit is required."
+Supplemental packs for 0x72's DungeonTileset II. File names were normalized (sd_<name>_<idle|run>_anim_f<n>.png).

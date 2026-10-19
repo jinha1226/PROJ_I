@@ -65,7 +65,7 @@ G.Fantasy = (() => {
       rt.seen = new Uint8Array(m.w * m.h);
       rt.seenVer = 0;
       const st = m.start;
-      const hero = rt.hero || { kind: 'hero', t: 'knight', s: 1.15, bar: true };
+      const hero = rt.hero || { kind: 'hero', t: 'knight', wpn: 'w_sword', s: 1.15, bar: true };
       Object.assign(hero, { x: st.cx, y: st.cy, max: F.heroHP(f), atkT: 0, dead: false });
       hero.hp = hero.max;
       rt.hero = hero;
@@ -76,7 +76,7 @@ G.Fantasy = (() => {
       Object.keys(D.allies).forEach((id, i) => {
         if (!ta('ally_' + id)) return;
         const def = D.allies[id];
-        const a = keep[id] || { kind: 'ally', id, def, t: def.t, s: 0.95, bar: true };
+        const a = keep[id] || { kind: 'ally', id, def, t: def.t, wpn: def.wpn, s: 0.95, bar: true };
         Object.assign(a, { x: st.cx + (i % 3) - 1, y: st.cy + (i > 2 ? 1 : 0), atkT: Math.random(), dead: false, reviveT: 0, skT: (a.skT || 3) });
         a.max = a.hp = F.heroHP(f) * def.hp * tm('allyHp');
         rt.allies.push(a);
@@ -104,7 +104,7 @@ G.Fantasy = (() => {
     spawnMon(rt, fl, d, x, y, boss) {
       const hp = F.monHP(fl, boss);
       rt.mons.push({
-        kind: 'mon', n: d.n, t: d.t, x, y, s: boss ? d.s || 1.6 : 1, hp, max: hp, atk: F.monAtk(fl, boss), gold: F.monGold(fl, boss),
+        kind: 'mon', n: d.n, t: d.t, wpn: d.wpn, x, y, s: boss ? d.s || 1.6 : 1, hp, max: hp, atk: F.monAtk(fl, boss), gold: F.monGold(fl, boss),
         boss, aggro: false, atkT: Math.random(), bar: true, label: boss ? d.n : null,
       });
     },
@@ -125,7 +125,7 @@ G.Fantasy = (() => {
       Object.keys(D.allies).forEach(id => {
         if (have.has(id) || !ta('ally_' + id)) return;
         const def = D.allies[id], h = rt.hero;
-        const a = { kind: 'ally', id, def, t: def.t, s: 0.95, bar: true, x: h.x, y: h.y, atkT: 0, dead: false, reviveT: 0, skT: 2 };
+        const a = { kind: 'ally', id, def, t: def.t, wpn: def.wpn, s: 0.95, bar: true, x: h.x, y: h.y, atkT: 0, dead: false, reviveT: 0, skT: 2 };
         a.max = a.hp = F.heroHP(f) * def.hp * tm('allyHp');
         rt.allies.push(a);
         rt.party.push(a);
@@ -414,8 +414,15 @@ G.Fantasy = (() => {
             const open = (dx, dy) => '.>'.includes(GR.at(m, x + dx, y + dy));
             if (G.ARTSET['f_wface' + b]) {
               if (open(0, 1)) return ['f_wface' + b];
-              for (const [dx, dy] of GR.DIR) if (open(dx, dy)) return ['f_wtop' + b];
-              return null;
+              // 벽 속은 어두운 돌. 바닥과 닿은 쪽마다 테두리, 앞면 바로 위 칸에는 앞면의 윗단
+              const face = GR.at(m, x, y + 1) === '#' && '.>'.includes(GR.at(m, x, y + 2));
+              if (!face && !GR.DIR.some(([dx, dy]) => open(dx, dy))) return null;
+              const L = ['f_wdark' + b];
+              if (face) L.push('f_cS' + b);
+              if (open(0, -1)) L.push('f_cN' + b);
+              if (open(1, 0)) L.push('f_cE' + b);
+              if (open(-1, 0)) L.push('f_cW' + b);
+              return L;
             }
             for (const [dx, dy] of GR.DIR) if (open(dx, dy)) return ['f_wall' + b];
             return null;

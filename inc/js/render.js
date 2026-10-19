@@ -45,6 +45,21 @@ G.MapView = function (canvas) {
   const sx = x => ox + (x + 0.5) * TS;
   const sy = y => oy + (y + 0.5) * TS;
 
+  // 손에 든 무기: 평소엔 앞으로 비스듬히 들고, 공격(내딛기) 때 뒤에서 앞으로 크게 휘두른다
+  function drawWeapon(e, cx, cy, size, lq) {
+    const im = G.T.image(e.wpn, 0);
+    if (!G.T.ready(im)) return;
+    const k = size / 16 * 0.65, w = im.naturalWidth * k, h = im.naturalHeight * k, face = e.flip ? -1 : 1;
+    let ang = 0.45;
+    if (lq < 1) { const q = 1 - Math.pow(1 - lq, 3); ang = lq < 0.15 ? 0.45 - 1.9 * (lq / 0.15) : -1.45 + 3.1 * q; }
+    ctx.save();
+    ctx.translate(cx + face * size * 0.32, cy + size * 0.22);
+    ctx.scale(face, 1);
+    ctx.rotate(ang);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(im, -w / 2, -h * 0.85, w, h);
+    ctx.restore();
+  }
   // 그리고 나서 그림의 윗변 y를 돌려준다 (체력바·이름표를 머리 위에 두려고)
   function drawSprite(spec, cx, cy, size, flip) {
     let top = cy - size / 2;
@@ -126,6 +141,7 @@ G.MapView = function (canvas) {
     if (e.dim) ctx.filter = 'grayscale(1) brightness(0.45)';
     const tc = e.tint && tinted(spec, e.tint);
     const top = tc ? blit(tc, cx, cy, size, e.flip) : drawSprite(spec, cx, cy, size, e.flip);
+    if (e.wpn && G.ARTSET[e.wpn]) drawWeapon(e, cx, cy, size, lq);
     ctx.filter = 'none';
     ctx.shadowBlur = 0;
     if (hq < 1) {
