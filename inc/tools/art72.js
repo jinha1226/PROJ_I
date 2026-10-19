@@ -2,7 +2,7 @@
 // SPEC의 키마다 원본 프레임(assets/src/0x72/frames)을 골라 편집(색 바꾸기·뒤집기·겹치기)하고
 // assets/art/<키>[_n].png로 저장한 뒤 js/artset.js(키 → 프레임 수)를 만든다. 같은 키의 DCSS 타일보다 우선한다.
 // 프레임이 여럿이면 캐릭터는 애니메이션으로 돌고, 지형은 칸마다 다른 변형이 된다. <키>_run이 있으면 걸을 때 쓴다.
-const fs = require('fs'), path = require('path'), PNG = require('./png');
+const fs = require('fs'), path = require('path'), PNG = require('./png'), PIX = require('./pix');
 // 원본: 0x72 팩 + 같은 그림체의 보충 팩(Superdark, sd_ 접두어). 보충 팩은 32×32 캔버스 가운데에 그려져 있어 여백을 잘라 쓴다.
 const ROOT = path.join(__dirname, '..'), OUT = path.join(ROOT, 'assets', 'art');
 const SRCS = ['0x72', 'superdark'].map(d => path.join(ROOT, 'assets', 'src', d, 'frames'));
@@ -150,6 +150,9 @@ const SPEC = {
   // 대현자의 보라 보석 지팡이, 성직자의 금빛 철퇴 (원본 색만 바꿈)
   w_arcstaff: { src: 'weapon_red_magic_staff', ed: [{ op: 'hue', deg: -80, only: [330, 30], sat: 1.2 }] },
   w_holymace: { src: 'weapon_mace', ed: [{ op: 'hue', deg: -130, only: [150, 200], sat: 1.4, light: 0.08 }] },
+  // 무협 마을: 0x72에 없는 야외 지형은 같은 팔레트로 직접 그린다 (tools/pix.js). draw: [함수, 변형 수, 옵션]
+  v_grass: { draw: ['grass', 6] }, v_flowers: { draw: ['flowers', 4] }, v_road: { draw: ['road', 4] }, v_path: { draw: ['path', 4] },
+  v_tree: { draw: ['tree', 3] }, v_plum: { draw: ['tree', 2, { blossom: true }] },
   // 화살 (날아가는 방향으로 돌려 그린다)
   fx_arrow: { src: 'weapon_arrow' },
   // 판타지: 던전 지형 (구간 0~5). 벽은 위에서 본 윗면(top)과 바닥 쪽으로 보이는 앞면(face)
@@ -205,6 +208,12 @@ function save(key, list, ed, box) {
   set[key] = list.length;
 }
 for (const [key, s] of Object.entries(SPEC)) {
+  if (s.draw) {
+    const [fn, n, opt] = s.draw;
+    for (let i = 0; i < n; i++) fs.writeFileSync(path.join(OUT, n > 1 ? `${key}_${i}.png` : `${key}.png`), PNG.write(edit(PIX[fn](i + 1, opt), s.ed)));
+    set[key] = n;
+    continue;
+  }
   const idle = Array.isArray(s.src) ? s.src : frames(s.src), run = s.run ? frames(s.run) : [], hit = s.hit ? [s.hit] : [];
   const box = idle.some(n => n.startsWith('sd_')) ? bbox([...idle, ...run, ...hit]) : null;
   save(key, idle, s.ed, box);
