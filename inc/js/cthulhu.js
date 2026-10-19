@@ -1,245 +1,271 @@
 'use strict';
-// 크툴루 · 금단의 복권 (밤의 아컴 거리 — Scritchy Scratchy, Luck be a Landlord 계열)
-// 광신도(스킬트리)가 집 → 복권방 → (인장을 얻으면) 제단을 오가며 복권을 긁는다. 맨홀에서 촉수가 기어 나와 이성을 갉아먹는다.
-// 촉수를 클릭하면 조사관이 퇴마한다. 복권방을 클릭하면 직접 긁는다: 같은 그림 3개 = 상금.
-// 이성이 낮을수록 당첨금이 최대 ×2.5. 0이 되면 15초 광기: 광신도가 얼어붙고 촉수가 쏟아진다.
+// 크툴루 · 인스머스의 밤 (심해 낚시 — Tiny Fishing, Dredge 계열)
+// 바다를 옆에서 자른 맵. 배에서 바늘을 내린다(줄 길이까지). 내려가다 물고기에 닿으면 거기서 감기 시작한다.
+// 감아 올릴 때 닿는 물고기는 걸린다(바늘 수만큼). 수면에 닿으면 팔아서 동전, 처음 잡은 어종은 도감에 오른다.
+// 깊을수록 값비싸고 기괴한 것들이 나오고, 이성이 깎인다. 이성이 낮을수록 값은 커지지만 0이 되면 줄이 끊기고 광기.
+// 해구부터는 촉수가 떠다닌다: 걸린 게 있을 때 닿으면 줄이 끊긴다. 클릭으로 퇴치.
+// 바늘은 자동으로 피하고 노리지만, 맵을 누르거나 끌면 직접 조종한다.
 G.RT = G.RT || {};
 G.Cthulhu = (() => {
   const D = G.D.C, U = G.U, GR = G.Grid;
   const tm = k => G.Tree.mul('cthulhu', G.S.w.cthulhu.tree, k);
   const ta = k => G.Tree.add('cthulhu', G.S.w.cthulhu.tree, k);
-  const MAD = 15, REST_EVERY = 8;
+  const W = 16, SURF = 3, MAXD = 300, DOWN = 7, UP = 4.5, STEER = 7, IDLE_T = 1, MAD = 12, LANE = 2, CALM = 12;
 
   const C = {
+    SURF,
     init(head = 0) {
-      return { coins: 20 * Math.pow(10, head), san: 100, tree: G.Tree.init('cthulhu'), tier: 0, madT: 0, cur: null, tickets: 0, wins: 0, best: 0, recent: [] };
+      return { coins: 20 * Math.pow(10, head), san: 100, tree: G.Tree.init('cthulhu'), madT: 0, auto: true, dex: {}, best: 0, trips: 0, last: [] };
     },
     rt(c) { return G.RT.cthulhu || (G.RT.cthulhu = C.boot(c)); },
-    boot(c) {
-      const map = GR.fromAscii(D.map, D.pass);
-      const [kx, ky] = map.poi.K[0];
-      return { map, fx: [], cultists: [], horrors: [], horrorT: 6, wardT: 0, inv: { kind: 'hero', t: ['wb_human', 'c_investigator', 'c_hat'], x: kx + 1, y: ky + 1, s: 1.05 } };
+    boot() {
+      // 바다 단면: 위 3줄 밤하늘, 수면, 깊이별 물. 양옆은 들쭉날쭉한 절벽.
+      const rows = [];
+      for (let y = 0; y < SURF + MAXD + 2; y++) {
+        let r = '';
+        const d = y - SURF, z = C.zoneOf(d), cl = d > 2 ? 1 + (Math.sin(y * 0.37) + Math.sin(y * 0.13) > 1.2 ? 1 : 0) : 0;
+        for (let x = 0; x < W; x++) {
+          if (y < SURF) r += ' ';
+          else if (y === SURF) r += '~';
+          else if (y >= SURF + MAXD + 1 || x < cl || x >= W - cl) r += 'R';
+          else r += String(z);
+        }
+        rows.push(r);
+      }
+      const map = GR.fromAscii(rows, '~0123');
+      const boat = { shape: 'boat', x: W / 2 - 0.5, y: SURF - 0.45, s: 1.6, rod: { x: W / 2 + 0.6, y: SURF - 1.9 } };
+      return {
+        map, fx: [], phase: 'idle', t: IDLE_T, boat,
+        fisher: { kind: 'hero', t: ['wb_human', 'c_investigator', 'c_hat'], x: W / 2 - 0.9, y: SURF - 1.15, s: 1 },
+        hook: { shape: 'hook', x: W / 2, y: SURF, s: 1 }, fish: [], tents: [], hooked: [], steerX: null, steerT: 0, deepest: 0,
+      };
     },
-    unlocked: () => Math.min(D.tickets.length - 1, ta('tier')),
+    zoneOf: d => D.zones.findIndex(z => d <= z.to),
+    lineD: () => Math.min(MAXD, 6 + ta('line')),
+    maxCatch: () => 3 + ta('catch'),
+    reel: () => UP * tm('reel'),
     maxSan: () => 100 + 20 * ta('mind'),
-    sanRegen: () => (1 + 0.3 * ta('mind')) * (1 + G.relicVal('c_san')),
     sanMult: c => 1 + 1.5 * (1 - c.san / C.maxSan()),
-    prizeMult() {
-      // 전역 배수는 당첨금이 아니라 광신도 속도에 붙는다 (당첨금에 붙으면 복권 한 장의 기댓값이 폭주한다)
-      let m = (1 + G.relicVal('c_prize')) * tm('prize');
+    depthMult: d => Math.pow(1.06, d),
+    valueMult(c) {
+      let m = tm('value') * (1 + G.relicVal('c_prize')) * G.globalMult() * C.sanMult(c);
       if (G.synergy('syn_heaven')) m *= 1 + 0.15 * G.S.w.xianxia.realm;
       return m;
     },
-    luck: () => 1 + ta('luck'),
-    cultCount: () => Math.min(25, ta('cult')),
-    probs() {
-      const l = C.luck(), ps = D.prizes.map(p => p.p * l), tot = ps.reduce((a, b) => a + b, 0);
-      return tot > 0.9 ? ps.map(p => p * 0.9 / tot) : ps;
-    },
-    price: tier => D.tickets[tier].price,
-    roll(tier) {
-      const ps = C.probs();
-      let r = Math.random(), prize = -1;
-      for (let i = ps.length - 1; i >= 0; i--) { if (r < ps[i]) { prize = i; break; } r -= ps[i]; }
-      return {
-        prize, tentacles: U.chance(0.45) ? (U.chance(0.25) ? 2 : 1) : 0,
-        sign: U.chance(0.02 * tm('sign')) ? 1 : 0, candle: U.chance(0.05) ? 1 : 0,
-      };
-    },
-    gen(tier) {
-      const R = C.roll(tier), cells = new Array(9).fill(null), pos = U.shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]);
-      let p = 0;
-      if (R.prize >= 0) for (let i = 0; i < 3; i++) cells[pos[p++]] = R.prize;
-      for (let i = 0; i < R.tentacles; i++) cells[pos[p++]] = 'tentacle';
-      if (R.sign) cells[pos[p++]] = 'sign';
-      if (R.candle) cells[pos[p++]] = 'candle';
-      const cnt = [0, 0, 0, 0, 0, 0];
-      if (R.prize >= 0) cnt[R.prize] = 3;
-      for (; p < 9; p++) {
-        const s = U.pick(cnt.map((n, i) => i).filter(i => cnt[i] < 2));
-        cnt[s]++;
-        cells[pos[p]] = s;
-      }
-      return { tier, prize: R.prize, cells: cells.map(s => ({ s, rev: false })), done: false };
-    },
+    value: (c, f) => f.sp.v * C.depthMult(f.d) * C.valueMult(c),
     gain(c, n) { c.coins += n; G.tally('cthulhu', n); },
-    // 직접 긁기
-    buy(c) {
-      if (c.madT > 0 || (c.cur && !c.cur.done)) return false;
-      const pr = C.price(c.tier);
-      if (c.coins < pr) return false;
-      c.coins -= pr;
-      c.cur = C.gen(c.tier);
-      c.tickets++;
+
+    // ── 던지기: 줄 길이까지 물고기와 촉수를 채운다 ──
+    cast(c) {
+      const rt = C.rt(c);
+      if (rt.phase !== 'idle' || c.madT > 0) return false;
+      const maxD = C.lineD();
+      rt.fish = []; rt.tents = []; rt.hooked = []; rt.deepest = 0;
+      for (let d = 3; d <= maxD + 2 && d <= MAXD; d += LANE) {
+        const z = C.zoneOf(d), y = SURF + d + Math.random() * 0.8;
+        if (z >= 2 && U.chance(0.12)) {
+          const hp = 3;
+          rt.tents.push({ kind: 'mon', tent: true, t: { k: 'sea_tent', v: U.rand(8) }, x0: 2 + Math.random() * (W - 4), x: 0, y, s: 1.4, hp, max: hp, bar: true, ph: Math.random() * 6 });
+          continue;
+        }
+        if (!U.chance(0.75)) continue;
+        const pool = D.fish.filter(f => (f.zMax != null ? z >= f.z && z <= f.zMax : f.z === z));
+        const sp = U.wpick(pool, f => f.w * (f.sign ? (ta('deal') ? 2 : 1) : f.w < 1 ? 1 + ta('bait') : 1));
+        const dir = U.chance(0.5) ? 1 : -1;
+        rt.fish.push({ kind: 'mon', sp, t: sp.t, tint: sp.tint, x: 1.8 + Math.random() * (W - 3.6), y, d, dir, spd: sp.spd * (0.7 + Math.random() * 0.6), s: (sp.s || 0.9), glow: sp.sign ? '#c78bff' : null });
+      }
+      rt.phase = 'down';
+      c.trips++;
+      G.J.sfx('cthulhu', 'select');
       return true;
     },
-    reveal(c, i) {
-      const t = c.cur;
-      if (!t || t.done || c.madT > 0 || t.cells[i].rev) return;
-      const cell = t.cells[i];
-      cell.rev = true;
-      if (cell.s === 'tentacle') { C.hurt(c, 8); G.J.sfx('cthulhu', 'hurt'); G.J.shake('cthulhu', 5); }
-      else if (cell.s === 'candle') { c.san = Math.min(C.maxSan(), c.san + 12); G.J.sfx('cthulhu', 'bell'); }
-      else if (cell.s === 'sign') { G.addSigns(1, 'cthulhu'); G.J.sfx('cthulhu', 'chime'); }
-      else G.J.sfx('cthulhu', 'reveal');
-      G.emit('c_reveal', { i, s: cell.s });
-      if (c.madT <= 0 && t.cells.every(x => x.rev)) C.resolve(c, t);
-    },
-    revealAll(c) {
-      if (!c.cur || c.cur.done) return;
-      for (let i = 0; i < 9 && c.madT <= 0; i++) C.reveal(c, i);
+    // 줄이 끊긴다: 걸린 것을 모두 잃는다
+    snap(c, rt, why) {
+      for (const f of rt.hooked) G.fx(rt, { k: 'die', spr: f.t, x: f.x, y: f.y, s: f.s, t: 0.6 });
+      rt.hooked = [];
+      G.fx(rt, { k: 'text', x: rt.hook.x, y: rt.hook.y - 0.6, s: why, col: '#ff7a7a', t: 1.2, sz: 1.2, pop: true });
+      G.J.sfx('cthulhu', 'lose');
+      G.J.shake('cthulhu', 9, 0, -1, 0.4);
     },
     hurt(c, n) {
       c.san -= n;
-      if (c.san <= 0) {
-        c.san = 0;
-        c.madT = MAD;
-        G.log('광기 발작! 눈앞의 숫자들이 꿈틀거린다…', 'cthulhu', 'bad');
-        G.J.sfx('cthulhu', 'mad');
-        G.J.shake('cthulhu', 12, 0, 0, 0.8);
-        G.J.flash('cthulhu', '#8f2bd6');
-        G.emit('c_mad');
-      }
-    },
-    payout(c, tier, prize) {
-      if (prize < 0) return 0;
-      const m = D.prizes[prize].m, win = C.price(tier) * m * C.sanMult(c) * C.prizeMult();
-      C.gain(c, win);
-      c.wins++;
-      if (win > c.best) c.best = win;
-      if (m >= 25) G.addEss(D.tickets[tier].ess * m / 25, 'cthulhu');
-      return win;
-    },
-    resolve(c, t) {
-      t.done = true;
-      const win = C.payout(c, t.tier, t.prize), res = { tier: t.tier, prize: t.prize, win };
-      c.recent.unshift(res);
-      if (c.recent.length > 8) c.recent.pop();
-      // 당첨 크기에 맞춘 소리: 꽝은 작게, 대박은 화면까지 번쩍
-      if (t.prize < 0) G.J.sfx('cthulhu', 'dud');
-      else if (D.prizes[t.prize].m >= 25) { G.J.sfx('cthulhu', 'jackpot'); G.J.flash('cthulhu', '#ffd24a'); G.J.shake('cthulhu', 8); }
-      else G.J.sfx('cthulhu', 'win', { tier: t.prize });
-      if (t.prize >= 3) G.log(`${D.tickets[t.tier].n} ${D.prizes[t.prize].m}배 당첨! +${U.fmt(win)}`, 'cthulhu', 'good');
-      G.emit('c_result', res);
-    },
-    beg(c) { c.coins += 1; },
-    // 광신도 몫: 결과만 굴린다. 촉수는 맨홀에서 실제로 기어 나온다.
-    autoTier(c) {
-      let t = C.unlocked();
-      while (t > 0 && c.coins < C.price(t) * 3) t--;
-      return t;
-    },
-    horrorHp: () => 10 * Math.pow(3, C.unlocked()),
-    spawnHorror(c, rt, near) {
-      if (rt.horrors.length >= 8) return;
-      const holes = rt.map.poi.o;
-      const [hx, hy] = near ? holes.reduce((a, b) => (Math.hypot(a[0] - near.x, a[1] - near.y) < Math.hypot(b[0] - near.x, b[1] - near.y) ? a : b)) : U.pick(holes);
-      const hp = C.horrorHp();
-      rt.horrors.push({ kind: 'mon', t: { k: 'c_horror', v: U.rand(5) }, x: hx, y: hy, s: 1, hp, max: hp, bar: true });
-      G.fx(rt, { k: 'ring', x: hx, y: hy, r: 0.8, t: 0.6, col: '#8f5bd6' });
-      G.J.sfx('cthulhu', 'gurgle');
-    },
-    // power > 0: 직접 퇴마 (히트스톱)
-    hitHorror(c, rt, h, dmg, from, col, power = 0) {
-      h.hp -= dmg;
-      G.fx(rt, { k: 'beam', x: from.x, y: from.y, x2: h.x, y2: h.y, col, w: 2, t: 0.15 });
-      G.J.hit('cthulhu', h, power);
-      if (power) G.fx(rt, { k: 'text', x: h.x, y: h.y - 0.5, s: U.fmt(dmg), col: '#e8d48a', t: 0.7, sz: 1.2 + 0.5 * Math.min(1, dmg / h.max), pop: true });
-      if (h.hp <= 0) {
-        G.J.sfx('cthulhu', 'banish');
-        rt.horrors = rt.horrors.filter(o => o !== h);
-        c.san = Math.min(C.maxSan(), c.san + 3);
-        G.fx(rt, { k: 'text', x: h.x, y: h.y - 0.7, s: '퇴마', col: '#c7a6ff', t: 0.9 });
-      }
-    },
-    click(c, x, y) {
+      if (c.san > 0) return;
+      c.san = 0;
+      c.madT = MAD;
       const rt = C.rt(c);
-      for (const h of rt.horrors) if (Math.hypot(h.x - x, h.y - y) < 1) {
-        C.hitHorror(c, rt, h, 4 * tm('banish') * G.globalMult(), rt.inv, '#e8d48a', 0.4);
-        G.J.sfx('cthulhu', 'hit');
-        return true;
-      }
-      const [kx, ky] = rt.map.poi.K[0];
-      if (Math.hypot(kx - x, ky - y) < 1.3) { G.emit('c_kiosk'); G.J.sfx('cthulhu', 'select'); return true; }
-      return false;
+      if (rt.hooked.length) C.snap(c, rt, '광기');
+      if (rt.phase === 'down') rt.phase = 'up';
+      G.log('광기 발작! 줄을 놓쳤다…', 'cthulhu', 'bad');
+      G.J.sfx('cthulhu', 'mad');
+      G.J.flash('cthulhu', '#8f2bd6');
+    },
+    // 수면 도착: 판다, 도감, 정수
+    land(c, rt) {
+      let sum = 0, big = null, signs = 0, fresh = 0;
+      const got = [];
+      rt.hooked.forEach((f, i) => {
+        const sp = f.sp;
+        if (sp.sign) signs++;
+        else {
+          const v = C.value(c, f);
+          sum += v;
+          G.fx(rt, { k: 'text', x: rt.boat.x + (i - rt.hooked.length / 2) * 0.6, y: SURF - 1.6 - i * 0.25, s: '+' + U.fmt(v), col: sp.v >= 60 ? '#ffd24a' : '#bfe8a0', t: 1.3, sz: sp.v >= 60 ? 1.4 : 1, pop: true });
+          if (!big || sp.v > big.v) big = sp;
+        }
+        G.fx(rt, { k: 'proj', key: f.t, x: f.x, y: f.y, x2: rt.boat.x, y2: SURF - 0.6, t: 0.4 + i * 0.08 });
+        if (!c.dex[sp.id]) {
+          c.dex[sp.id] = 0;
+          signs += ta('deal') ? 2 : 1;
+          G.addEss(0.5 * Math.pow(1 + D.fish.indexOf(sp), 1.2), 'cthulhu');
+          G.fx(rt, { k: 'text', x: rt.boat.x, y: SURF - 2.6 - fresh++ * 0.6, s: `도감 · ${sp.n}`, col: '#c7a6ff', t: 2, sz: 1.3, pop: true });
+          G.J.sfx('cthulhu', 'chime');
+        }
+        c.dex[sp.id]++;
+        got.push(sp.id);
+      });
+      C.gain(c, sum);
+      if (signs) G.addSigns(signs, 'cthulhu');
+      if (rt.deepest > 0) G.addEss(0.02 * Math.pow(rt.deepest, 1.3), 'cthulhu');
+      if (got.length) { c.last = got; G.J.sfx('cthulhu', big && big.v >= 60 ? 'jackpot' : 'coin'); }
+      if (big && big.v >= 60) { G.J.finish('cthulhu', rt.boat.x, SURF - 0.5, 1.3); G.log(`${big.n}을(를) 낚았다!`, 'cthulhu', 'good'); }
+      rt.hooked = [];
+      rt.phase = 'idle';
+      rt.t = IDLE_T;
     },
 
+    // ── 바늘 조종: 내려갈 때는 피하고, 올라올 때는 값진 것을 노린다 ──
+    autoX(c, rt) {
+      const h = rt.hook, look = 1.5 + ta('skill'), down = rt.phase === 'down';
+      const vy = down ? DOWN : C.reel();
+      const ahead = o => (down ? o.y - h.y : h.y - o.y);
+      const px = (o, tt) => (o.tent ? o.x : U.clamp(o.x + o.dir * o.spd * tt, 1.5, W - 2.5));
+      const danger = [...(down ? rt.fish : []), ...rt.tents].filter(o => ahead(o) > 0 && ahead(o) < look);
+      const full = rt.hooked.length >= C.maxCatch();
+      let goal = null;
+      if (!down && !full) {
+        let bv = 0;
+        for (const f of rt.fish) { const a = ahead(f); if (a > 0 && a < look + 1.5 && f.sp.v * C.depthMult(f.d) > bv) { bv = f.sp.v * C.depthMult(f.d); goal = f; } }
+      }
+      let best = h.x, bs = -1e9;
+      for (let x = 1.5; x <= W - 2.5; x += 0.5) {
+        let md = 9;
+        for (const o of danger) md = Math.min(md, Math.abs(px(o, ahead(o) / vy) - x));
+        let sc = Math.min(md, 2.2) * (down || rt.hooked.length ? 1 : 0.3) - Math.abs(x - h.x) * 0.04;
+        if (goal) sc -= Math.abs(px(goal, ahead(goal) / vy) - x) * 0.8;
+        if (sc > bs) { bs = sc; best = x; }
+      }
+      return best;
+    },
+    // 맵 클릭: 촉수 → 퇴치, 대기 중 → 던지기, 그 밖 → 바늘을 그쪽으로
+    click(c, x, y) {
+      const rt = C.rt(c);
+      for (const o of rt.tents) if (Math.hypot(o.x - x, o.y - y) < 1.1) {
+        o.hp--;
+        G.J.hit('cthulhu', o, 0.4, rt.hook);
+        G.fx(rt, { k: 'beam', x: rt.boat.x, y: SURF - 1, x2: o.x, y2: o.y, col: '#e8d48a', w: 2, t: 0.15 });
+        G.J.sfx('cthulhu', 'hit');
+        if (o.hp <= 0) {
+          rt.tents = rt.tents.filter(q => q !== o);
+          c.san = Math.min(C.maxSan(), c.san + 5);
+          G.fx(rt, { k: 'die', spr: o.t, x: o.x, y: o.y, s: o.s, t: 0.5 });
+          G.fx(rt, { k: 'text', x: o.x, y: o.y - 0.7, s: '퇴마', col: '#c7a6ff', t: 0.9, pop: true });
+          G.J.sfx('cthulhu', 'banish');
+        }
+        return true;
+      }
+      if (rt.phase === 'idle') return C.cast(c);
+      C.steer(c, x);
+      return true;
+    },
+    steer(c, x) { const rt = C.rt(c); rt.steerX = U.clamp(x, 1.5, W - 2.5); rt.steerT = 1.5; },
+
     tick(c, dt) {
-      const rt = C.rt(c), m = rt.map, [kx, ky] = m.poi.K[0], [ax, ay] = m.poi.A[0];
+      const rt = C.rt(c), h = rt.hook;
       G.fxTick(rt, dt);
-      const mad = c.madT > 0;
-      if (mad) { if ((c.madT -= dt) <= 0) { c.madT = 0; c.san = C.maxSan() * 0.5; } }
-      else c.san = Math.min(C.maxSan(), c.san + C.sanRegen() * dt - 0.3 * rt.horrors.length * dt);
-      if (!mad && c.san <= 0) C.hurt(c, 0);
-      // 조사관: 직접 긁는 중이면 복권방 앞, 아니면 그 옆
-      rt.inv.moving = false;
-      GR.moveTo(m, rt.inv, kx + (c.cur && !c.cur.done ? 0 : 1), ky + 1, 3, dt, 0.1);
-      // 광신도
-      const homes = m.poi.H, n = C.cultCount();
-      while (rt.cultists.length < n) {
-        const home = homes[rt.cultists.length % homes.length];
-        rt.cultists.push({ kind: 'ally', t: 'c_cultist', x: home[0], y: home[1], s: 0.95, home, state: 'go', t0: 0, done: 0, slot: rt.cultists.length });
+      if (c.madT > 0 && (c.madT -= dt) <= 0) { c.madT = 0; c.san = C.maxSan() * 0.5; }
+      // 물고기·촉수 움직임
+      for (const f of rt.fish) {
+        f.x += f.dir * f.spd * dt;
+        if (f.x < 1.5 || f.x > W - 2.5) { f.dir *= -1; f.x = U.clamp(f.x, 1.5, W - 2.5); }
+        f.flip = f.dir > 0;
+        f.moving = true;
       }
-      const scratchT = 2.5 / (tm('cultSpeed') * Math.sqrt(G.globalMult()));
-      for (const cu of rt.cultists) {
-        cu.moving = false;
-        if (mad) { cu.dim = true; continue; }
-        cu.dim = false;
-        if (cu.state === 'stun') { if ((cu.t0 -= dt) <= 0) cu.state = 'go'; continue; }
-        if (cu.state === 'go') {
-          const a = cu.slot * 2.4, tx = kx + Math.cos(a) * 1.2, ty = ky + 0.4 + Math.abs(Math.sin(a)) * 1.1;
-          if (GR.moveTo(m, cu, tx, ty, 2.2, dt, 0.15)) {
-            const tier = C.autoTier(c);
-            if (c.coins >= C.price(tier)) { c.coins -= C.price(tier); cu.tier = tier; cu.state = 'scratch'; cu.t0 = scratchT; }
+      for (const o of rt.tents) { o.ph += dt; o.x = U.clamp(o.x0 + Math.sin(o.ph * 0.7) * 2, 1.5, W - 2.5); }
+      // 이성: 60m 아래에서는 깎이고, 얕은 곳·수면에서는 돌아온다
+      const hd = h.y - SURF;
+      if (c.madT <= 0) {
+        if (hd > CALM) C.hurt(c, (hd - CALM) * 0.05 * Math.max(0.1, 1 - ta('ward')) * dt);
+        else c.san = Math.min(C.maxSan(), c.san + (3 + ta('mind')) * dt);
+      }
+      // 바늘 조종
+      if (rt.phase === 'down' || rt.phase === 'up') {
+        if (rt.steerT > 0) rt.steerT -= dt;
+        const gx = rt.steerT > 0 ? rt.steerX : C.autoX(c, rt);
+        h.x += U.clamp(gx - h.x, -STEER * dt, STEER * dt);
+      }
+      if (rt.phase === 'idle') {
+        h.x += (rt.boat.x + 1.1 - h.x) * Math.min(1, dt * 5); h.y = SURF;
+        if (c.madT <= 0 && c.auto && (rt.t -= dt) <= 0) C.cast(c);
+      } else if (rt.phase === 'down') {
+        h.y += DOWN * dt;
+        rt.deepest = Math.max(rt.deepest, h.y - SURF);
+        c.best = Math.max(c.best, Math.round((h.y - SURF) * D.M_PER_TILE));
+        const f = rt.fish.find(o => Math.hypot(o.x - h.x, o.y - h.y) < 0.6);
+        const tn = rt.tents.find(o => Math.hypot(o.x - h.x, o.y - h.y) < 0.8);
+        if (f) {
+          // 내려가다 물렸다: 여기서 감는다
+          rt.fish = rt.fish.filter(o => o !== f);
+          rt.hooked.push(f);
+          G.J.hit('cthulhu', f, 0.2, h);
+          G.J.sfx('cthulhu', 'pop');
+          rt.phase = 'up';
+        } else if (tn) {
+          C.hurt(c, 8);
+          G.J.hit('cthulhu', tn, 0.3, h);
+          G.J.shake('cthulhu', 5);
+          G.J.sfx('cthulhu', 'hurt');
+          rt.phase = 'up';
+        } else if (h.y - SURF >= C.lineD()) rt.phase = 'up';
+      } else if (rt.phase === 'up') {
+        h.y -= C.reel() * (c.madT > 0 ? 3 : 1) * dt;
+        if (rt.hooked.length < C.maxCatch()) {
+          const f = rt.fish.find(o => Math.hypot(o.x - h.x, o.y - h.y) < 0.65);
+          if (f) {
+            rt.fish = rt.fish.filter(o => o !== f);
+            rt.hooked.push(f);
+            G.J.hit('cthulhu', f, 0.15, h);
+            G.J.sfx('cthulhu', 'pop');
           }
-        } else if (cu.state === 'scratch') {
-          if ((cu.t0 -= dt) > 0) { if (Math.random() < dt * 2) G.fx(rt, { k: 'text', x: cu.x, y: cu.y - 0.6, s: '…', col: '#aaa', t: 0.5 }); continue; }
-          c.tickets++;
-          const R = C.roll(cu.tier), win = C.payout(c, cu.tier, R.prize);
-          if (win) G.fx(rt, { k: 'text', x: cu.x, y: cu.y - 0.8, s: '+' + U.fmt(win), col: R.prize >= 3 ? '#ffd24a' : '#bfe8a0', t: 1, sz: R.prize >= 3 ? 1.3 : 0.9, pop: R.prize >= 3 });
-          if (R.prize >= 3) G.J.sfx('cthulhu', 'coin');
-          if (R.tentacles) C.spawnHorror(c, rt, cu);
-          cu.done++;
-          cu.state = R.sign ? 'altar' : cu.done % REST_EVERY === 0 ? 'home' : 'go';
-        } else if (cu.state === 'altar') {
-          if (GR.moveTo(m, cu, ax, ay + 1, 2.2, dt, 0.4)) { G.addSigns(1, 'cthulhu'); G.fx(rt, { k: 'tile', key: 'c_sign', x: ax, y: ay, t: 1 }); cu.state = 'go'; }
-        } else if (cu.state === 'home') {
-          if (GR.moveTo(m, cu, cu.home[0], cu.home[1], 2.2, dt, 0.2)) { cu.state = 'rest'; cu.t0 = 4; }
-        } else if (cu.state === 'rest') {
-          if ((cu.t0 -= dt) <= 0) cu.state = 'go';
         }
-      }
-      // 촉수
-      rt.horrorT -= dt * (mad ? 3 : 1);
-      // 촉수는 광신도가 많을수록 자주 꼬인다 (광신도가 없으면 거리는 조용하다)
-      if (rt.horrorT <= 0) { rt.horrorT = Math.max(4, 14 * (0.4 + c.san / C.maxSan())); if (rt.horrors.length < Math.ceil(rt.cultists.length / 3)) C.spawnHorror(c, rt); }
-      for (const h of rt.horrors) {
-        h.moving = false;
-        let tg = null, bd = 1e9;
-        for (const cu of rt.cultists) if (cu.state !== 'stun' && cu.state !== 'rest') { const d = GR.dist(h, cu); if (d < bd) { bd = d; tg = cu; } }
-        if (!tg) continue;
-        if (bd > 0.8) GR.moveTo(m, h, tg.x, tg.y, 1.1, dt, 0.7);
-        else { tg.state = 'stun'; tg.t0 = 4; G.fx(rt, { k: 'text', x: tg.x, y: tg.y - 0.7, s: '으아악', col: '#c7a6ff', t: 1 }); }
-      }
-      // 엘더 사인 결계
-      if (ta('ward') && (rt.wardT -= dt) <= 0) {
-        rt.wardT = 1;
-        for (const [wx, wy] of [[kx, ky], [ax, ay]]) {
-          const h = rt.horrors.find(o => Math.hypot(o.x - wx, o.y - wy) <= 4);
-          if (h) C.hitHorror(c, rt, h, 5 * tm('wardDmg') * G.globalMult(), { x: wx, y: wy }, '#9b6bd6');
+        const tn = rt.tents.find(o => Math.hypot(o.x - h.x, o.y - h.y) < 0.8);
+        if (tn && rt.hooked.length && !tn.hitT) {
+          tn.hitT = 1;
+          if (U.chance(ta('charm'))) G.fx(rt, { k: 'text', x: h.x, y: h.y - 0.6, s: '부적!', col: '#e8d48a', t: 1, pop: true });
+          else { C.snap(c, rt, '줄이 끊겼다'); C.hurt(c, 10); }
         }
+        if (h.y <= SURF) { h.y = SURF; rt.phase = 'land'; C.land(c, rt); }
       }
+      // 걸린 것들은 바늘 아래에 매달린다
+      rt.hooked.forEach((f, i) => { f.x = h.x + Math.sin(i * 2.1) * 0.25; f.y = h.y + 0.45 + i * 0.35; f.moving = true; });
     },
     view(c) {
-      const rt = C.rt(c), ents = [...rt.horrors, ...rt.cultists, rt.inv];
-      if (ta('ward')) for (const ch of ['K', 'A']) { const [x, y] = rt.map.poi[ch][0]; ents.unshift({ t: 'c_ward', x, y: y + 0.05, s: 1.6, alpha: 0.35, under: true }); }
-      const lowSan = 1 - c.san / C.maxSan();
+      const rt = C.rt(c), h = rt.hook, hd = Math.max(0, h.y - SURF), lowSan = 1 - c.san / C.maxSan();
+      const ents = [rt.boat, rt.fisher, ...rt.fish, ...rt.tents, ...rt.hooked, h];
       return {
-        map: rt.map, ents, fx: rt.fx, fit: true, cam: rt.inv, terrain: (x, y) => D.tiles[GR.at(rt.map, x, y)] || null,
-        tint: c.madT > 0 ? 'rgba(90,20,120,0.35)' : `rgba(20,40,30,${0.15 + lowSan * 0.25})`, lamps: true,
+        map: rt.map, ents, fx: rt.fx, cam: { x: W / 2, y: Math.max(SURF + 3, h.y + (rt.phase === 'down' ? 3.5 : rt.phase === 'up' ? -2 : 0)) }, viewH: 13,
+        lines: [{ x: rt.boat.rod.x, y: rt.boat.rod.y, x2: h.x, y2: h.y - 0.3, col: 'rgba(230,230,210,0.7)', w: 1 }],
+        lamp: { x: h.x, y: h.y, r: 3 + ta('lamp'), a: Math.min(0.9, Math.max(0, (hd - 6) / 70)) },
+        terrain(x, y) {
+          const ch = GR.at(rt.map, x, y);
+          if (ch === ' ') return null;
+          if (ch === '~') return ['sea_w0', 'sea_wave'];
+          if (ch === 'R') return ['sea_rock'];
+          return [D.zones[+ch].t];
+        },
+        tint: c.madT > 0 ? 'rgba(90,20,120,0.35)' : lowSan > 0.3 ? `rgba(20,60,40,${(lowSan - 0.3) * 0.35})` : null,
       };
     },
-    status: c => `동전 ${U.fmt(c.coins)}`,
+    status: c => `${c.best}m`,
   };
   return C;
 })();

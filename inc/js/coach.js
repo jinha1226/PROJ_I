@@ -36,8 +36,11 @@ G.Coach = {
       return { x: rt.pads[i][0], y: rt.pads[i][1], s: 1, label: w.selPad == null ? '눌러!' : '건설!' };
     }
     if (id === 'cthulhu') {
-      const [kx, ky] = G.Cthulhu.rt(w).map.poi.K[0];
-      return { x: kx, y: ky, s: 1.3, label: '눌러!' };
+      // 감아 올릴 때 위쪽의 물고기 하나를 가리킨다: 누르면 바늘이 그쪽으로 간다
+      const rt = G.Cthulhu.rt(w), h = rt.hook;
+      if (rt.phase !== 'up') return null;
+      const f = rt.fish.find(o => o.y < h.y && h.y - o.y < 4);
+      return f ? { x: f._rx ?? f.x, y: f._ry ?? f.y, s: 1, label: '눌러!' } : null;
     }
     return null;
   },

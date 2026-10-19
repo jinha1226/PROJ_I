@@ -66,6 +66,7 @@ G.MapView = function (canvas) {
       ctx.setLineDash([]);
       return;
     }
+    if (e.shape) return drawShape(e, cx, cy, size, t);
     if (!e.t) return;
     const foot = cy + size * 0.38;
     if (e.moving) cy -= Math.abs(Math.sin(t / 90 + e.x * 3)) * TS * 0.06;
@@ -98,7 +99,8 @@ G.MapView = function (canvas) {
     }
     if (e.glow) { ctx.shadowColor = e.glow; ctx.shadowBlur = 14; }
     if (e.dim) ctx.filter = 'grayscale(1) brightness(0.45)';
-    drawSprite(e.t, cx, cy, size, e.flip);
+    const tc = e.tint && tinted(e.t, e.tint);
+    if (tc) blit(tc, cx, cy, size, e.flip); else drawSprite(e.t, cx, cy, size, e.flip);
     ctx.filter = 'none';
     ctx.shadowBlur = 0;
     if (hq < 1) {
@@ -176,6 +178,30 @@ G.MapView = function (canvas) {
       ctx.stroke(); ctx.shadowBlur = 0;
     }
     ctx.globalAlpha = 1;
+  }
+  // 타일로 없는 것: 배(나무 선체·돛대 등불·낚싯대), 낚싯바늘
+  function drawShape(e, cx, cy, size, t) {
+    if (e.shape === 'boat') {
+      cy += Math.sin(t / 600) * TS * 0.05;
+      const w = size * 0.6, top = cy - size * 0.02, bot = cy + size * 0.22;
+      ctx.fillStyle = '#5a3a22'; ctx.strokeStyle = '#1e120a'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(cx - w, top); ctx.lineTo(cx + w, top); ctx.lineTo(cx + w * 0.72, bot); ctx.lineTo(cx - w * 0.72, bot); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#7a5434'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx - w * 0.9, top + (bot - top) * 0.45); ctx.lineTo(cx + w * 0.9, top + (bot - top) * 0.45); ctx.stroke();
+      // 돛대와 등불
+      const mx = cx + w * 0.55;
+      ctx.strokeStyle = '#3a2716'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(mx, top); ctx.lineTo(mx, top - size * 0.55); ctx.stroke();
+      const g = ctx.createRadialGradient(mx, top - size * 0.55, 1, mx, top - size * 0.55, TS * 1.2);
+      g.addColorStop(0, 'rgba(255,200,110,0.9)'); g.addColorStop(0.15, 'rgba(255,190,90,0.35)'); g.addColorStop(1, 'rgba(255,190,90,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(mx, top - size * 0.55, TS * 1.2, 0, 7); ctx.fill();
+      // 낚싯대
+      if (e.rod) { ctx.strokeStyle = '#8a6a44'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx - w * 0.2, top - size * 0.25); ctx.lineTo(sx(e.rod.x), sy(e.rod.y)); ctx.stroke(); }
+    } else if (e.shape === 'hook') {
+      ctx.strokeStyle = '#dfe6ee'; ctx.lineWidth = Math.max(1.5, TS * 0.05); ctx.shadowColor = '#fff'; ctx.shadowBlur = 6;
+      ctx.beginPath(); ctx.moveTo(cx, cy - TS * 0.3); ctx.lineTo(cx, cy + TS * 0.05); ctx.arc(cx - TS * 0.1, cy + TS * 0.05, TS * 0.1, 0, Math.PI); ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
   }
   // 안개: 본 적 없는 칸은 어둡게(칸당 1px 캔버스를 부드럽게 확대), 주인공 주변은 등불처럼 밝게
   function drawFog(view) {
@@ -295,10 +321,20 @@ G.MapView = function (canvas) {
         ctx.shadowBlur = 0;
       }
       ctx.setLineDash([]); ctx.globalAlpha = 1;
+      if (view.lines) for (const l of view.lines) {
+        ctx.strokeStyle = l.col; ctx.lineWidth = l.w || 1;
+        ctx.beginPath(); ctx.moveTo(sx(l.x), sy(l.y)); ctx.lineTo(sx(l.x2), sy(l.y2)); ctx.stroke();
+      }
       for (const e of ents) if (!e.under) drawEnt(e, t, now);
       if (fog) drawFog(view);
       if (view.labels) for (const l of view.labels) text(l.s, sx(l.x), sy(l.y) - TS * 0.7, l.on ? '#ffe08a' : 'rgba(255,255,255,0.75)', Math.max(10, TS * 0.32));
       for (const f of view.fx) drawFx(f, t);
+      if (view.lamp && view.lamp.a > 0) {
+        const L = view.lamp, lx = sx(L.x), ly = sy(L.y);
+        const g = ctx.createRadialGradient(lx, ly, TS * L.r * 0.35, lx, ly, TS * L.r * 1.6);
+        g.addColorStop(0, 'rgba(0,0,8,0)'); g.addColorStop(1, `rgba(0,0,8,${L.a})`);
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      }
       const coach = G.Coach && G.Coach.target(id);
       if (coach) drawCoach(coach, t);
       if (view.dimAll) { ctx.fillStyle = 'rgba(60,0,0,0.45)'; ctx.fillRect(0, 0, W, H); }
@@ -323,6 +359,23 @@ G.MapView = function (canvas) {
   };
 };
 
+// 타일 위에 색을 반쯤 덧칠한 것 (Safari도 되도록 ctx.filter 대신 합성으로)
+const tintCache = new Map();
+function tinted(spec, col) {
+  const key = JSON.stringify(spec) + col;
+  let c = tintCache.get(key);
+  if (c) return c;
+  const ims = G.T.layers(spec).map(([k, v]) => G.T.image(k, v)).filter(Boolean);
+  if (!ims.length || !ims.every(G.T.ready)) return null;
+  c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const b = c.getContext('2d');
+  for (const im of ims) b.drawImage(im, 0, 0);
+  b.globalCompositeOperation = 'source-atop';
+  b.globalAlpha = 0.55; b.fillStyle = col; b.fillRect(0, 0, 32, 32);
+  tintCache.set(key, c);
+  return c;
+}
 // 타일을 한 색으로 칠한 실루엣 (번쩍임·외곽선용). 겹친 인형도 한 장으로 합친다.
 const silCache = new Map();
 function silhouette(spec, col) {

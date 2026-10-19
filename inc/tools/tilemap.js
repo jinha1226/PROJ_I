@@ -110,6 +110,16 @@ module.exports = {
   c_s5: ['item/gem/zot_found_whole', 'mon/eyes/golden_eye', 'mon/eyes/eye_of_devastation', 'mon/nonliving/shooting_star', 'mon/eyes/great_orb_of_eyes', 'item/misc/orb_of_zot1'],
   c_tentacle: ['mon/aberrations/tentacled_monstrosity'], c_sign: ['item/misc/runes/rune_abyss'], c_candle: ['item/misc/misc_lamp'],
   c_cultist: ['mon/humanoids/humans/occultist'],
+  // 크툴루 · 인스머스 심해 낚시: 바다 단면(깊이마다 물이 달라진다), 절벽, 어종
+  item_line: ['item/weapon/ranged/throwing_net'], item_wire: ['dngn/traps/net'],
+  sea_w0: ['dngn/water/open_sea'], sea_w1: ['dngn/water/deep_water'], sea_w2: ['dngn/water/ink_full'], sea_w3: ['dngn/wall/abyss/abyss_blue[0-3]'],
+  sea_wave: ['dngn/water/deep_water_wave_N[0-9]*'], sea_rock: ['dngn/wall/wall_stone_shoals[0-4]'], sea_tent: ['mon/tentacles/eldritch_ends/eldritch_tentacle[1-8]'],
+  fs_cod: ['mon/aquatic/rock_fish'], fs_crab: ['mon/animals/ghost_crab'], fs_jelly: ['mon/aquatic/jellyfish'],
+  fs_eel: ['mon/aquatic/electric_eel'], fs_octo: ['mon/aquatic/octopode'], fs_blind: ['mon/undead/zombies/zombie_fish'], fs_ghost: ['mon/undead/spectrals/spectral_fish'],
+  fs_deepone: ['mon/demihumanoids/merfolk/merfolk_water'], fs_siren: ['mon/demihumanoids/merfolk/merfolk_siren_water'], fs_bone: ['mon/undead/draugr/draugr_fish'],
+  fs_slime: ['mon/amorphous/azure_jelly'], fs_kraken: ['mon/aquatic/kraken_head'],
+  fs_star: ['mon/abyss/tentacled_starspawn'], fs_mass: ['mon/abyss/starcursed_mass'], fs_thrash: ['mon/abyss/thrashing_horror'],
+  fs_acrab: ['mon/abyss/apocalypse_crab'], fs_eye: ['mon/aberrations/tentacled_monstrosity'], fs_dagon: ['mon/abyss/lurking_horror'],
   cu_luck: ['item/amulet/cameo'], cu_cultist: ['mon/humanoids/humans/servant_of_whispers'], cu_ritual: ['dngn/altars/kikubaaqudgha'],
   cu_mind: ['item/potion/sky_blue'], cu_foil: ['item/gold/05'], c_coin: ['item/gold/04'],
 

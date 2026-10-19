@@ -30,6 +30,15 @@ G.UI.worldScreen = function (id, spec) {
     if (!(spec.click && spec.click(p, e)) && mod.click) mod.click(G.S.w[id], p.x, p.y);
     G.Coach.clicked(id, p, ct);
   });
+  // 끌기: 누른 채 움직이면 spec.drag (낚싯바늘 조종 등). 끌기를 쓰는 맵은 터치 스크롤을 막는다.
+  if (spec.drag) {
+    cv.style.touchAction = 'none';
+    cv.addEventListener('pointermove', e => {
+      if (!e.buttons) return;
+      const r = cv.getBoundingClientRect();
+      spec.drag(mv.toTile(e.clientX - r.left, e.clientY - r.top), e);
+    });
+  }
 
   const el = h('section.world.' + id, null,
     G.V.head(id, h('div.wtabs', null, mapBtn, treeBtn)),

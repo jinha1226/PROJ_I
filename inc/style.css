@@ -567,3 +567,9 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .tree-edges .body polygon { stroke-width: 30; }
 .tree-edges .body circle { fill: #ffffff0a; stroke: #ffffff14; stroke-width: 2; }
 .tree-edges .body circle.dantian { fill: #ffd24a14; stroke: #ffd24a55; }
+
+/* ── 크툴루 낚시: 어획, 도감 ── */
+.catch-row { display: flex; flex-wrap: wrap; gap: 2px; min-height: 36px; }
+.dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 4px; }
+.dx { display: flex; flex-direction: column; align-items: center; padding: 3px 0; border-radius: 8px; background: var(--panel2); font-size: 10px; color: var(--dim); }
+.dx.unknown .tl img { filter: brightness(0) drop-shadow(0 0 1px #8f5bd6aa); opacity: .7; }

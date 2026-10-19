@@ -11,8 +11,8 @@ G.D.WORLDS = [
     blurb: '영기를 모아 천겁을 넘고 경지를 돌파한다. 실패하면 도심이 흔들린다. 천교방에 도전해 영석을 벌어라.' },
   { id: 'scifi', name: '최후의 방어선', genre: 'SF', style: '디펜스형', icon: '🛰️', ref: 'The Tower · Sir, We Have an Orc Problem',
     blurb: '궤도 기지의 코어를 노리는 기계 군단. 포대를 짓고 강화해 끝없는 웨이브를 막아라.' },
-  { id: 'cthulhu', name: '금단의 복권', genre: '크툴루', style: '운·가차형', icon: '🐙', ref: 'Scritchy Scratchy · Luck be a Landlord',
-    blurb: '긁을 때마다 무언가가 속삭인다. 이성이 낮을수록 당첨금은 커지지만, 바닥나면 광기가 덮친다.' },
+  { id: 'cthulhu', name: '인스머스의 밤', genre: '크툴루', style: '심해 낚시형', icon: '🐙', ref: 'Tiny Fishing · Dredge',
+    blurb: '깊이 내릴수록 값진 것이 걸린다. 그리고 그것들도 당신을 본다.' },
 ];
 G.D.WORLD = Object.fromEntries(G.D.WORLDS.map(w => [w.id, w]));
 // 세계 해금 비용(정수): 이미 해금한 세계 수에 따라 오른다. 순서는 플레이어가 고른다.
@@ -215,47 +215,41 @@ G.D.S = {
   },
 };
 
-// ───────── 크툴루: 금단의 복권 ─────────
+// ───────── 크툴루: 인스머스 심해 낚시 (Tiny Fishing · Dredge 계열) ─────────
+// 바다 단면 맵. 한 칸 = 5m. 바늘이 내려갈 때 물고기에 닿으면 거기서 감기 시작하고, 올라올 때 닿는 물고기는 걸린다.
+// 깊을수록 값비싼 기괴한 것들이 나오고 이성이 깎인다. 해구부터 촉수가 줄을 끊는다.
 G.D.C = {
-  // 거리 지도. M 외벽 # 집 벽 _ 집 안 H 집 문(광신도 숙소) . 길 , 공원 T 고목 L 가로등 o 맨홀(촉수) K 복권방 A 제단
-  map: [
-    'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
-    'M#####.#####.#####.,,,,,,.#####.###M',
-    'M#___#.#___#.#___#.,T,,T,.#___#.#_#M',
-    'M##H##.##H##.##H##.,,,A,,.##H##.#H#M',
-    'M.....L..o.L.......,,,,,,.....L....M',
-    'M..................,T,,,T,.........M',
-    'M.......K..........,,,,,,,....o....M',
-    'M..L.......o...L..........L........M',
-    'M#####.#####......o.....#####.#####M',
-    'M#___#.#___#.,,,,.......#___#.#___#M',
-    'M##H##.##H##.,T,,...L...##H##.##H##M',
-    'M..........,,,,,...........o.......M',
-    'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
+  M_PER_TILE: 5,
+  zones: [
+    { to: 12, n: '얕은 바다', t: 'sea_w0' },
+    { to: 40, n: '깊은 바다', t: 'sea_w1' },
+    { to: 90, n: '해구', t: 'sea_w2' },
+    { to: 1e9, n: '심연', t: 'sea_w3' },
   ],
-  pass: '._,HoKA',
-  tiles: {
-    'M': ['c_house'], '#': ['c_house'], '_': ['c_hfloor'], 'H': ['c_street', 'c_hdoor'], '.': ['c_street'], ',': ['c_park'],
-    'T': ['c_park', 'c_deadtree'], 'L': ['c_street', 'c_lamp'], 'o': ['c_street', 'c_manhole'], 'K': ['c_street', 'c_kiosk'], 'A': ['c_park', 'c_altar'],
-  },
-  tickets: [
-    { n: '속삭이는 쪽지', price: 5, unlock: 0, ess: 0.1, col: '#5d6b4c', syms: ['💀', '📜', '🦴', '🕷️', '👁️', '🗿'] },
-    { n: '심연 복권', price: 60, unlock: 400, ess: 0.3, col: '#2e5a62', syms: ['🐚', '🦑', '⚓', '🌊', '🐟', '🔱'] },
-    { n: '검은 파라오의 표', price: 2000, unlock: 1.5e4, ess: 0.8, col: '#6b5222', syms: ['🐈‍⬛', '🏺', '🦂', '🪲', '🐍', '🔺'] },
-    { n: '르뤼에 대복권', price: 8e4, unlock: 6e5, ess: 1.2, col: '#244a3a', syms: ['🌀', '🗝️', '🏛️', '🌒', '🦠', '🪸'] },
-    { n: '아자토스의 꿈', price: 4e6, unlock: 3e7, ess: 2, col: '#4a2a66', syms: ['🎺', '🥁', '✨', '🌌', '🪐', '♾️'] },
-    { n: '별들의 정렬', price: 2.5e8, unlock: 2e9, ess: 3.5, col: '#661f2c', syms: ['⭐', '☄️', '🌠', '🔮', '👑', '☀️'] },
+  // z: 나오는 구역, v: 기본 값, w: 빈도, spd: 헤엄 속도(칸/초), tint: 같은 그림을 다른 색으로
+  fish: [
+    { id: 'cod', n: '대구', t: 'fs_cod', z: 0, v: 1, w: 5, spd: 1.2 },
+    { id: 'mackerel', n: '고등어', t: 'fs_cod', tint: '#3b8cff', z: 0, v: 1.5, w: 4, spd: 2 },
+    { id: 'crab', n: '유령게', t: 'fs_crab', z: 0, v: 2, w: 2, spd: 0.6 },
+    { id: 'jelly', n: '해파리', t: 'fs_jelly', z: 0, v: 2.5, w: 1.5, spd: 0.5 },
+    { id: 'eel', n: '전기뱀장어', t: 'fs_eel', z: 1, v: 4, w: 3, spd: 1.8 },
+    { id: 'octo', n: '문어', t: 'fs_octo', z: 1, v: 5, w: 2, spd: 0.8 },
+    { id: 'blind', n: '눈먼 물고기', t: 'fs_blind', z: 1, v: 6, w: 3, spd: 1 },
+    { id: 'ghost', n: '유령 물고기', t: 'fs_ghost', z: 1, v: 8, w: 1.5, spd: 1.4 },
+    { id: 'deepone', n: '심해인', t: 'fs_deepone', z: 2, v: 15, w: 3, spd: 1.3 },
+    { id: 'bone', n: '뼈물고기', t: 'fs_bone', z: 2, v: 12, w: 3, spd: 1.1 },
+    { id: 'siren', n: '세이렌', t: 'fs_siren', z: 2, v: 20, w: 1.5, spd: 1.2 },
+    { id: 'slime', n: '심해 점액', t: 'fs_slime', z: 2, v: 18, w: 2, spd: 0.4 },
+    { id: 'kraken', n: '크라켄', t: 'fs_kraken', z: 2, v: 60, w: 0.3, spd: 0.7, s: 1.5 },
+    { id: 'star', n: '별의 자식', t: 'fs_star', z: 3, v: 80, w: 3, spd: 1 },
+    { id: 'mass', n: '저주받은 덩어리', t: 'fs_mass', z: 3, v: 100, w: 2, spd: 0.5 },
+    { id: 'thrash', n: '몸부림치는 공포', t: 'fs_thrash', z: 3, v: 120, w: 2, spd: 1.6 },
+    { id: 'acrab', n: '종말의 게', t: 'fs_acrab', z: 3, v: 150, w: 1, spd: 0.7 },
+    { id: 'eye', n: '촉수 괴물', t: 'fs_eye', z: 3, v: 300, w: 0.4, spd: 0.6, s: 1.3 },
+    { id: 'dagon', n: '다곤의 그림자', t: 'fs_dagon', z: 3, v: 1000, w: 0.1, spd: 0.4, s: 1.8 },
+    // 고대 인장: 얕은 바다 밖 어디서나 드물게. 잡으면 인장 +1
+    { id: 'sign', n: '고대 인장', t: 'ui_sign', z: 1, zMax: 3, v: 0, w: 0.25, spd: 0.3, sign: true },
   ],
-  // 상금 배수(복권 값 대비)와 기본 확률. 각 단계는 그 복권의 기호 하나에 대응한다.
-  prizes: [
-    { m: 1, p: 0.22 }, { m: 3, p: 0.12 }, { m: 8, p: 0.05 },
-    { m: 25, p: 0.015 }, { m: 100, p: 0.004 }, { m: 1000, p: 0.0004 },
-  ],
-  specials: {
-    tentacle: { e: '🐙', d: '이성 -8' },
-    sign: { e: '✴️', d: '고대 인장 획득' },
-    candle: { e: '🕯️', d: '이성 +12' },
-  },
 };
 
 // ───────── 유물 (가차) ─────────
@@ -275,7 +269,7 @@ G.D.RELICS = [
   { id: 'spirit', n: '하품 영석', e: '💎', r: 'common', w: 'xianxia', eff: 'x_stone', v: 0.12, d: '영석 수입' },
   { id: 'chip', n: '고장 난 칩', e: '💾', r: 'common', w: 'scifi', eff: 's_dmg', v: 0.1, d: '포탑 피해' },
   { id: 'plating', n: '장갑판 조각', e: '🔩', r: 'common', w: 'scifi', eff: 's_core', v: 0.15, d: '코어 내구도' },
-  { id: 'coin', n: '녹색 동전', e: '🪙', r: 'common', w: 'cthulhu', eff: 'c_prize', v: 0.08, d: '복권 당첨금' },
+  { id: 'coin', n: '녹색 동전', e: '🪙', r: 'common', w: 'cthulhu', eff: 'c_prize', v: 0.08, d: '어획 가치' },
   { id: 'string', n: '엘프의 활시위', e: '🎯', r: 'rare', w: 'fantasy', eff: 'f_gold', v: 0.2, d: '던전 골드' },
   { id: 'plum', n: '매화 검수', e: '🌸', r: 'rare', w: 'wuxia', eff: 'w_xp', v: 0.25, d: '무협 숙련' },
   { id: 'jade', n: '태극 옥패', e: '🟢', r: 'rare', w: 'xianxia', eff: 'x_power', v: 0.2, d: '도력' },
@@ -285,7 +279,7 @@ G.D.RELICS = [
   { id: 'cheonma', n: '천마의 비급', e: '📕', r: 'epic', w: 'wuxia', eff: 'w_xp', v: 0.5, d: '무협 숙련' },
   { id: 'gourd', n: '자금 호로', e: '🏺', r: 'epic', w: 'xianxia', eff: 'x_qi', v: 0.4, d: '영기 수련' },
   { id: 'antimatter', n: '반물질 코어', e: '⚛️', r: 'epic', w: 'scifi', eff: 's_dmg', v: 0.4, d: '포탑 피해' },
-  { id: 'necro', n: '네크로노미콘 사본', e: '📖', r: 'epic', w: 'cthulhu', eff: 'c_prize', v: 0.3, d: '복권 당첨금' },
+  { id: 'necro', n: '네크로노미콘 사본', e: '📖', r: 'epic', w: 'cthulhu', eff: 'c_prize', v: 0.3, d: '어획 가치' },
   { id: 'key', n: '차원의 열쇠', e: '🗝️', r: 'legend', w: 'all', eff: 'ess', v: 0.25, d: '모든 정수 획득' },
   { id: 'flute', n: '아자토스의 피리', e: '🪈', r: 'legend', w: 'all', eff: 'all', v: 0.3, d: '모든 세계 생산' },
 ];

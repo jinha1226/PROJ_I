@@ -54,10 +54,10 @@ function bot(dt) {
     if (xr.beasts.length && acc > 1) G.Xianxia.flySword(x, xr.beasts[0]);
   }
   if (S.unlocked.cthulhu) {
+    // 바늘 근처 촉수는 눌러서 퇴치한다 (나머지는 자동 조종에 맡긴다)
     const c = S.w.cthulhu, C = G.Cthulhu, cr = C.rt(c);
-    c.tier = C.autoTier(c);
-    if (acc > 1 && cr.horrors.length) C.click(c, cr.horrors[0].x, cr.horrors[0].y);
-    if (acc > 3 && c.san > 40) { if (!c.cur || c.cur.done) { if (!C.buy(c)) C.beg(c); } else C.revealAll(c); }
+    const tn = acc > 1 && cr.tents.find(o => Math.abs(o.y - cr.hook.y) < 3);
+    if (tn) C.click(c, tn.x, tn.y);
   }
   if (acc > 3) acc = 0;
 }
@@ -83,7 +83,7 @@ for (let t = 0; t < MIN * 60; t++) {
       (S.unlocked.wuxia ? `무협 ${w.lives + 1}생 ${G.Wuxia.status(w)} 깨달음${U.fmt(w.ins)} | ` : '') +
       (S.unlocked.xianxia ? `수선 ${G.Xianxia.realmName(x.realm)} 진기${G.Xianxia.slotCount()} | ` : '') +
       (S.unlocked.scifi ? `SF W${s.maxWave} 포탑${Object.keys(s.towers).length} | ` : '') +
-      (S.unlocked.cthulhu ? `크툴루 ${U.fmt(c.coins)} 광신도${G.Cthulhu.cultCount()} | ` : '') +
+      (S.unlocked.cthulhu ? `크툴루 ${U.fmt(c.coins)} ${c.best}m 도감${Object.keys(c.dex).length} | ` : '') +
       `붕괴 ${G.Prestige.can() ? G.Prestige.gain() : '-'}`);
   }
 }
