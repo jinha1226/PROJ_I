@@ -37,3 +37,8 @@ npm run dev                   # http://localhost:5173
 ## 에셋
 
 [KayKit](https://kaylousberg.com) Character Pack Adventurers/Skeletons, Dungeon Remastered, Medieval Hexagon Pack (CC0, Kay Lousberg).
+
+## 차원 균열 · Infinite Rift (`inc/`)
+
+다섯 세계(판타지·무협·수선·SF·크툴루)가 2D 타일 맵 위에서 자동으로 굴러가는 인크레멘탈 프로토타입. 세계마다 스킬트리, 공용 넥서스 트리, 차원 붕괴(환생).
+빌드 없는 바닐라 JS — `inc/index.html`을 바로 열면 된다. 배포 주소: `/inc/`. 설계는 `inc/DESIGN.md`, 밸런스 봇은 `node inc/test/sim.js [분]`.

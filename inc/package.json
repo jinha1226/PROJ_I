@@ -1,0 +1,6 @@
+{
+  "name": "infinite-rift",
+  "private": true,
+  "type": "commonjs",
+  "description": "차원 균열 — 빌드 없는 바닐라 JS. 이 파일은 test/sim.js를 CommonJS로 돌리기 위해서만 있다."
+}
