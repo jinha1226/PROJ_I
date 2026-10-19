@@ -104,7 +104,7 @@ G.Fantasy = (() => {
     spawnMon(rt, fl, d, x, y, boss) {
       const hp = F.monHP(fl, boss);
       rt.mons.push({
-        kind: 'mon', n: d.n, t: d.t, x, y, s: boss ? 1.7 : 1, hp, max: hp, atk: F.monAtk(fl, boss), gold: F.monGold(fl, boss),
+        kind: 'mon', n: d.n, t: d.t, x, y, s: boss ? d.s || 1.6 : 1, hp, max: hp, atk: F.monAtk(fl, boss), gold: F.monGold(fl, boss),
         boss, aggro: false, atkT: Math.random(), bar: true, label: boss ? d.n : null,
       });
     },
@@ -410,7 +410,14 @@ G.Fantasy = (() => {
         terrain(x, y) {
           const c = m.c[y * m.w + x];
           if (c === '#') {
-            for (const [dx, dy] of GR.DIR) if ('.>'.includes(GR.at(m, x + dx, y + dy))) return ['f_wall' + b];
+            // 0x72 벽: 아래가 바닥이면 앞면(벽돌이 보인다), 그 밖에 바닥과 닿으면 윗면
+            const open = (dx, dy) => '.>'.includes(GR.at(m, x + dx, y + dy));
+            if (G.ARTSET['f_wface' + b]) {
+              if (open(0, 1)) return ['f_wface' + b];
+              for (const [dx, dy] of GR.DIR) if (open(dx, dy)) return ['f_wtop' + b];
+              return null;
+            }
+            for (const [dx, dy] of GR.DIR) if (open(dx, dy)) return ['f_wall' + b];
             return null;
           }
           return c === '>' ? ['f_floor' + b, 'f_stairs'] : ['f_floor' + b];

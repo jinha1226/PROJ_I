@@ -23,11 +23,11 @@ G.MapView = function (canvas) {
     const m = view.map;
     if (m._bg && m._bgVer === m.ver && m._bgReady) return m._bg;
     const cv = m._bg || document.createElement('canvas');
-    // 생성 그림(그린 그림)이 있으면 지형을 칸당 64px로 그려 둔다. 아주 긴 맵(낚시 바다)은 메모리 때문에 32px.
-    const TSRC = Object.keys(G.ARTSET).length && m.w * m.h * 4096 <= 12e6 ? 64 : 32;
+    // 칸당 32px로 그려 두고 확대한다 (16px 픽셀 타일은 2배, 픽셀 그대로)
+    const TSRC = 32;
     cv.width = m.w * TSRC; cv.height = m.h * TSRC;
     const b = cv.getContext('2d');
-    b.imageSmoothingEnabled = TSRC > 32;
+    b.imageSmoothingEnabled = false;
     b.clearRect(0, 0, cv.width, cv.height);
     let ready = true;
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
@@ -45,20 +45,32 @@ G.MapView = function (canvas) {
   const sx = x => ox + (x + 0.5) * TS;
   const sy = y => oy + (y + 0.5) * TS;
 
+  // 그리고 나서 그림의 윗변 y를 돌려준다 (체력바·이름표를 머리 위에 두려고)
   function drawSprite(spec, cx, cy, size, flip) {
+    let top = cy - size / 2;
     for (const [k, v] of G.T.layers(spec)) {
       const im = G.T.image(k, v);
       if (!G.T.ready(im)) continue;
-      blit(im, cx, cy, size, flip);
+      top = Math.min(top, blit(im, cx, cy, size, flip));
     }
+    return top;
   }
+  // DCSS 타일(32×32)은 칸 가운데에 칸 크기로. 0x72 픽셀 그림(16px 기준, 세로로 긴 것도)은
+  // 원본 1px = 칸/16 비율로 키우고 발을 칸 아래쪽에 맞춘다.
   function blit(im, cx, cy, size, flip) {
-    ctx.imageSmoothingEnabled = (im.naturalWidth || im.width) > 32;
+    const w = im.naturalWidth || im.width, h = im.naturalHeight || im.height;
+    ctx.imageSmoothingEnabled = false;
+    let dw = size, dh = size, x = cx - size / 2, y = cy - size / 2;
+    if (w !== 32 || h !== 32) {
+      const k = size / 16;
+      dw = w * k; dh = h * k; x = cx - dw / 2; y = cy + size * 0.45 - dh;
+    }
     if (flip) {
       ctx.save(); ctx.translate(cx, 0); ctx.scale(-1, 1);
-      ctx.drawImage(im, -size / 2, cy - size / 2, size, size);
+      ctx.drawImage(im, x - cx, y, dw, dh);
       ctx.restore();
-    } else ctx.drawImage(im, cx - size / 2, cy - size / 2, size, size);
+    } else ctx.drawImage(im, x, y, dw, dh);
+    return y;
   }
   function drawEnt(e, t, now) {
     const size = (e.s || 1) * TS;
@@ -71,10 +83,18 @@ G.MapView = function (canvas) {
       return;
     }
     if (e.shape) return drawShape(e, cx, cy, size, t);
-    const spec = e.art && G.ARTSET[e.art] ? e.art : e.t;
+    let spec = e.art && G.ARTSET[e.art] ? e.art : e.t;
     if (!spec) return;
     const foot = cy + size * 0.38;
-    if (e.moving) cy -= Math.abs(Math.sin(t / 90 + e.x * 3)) * TS * 0.06;
+    // 0x72 그림: 맞을 때 한 장, 걸을 때 run, 아니면 대기 애니메이션 (걷는 들썩임은 run이 대신한다)
+    const anim = typeof spec === 'string' && G.ARTSET[spec];
+    const hitNow = e._hit && now - e._hit < 160;
+    if (anim) {
+      const key = hitNow && G.ARTSET[spec + '_hit'] ? spec + '_hit' : e.moving && G.ARTSET[spec + '_run'] ? spec + '_run' : spec;
+      if (e._ph == null) e._ph = Math.random() * 4;
+      spec = { k: key, v: Math.floor(now / (key.endsWith('_run') ? 90 : 140) + e._ph) };
+    }
+    if (e.moving && !(anim && G.ARTSET[e.t + '_run'])) cy -= Math.abs(Math.sin(t / 90 + e.x * 3)) * TS * 0.06;
     // 공격: 대상 쪽으로 내딛었다 돌아온다
     const lq = e._lu ? (now - e._lu) / 170 : 1;
     if (lq < 1) { const k = Math.sin(Math.PI * lq) * TS * 0.3; cx += e._lx * k; cy += e._ly * k; }
@@ -96,7 +116,7 @@ G.MapView = function (canvas) {
       ctx.beginPath(); ctx.ellipse(cx, foot, size * 0.36, size * 0.13, 0, 0, 7); ctx.stroke();
       const sil = silhouette(spec, '#fff3c4');
       if (sil) {
-        const o = Math.max(1, size / 32);
+        const o = Math.max(1, size / 20);
         ctx.globalAlpha *= 0.8;
         for (const [dx, dy] of [[o, 0], [-o, 0], [0, o], [0, -o]]) blit(sil, cx + dx, cy + dy, size, e.flip);
         ctx.globalAlpha = e.alpha == null ? 1 : e.alpha;
@@ -105,7 +125,7 @@ G.MapView = function (canvas) {
     if (e.glow) { ctx.shadowColor = e.glow; ctx.shadowBlur = 14; }
     if (e.dim) ctx.filter = 'grayscale(1) brightness(0.45)';
     const tc = e.tint && tinted(spec, e.tint);
-    if (tc) blit(tc, cx, cy, size, e.flip); else drawSprite(spec, cx, cy, size, e.flip);
+    const top = tc ? blit(tc, cx, cy, size, e.flip) : drawSprite(spec, cx, cy, size, e.flip);
     ctx.filter = 'none';
     ctx.shadowBlur = 0;
     if (hq < 1) {
@@ -115,7 +135,7 @@ G.MapView = function (canvas) {
     }
     ctx.globalAlpha = 1;
     if (e.bar && e.max && e.hp < e.max && e.hp > 0) {
-      const bw = Math.max(18, size * 0.8), by = cy - size / 2 - 5, r = Math.max(0, e.hp / e.max);
+      const bw = Math.max(18, size * 0.8), by = top - 5, r = Math.max(0, e.hp / e.max);
       // 깎인 만큼 흰 띠가 잠깐 남았다가 따라 줄어든다
       e._hpv = e._hpv == null || e._hpv < r ? r : e._hpv + (r - e._hpv) * 0.08;
       ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(cx - bw / 2 - 1, by - 1, bw + 2, 5);
@@ -123,7 +143,7 @@ G.MapView = function (canvas) {
       ctx.fillStyle = e.kind === 'mon' ? '#ff5a5a' : '#5fdc7a';
       ctx.fillRect(cx - bw / 2, by, bw * r, 3);
     }
-    if (e.label) text(e.label, cx, cy - size / 2 - 10, '#ffd9a0', 11);
+    if (e.label) text(e.label, cx, top - 10, '#ffd9a0', 11);
   }
   // 굵은 잉크 붓질 초승달 (베기 그림이 없을 때)
   function inkSlash(x, y, r, rot, p, crit) {
@@ -419,12 +439,12 @@ function tinted(spec, col) {
   const ims = G.T.layers(spec).map(([k, v]) => G.T.image(k, v)).filter(Boolean);
   if (!ims.length || !ims.every(G.T.ready)) return null;
   c = document.createElement('canvas');
-  const R = Math.max(32, ims[0].naturalWidth || 32);
-  c.width = c.height = R;
+  const W = ims[0].naturalWidth || 32, H = ims[0].naturalHeight || 32;
+  c.width = W; c.height = H;
   const b = c.getContext('2d');
-  for (const im of ims) b.drawImage(im, 0, 0, R, R);
+  for (const im of ims) b.drawImage(im, 0, 0, W, H);
   b.globalCompositeOperation = 'source-atop';
-  b.globalAlpha = 0.55; b.fillStyle = col; b.fillRect(0, 0, R, R);
+  b.globalAlpha = 0.55; b.fillStyle = col; b.fillRect(0, 0, W, H);
   tintCache.set(key, c);
   return c;
 }
@@ -437,12 +457,12 @@ function silhouette(spec, col) {
   const ims = G.T.layers(spec).map(([k, v]) => G.T.image(k, v)).filter(Boolean);
   if (!ims.length || !ims.every(G.T.ready)) return null;
   c = document.createElement('canvas');
-  const R = Math.max(32, ims[0].naturalWidth || 32);
-  c.width = c.height = R;
+  const W = ims[0].naturalWidth || 32, H = ims[0].naturalHeight || 32;
+  c.width = W; c.height = H;
   const b = c.getContext('2d');
-  for (const im of ims) b.drawImage(im, 0, 0, R, R);
+  for (const im of ims) b.drawImage(im, 0, 0, W, H);
   b.globalCompositeOperation = 'source-in';
-  b.fillStyle = col; b.fillRect(0, 0, R, R);
+  b.fillStyle = col; b.fillRect(0, 0, W, H);
   if (silCache.size > 400) silCache.clear();
   silCache.set(key, c);
   return c;

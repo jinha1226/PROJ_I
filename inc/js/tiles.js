@@ -1,7 +1,7 @@
 'use strict';
 // 타일 그리기: DOM 아이콘, 겹친 인형, 타일 배경 장면, 캔버스용 이미지 캐시
 // 타일 키는 G.TILESET(tools/build_tiles.js가 생성)에 있다. 없는 키는 글자(이모지)로 대신 그린다.
-// 같은 키의 그림이 assets/art/에 있으면(G.ARTSET, tools/build_art.js가 생성) DCSS 타일 대신 그것을 쓴다.
+// 같은 키의 그림이 assets/art/에 있으면(G.ARTSET, tools/art72.js가 0x72 팩에서 생성) DCSS 타일 대신 그것을 쓴다.
 // 인형(여러 타일을 겹친 캐릭터)도 인형 이름으로 된 그림이 있으면 그 한 장으로 바뀐다. 자세한 것은 ART.md.
 G.T = {
   base: 'assets/tiles/',

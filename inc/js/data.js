@@ -20,18 +20,20 @@ G.D.UNLOCK_COST = [15, 120, 800, 4000];
 
 // ───────── 판타지: 끝없는 던전 ─────────
 G.D.F = {
+  // 몬스터 그림은 0x72 DungeonTileset II (tools/art72.js에서 키 → 원본)
   bands: [
-    { to: 5, mons: [{ n: '시궁쥐', e: '🐀', t: 'm_rat' }, { n: '산성 점액', e: '🟢', t: 'm_slime' }] },
-    { to: 15, mons: [{ n: '고블린', e: '👺', t: 'm_goblin' }, { n: '걷는 버섯', e: '🍄', t: 'm_shroom' }, { n: '흡혈박쥐', e: '🦇', t: 'm_bat' }] },
-    { to: 30, mons: [{ n: '해골 전사', e: '💀', t: 'm_skeleton' }, { n: '와르그', e: '🐺', t: 'm_warg' }, { n: '맨드레이크', e: '🌱', t: 'm_mandrake' }] },
-    { to: 50, mons: [{ n: '동굴 트롤', e: '🧌', t: 'm_troll' }, { n: '원혼', e: '👻', t: 'm_phantom' }, { n: '구울', e: '🧟', t: 'm_ghoul' }] },
-    { to: 80, mons: [{ n: '오우거', e: '👹', t: 'm_ogre' }, { n: '늑대거미', e: '🕷️', t: 'm_spider' }, { n: '리치', e: '🧙', t: 'm_lich' }] },
-    { to: 1e9, mons: [{ n: '발로그', e: '😈', t: 'm_demon' }, { n: '강철 골렘', e: '🗿', t: 'm_golem' }, { n: '살아있는 주문', e: '🌀', t: 'm_spell' }] },
+    { to: 5, mons: [{ n: '꼬마 좀비', e: '🧟', t: 'm_rat' }, { n: '늪 점액', e: '🟢', t: 'm_slime' }] },
+    { to: 15, mons: [{ n: '고블린', e: '👺', t: 'm_goblin' }, { n: '임프', e: '😈', t: 'm_shroom' }, { n: '해골', e: '💀', t: 'm_bat' }] },
+    { to: 30, mons: [{ n: '오크 전사', e: '👹', t: 'm_skeleton' }, { n: '가면 오크', e: '👺', t: 'm_warg' }, { n: '오크 주술사', e: '🧙', t: 'm_mandrake' }] },
+    { to: 50, mons: [{ n: '얼음 좀비', e: '🧊', t: 'm_troll' }, { n: '진흙 점액', e: '🟤', t: 'm_phantom' }, { n: '좀비', e: '🧟', t: 'm_ghoul' }] },
+    { to: 80, mons: [{ n: '워골', e: '👹', t: 'm_ogre' }, { n: '초트', e: '👿', t: 'm_spider' }, { n: '강령술사', e: '🧙', t: 'm_lich' }] },
+    { to: 1e9, mons: [{ n: '대악마', e: '😈', t: 'm_demon' }, { n: '오우거', e: '🗿', t: 'm_golem' }, { n: '호박 망령', e: '🎃', t: 'm_spell' }] },
   ],
+  // 보스: 큰 그림(32px)은 s를 작게 — 그림 자체가 이미 두 칸이다
   bosses: [
-    { n: '왕실 젤리', e: '👑', t: 'b_slimeking' }, { n: '고블린 족장 이지브', e: '👺', t: 'b_goblinchief' }, { n: '거대 박쥐', e: '🦇', t: 'b_bat' },
-    { n: '고대 용사의 해골', e: '☠️', t: 'b_skeleton' }, { n: '지옥견', e: '🐺', t: 'b_wolf' }, { n: '강철 트롤', e: '🧌', t: 'b_troll' },
-    { n: '거미 여왕', e: '🕷️', t: 'b_spider' }, { n: '쌍두 오우거', e: '👹', t: 'b_ogre' }, { n: '고대 리치', e: '🧟', t: 'b_lich' }, { n: '황금 고룡', e: '🐉', t: 'b_dragon' },
+    { n: '늪의 군주', e: '👑', t: 'b_slimeking', s: 2 }, { n: '고블린 족장', e: '👺', t: 'b_goblinchief' }, { n: '해골 기사', e: '💀', t: 'b_bat' },
+    { n: '거대 좀비', e: '🧟', t: 'b_skeleton', s: 1.1 }, { n: '피의 오크', e: '👹', t: 'b_wolf' }, { n: '오우거 대장', e: '🗿', t: 'b_troll', s: 1.1 },
+    { n: '심연의 초트', e: '👿', t: 'b_spider' }, { n: '역병 거인', e: '🧟', t: 'b_ogre', s: 1.1 }, { n: '강령술사 군주', e: '🧙', t: 'b_lich' }, { n: '황금 대악마', e: '😈', t: 'b_dragon', s: 1.1 },
   ],
   // 동료: 영웅 기본 공격력 대비 배율, 사거리(칸), 공격 간격(초)
   allies: {
