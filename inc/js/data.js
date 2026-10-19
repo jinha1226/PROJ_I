@@ -37,7 +37,7 @@ G.D.F = {
   ],
   // 동료: 영웅 기본 공격력 대비 배율, 사거리(칸), 공격 간격(초)
   allies: {
-    archer: { n: '레인저', t: 'u_archer', atk: 0.6, hp: 0.5, range: 5, cd: 1.0, proj: 'fx_arrow' },
+    archer: { n: '레인저', t: 'u_archer', wpn: 'w_bow', atk: 0.6, hp: 0.5, range: 5, cd: 1.0, proj: 'fx_arrow' },
     cleric: { n: '수도사', t: 'u_cleric', atk: 0.2, hp: 0.6, range: 4, cd: 2.0, heal: 0.08, proj: 'fx_holy' },
     bard: { n: '음유시인', t: 'u_bard', atk: 0.3, hp: 0.6, range: 4, cd: 1.5, proj: 'fx_ice', song: true },
     mage: { n: '화염 마법사', t: 'u_mage', wpn: 'w_staff', atk: 1.4, hp: 0.5, range: 5, cd: 1.8, splash: 1.4, proj: 'fx_flame' },

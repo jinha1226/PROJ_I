@@ -50,10 +50,13 @@ G.MapView = function (canvas) {
     const im = G.T.image(e.wpn, 0);
     if (!G.T.ready(im)) return;
     const k = size / 16 * 0.65, w = im.naturalWidth * k, h = im.naturalHeight * k, face = e.flip ? -1 : 1;
-    let ang = 0.45;
-    if (lq < 1) { const q = 1 - Math.pow(1 - lq, 3); ang = lq < 0.15 ? 0.45 - 1.9 * (lq / 0.15) : -1.45 + 3.1 * q; }
+    let ang = 0.45, pull = 0;
+    // 활은 휘두르지 않고 앞에 세워 들었다가, 쏠 때 뒤로 당겼다 놓는다
+    const bow = e.wpn === 'w_bow';
+    if (bow) { ang = 0; pull = lq < 1 ? Math.sin(Math.PI * lq) * size * 0.12 : 0; }
+    else if (lq < 1) { const q = 1 - Math.pow(1 - lq, 3); ang = lq < 0.15 ? 0.45 - 1.9 * (lq / 0.15) : -1.45 + 3.1 * q; }
     ctx.save();
-    ctx.translate(cx + face * size * 0.32, cy + size * 0.22);
+    ctx.translate(cx + face * (size * (bow ? 0.38 : 0.32) - pull), cy + size * (bow ? 0.05 : 0.22));
     ctx.scale(face, 1);
     ctx.rotate(ang);
     ctx.imageSmoothingEnabled = false;
@@ -190,7 +193,15 @@ G.MapView = function (canvas) {
       text(f.s, sx(f.x), sy(f.y) - p * TS * 0.8, f.col || '#fff', Math.max(11, TS * 0.36) * (f.sz || 1) * pop, true);
     } else if (f.k === 'proj') {
       const x = f.x + (f.x2 - f.x) * p, y = f.y + (f.y2 - f.y) * p;
-      drawSprite({ k: f.key, v: Math.floor(t / 80) }, sx(x), sy(y), TS * 0.8, f.x2 < f.x);
+      // 0x72 화살은 위를 향해 그려져 있다: 날아가는 방향으로 돌린다 (살짝 포물선)
+      if (G.ARTSET[f.key] && f.key === 'fx_arrow') {
+        const im = G.T.image('fx_arrow', 0);
+        if (G.T.ready(im)) {
+          const k = TS / 16 * 0.8, arc = Math.sin(Math.PI * p) * 0.35, ang = Math.atan2(f.y2 - f.y, f.x2 - f.x) + Math.PI / 2 - (f.x2 >= f.x ? 1 : -1) * (0.5 - p) * 0.6;
+          ctx.save(); ctx.translate(sx(x), sy(y - arc)); ctx.rotate(ang); ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(im, -im.naturalWidth * k / 2, -im.naturalHeight * k / 2, im.naturalWidth * k, im.naturalHeight * k); ctx.restore();
+        }
+      } else drawSprite({ k: f.key, v: Math.floor(t / 80) }, sx(x), sy(y), TS * 0.8, f.x2 < f.x);
     } else if (f.k === 'ring') {
       ctx.strokeStyle = f.col; ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.arc(sx(f.x), sy(f.y), f.r * TS * (0.6 + 0.4 * p), 0, 7); ctx.stroke();

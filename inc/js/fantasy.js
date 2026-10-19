@@ -387,7 +387,7 @@ G.Fantasy = (() => {
           if ((a.atkT -= dt * aspd) <= 0) {
             a.atkT = def.cd;
             const dmg = F.heroAtk(f) * def.atk * 0.5 * tm('allyAtk');
-            if (def.proj) G.fx(rt, { k: 'proj', key: def.proj, x: a.x, y: a.y, x2: tg.x, y2: tg.y, t: 0.25 });
+            if (def.proj) { G.fx(rt, { k: 'proj', key: def.proj, x: a.x, y: a.y, x2: tg.x, y2: tg.y, t: def.proj === 'fx_arrow' ? 0.3 : 0.25 }); G.J.lunge('fantasy', a, tg); }
             else { G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.25, rot: Math.random() - 0.5, flip: a.x > tg.x }); G.J.lunge('fantasy', a, tg); }
             if (def.splash) { for (const mo of [...rt.mons]) if (GR.dist(mo, tg) <= def.splash) F.hurt(f, rt, mo, dmg, 'hit', a); }
             else if (def.chain) {

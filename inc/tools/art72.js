@@ -147,6 +147,8 @@ const SPEC = {
   w_axe: { src: 'weapon_axe' }, w_waraxe: { src: 'weapon_waraxe' }, w_cleaver: { src: 'weapon_cleaver' },
   w_spear: { src: 'weapon_spear' }, w_staff: { src: 'weapon_red_magic_staff' }, w_gstaff: { src: 'weapon_green_magic_staff' },
   w_hammer: { src: 'weapon_hammer' }, w_mace: { src: 'weapon_mace' }, w_bow: { src: 'weapon_bow' },
+  // 화살 (날아가는 방향으로 돌려 그린다)
+  fx_arrow: { src: 'weapon_arrow' },
   // 판타지: 던전 지형 (구간 0~5). 벽은 위에서 본 윗면(top)과 바닥 쪽으로 보이는 앞면(face)
   f_stairs: { src: 'floor_stairs' },
   // 공용·판타지 아이콘
