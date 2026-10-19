@@ -52,7 +52,7 @@ G.UI = (function () {
       <div class="tb-speed">${sp}</div>
       <div class="tb-res">${res}</div>
       <div class="tb-threat" title="시간이 지나면 차오르고, 100%가 되면 던전에서 괴물이 몰려온다. 원정에서 괴물을 처치하고 새 깊이에 도달하면 줄어든다.">던전 압력 ${bar(th, 100, th > 75 ? '#e33' : th > 45 ? '#eb3' : '#8a6', 70)} ${th}% ${raid}</div>
-      <div class="tb-btns">${btn('expedition', '⚔ 원정 준비', {}, 'big')}${btn('help', '?', {}, '', '도움말')}${btn('savegame', '저장', {})}</div>`;
+      <div class="tb-btns">${btn('expedition', '⚔ 원정 준비', {}, 'big')}${btn('gfx', G.R.gfx() === 'tiles' ? '글자' : '타일', {}, '', '타일/글자 화면 전환 (T) · 휠: 확대/축소')}${btn('help', '?', {}, '', '도움말')}${btn('savegame', '저장', {})}</div>`;
   }
 
   function topDungeon() {
@@ -62,7 +62,7 @@ G.UI = (function () {
       <div class="tb-time">지하 ${d.depth}층 · ${lv.theme} · ${d.turn}턴</div>
       <div class="tb-res">정착지: ${G.Settle.day()}일째 · 압력 ${Math.floor(s.threat)}% ${raid}</div>
       <div class="tb-res">가방 ${G.Dun.bagWeight()} / ${G.Dun.bagCap()}</div>
-      <div class="tb-btns">${btn('dcmd', '가방 (i)', { v: 'inv' })}${btn('help', '?', {})}</div>`;
+      <div class="tb-btns">${btn('dcmd', '가방 (i)', { v: 'inv' })}${btn('gfx', G.R.gfx() === 'tiles' ? '글자' : '타일', {}, '', '타일/글자 화면 전환 (T) · 휠: 확대/축소')}${btn('help', '?', {})}</div>`;
   }
 
   // ───────── 정착지 측면 패널 ─────────
@@ -475,7 +475,7 @@ G.UI = (function () {
   <p>정착지에서 식량·휴대식량·장비를 만든다 → 최대 4명이 원정을 떠난다 → 던전에서 광석·가죽·뼈·수정·정수·유물을 가방에 담아 온다 → 그 재료로 연구하고 더 좋은 장비를 만든다.
   원정 중에도 정착지의 시간은 흐른다. <b>던전 압력</b>이 100%가 되면 괴물이 입구에서 쏟아져 나오므로, 남은 정착민과 벽·문·함정으로 지켜야 한다. 던전에서 괴물을 처치하고 새 깊이에 도달하면 압력이 줄어든다.</p>
   <div class="sect">정착지 조작</div>
-  <p>Space: 일시정지 · 1/2/3: 속도 · 건설 탭에서 도구를 고르고 지도에서 드래그 · 우클릭/Esc: 선택 도구 · 방향키: 지도 이동(화면이 작을 때) · E: 원정 준비 · R: 전원 징집/해제</p>
+  <p>Space: 일시정지 · 1/2/3: 속도 · 건설 탭에서 도구를 고르고 지도에서 드래그 · 우클릭/Esc: 선택 도구 · 방향키: 지도 이동(화면이 작을 때) · 빈 땅 드래그: 지도 이동 · 마우스 휠: 확대/축소 · T: 타일/글자 화면 전환 · E: 원정 준비 · R: 전원 징집/해제</p>
   <p><b>징집</b>: 정착민을 징집하면 일을 멈추고, 선택한 뒤 지도를 우클릭해 그곳으로 보낼 수 있다. 징집된 정착민은 닿는 적을 공격한다. 습격 때 문 앞을 지키게 하자.</p>
   <div class="sect">던전 조작 (DCSS 방식)</div>
   <p>방향키 / 숫자패드 / hjklyubn: 이동·공격 · 적에게 부딪히면 공격, 광맥에 부딪히면 채굴 · . 또는 숫자패드5: 대기 · o: 자동 탐험 · R: 휴식(회복까지)
@@ -553,6 +553,7 @@ G.UI = (function () {
     yes: () => { const p = ui.modals[ui.modals.length - 1].opts.prompt; ui.modals.pop(); renderModal(); if (p.yes) p.yes(); },
     no: () => { const p = ui.modals[ui.modals.length - 1].opts.prompt; ui.modals.pop(); renderModal(); if (p.no) p.no(); },
     help: () => openModal(() => HELP),
+    gfx: () => { G.R.setGfx(G.R.gfx() === 'tiles' ? 'glyph' : 'tiles'); refresh(); },
     savegame: () => { const ok = G.save(); toast(ok ? '저장했다.' : '저장 실패', ok ? '' : 'bad'); },
     ctrl: el => { G.Dun.switchCtrl(+el.dataset.id); ui.target = null; },
     abil: el => startAbility(+el.dataset.i),
@@ -643,6 +644,7 @@ G.UI = (function () {
       return;
     }
     if (!S() || S().mode === 'title') return;
+    if (k === 'T') { A.gfx(); e.preventDefault(); return; }
     if (S().mode === 'settle') {
       if (k === ' ') { ui.paused = !ui.paused; e.preventDefault(); }
       else if (k === '1' || k === '2' || k === '3') { ui.speed = +k; ui.paused = false; }
@@ -737,6 +739,7 @@ G.UI = (function () {
       if (ui.tool === 'select') {
         const c = S().colonists.find(o => o.loc === 'home' && o.x === m.x && o.y === m.y);
         if (c) { ui.sel = c.id; ui.tab = 'colonists'; }
+        else { const v = G.R.view(); ui.pan = { x: p.x, y: p.y, cx: v.cx, cy: v.cy }; }
         return;
       }
       ui.drag = m;
@@ -763,9 +766,23 @@ G.UI = (function () {
     const p = canvasPos(e);
     ui.mouse = p;
     ui.hover = G.R.toMap(p.x, p.y);
+    if (ui.pan && S() && S().mode === 'settle') {
+      const v = G.R.view();
+      ui.camX = U.clamp(ui.pan.cx - (p.x - ui.pan.x) / v.cell, 0, G.Settle.W);
+      ui.camY = U.clamp(ui.pan.cy - (p.y - ui.pan.y) / v.cell, 0, G.Settle.H);
+    }
+  }
+
+  function onWheel(e) {
+    if (modalOpen() || !S() || S().mode === 'title') return;
+    e.preventDefault();
+    const p = canvasPos(e), view = S().mode === 'settle' ? 'settle' : 'dungeon';
+    const c = G.R.zoomAt(view, e.deltaY < 0 ? 1 : -1, p.x, p.y);
+    if (view === 'settle') { ui.camX = U.clamp(c.x, 0, G.Settle.W); ui.camY = U.clamp(c.y, 0, G.Settle.H); }
   }
 
   function onCanvasUp(e) {
+    ui.pan = null;
     if (!ui.drag || S().mode !== 'settle') { ui.drag = null; return; }
     const p = canvasPos(e), m = G.R.toMap(p.x, p.y);
     const n = G.Settle.applyTool(ui.tool, ui.drag.x, ui.drag.y, m.x, m.y);
@@ -817,6 +834,7 @@ G.UI = (function () {
     cv.addEventListener('pointerleave', () => { ui.hover = null; ui.mouse = null; });
     window.addEventListener('pointerup', onCanvasUp);
     cv.addEventListener('contextmenu', e => e.preventDefault());
+    cv.addEventListener('wheel', onWheel, { passive: false });
     G.onEvent = onEvent;
     G.onPrompt = (text, yes) => prompt(text, yes);
     openModal(titleModal, { locked: true });

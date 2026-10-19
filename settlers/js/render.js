@@ -31,7 +31,83 @@ G.R = (function () {
   }
   const hash = i => { let x = (i * 2654435761) >>> 0; x ^= x >>> 13; return (x * 1274126177) >>> 0; };
 
-  function init(canvas) { cv = canvas; ctx = cv.getContext('2d'); resize(); }
+  // ───────── 타일 (DCSS rltiles) ─────────
+  const TI = {};
+  let tilesTotal = 0, tilesDone = 0, gfx = 'tiles';
+  try { gfx = localStorage.getItem('dp_gfx') || 'tiles'; } catch (e) { /* 저장소 없음 */ }
+  const zoom = { settle: 0, dungeon: 0 }; // 0 = 자동
+  function loadTiles() {
+    if (!G.TILESET) return;
+    for (const k in G.TILESET) {
+      const n = G.TILESET[k];
+      TI[k] = [];
+      for (let i = 0; i < n; i++) {
+        const im = new Image();
+        im.onload = im.onerror = () => { tilesDone++; };
+        im.src = `assets/tiles/${k}${n > 1 ? '_' + i : ''}.png`;
+        TI[k].push(im);
+        tilesTotal++;
+      }
+    }
+  }
+  const useTiles = () => gfx === 'tiles' && tilesTotal > 0 && tilesDone >= tilesTotal;
+  function setGfx(m) { gfx = m; zoom.settle = zoom.dungeon = 0; try { localStorage.setItem('dp_gfx', m); } catch (e) { /* 무시 */ } }
+  function tImg(key, v) {
+    const a = TI[key];
+    if (!a) return null;
+    const im = a[((v || 0) >>> 0) % a.length];
+    return im.naturalWidth ? im : null;
+  }
+  // 칸에 타일 그리기 (s: 크기 비율)
+  function ti(x, y, key, v, s) {
+    const im = tImg(key, v);
+    if (!im) return false;
+    if (s && s !== 1) { const o = cell * (1 - s) / 2; ctx.drawImage(im, px(x) + o, py(y) + o, cell * s, cell * s); }
+    else ctx.drawImage(im, px(x), py(y), cell, cell);
+    return true;
+  }
+  function fill(x, y, c) { ctx.fillStyle = c; ctx.fillRect(px(x), py(y), cell, cell); }
+
+  // 정착민 인형: 종족·성별·옷·머리·무기·방패 레이어를 합쳐 캐시
+  const dolls = new Map();
+  function dollLayers(c) {
+    const h = hash(c.id * 7 + 3), sex = h & 1 ? 'f' : 'm';
+    const L = [['pb_' + c.race + '_' + sex, h >> 3], ['pl_boots', h >> 5], ['pl_pants', h >> 7]];
+    const ar = c.equip.armor;
+    L.push(ar && TI['pc_' + ar.base] ? ['pc_' + ar.base, h >> 9] : ['pc_shirt', h >> 9]);
+    const w = c.equip.weapon;
+    if (w && TI['pw_' + w.base]) L.push(['pw_' + w.base, 0]);
+    else if (c.loc === 'home' && c.job && c.job.kind === 'farm') L.push(['pw_tool', 0]);
+    const sh = c.equip.shield;
+    if (sh && TI['ps_' + sh.base]) L.push(['ps_' + sh.base, 0]);
+    if (c.race !== 'orc') L.push(['ph_hair', h >> 11]);
+    return L;
+  }
+  function dollOf(c) {
+    const L = dollLayers(c);
+    const key = L.map(l => l[0] + ':' + ((l[1] >>> 0) % TI[l[0]].length)).join('|');
+    let cv2 = dolls.get(key);
+    if (!cv2) {
+      cv2 = document.createElement('canvas');
+      cv2.width = cv2.height = 32;
+      const g = cv2.getContext('2d');
+      for (const [k, v] of L) { const im = tImg(k, v); if (im) g.drawImage(im, 0, 0); }
+      if (dolls.size > 300) dolls.clear();
+      dolls.set(key, cv2);
+    }
+    return cv2;
+  }
+  function drawDoll(c, x, y, dim) {
+    ctx.drawImage(dollOf(c), px(x), py(y), cell, cell);
+    if (dim) fill(x, y, `rgba(0,0,20,${dim})`);
+  }
+  function hpBar(x, y, hp, mx, back, front) {
+    ctx.fillStyle = back; ctx.fillRect(px(x) + 1, py(y) + cell - 3, cell - 2, 3);
+    ctx.fillStyle = front; ctx.fillRect(px(x) + 1, py(y) + cell - 3, (cell - 2) * Math.max(0, hp) / mx, 3);
+  }
+  function zzz(x, y, c) { ctx.font = `bold ${Math.round(cell * 0.45)}px ${FONT}`; ctx.fillStyle = c; ctx.fillText('z', px(x) + cell - 4, py(y) + 5); ctx.font = `${Math.round(cell * 0.82)}px ${FONT}`; }
+
+  function init(canvas) { cv = canvas; ctx = cv.getContext('2d'); resize(); loadTiles(); }
   function resize() {
     const wrap = cv.parentElement;
     dpr = window.devicePixelRatio || 1;
@@ -39,9 +115,12 @@ G.R = (function () {
     cv.width = Math.floor(cssW * dpr); cv.height = Math.floor(cssH * dpr);
     cv.style.width = cssW + 'px'; cv.style.height = cssH + 'px';
   }
-  function layout(W, H, fx, fy) {
+  function layout(W, H, fx, fy, view) {
     mapW = W; mapH = H;
-    cell = Math.max(12, Math.min(28, Math.floor(Math.min(cssW / W, cssH / H))));
+    const fit = Math.floor(Math.min(cssW / W, cssH / H));
+    if (zoom[view]) cell = zoom[view];
+    else if (useTiles()) cell = view === 'dungeon' ? Math.max(32, Math.min(48, fit)) : Math.max(16, Math.min(48, fit));
+    else cell = Math.max(12, Math.min(28, fit));
     cols = Math.floor(cssW / cell); rows = Math.floor(cssH / cell);
     offX = cols >= W ? Math.floor((cssW - W * cell) / 2) : 0;
     offY = rows >= H ? Math.floor((cssH - H * cell) / 2) : 0;
@@ -55,12 +134,20 @@ G.R = (function () {
     ctx.font = `${Math.round(cell * 0.82)}px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.imageSmoothingEnabled = cell < 32;
   }
   const px = x => offX + (x - camX) * cell, py = y => offY + (y - camY) * cell;
   const inView = (x, y) => x >= camX && y >= camY && x < camX + cols && y < camY + rows;
   function bg(x, y, c) { ctx.fillStyle = c; ctx.fillRect(px(x), py(y), cell, cell); }
   function gl(x, y, ch, c) { if (!ch || ch === ' ') return; ctx.fillStyle = c; ctx.fillText(ch, px(x) + cell / 2, py(y) + cell / 2 + 1); }
   function box(x, y, c, w) { ctx.strokeStyle = c; ctx.lineWidth = w || 1.5; ctx.strokeRect(px(x) + 1, py(y) + 1, cell - 2, cell - 2); }
+  // 휠 확대/축소. 마우스 아래 칸이 제자리에 남도록 새 카메라 중심을 돌려준다
+  function zoomAt(view, dir, mx, my) {
+    const m = toMap(mx, my);
+    const nc = U.clamp(cell + dir * 4, 12, 64);
+    zoom[view] = nc;
+    return { x: m.x + 0.5 - (mx - cssW / 2) / nc, y: m.y + 0.5 - (my - cssH / 2) / nc };
+  }
   function toMap(cx, cy) { return { x: Math.floor((cx - offX) / cell) + camX, y: Math.floor((cy - offY) / cell) + camY }; }
 
   // ───────── 정착지 ─────────
@@ -87,13 +174,14 @@ G.R = (function () {
 
   function drawSettle(ui) {
     const s = G.S.settle, W = G.Settle.W, H = G.Settle.H;
-    layout(W, H, ui.camX != null ? ui.camX : W / 2, ui.camY != null ? ui.camY : H / 2);
+    layout(W, H, ui.camX != null ? ui.camX : W / 2, ui.camY != null ? ui.camY : H / 2, 'settle');
     begin();
     const light = daylight(s);
     const pileAt = new Map();
     for (const p of s.piles) pileAt.set(p.y * W + p.x, p);
     const grave = new Map();
     for (const g of s.graves) grave.set(g.y * W + g.x, g);
+    if (useTiles()) { settleTiles(ui, s, W, H, light, pileAt, grave); return; }
     for (let y = camY; y < Math.min(H, camY + rows); y++) for (let x = camX; x < Math.min(W, camX + cols); x++) {
       const i = y * W + x, t = s.terrain[i], st = ST[t], h = hash(i);
       const vf = 0.85 + (h % 100) / 100 * 0.3;
@@ -147,7 +235,79 @@ G.R = (function () {
       bg(m.x, m.y, '#3a0808');
       gl(m.x, m.y, d.g, d.c);
     }
-    // 도구 미리보기
+    toolPreview(ui);
+    const night = 1 - light;
+    if (night > 0.05) { ctx.fillStyle = `rgba(8,12,40,${night * 0.5})`; ctx.fillRect(0, 0, cssW, cssH); }
+  }
+
+  const GROUND = { grass: 'grass', bush: 'grass', bush_e: 'grass', herb: 'grass', herb_e: 'grass', tree: 'grass', dirt: 'dirt', rock: 'rock', ore: 'rock', water: 'water', shallow: 'shallow', entrance: 'dirt' };
+  const PLANT = { tree: 'tree', bush: 'bush', bush_e: 'bush_e', herb: 'herb' };
+  function settleTiles(ui, s, W, H, light, pileAt, grave) {
+    const now = Date.now();
+    const occ = new Set();
+    for (const c of G.S.colonists) if (c.loc === 'home') occ.add(c.y * W + c.x);
+    for (const m of s.mons) occ.add(m.y * W + m.x);
+    for (let y = camY; y < Math.min(H, camY + rows); y++) for (let x = camX; x < Math.min(W, camX + cols); x++) {
+      const i = y * W + x, t = s.terrain[i], h = hash(i), z = s.zone[i];
+      if (z === 'farm') {
+        ti(x, y, 'soil', h);
+        const cr = s.crop[i];
+        if (cr) {
+          if (cr.g < 0.4) ti(x, y, 'sprout', 0, 0.55);
+          else if (cr.g < 1) ti(x, y, 'herb', h, 0.85);
+          else ti(x, y, 'crop', 0);
+        }
+      } else {
+        const gk = GROUND[t];
+        ti(x, y, gk === 'grass' && h % 29 === 0 ? 'grass_fl' : gk, h);
+        if (PLANT[t]) {
+          ti(x, y, PLANT[t], h >> 4);
+          if (t === 'bush') { ctx.fillStyle = '#e83040'; for (let k = 0; k < 3; k++) ctx.fillRect(px(x) + cell * (0.3 + 0.2 * k), py(y) + cell * (0.35 + 0.15 * (k & 1)), Math.max(2, cell / 10), Math.max(2, cell / 10)); }
+        }
+        if (t === 'ore') ti(x, y, 'r_iron_ore', 0, 0.62);
+        if (t === 'entrance') ti(x, y, 'entrance', Math.floor(now / 220) % 3);
+        if (z === 'stock') fill(x, y, 'rgba(230,200,80,0.16)');
+      }
+      const b = s.bld[i];
+      if (b) {
+        const key = b.type === 'med_bed' ? 'bed' : b.type === 'door' && occ.has(i) ? 'door_open' : b.type;
+        if (!b.built) ctx.globalAlpha = 0.4;
+        ti(x, y, key, h);
+        ctx.globalAlpha = 1;
+        if (b.type === 'med_bed') { ctx.fillStyle = '#40e060'; const u = cell / 8; ctx.fillRect(px(x) + cell - 3 * u, py(y) + u * 0.5, u, 3 * u); ctx.fillRect(px(x) + cell - 4 * u, py(y) + 1.5 * u, 3 * u, u); }
+        if (!b.built) { fill(x, y, 'rgba(60,140,255,0.22)'); box(x, y, 'rgba(110,170,255,0.7)', 1); }
+      } else if (pileAt.has(i)) ti(x, y, 'r_' + pileAt.get(i).r, 0, 0.85);
+      else if (grave.has(i)) ti(x, y, 'grave', 0);
+      const ds = s.desig[i];
+      if (ds) box(x, y, ds === 'chop' ? '#ffd040' : '#ff7040', 1.5);
+    }
+    for (const c of G.S.colonists) {
+      if (c.loc !== 'home' || !inView(c.x, c.y)) continue;
+      const sleeping = c.job && c.job.kind === 'sleep' && c.job.stage === 'sleep';
+      if (c.drafted) fill(c.x, c.y, 'rgba(200,40,40,0.35)');
+      drawDoll(c, c.x, c.y, sleeping ? 0.45 : 0);
+      if (ui.sel === c.id) box(c.x, c.y, '#ffe040', 2);
+      if (c.drafted && c.order) box(c.order.x, c.order.y, 'rgba(255,90,90,0.8)', 1.5);
+      if (c.carry) {
+        const r = Object.keys(c.carry)[0], im = r && tImg('r_' + r, 0);
+        if (im) ctx.drawImage(im, px(c.x) + cell * 0.5, py(c.y), cell * 0.5, cell * 0.5);
+      }
+      const mx = G.Chars.maxHP(c);
+      if (c.hp < mx) hpBar(c.x, c.y, c.hp, mx, '#400', '#e33');
+      if (sleeping) zzz(c.x, c.y, '#bcd');
+    }
+    for (const m of s.mons) {
+      if (!inView(m.x, m.y)) continue;
+      fill(m.x, m.y, 'rgba(160,20,20,0.3)');
+      ti(m.x, m.y, 'm_' + m.type, 0);
+      if (m.type === 'orc_archer') ti(m.x, m.y, 'ov_bow', 0);
+      if (m.hp < m.maxhp) hpBar(m.x, m.y, m.hp, m.maxhp, '#400', '#f44');
+    }
+    toolPreview(ui);
+    const night = 1 - light;
+    if (night > 0.05) { ctx.fillStyle = `rgba(8,12,40,${night * 0.62})`; ctx.fillRect(0, 0, cssW, cssH); }
+  }
+  function toolPreview(ui) {
     if (ui.drag && ui.tool !== 'select') {
       const a = ui.drag, b = ui.hover || a;
       const ax = Math.min(a.x, b.x), bx = Math.max(a.x, b.x), ay = Math.min(a.y, b.y), by = Math.max(a.y, b.y);
@@ -158,8 +318,6 @@ G.R = (function () {
         ctx.fillRect(px(x), py(y), cell, cell);
       }
     } else if (ui.hover && ui.tool !== 'select') box(ui.hover.x, ui.hover.y, '#80c0ff', 2);
-    const night = 1 - light;
-    if (night > 0.05) { ctx.fillStyle = `rgba(8,12,40,${night * 0.5})`; ctx.fillRect(0, 0, cssW, cssH); }
   }
 
   // ───────── 던전 ─────────
@@ -173,11 +331,12 @@ G.R = (function () {
   function drawDungeon(ui) {
     const d = G.S.dun, lv = G.Dun.level(), W = G.Dun.W, H = G.Dun.H;
     const ctrl = G.Dun.ctrl();
-    layout(W, H, ctrl ? ctrl.x : W / 2, ctrl ? ctrl.y : H / 2);
+    layout(W, H, ctrl ? ctrl.x : W / 2, ctrl ? ctrl.y : H / 2, 'dungeon');
     begin();
     const th = G.Dun.theme(lv.depth);
     const vis = d.vis, li = d.light;
     const now = Date.now();
+    if (useTiles()) { dungeonTiles(ui, d, lv, W, H, th, ctrl, now); return; }
     for (let y = camY; y < Math.min(H, camY + rows); y++) for (let x = camX; x < Math.min(W, camX + cols); x++) {
       const i = y * W + x;
       if (!lv.seen[i]) continue;
@@ -231,6 +390,63 @@ G.R = (function () {
     if (ui.hover && !ui.target && lv.seen[ui.hover.y * W + ui.hover.x]) box(ui.hover.x, ui.hover.y, 'rgba(160,200,255,0.6)', 1);
   }
 
+  const DFEAT = { door: 'door', door_open: 'door_open', mandrake: 'mandrake', bloodtree: 'bloodtree', deadtree: 'deadtree', chest: 'chest', captive: 'captive' };
+  const DFULL = { up: 'stairs_up', down: 'stairs_down', shallow: 'shallow', deep: 'water', crystal: 'crystal_wall' };
+  function dungeonTiles(ui, d, lv, W, H, th, ctrl, now) {
+    const vis = d.vis, li = d.light, wk = 'dwall' + th.tile, fk = 'dfloor' + th.tile;
+    for (let y = camY; y < Math.min(H, camY + rows); y++) for (let x = camX; x < Math.min(W, camX + cols); x++) {
+      const i = y * W + x;
+      if (!lv.seen[i]) continue;
+      const t = lv.t[i], h = hash(i);
+      if (t === 'wall') ti(x, y, wk, h);
+      else if (t === 'ore') { ti(x, y, wk, h); ti(x, y, 'r_iron_ore', 0, 0.62); }
+      else if (t === 'lava') ti(x, y, 'lava', (h + Math.floor(now / 350)) % 4);
+      else if (DFULL[t]) { if (t === 'up' || t === 'down') ti(x, y, fk, h); ti(x, y, DFULL[t], h); }
+      else {
+        ti(x, y, fk, h);
+        if (DFEAT[t]) ti(x, y, DFEAT[t], h);
+        if (t === 'captive') ti(x, y, 'cage', 0);
+      }
+      const v = vis && vis[i];
+      if (v) {
+        const f = (0.35 + li[i] * 0.75) * (0.92 + (h % 16) / 100);
+        if (f < 1) fill(x, y, `rgba(0,0,0,${Math.min(0.5, (1 - f) * 0.6).toFixed(2)})`);
+      } else fill(x, y, 'rgba(8,8,22,0.55)');
+    }
+    for (const it of lv.items) {
+      const i = it.y * W + it.x;
+      if (!lv.seen[i]) continue;
+      ti(it.x, it.y, it.k === 'stack' ? 'r_' + it.id : 'g_' + it.item.base, 0, it.k === 'stack' ? 0.8 : 0.9);
+      if (!(vis && vis[i])) fill(it.x, it.y, 'rgba(8,8,22,0.5)');
+    }
+    if (ui.target) {
+      for (const t of ui.target.list) box(t.x, t.y, '#806020', 1.2);
+      const cur = ui.target.list[ui.target.idx];
+      if (cur && ctrl) {
+        ctx.fillStyle = 'rgba(255,220,80,0.18)';
+        for (const [x, y] of G.line(ctrl.x, ctrl.y, cur.x, cur.y)) ctx.fillRect(px(x), py(y), cell, cell);
+        box(cur.x, cur.y, '#ffe040', 2.5);
+      }
+    }
+    for (const m of lv.mons) {
+      if (m.hp <= 0 || !vis || !vis[m.y * W + m.x]) continue;
+      const md = G.MON[m.type];
+      if (md.boss) fill(m.x, m.y, `rgba(150,0,30,${(0.35 + Math.sin(now / 250) * 0.25).toFixed(2)})`);
+      ti(m.x, m.y, 'm_' + m.type, 0);
+      if (m.type === 'orc_archer') ti(m.x, m.y, 'ov_bow', 0);
+      if (m.state === 'sleep') { fill(m.x, m.y, 'rgba(0,0,30,0.3)'); zzz(m.x, m.y, '#9ab'); }
+      if (m.hp < m.maxhp) hpBar(m.x, m.y, m.hp, m.maxhp, '#400', '#f44');
+      if (d.focus === m.id) box(m.x, m.y, '#ff6060', 1.5);
+    }
+    for (const c of G.Dun.alive()) {
+      if (c.id === d.ctrl) { fill(c.x, c.y, 'rgba(70,110,220,0.3)'); box(c.x, c.y, 'rgba(140,180,255,0.9)', 1.5); }
+      drawDoll(c, c.x, c.y, 0);
+      const mx = G.Chars.maxHP(c);
+      hpBar(c.x, c.y, c.hp, mx, '#300', c.hp < mx * 0.3 ? '#f33' : '#4d4');
+    }
+    if (ui.hover && !ui.target && lv.seen[ui.hover.y * W + ui.hover.x]) box(ui.hover.x, ui.hover.y, 'rgba(160,200,255,0.6)', 1);
+  }
+
   function gearGlyph(it) {
     const d = G.GEAR[it.base];
     if (d.slot === 'armor') return '[';
@@ -240,5 +456,5 @@ G.R = (function () {
     return '(';
   }
 
-  return { init, resize, drawSettle, drawDungeon, toMap, shade, gearGlyph };
+  return { init, resize, drawSettle, drawDungeon, toMap, shade, gearGlyph, zoomAt, setGfx, view: () => ({ cell, cx: camX + Math.min(cols, mapW) / 2, cy: camY + Math.min(rows, mapH) / 2 }), gfx: () => gfx, tilesReady: useTiles };
 })();

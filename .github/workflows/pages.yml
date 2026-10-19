@@ -85,7 +85,7 @@ jobs:
       - name: Copy dungeon settlers prototype into dist/settlers
         run: |
           mkdir -p dist/settlers
-          cp -r settlers/index.html settlers/style.css settlers/js dist/settlers/
+          cp -r settlers/index.html settlers/style.css settlers/js settlers/assets dist/settlers/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

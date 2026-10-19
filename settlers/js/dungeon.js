@@ -26,10 +26,10 @@ G.Dun = (function () {
     chest: { n: '낡은 보물상자', g: '■', pass: 0, act: 'chest' },
   };
   const THEMES = [
-    { n: '흙빛 굴', wall: ['#c8ae90', '#4e3c2c'], floor: ['#8a7c6c', '#211a14'] },
-    { n: '이끼 동굴', wall: ['#90c8a8', '#264432'], floor: ['#6a8a7c', '#11221b'] },
-    { n: '뼈의 회랑', wall: ['#d0c0e0', '#3c3250'], floor: ['#867ea0', '#1a1622'] },
-    { n: '심장부', wall: ['#e88888', '#562020'], floor: ['#9a6464', '#260d0d'] },
+    { n: '흙빛 굴', tile: 0, wall: ['#c8ae90', '#4e3c2c'], floor: ['#8a7c6c', '#211a14'] },
+    { n: '이끼 동굴', tile: 1, wall: ['#90c8a8', '#264432'], floor: ['#6a8a7c', '#11221b'] },
+    { n: '뼈의 회랑', tile: 2, wall: ['#d0c0e0', '#3c3250'], floor: ['#867ea0', '#1a1622'] },
+    { n: '심장부', tile: 3, wall: ['#e88888', '#562020'], floor: ['#9a6464', '#260d0d'] },
   ];
   const theme = depth => THEMES[depth >= 10 ? 3 : depth >= 7 ? 2 : depth >= 4 ? 1 : 0];
 
