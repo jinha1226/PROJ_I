@@ -374,6 +374,7 @@ G.Fantasy = (() => {
             a.atkT = low ? def.cd : 0.3;
             if (low) {
               low.hp = Math.min(low.max, low.hp + low.max * def.heal);
+              G.J.lunge('fantasy', a, low);
               G.fx(rt, { k: 'tile', key: 'fx_holy', x: low.x, y: low.y, t: 0.5 });
             }
           }

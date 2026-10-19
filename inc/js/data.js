@@ -38,12 +38,12 @@ G.D.F = {
   // 동료: 영웅 기본 공격력 대비 배율, 사거리(칸), 공격 간격(초)
   allies: {
     archer: { n: '레인저', t: 'u_archer', wpn: 'w_bow', atk: 0.6, hp: 0.5, range: 5, cd: 1.0, proj: 'fx_arrow' },
-    cleric: { n: '수도사', t: 'u_cleric', atk: 0.2, hp: 0.6, range: 4, cd: 2.0, heal: 0.08, proj: 'fx_holy' },
+    cleric: { n: '수도사', t: 'u_cleric', wpn: 'w_holymace', atk: 0.2, hp: 0.6, range: 4, cd: 2.0, heal: 0.08, proj: 'fx_holy' },
     bard: { n: '음유시인', t: 'u_bard', atk: 0.3, hp: 0.6, range: 4, cd: 1.5, proj: 'fx_ice', song: true },
     mage: { n: '화염 마법사', t: 'u_mage', wpn: 'w_staff', atk: 1.4, hp: 0.5, range: 5, cd: 1.8, splash: 1.4, proj: 'fx_flame' },
     paladin: { n: '성기사', t: 'u_paladin', wpn: 'w_hammer', atk: 0.8, hp: 1.6, range: 1.3, cd: 1.0 },
     dragoon: { n: '용기병', t: 'u_dragoon', wpn: 'w_spear', atk: 3, hp: 1.2, range: 1.5, cd: 1.4 },
-    archmage: { n: '대현자', t: 'u_archmage', atk: 2.5, hp: 0.7, range: 6, cd: 1.6, chain: 4, proj: 'fx_zap' },
+    archmage: { n: '대현자', t: 'u_archmage', wpn: 'w_arcstaff', atk: 2.5, hp: 0.7, range: 6, cd: 1.6, chain: 4, proj: 'fx_zap' },
   },
   // 버프: 음유시인의 노래, 성직자의 축복, 기술 「전투 함성」. dmg는 모든 피해 배율.
   buffs: {

@@ -51,16 +51,27 @@ G.MapView = function (canvas) {
     if (!G.T.ready(im)) return;
     const k = size / 16 * 0.65, w = im.naturalWidth * k, h = im.naturalHeight * k, face = e.flip ? -1 : 1;
     let ang = 0.45, pull = 0;
-    // 활은 휘두르지 않고 앞에 세워 들었다가, 쏠 때 뒤로 당겼다 놓는다
-    const bow = e.wpn === 'w_bow';
+    // 활은 휘두르지 않고 앞에 세워 들었다가, 쏠 때 뒤로 당겼다 놓는다.
+    // 지팡이·성직자 철퇴는 주문 때 세워 들어 올리고 끝이 빛난다.
+    const bow = e.wpn === 'w_bow', staff = /staff|holymace/.test(e.wpn);
+    let lift = 0;
     if (bow) { ang = 0; pull = lq < 1 ? Math.sin(Math.PI * lq) * size * 0.12 : 0; }
+    else if (staff) { ang = 0.25; if (lq < 1) { const u = Math.sin(Math.PI * lq); ang = 0.25 - 0.3 * u; lift = u * size * 0.28; } }
     else if (lq < 1) { const q = 1 - Math.pow(1 - lq, 3); ang = lq < 0.15 ? 0.45 - 1.9 * (lq / 0.15) : -1.45 + 3.1 * q; }
     ctx.save();
-    ctx.translate(cx + face * (size * (bow ? 0.38 : 0.32) - pull), cy + size * (bow ? 0.05 : 0.22));
+    ctx.translate(cx + face * (size * (bow ? 0.38 : 0.32) - pull), cy + size * (bow ? 0.05 : 0.22) - lift);
     ctx.scale(face, 1);
     ctx.rotate(ang);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(im, -w / 2, -h * 0.85, w, h);
+    if (staff && lift > 0) {
+      const col = e.wpn === 'w_arcstaff' ? '200,140,255' : e.wpn === 'w_holymace' ? '255,230,140' : e.wpn === 'w_gstaff' ? '150,255,140' : '255,140,90';
+      const g = ctx.createRadialGradient(0, -h * 0.8, 1, 0, -h * 0.8, size * 0.45);
+      g.addColorStop(0, `rgba(${col},0.95)`); g.addColorStop(1, `rgba(${col},0)`);
+      ctx.fillStyle = g; ctx.globalCompositeOperation = 'lighter';
+      ctx.beginPath(); ctx.arc(0, -h * 0.8, size * 0.45, 0, 7); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
     ctx.restore();
   }
   // 그리고 나서 그림의 윗변 y를 돌려준다 (체력바·이름표를 머리 위에 두려고)
