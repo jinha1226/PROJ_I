@@ -153,6 +153,31 @@ const SPEC = {
   // 무협 마을: 0x72에 없는 야외 지형은 같은 팔레트로 직접 그린다 (tools/pix.js). draw: [함수, 변형 수, 옵션]
   v_grass: { draw: ['grass', 6] }, v_flowers: { draw: ['flowers', 4] }, v_road: { draw: ['road', 4] }, v_path: { draw: ['path', 4] },
   v_tree: { draw: ['tree', 3] }, v_plum: { draw: ['tree', 2, { blossom: true }] },
+  v_rock: { draw: ['rock', 4] }, v_water: { draw: ['water', 4] }, v_falls: { draw: ['falls', 3] }, v_inner: { draw: ['planks', 3] },
+  v_door: { draw: ['door', 1] }, x_table: { draw: ['table', 1] }, x_cart: { draw: ['cart', 1] }, w_board: { draw: ['board', 1] },
+  w_dummy: { draw: ['dummy', 1] }, x_statue: { draw: ['statue', 1] }, x_altar: { draw: ['altar', 1] }, x_lantern: { draw: ['lantern', 1] },
+  q_herb: { draw: ['herb', 1] }, w_cave: { draw: ['cave', 1] },
+  // 집 벽은 0x72 벽돌을 흙벽 색으로, 화산파 전각은 밝은 대리석으로
+  v_wall: { src: ['wall_mid', 'wall_mid', 'wall_hole_1'], ed: [{ op: 'hue', deg: 18, sat: 1.25, light: 0.06 }] },
+  v_mwall: { src: ['wall_mid'], ed: [{ op: 'hue', deg: 160, sat: 0.25, light: 0.32 }] },
+  v_marble: { src: ['floor_1', 'floor_1', 'floor_1', 'floor_2'], ed: [{ op: 'hue', deg: 150, sat: 0.2, light: 0.38 }] },
+  // 무협 인물: Superdark 캐릭터를 무협 옷 색으로 (주인공은 직업 단계마다)
+  wx_hero0: { src: 'sd_townsfolk_m_idle_anim', run: 'sd_townsfolk_m_run_anim' },
+  wx_hero1: { src: 'sd_blacksmith_idle_anim', run: 'sd_blacksmith_run_anim' },
+  wx_hero2: { src: 'sd_thief_idle_anim', run: 'sd_thief_run_anim', ed: [{ op: 'hue', deg: -40, only: [180, 300], sat: 1.4 }] },
+  wx_hero3: { src: 'sd_knight_idle_anim', run: 'sd_knight_run_anim', ed: [{ op: 'hue', deg: 0, sat: 0.2, light: 0.15 }] },
+  wx_hero4: { src: 'sd_elven_knight_idle_anim', run: 'sd_elven_knight_run_anim', ed: [{ op: 'hue', deg: -110, only: [60, 180], sat: 1.2 }] },
+  wx_hero5: { src: 'sd_alchemist_idle_anim', run: 'sd_alchemist_run_anim' },
+  wx_hero6: { src: 'sd_high_elf_m_idle_anim', ed: [{ op: 'hue', deg: -120, only: [60, 200], sat: 1.3 }] },
+  wx_hero7: { src: 'sd_king_idle_anim', run: 'sd_king_run_anim' },
+  wx_hero8: { src: 'sd_mountain_king_idle_anim' },
+  wx_hero9: { src: 'sd_forest_guardian_idle_anim', run: 'sd_forest_guardian_run_anim', ed: [{ op: 'hue', deg: -60, sat: 0.35, light: 0.18 }] },
+  wx_vil_m: { src: 'sd_townsfolk_m_idle_anim', run: 'sd_townsfolk_m_run_anim', ed: [{ op: 'hue', deg: 120, only: [180, 280] }] },
+  wx_vil_f: { src: 'sd_townsfolk_f_idle_anim', run: 'sd_townsfolk_f_run_anim' },
+  wx_merchant: { src: 'sd_merchant_idle_anim', run: 'sd_merchant_run_anim' },
+  wx_bandit0: { src: 'sd_bandit_idle_anim', run: 'sd_bandit_run_anim' },
+  wx_bandit1: { src: 'sd_thief_idle_anim', run: 'sd_thief_run_anim', ed: [{ op: 'hue', deg: 150, sat: 0.6, light: -0.08 }] },
+  w_katana: { src: 'weapon_katana' }, w_duel: { src: 'weapon_duel_sword' },
   // 화살 (날아가는 방향으로 돌려 그린다)
   fx_arrow: { src: 'weapon_arrow' },
   // 판타지: 던전 지형 (구간 0~5). 벽은 위에서 본 윗면(top)과 바닥 쪽으로 보이는 앞면(face)

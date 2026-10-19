@@ -77,4 +77,80 @@ function tree(seed, { blossom = false } = {}) {
   if (blossom) for (let i = 0; i < 5; i++) { const x = (R() * 16) | 0, y = (R() * 12) | 0; if (inside(x - 1, y) && inside(x + 1, y) && inside(x, y - 1) && inside(x, y + 1)) put(im, x, y, 'yellow', false); }
   return im;
 }
-module.exports = { PAL, grass, flowers, road, path, tree };
+// ── 무협 마을 지형 ──
+// 바위산: 어두운 바탕에 외곽선 있는 바위 덩어리 둘, 왼쪽 위가 밝다
+function rock(seed) {
+  const im = img(16, 16, '#3a3036'), R = rng(seed);
+  for (const [bx, by, r] of [[4 + R() * 3, 5 + R() * 3, 4.5], [11 + R() * 2, 10 + R() * 3, 4.8]]) {
+    const inside = (x, y) => { const dx = Math.min(Math.abs(x - bx), 16 - Math.abs(x - bx)), dy = Math.min(Math.abs(y - by), 16 - Math.abs(y - by)); return dx * dx + dy * dy * 1.3 <= r * r; };
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      if (!inside(x, y)) continue;
+      const edge = !inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1);
+      const ddx = ((x - bx + 24) % 16) - 8, ddy = ((y - by + 24) % 16) - 8;
+      put(im, x, y, edge ? 'ink' : ddx + ddy < -2 ? 'soil3' : ddx + ddy > 3 ? 'soil1' : 'soil2');
+    }
+  }
+  return im;
+}
+// 강물: 짙은 파랑 바탕, 가로 물결(밝은 파랑 짧은 줄 + 흰 반짝임)
+function water(seed) {
+  const im = img(16, 16, 'blue1'), R = rng(seed);
+  for (let i = 0; i < 10; i++) put(im, (R() * 16) | 0, (R() * 16) | 0, 'blue0');
+  for (let i = 0; i < 4; i++) { const x = (R() * 16) | 0, y = (R() * 16) | 0; for (let k = 0; k < 4; k++) put(im, x + k, y + (k === 0 || k === 3 ? 1 : 0), 'blue2'); }
+  for (let i = 0; i < 2; i++) put(im, (R() * 16) | 0, (R() * 16) | 0, 'white');
+  return im;
+}
+// 폭포: 세로로 떨어지는 흰·하늘 줄무늬
+function falls(seed) {
+  const im = img(16, 16, 'blue2'), R = rng(seed);
+  for (let x = 0; x < 16; x++) { const c = R() < 0.35 ? 'white' : R() < 0.5 ? 'blue1' : 'blue2', o = (R() * 16) | 0; for (let y = 0; y < 16; y++) if ((y + o) % 6 < 4) put(im, x, y, c); }
+  return im;
+}
+// 나무 마루(실내 바닥): 가로 널빤지, 어긋난 이음매
+function planks(seed) {
+  const im = img(16, 16, '#9a6b47'), R = rng(seed);
+  for (let r = 0; r < 4; r++) {
+    for (let x = 0; x < 16; x++) put(im, x, r * 4, '#6e4a33');
+    const j = (r * 7 + ((R() * 6) | 0)) % 16; put(im, j, r * 4 + 1, '#6e4a33'); put(im, j, r * 4 + 2, '#6e4a33'); put(im, j, r * 4 + 3, '#6e4a33');
+    for (let k = 0; k < 2; k++) put(im, (R() * 16) | 0, r * 4 + 1 + ((R() * 3) | 0), '#b98a5e');
+  }
+  return im;
+}
+// 사물들 (투명 바탕, 외곽선)
+function sprite(rows, pal) {
+  const im = img(16, 16);
+  rows.forEach((row, y) => [...row].forEach((ch, x) => { if (pal[ch]) put(im, x, y, pal[ch], false); }));
+  return im;
+}
+const WOOD = { k: 'ink', w: '#9a6b47', W: '#b98a5e', d: '#6e4a33' };
+const door = () => sprite([
+  '', '', '   kkkkkkkkkk', '   kddddddddk', '   kdWwwwWwwdk', '   kdWwwwWwwdk', '   kdWwwwWwwdk', '   kdWwwwWwwdk', '   kdWwwYWwwdk', '   kdWwwwWwwdk',
+  '   kdWwwwWwwdk', '   kdWwwwWwwdk', '   kdWwwwWwwdk', '   kdWwwwWwwdk', '   kkkkkkkkkkk'].map(r => r.slice(0, 16)), { ...WOOD, Y: 'yellow' });
+const table = () => sprite([
+  '', '', '', '', '  kkkkkkkkkkkk', '  kWWWWWWWWWWk', '  kwwwwwwwwwwk', '  kddddddddddk', '  kkkkkkkkkkkk', '   kd      dk', '   kd      dk', '   kd      dk', '   kk      kk',
+  '', '  k  wk', ''], { ...WOOD });
+const cart = () => sprite([
+  '', '', '', '  kkkkkkkkkkk', '  kWWWWWWWWWk', '  kwwwwwwwwwk', '  kwwwwwwwwwkkkk', '  kdddddddddk', '  kkkkkkkkkkk', '   kkk   kkk', '  kgsgk kgsgk', '  ksSsk ksSsk',
+  '  kgsgk kgsgk', '   kkk   kkk'], { ...WOOD, g: '#555555', s: '#888888', S: '#cccccc' });
+const board = () => sprite([
+  '', ' kkkkkkkkkkkkkk', ' kWWWWWWWWWWWWk', ' kwPPPwwwPPPwwk', ' kwPRPwwwPRPwwk', ' kwPPPwwwPPPwwk', ' kwwwwwwwwwwwwk', ' kwwPPPwwwwwwwk', ' kwwPRPwwwwwwwk',
+  ' kwwPPPwwwwwwwk', ' kddddddddddddk', ' kkkkkkkkkkkkkk', '   kd      dk', '   kd      dk', '   kd      dk', '   kk      kk'], { ...WOOD, P: '#e8e2d0', R: 'red' });
+const dummy = () => sprite([
+  '', '      kkkk', '     kWWWWk', '     kWwwWk', '     kwwwwk', '      kkkk', '  kkkkkdkkkkk', '  kWWWWwWWWWk', '  kkkkkdkkkkk', '      kdk', '     kwwwk',
+  '     kwddk', '      kdk', '      kdk', '    kkkdkkk', '    kdddddk'], { ...WOOD });
+const statue = () => sprite([
+  '', '      kkkk', '     kSSSSk', '     kSssSk', '      kkkk', '    kkSSSSkk', '   kSSSsssSSk', '   kSsSsssSsk', '   kSsSsssSsk', '    kkSsssk', '     kSssSk',
+  '     kSkkSk', '   kkkkkkkkkk', '   kSSSSSSSSk', '   kssssssssk', '   kkkkkkkkkk'], { k: 'ink', S: '#c9c3b8', s: '#8e8a84' });
+const altar = () => sprite([
+  '', '', '      kYk', '     kYOYk', '      kYk', '    kkkkkkkk', '   kRRRRRRRRk', '   kRrrrrrrRk', '  kkkkkkkkkkkk', '  kSSSSSSSSSSk', '  kSssssssssSk',
+  '  kSsGGGGGGsSk', '  kSsGGGGGGsSk', '  kSssssssssSk', '  kkkkkkkkkkkk'], { k: 'ink', Y: 'yellow', O: 'orange', R: 'red', r: '#8a2a2a', S: '#c9c3b8', s: '#8e8a84', G: '#d9b44a' });
+const lantern = () => sprite([
+  '', '     kkkkkk', '    kSSSSSSk', '   kkkkkkkkkk', '     kSYYSk', '     kSYOSk', '     kSYYSk', '    kkkkkkkk', '      kSSk', '      kSsk',
+  '      kSsk', '      kSsk', '    kkkkkkkk', '    kSSSSSSk', '    kkkkkkkk'], { k: 'ink', S: '#c9c3b8', s: '#8e8a84', Y: 'yellow', O: 'orange' });
+const herb = () => sprite([
+  '', '     k  k', '    kgk kgk', '   kgGgkgGgk', '    kgGGGgk', '  kgkgGgGgkgk', '  kgGgGgGgGgk', '   kkgGgGgkk', '     kgGgk', '    kkkkkkk',
+  '   kdddddddk', '   kdWWWWWdk', '   kdwwwwwdk', '    kdwwwdk', '    kkkkkkk'], { ...WOOD, g: 'g1', G: 'g2' });
+const cave = () => sprite([
+  '', '    kkkkkkkk', '   kSSSSSSSSk', '  kSSkkkkkkSSk', ' kSSkkkkkkkkSSk', ' kSkkkkkkkkkkSk', ' kSkkkkkkkkkkSk', 'kSSkkkkkkkkkkSSk', 'kSkkkkkkkkkkkkSk',
+  'kSkkkkkkkkkkkkSk', 'kSkkkkkkkkkkkkSk', 'kSskkkkkkkkkksSk', 'kSskkkkkkkkkksSk', 'kssskkkkkkkkksssk', 'kkkkkkkkkkkkkkkk'].map(r => r.slice(0, 16)), { k: 'ink', S: 'soil2', s: 'soil1' });
+module.exports = { PAL, grass, flowers, road, path, tree, rock, water, falls, planks, door, table, cart, board, dummy, statue, altar, lantern, herb, cave };

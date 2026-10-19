@@ -27,7 +27,7 @@ G.Wuxia = (() => {
       const rt = { map, fx: [], bandits: [], villagers: [], hero: { kind: 'hero', x, y, s: 1.1, bar: true }, stay: 0, banditT: 4, focus: null, restT: 0, deadT: 0 };
       for (let i = 0; i < 4; i++) {
         const c = GR.randomCell(map, (cx, cy) => '.=,'.includes(GR.at(map, cx, cy)) && cy > 12);
-        if (c) rt.villagers.push({ kind: 'npc', t: { k: 'v_villager', v: i }, x: c[0], y: c[1], s: 0.9, goal: null, wait: Math.random() * 3 });
+        if (c) rt.villagers.push({ kind: 'npc', t: ['wx_vil_m', 'wx_vil_f', 'wx_merchant', 'wx_vil_f'][i], x: c[0], y: c[1], s: 0.9, goal: null, wait: Math.random() * 3 });
       }
       W.heal(w, rt);
       return rt;
@@ -171,6 +171,7 @@ G.Wuxia = (() => {
       G.fxTick(rt, dt);
       h.t = D.outfits[W.jobIdx(w)];
       h.art = 'wx_hero' + W.jobIdx(w);
+      h.wpn = W.jobIdx(w) >= 2 ? (W.jobIdx(w) >= 6 ? 'w_duel' : 'w_katana') : null;
       h.moving = false;
       if (w.dead) {
         h.dim = true;
@@ -210,7 +211,7 @@ G.Wuxia = (() => {
         const [bx, by] = U.pick(m.poi.S);
         // 산적은 주인공 수준에 맞춰 나온다: 여섯 대쯤 맞으면 쓰러지고, 주인공 체력의 절반 남짓을 깎는다
         const ji = W.jobIdx(w), hp = W.power(w) * 6;
-        rt.bandits.push({ kind: 'mon', t: { k: 'v_bandit', v: U.rand(2) }, x: bx, y: by, s: 1, hp, max: hp, atk: W.maxHp(w) / 14, bar: true, goal: null, atkT: 1, ji });
+        rt.bandits.push({ kind: 'mon', t: 'wx_bandit' + U.rand(2), wpn: 'w_knife', x: bx, y: by, s: 1, hp, max: hp, atk: W.maxHp(w) / 14, bar: true, goal: null, atkT: 1, ji });
       }
       for (const b of rt.bandits) {
         b.moving = false;
@@ -250,6 +251,7 @@ G.Wuxia = (() => {
               const dmg = W.power(w);
               foe.hp -= dmg;
               G.fx(rt, { k: 'slash', x: foe.x, y: foe.y, t: 0.3, rot: Math.random() - 0.5, flip: h.x > foe.x });
+              G.J.lunge('wuxia', h, foe);
               G.fx(rt, { k: 'splat', x: foe.x, y: foe.y, dx: foe.x - h.x, dy: foe.y - h.y, n: 5, t: 0.5 });
               G.fx(rt, { k: 'text', x: foe.x, y: foe.y - 0.6, s: U.fmt(dmg), col: '#fff', t: 0.7, sz: 0.85 + 0.5 * Math.min(1, dmg / foe.max) });
               G.J.hit('wuxia', foe, foe.hp <= 0 ? 0.45 : 0);
