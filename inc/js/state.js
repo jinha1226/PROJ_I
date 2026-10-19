@@ -158,6 +158,11 @@ G.deserialize = function (json) {
   };
   G.newState();
   merge(G.S, data);
+  // 판타지 요리 노드 → 음유시인 노드 (요리 컨셉 제거)
+  const ft = G.S.w.fantasy.tree, MOVE = { cook1: 'bard', cook2: 'bless', cook3: 'songDur', cook4: 'songWar' };
+  for (const k in MOVE) if (ft[k]) { ft[MOVE[k]] = Math.max(ft[MOVE[k]] || 0, 1); delete ft[k]; }
+  if (ft.chef) { ft.songDur = (ft.songDur || 0) + ft.chef; delete ft.chef; }
+  delete G.S.w.fantasy.ing;
   G.RT = {};
   return G.S;
 };

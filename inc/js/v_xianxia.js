@@ -5,7 +5,7 @@ G.UI.views.xianxia = function () {
   const STATE = { meditate: '영맥에서 좌선', hunt: '요수 사냥', duel: '산문에서 비무', trib: '정상에서 천겁' };
 
   const hudState = h('b');
-  const hud = h('div', null, hudState, h('small.dim', null, '요수를 누르면 비검 · 수도자를 누르면 운기조식 · 익은 영초를 누르면 수확'));
+  const hud = h('div', null, hudState);
 
   const realmEl = h('div.realm'), nextEl = h('small');
   const qi = G.UI.meter('영기'), chanceEl = h('b'), pillEl = h('b'), herbEl = h('b'), devEl = h('p.warn.hidden');
@@ -16,11 +16,11 @@ G.UI.views.xianxia = function () {
   const oTile = G.T.el('o_0', 'lg'), oName = h('b'), oInfo = h('small'), powEl = h('b'), stoneEl = h('b'), discEl = h('small');
 
   const side = h('div', null,
-    h('div.card.realm-card', null, h('small', null, '현재 경지'), realmEl, nextEl, qi.el,
-      h('div.kv', null, h('span', null, '천겁 성공률'), chanceEl), h('div.kv', null, h('span', null, '단약 (천겁에 4개까지, 개당 +12%)'), pillEl),
-      h('div.kv', null, h('span', null, '영초'), herbEl), devEl, breakBtn, h('div.tgls', null, tAuto.el, thr)),
-    h('div.card', null, h('div.card-h', null, h('b', null, '천교방 다음 도전자')), h('div.opp-row', null, oTile, h('div', null, oName, oInfo)),
-      h('div.kv', null, h('span', null, '나의 도력'), powEl)),
+    h('div.card.realm-card', null, realmEl, nextEl, qi.el,
+      h('div.kv', null, h('span', null, '천겁 성공률'), chanceEl), h('div.kv', { title: '천겁에 4개까지, 개당 +12%' }, h('span', null, G.T.el('q_pill', 'xs'), ' 단약'), pillEl),
+      h('div.kv', null, h('span', null, G.T.el('q_herb', 'xs'), ' 영초'), herbEl), devEl, breakBtn, h('div.tgls', null, tAuto.el, thr)),
+    h('div.card', null, h('div.opp-row', null, oTile, h('div', null, oName, oInfo)),
+      h('div.kv', null, h('span', null, G.T.el('cultivator', 'xs'), ' 도력'), powEl)),
     h('div.card', null, h('div.card-h', null, G.T.el('q_stone', 'cur'), stoneEl, h('small', null, ' 영석')), discEl));
 
   return G.UI.worldScreen('xianxia', {
@@ -35,13 +35,13 @@ G.UI.views.xianxia = function () {
       setText(pillEl, s.pills);
       setText(herbEl, s.herbs);
       tog(devEl, 'hidden', s.devT <= 0);
-      if (s.devT > 0) setText(devEl, `도심 동요: ${Math.ceil(s.devT)}초간 수련 30%`);
+      if (s.devT > 0) setText(devEl, `도심 동요 ${Math.ceil(s.devT)}초 · 수련 30%`);
       breakBtn.disabled = s.qi < cost || rt.state === 'trib';
       tAuto.update();
       const o = X.opp(s.k);
       G.T.set(oTile, 'o_' + Math.min(8, o.tier));
       setText(oName, `${o.title} ${o.name}`);
-      setText(oInfo, ` ${o.sect} · ${o.rank} · 도력 ${U.fmt(o.power)}`);
+      setText(oInfo, ` ${o.rank} · 도력 ${U.fmt(o.power)}`);
       setText(powEl, U.fmt(X.power(s)));
       setText(stoneEl, U.fmt(s.stone));
       setText(discEl, ` · 제자 ${rt.disciples.length}명`);

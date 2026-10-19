@@ -36,7 +36,7 @@ G.UI.tree = function (treeId, getSt) {
   });
 
   // 정보창
-  const iName = h('b'), iLv = h('small'), iDesc = h('p'), iCost = h('div.cost'), buyBtn = h('button.btn.big', { on: { click: () => { if (sel) buy(sel); } } }, '배우기');
+  const iName = h('b'), iLv = h('small'), iDesc = h('p'), iCostV = h('span'), iCost = h('div.cost', null, G.T.el(wallet.tile, 'xs'), ' ', iCostV), buyBtn = h('button.btn.big', { on: { click: () => { if (sel) buy(sel); } } }, '배우기');
   const info = h('div.tree-info.hidden', null, h('div.ti-h', null, iName, iLv), iDesc, iCost, buyBtn);
   function select(n) { sel = n; update(); }
   // 배우면 소리와 함께 노드가 튀어 오른다
@@ -75,9 +75,9 @@ G.UI.tree = function (treeId, getSt) {
   const moneyEl = h('b'), avail = h('small');
   const el = h('div.tree', null,
     vp, info,
-    h('div.tree-tools', null, G.T.el(wallet.tile, 'cur'), moneyEl, h('small', null, ' ' + wallet.name), avail,
-      h('button.btn.sm', { on: { click: center } }, '가운데로')),
-    h('div.tree-hint', null, '끌어서 이동 · 휠로 확대 · 두 번 누르면 바로 배운다'));
+    h('div.tree-tools', null, G.T.el(wallet.tile, 'cur'), moneyEl, avail,
+      h('button.btn.sm', { on: { click: center } }, '⌖')),
+  );
 
   let centered = false;
   function update() {
@@ -110,9 +110,9 @@ G.UI.tree = function (treeId, getSt) {
       const n = sel, lv = T.lv(st, n.id), max = n.max || 1, open = T.open(treeId, st, n.id);
       setText(iName, open ? n.n : '???');
       setText(iLv, n.root ? '' : max > 1 ? ` Lv ${lv} / ${max}` : lv ? ' 습득' : '');
-      setText(iDesc, open ? n.d : `먼저 「${(n.req || []).map(r => T.idx[treeId][r].n).join(n.reqAll ? '」과 「' : '」 또는 「')}」을 배워야 한다.`);
+      setText(iDesc, open ? n.d : `🔒 ${(n.req || []).map(r => T.idx[treeId][r].n).join(n.reqAll ? ' + ' : ' / ')}`);
       const maxed = lv >= max;
-      setText(iCost, maxed ? '모두 배웠다' : open ? `${wallet.name} ${U.fmt(T.cost(treeId, st, n.id))}` : '');
+      setText(iCostV, maxed ? 'MAX' : open ? U.fmt(T.cost(treeId, st, n.id)) : '');
       buyBtn.disabled = !T.canBuy(treeId, st, n.id);
       tog(buyBtn, 'hidden', maxed || n.root);
     }

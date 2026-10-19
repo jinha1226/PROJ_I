@@ -12,12 +12,21 @@ G.J = {
   live: id => !G.quiet && !!G.UI && G.UI.cur === id,
   s(id) { return this.st[id] || (this.st[id] = { stop: 0, slow: 0, debt: 0, shA: 0, shT: 0, shD: 1, dx: 0, dy: 0, zT: 0, zD: 1, zx: 0, zy: 0, z: 1, flT: 0, flC: '#fff' }); },
 
-  // 맞은 대상이 하얗게 번쩍이며 떤다. power(0~1) > 0이면 세계 전체가 잠깐 멈춘다(히트스톱).
-  hit(id, e, power = 0) {
+  // 맞은 대상이 번쩍이며 떤다. from(때린 쪽)을 주면 반대로 밀려난다(넉백).
+  // power(0~1) > 0이면 세계 전체가 잠깐 멈춘다(히트스톱).
+  hit(id, e, power = 0, from) {
     if (!G.J.live(id)) return;
     e._hit = G.J.now();
     e._hitP = power;
+    if (from) { const dx = e.x - from.x, dy = e.y - from.y, l = Math.hypot(dx, dy) || 1; e._kx = dx / l; e._ky = dy / l; }
+    else e._kx = e._ky = 0;
     if (power > 0) { const s = G.J.s(id); s.stop = Math.max(s.stop, 0.03 + 0.1 * power); }
+  },
+  // 공격하는 쪽이 대상 쪽으로 짧게 내딛었다 돌아온다
+  lunge(id, a, tg) {
+    if (!G.J.live(id)) return;
+    const dx = tg.x - a.x, dy = tg.y - a.y, l = Math.hypot(dx, dy) || 1;
+    a._lu = G.J.now(); a._lx = dx / l; a._ly = dy / l;
   },
   // 방향(dx, dy)을 주면 그쪽으로 튕겼다 돌아오고, 없으면 무작위로 떤다
   shake(id, amp, dx = 0, dy = 0, dur = 0.25) {

@@ -516,3 +516,39 @@ details.card summary { cursor: pointer; font-weight: 700; }
 @keyframes tpop { 0% { transform: scale(1.5); filter: brightness(2.5); } 100% { transform: scale(1); filter: none; } }
 .opt-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
 .opt-row .vol { width: 120px; accent-color: var(--accent); }
+
+/* ── 판타지: HUD 버프, 파티 상태창, 아이콘 능력치 ── */
+.hud-mon { display: inline-flex; align-items: center; gap: 2px; margin-left: 8px; vertical-align: middle; }
+.buffs { display: flex; gap: 4px; margin-top: 4px; }
+.buff { display: inline-flex; align-items: center; gap: 2px; padding: 1px 5px 1px 2px; border-radius: 99px; background: #000a; border: 1px solid var(--bc); }
+.buff small { font-size: 11px; color: var(--bc); font-weight: 800; }
+.prow { padding: 4px 6px; border-radius: 8px; background: var(--panel2); }
+.prow.down { opacity: .5; filter: grayscale(.8); }
+.pmain { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pname { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.pname .chip { display: inline-flex; align-items: center; gap: 1px; margin-left: auto; font-size: 11px; color: var(--dim); }
+.pname .chip + .chip { margin-left: 4px; }
+.pname .chip b { color: var(--text); font-weight: 700; }
+.prow .hpt { font-size: 10px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.prow .pst { color: #ff8a8a; }
+.bar.hp.low > i { background: linear-gradient(90deg, #c9702a, #e3a13a); }
+.istats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.istat { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 8px; background: var(--panel2); font-size: 12px; font-variant-numeric: tabular-nums; }
+.istat b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── 무협: 은자 상점 ── */
+.shop { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; margin-top: 6px; }
+.shop-it { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); text-align: left; position: relative; }
+.shop-it .si { display: flex; flex-direction: column; min-width: 0; font-size: 11px; line-height: 1.25; }
+.shop-it .si b { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shop-it .c { color: var(--accent); }
+.shop-it:disabled { opacity: .55; }
+.shop-it.own { opacity: 1; border-color: var(--good); }
+.shop-it.own .c { color: var(--good); }
+.shop-it.elix > b { position: absolute; right: 6px; top: 3px; font-size: 11px; color: var(--good); }
+.shop-it:not(:disabled):hover { border-color: var(--accent); }
+
+/* 따라가는 카메라 맵: 좁은 화면에서는 정사각에 가깝게 키운다 */
+@media (max-width: 760px) {
+  .mapbox.fit.cam { aspect-ratio: 4 / 5 !important; max-height: 70vh; }
+}

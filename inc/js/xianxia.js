@@ -277,7 +277,7 @@ G.Xianxia = (() => {
       ents.push(...rt.disciples, ...rt.beasts);
       if (rt.rival) ents.push(rt.rival);
       ents.push(rt.me);
-      return { map: rt.map, ents, fx: rt.fx, fit: true, terrain: (cx, cy) => D.tiles[GR.at(rt.map, cx, cy)] || null, tint: x.devT > 0 ? 'rgba(120,0,40,0.18)' : null };
+      return { map: rt.map, ents, fx: rt.fx, fit: true, cam: rt.me, terrain: (cx, cy) => D.tiles[GR.at(rt.map, cx, cy)] || null, tint: x.devT > 0 ? 'rgba(120,0,40,0.18)' : null };
     },
     status: x => X.realmName(x.realm),
   };

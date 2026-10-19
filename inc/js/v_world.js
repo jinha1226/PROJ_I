@@ -41,7 +41,14 @@ G.UI.worldScreen = function (id, spec) {
       if (tab !== 'map') return;
       const v = mod.view(G.S.w[id]);
       // 고정 지도는 지도 비율에 맞춰 상자를 줄여 위아래 빈 띠를 없앤다
-      if (v.fit && !mapPane._fit) { mapPane._fit = true; mapPane.querySelector('.mapbox').style.aspectRatio = `${v.map.w} / ${v.map.h}`; mapPane.querySelector('.mapbox').classList.add('fit'); }
+      // 따라가는 카메라가 있는 맵은 좁은 화면(모바일 세로)에서 정사각에 가깝게 키운다 (style.css .mapbox.cam)
+      if (v.fit && !mapPane._fit) {
+        mapPane._fit = true;
+        const box = mapPane.querySelector('.mapbox');
+        box.style.aspectRatio = `${v.map.w} / ${v.map.h}`;
+        box.classList.add('fit');
+        tog(box, 'cam', !!v.cam);
+      }
       mv.draw(v, t, id);
     },
     update() {

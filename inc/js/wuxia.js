@@ -17,7 +17,7 @@ G.Wuxia = (() => {
     init(head = 0) {
       return {
         age: 16, gold: 5 * Math.pow(10, head), job: 'jumso', skill: 'naegong', lvl: {}, xp: {}, peak: {}, items: {},
-        lives: 0, ins: 0, tree: G.Tree.init('wuxia'), dead: false, bestJob: 0, autoPromote: true, autoSkill: true, mode: 'work',
+        lives: 0, ins: 0, tree: G.Tree.init('wuxia'), dead: false, bestJob: 0, autoPromote: true, autoSkill: true, autoBuy: true, mode: 'work', elix: 0,
       };
     },
     rt(w) { return G.RT.wuxia || (G.RT.wuxia = W.boot(w)); },
@@ -41,7 +41,7 @@ G.Wuxia = (() => {
       if (w.items.manual) m *= 2;
       if (w.items.manor) m *= 2;
       if (w.items.daehwan) m *= 1.5;
-      return m;
+      return m * (1 + 0.1 * w.elix);
     },
     jobXp: (w, id) => 15 * W.xpMult(w) * W.peakMult(w, id) * (1 + 0.01 * W.L(w, 'gyeong')) * tm('jobXp'),
     skillXp: (w, id) => 15 * W.xpMult(w) * W.peakMult(w, id) * (1 + 0.01 * W.L(w, 'tuna')) * (w.items.room ? 1.5 : 1) * tm('skillXp'),
@@ -91,7 +91,7 @@ G.Wuxia = (() => {
       let sum = 0;
       for (const id in w.lvl) { sum += w.lvl[id]; w.peak[id] = Math.max(w.peak[id] || 0, w.lvl[id]); }
       W.gainIns(w, Math.pow(sum / 10, 1.2));
-      const keep = { peak: w.peak, lives: w.lives + 1, ins: w.ins, tree: w.tree, bestJob: w.bestJob, autoPromote: w.autoPromote, autoSkill: w.autoSkill };
+      const keep = { peak: w.peak, lives: w.lives + 1, ins: w.ins, tree: w.tree, bestJob: w.bestJob, autoPromote: w.autoPromote, autoSkill: w.autoSkill, autoBuy: w.autoBuy };
       Object.assign(w, W.init(G.S.stree ? G.Tree.add('stars', G.S.stree, 'head') : 0), keep);
       w.age = W.startAge();
       G.addSigns(1, 'wuxia');
@@ -105,6 +105,28 @@ G.Wuxia = (() => {
       G.log(`회귀했다. ${w.lives + 1}번째 삶, 다시 ${Math.floor(w.age)}세`, 'wuxia', 'good');
     },
     heal(w, rt) { rt.hero.max = W.maxHp(w); rt.hero.hp = rt.hero.max; },
+    buyItem(w, id) {
+      const it = D.items.find(x => x.id === id);
+      if (w.items[id] || w.gold < it.cost) return false;
+      w.gold -= it.cost;
+      w.items[id] = true;
+      const h = W.rt(w).hero;
+      G.fx(W.rt(w), { k: 'text', x: h.x, y: h.y - 1, s: it.n, col: '#ffe08a', t: 1.5, sz: 1.2, pop: true });
+      G.J.sfx('wuxia', 'coin');
+      return true;
+    },
+    // 영단: 생마다 몇 번이고 산다. 하나에 모든 숙련 +10%, 값은 ×3씩
+    elixCost: w => 50 * Math.pow(3, w.elix),
+    buyElixir(w) {
+      const c = W.elixCost(w);
+      if (w.gold < c) return false;
+      w.gold -= c;
+      w.elix++;
+      const h = W.rt(w).hero;
+      G.fx(W.rt(w), { k: 'text', x: h.x, y: h.y - 1, s: '영단 +10%', col: '#9fe79f', t: 1.2, pop: true });
+      G.J.sfx('wuxia', 'coin');
+      return true;
+    },
 
     // 지금 가야 할 장소
     dest(w) {
@@ -158,7 +180,11 @@ G.Wuxia = (() => {
       w.age += dt / YEAR;
       const inc = W.income(w) * dt;
       w.gold += inc;
-      for (const it of D.items) if (!w.items[it.id] && w.gold >= it.cost) { w.gold -= it.cost; w.items[it.id] = true; G.fx(rt, { k: 'text', x: h.x, y: h.y - 1, s: it.n, col: '#ffe08a', t: 1.5, sz: 1.2, pop: true }); G.J.sfx('wuxia', 'coin'); }
+      // 은자: 이번 생의 물건과 영단에 쓴다 (회귀하면 사라진다)
+      if (w.autoBuy) {
+        for (const it of D.items) if (!w.items[it.id] && w.gold >= it.cost) W.buyItem(w, it.id);
+        if (w.gold >= W.elixCost(w) * 2) W.buyElixir(w);
+      }
       // 승진·자동 수련
       if (w.autoPromote) {
         const nx = W.nextJob(w);
@@ -274,7 +300,7 @@ G.Wuxia = (() => {
     view(w) {
       const rt = W.rt(w);
       return {
-        map: rt.map, ents: [...rt.villagers, ...rt.bandits, rt.hero], fx: rt.fx, fit: true,
+        map: rt.map, ents: [...rt.villagers, ...rt.bandits, rt.hero], fx: rt.fx, fit: true, cam: rt.hero,
         terrain: (x, y) => D.tiles[GR.at(rt.map, x, y)] || null,
         labels: Object.entries(D.places).map(([ch, n]) => ({ x: rt.map.poi[ch][0][0], y: rt.map.poi[ch][0][1], s: n, on: W.dest(w) === ch })),
       };

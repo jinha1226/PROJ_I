@@ -4,7 +4,7 @@
 // 로직은 10Hz라 엔티티 위치를 그릴 때 부드럽게 따라가게(_rx, _ry) 한다. 손맛 효과(G.J)는 세계 id로 찾는다.
 G.MapView = function (canvas) {
   const ctx = canvas.getContext('2d');
-  const TSRC = 32;
+  const TSRC = 32, MIN_TS = 28;
   let W = 0, H = 0, TS = 32, ox = 0, oy = 0, lastT = 0;
   const cam = { x: 0, y: 0, ok: false };
 
@@ -69,9 +69,16 @@ G.MapView = function (canvas) {
     if (!e.t) return;
     const foot = cy + size * 0.38;
     if (e.moving) cy -= Math.abs(Math.sin(t / 90 + e.x * 3)) * TS * 0.06;
-    // 맞은 직후: 떨림
-    const hq = e._hit ? (now - e._hit) / (90 + 180 * (e._hitP || 0)) : 1;
-    if (hq < 1) cx += Math.sin(now / 11) * TS * 0.07 * (0.5 + (e._hitP || 0)) * (1 - hq);
+    // 공격: 대상 쪽으로 내딛었다 돌아온다
+    const lq = e._lu ? (now - e._lu) / 170 : 1;
+    if (lq < 1) { const k = Math.sin(Math.PI * lq) * TS * 0.3; cx += e._lx * k; cy += e._ly * k; }
+    // 맞음: 뒤로 밀렸다 돌아오며 떤다
+    const hq = e._hit ? (now - e._hit) / (110 + 180 * (e._hitP || 0)) : 1;
+    if (hq < 1) {
+      const kb = (1 - hq) * (1 - hq) * TS * (0.16 + 0.2 * (e._hitP || 0));
+      cx += (e._kx || 0) * kb + Math.sin(now / 11) * TS * 0.05 * (1 - hq);
+      cy += (e._ky || 0) * kb;
+    }
     ctx.globalAlpha = e.alpha == null ? 1 : e.alpha;
     if (!e.under && e.kind) {
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
@@ -95,15 +102,19 @@ G.MapView = function (canvas) {
     ctx.filter = 'none';
     ctx.shadowBlur = 0;
     if (hq < 1) {
-      const sil = silhouette(e.t, '#ffffff');
-      if (sil) { ctx.globalAlpha = 0.9 * (1 - hq); blit(sil, cx, cy, size, e.flip); }
+      // 몬스터는 하얗게, 아군은 붉게 번쩍
+      const sil = silhouette(e.t, e.kind === 'mon' ? '#ffffff' : '#ff6060');
+      if (sil) { ctx.globalAlpha = (e.kind === 'mon' ? 0.9 : 0.7) * (1 - hq); blit(sil, cx, cy, size, e.flip); }
     }
     ctx.globalAlpha = 1;
     if (e.bar && e.max && e.hp < e.max && e.hp > 0) {
-      const bw = Math.max(18, size * 0.8), by = cy - size / 2 - 5;
+      const bw = Math.max(18, size * 0.8), by = cy - size / 2 - 5, r = Math.max(0, e.hp / e.max);
+      // 깎인 만큼 흰 띠가 잠깐 남았다가 따라 줄어든다
+      e._hpv = e._hpv == null || e._hpv < r ? r : e._hpv + (r - e._hpv) * 0.08;
       ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(cx - bw / 2 - 1, by - 1, bw + 2, 5);
+      ctx.fillStyle = '#fff'; ctx.fillRect(cx - bw / 2, by, bw * e._hpv, 3);
       ctx.fillStyle = e.kind === 'mon' ? '#ff5a5a' : '#5fdc7a';
-      ctx.fillRect(cx - bw / 2, by, bw * Math.max(0, e.hp / e.max), 3);
+      ctx.fillRect(cx - bw / 2, by, bw * r, 3);
     }
     if (e.label) text(e.label, cx, cy - size / 2 - 10, '#ffd9a0', 11);
   }
@@ -138,6 +149,15 @@ G.MapView = function (canvas) {
     } else if (f.k === 'slash') {
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.arc(sx(f.x), sy(f.y), TS * 0.45, -2.4 + p * 1.2, -0.6 + p * 1.2); ctx.stroke();
+    } else if (f.k === 'die') {
+      // 쓰러짐: 번쩍인 뒤 납작해지며 사라진다
+      const size = TS * (f.s || 1), cx = sx(f.x), cy = sy(f.y);
+      ctx.save(); ctx.translate(cx, cy + size * 0.4); ctx.scale(1 + p * 0.3, 1 - p * 0.8); ctx.translate(-cx, -(cy + size * 0.4));
+      ctx.globalAlpha = 1 - p;
+      drawSprite(f.spr, cx, cy, size, f.flip);
+      const sil = p < 0.4 && silhouette(f.spr, '#ffffff');
+      if (sil) { ctx.globalAlpha = 1 - p / 0.4; blit(sil, cx, cy, size, f.flip); }
+      ctx.restore();
     } else if (f.k === 'tile') {
       drawSprite({ k: f.key, v: Math.floor(t / 120) }, sx(f.x), sy(f.y), TS * (f.s || 1), false);
     } else if (f.k === 'beam') {
@@ -150,6 +170,55 @@ G.MapView = function (canvas) {
       ctx.stroke(); ctx.shadowBlur = 0;
     }
     ctx.globalAlpha = 1;
+  }
+  // 안개: 본 적 없는 칸은 어둡게(칸당 1px 캔버스를 부드럽게 확대), 주인공 주변은 등불처럼 밝게
+  function drawFog(view) {
+    const m = view.map, fg = view.fog;
+    if (!m._fog || m._fogVer !== fg.ver || m._fogSeen !== fg.seen) {
+      const c = m._fog || document.createElement('canvas');
+      c.width = m.w; c.height = m.h;
+      const b = c.getContext('2d'), img = b.createImageData(m.w, m.h);
+      for (let i = 0; i < m.w * m.h; i++) img.data[i * 4 + 3] = fg.seen[i] ? 0 : 235;
+      b.putImageData(img, 0, 0);
+      m._fog = c; m._fogVer = fg.ver; m._fogSeen = fg.seen;
+    }
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(m._fog, ox, oy, m.w * TS, m.h * TS);
+    ctx.imageSmoothingEnabled = false;
+    if (fg.light) {
+      const lx = sx(fg.light._rx ?? fg.light.x), ly = sy(fg.light._ry ?? fg.light.y);
+      const g = ctx.createRadialGradient(lx, ly, TS * 3, lx, ly, TS * 9);
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.5)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
+  }
+  // 미니맵: 오른쪽 위. 본 칸, 계단, 파티(초록·금색), 본 칸 위의 몬스터(빨강)
+  function drawMini(view) {
+    const m = view.map, mi = view.mini, k = Math.max(2, Math.min(4, Math.floor(Math.min(W, H) * 0.28 / m.w)));
+    const w = m.w * k, h = m.h * k, x0 = W - w - 8, y0 = 8;
+    if (!m._mini || m._miniVer !== mi.ver || m._miniSeen !== mi.seen) {
+      const c = m._mini || document.createElement('canvas');
+      c.width = m.w; c.height = m.h;
+      const b = c.getContext('2d'), img = b.createImageData(m.w, m.h);
+      for (let i = 0; i < m.w * m.h; i++) {
+        if (!mi.seen[i]) continue;
+        const ch = m.c[i], o = i * 4;
+        const col = ch === '#' ? [70, 62, 54, 255] : [150, 140, 120, 255];
+        img.data.set(col, o);
+      }
+      b.putImageData(img, 0, 0);
+      m._mini = c; m._miniVer = mi.ver; m._miniSeen = mi.seen;
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x0 - 3, y0 - 3, w + 6, h + 6);
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1; ctx.strokeRect(x0 - 3.5, y0 - 3.5, w + 7, h + 7);
+    ctx.drawImage(m._mini, x0, y0, w, h);
+    const dot = (x, y, col, r) => { ctx.fillStyle = col; ctx.fillRect(x0 + (x + 0.5) * k - r, y0 + (y + 0.5) * k - r, r * 2, r * 2); };
+    if (mi.seen[mi.end.cy * m.w + mi.end.cx]) dot(mi.end.cx, mi.end.cy, '#ffd24a', k);
+    for (const e of mi.mons) if (mi.seen[Math.round(e.y) * m.w + Math.round(e.x)]) dot(e.x, e.y, '#ff4a4a', e.boss ? k : k * 0.6);
+    for (const e of mi.party) if (!e.dead) dot(e.x, e.y, e.kind === 'hero' ? '#fff3c4' : '#6fe39a', e.kind === 'hero' ? k * 0.9 : k * 0.6);
+    // 지금 화면에 보이는 범위
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeRect(x0 + Math.max(0, -ox / TS * k), y0 + Math.max(0, -oy / TS * k), Math.min(w, W / TS * k), Math.min(h, H / TS * k));
   }
   // 처음 해 보는 사람에게 "여기를 눌러"를 글 대신 화살표로
   function drawCoach(c, t) {
@@ -169,12 +238,12 @@ G.MapView = function (canvas) {
       if (!resize() || !view) return;
       const now = performance.now(), fdt = Math.min(0.1, Math.max(0, (t - lastT) / 1000));
       lastT = t;
-      const m = view.map, bg = background(view);
-      if (view.fit) {
-        TS = Math.min(W / m.w, H / m.h);
+      const m = view.map, bg = background(view), fitTS = Math.min(W / m.w, H / m.h);
+      if (view.fit && (!view.cam || fitTS >= MIN_TS)) {
+        TS = fitTS;
         ox = (W - m.w * TS) / 2; oy = (H - m.h * TS) / 2;
       } else {
-        TS = H / view.viewH;
+        TS = view.fit ? MIN_TS : H / view.viewH;
         const c = view.cam;
         if (!cam.ok || Math.hypot(c.x - cam.x, c.y - cam.y) > 12) { cam.x = c.x; cam.y = c.y; cam.ok = true; }
         cam.x += (c.x - cam.x) * 0.12; cam.y += (c.y - cam.y) * 0.12;
@@ -203,8 +272,11 @@ G.MapView = function (canvas) {
         if (e._rx === undefined || Math.abs(e.x - e._rx) + Math.abs(e.y - e._ry) > 2.5) { e._rx = e.x; e._ry = e.y; }
         else { e._rx += (e.x - e._rx) * k; e._ry += (e.y - e._ry) * k; }
       }
-      const ents = view.ents.slice().sort((a, b) => (b.under ? 1 : 0) - (a.under ? 1 : 0) || a._ry - b._ry);
+      const fog = view.fog;
+      const hidden = e => fog && e.kind === 'mon' && !fog.seen[Math.round(e.y) * m.w + Math.round(e.x)];
+      const ents = view.ents.filter(e => !hidden(e)).sort((a, b) => (b.under ? 1 : 0) - (a.under ? 1 : 0) || a._ry - b._ry);
       for (const e of ents) drawEnt(e, t, now);
+      if (fog) drawFog(view);
       if (view.labels) for (const l of view.labels) text(l.s, sx(l.x), sy(l.y) - TS * 0.7, l.on ? '#ffe08a' : 'rgba(255,255,255,0.75)', Math.max(10, TS * 0.32));
       for (const f of view.fx) drawFx(f, t);
       const coach = G.Coach && G.Coach.target(id);
@@ -222,6 +294,7 @@ G.MapView = function (canvas) {
           ctx.globalCompositeOperation = 'source-over';
         }
       }
+      if (view.mini) drawMini(view);
       const fa = G.J.flashA(id, now);
       if (fa > 0) { ctx.fillStyle = G.J.st[id].flC; ctx.globalAlpha = fa; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
     },

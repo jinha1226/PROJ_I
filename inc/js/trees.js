@@ -11,7 +11,7 @@
 
   // ───── 판타지 (골드) ─────
   G.Tree.define('fantasy', [
-    N('root', 0, 0, '', 'knight', '모험의 시작', '요리하는 기사가 던전에 들어선다.', 1, 0, 1, {}, { root: true }),
+    N('root', 0, 0, '', 'knight', '모험의 시작', '', 1, 0, 1, {}, { root: true }),
     // 동: 공격
     N('atk1', 1.2, 0, 'root', 'u_sword', '예리한 검', '영웅 공격력 +15%', 10, 10, 1.45, { atk: 0.15 }),
     N('aspd1', 2.3, -0.7, 'atk1', 'n_auto_duel', '연속 베기', '공격 속도 +8%', 10, 60, 1.6, { aspd: 0.08 }),
@@ -36,16 +36,15 @@
     N('allyAtk1', 2.3, -3.4, 'mage', 'u_legend', '전우애', '동료 공격력 +18%', 15, 1500, 1.5, { allyAtk: 0.18 }),
     N('allyAtk2', 2.3, -5.6, 'archmage allyAtk1', 'u_god', '영웅단', '동료 공격력 +35%', 25, 200000, 1.6, { allyAtk: 0.35 }),
     N('allyHp', -2.3, -3.4, 'cleric', 'rl_herb', '결속', '동료 최대 체력 +20%', 15, 1500, 1.5, { allyHp: 0.2 }),
-    // 서: 살림·요리
+    // 서: 살림·음유시인
     N('gold1', -1.2, 0, 'root', 'ui_gold', '약탈', '골드 +15%', 15, 25, 1.5, { gold: 0.15 }),
     N('speed1', -2.3, -0.8, 'gold1', 'a_escape', '가벼운 발걸음', '이동 속도 +8%', 8, 50, 1.7, { speed: 0.08 }),
     N('gold2', -3.5, 0, 'gold1', 'rs_salvage', '보물 사냥꾼', '골드 +30%', 20, 5000, 1.55, { gold: 0.3 }),
     N('essf', -4.7, -0.8, 'gold2', 'ui_ess', '심연의 기운', '이 세계의 정수 +15%', 10, 50000, 1.9, { ess: 0.15 }),
-    N('cook1', -2.3, 0.8, 'gold1', 'r_steak', '야전 요리: 스테이크', '고기 3 → 15초간 공격 +50% (자동 조리)', 1, 150, 1, { cook_steak: 1 }),
-    N('cook2', -3.5, 1.6, 'cook1', 'r_stew', '약초 스튜', '약초 2 + 고기 1 → 초당 4% 회복', 1, 800, 1, { cook_stew: 1 }),
-    N('cook3', -2.3, 2.4, 'cook1', 'r_pudding', '젤리 푸딩', '젤리 3 → 골드 ×2', 1, 1500, 1, { cook_pudding: 1 }),
-    N('cook4', -4.7, 2.4, 'cook2 cook3', 'r_dragon', '용 꼬리 구이', '용비늘 1 + 고기 3 → 모든 피해 ×3', 1, 30000, 1, { cook_dragon: 1 }),
-    N('chef', -3.5, 3.2, 'cook4', 'r_broth', '궁정 요리사', '요리 지속 시간 +20%', 10, 100000, 1.8, { cookDur: 0.2 }),
+    N('bard', -2.3, 0.8, 'gold1', 'u_bard', '음유시인', '노래: 피해 ×1.5 ↔ 골드 ×2', 1, 150, 1, { ally_bard: 1 }),
+    N('bless', -3.5, 1.6, 'bard', 'b_regen', '축복', '수도사 · 10초: 초당 체력 +4%', 1, 800, 1, { bless: 1 }),
+    N('songDur', -2.3, 2.4, 'bard', 'fx_song', '앙코르', '노래·축복 지속 +20%', 16, 1500, 1.8, { songDur: 0.2 }),
+    N('songWar', -4.7, 2.4, 'bless songDur', 'b_fury', '전쟁의 북', '노래 추가: 피해 ×3', 1, 30000, 1, { songWar: 1 }),
     // 남동: 벼락 일격과 기술
     N('smite1', 1.2, 1.2, 'root', 'n_auto_break', '벼락 일격', '맵 클릭 피해 +30%', 20, 20, 1.45, { smite: 0.3 }),
     N('smiteR', 2.4, 1.9, 'smite1', 'a_thunder', '낙뢰', '벼락 범위 +0.25칸', 6, 400, 2, { smiteR: 0.25 }),
@@ -57,7 +56,7 @@
 
   // ───── 무협 (깨달음: 회귀해도 남는다) ─────
   G.Tree.define('wuxia', [
-    N('root', 0, 0, '', 'w_wuxia', '회귀자', '죽음 너머의 기억. 깨달음은 몇 번을 회귀해도 사라지지 않는다.', 1, 0, 1, {}, { root: true }),
+    N('root', 0, 0, '', 'w_wuxia', '회귀자', '', 1, 0, 1, {}, { root: true }),
     N('jxp1', 1.2, 0, 'root', 'j_jumso', '눈치', '직업 숙련 +15%', 15, 1, 1.45, { jobXp: 0.15 }),
     N('gold1', 2.3, 0.8, 'jxp1', 'c_coin', '장사 수완', '은자 +20%', 15, 3, 1.5, { gold: 0.2 }),
     N('jxp2', 3.5, 0, 'jxp1', 'j_daejeja', '처세술', '직업 숙련 +30%', 20, 60, 1.5, { jobXp: 0.3 }),
@@ -81,7 +80,7 @@
 
   // ───── 수선 (영석) ─────
   G.Tree.define('xianxia', [
-    N('root', 0, 0, '', 'cultivator', '입문', '청운문의 외문 제자가 되었다.', 1, 0, 1, {}, { root: true }),
+    N('root', 0, 0, '', 'cultivator', '입문', '', 1, 0, 1, {}, { root: true }),
     N('qi1', 1.2, 0, 'root', 'a_gong', '토납법', '영기 수련 +20%', 15, 8, 1.45, { qi: 0.2 }),
     N('medit', 2.3, -0.8, 'qi1', 'q_vein', '좌선', '영맥에서 좌선할 때 영기 +50%', 10, 60, 1.6, { medit: 0.5 }),
     N('qi2', 3.5, 0, 'qi1', 'a_dao', '태청장생공', '영기 수련 +35%', 20, 3000, 1.5, { qi: 0.35 }),
@@ -104,7 +103,7 @@
 
   // ───── SF (크레딧) ─────
   G.Tree.define('scifi', [
-    N('root', 0, 0, '', 's_core', '방어 사령부', '궤도 기지 최후의 방어선이 가동된다.', 1, 0, 1, {}, { root: true }),
+    N('root', 0, 0, '', 's_core', '방어 사령부', '', 1, 0, 1, {}, { root: true }),
     N('laser1', 1.2, -0.6, 'root', 't_laser', '펄스 증폭', '레이저 피해 +25%', 20, 15, 1.45, { laser: 0.25 }),
     N('rail', 2.3, -1.4, 'laser1', 't_rail', '레일건', '포탑 「레일건」 건설 가능 (관통)', 1, 150, 1, { t_rail: 1 }),
     N('rail1', 3.4, -2.0, 'rail', 't_rail', '가속 코일', '레일건 피해 +30%', 20, 600, 1.5, { rail: 0.3 }),
@@ -129,7 +128,7 @@
 
   // ───── 크툴루 (동전) ─────
   G.Tree.define('cthulhu', [
-    N('root', 0, 0, '', 'c_kiosk', '첫 복권', '밤의 복권방이 문을 열었다. 「속삭이는 쪽지」 판매.', 1, 0, 1, {}, { root: true }),
+    N('root', 0, 0, '', 'c_kiosk', '첫 복권', '', 1, 0, 1, {}, { root: true }),
     N('tier1', 1.2, 0, 'root', { k: 'c_s1', v: 5 }, '심연 복권', '복권 「심연 복권」 판매 허가', 1, 400, 1, { tier: 1 }),
     N('tier2', 2.4, 0, 'tier1', { k: 'c_s2', v: 5 }, '검은 파라오의 표', '복권 「검은 파라오의 표」 판매 허가', 1, 1.5e4, 1, { tier: 1 }),
     N('tier3', 3.6, 0, 'tier2', { k: 'c_s3', v: 5 }, '르뤼에 대복권', '복권 「르뤼에 대복권」 판매 허가', 1, 6e5, 1, { tier: 1 }),
@@ -151,11 +150,11 @@
 
   // ───── 차원 넥서스 (정수) ─────
   const unlockCost = () => G.D.UNLOCK_COST[Object.values(S().unlocked).filter(Boolean).length - 1] || 1e9;
-  const W = (id, x, y, t, n) => N('open_' + id, x, y, 'root', t, `차원 개방: ${n}`, `「${G.D.WORLD[id].name}」 세계를 연다. (${G.D.WORLD[id].genre} · ${G.D.WORLD[id].style}) 여는 순서는 자유, 하나 열 때마다 다음이 비싸진다.`, 1, 0, 1, { ['open_' + id]: 1 },
+  const W = (id, x, y, t, n) => N('open_' + id, x, y, 'root', t, `차원 개방: ${n}`, `${G.D.WORLD[id].genre} · ${G.D.WORLD[id].style}`, 1, 0, 1, { ['open_' + id]: 1 },
     { costFn: unlockCost, onBuy: () => { S().unlocked[id] = true; G.log(`새로운 차원 「${G.D.WORLD[id].name}」이 열렸다`, 'nexus', 'good'); } });
   const SYN = (id, x, y, req, t, n, d, cost) => N(id, x, y, req, t, n, d, 1, cost, 1, { [id]: 1 }, { reqAll: true, syn: true });
   G.Tree.define('nexus', [
-    N('root', 0, 0, '', 'ui_nexus', '균열의 핵', '모든 세계가 흘려보내는 정수가 여기 모인다. 「끝없는 던전」은 처음부터 열려 있다.', 1, 0, 1, {}, { root: true }),
+    N('root', 0, 0, '', 'ui_nexus', '균열의 핵', '', 1, 0, 1, {}, { root: true }),
     W('wuxia', -2.2, -1.2, 'w_wuxia', '화산귀환록'),
     W('xianxia', 2.2, -1.2, 'w_xianxia', '구천등선'),
     W('scifi', 2.2, 1.2, 'w_scifi', '최후의 방어선'),
@@ -167,17 +166,17 @@
     N('sands', 0, 2.6, 'flow', 'n_sands', '시간의 모래', '오프라인 진행 한도 +2시간 (기본 2시간)', 5, 20, 3, { sands: 1 }),
     SYN('syn_sword', -3.4, -1.9, 'open_wuxia', 'w_wuxia', '검기상인', '무협 무공 총 레벨 1마다 던전 피해 +1%', 60),
     SYN('syn_marrow', -1.1, -2.5, 'open_wuxia open_xianxia', 'w_xianxia', '환골탈태', '수선 경지 1마다 무협 천수 +5년', 60),
-    SYN('syn_regress', 1.1, -2.5, 'open_wuxia open_xianxia', 'w_wuxia', '회귀자의 도심', '무협 회귀 1회마다 천겁 성공률 +3% (최대 +30%)', 90),
+    SYN('syn_regress', 1.1, -2.5, 'open_wuxia open_xianxia', 'w_wuxia', '회귀자의 도심', '회귀 1회당 천겁 성공률 +3% (최대 30%)', 90),
     SYN('syn_tactics', 3.4, 0, 'open_scifi open_xianxia', 'w_scifi', '전술 데이터', '최고 웨이브 1마다 영기 수련 +4%', 120),
     SYN('syn_magitech', 3.4, 1.9, 'open_scifi', 'w_fantasy', '마도공학', '던전 최고층 1층마다 포탑 피해 +3%', 120),
     SYN('syn_madblade', -3.4, 1.9, 'open_cthulhu', 'w_cthulhu', '광기의 검', '잃은 이성 1%마다 던전 피해 +1.5%', 200),
     SYN('syn_heaven', -1.1, 2.6, 'open_xianxia open_cthulhu', 'w_xianxia', '천기누설', '수선 경지 1마다 복권 당첨금 +15%', 200),
-    SYN('syn_void', 1.1, 2.6, 'open_cthulhu open_scifi', 'w_cthulhu', '공허 통신', '보유 고대 인장 1개마다 크레딧 +2% (최대 +200%)', 300),
+    SYN('syn_void', 1.1, 2.6, 'open_cthulhu open_scifi', 'w_cthulhu', '공허 통신', '인장 1개당 크레딧 +2% (최대 200%)', 300),
   ], { get: () => S().ess, spend: n => { S().ess -= n; }, tile: 'ui_ess', name: '정수' });
 
   // ───── 별 (차원 붕괴 후 남는다) ─────
   G.Tree.define('stars', [
-    N('root', 0, 0, '', 'ui_prestige', '붕괴의 잔해', '별의 파편 하나마다 모든 생산 +10%.', 1, 0, 1, {}, { root: true }),
+    N('root', 0, 0, '', 'ui_prestige', '붕괴의 잔해', '', 1, 0, 1, {}, { root: true }),
     N('keep_worlds', -1.2, -0.8, 'root', 'ss_keep_worlds', '세계의 기억', '붕괴 후에도 연 세계를 유지', 1, 4, 1, { keepWorlds: 1 }),
     N('keep_syn', -2.4, -1.4, 'keep_worlds', 'ss_keep_auto', '인연의 실', '붕괴 후에도 시너지 노드를 유지', 1, 8, 1, { keepSyn: 1 }),
     N('head', 1.2, -0.8, 'root', 'ss_head_start', '선행 투자', '모든 세계의 시작 재화 ×10', 5, 2, 2, { head: 1 }),

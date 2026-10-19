@@ -46,7 +46,7 @@ G.UI = {
   buildRes() {
     const item = (tile, label, title) => {
       const v = h('b');
-      this.res.append(h('div.res-item', { title }, G.T.el(tile, 'ri'), h('span.rl', null, label), v));
+      this.res.append(h('div.res-item', { title }, G.T.el(tile, 'ri'), v));
       return v;
     };
     this.rEss = item('ui_ess', '정수', '차원 정수: 모든 세계에서 모이며 넥서스에서 쓴다');
@@ -93,15 +93,15 @@ G.UI = {
       const it = this.navItems[w.id];
       const lock = !S.unlocked[w.id];
       tog(it.el, 'locked', lock);
-      setText(it.st, lock ? `잠김 · 정수 ${G.U.fmt(G.Tree.cost('nexus', S.ntree, 'open_' + w.id))}` : `${w.genre} · ${G.MODS[w.id].status(S.w[w.id])}`);
+      setText(it.st, lock ? `🔒 ${G.U.fmt(G.Tree.cost('nexus', S.ntree, 'open_' + w.id))}` : G.MODS[w.id].status(S.w[w.id]));
       const c = !lock && G.Tree.cheapest(w.id, S.w[w.id].tree);
       tog(it.el, 'dot', !!(c && G.Tree.wallet[w.id].get() >= c.cost));
     }
     const nc = G.Tree.cheapest('nexus', S.ntree);
-    setText(this.navItems.nexus.st, nc && S.ess >= nc.cost ? '배울 수 있는 노드가 있다' : '정수 스킬트리');
+    setText(this.navItems.nexus.st, nc && S.ess >= nc.cost ? '✦' : '');
     tog(this.navItems.nexus.el, 'dot', !!(nc && S.ess >= nc.cost));
-    setText(this.navItems.altar.st, `소환 ${Math.floor(S.signs / G.D.SUMMON_COST)}회 가능`);
-    setText(this.navItems.prestige.st, G.Prestige.can() ? `별 +${G.Prestige.gain()}` : `정수 ${G.U.fmt(S.runEss)}/${G.U.fmt(G.D.PRESTIGE_MIN)}`);
+    setText(this.navItems.altar.st, `소환 ×${Math.floor(S.signs / G.D.SUMMON_COST)}`);
+    setText(this.navItems.prestige.st, G.Prestige.can() ? `★ +${G.Prestige.gain()}` : `${G.U.fmt(S.runEss)} / ${G.U.fmt(G.D.PRESTIGE_MIN)}`);
     tog(this.navItems.prestige.el, 'ready', G.Prestige.can());
     if (this.view && this.view.update) this.view.update();
   },
@@ -138,7 +138,6 @@ G.UI = {
         h('input.vol', { type: 'range', min: 0, max: 1, step: 0.05, value: G.OPT.vol, title: '음량',
           on: { input: e => G.SFX.setVol(+e.target.value), change: () => { G.saveOpt(); G.SFX.play('coin'); } } }),
         this.toggle('화면 흔들림', () => G.OPT.shake, v => { G.OPT.shake = v; G.saveOpt(); }).el),
-      h('p.dim', null, '진행은 15초마다 이 브라우저에 자동 저장된다.'),
       ta,
       h('div.row-btns', null,
         h('button.btn', { on: { click: () => { G.save(); this.toast('저장했다'); } } }, '지금 저장'),
@@ -167,15 +166,13 @@ G.V = {
         G.T.el('w_' + id, 'lk-icon'),
         h('div.tag', null, `${w.genre} · ${w.style}`),
         h('h1', null, w.name),
-        h('p', null, w.blurb),
-        h('p.dim', null, `참고한 게임: ${w.ref}`),
-        btn,
-        h('p.dim', null, '차원 넥서스 스킬트리의 「차원 개방」 노드다. 순서는 자유, 하나 열 때마다 다음 세계가 비싸진다.')));
+        btn));
     return {
       el,
       update() {
         const c = G.Tree.cost('nexus', G.S.ntree, 'open_' + id);
-        setText(btn, `정수 ${G.U.fmt(c)}로 차원 열기`);
+        btn.innerHTML = '';
+        btn.append(G.T.el('ui_ess', 'xs'), ` ${G.U.fmt(c)} · 열기`);
         btn.disabled = G.S.ess < c;
       },
     };
@@ -185,6 +182,6 @@ G.V = {
     const w = G.D.WORLD[id];
     return h('div.whead', null,
       h('div.wtitle', null, G.T.el('w_' + id, 'wh-icon'), h('div', null, h('div.tag', null, `${w.genre} · ${w.style}`), h('h1', null, w.name))),
-      h('p.blurb', null, w.blurb), extra || null);
+      extra || null);
   },
 };

@@ -2,13 +2,14 @@
 // 판타지 · 끝없는 던전 (2D 던전 맵, 자동 전투)
 // 층마다 방과 복도로 된 던전이 새로 생긴다. 기사와 동료들이 몬스터를 찾아가 싸우고, 모두 잡으면 계단으로 내려간다.
 // 5층마다 계단 앞에 보스. 기사가 쓰러지면 같은 층을 다시 시작하고, 세 번 쓰러지면 한 층 물러난다.
-// 맵 클릭 = 벼락 일격(범위 피해). 스킬트리에서 동료·기술·요리를 연다.
+// 맵 클릭 = 벼락 일격(범위 피해). 스킬트리에서 동료·기술을 연다. 버프는 음유시인의 노래와 성직자의 축복.
+// 기사 주변 칸은 「본 칸」으로 남는다(안개·미니맵).
 G.RT = G.RT || {};
 G.Fantasy = (() => {
   const D = G.D.F, U = G.U, GR = G.Grid;
   const tm = k => G.Tree.mul('fantasy', G.S.w.fantasy.tree, k);
   const ta = k => G.Tree.add('fantasy', G.S.w.fantasy.tree, k);
-  const MW = 40, MH = 26, REVIVE = 4, SMITE_CD = 0.6;
+  const MW = 40, MH = 26, REVIVE = 4, SMITE_CD = 0.6, SIGHT = 5, SONG_CD = 12, BLESS_CD = 15;
   const SKILLS = {
     heal: { n: '치유의 빛', t: 'fx_holy', cd: 30, need: 'sk_heal' },
     rage: { n: '전투 함성', t: 'r_dragon', cd: 40, need: 'sk_rage' },
@@ -18,10 +19,7 @@ G.Fantasy = (() => {
   const F = {
     SKILLS,
     init(head = 0) {
-      return {
-        floor: 1, maxFloor: 1, gold: 5 * Math.pow(10, head), tree: G.Tree.init('fantasy'),
-        ing: { meat: 0, herb: 0, jelly: 0, bone: 0, scale: 0 }, buffs: {}, deaths: 0, auto: true, kills: 0, cds: {},
-      };
+      return { floor: 1, maxFloor: 1, gold: 5 * Math.pow(10, head), tree: G.Tree.init('fantasy'), buffs: {}, deaths: 0, auto: true, kills: 0, cds: {} };
     },
     rt(f) { return G.RT.fantasy || (G.RT.fantasy = F.boot(f)); },
     isBoss: fl => fl % 5 === 0,
@@ -36,9 +34,7 @@ G.Fantasy = (() => {
       let m = G.globalMult() * (1 + G.relicVal('f_atk'));
       if (G.synergy('syn_sword')) m *= 1 + 0.01 * G.Wuxia.mastery(S.w.wuxia);
       if (G.synergy('syn_madblade')) m *= 1 + 1.5 * (1 - S.w.cthulhu.san / G.Cthulhu.maxSan(S.w.cthulhu));
-      if (f.buffs.atk) m *= 1.5;
-      if (f.buffs.fury) m *= 3;
-      if (f.buffs.rage) m *= 2;
+      for (const k in f.buffs) if (D.buffs[k] && D.buffs[k].dmg) m *= D.buffs[k].dmg;
       return m;
     },
     heroAtk: f => 5 * tm('atk') * F.dmgMult(f),
@@ -52,10 +48,13 @@ G.Fantasy = (() => {
     smiteDmg: f => F.heroAtk(f) * 2 * tm('smite'),
     smiteR: () => 1 + ta('smiteR'),
     gain(f, n) { f.gold += n; G.tally('fantasy', n); },
+    // 음유시인이 번갈아 부르는 노래
+    songs: () => ['atk', 'gold'].concat(ta('songWar') ? ['fury'] : []),
+    songDur: () => 8 * (1 + ta('songDur')),
 
     // ── 층 만들기 ──
     boot(f) {
-      const rt = { fx: [], ents: [], mons: [], party: [], allies: [], phase: 'explore', reviveT: 0, smiteCd: 0, focus: null };
+      const rt = { fx: [], ents: [], mons: [], party: [], allies: [], phase: 'explore', reviveT: 0, smiteCd: 0, focus: null, target: null, song: 0 };
       F.newFloor(f, rt);
       return rt;
     },
@@ -63,6 +62,8 @@ G.Fantasy = (() => {
       const fl = f.floor, boss = F.isBoss(fl), m = GR.dungeon(MW, MH);
       rt.map = m;
       rt.mons = [];
+      rt.seen = new Uint8Array(m.w * m.h);
+      rt.seenVer = 0;
       const st = m.start;
       const hero = rt.hero || { kind: 'hero', t: 'knight', s: 1.15, bar: true };
       Object.assign(hero, { x: st.cx, y: st.cy, max: F.heroHP(f), atkT: 0, dead: false });
@@ -76,7 +77,7 @@ G.Fantasy = (() => {
         if (!ta('ally_' + id)) return;
         const def = D.allies[id];
         const a = keep[id] || { kind: 'ally', id, def, t: def.t, s: 0.95, bar: true };
-        Object.assign(a, { x: st.cx + (i % 3) - 1, y: st.cy + (i > 2 ? 1 : 0), atkT: Math.random(), dead: false, reviveT: 0 });
+        Object.assign(a, { x: st.cx + (i % 3) - 1, y: st.cy + (i > 2 ? 1 : 0), atkT: Math.random(), dead: false, reviveT: 0, skT: (a.skT || 3) });
         a.max = a.hp = F.heroHP(f) * def.hp * tm('allyHp');
         rt.allies.push(a);
         rt.party.push(a);
@@ -91,19 +92,32 @@ G.Fantasy = (() => {
       }
       if (boss) {
         const d = D.bosses[(fl / 5 - 1) % D.bosses.length];
-        F.spawnMon(rt, fl, Object.assign({ drop: 'scale' }, d), m.end.cx - 1, m.end.cy, true);
+        F.spawnMon(rt, fl, d, m.end.cx - 1, m.end.cy, true);
       }
       rt.phase = 'explore';
       rt.focus = null;
+      rt.target = null;
       rt.ents = [...rt.party, ...rt.mons];
+      F.look(rt);
       G.emit('f_floor', fl);
     },
     spawnMon(rt, fl, d, x, y, boss) {
       const hp = F.monHP(fl, boss);
       rt.mons.push({
         kind: 'mon', n: d.n, t: d.t, x, y, s: boss ? 1.7 : 1, hp, max: hp, atk: F.monAtk(fl, boss), gold: F.monGold(fl, boss),
-        drop: d.drop, boss, aggro: false, atkT: Math.random(), bar: true, label: boss ? d.n : null,
+        boss, aggro: false, atkT: Math.random(), bar: true, label: boss ? d.n : null,
       });
+    },
+    // 기사 주변 SIGHT칸을 본 칸으로
+    look(rt) {
+      const m = rt.map, hx = Math.round(rt.hero.x), hy = Math.round(rt.hero.y);
+      let added = false;
+      for (let y = hy - SIGHT; y <= hy + SIGHT; y++) for (let x = hx - SIGHT; x <= hx + SIGHT; x++) {
+        if (x < 0 || y < 0 || x >= m.w || y >= m.h || (x - hx) ** 2 + (y - hy) ** 2 > SIGHT * SIGHT) continue;
+        const i = y * m.w + x;
+        if (!rt.seen[i]) { rt.seen[i] = 1; added = true; }
+      }
+      if (added) rt.seenVer++;
     },
     // 동료 목록이 트리 구매로 바뀌면 다음 층부터 반영된다. 지금 층에도 바로 합류시킨다.
     syncAllies(f) {
@@ -111,24 +125,25 @@ G.Fantasy = (() => {
       Object.keys(D.allies).forEach(id => {
         if (have.has(id) || !ta('ally_' + id)) return;
         const def = D.allies[id], h = rt.hero;
-        const a = { kind: 'ally', id, def, t: def.t, s: 0.95, bar: true, x: h.x, y: h.y, atkT: 0, dead: false, reviveT: 0 };
+        const a = { kind: 'ally', id, def, t: def.t, s: 0.95, bar: true, x: h.x, y: h.y, atkT: 0, dead: false, reviveT: 0, skT: 2 };
         a.max = a.hp = F.heroHP(f) * def.hp * tm('allyHp');
         rt.allies.push(a);
         rt.party.push(a);
         rt.ents = [...rt.party, ...rt.mons];
         G.fx(rt, { k: 'tile', key: 'fx_holy', x: h.x, y: h.y, t: 0.8 });
+        G.J.sfx('fantasy', 'chime');
       });
     },
 
     // ── 전투 ──
-    hurt(f, rt, m, dmg, src) {
+    hurt(f, rt, m, dmg, src, from) {
       if (m.hp <= 0) return;
       m.hp -= dmg;
       m.aggro = true;
       // 숫자 크기로 위계: 치명타·벼락은 크게 튀고, 보통 타격은 체력 대비 피해만큼 커진다
       const big = src !== 'hit';
       G.fx(rt, { k: 'text', x: m.x, y: m.y - 0.6, s: U.fmt(dmg) + (src === 'crit' ? '!' : ''), col: src === 'crit' ? '#ffd24a' : src === 'smite' ? '#bfe8ff' : '#fff', t: 0.8, sz: (big ? 1.3 : 0.85) + 0.5 * Math.min(1, dmg / m.max), pop: big });
-      G.J.hit('fantasy', m, src === 'smite' ? 0.5 : src === 'crit' ? 0.25 : 0);
+      G.J.hit('fantasy', m, src === 'smite' ? 0.5 : src === 'crit' ? 0.25 : 0, from);
       if (src === 'crit') G.J.sfx('fantasy', 'crit');
       if (m.hp <= 0) F.kill(f, rt, m);
     },
@@ -136,24 +151,37 @@ G.Fantasy = (() => {
       const g = m.gold * F.goldMult(f);
       F.gain(f, g);
       f.kills++;
+      G.fx(rt, { k: 'die', spr: m.t, x: m.x, y: m.y, s: m.s, flip: m.flip, t: 0.45 });
       G.fx(rt, { k: 'text', x: m.x, y: m.y - 1, s: '+' + U.fmt(g), col: '#ffd24a', t: 1.1 });
       G.J.sfx('fantasy', 'coin');
       if (m.boss) {
         G.J.finish('fantasy', m.x, m.y);
         G.J.sfx('fantasy', 'finish');
-        f.ing.scale++;
-        for (let i = 0; i < 2; i++) f.ing[U.pick(['meat', 'herb', 'jelly', 'bone'])]++;
         if (f.floor % 10 === 0) G.addSigns(1, 'fantasy');
         G.log(`${m.n} 토벌! (${f.floor}층)`, 'fantasy', 'good');
-      } else if (U.chance(0.4)) f.ing[m.drop]++;
+      }
       rt.mons = rt.mons.filter(x => x !== m);
       if (rt.focus === m) rt.focus = null;
+      if (rt.target === m) rt.target = null;
       rt.ents = [...rt.party, ...rt.mons];
     },
     nearestMon(rt, e, maxD = 1e9) {
       let best = null, bd = maxD;
       for (const m of rt.mons) { const d = GR.dist(e, m); if (d < bd) { bd = d; best = m; } }
       return best;
+    },
+    // 길로 잰 가장 가까운 몬스터. 한 번 고르면 쓰러뜨릴 때까지 바꾸지 않는다 (벽 너머 두 적 사이에서 오가지 않게).
+    pickTarget(rt) {
+      const t = rt.target;
+      if (t && t.hp > 0 && rt.mons.includes(t)) return t;
+      const h = rt.hero, d = GR.field(rt.map, Math.round(h.x), Math.round(h.y));
+      let best = null, bd = 1e9;
+      for (const m of rt.mons) {
+        const v = d[Math.round(m.x) + Math.round(m.y) * rt.map.w];
+        const k = v >= 0 ? v : 1e6 + GR.dist(h, m);
+        if (k < bd) { bd = k; best = m; }
+      }
+      return (rt.target = best);
     },
     descend(f, rt) {
       G.addEss(F.floorEss(f.floor), 'fantasy');
@@ -182,7 +210,7 @@ G.Fantasy = (() => {
       G.J.sfx('fantasy', 'smite');
       G.J.shake('fantasy', 5, 0, 1, 0.2);
       let last = null;
-      for (const m of [...rt.mons]) if (Math.hypot(m.x - x, m.y - y) <= r) { last = m; F.hurt(f, rt, m, dmg, 'smite'); }
+      for (const m of [...rt.mons]) if (Math.hypot(m.x - x, m.y - y) <= r) { last = m; F.hurt(f, rt, m, dmg, 'smite', { x, y: y - 1 }); }
       if (last && last.hp > 0) rt.focus = last;
       return true;
     },
@@ -205,13 +233,32 @@ G.Fantasy = (() => {
         G.fx(rt, { k: 'tile', key: 'fx_fire', x, y, t: 0.9, s: 3 });
         G.J.sfx('fantasy', 'boom');
         G.J.shake('fantasy', 10, 0, 1, 0.35);
-        for (const m of [...rt.mons]) if (Math.hypot(m.x - x, m.y - y) <= 2.5) F.hurt(f, rt, m, F.smiteDmg(f) * 20, 'smite');
+        for (const m of [...rt.mons]) if (Math.hypot(m.x - x, m.y - y) <= 2.5) F.hurt(f, rt, m, F.smiteDmg(f) * 20, 'smite', { x, y: y - 1 });
       }
       return true;
     },
+    // 음유시인의 노래 / 성직자의 축복: 버프를 건다
+    buff(f, rt, who, k, dur) {
+      f.buffs[k] = dur;
+      const B = D.buffs[k];
+      G.fx(rt, { k: 'ring', x: who.x, y: who.y, r: 3, t: 0.7, col: B.col });
+      G.fx(rt, { k: 'text', x: who.x, y: who.y - 1.1, s: B.n, col: B.col, t: 1.4, sz: 1.1, pop: true });
+      G.J.sfx('fantasy', k === 'regen' ? 'bell' : 'chime');
+    },
 
-    canCook: (f, r) => Object.entries(r.need).every(([k, n]) => f.ing[k] >= n),
-    cookUnlocked: r => ta('cook_' + r.id) > 0,
+    // 같은 무리끼리 겹치지 않게 살짝 밀어낸다 (벽 칸으로는 밀지 않는다)
+    spread(m, list, r) {
+      for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+        const a = list[i], b = list[j];
+        if (a.dead || b.dead) continue;
+        let dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+        if (d >= r) continue;
+        if (d < 1e-3) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d = Math.hypot(dx, dy); }
+        const p = (r - d) * 0.25, ux = dx / d * p, uy = dy / d * p;
+        if (a.kind !== 'hero' && GR.pass(m, Math.round(a.x - ux), Math.round(a.y - uy))) { a.x -= ux; a.y -= uy; }
+        if (b.kind !== 'hero' && GR.pass(m, Math.round(b.x + ux), Math.round(b.y + uy))) { b.x += ux; b.y += uy; }
+      }
+    },
 
     tick(f, dt) {
       const rt = F.rt(f);
@@ -219,12 +266,6 @@ G.Fantasy = (() => {
       for (const k in f.buffs) if ((f.buffs[k] -= dt) <= 0) delete f.buffs[k];
       for (const k in f.cds) if ((f.cds[k] -= dt) <= 0) delete f.cds[k];
       if (rt.smiteCd > 0) rt.smiteCd -= dt;
-      for (const r of D.recipes) {
-        if (!F.cookUnlocked(r) || f.buffs[r.buff] || !F.canCook(f, r)) continue;
-        for (const k in r.need) f.ing[k] -= r.need[k];
-        f.buffs[r.buff] = r.dur * (1 + ta('cookDur'));
-        G.emit('f_cook', r);
-      }
       if (ta('autocast') && rt.phase !== 'dead') {
         if (rt.mons.length && F.canCast(f, 'rage')) F.cast(f, 'rage');
         if (rt.mons.length && F.canCast(f, 'meteor')) F.cast(f, 'meteor');
@@ -264,8 +305,9 @@ G.Fantasy = (() => {
           mo.atkT = 1;
           const dmg = mo.atk * (tg === hero ? 1 - F.armor() : 1);
           tg.hp -= dmg;
+          G.J.lunge('fantasy', mo, tg);
+          G.J.hit('fantasy', tg, 0, mo);
           G.fx(rt, { k: 'text', x: tg.x, y: tg.y - 0.6, s: '-' + U.fmt(dmg), col: '#ff6b6b', t: 0.7 });
-          G.J.hit('fantasy', tg);
           if (tg === hero) G.J.sfx('fantasy', 'hurt');
           if (tg.hp <= 0) {
             tg.dead = true;
@@ -282,9 +324,9 @@ G.Fantasy = (() => {
           }
         }
       }
-      // 기사: 지정한 적 또는 가장 가까운 적. 적이 없으면 계단으로.
+      // 기사: 지정한 적 또는 길로 가장 가까운 적. 적이 없으면 계단으로.
       hero.moving = false;
-      const target = (rt.focus && rt.focus.hp > 0) ? rt.focus : F.nearestMon(rt, hero);
+      const target = (rt.focus && rt.focus.hp > 0) ? rt.focus : F.pickTarget(rt);
       if (target) {
         if (GR.dist(hero, target) > 1.2 + target.s * 0.2) GR.moveTo(m, hero, target.x, target.y, speed, dt, 1);
         else {
@@ -293,14 +335,16 @@ G.Fantasy = (() => {
             hero.atkT = 1;
             const c = U.chance(F.crit());
             G.fx(rt, { k: 'slash', x: target.x, y: target.y, t: 0.18 });
+            G.J.lunge('fantasy', hero, target);
             if (!c) G.J.sfx('fantasy', 'tap');
-            F.hurt(f, rt, target, F.heroAtk(f) * (c ? F.critD() : 1), c ? 'crit' : 'hit');
+            F.hurt(f, rt, target, F.heroAtk(f) * (c ? F.critD() : 1), c ? 'crit' : 'hit', hero);
           }
         }
       } else if (GR.moveTo(m, hero, m.end.cx, m.end.cy, speed, dt, 0.2)) {
         F.descend(f, rt);
         return;
       }
+      F.look(rt);
       // 동료
       for (const a of rt.allies) {
         a.moving = false;
@@ -309,7 +353,15 @@ G.Fantasy = (() => {
           continue;
         }
         const def = a.def;
+        // 음유시인: 노래를 번갈아 부른다
+        if (def.song && rt.mons.length && (a.skT -= dt) <= 0) {
+          a.skT = SONG_CD;
+          const ss = F.songs(), k = ss[rt.song++ % ss.length];
+          F.buff(f, rt, a, k, F.songDur() * (k === 'fury' ? 0.6 : 1));
+        }
         if (def.heal) {
+          // 성직자: 축복(트리)으로 파티 재생
+          if (ta('bless') && (a.skT -= dt) <= 0) { a.skT = BLESS_CD; F.buff(f, rt, a, 'regen', 10 * (1 + ta('songDur'))); }
           if ((a.atkT -= dt) <= 0) {
             let low = null;
             for (const p of rt.party) if (!p.dead && p.hp < p.max * 0.9 && (!low || p.hp / p.max < low.hp / low.max)) low = p;
@@ -330,21 +382,25 @@ G.Fantasy = (() => {
             a.atkT = def.cd;
             const dmg = F.heroAtk(f) * def.atk * 0.5 * tm('allyAtk');
             if (def.proj) G.fx(rt, { k: 'proj', key: def.proj, x: a.x, y: a.y, x2: tg.x, y2: tg.y, t: 0.25 });
-            else G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.18 });
-            if (def.splash) { for (const mo of [...rt.mons]) if (GR.dist(mo, tg) <= def.splash) F.hurt(f, rt, mo, dmg, 'hit'); }
+            else { G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.18 }); G.J.lunge('fantasy', a, tg); }
+            if (def.splash) { for (const mo of [...rt.mons]) if (GR.dist(mo, tg) <= def.splash) F.hurt(f, rt, mo, dmg, 'hit', a); }
             else if (def.chain) {
               const hit = rt.mons.slice().sort((p, q) => GR.dist(p, tg) - GR.dist(q, tg)).slice(0, def.chain);
-              for (const mo of hit) F.hurt(f, rt, mo, dmg, 'hit');
-            } else F.hurt(f, rt, tg, dmg, 'hit');
+              for (const mo of hit) F.hurt(f, rt, mo, dmg, 'hit', a);
+            } else F.hurt(f, rt, tg, dmg, 'hit', a);
           }
         } else if (GR.dist(a, hero) > 1.8) GR.moveTo(m, a, hero.x, hero.y, speed * 1.1, dt, 1.4);
       }
+      F.spread(m, rt.party, 0.75);
+      F.spread(m, rt.mons, 0.8);
     },
     view(f) {
       const rt = F.rt(f), b = F.band(f.floor), m = rt.map;
       if (m._band !== b) { m._band = b; m.ver++; }
       return {
         map: m, ents: rt.ents, fx: rt.fx, cam: rt.hero, viewH: 13, dimAll: rt.phase === 'dead',
+        fog: { seen: rt.seen, ver: rt.seenVer, light: rt.hero },
+        mini: { seen: rt.seen, ver: rt.seenVer, end: m.end, party: rt.party, mons: rt.mons },
         terrain(x, y) {
           const c = m.c[y * m.w + x];
           if (c === '#') {

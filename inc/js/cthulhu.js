@@ -235,7 +235,7 @@ G.Cthulhu = (() => {
       if (ta('ward')) for (const ch of ['K', 'A']) { const [x, y] = rt.map.poi[ch][0]; ents.unshift({ t: 'c_ward', x, y: y + 0.05, s: 1.6, alpha: 0.35, under: true }); }
       const lowSan = 1 - c.san / C.maxSan();
       return {
-        map: rt.map, ents, fx: rt.fx, fit: true, terrain: (x, y) => D.tiles[GR.at(rt.map, x, y)] || null,
+        map: rt.map, ents, fx: rt.fx, fit: true, cam: rt.inv, terrain: (x, y) => D.tiles[GR.at(rt.map, x, y)] || null,
         tint: c.madT > 0 ? 'rgba(90,20,120,0.35)' : `rgba(20,40,30,${0.15 + lowSan * 0.25})`, lamps: true,
       };
     },

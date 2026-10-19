@@ -4,7 +4,7 @@ G.D = {};
 
 G.D.WORLDS = [
   { id: 'fantasy', name: '끝없는 던전', genre: '판타지', style: '던전 전투형', icon: '🗡️', ref: 'Chef Knight · 무한던전피버 · Clicker Heroes',
-    blurb: '요리하는 기사와 동료들이 끝없는 던전을 내려간다. 몬스터 재료로 요리해 버프를 얻어라.' },
+    blurb: '기사와 동료들이 끝없는 던전을 내려간다.' },
   { id: 'wuxia', name: '화산귀환록', genre: '무협', style: '회귀 루프형', icon: '🥋', ref: 'Increlution · Progress Knight',
     blurb: '천수를 다하면 열여섯 살로 회귀한다. 전생에 쌓은 무공만큼 다음 생은 빨라진다. 점소이에서 검선까지.' },
   { id: 'xianxia', name: '구천등선', genre: '수선', style: '경지 수련형', icon: '☁️', ref: 'Cultivation Idle · Xiuzhen Idle',
@@ -21,37 +21,36 @@ G.D.UNLOCK_COST = [15, 120, 800, 4000];
 // ───────── 판타지: 끝없는 던전 ─────────
 G.D.F = {
   bands: [
-    { to: 5, mons: [{ n: '시궁쥐', e: '🐀', t: 'm_rat', drop: 'meat' }, { n: '산성 점액', e: '🟢', t: 'm_slime', drop: 'jelly' }] },
-    { to: 15, mons: [{ n: '고블린', e: '👺', t: 'm_goblin', drop: 'meat' }, { n: '걷는 버섯', e: '🍄', t: 'm_shroom', drop: 'herb' }, { n: '흡혈박쥐', e: '🦇', t: 'm_bat', drop: 'meat' }] },
-    { to: 30, mons: [{ n: '해골 전사', e: '💀', t: 'm_skeleton', drop: 'bone' }, { n: '와르그', e: '🐺', t: 'm_warg', drop: 'meat' }, { n: '맨드레이크', e: '🌱', t: 'm_mandrake', drop: 'herb' }] },
-    { to: 50, mons: [{ n: '동굴 트롤', e: '🧌', t: 'm_troll', drop: 'meat' }, { n: '원혼', e: '👻', t: 'm_phantom', drop: 'jelly' }, { n: '구울', e: '🧟', t: 'm_ghoul', drop: 'bone' }] },
-    { to: 80, mons: [{ n: '오우거', e: '👹', t: 'm_ogre', drop: 'meat' }, { n: '늑대거미', e: '🕷️', t: 'm_spider', drop: 'jelly' }, { n: '리치', e: '🧙', t: 'm_lich', drop: 'bone' }] },
-    { to: 1e9, mons: [{ n: '발로그', e: '😈', t: 'm_demon', drop: 'meat' }, { n: '강철 골렘', e: '🗿', t: 'm_golem', drop: 'bone' }, { n: '살아있는 주문', e: '🌀', t: 'm_spell', drop: 'herb' }] },
+    { to: 5, mons: [{ n: '시궁쥐', e: '🐀', t: 'm_rat' }, { n: '산성 점액', e: '🟢', t: 'm_slime' }] },
+    { to: 15, mons: [{ n: '고블린', e: '👺', t: 'm_goblin' }, { n: '걷는 버섯', e: '🍄', t: 'm_shroom' }, { n: '흡혈박쥐', e: '🦇', t: 'm_bat' }] },
+    { to: 30, mons: [{ n: '해골 전사', e: '💀', t: 'm_skeleton' }, { n: '와르그', e: '🐺', t: 'm_warg' }, { n: '맨드레이크', e: '🌱', t: 'm_mandrake' }] },
+    { to: 50, mons: [{ n: '동굴 트롤', e: '🧌', t: 'm_troll' }, { n: '원혼', e: '👻', t: 'm_phantom' }, { n: '구울', e: '🧟', t: 'm_ghoul' }] },
+    { to: 80, mons: [{ n: '오우거', e: '👹', t: 'm_ogre' }, { n: '늑대거미', e: '🕷️', t: 'm_spider' }, { n: '리치', e: '🧙', t: 'm_lich' }] },
+    { to: 1e9, mons: [{ n: '발로그', e: '😈', t: 'm_demon' }, { n: '강철 골렘', e: '🗿', t: 'm_golem' }, { n: '살아있는 주문', e: '🌀', t: 'm_spell' }] },
   ],
   bosses: [
     { n: '왕실 젤리', e: '👑', t: 'b_slimeking' }, { n: '고블린 족장 이지브', e: '👺', t: 'b_goblinchief' }, { n: '거대 박쥐', e: '🦇', t: 'b_bat' },
     { n: '고대 용사의 해골', e: '☠️', t: 'b_skeleton' }, { n: '지옥견', e: '🐺', t: 'b_wolf' }, { n: '강철 트롤', e: '🧌', t: 'b_troll' },
     { n: '거미 여왕', e: '🕷️', t: 'b_spider' }, { n: '쌍두 오우거', e: '👹', t: 'b_ogre' }, { n: '고대 리치', e: '🧟', t: 'b_lich' }, { n: '황금 고룡', e: '🐉', t: 'b_dragon' },
   ],
-  ingredients: {
-    meat: { n: '고기', e: '🍖' }, herb: { n: '약초', e: '🌿' }, jelly: { n: '젤리', e: '🫧' },
-    bone: { n: '뼈', e: '🦴' }, scale: { n: '용비늘', e: '🐲' },
-  },
   // 동료: 영웅 기본 공격력 대비 배율, 사거리(칸), 공격 간격(초)
   allies: {
     archer: { n: '엘프 궁수', t: 'u_archer', atk: 0.6, hp: 0.5, range: 5, cd: 1.0, proj: 'fx_arrow' },
     cleric: { n: '수도사', t: 'u_cleric', atk: 0.2, hp: 0.6, range: 4, cd: 2.0, heal: 0.08, proj: 'fx_holy' },
+    bard: { n: '음유시인', t: 'u_bard', atk: 0.3, hp: 0.6, range: 4, cd: 1.5, proj: 'fx_ice', song: true },
     mage: { n: '화염 마법사', t: 'u_mage', atk: 1.4, hp: 0.5, range: 5, cd: 1.8, splash: 1.4, proj: 'fx_flame' },
     paladin: { n: '성기사', t: 'u_paladin', atk: 0.8, hp: 1.6, range: 1.3, cd: 1.0 },
     dragoon: { n: '용기병', t: 'u_dragoon', atk: 3, hp: 1.2, range: 1.5, cd: 1.4 },
     archmage: { n: '대현자', t: 'u_archmage', atk: 2.5, hp: 0.7, range: 6, cd: 1.6, chain: 4, proj: 'fx_zap' },
   },
-  recipes: [
-    { id: 'steak', n: '기사의 스테이크', e: '🥩', need: { meat: 3 }, buff: 'atk', dur: 15, d: '모든 피해 ×1.5' },
-    { id: 'stew', n: '약초 스튜', e: '🍲', need: { herb: 2, meat: 1 }, buff: 'regen', dur: 15, d: '초당 체력 4% 회복' },
-    { id: 'pudding', n: '젤리 푸딩', e: '🍮', need: { jelly: 3 }, buff: 'gold', dur: 20, d: '골드 ×2' },
-        { id: 'dragon', n: '용 꼬리 구이', e: '🍗', need: { scale: 1, meat: 3 }, buff: 'fury', dur: 12, d: '모든 피해 ×3' },
-  ],
+  // 버프: 음유시인의 노래, 성직자의 축복, 기술 「전투 함성」. dmg는 모든 피해 배율.
+  buffs: {
+    atk: { n: '용맹의 노래', t: 'b_atk', dmg: 1.5, col: '#ffb36b', d: '피해 ×1.5' },
+    gold: { n: '행운의 노래', t: 'b_gold', col: '#ffd24a', d: '골드 ×2' },
+    fury: { n: '전쟁의 북', t: 'b_fury', dmg: 3, col: '#ff5a3a', d: '피해 ×3' },
+    regen: { n: '축복', t: 'b_regen', col: '#9fe79f', d: '초당 체력 +4%' },
+    rage: { n: '전투 함성', t: 'r_dragon', dmg: 2, col: '#ff7a5a', d: '피해 ×2' },
+  },
 };
 
 // ───────── 무협: 화산귀환록 (회귀 루프, 마을 지도) ─────────

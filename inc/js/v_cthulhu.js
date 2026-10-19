@@ -9,7 +9,7 @@ G.UI.views.cthulhu = function () {
     : G.T.el('c_' + s, cls, D.specials[s].e));
 
   const hudSan = h('b'), hudInfo = h('small');
-  const hud = h('div', null, hudSan, hudInfo, h('small.dim', null, '촉수를 누르면 퇴마 · 복권방을 누르면 직접 긁기'));
+  const hud = h('div', null, hudSan, hudInfo);
 
   const san = G.UI.meter('이성'), multEl = h('b');
   const tiersEl = h('div.tiers');
@@ -28,9 +28,9 @@ G.UI.views.cthulhu = function () {
 
   const side = h('div', null,
     h('div.card', null, h('div.card-h', null, G.T.el('c_coin', 'cur'), coinEl, h('small', null, ' 동전'), h('span.sp'), cultEl), san.el,
-      h('div.kv', null, h('span', null, '당첨금 배율 (이성이 낮을수록)'), multEl)),
+      h('div.kv', { title: '이성이 낮을수록 커진다' }, h('span', null, G.T.el('c_coin', 'xs'), ' 당첨금'), multEl)),
     h('div.card.ticket-card', null, tiersEl, ticket, h('div.row-btns', null, buyBtn, allBtn, begBtn)),
-    h('details.card', null, h('summary', null, '상금표 · 같은 그림 3개'), legend));
+    h('details.card', null, h('summary', null, '상금표'), legend));
 
   // ── 은박 ──
   const fctx = foil.getContext('2d');

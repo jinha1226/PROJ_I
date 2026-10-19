@@ -8,6 +8,9 @@
     const sec = (Date.now() - G.S.time) / 1000;
     if (sec > 30) away = G.catchUp(sec);
   }
+  // 테스트 기간: 다섯 세계를 처음부터 모두 연다 (정식 진행으로 돌리려면 false)
+  const TEST_OPEN_ALL = true;
+  if (TEST_OPEN_ALL) for (const id in G.S.unlocked) { G.S.unlocked[id] = true; if (id !== 'fantasy') G.S.ntree['open_' + id] = 1; }
   G.UI.init();
 
   if (away) {
