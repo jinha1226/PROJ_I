@@ -246,7 +246,7 @@ G.Xianxia = (() => {
       const nd = Math.min(6, ta('disciple'));
       while (rt.disciples.length < nd) {
         const [qx, qy] = m.poi.Q[0];
-        rt.disciples.push({ kind: 'ally', t: ['wb_human', 'wl_white', 'q_disciple', 'wh_topknot'], x: qx, y: qy, s: 0.9, carry: 0, goal: null });
+        rt.disciples.push({ kind: 'ally', t: ['wb_human', 'wl_white', 'q_disciple', 'wh_topknot'], art: 'x_disciple', x: qx, y: qy, s: 0.9, carry: 0, goal: null });
       }
       for (const d of rt.disciples) {
         d.moving = false;

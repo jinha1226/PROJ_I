@@ -4,7 +4,7 @@
 // 로직은 10Hz라 엔티티 위치를 그릴 때 부드럽게 따라가게(_rx, _ry) 한다. 손맛 효과(G.J)는 세계 id로 찾는다.
 G.MapView = function (canvas) {
   const ctx = canvas.getContext('2d');
-  const TSRC = 32, MIN_TS = 28;
+  const MIN_TS = 28;
   let W = 0, H = 0, TS = 32, ox = 0, oy = 0, lastT = 0;
   const cam = { x: 0, y: 0, ok: false };
 
@@ -23,8 +23,11 @@ G.MapView = function (canvas) {
     const m = view.map;
     if (m._bg && m._bgVer === m.ver && m._bgReady) return m._bg;
     const cv = m._bg || document.createElement('canvas');
+    // 생성 그림(그린 그림)이 있으면 지형을 칸당 64px로 그려 둔다. 아주 긴 맵(낚시 바다)은 메모리 때문에 32px.
+    const TSRC = Object.keys(G.ARTSET).length && m.w * m.h * 4096 <= 12e6 ? 64 : 32;
     cv.width = m.w * TSRC; cv.height = m.h * TSRC;
     const b = cv.getContext('2d');
+    b.imageSmoothingEnabled = TSRC > 32;
     b.clearRect(0, 0, cv.width, cv.height);
     let ready = true;
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
@@ -33,7 +36,7 @@ G.MapView = function (canvas) {
       for (const k of keys) {
         const im = G.T.image(k, G.T.hash(x, y));
         if (!G.T.ready(im)) { ready = false; continue; }
-        b.drawImage(im, x * TSRC, y * TSRC);
+        b.drawImage(im, x * TSRC, y * TSRC, TSRC, TSRC);
       }
     }
     m._bg = cv; m._bgVer = m.ver; m._bgReady = ready;
@@ -50,6 +53,7 @@ G.MapView = function (canvas) {
     }
   }
   function blit(im, cx, cy, size, flip) {
+    ctx.imageSmoothingEnabled = (im.naturalWidth || im.width) > 32;
     if (flip) {
       ctx.save(); ctx.translate(cx, 0); ctx.scale(-1, 1);
       ctx.drawImage(im, -size / 2, cy - size / 2, size, size);
@@ -67,7 +71,8 @@ G.MapView = function (canvas) {
       return;
     }
     if (e.shape) return drawShape(e, cx, cy, size, t);
-    if (!e.t) return;
+    const spec = e.art && G.ARTSET[e.art] ? e.art : e.t;
+    if (!spec) return;
     const foot = cy + size * 0.38;
     if (e.moving) cy -= Math.abs(Math.sin(t / 90 + e.x * 3)) * TS * 0.06;
     // 공격: 대상 쪽으로 내딛었다 돌아온다
@@ -89,7 +94,7 @@ G.MapView = function (canvas) {
     if (e.kind === 'hero') {
       ctx.strokeStyle = `rgba(255,214,110,${0.55 + 0.25 * Math.sin(t / 260)})`; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.ellipse(cx, foot, size * 0.36, size * 0.13, 0, 0, 7); ctx.stroke();
-      const sil = silhouette(e.t, '#fff3c4');
+      const sil = silhouette(spec, '#fff3c4');
       if (sil) {
         const o = Math.max(1, size / 32);
         ctx.globalAlpha *= 0.8;
@@ -99,13 +104,13 @@ G.MapView = function (canvas) {
     }
     if (e.glow) { ctx.shadowColor = e.glow; ctx.shadowBlur = 14; }
     if (e.dim) ctx.filter = 'grayscale(1) brightness(0.45)';
-    const tc = e.tint && tinted(e.t, e.tint);
-    if (tc) blit(tc, cx, cy, size, e.flip); else drawSprite(e.t, cx, cy, size, e.flip);
+    const tc = e.tint && tinted(spec, e.tint);
+    if (tc) blit(tc, cx, cy, size, e.flip); else drawSprite(spec, cx, cy, size, e.flip);
     ctx.filter = 'none';
     ctx.shadowBlur = 0;
     if (hq < 1) {
       // 몬스터는 하얗게, 아군은 붉게 번쩍
-      const sil = silhouette(e.t, e.kind === 'mon' ? '#ffffff' : '#ff6060');
+      const sil = silhouette(spec, e.kind === 'mon' ? '#ffffff' : '#ff6060');
       if (sil) { ctx.globalAlpha = (e.kind === 'mon' ? 0.9 : 0.7) * (1 - hq); blit(sil, cx, cy, size, e.flip); }
     }
     ctx.globalAlpha = 1;
@@ -368,11 +373,12 @@ function tinted(spec, col) {
   const ims = G.T.layers(spec).map(([k, v]) => G.T.image(k, v)).filter(Boolean);
   if (!ims.length || !ims.every(G.T.ready)) return null;
   c = document.createElement('canvas');
-  c.width = c.height = 32;
+  const R = Math.max(32, ims[0].naturalWidth || 32);
+  c.width = c.height = R;
   const b = c.getContext('2d');
-  for (const im of ims) b.drawImage(im, 0, 0);
+  for (const im of ims) b.drawImage(im, 0, 0, R, R);
   b.globalCompositeOperation = 'source-atop';
-  b.globalAlpha = 0.55; b.fillStyle = col; b.fillRect(0, 0, 32, 32);
+  b.globalAlpha = 0.55; b.fillStyle = col; b.fillRect(0, 0, R, R);
   tintCache.set(key, c);
   return c;
 }
@@ -385,11 +391,12 @@ function silhouette(spec, col) {
   const ims = G.T.layers(spec).map(([k, v]) => G.T.image(k, v)).filter(Boolean);
   if (!ims.length || !ims.every(G.T.ready)) return null;
   c = document.createElement('canvas');
-  c.width = c.height = 32;
+  const R = Math.max(32, ims[0].naturalWidth || 32);
+  c.width = c.height = R;
   const b = c.getContext('2d');
-  for (const im of ims) b.drawImage(im, 0, 0);
+  for (const im of ims) b.drawImage(im, 0, 0, R, R);
   b.globalCompositeOperation = 'source-in';
-  b.fillStyle = col; b.fillRect(0, 0, 32, 32);
+  b.fillStyle = col; b.fillRect(0, 0, R, R);
   if (silCache.size > 400) silCache.clear();
   silCache.set(key, c);
   return c;

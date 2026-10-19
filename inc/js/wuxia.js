@@ -170,6 +170,7 @@ G.Wuxia = (() => {
       const rt = W.rt(w), h = rt.hero, m = rt.map;
       G.fxTick(rt, dt);
       h.t = D.outfits[W.jobIdx(w)];
+      h.art = 'wx_hero' + W.jobIdx(w);
       h.moving = false;
       if (w.dead) {
         h.dim = true;

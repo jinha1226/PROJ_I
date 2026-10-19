@@ -573,3 +573,6 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 4px; }
 .dx { display: flex; flex-direction: column; align-items: center; padding: 3px 0; border-radius: 8px; background: var(--panel2); font-size: 10px; color: var(--dim); }
 .dx.unknown .tl img { filter: brightness(0) drop-shadow(0 0 1px #8f5bd6aa); opacity: .7; }
+
+/* 생성한 그림(assets/art)은 픽셀 타일과 달리 부드럽게 확대 */
+.tl img.art, .tl-inline img.art { image-rendering: auto; }

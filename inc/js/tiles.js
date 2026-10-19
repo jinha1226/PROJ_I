@@ -1,6 +1,8 @@
 'use strict';
 // 타일 그리기: DOM 아이콘, 겹친 인형, 타일 배경 장면, 캔버스용 이미지 캐시
 // 타일 키는 G.TILESET(tools/build_tiles.js가 생성)에 있다. 없는 키는 글자(이모지)로 대신 그린다.
+// 같은 키의 그림이 assets/art/에 있으면(G.ARTSET, tools/build_art.js가 생성) DCSS 타일 대신 그것을 쓴다.
+// 인형(여러 타일을 겹친 캐릭터)도 인형 이름으로 된 그림이 있으면 그 한 장으로 바뀐다. 자세한 것은 ART.md.
 G.T = {
   base: 'assets/tiles/',
   // 여러 타일을 겹친 인형. 순서대로 위에 그린다.
@@ -9,21 +11,25 @@ G.T = {
     w_wuxia: ['wb_human', 'wl_black', 'wc_china', 'wh_queue', 'ww_sword'],
     cultivator: ['wb_human', 'wl_white', 'qd_robe', 'qd_hair', 'qd_staff'],
   },
-  has: k => !!(G.TILESET[k] || G.T.DOLLS[k]),
+  has: k => !!(G.TILESET[k] || G.ARTSET[k] || G.T.DOLLS[k]),
+  known: k => !!(G.TILESET[k] || G.ARTSET[k]),
+  isArt: k => !!G.ARTSET[k],
   src(k, v = 0) {
+    const a = G.ARTSET[k];
+    if (a) return 'assets/art/' + (a > 1 ? `${k}_${((v % a) + a) % a}` : k) + '.png';
     const n = G.TILESET[k];
     if (!n) return null;
     return G.T.base + (n > 1 ? `${k}_${((v % n) + n) % n}` : k) + '.png';
   },
-  count: k => G.TILESET[k] || 0,
+  count: k => G.ARTSET[k] || G.TILESET[k] || 0,
   // HTML 문자열 안에 넣을 작은 타일 (모달 본문 등)
   html(spec) {
-    const L = G.T.layers(spec).filter(([k]) => G.TILESET[k]);
-    return `<span class="tl-inline">${L.map(([k, v]) => `<img src="${G.T.src(k, v)}" alt="">`).join('')}</span>`;
+    const L = G.T.layers(spec).filter(([k]) => G.T.known(k));
+    return `<span class="tl-inline">${L.map(([k, v]) => `<img src="${G.T.src(k, v)}"${G.ARTSET[k] ? ' class="art"' : ''} alt="">`).join('')}</span>`;
   },
   layers(spec) {
     if (Array.isArray(spec)) return spec.flatMap(s => G.T.layers(s));
-    if (G.T.DOLLS[spec]) return G.T.DOLLS[spec].map(k => [k, 0]);
+    if (G.T.DOLLS[spec] && !G.ARTSET[spec]) return G.T.DOLLS[spec].map(k => [k, 0]);
     if (typeof spec === 'object' && spec) return [[spec.k, spec.v || 0]];
     return [[spec, 0]];
   },
@@ -40,12 +46,13 @@ G.T = {
     if (box._spec === key) return;
     box._spec = key;
     box.innerHTML = '';
-    const L = G.T.layers(spec).filter(([k]) => G.TILESET[k]);
+    const L = G.T.layers(spec).filter(([k]) => G.T.known(k));
     if (!L.length) { box.textContent = fallback; box.classList.add('txt'); return; }
     box.classList.remove('txt');
     for (const [k, v] of L) {
       const im = document.createElement('img');
       im.src = G.T.src(k, v);
+      if (G.ARTSET[k]) im.className = 'art';
       im.draggable = false;
       im.alt = '';
       box.append(im);

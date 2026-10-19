@@ -36,7 +36,7 @@ G.Cthulhu = (() => {
       const boat = { shape: 'boat', x: W / 2 - 0.5, y: SURF - 0.45, s: 1.6, rod: { x: W / 2 + 0.6, y: SURF - 1.9 } };
       return {
         map, fx: [], phase: 'idle', t: IDLE_T, boat,
-        fisher: { kind: 'hero', t: ['wb_human', 'c_investigator', 'c_hat'], x: W / 2 - 0.9, y: SURF - 1.15, s: 1 },
+        fisher: { kind: 'hero', t: ['wb_human', 'c_investigator', 'c_hat'], art: 'c_fisher', x: W / 2 - 0.9, y: SURF - 1.15, s: 1 },
         hook: { shape: 'hook', x: W / 2, y: SURF, s: 1 }, fish: [], tents: [], hooked: [], steerX: null, steerT: 0, deepest: 0,
       };
     },
