@@ -37,12 +37,15 @@ G.UI.views.fantasy = function () {
   const rows = [];
   function buildParty() {
     // 층이 바뀌면 파티원 객체를 새로 만드므로, 이름이 같아도 객체가 다르면 다시 묶는다 (예전 객체를 붙잡으면 쓰러진 채 멈춘다)
-    const rt = F.rt(f()), key = rt.party.map(p => p.id || 'hero').join();
-    if (key === partyKey && rows.every((r, i) => r.p === rt.party[i])) return;
+    // 기사가 맨 위, 동료는 영입한 순서대로
+    const rt = F.rt(f()), order = F.recruits(f());
+    const list = [rt.hero, ...[...rt.allies].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id))];
+    const key = list.map(p => p.id || 'hero').join();
+    if (key === partyKey && rows.length === list.length && rows.every((r, i) => r.p === list[i])) return;
     partyKey = key;
     frames.querySelectorAll('.pf').forEach(e => e.remove());
     rows.length = 0;
-    for (const p of rt.party) {
+    for (const p of list) {
       const b = bar('hp'), dead = h('b.pf-dead'), buffs = h('div.pf-buffs'), card = h('div.pf-card');
       // 모바일은 올릴 수 없으니 눌러서 카드를 연다
       const el = h('div.pf' + (p.kind === 'hero' ? '.lead' : ''), { on: { click: () => el.classList.toggle('show') } },
@@ -66,7 +69,7 @@ G.UI.views.fantasy = function () {
   let rosterKey = '';
   const rosterBtns = {};
   function buildRoster() {
-    const have = F.roster(), key = have.join();
+    const have = F.recruits(f()), key = have.join();
     if (key === rosterKey) return;
     rosterKey = key;
     rosterEl.innerHTML = '';

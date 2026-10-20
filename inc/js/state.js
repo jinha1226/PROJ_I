@@ -185,4 +185,4 @@ G.hardReset = function () {
 };
 
 // 트리 구매가 맵에 바로 보이게
-G.on('tree', e => { if (e.id === 'fantasy' && G.RT.fantasy) G.Fantasy.syncAllies(G.S.w.fantasy); });
+G.on('tree', e => { if (e.id === 'fantasy' && G.RT.fantasy) { G.Fantasy.recruits(G.S.w.fantasy); G.Fantasy.syncAllies(G.S.w.fantasy); } });

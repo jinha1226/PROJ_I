@@ -38,6 +38,13 @@ G.Fantasy = (() => {
     // ── 원정대 편성 ──
     slots: () => 3 + ta('slot'),
     roster: () => Object.keys(D.allies).filter(id => ta('ally_' + id)),
+    // 영입한 순서 (새로 연 동료는 뒤에 붙는다. 붕괴로 트리가 비면 같이 비운다)
+    recruits(f) {
+      const have = F.roster();
+      f.recruits = (f.recruits || []).filter(id => have.includes(id));
+      for (const id of have) if (!f.recruits.includes(id)) f.recruits.push(id);
+      return f.recruits;
+    },
     lineup(f) {
       const have = F.roster(), n = F.slots();
       if (f.autoParty !== false) return AUTO.filter(id => have.includes(id)).slice(0, n);

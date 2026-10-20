@@ -715,3 +715,16 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .ftop .php { min-width: 0; }
   .ftop .minis { grid-template-columns: repeat(4, 1fr); gap: 1px 0; }
 }
+
+/* 파티 상태창: 왼쪽 가운데, 위에서부터 편성 단추 · 기사 · 영입 순 */
+.fleft { top: 50%; bottom: auto; transform: translateY(-50%); }
+.pframes { flex-direction: column; }
+.pf-top { order: -1; }
+.pf-top .pbtn { width: 30px; height: 22px; min-width: 0; padding: 0; font-size: 12px; border-radius: 6px; }
+.pf-top .fpop { bottom: auto; top: 0; left: 66px; }
+@media (max-width: 760px) {
+  .fleft { top: auto; bottom: 8px; transform: none; }
+  .pframes { flex-direction: row; align-items: flex-end; }
+  .pf-top .pbtn { width: 28px; height: 28px; }
+  .pf-top .fpop { top: auto; left: 0; bottom: 36px; }
+}
