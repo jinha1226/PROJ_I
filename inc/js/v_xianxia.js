@@ -1,51 +1,45 @@
 'use strict';
-// 수선 화면: 동부 지도 + 옆 패널(경지·영기·천겁, 오행 진기 팔레트, 영석·단약)
-// 팔레트에서 오행을 고르고 진법 칸을 누르면 놓인다. 같은 진기를 다시 누르거나 지우개면 뺀다.
+// 수선 화면: 동부 지도가 화면 전체, 그 위에 HUD (판타지와 같은 구성 원리)
+//  위 가운데: 영기 막대(다 차면 천겁) + 초당 영기, 아래 한 줄: 천겁 성공률·단약·영초·영석
+//  왼쪽 위: 경지·상태, 자동 천겁(기준) / 왼쪽 가운데: 오행 팔레트(자주 고르는 것) / 아래 가운데: 천겁
+//  팔레트에서 오행을 고르고 진법 칸을 누르면 놓인다. 같은 진기를 다시 누르거나 지우개면 뺀다.
 G.UI.views.xianxia = function () {
   const x = () => G.S.w.xianxia, X = G.Xianxia, D = G.D.X, U = G.U;
   const STATE = { meditate: '좌선', trib: '천겁' };
   let pick = 'water';
 
-  const hudState = h('b'), hudInfo = h('small');
-  const hud = h('div', null, hudState, hudInfo);
-
-  const realmEl = h('div.realm'), nextEl = h('small');
-  const qi = G.UI.meter('영기'), chanceEl = h('b'), pillEl = h('b'), herbEl = h('b'), devEl = h('p.warn.hidden');
-  const breakBtn = h('button.btn.big', { on: { click: () => X.breakthrough(x()) } }, '천겁');
-  const tAuto = G.UI.toggle('자동 천겁', () => x().autoBreak, v => { x().autoBreak = v; });
-  const thr = h('select', { on: { change: e => { x().autoThr = +e.target.value; } } },
+  // ── 왼쪽 위: 경지 · 상태 · 자동 천겁
+  const realmEl = h('b'), stateEl = h('small'), devEl = h('small.warn');
+  const tAuto = G.UI.toggle('천겁', () => x().autoBreak, v => { x().autoBreak = v; }, '자동 천겁: 성공률이 기준 이상이면 스스로 넘는다');
+  const thr = h('select.othr', { on: { change: e => { x().autoThr = +e.target.value; } } },
     [0.25, 0.4, 0.5, 0.6, 0.75, 0.9, 1].map(v => h('option', { value: v, selected: x().autoThr === v }, `≥ ${v * 100}%`)));
+  const hud = h('div.fhud', null, h('div.floorrow', null, realmEl, stateEl), h('div.tgls', null, h('small.dim', null, '자동'), tAuto.el, thr), devEl);
 
-  // 오행 팔레트: 보석 + 그 오행의 총 출력
+  // ── 위 가운데: 영기
+  const qi = G.UI.ov.bar('영기: 다 차면 천겁에 도전할 수 있다', '초당 영기');
+  const st = G.UI.ov.stats([['chance', 'a_thunder', '천겁 성공률'], ['pill', 'q_pill', '단약: 천겁에 4개까지, 개당 성공률 +12%'], ['herb', 'q_herb', '영초'], ['stone', 'q_stone', '영석']]);
+  const top = h('div.ftop', null, qi.el, st.el);
+
+  // ── 왼쪽 가운데: 오행 팔레트. 보석 + 그 오행의 총 출력, 올리면 효과
+  const EFF = { water: '영기', metal: '영석', wood: '영초 성장', fire: '연단 속도', earth: '요수 방어 · 천겁 성공률' };
   const pal = D.els.map(el => {
-    const v = h('b');
-    const b = h('button.el-pick', { title: `${D.el[el].n} · ${D.el[el].d}`, style: `--ec:${D.el[el].col}`, on: { click: () => { pick = el; } } },
-      G.T.el(D.el[el].t, 'md'), h('span', null, h('small', null, D.el[el].n), v));
-    return { el, b, v };
+    const v = h('b'), eff = h('small');
+    const b = h('button.el-pick.ovp', { 'data-tip': `${D.el[el].n} · ${EFF[el]}`, style: `--ec:${D.el[el].col}`, on: { click: () => { pick = el; } } },
+      G.T.el(D.el[el].t, 'md'), h('span', null, v, eff));
+    return { el, b, v, eff };
   });
-  const eraser = h('button.el-pick.erase', { title: '빼기', on: { click: () => { pick = null; } } }, '✕');
-  const tArr = G.UI.toggle('자동 배치', () => x().autoArr, v => { x().autoArr = v; if (v) X.autoArrange(x()); });
+  const eraser = h('button.el-pick.erase.ovp', { 'data-tip': '빼기', on: { click: () => { pick = null; } } }, '✕');
+  const tArr = G.UI.toggle('자동', () => x().autoArr, v => { x().autoArr = v; if (v) X.autoArrange(x()); }, '자동 배치');
   const slotEl = h('small');
-  const effs = { water: h('b'), metal: h('b'), wood: h('b'), fire: h('b'), earth: h('b') };
-  const stoneEl = h('b');
+  const left = h('div.fleft', null, h('div.ocol.pal', null, h('div.palh', null, slotEl, tArr.el), pal.map(p => p.b), eraser));
 
-  const side = h('div', null,
-    h('div.card.realm-card', null, realmEl, nextEl, qi.el,
-      h('div.kv', null, h('span', null, '천겁 성공률'), chanceEl),
-      h('div.kv', { title: '천겁에 4개까지, 개당 +12%' }, h('span', null, G.T.el('q_pill', 'xs'), ' 단약'), pillEl),
-      h('div.kv', null, h('span', null, G.T.el('q_herb', 'xs'), ' 영초'), herbEl), devEl, breakBtn, h('div.tgls', null, tAuto.el, thr)),
-    h('div.card', null, h('div.card-h', null, h('b', null, '진법'), slotEl, h('span.sp'), tArr.el),
-      h('div.el-pal', null, pal.map(p => p.b), eraser),
-      h('div.el-eff', null,
-        h('span', { title: '영기' }, G.T.el('e_water', 'xs'), ' 영기 ', effs.water),
-        h('span', { title: '영석' }, G.T.el('e_metal', 'xs'), ' 영석 ', effs.metal),
-        h('span', { title: '영초 성장' }, G.T.el('e_wood', 'xs'), ' 영초 ', effs.wood),
-        h('span', { title: '연단 속도' }, G.T.el('e_fire', 'xs'), ' 연단 ', effs.fire),
-        h('span', { title: '요수 방어 · 천겁 성공률' }, G.T.el('e_earth', 'xs'), ' 방어 ', effs.earth))),
-    h('div.card', null, h('div.card-h', null, G.T.el('q_stone', 'cur'), stoneEl, h('small', null, ' 영석'))));
+  // ── 아래 가운데: 천겁
+  const breakBtn = h('button.btn.big', { on: { click: () => X.breakthrough(x()) } }, '천겁');
+  const act = h('div.oact', null, breakBtn);
 
+  const overlay = h('div.fover', null, hud, top, left, act);
   return G.UI.worldScreen('xianxia', {
-    side, hud,
+    overlay,
     click(p) {
       const s = x();
       if (X.click(s, p.x, p.y)) return true;
@@ -60,27 +54,21 @@ G.UI.views.xianxia = function () {
     },
     update() {
       const s = x(), rt = X.rt(s), cost = X.breakCost(s.realm), L = X.layout(s);
-      setText(hudState, rt.state === 'trib' ? (rt.demons.length ? `심마 ${rt.demons.length}` : '천겁') : STATE[rt.state]);
-      setText(hudInfo, ` · +${U.fmt(X.qiRate(s))}/초`);
       setText(realmEl, X.realmName(s.realm));
-      setText(nextEl, `→ ${X.realmName(s.realm + 1)}`);
-      qi.set(s.qi / cost, `${U.fmt(s.qi)} / ${U.fmt(cost)}`);
-      setText(chanceEl, U.pct(Math.max(0, X.breakChance(s) - (rt.state === 'trib' ? rt.penalty : 0))));
-      setText(pillEl, s.pills);
-      setText(herbEl, s.herbs);
-      tog(devEl, 'hidden', s.devT <= 0);
-      if (s.devT > 0) setText(devEl, `도심 동요 ${Math.ceil(s.devT)}초 · 영기 30%`);
-      breakBtn.disabled = s.qi < cost || rt.state === 'trib';
+      setText(stateEl, ` · ${rt.state === 'trib' ? (rt.demons.length ? `심마 ${rt.demons.length}` : '천겁') : STATE[rt.state]} → ${X.realmName(s.realm + 1)}`);
+      setText(devEl, s.devT > 0 ? `도심 동요 ${Math.ceil(s.devT)}초 · 영기 30%` : '');
       tAuto.update(); tArr.update();
-      for (const p of pal) { tog(p.b, 'on', pick === p.el); setText(p.v, L.sum[p.el].toFixed(1)); }
+      qi.set(s.qi / cost, `${U.fmt(s.qi)} / ${U.fmt(cost)}`, `+${U.fmt(X.qiRate(s))}/초`);
+      st.set('chance', U.pct(Math.max(0, X.breakChance(s) - (rt.state === 'trib' ? rt.penalty : 0))));
+      st.set('pill', s.pills);
+      st.set('herb', s.herbs);
+      st.set('stone', U.fmt(s.stone));
+      breakBtn.disabled = s.qi < cost || rt.state === 'trib';
+      tog(breakBtn, 'ready', !breakBtn.disabled);
+      const effTxt = { water: `+${U.fmt(X.qiRate(s))}/초`, metal: `+${U.fmt(X.stoneRate(s))}/초`, wood: `×${(1 + 0.5 * L.sum.wood).toFixed(1)}`, fire: `×${(1 + 0.5 * L.sum.fire).toFixed(1)}`, earth: `+${Math.round(Math.min(20, 2 * L.sum.earth))}%` };
+      for (const p of pal) { tog(p.b, 'on', pick === p.el); setText(p.v, L.sum[p.el].toFixed(1)); setText(p.eff, ` ${effTxt[p.el]}`); }
       tog(eraser, 'on', pick === null);
-      setText(slotEl, ` ${Object.keys(s.arr).filter(i => i < X.slotCount()).length} / ${X.slotCount()}`);
-      setText(effs.water, `+${U.fmt(X.qiRate(s))}/초`);
-      setText(effs.metal, `+${U.fmt(X.stoneRate(s))}/초`);
-      setText(effs.wood, `×${(1 + 0.5 * L.sum.wood).toFixed(1)}`);
-      setText(effs.fire, `×${(1 + 0.5 * L.sum.fire).toFixed(1)}`);
-      setText(effs.earth, `+${Math.round(Math.min(20, 2 * L.sum.earth))}%`);
-      setText(stoneEl, U.fmt(s.stone));
+      setText(slotEl, `${Object.keys(s.arr).filter(i => i < X.slotCount()).length} / ${X.slotCount()}`);
     },
   });
 };

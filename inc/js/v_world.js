@@ -93,3 +93,32 @@ G.UI.meter = function (label) {
   const el = h('div.meter', null, h('div.meter-h', null, h('span', null, label), v), b);
   return { el, set(frac, txt) { setW(b.fill, frac); setText(v, txt); }, bar: b };
 };
+
+// ── 맵 위 HUD 부품 (모든 세계 공통 구성: 위 가운데 막대 + 능력치 줄, 왼쪽 위 진행, 왼쪽 가운데 유닛 줄, 작은 단추 → 창)
+G.UI.ov = {
+  // 위 가운데 긴 막대: 이번 판을 끝내는 자원. 오른쪽에 줄어드는/차오르는 속도
+  bar(tip, sideTip) {
+    const b = bar('hp'), t = h('b.php-t'), side = h('span.corr', sideTip ? { 'data-tip': sideTip } : null);
+    const el = h('div.ftop-r', null, h('div.php', tip ? { 'data-tip': tip } : null, b, t), side);
+    return { el, bar: b, set(frac, txt, sideTxt, low) { setW(b.fill, frac); setText(t, txt); setText(side, sideTxt || ''); tog(b, 'low', !!low); } };
+  },
+  // 능력치 한 줄: [[키, 그림, 뜻]] → 아이콘 + 숫자, 올리면 뜻
+  stats(defs) {
+    const v = {}, ic = {};
+    const el = h('div.minis', null, defs.map(([k, t, tip]) => h('span.mini', { 'data-tip': tip }, ic[k] = G.T.el(t, 'xs'), v[k] = h('b'))));
+    return { el, set(k, txt) { setText(v[k], txt); }, icon: k => ic[k] };
+  },
+  // 작은 단추 + 옆으로 열리는 창. 같은 묶음(group) 안에서는 하나만 열린다
+  pop(label, title, body, group) {
+    const p = h('div.fpop.lpop.hidden', null, body);
+    const btn = h('button.fbtn.obtn', { 'data-tip': title, on: { click: e => { e.stopPropagation(); set(!open); } } }, label);
+    let open = false;
+    function set(v) {
+      if (v && group) for (const o of group) if (o !== api) o.set(false);
+      open = v; tog(p, 'hidden', !v); tog(btn, 'on', v);
+    }
+    const api = { el: h('div.owrap', null, btn, p), btn, set, isOpen: () => open };
+    if (group) group.push(api);
+    return api;
+  },
+};

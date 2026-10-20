@@ -729,3 +729,120 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .pf-top .pbtn { width: 28px; height: 28px; }
   .pf-top .fpop { top: auto; left: 0; bottom: 36px; }
 }
+
+/* ── 맵 위 HUD 공통 (무협·수선·SF·크툴루) ── */
+.owrap { position: relative; }
+.obtn { min-width: 34px; height: 30px; display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
+.obtn .tl { width: 22px; height: 22px; }
+.obtn.on { border-color: var(--accent); color: var(--accent); }
+.lpop { position: absolute; left: calc(100% + 8px); top: 0; z-index: 30; width: max-content; max-width: min(420px, 70vw); max-height: 60vh; overflow-y: auto; }
+.ocol { display: flex; flex-direction: column; gap: 6px; pointer-events: auto; }
+.ocard { position: relative; display: flex; align-items: center; gap: 6px; width: 170px; padding: 4px 6px; border-radius: 10px; background: #000b; border: 1px solid #ffffff22; color: var(--text); text-align: left; }
+.ocard.on { border-color: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.ocard .tl { width: 32px; height: 32px; flex: none; }
+.ocard .om { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; font-size: 12px; }
+.ocard .om b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ocard .om small { color: var(--dim); font-size: 10px; }
+.ocard .bar { height: 5px; }
+.fhud .tgls { display: flex; gap: 4px; flex-wrap: wrap; pointer-events: auto; }
+.fhud .tgl { font-size: 11px; padding: 2px 8px; }
+.oact { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 8px; pointer-events: auto; }
+@media (max-width: 760px) {
+  .lpop { left: 0; top: auto; bottom: calc(100% + 6px); max-width: calc(100vw - 32px); }
+  .ocol { flex-direction: row; flex-wrap: wrap; }
+  .ocard { width: 140px; }
+}
+/* 카드처럼 생긴 창 단추 (무협 직업·무공) */
+.obtn.cardbtn { height: auto; padding: 0; background: none; border: none; }
+.obtn.cardbtn.on .ocard { border-color: var(--accent); }
+.olist { display: flex; flex-direction: column; gap: 3px; width: 280px; }
+.fpop .shop { width: 300px; }
+/* HUD 밑판: 밝은 맵(무협 마을·수선 동부)에서도 글자가 읽히게 */
+.fover .fhud, .fover .ftop { background: #000a; border-radius: 10px; padding: 5px 9px; }
+@media (max-width: 760px) {
+  /* 모바일: 왼쪽 위 HUD와 위 막대를 겹치지 않게 위에서부터 차례로 쌓는다 */
+  .fover { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 6px; }
+  .fover .fhud, .fover .ftop { position: static; transform: none; left: auto; right: auto; top: auto; }
+  .fover .fhud { align-self: flex-start; }
+  .fantasy .fover .fhud, .fantasy .fover .ftop { margin-right: 112px; }
+  .fover .ftop .minis { position: static; width: auto; }
+}
+@media (max-width: 760px) {
+  .fover .ftop { min-width: 0; max-width: 100%; box-sizing: border-box; }
+  .fover .ftop-r { width: 100%; min-width: 0; }
+  .fover .ftop .php { flex: 1; min-width: 0; }
+  .fover .ftop .minis { width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .fover .ftop .mini b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+/* 옆 패널 없는 화면: 카메라가 따라가는 맵은 상자를 꽉 채우고, 고정 맵은 비율을 지키며 폭에 맞춘다 */
+.wmap.solo .mapbox.fit { width: 100%; }
+.wmap.solo .mapbox.fit:not(.cam) { height: auto; max-height: calc(100vh - 100px); }
+.wmap.solo .mapbox.fit.cam { aspect-ratio: auto !important; height: calc(100vh - 100px); max-height: none; }
+@media (max-width: 760px) {
+  .wmap.solo .mapbox.fit.cam { height: calc(100dvh - 150px); }
+  .wmap.solo .mapbox.fit:not(.cam) { max-height: calc(100dvh - 150px); }
+}
+/* 수선: 왼쪽 오행 팔레트 세로 줄 */
+.ocol.pal { background: #000a; border-radius: 10px; padding: 6px; gap: 4px; }
+.palh { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11px; }
+.palh .tgl { font-size: 11px; padding: 1px 7px; }
+.el-pick.ovp { flex-direction: row; justify-content: flex-start; gap: 6px; width: 150px; padding: 3px 6px; background: #000c; }
+.el-pick.ovp span { display: flex; align-items: baseline; gap: 2px; font-size: 12px; }
+.el-pick.ovp span small { color: var(--dim); font-size: 10px; }
+.el-pick.erase.ovp { justify-content: center; height: 28px; }
+.othr { background: #000c; color: var(--text); border: 1px solid var(--line); border-radius: 6px; font-size: 11px; padding: 1px 4px; pointer-events: auto; }
+.fhud .warn { color: #ff9a6b; font-size: 11px; }
+.oact .btn.ready { animation: coach 1.2s ease-in-out infinite; }
+@media (max-width: 760px) {
+  .ocol.pal { flex-direction: row; flex-wrap: wrap; width: calc(100vw - 110px); }
+  .palh { width: 100%; }
+  .el-pick.ovp { width: auto; flex: 1 1 30%; }
+  .oact { bottom: auto; top: auto; }
+}
+.wuxia .floorrow b, .xianxia .floorrow b, .scifi .floorrow b, .cthulhu .floorrow b { min-width: 0; text-align: left; }
+@media (max-width: 760px) {
+  .fover .oact { position: absolute; left: auto; right: 8px; bottom: 66px; top: auto; transform: none; }
+  .ocol.pal { width: calc(100vw - 90px); padding: 4px; }
+  .el-pick.ovp { flex: 1 1 28%; padding: 2px 4px; gap: 3px; }
+  .el-pick.ovp .tl { width: 22px; height: 22px; }
+  .el-pick.ovp span { font-size: 11px; }
+  .el-pick.ovp span small { display: none; }
+  .el-pick.erase.ovp { height: auto; }
+}
+/* 모바일 알림은 위로: 아래쪽은 팔레트·초상·기술 단추 자리 */
+@media (max-width: 760px) {
+  #toasts { top: 8px; bottom: auto; left: 8px; right: 8px; align-items: stretch; }
+  .toast { font-size: 13px; padding: 6px 10px; }
+}
+/* SF: 왼쪽 건설 메뉴 */
+.opad { display: flex; flex-direction: column; gap: 4px; width: 190px; background: #000b; border: 1px solid #ffffff22; border-radius: 10px; padding: 6px 8px; font-size: 12px; }
+.opad .padbody { display: flex; flex-direction: column; gap: 3px; }
+.opad .tbuild { display: flex; align-items: center; gap: 6px; padding: 3px 6px; font-size: 12px; text-align: left; }
+.opad .tbuild b { flex: 1; font-weight: 600; }
+.opad .tbuild small.c { color: var(--accent); }
+.opad .opp-row { display: flex; gap: 6px; align-items: center; }
+.fpop .bestiary { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+@media (max-width: 760px) {
+  .opad { width: calc(100vw - 110px); }
+  .opad .padbody { flex-direction: row; flex-wrap: wrap; }
+  .opad .tbuild { flex: 1 1 45%; }
+}
+@media (max-width: 760px) {
+  /* 모바일 세로: 가로로 넓은 고정 맵은 화면 높이 상자 가운데에 두고, 위아래 빈 띠에 HUD·메뉴가 들어가게 */
+  .wmap.solo .mapbox.fit:not(.cam) { aspect-ratio: auto !important; height: calc(100dvh - 150px); max-height: none; }
+}
+/* 크툴루: 왼쪽 이번 어획, 도감 창 */
+.ocatch { width: 170px; min-height: 40px; background: #000b; border: 1px solid #ffffff22; border-radius: 10px; padding: 4px 6px; pointer-events: auto; }
+.ocatch .catch-row { min-height: 32px; }
+.ocatch .catch-row:empty::before { content: '🎣'; opacity: .4; font-size: 18px; }
+.odex { width: 330px; }
+.odex .dex { grid-template-columns: repeat(6, 1fr); }
+@media (max-width: 760px) {
+  .ocatch { width: calc(100vw - 150px); }
+  .odex { width: calc(100vw - 40px); }
+}
+/* 크툴루: 위 가운데는 배(수면)가 있는 자리라 막대를 오른쪽 위로, 모바일은 HUD를 아래쪽에 쌓는다 */
+.cthulhu .fover .ftop { left: auto; right: 12px; transform: none; }
+@media (max-width: 760px) {
+  .cthulhu .fover { justify-content: flex-end; padding-bottom: 76px; }
+}
