@@ -664,7 +664,7 @@ G.Fantasy = (() => {
       const rt = F.rt(f), b = F.band(f.floor), m = rt.map;
       if (m._band !== b) { m._band = b; m.ver++; }
       return {
-        map: m, ents: rt.ents, fx: rt.fx, cam: rt.hero.dead ? rt.party.find(p => !p.dead) || rt.hero : rt.hero, viewH: 13, dimAll: rt.phase === 'dead',
+        map: m, ents: rt.ents, fx: rt.fx, cam: rt.hero.dead ? rt.party.find(p => !p.dead) || rt.hero : rt.hero, viewH: 13, center: true, dimAll: rt.phase === 'dead',
         fog: { seen: rt.seen, ver: rt.seenVer, light: rt.hero.dead ? rt.party.find(p => !p.dead) || rt.hero : rt.hero },
         mini: { seen: rt.seen, ver: rt.seenVer, end: m.end, party: rt.party, mons: rt.mons },
         terrain(x, y) {

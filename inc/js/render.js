@@ -419,8 +419,11 @@ G.MapView = function (canvas, id) {
         if (!cam.ok || Math.hypot(c.x - cam.x, c.y - cam.y) > 12) { cam.x = c.x; cam.y = c.y; cam.ok = true; }
         cam.x += (c.x - cam.x) * 0.12; cam.y += (c.y - cam.y) * 0.12;
         ox = W / 2 - (cam.x + 0.5) * TS; oy = H / 2 - (cam.y + 0.5) * TS;
-        if (m.w * TS > W) ox = Math.min(0, Math.max(W - m.w * TS, ox)); else ox = (W - m.w * TS) / 2;
-        if (m.h * TS > H) oy = Math.min(0, Math.max(H - m.h * TS, oy)); else oy = (H - m.h * TS) / 2;
+        // view.center: 캐릭터를 늘 화면 가운데에 (던전처럼 바깥이 어둠이어도 되는 맵). 아니면 맵 가장자리에서 멈춘다
+        if (!view.center) {
+          if (m.w * TS > W) ox = Math.min(0, Math.max(W - m.w * TS, ox)); else ox = (W - m.w * TS) / 2;
+          if (m.h * TS > H) oy = Math.min(0, Math.max(H - m.h * TS, oy)); else oy = (H - m.h * TS) / 2;
+        }
       }
       // 결정타 확대: 초점을 화면 가운데 쪽으로 끌어오며 키운다
       const zk = G.J.zoomK(id, now);

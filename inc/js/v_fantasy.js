@@ -48,8 +48,9 @@ G.UI.views.fantasy = function () {
     for (const p of list) {
       const b = bar('hp'), dead = h('b.pf-dead'), buffs = h('div.pf-buffs'), card = h('div.pf-card');
       // 모바일은 올릴 수 없으니 눌러서 카드를 연다
-      const el = h('div.pf' + (p.kind === 'hero' ? '.lead' : ''), { on: { click: () => el.classList.toggle('show') } },
-        h('div.pf-ic', null, G.T.el(p.t, 'pf-img'), dead), b, buffs, card);
+      // 카드는 초상 그림 위에서만 (옆 버프에 올렸을 때는 버프 말풍선만)
+      const el = h('div.pf' + (p.kind === 'hero' ? '.lead' : ''), null,
+        h('div.pf-ic', { on: { click: () => el.classList.toggle('show') } }, G.T.el(p.t, 'pf-img'), dead), b, buffs, card);
       frames.append(el);
       rows.push({ p, b, dead, el, buffs, card, bk: null });
     }
