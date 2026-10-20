@@ -10,8 +10,8 @@ G.Cthulhu = (() => {
   const D = G.D.C, U = G.U, GR = G.Grid;
   const tm = k => G.Tree.mul('cthulhu', G.S.w.cthulhu.tree, k);
   const ta = k => G.Tree.add('cthulhu', G.S.w.cthulhu.tree, k);
-  // W: 낚시하는 폭. 양옆에 X0칸씩 그냥 바다를 더 깔아 넓은 화면에서도 물이 끝까지 이어진다 (벽 없음)
-  const W = 16, X0 = 10, LO = X0 + 1.5, HI = X0 + W - 2.5, MID = X0 + W / 2, SURF = 3, MAXD = 300, DOWN = 7, UP = 4.5, STEER = 7, IDLE_T = 1, MAD = 12, LANE = 2, CALM = 12;
+  // W: 바다 폭 (양옆 벽 없음). 물고기·바늘은 LO~HI 안에서 움직인다
+  const W = 16, LO = 1.5, HI = W - 2.5, MID = W / 2, SURF = 3, MAXD = 300, DOWN = 7, UP = 4.5, STEER = 7, IDLE_T = 1, MAD = 12, LANE = 2, CALM = 12;
 
   const C = {
     SURF,
@@ -25,7 +25,7 @@ G.Cthulhu = (() => {
       for (let y = 0; y < SURF + MAXD + 2; y++) {
         let r = '';
         const d = y - SURF, z = C.zoneOf(d);
-        for (let x = 0; x < W + 2 * X0; x++) {
+        for (let x = 0; x < W; x++) {
           if (y < SURF) r += ' ';
           else if (y === SURF) r += '~';
           else if (y >= SURF + MAXD + 1) r += 'R';
@@ -72,14 +72,14 @@ G.Cthulhu = (() => {
         const z = C.zoneOf(d), y = SURF + d + Math.random() * 0.8;
         if (z >= 2 && U.chance(0.12)) {
           const hp = 3;
-          rt.tents.push({ kind: 'mon', tent: true, t: { k: 'sea_tent', v: U.rand(8) }, x0: X0 + 2 + Math.random() * (W - 4), x: 0, y, s: 1.4, hp, max: hp, bar: true, ph: Math.random() * 6 });
+          rt.tents.push({ kind: 'mon', tent: true, t: { k: 'sea_tent', v: U.rand(8) }, x0: 2 + Math.random() * (W - 4), x: 0, y, s: 1.4, hp, max: hp, bar: true, ph: Math.random() * 6 });
           continue;
         }
         if (!U.chance(0.75)) continue;
         const pool = D.fish.filter(f => (f.zMax != null ? z >= f.z && z <= f.zMax : f.z === z));
         const sp = U.wpick(pool, f => f.w * (f.sign ? (ta('deal') ? 2 : 1) : f.w < 1 ? 1 + ta('bait') : 1));
         const dir = U.chance(0.5) ? 1 : -1;
-        rt.fish.push({ kind: 'mon', sp, t: sp.t, tint: sp.tint, x: X0 + 1.8 + Math.random() * (W - 3.6), y, d, dir, spd: sp.spd * (0.7 + Math.random() * 0.6), s: (sp.s || 0.9), glow: sp.sign ? '#c78bff' : null });
+        rt.fish.push({ kind: 'mon', sp, t: sp.t, tint: sp.tint, x: 1.8 + Math.random() * (W - 3.6), y, d, dir, spd: sp.spd * (0.7 + Math.random() * 0.6), s: (sp.s || 0.9), glow: sp.sign ? '#c78bff' : null });
       }
       rt.phase = 'down';
       c.trips++;

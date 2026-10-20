@@ -15,7 +15,8 @@ G.UI.views.fantasy = function () {
   // 파티 전체 능력치(트리로 올린 파티 공용 배율): 아이콘 + 숫자 한 줄, 올리면 뜻이 뜬다. 기사만의 수치(치명)는 기사 카드로
   const stats = {};
   const statEl = h('div.minis', null, [['atk', 'u_sword', '파티 공격력 배율 (기사·동료 모두)'], ['hp', 'u_armor', '파티 체력 배율'], ['aspd', 'st_haste', '공격 속도 배율'], ['regen', 'b_regen', '초당 체력 재생'], ['armor', 'd_shield', '받는 피해 감소'], ['smite', 'a_thunder', '벼락 피해'], ['gold', 'ui_gold', '골드 배율'], ['matk', 'm_rat', '이 층 적의 공격력']]
-    .map(([k, t, l]) => h('span.mini', { 'data-tip': l }, k === 'matk' ? (stats.matkIc = G.T.el(t, 'xs')) : G.T.el(t, 'xs'), stats[k] = h('b'))));
+    .map(([k, t, l]) => (stats['_' + k] = h('span.mini', { 'data-tip': l }, k === 'matk' ? (stats.matkIc = G.T.el(t, 'xs')) : G.T.el(t, 'xs'), stats[k] = h('b')))));
+  const tipSet = (k, txt) => { const e = stats['_' + k]; if (e.dataset.tip !== txt) e.dataset.tip = txt; };
   const hud = h('div.fhud', null,
     h('div.floorrow', null, prev, floorEl, next, auto.el),
     h('div.hud-sub', null, hudMon, hudLeft, maxEl));
@@ -129,9 +130,13 @@ G.UI.views.fantasy = function () {
         if (r.card.childNodes.length !== lines.length) { r.card.innerHTML = ''; for (const _ of lines) r.card.append(h('div')); r.card.firstChild.classList.add('pc-n'); }
         lines.forEach((t, i) => setText(r.card.childNodes[i], t));
       }
-      const tmf = k => G.Tree.mul('fantasy', s.tree, k);
-      setText(stats.atk, `×${U.fmt(tmf('atk') * F.dmgMult(s))}`);
-      setText(stats.hp, `×${U.fmt(tmf('hp') * G.globalMult())}`);
+      // 총 배율 (트리·차원·유물·시너지를 더한 값) + 말풍선 내역
+      const tipOf = k => F.parts(k).filter(p => +p[1].toFixed(2) !== 1).map(([n, v]) => `${n} ×${U.fmt(v)}`).join(' · ') || '기본';
+      setText(stats.atk, `×${U.fmt(F.atkMult() * F.dmgMult(s))}`);
+      tipSet('atk', `파티 공격력 — ${tipOf('atk')}${F.dmgMult(s) !== 1 ? ` · 버프 ×${U.fmt(F.dmgMult(s))}` : ''}`);
+      setText(stats.hp, `×${U.fmt(F.sum(F.parts('hp')))}`);
+      tipSet('hp', `파티 체력 — ${tipOf('hp')}`);
+      tipSet('gold', `골드 — ${tipOf('gold')}${s.buffs.gold ? ' · 행운의 노래 ×2' : ''}`);
       setText(stats.aspd, `×${F.aspd(s).toFixed(2)}`);
       setText(stats.regen, `${(F.regen(s) * 100).toFixed(1)}%`);
       setText(stats.armor, U.pct(F.armor()));

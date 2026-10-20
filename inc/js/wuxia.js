@@ -76,7 +76,7 @@ G.Wuxia = (() => {
     },
     // 여정 속도: 경공 무공 × 트리 × 경지(한 단계마다 +15%) × 초상비
     realmTravel: w => 1 + 0.15 * W.realm(w),
-    travelMult: w => (1 + 0.01 * W.eff(w, 'walk')) * tm('walk') * W.realmTravel(w) * (1 + 0.25 * ta('gg_fly')),
+    travelMult: w => W.sum(W.parts(w, 'walk')),
     tripYears: (w, a, b) => W.route(a, b).years / W.travelMult(w),
 
     startAge: () => Math.max(10, 16 - ta('young')),
@@ -101,13 +101,12 @@ G.Wuxia = (() => {
     regionTrain: (w, region, fam) => ((W.act(w, region).train || {})[fam] || 1),
     // 지위 보너스: 단계마다 숙련 +10%
     rankXp: w => 1 + 0.1 * jobDef(w.job).tier,
-    xpMult(w) {
-      const m = (1 + 0.01 * W.eff(w, 'xp')) * G.globalMult() * (1 + G.relicVal('w_xp')) * W.rankXp(w) * W.itemMul(w, 'xp');
-      return m * (1 + (0.1 + ta('elixEff')) * w.elix);
-    },
     // 계열 숙련 배율 (전생 레벨·지역을 뺀 것): 무공 효과 × 특산 × 트리 × 넥서스·유물·붕괴(globalMult)
-    famXp(w, fam) { return W.xpMult(w) * (1 + 0.01 * W.eff(w, 'sxp')) * tm('sxp') * tm(FAM[fam]) * W.itemFam(w, fam); },
-    // 배율이 어디서 왔나: [[이름, 배수], ...] — 곱하면 화면의 총 배율 (말풍선용)
+    famXp(w, fam) { return W.sum(W.parts(w, fam)); },
+    // 영구 배율은 출처끼리 더한다: 1 + Σ(출처 배수 − 1). 곱하면 출처 하나하나가 서로를 키워 후반이 폭주한다.
+    // (지역 수련 배수·전생 따라잡기·버프처럼 상황에 따라 켜지는 것은 따로 곱한다)
+    sum: parts => 1 + parts.reduce((a, p) => a + p[1] - 1, 0),
+    // 배율이 어디서 왔나: [[이름, 배수], ...] — 더하면 화면의 총 배율 (말풍선용)
     parts(w, k) {
       const dim = G.globalMult(), x = v => +v.toFixed(2);
       if (FAM[k]) return [['무공', x((1 + 0.01 * W.eff(w, 'xp')) * (1 + 0.01 * W.eff(w, 'sxp')))], ['지위', x(W.rankXp(w))], ['영단', x(1 + (0.1 + ta('elixEff')) * w.elix)],
@@ -131,7 +130,7 @@ G.Wuxia = (() => {
     },
     income: w => W.stipend(w),
     // 명성 배율 (녹봉 빼고): 무공 효과 × 특산 × 트리 × 넥서스·유물·붕괴
-    fameMult: w => (1 + 0.01 * W.eff(w, 'fame')) * G.globalMult() * (1 + G.relicVal('w_gold')) * tm('fame') * W.itemMul(w, 'fame'),
+    fameMult: w => W.sum(W.parts(w, 'fame')),
     addFame(w, n) { w.gold += n; w.fameT += n; },
     lifespan(w) {
       // 마교 무공의 천수 감소는 「천마 해방」으로 절반
@@ -149,7 +148,7 @@ G.Wuxia = (() => {
       return s;
     },
     // 경지마다 전투력 +30%. 화산 「매화개화」: 화산 진로면 ×1.3
-    powMult: w => (1 + 0.3 * W.realm(w)) * tm('combat') * G.globalMult() * W.itemMul(w, 'pow') * (1 + 0.3 * W.pathNote(w, 'plum')),
+    powMult: w => W.sum(W.parts(w, 'pow').slice(1)),
     power: w => (3 + W.eff(w, 'pow')) * W.powMult(w),
     maxHp: w => (40 + W.eff(w, 'hp')) * tm('combat') * tm('hp') * G.globalMult() * W.itemMul(w, 'hp'),
     atkCd: () => 0.7 / (1 + 0.3 * ta('oe_combo')),

@@ -62,11 +62,24 @@ G.Fantasy = (() => {
     members: f => (f.buffs.assault ? [...F.lineup(f), ...F.roster().filter(id => !F.lineup(f).includes(id))] : F.lineup(f)),
     inParty: (rt, id) => rt.allies.some(a => a.id === id && !a.dead),
 
+    // 영구 배율은 출처끼리 더한다: 1 + Σ(출처 배수 − 1) (트리·차원 넥서스·유물·시너지). 버프는 따로 곱한다.
+    sum: parts => 1 + parts.reduce((a, p) => a + p[1] - 1, 0),
+    parts(k) {
+      const S = G.S, dim = ['차원', G.globalMult()];
+      if (k === 'atk') {
+        let syn = 1;
+        if (G.synergy('syn_sword')) syn += 0.01 * G.Wuxia.mastery(S.w.wuxia);
+        if (G.synergy('syn_madblade')) syn += 1.5 * (1 - S.w.cthulhu.san / G.Cthulhu.maxSan(S.w.cthulhu));
+        return [['트리', tm('atk')], dim, ['유물', 1 + G.relicVal('f_atk')], ['시너지', syn]];
+      }
+      if (k === 'hp') return [['트리', tm('hp')], dim, ['유물', 1 + G.relicVal('f_hp')]];
+      if (k === 'gold') return [['트리', tm('gold')], dim, ['유물', 1 + G.relicVal('f_gold')]];
+      return [];
+    },
+    atkMult: () => F.sum(F.parts('atk')),
+    // 버프(노래·함성·전쟁의 북·총공세): 걸려 있는 동안만 곱한다
     dmgMult(f) {
-      const S = G.S;
-      let m = G.globalMult() * (1 + G.relicVal('f_atk'));
-      if (G.synergy('syn_sword')) m *= 1 + 0.01 * G.Wuxia.mastery(S.w.wuxia);
-      if (G.synergy('syn_madblade')) m *= 1 + 1.5 * (1 - S.w.cthulhu.san / G.Cthulhu.maxSan(S.w.cthulhu));
+      let m = 1;
       for (const k in f.buffs) {
         if (k === 'atk') m *= 1.5 + ta('songPow');
         else if (k === 'assault') m *= 1 + ta('k_rally');
@@ -74,8 +87,8 @@ G.Fantasy = (() => {
       }
       return m;
     },
-    heroAtk: f => 5 * tm('atk') * F.dmgMult(f),
-    heroHP: f => 60 * tm('hp') * G.globalMult() * (1 + G.relicVal('f_hp')),
+    heroAtk: f => 5 * F.atkMult() * F.dmgMult(f),
+    heroHP: f => 60 * F.sum(F.parts('hp')),
     allyAtk: (f, a) => F.heroAtk(f) * a.def.atk * 0.5 * tm('allyAtk') * tm(a.id + 'Atk'),
     allyHP: (f, a) => F.heroHP(f) * a.def.hp * tm('allyHp') * tm(a.id + 'Hp'),
     aspd: f => tm('aspd') * (f.buffs.haste ? 1.5 : 1) * (f.buffs.static ? 1.2 : 1),
@@ -83,7 +96,7 @@ G.Fantasy = (() => {
     critD: () => 2 + ta('critd'),
     armor: () => Math.min(0.75, ta('armor')),
     regen: f => 0.01 + ta('regen') + (f.buffs.regen ? 0.04 : 0),
-    goldMult: f => G.globalMult() * tm('gold') * (1 + G.relicVal('f_gold')) * (f.buffs.gold ? 2 : 1),
+    goldMult: f => F.sum(F.parts('gold')) * (f.buffs.gold ? 2 : 1),
     smiteDmg: f => F.heroAtk(f) * 2 * tm('smite'),
     smiteR: () => 1 + ta('smiteR'),
     smiteCd: () => SMITE_CD * Math.max(0.3, 1 - ta('s_cd')),

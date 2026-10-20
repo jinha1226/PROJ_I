@@ -64,7 +64,7 @@ G.UI.views.cthulhu = function () {
         setText(x.n, n == null ? '?' : U.fmt(n));
         const price = x.sp.sign ? '인장' : `🪙${U.fmt(C.dexPrice(s, x.sp))}`;
         setText(x.pv, n == null ? '' : price);
-        x.el.title = n == null ? '???' : x.sp.sign ? `${x.sp.n} · 잡으면 인장 +1` : `${x.sp.n} · ${price}부터 (더 깊이, 이성이 낮을수록 비싸다)`;
+        x.el.title = n == null ? '???' : `${x.sp.n} · ${price}`;
       }
       setText(dexCnt, ` ${have}/${dex.length}`);
     },
