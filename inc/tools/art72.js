@@ -236,14 +236,22 @@ const SPEC = {
   st_haste: { src: 'flask_blue' },
   fx_song: { src: 'weapon_bow' },
 };
+// 벽 한 벌: 앞면(face, 아래가 트인 벽), 속(dark), 테두리 cS(앞면 위 칸의 윗단)·cN(위가 트임)·cE(오른쪽)·cW(왼쪽)
+// 키는 <접두어><조각><suf> (예: f_wface0, f_cE0 / vw_wface, vw_cE)
+function wallSet(pre, suf, ed, dark, face) {
+  SPEC[pre + 'wface' + suf] = { src: face, ed };
+  SPEC[pre + 'wdark' + suf] = { src: ['wall_top_mid'], ed: [{ op: 'fill', c: dark }, { op: 'tint', c: [...[1, 3, 5].map(i => parseInt(dark.slice(i, i + 2), 16)), 1] }, ...ed] };
+  SPEC[pre + 'cS' + suf] = { src: ['wall_top_mid'], ed };
+  SPEC[pre + 'cN' + suf] = { src: ['wall_top_mid'], ed: [{ op: 'vflip' }, ...ed] };
+  SPEC[pre + 'cE' + suf] = { src: ['wall_edge_mid_right'], ed };
+  SPEC[pre + 'cW' + suf] = { src: ['wall_edge_mid_left'], ed };
+}
+// 무협: 민가는 따뜻한 흙벽돌, 화산파 전각은 밝은 대리석 (0x72 벽돌을 다시 칠한다)
+wallSet('vw_', '', [{ op: 'hue', deg: 18, sat: 1.25, light: 0.06 }], '#3a2418', ['wall_mid', 'wall_mid', 'wall_mid', 'wall_hole_1']);
+wallSet('vm_', '', [{ op: 'hue', deg: 160, sat: 0.25, light: 0.32 }], '#56606a', ['wall_mid', 'wall_mid', 'wall_mid', 'wall_banner_red']);
 for (let b = 0; b < 6; b++) {
   SPEC['f_floor' + b] = { src: FLOOR, ed: BAND[b] };
-  SPEC['f_wdark' + b] = { src: ['wall_top_mid'], ed: [{ op: 'fill', c: '#1d1518' }, { op: 'tint', c: [29, 21, 24, 1] }, ...BAND[b]] };
-  SPEC['f_cS' + b] = { src: ['wall_top_mid'], ed: BAND[b] };
-  SPEC['f_cN' + b] = { src: ['wall_top_mid'], ed: [{ op: 'vflip' }, ...BAND[b]] };
-  SPEC['f_cE' + b] = { src: ['wall_edge_mid_right'], ed: BAND[b] };
-  SPEC['f_cW' + b] = { src: ['wall_edge_mid_left'], ed: BAND[b] };
-  SPEC['f_wface' + b] = { src: ['wall_mid', 'wall_mid', 'wall_mid', 'wall_hole_1', 'wall_mid', 'wall_banner_red', 'wall_mid', 'wall_hole_2'], ed: BAND[b] };
+  wallSet('f_', b, BAND[b], '#1d1518', ['wall_mid', 'wall_mid', 'wall_mid', 'wall_hole_1', 'wall_mid', 'wall_banner_red', 'wall_mid', 'wall_hole_2']);
 }
 
 // ── 만들기 ──

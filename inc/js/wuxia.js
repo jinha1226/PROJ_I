@@ -305,7 +305,12 @@ G.Wuxia = (() => {
       const rt = W.rt(w);
       return {
         map: rt.map, ents: [...rt.villagers, ...rt.bandits, rt.hero], fx: rt.fx, fit: true, cam: rt.hero,
-        terrain: (x, y) => D.tiles[GR.at(rt.map, x, y)] || null,
+        terrain(x, y) {
+          // 민가 벽(#)·화산파 전각 벽(W)은 0x72식으로 방향마다 다른 조각 (바위·벽이 아닌 칸이 트인 쪽)
+          const ch = GR.at(rt.map, x, y), pre = ch === '#' ? 'vw_' : ch === 'W' ? 'vm_' : null;
+          if (pre && G.ARTSET[pre + 'wface']) return GR.wallKeys(x, y, (xx, yy) => GR.at(rt.map, xx, yy) === ch, (xx, yy) => !'#WM '.includes(GR.at(rt.map, xx, yy)), pre);
+          return D.tiles[ch] || null;
+        },
         labels: Object.entries(D.places).map(([ch, n]) => ({ x: rt.map.poi[ch][0][0], y: rt.map.poi[ch][0][1], s: n, on: W.dest(w) === ch })),
       };
     },

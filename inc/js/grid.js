@@ -93,6 +93,19 @@ G.Grid = {
     e.moving = true;
     return Math.hypot(tx - e.x, ty - e.y) <= stopAt;
   },
+  // 0x72식 벽 조각 고르기: 아래가 트였으면 앞면, 아니면 속(어두움) 위에 트인 쪽마다 테두리,
+  // 앞면 바로 위 칸에는 앞면의 윗단. wall(x, y)·open(x, y)는 맵마다 다르다. 키는 <pre><조각><suf>.
+  wallKeys(x, y, wall, open, pre, suf = '') {
+    if (open(x, y + 1)) return [pre + 'wface' + suf];
+    const face = wall(x, y + 1) && open(x, y + 2);
+    if (!face && !G.Grid.DIR.some(([dx, dy]) => open(x + dx, y + dy))) return null;
+    const L = [pre + 'wdark' + suf];
+    if (face) L.push(pre + 'cS' + suf);
+    if (open(x, y - 1)) L.push(pre + 'cN' + suf);
+    if (open(x + 1, y)) L.push(pre + 'cE' + suf);
+    if (open(x - 1, y)) L.push(pre + 'cW' + suf);
+    return L;
+  },
   // 걸을 수 있는 무작위 칸 (조건 함수 선택)
   randomCell(m, ok) {
     for (let i = 0; i < 400; i++) {

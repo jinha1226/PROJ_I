@@ -413,18 +413,7 @@ G.Fantasy = (() => {
           if (c === '#') {
             // 0x72 벽: 아래가 바닥이면 앞면(벽돌이 보인다), 그 밖에 바닥과 닿으면 윗면
             const open = (dx, dy) => '.>'.includes(GR.at(m, x + dx, y + dy));
-            if (G.ARTSET['f_wface' + b]) {
-              if (open(0, 1)) return ['f_wface' + b];
-              // 벽 속은 어두운 돌. 바닥과 닿은 쪽마다 테두리, 앞면 바로 위 칸에는 앞면의 윗단
-              const face = GR.at(m, x, y + 1) === '#' && '.>'.includes(GR.at(m, x, y + 2));
-              if (!face && !GR.DIR.some(([dx, dy]) => open(dx, dy))) return null;
-              const L = ['f_wdark' + b];
-              if (face) L.push('f_cS' + b);
-              if (open(0, -1)) L.push('f_cN' + b);
-              if (open(1, 0)) L.push('f_cE' + b);
-              if (open(-1, 0)) L.push('f_cW' + b);
-              return L;
-            }
+            if (G.ARTSET['f_wface' + b]) return GR.wallKeys(x, y, (xx, yy) => GR.at(m, xx, yy) === '#', (xx, yy) => '.>'.includes(GR.at(m, xx, yy)), 'f_', b);
             for (const [dx, dy] of GR.DIR) if (open(dx, dy)) return ['f_wall' + b];
             return null;
           }
