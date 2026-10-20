@@ -677,8 +677,23 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .ftop { left: 8px; right: 124px; top: 46px; transform: none; gap: 4px; }
   .ftop .corr { font-size: 11px; }
   .php { flex: 1; width: auto; }
-  .fhud .minis { position: absolute; top: 76px; left: 0; gap: 6px; }
+  .fhud .minis { position: absolute; top: 76px; left: 0; gap: 2px 8px; flex-wrap: wrap; width: calc(100vw - 50px); }
   .fhud .hud-sub { display: none; }
   .fleft { left: 8px; bottom: 8px; flex-direction: column-reverse; align-items: flex-start; }
   .fbuffs { flex-direction: row; margin: 0; }
+}
+/* 판타지 초상: 오른쪽에 그 캐릭터에게 걸린 버프, 올리면(누르면) 능력치 카드 */
+.pf { position: relative; pointer-events: auto; cursor: pointer; }
+.pf-buffs { position: absolute; left: calc(100% + 4px); top: 2px; display: flex; gap: 2px; }
+.pf-buffs .buff { padding: 0 3px 0 1px; pointer-events: auto; }
+.pf-buffs .buff .tl { width: 14px; height: 14px; }
+.pf-buffs .buff small { font-size: 10px; }
+.pf-card { display: none; position: absolute; left: calc(100% + 6px); bottom: 0; z-index: 35; white-space: nowrap; background: #000e; border: 1px solid var(--line);
+  border-radius: 8px; padding: 5px 10px; font-size: 12px; font-variant-numeric: tabular-nums; line-height: 1.5; pointer-events: none; }
+.pf-card .pc-n { font-weight: 800; color: var(--accent); }
+.pf:hover .pf-card, .pf.show .pf-card { display: block; }
+.pf:hover .pf-buffs, .pf.show .pf-buffs { visibility: hidden; }
+@media (max-width: 760px) {
+  .pf-buffs { left: 0; top: auto; bottom: calc(100% + 2px); flex-direction: column; }
+  .pf-card { left: 0; bottom: calc(100% + 6px); }
 }

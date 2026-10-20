@@ -390,7 +390,9 @@ G.Fantasy = (() => {
     buff(f, rt, who, k, dur) {
       f.buffs[k] = dur;
       const B = D.buffs[k];
+      // 파티 전체에 걸린다: 시전자 고리 + 살아 있는 파티원마다 작은 고리
       G.fx(rt, { k: 'ring', x: who.x, y: who.y, r: 3, t: 0.7, col: B.col });
+      for (const p of rt.party) if (!p.dead && p !== who) G.fx(rt, { k: 'ring', x: p.x, y: p.y, r: 0.9, t: 0.6, col: B.col });
       G.fx(rt, { k: 'text', x: who.x, y: who.y - 1.1, s: B.n, col: B.col, t: 1.4, sz: 1.1, pop: true });
       G.J.sfx('fantasy', k === 'regen' ? 'bell' : 'chime');
     },
