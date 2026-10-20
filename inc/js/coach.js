@@ -23,7 +23,7 @@ G.Coach = {
       return m ? { x: m._rx ?? m.x, y: m._ry ?? m.y, s: m.s, label: '눌러!' } : null;
     }
     if (id === 'wuxia') {
-      const b = G.Wuxia.rt(w).bandits[0];
+      const b = G.Wuxia.rt(w).foes[0];
       return b ? { x: b._rx ?? b.x, y: b._ry ?? b.y, s: 1, label: '눌러!' } : null;
     }
     if (id === 'xianxia') {

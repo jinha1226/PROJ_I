@@ -902,3 +902,8 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .jbox:hover { transform: none; }
   .fover.travel .jbox { transform: translate(50%, -50%) scale(2.5); }
 }
+.lrow.rrow { cursor: default; }
+.lrow.rrow.done { opacity: .55; }
+.lrow.rrow.on { border-color: var(--accent); }
+
+.ocard .om small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

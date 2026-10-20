@@ -165,6 +165,16 @@ G.deserialize = function (json) {
   delete G.S.w.fantasy.ing;
   // 원정대 노드가 생기기 전 저장: 동료를 이미 열었으면 원정대도 연 것으로
   if (['archer', 'bard', 'cleric', 'mage', 'paladin', 'dragoon', 'archmage'].some(k => ft[k])) ft.party = 1;
+  // 무협: 직업 레벨 → 명성 지위로 바뀌기 전 저장. 옛 트리는 쓴 깨달음을 돌려주고 비운다, 쌓은 명성은 지금 지위만큼 채운다
+  const wx = G.S.w.wuxia;
+  const OLD = { jxp1: [1, 1.585], gold1: [3, 1.65], jxp2: [60, 1.65], sxp1: [1, 1.585], sxp2: [60, 1.65], twin: [15, 2.3], peak1: [5, 1.78], peak2: [300, 1.91], life1: [2, 1.715], young: [10, 2.3], life2: [250, 1.91], walk: [4, 2.04], fight1: [3, 1.65], bounty: [20, 1.78], fight2: [400, 1.78], yang: [25, 1], magong: [400, 1], ins1: [20, 1.78], essw: [800, 2.17] };
+  if (wx.tree && (wx.tree.jxp1 != null || wx.tree.sxp1 != null || wx.tree.fight1 != null)) {
+    let back = 0;
+    for (const [k, [b, g]] of Object.entries(OLD)) for (let i = 0; i < (wx.tree[k] || 0); i++) back += b * Math.pow(g, i);
+    wx.tree = G.Tree.init('wuxia');
+    wx.ins += back;
+  }
+  if (!data.w || !data.w.wuxia || data.w.wuxia.fameT == null) { const j = G.D.WX.jobs.find(x => x.id === wx.job) || G.D.WX.jobs[0]; wx.job = j.id; wx.fameT = j.fame; }
   G.RT = {};
   return G.S;
 };
