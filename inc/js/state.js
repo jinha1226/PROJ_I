@@ -92,6 +92,8 @@ G.Relic = {
 };
 
 // ───── 차원 붕괴 ─────
+// 작은 차원 붕괴(보류 — 사용자: 세계마다 조건을 채우는 건 번잡스럽다): WORLD_CONDS를 켜면 세계마다 작은 조건 하나.
+// 꺼져 있으면 예전처럼 이번 회차 정수 PRESTIGE_MIN.
 // 작은 차원 붕괴: 세계마다 작은 조건 하나. 판타지·무협은 늘, 나머지는 연 세계만 (판타지·무협만 열고 붕괴할 수도, 더 열고 할 수도)
 // 크툴루 각성으로 일어나는 큰 붕괴(세계 융합)는 나중 콘텐츠
 G.Prestige = {
@@ -105,8 +107,9 @@ G.Prestige = {
     ];
     return out.filter(c => c.id === 'fantasy' || c.id === 'wuxia' || S.unlocked[c.id]).map(c => ({ ...c, ok: c.v >= c.need }));
   },
+  WORLD_CONDS: false,
   gain: () => Math.max(1, Math.floor(Math.sqrt(G.S.runEss / 200))),
-  can: () => G.Prestige.conds().every(c => c.ok),
+  can: () => (G.Prestige.WORLD_CONDS ? G.Prestige.conds().every(c => c.ok) : G.S.runEss >= G.D.PRESTIGE_MIN),
   go() {
     if (!G.Prestige.can()) return false;
     const old = G.S, gain = G.Prestige.gain();

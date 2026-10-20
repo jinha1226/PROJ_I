@@ -109,8 +109,9 @@ G.UI.views.prestige = function () {
       const S = G.S;
       setText(runEl, U.fmt(S.runEss));
       setText(gainEl, G.Prestige.can() ? G.Prestige.gain() : 0);
-      const cs = G.Prestige.conds();
-      setText(btn, G.Prestige.can() ? '차원을 붕괴시킨다' : `조건 ${cs.filter(c => c.ok).length} / ${cs.length}`);
+      const on = G.Prestige.WORLD_CONDS, cs = on ? G.Prestige.conds() : [];
+      tog(condEl, 'hidden', !on);
+      setText(btn, G.Prestige.can() ? '차원을 붕괴시킨다' : on ? `조건 ${cs.filter(c => c.ok).length} / ${cs.length}` : `정수 ${U.fmt(G.D.PRESTIGE_MIN)} 필요`);
       // 세계마다 작은 조건 (연 세계만)
       const ck = cs.map(c => c.id + c.ok + Math.floor(c.v)).join();
       if (condEl._k !== ck) {

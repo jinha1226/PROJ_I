@@ -100,8 +100,8 @@ G.UI = {
     const nc = G.Tree.cheapest('nexus', S.ntree);
     tog(this.navItems.nexus.el, 'dot', !!(nc && S.ess >= nc.cost));
     setText(this.navItems.altar.st, `소환 ×${Math.floor(S.signs / G.D.SUMMON_COST)}`);
-    const pc = G.Prestige.conds();
-    setText(this.navItems.prestige.st, G.Prestige.can() ? `★ +${G.Prestige.gain()}` : `조건 ${pc.filter(c => c.ok).length} / ${pc.length}`);
+    const pc = G.Prestige.WORLD_CONDS ? G.Prestige.conds() : null;
+    setText(this.navItems.prestige.st, G.Prestige.can() ? `★ +${G.Prestige.gain()}` : pc ? `조건 ${pc.filter(c => c.ok).length} / ${pc.length}` : `${G.U.fmt(S.runEss)} / ${G.U.fmt(G.D.PRESTIGE_MIN)}`);
     tog(this.navItems.prestige.el, 'ready', G.Prestige.can());
     if (this.view && this.view.update) this.view.update();
   },
