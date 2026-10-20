@@ -95,7 +95,7 @@ G.UI.views.xianxia = function () {
   const cmp = h('div.dcmp');
   // 천겁 진법(청사진 한 장): 천겁이 시작되면 이 진법으로 바꿔 깔고, 끝나면 원래대로
   const tribTxt = h('small');
-  const saveBtn = h('button.btn.sm', { 'data-tip': '지금 깔린 진법을 천겁용으로 저장 (토·화 위주로 깔아 두고 누르면 좋다)', on: { click: () => { X.saveTrib(x()); G.SFX.play('select'); } } }, '지금 진법 저장');
+  const saveBtn = h('button.btn.sm', { 'data-tip': '지금 깔린 진법을 천겁용으로 저장 (토·화 위주로 깔아 두고 누르면 좋다)', on: { click: () => { X.saveTrib(x()); G.SFX.play('select'); } } }, '저장');
   const clearBtn = h('button.btn.sm', { on: { click: () => { X.clearTrib(x()); } } }, '지우기');
   const design = h('div.xdesign.hidden', null,
     h('div.card-h', null, h('b', null, '진법 설계'), h('span.sp'), h('small.dim', null, '맵 위 숫자 = 진기 출력')),
