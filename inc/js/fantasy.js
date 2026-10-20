@@ -565,8 +565,11 @@ G.Fantasy = (() => {
         }
       }
       F.look(rt);
-      // 동료: 기사를 따라다니며 각자 싸운다
+      // 동료: 기사를 따라다니며 각자 싸운다. 기사가 쓰러지면 살아 있는 전열(성기사·용기병)을 따르고,
+      // 전열도 없으면 제자리를 지킨다 — 쓰러진 기사(대개 적 한가운데)를 따라가 후열이 적진에 뛰어들지 않게
+      const front = hero.dead ? rt.allies.find(q => !q.dead && (q.id === 'paladin' || q.id === 'dragoon')) : hero;
       for (const a of rt.allies) {
+        const lead = front || a;
         a.moving = false;
         if (a.dead) continue;
         const def = a.def;
@@ -590,13 +593,19 @@ G.Fantasy = (() => {
               G.fx(rt, { k: 'tile', key: 'fx_holy', x: low.x, y: low.y, t: 0.5 });
             }
           }
-          if (GR.dist(a, hero) > 1.8) GR.moveTo(m, a, hero.x, hero.y, speed * 1.1, dt, 1.4);
+          if (lead !== a && GR.dist(a, lead) > 1.8) GR.moveTo(m, a, lead.x, lead.y, speed * 1.1, dt, 1.4);
           continue;
         }
         const range = def.range + (a.id === 'archer' ? ta('r_range') : 0);
         const prefer = ta('s_focus') && rt.focus && rt.focus.hp > 0 && GR.dist(rt.focus, a) < range + 4 ? rt.focus : null;
         const tg = prefer || F.nearestMon(rt, a, range + 4);
-        if (tg && GR.dist(tg, hero) < 9) {
+        if (tg && GR.dist(tg, lead) < 9) {
+          // 원거리: 적이 바로 붙으면 한 걸음 물러나 쏜다 (앞에 막아 줄 동료가 있을 때만 — 혼자면 그냥 싸운다)
+          if (range >= 3 && GR.dist(a, tg) < 1.4 && rt.party.some(q => !q.dead && q !== a && GR.dist(q, tg) < 2.5)) {
+            const dx = a.x - tg.x, dy = a.y - tg.y, l = Math.hypot(dx, dy) || 1;
+            const bx = U.clamp(Math.round(a.x + dx / l * 2), 1, m.w - 2), by = U.clamp(Math.round(a.y + dy / l * 2), 1, m.h - 2);
+            if (GR.pass(m, bx, by)) { GR.moveTo(m, a, bx, by, speed, dt, 0.3); continue; }
+          }
           // 용기병 돌진: 사거리 밖 6칸 안의 적에게 뛰어든다
           if (a.id === 'dragoon' && ta('d_dash') && a.dashT <= 0 && GR.dist(a, tg) > range && GR.dist(a, tg) <= 6 && F.sees(m, a, tg)) {
             a.dashT = DASH_CD;
@@ -612,7 +621,7 @@ G.Fantasy = (() => {
             a.atkT = F.allyCd(a);
             F.allyAttack(f, rt, a, tg);
           }
-        } else if (GR.dist(a, hero) > 1.8) GR.moveTo(m, a, hero.x, hero.y, speed * 1.1, dt, 1.4);
+        } else if (lead !== a && GR.dist(a, lead) > 1.8) GR.moveTo(m, a, lead.x, lead.y, speed * 1.1, dt, 1.4);
       }
       F.spread(m, rt.party, 0.75);
       F.spread(m, rt.mons, 0.8);
