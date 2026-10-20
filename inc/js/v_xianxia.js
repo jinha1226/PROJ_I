@@ -167,8 +167,13 @@ G.UI.views.xianxia = function () {
       setText(herbTxt, ` ${X.herbEvery(s, L).toFixed(1)}초마다`);
       setW(alchBar.fill, s.herbs >= 3 ? rt.alchT / X.ALCH_T : 0);
       setText(alchTxt, s.herbs >= 3 ? ` ${X.alchEvery(s, L).toFixed(1)}초마다` : ` 영초 ${s.herbs}/3`);
-      const nk = X.bottleneck(s);
-      setText(neckEl, nk ? `병목 · ${nk}` : '');
+      // 첫 천겁 안내: 영기가 80% 차고 천겁 진법이 없으면 📐 → 저장을 반짝여 짚는다 (저장하면 끝, 막지는 않는다)
+      const tut = s.realm === 0 && !s.arrTrib && !s.tutTrib && s.qi >= cost * 0.8;
+      if (s.arrTrib && !s.tutTrib) s.tutTrib = 1;
+      tog(designBtn, 'coach', tut && !X.showNums);
+      tog(saveBtn, 'coach', tut && X.showNums);
+      const nk = tut ? '첫 천겁 전에: 토·화 위주로 깔고 📐 → 천겁 진법 저장' : X.bottleneck(s);
+      setText(neckEl, nk ? `${tut ? '안내' : '병목'} · ${nk}` : '');
       // 진법 설계
       if (X.showNums) {
         setText(tribTxt, s.arrTrib ? `저장됨 · 진기 ${Object.keys(s.arrTrib).length}개` : '없음 · 지금 진법을 저장');
