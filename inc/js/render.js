@@ -33,10 +33,19 @@ G.MapView = function (canvas) {
     for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
       const keys = view.terrain(x, y);
       if (!keys) continue;
-      for (const k of keys) {
-        const im = G.T.image(k, G.T.hash(x, y));
+      for (const it of keys) {
+        // { k, q: [qx, qy] } 이면 그 그림의 사분면 하나만 이 칸의 같은 사분면에 (벽 밑 땅을 양쪽에 맞게 깔 때)
+        const k = typeof it === 'string' ? it : it.k;
+        const im = G.T.image(k, G.T.hash(x + (it.dx || 0), y + (it.dy || 0)));
         if (!G.T.ready(im)) { ready = false; continue; }
-        b.drawImage(im, x * TSRC, y * TSRC, TSRC, TSRC);
+        if (it.q) {
+          const hw = im.naturalWidth / 2, h2 = TSRC / 2;
+          b.drawImage(im, it.q[0] * hw, it.q[1] * hw, hw, hw, x * TSRC + it.q[0] * h2, y * TSRC + it.q[1] * h2, h2, h2);
+          continue;
+        }
+        // 0x72 높은 벽(16×32): 아래 절반이 이 칸, 위 절반(윗단 턱)은 위 칸에 겹친다
+        if (im.naturalHeight === im.naturalWidth * 2) b.drawImage(im, x * TSRC, (y - 1) * TSRC, TSRC, TSRC * 2);
+        else b.drawImage(im, x * TSRC, y * TSRC, TSRC, TSRC);
       }
     }
     m._bg = cv; m._bgVer = m.ver; m._bgReady = ready;

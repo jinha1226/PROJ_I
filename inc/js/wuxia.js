@@ -309,6 +309,18 @@ G.Wuxia = (() => {
           // 민가 벽(#)·화산파 전각 벽(W)은 0x72식으로 방향마다 다른 조각 (바위·벽이 아닌 칸이 트인 쪽)
           const ch = GR.at(rt.map, x, y), pre = ch === '#' ? 'vw_' : ch === 'W' ? 'vm_' : null;
           const isWall = (xx, yy) => '#W'.includes(GR.at(rt.map, xx, yy)) && GR.at(rt.map, xx, yy) !== ' ';
+          if (pre && G.ARTSET[pre + 'hw0']) {
+            // 벽 밑 땅: 사분면마다 그쪽 이웃(가로 → 세로 → 대각선 순)의 땅을 깐다. 실내 쪽은 마루, 바깥쪽은 풀밭.
+            const ground = (xx, yy) => { const c = GR.at(rt.map, xx, yy); return '#WM '.includes(c) ? null : D.tiles[c][0]; };
+            const L = [];
+            for (const [qx, qy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+              const sx = qx ? 1 : -1, sy = qy ? 1 : -1;
+              const pick = [[sx, 0], [0, sy], [sx, sy]].map(([dx, dy]) => [ground(x + dx, y + dy), dx, dy]).find(g => g[0]);
+              if (pick) L.push({ k: pick[0], q: [qx, qy], dx: pick[1], dy: pick[2] });
+            }
+            L.push(pre + 'hw' + GR.blob(x, y, (xx, yy) => GR.at(rt.map, xx, yy) === ch));
+            return L;
+          }
           if (pre && G.ARTSET[pre + 'wface']) return GR.wallKeys(x, y, (xx, yy) => GR.at(rt.map, xx, yy) === ch, (xx, yy) => !'#WM '.includes(GR.at(rt.map, xx, yy)), pre, '', true);
           const base = D.tiles[ch];
           // 땅 그림자: 위나 왼쪽이 벽이면 그쪽 가장자리가 어둡다 (벽이 땅에 서 있게)

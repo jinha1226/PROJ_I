@@ -236,6 +236,16 @@ const SPEC = {
   st_haste: { src: 'flask_blue' },
   fx_song: { src: 'weapon_bow' },
 };
+// 0x72 자동 타일 벽 (atlas_walls_high-16x32, Godot 3x3 minimal 배치 12×4). 이웃 마스크 → 시트 위치.
+// 마스크 비트: N1 E2 S4 W8 NE16 SE32 SW64 NW128 (대각선은 양옆이 모두 벽일 때만). Godot 공식 템플릿 그림에서 읽은 표.
+const GODOT47 = {"0":[0,3],"1":[0,2],"2":[1,3],"3":[1,2],"4":[0,0],"5":[0,1],"6":[1,0],"7":[1,1],"8":[3,3],"9":[3,2],"10":[2,3],"11":[2,2],"12":[3,0],"13":[3,1],"14":[2,0],"15":[2,1],"19":[8,3],"23":[4,2],"27":[5,3],"31":[7,0],"38":[8,0],"39":[4,1],"46":[5,0],"47":[7,3],"55":[8,1],"63":[8,2],"76":[11,0],"77":[7,1],"78":[6,0],"79":[4,3],"95":[9,1],"110":[10,0],"111":[9,0],"127":[5,1],"137":[11,3],"139":[6,3],"141":[7,2],"143":[4,0],"155":[9,3],"159":[10,3],"175":[10,2],"191":[5,2],"205":[11,2],"207":[11,1],"223":[6,2],"239":[6,1],"255":[9,2]};
+const ATLAS = PNG.read(fs.readFileSync(path.join(ROOT, 'assets', 'src', '0x72', 'atlas_walls_high-16x32.png')));
+function atlasSet(pre, suf, ed) {
+  for (const [m, [tx, ty]] of Object.entries(GODOT47)) {
+    const tile = crop(ATLAS, { x0: tx * 16, y0: ty * 32, x1: tx * 16 + 15, y1: ty * 32 + 31 });
+    SPEC[pre + 'hw' + m + suf] = { img: tile, ed };
+  }
+}
 // 벽 한 벌: 앞면(face, 아래가 트인 벽), 속(dark), 테두리 cS(앞면 위 칸의 윗단)·cN(위가 트임)·cE(오른쪽)·cW(왼쪽)
 // 키는 <접두어><조각><suf> (예: f_wface0, f_cE0 / vw_wface, vw_cE)
 function wallSet(pre, suf, ed, dark, face) {
@@ -247,6 +257,8 @@ function wallSet(pre, suf, ed, dark, face) {
   SPEC[pre + 'cW' + suf] = { src: ['wall_edge_mid_left'], ed };
 }
 // 무협: 민가는 따뜻한 흙벽돌, 화산파 전각은 밝은 대리석 (0x72 벽돌을 다시 칠한다)
+atlasSet('vw_', '', [{ op: 'hue', deg: 18, sat: 1.2, light: 0.13 }]);
+atlasSet('vm_', '', [{ op: 'hue', deg: 160, sat: 0.25, light: 0.32 }]);
 wallSet('vw_', '', [{ op: 'hue', deg: 18, sat: 1.2, light: 0.13 }], '#3a2418', ['wall_mid', 'wall_mid', 'wall_mid', 'wall_hole_1']);
 wallSet('vm_', '', [{ op: 'hue', deg: 160, sat: 0.25, light: 0.32 }], '#56606a', ['wall_mid', 'wall_mid', 'wall_mid', 'wall_banner_red']);
 // 마을 벽은 윗면을 재질로 채운다(cap) + 트인 쪽 가장자리 선(oN·oE·oW) + 땅 그림자(sh_N·sh_W)
@@ -258,6 +270,7 @@ SPEC.sh_N = { draw: ['shade', 1, { side: 'N', depth: 6, a: 0.5 }] };
 SPEC.sh_W = { draw: ['shade', 1, { side: 'W', depth: 4, a: 0.35 }] };
 for (let b = 0; b < 6; b++) {
   SPEC['f_floor' + b] = { src: FLOOR, ed: BAND[b] };
+  atlasSet('f_', b, BAND[b]);
   wallSet('f_', b, BAND[b], '#1d1518', ['wall_mid', 'wall_mid', 'wall_mid', 'wall_hole_1', 'wall_mid', 'wall_banner_red', 'wall_mid', 'wall_hole_2']);
 }
 
@@ -287,6 +300,7 @@ function save(key, list, ed, box) {
   set[key] = list.length;
 }
 for (const [key, s] of Object.entries(SPEC)) {
+  if (s.img) { fs.writeFileSync(path.join(OUT, key + '.png'), PNG.write(edit(s.img, s.ed))); set[key] = 1; continue; }
   if (s.draw) {
     const [fn, n, opt] = s.draw;
     for (let i = 0; i < n; i++) fs.writeFileSync(path.join(OUT, n > 1 ? `${key}_${i}.png` : `${key}.png`), PNG.write(edit(PIX[fn](i + 1, opt), s.ed)));

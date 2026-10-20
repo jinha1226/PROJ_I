@@ -93,6 +93,13 @@ G.Grid = {
     e.moving = true;
     return Math.hypot(tx - e.x, ty - e.y) <= stopAt;
   },
+  // 0x72 자동 타일 벽: 이웃 8칸이 벽인지로 47가지 마스크 (Godot 3x3 minimal과 같은 비트)
+  // N1 E2 S4 W8, 대각선 NE16 SE32 SW64 NW128은 양옆 두 칸이 모두 벽일 때만 센다.
+  blob(x, y, wall) {
+    const n = wall(x, y - 1), e = wall(x + 1, y), s = wall(x, y + 1), w = wall(x - 1, y);
+    return (n ? 1 : 0) | (e ? 2 : 0) | (s ? 4 : 0) | (w ? 8 : 0) | (n && e && wall(x + 1, y - 1) ? 16 : 0) | (s && e && wall(x + 1, y + 1) ? 32 : 0)
+      | (s && w && wall(x - 1, y + 1) ? 64 : 0) | (n && w && wall(x - 1, y - 1) ? 128 : 0);
+  },
   // 0x72식 벽 조각 고르기: 아래가 트였으면 앞면, 아니면 속(어두움) 위에 트인 쪽마다 테두리,
   // 앞면 바로 위 칸에는 앞면의 윗단. wall(x, y)·open(x, y)는 맵마다 다르다. 키는 <pre><조각><suf>.
   // cap이면 마을 벽: 윗면을 재질로 채우고(빈 어둠 대신) 트인 쪽에 가장자리 선

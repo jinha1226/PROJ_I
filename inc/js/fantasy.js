@@ -413,6 +413,12 @@ G.Fantasy = (() => {
           if (c === '#') {
             // 0x72 벽: 아래가 바닥이면 앞면(벽돌이 보인다), 그 밖에 바닥과 닿으면 윗면
             const open = (dx, dy) => '.>'.includes(GR.at(m, x + dx, y + dy));
+            // 0x72 자동 타일(47조각): 맵 밖도 벽으로 친다
+            // 바닥과 닿은 벽 칸은 밑에 바닥을 깐다 (0x72 벽은 칸 가운데에 얇게 그려져 양옆이 비어 있다)
+            if (G.ARTSET['f_hw0' + b]) {
+              const k = 'f_hw' + GR.blob(x, y, (xx, yy) => xx < 0 || yy < 0 || xx >= m.w || yy >= m.h || m.c[yy * m.w + xx] === '#') + b;
+              return GR.DIR.some(([dx, dy]) => open(dx, dy)) ? ['f_floor' + b, k] : [k];
+            }
             if (G.ARTSET['f_wface' + b]) return GR.wallKeys(x, y, (xx, yy) => GR.at(m, xx, yy) === '#', (xx, yy) => '.>'.includes(GR.at(m, xx, yy)), 'f_', b);
             for (const [dx, dy] of GR.DIR) if (open(dx, dy)) return ['f_wall' + b];
             return null;
