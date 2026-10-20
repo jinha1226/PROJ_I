@@ -576,3 +576,18 @@ details.card summary { cursor: pointer; font-weight: 700; }
 
 /* 0x72 그림(assets/art)은 세로로 긴 것도 있어 비율을 지켜 넣는다 */
 .tl img.art, .tl-inline img.art { object-fit: contain; image-rendering: pixelated; }
+
+/* 트리: 행동이 바뀌는 큰 노드(★)와 택1 짝 노드 */
+.tnode.notable { border-width: 3px; border-color: #d9a62e88; box-shadow: 0 0 0 2px #00000088, 0 0 10px #d9a62e44; }
+.tnode.notable.owned { border-color: #ffd24a; }
+.tnode.pair::before { content: '⇄'; position: absolute; top: -9px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #ffd24a; text-shadow: 0 0 3px #000; }
+.tnode.off { filter: grayscale(0.8) brightness(0.6); border-style: dashed; }
+
+/* 판타지: 원정대 합산 체력·오염·편성 */
+.hud-hp { width: 170px; margin-top: 4px; pointer-events: none; }
+.hud-hp .meter-h { font-size: 11px; }
+.corr { display: block; color: #b6e36a; font-size: 11px; margin: 2px 0 6px; }
+.roster { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 8px; }
+.rmember { width: 40px; height: 44px; padding: 2px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); opacity: .45; }
+.rmember.on { opacity: 1; border-color: var(--good); box-shadow: 0 0 0 1px var(--good); }
+.rmember .tl { width: 100%; height: 100%; }

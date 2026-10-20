@@ -217,6 +217,9 @@ const SPEC = {
     };
   })(),
   w_katana: { src: 'weapon_katana' }, w_duel: { src: 'weapon_duel_sword' },
+  // 보물상자(닫힘·열림)와 미믹
+  x_chest: { src: 'chest_full_open_anim_f0' }, x_chest_open: { src: 'chest_full_open_anim_f2' },
+  m_mimic: { src: 'chest_mimic_open_anim' },
   // 화살 (날아가는 방향으로 돌려 그린다)
   fx_arrow: { src: 'weapon_arrow' },
   // 판타지: 던전 지형 (구간 0~5). 벽은 위에서 본 윗면(top)과 바닥 쪽으로 보이는 앞면(face)

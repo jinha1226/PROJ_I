@@ -3,6 +3,7 @@
 // 노드: { id, x, y, req:[부모 id], reqAll, t(타일), n, d, max, base, g, eff:{키: 레벨당 값}, root, costFn }
 // 효과 읽기: mul(키) = Π(1 + v·lv) (노드 안에서는 더하고, 노드끼리는 곱한다),  add(키) = Σ v·lv,  has(키) = add > 0
 // 트리 상태(레벨)는 세이브에 들어가는 평범한 객체 { 노드id: 레벨 }. 계산 캐시는 열거되지 않는 _c에 둔다.
+// 짝 노드(pair: 그룹 이름): 같은 그룹은 둘 다 배울 수 있지만 효과는 고른 하나만. 고른 것은 st['@그룹']. 바꾸기는 공짜.
 G.Tree = {
   defs: {},   // 트리 id → 노드 배열
   idx: {},    // 트리 id → { 노드 id → 노드 }
@@ -24,18 +25,33 @@ G.Tree = {
     if (!st._c) Object.defineProperty(st, '_c', { value: {}, writable: true, enumerable: false });
     return st._c;
   },
+  // 짝 노드 중 고르지 않은 쪽은 효과가 없다
+  on: (st, n) => !!st[n.id] && (!n.pair || G.Tree.picked(st, n) === n.id),
+  picked(st, n) {
+    const p = st['@' + n.pair];
+    if (p && st[p]) return p;
+    return n.id;
+  },
+  pick(id, st, nid) {
+    const n = G.Tree.idx[id][nid];
+    if (!n || !n.pair || !st[nid]) return false;
+    st['@' + n.pair] = nid;
+    st._c = {};
+    G.emit('tree', { id, nid, pick: true });
+    return true;
+  },
   mul(id, st, key) {
     const c = G.Tree.cache(st), ck = 'm' + key;
     if (c[ck] !== undefined) return c[ck];
     let v = 1;
-    for (const n of G.Tree.defs[id]) if (n.eff && n.eff[key] && st[n.id]) v *= 1 + n.eff[key] * st[n.id];
+    for (const n of G.Tree.defs[id]) if (n.eff && n.eff[key] && G.Tree.on(st, n)) v *= 1 + n.eff[key] * st[n.id];
     return (c[ck] = v);
   },
   add(id, st, key) {
     const c = G.Tree.cache(st), ck = 'a' + key;
     if (c[ck] !== undefined) return c[ck];
     let v = 0;
-    for (const n of G.Tree.defs[id]) if (n.eff && n.eff[key] && st[n.id]) v += n.eff[key] * st[n.id];
+    for (const n of G.Tree.defs[id]) if (n.eff && n.eff[key] && G.Tree.on(st, n)) v += n.eff[key] * st[n.id];
     return (c[ck] = v);
   },
   has: (id, st, key) => G.Tree.add(id, st, key) > 0,
@@ -72,6 +88,8 @@ G.Tree = {
     G.Tree.cache(st);
     st._c = {};
     const n = G.Tree.idx[id][nid];
+    // 짝 노드는 새로 배운 쪽을 바로 쓴다
+    if (n.pair) st['@' + n.pair] = nid;
     if (n.onBuy) n.onBuy();
     G.emit('tree', { id, nid });
     return true;

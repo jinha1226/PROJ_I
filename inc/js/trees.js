@@ -10,48 +10,104 @@
   const S = () => G.S;
 
   // ───── 판타지 (골드) ─────
+  // 북: 원정대(동료 해금 → 그 동료 전용 가지, 끝에 ★택1 짝) · 남: 기사(리더)와 파티 전체 · 동: 벼락(클릭) · 서: 재화
+  // 짝 노드(pair)는 둘 다 배울 수 있고 효과는 고른 하나만, 바꾸기는 공짜.
+  const PAIR = (id, x, y, req, t, n, d, base, eff, pair) => N(id, x, y, req, t, n, d, 1, base, 1, eff, { pair, notable: true });
+  const NOTE = (id, x, y, req, t, n, d, base, eff) => N(id, x, y, req, t, n, d, 1, base, 1, eff, { notable: true });
   G.Tree.define('fantasy', [
     N('root', 0, 0, '', 'knight', '모험의 시작', '', 1, 0, 1, {}, { root: true }),
-    // 동: 공격
-    N('atk1', 1.2, 0, 'root', 'u_sword', '예리한 검', '영웅 공격력 +15%', 10, 10, 1.45, { atk: 0.15 }),
-    N('aspd1', 2.3, -0.7, 'atk1', 'n_auto_duel', '연속 베기', '공격 속도 +8%', 10, 60, 1.6, { aspd: 0.08 }),
-    N('crit1', 2.3, 0.7, 'atk1', 'g_dagger', '급소 찌르기', '치명타 확률 +3%', 10, 80, 1.6, { crit: 0.03 }),
-    N('atk2', 3.5, 0, 'aspd1 crit1', 'it_sword', '명검 단련', '영웅 공격력 +20%', 15, 300, 1.5, { atk: 0.2 }),
-    N('critd', 4.6, 0.8, 'atk2', 'j_nangin', '일격필살', '치명타 피해 +25%', 15, 1500, 1.6, { critd: 0.25 }),
-    N('atk3', 5.8, 0, 'atk2', 'j_jangmun', '성검', '영웅 공격력 +35%', 20, 10000, 1.6, { atk: 0.35 }),
-    N('atk4', 7.2, 0, 'atk3', 'rl_heart', '용살검', '영웅 공격력 +50%', 25, 500000, 1.7, { atk: 0.5 }),
-    // 남: 방어
-    N('hp1', 0, 1.2, 'root', 'u_armor', '판금 갑옷', '영웅 최대 체력 +18%', 10, 15, 1.45, { hp: 0.18 }),
-    N('regen1', -0.8, 2.3, 'hp1', 'r_stew', '붕대', '초당 체력 회복 +0.5%', 10, 120, 1.6, { regen: 0.005 }),
-    N('armor1', 0.8, 2.3, 'hp1', 'd_shield', '방패술', '받는 피해 -3% (최대 75%)', 15, 200, 1.55, { armor: 0.03 }),
-    N('hp2', 0, 3.5, 'regen1 armor1', 'rl_plating', '미스릴 사슬', '영웅 최대 체력 +25%', 15, 1000, 1.5, { hp: 0.25 }),
-    N('hp3', 0, 4.8, 'hp2', 'i_scale', '용비늘 갑주', '영웅 최대 체력 +40%', 25, 100000, 1.6, { hp: 0.4 }),
-    // 북: 동료
-    N('archer', 0, -1.2, 'root', 'u_archer', '레인저', '합류 · 원거리', 1, 40, 1, { ally_archer: 1 }),
-    N('cleric', -1.1, -2.3, 'archer', 'u_cleric', '떠돌이 수도사', '합류 · 치유', 1, 300, 1, { ally_cleric: 1 }),
-    N('mage', 1.1, -2.3, 'archer', 'u_mage', '화염 마법사', '합류 · 범위 공격', 1, 1200, 1, { ally_mage: 1 }),
-    N('paladin', 0, -3.4, 'cleric mage', 'u_paladin', '성기사', '합류 · 탱커', 1, 8000, 1, { ally_paladin: 1 }),
-    N('dragoon', -1.1, -4.5, 'paladin', 'u_dragoon', '용기병', '합류 · 강타', 1, 60000, 1, { ally_dragoon: 1 }),
-    N('archmage', 1.1, -4.5, 'paladin', 'u_archmage', '대현자', '합류 · 연쇄 번개', 1, 400000, 1, { ally_archmage: 1 }),
-    N('allyAtk1', 2.3, -3.4, 'mage', 'u_legend', '전우애', '동료 공격력 +18%', 15, 1500, 1.5, { allyAtk: 0.18 }),
-    N('allyAtk2', 2.3, -5.6, 'archmage allyAtk1', 'u_god', '영웅단', '동료 공격력 +35%', 25, 200000, 1.6, { allyAtk: 0.35 }),
-    N('allyHp', -2.3, -3.4, 'cleric', 'rl_herb', '결속', '동료 최대 체력 +20%', 15, 1500, 1.5, { allyHp: 0.2 }),
-    // 서: 살림·음유시인
-    N('gold1', -1.2, 0, 'root', 'ui_gold', '약탈', '골드 +15%', 15, 25, 1.5, { gold: 0.15 }),
-    N('speed1', -2.3, -0.8, 'gold1', 'a_escape', '가벼운 발걸음', '이동 속도 +8%', 8, 50, 1.7, { speed: 0.08 }),
-    N('gold2', -3.5, 0, 'gold1', 'rs_salvage', '보물 사냥꾼', '골드 +30%', 20, 5000, 1.55, { gold: 0.3 }),
-    N('essf', -4.7, -0.8, 'gold2', 'ui_ess', '심연의 기운', '이 세계의 정수 +15%', 10, 50000, 1.9, { ess: 0.15 }),
-    N('bard', -2.3, 0.8, 'gold1', 'u_bard', '음유시인', '노래: 피해 ×1.5 ↔ 골드 ×2', 1, 150, 1, { ally_bard: 1 }),
-    N('bless', -3.5, 1.6, 'bard', 'b_regen', '축복', '수도사 · 10초: 초당 체력 +4%', 1, 800, 1, { bless: 1 }),
-    N('songDur', -2.3, 2.4, 'bard', 'fx_song', '앙코르', '노래·축복 지속 +20%', 16, 1500, 1.8, { songDur: 0.2 }),
-    N('songWar', -4.7, 2.4, 'bless songDur', 'b_fury', '전쟁의 북', '노래 추가: 피해 ×3', 1, 30000, 1, { songWar: 1 }),
-    // 남동: 벼락 일격과 기술
-    N('smite1', 1.2, 1.2, 'root', 'n_auto_break', '벼락 일격', '맵 클릭 피해 +30%', 20, 20, 1.45, { smite: 0.3 }),
-    N('smiteR', 2.4, 1.9, 'smite1', 'a_thunder', '낙뢰', '벼락 범위 +0.25칸', 6, 400, 2, { smiteR: 0.25 }),
-    N('heal', 1.9, 3.0, 'smite1', 'fx_holy', '치유의 빛', '기술: 파티 체력 50% 회복 (30초)', 1, 800, 1, { sk_heal: 1 }),
-    N('rage', 3.3, 3.0, 'smiteR heal', 'r_dragon', '전투 함성', '기술: 10초간 모든 피해 ×2 (40초)', 1, 6000, 1, { sk_rage: 1 }),
-    N('meteor', 4.4, 2.2, 'rage', 'fx_fire', '유성 낙하', '기술: 클릭 피해 ×20 광역 (25초)', 1, 50000, 1, { sk_meteor: 1 }),
-    N('autocast', 4.6, 3.6, 'rage', 'n_auto_build', '전투 본능', '기술을 쿨다운마다 알아서 쓴다', 1, 200000, 1, { autocast: 1 }),
+
+    // ── 북: 원정대 ──
+    N('party', 0, -1.2, 'root', 'u_legend', '원정대', '동료 3명까지 출전', 1, 20, 1, {}),
+    // 레인저
+    N('archer', -6, -2.4, 'party', 'u_archer', '레인저', '합류 · 원거리', 1, 40, 1, { ally_archer: 1 }),
+    N('r_atk', -6, -3.5, 'archer', 'fx_arrow', '날카로운 화살촉', '레인저 피해 +25%', 15, 60, 1.45, { archerAtk: 0.25 }),
+    N('r_range', -6, -4.6, 'r_atk', 'w_bow', '매의 눈', '사거리 +1칸 · 연사 +10%', 5, 500, 2, { r_range: 1 }),
+    PAIR('r_pierce', -6.6, -5.8, 'r_range', 'fx_arrow', '관통 화살', '뒤의 적 2마리까지 꿰뚫는다', 4000, { r_pierce: 1 }, 'r_pair'),
+    PAIR('r_poison', -5.4, -5.8, 'r_range', 'r_stew', '독화살', '4초간 초당 피해 30%', 4000, { r_poison: 1 }, 'r_pair'),
+    // 음유시인
+    N('bard', -4, -2.4, 'party', 'u_bard', '음유시인', '합류 · 노래: 피해 ×1.5 ↔ 골드 ×2', 1, 150, 1, { ally_bard: 1 }),
+    N('songDur', -4, -3.5, 'bard', 'fx_song', '앙코르', '노래·축복 지속 +20%', 16, 1500, 1.8, { songDur: 0.2 }),
+    N('songPow', -4, -4.6, 'songDur', 'b_atk', '격정', '용맹의 노래 피해 배율 +0.1', 10, 4000, 1.8, { songPow: 0.1 }),
+    PAIR('songWar', -4.6, -5.8, 'songPow', 'b_fury', '전쟁의 북', '노래 추가: 피해 ×3', 30000, { songWar: 1 }, 'b_pair'),
+    PAIR('songRegen', -3.4, -5.8, 'songPow', 'b_regen', '회복의 노래', '노래 추가: 초당 체력 +4%', 30000, { songRegen: 1 }, 'b_pair'),
+    // 수도사
+    N('cleric', -2, -2.4, 'party', 'u_cleric', '수도사', '합류 · 치유', 1, 300, 1, { ally_cleric: 1 }),
+    N('c_heal', -2, -3.5, 'cleric', 'fx_holy', '치유술', '수도사 치유량 +20%', 15, 400, 1.5, { clericHeal: 0.2 }),
+    N('bless', -2, -4.6, 'c_heal', 'b_regen', '축복', '15초마다 10초간 파티 초당 체력 +4%', 1, 800, 1, { bless: 1 }),
+    NOTE('heal', -2, -5.7, 'bless', 'fx_holy', '치유의 빛', '기술: 파티 체력 50% 회복 (30초)', 3000, { sk_heal: 1 }),
+    PAIR('c_revive', -2.6, -6.8, 'heal', 'u_god', '부활 기도', '동료 부활 시간 절반', 20000, { c_revive: 1 }, 'c_pair'),
+    PAIR('c_sanct', -1.4, -6.8, 'heal', 'q_peak', '성역', '수도사가 서 있으면 오염 절반', 20000, { c_sanct: 1 }, 'c_pair'),
+    // 화염 마법사
+    N('mage', 0, -2.4, 'party', 'u_mage', '화염 마법사', '합류 · 범위 공격', 1, 1200, 1, { ally_mage: 1 }),
+    N('m_atk', 0, -3.5, 'mage', 'fx_flame', '불꽃 단련', '마법사 피해 +25%', 15, 1500, 1.45, { mageAtk: 0.25 }),
+    N('m_area', 0, -4.6, 'm_atk', 'fx_fire', '대폭발', '폭발 범위 +0.3칸', 5, 6000, 2, { m_area: 0.3 }),
+    NOTE('meteor', 0, -5.7, 'm_area', 'fx_fire', '유성 낙하', '기술: 벼락 ×20 광역 (25초)', 20000, { sk_meteor: 1 }),
+    PAIR('m_burn', -0.6, -6.8, 'meteor', 'fx_flame', '화상', '맞은 적이 3초간 초당 피해 25%', 60000, { m_burn: 1 }, 'm_pair'),
+    PAIR('m_quick', 0.6, -6.8, 'meteor', 'st_haste', '빠른 영창', '마법사 공격·유성 재사용 -30%', 60000, { m_quick: 1 }, 'm_pair'),
+    // 성기사
+    N('paladin', 2, -2.4, 'party', 'u_paladin', '성기사', '합류 · 탱커', 1, 8000, 1, { ally_paladin: 1 }),
+    N('p_hp', 2, -3.5, 'paladin', 'u_armor', '성스러운 갑주', '성기사 체력 +30%', 15, 9000, 1.45, { paladinHp: 0.3 }),
+    N('p_guard', 2, -4.6, 'p_hp', 'd_shield', '방패 막기', '성기사 받는 피해 -6%', 8, 20000, 1.8, { p_guard: 0.06 }),
+    PAIR('p_taunt', 1.4, -5.8, 'p_guard', 'u_paladin', '도발', '적이 성기사를 먼저 노린다', 60000, { p_taunt: 1 }, 'p_pair'),
+    PAIR('p_counter', 2.6, -5.8, 'p_guard', 'w_hammer', '반격', '받은 피해의 50%를 되돌린다', 60000, { p_counter: 1 }, 'p_pair'),
+    // 용기병
+    N('dragoon', 4, -2.4, 'party', 'u_dragoon', '용기병', '합류 · 강타', 1, 60000, 1, { ally_dragoon: 1 }),
+    N('d_atk', 4, -3.5, 'dragoon', 'w_spear', '용의 창', '용기병 피해 +25%', 15, 70000, 1.45, { dragoonAtk: 0.25 }),
+    N('d_crit', 4, -4.6, 'd_atk', 'g_dagger', '급소 꿰뚫기', '용기병 치명 +6%', 6, 150000, 1.8, { d_crit: 0.06 }),
+    PAIR('d_dash', 3.4, -5.8, 'd_crit', 'a_escape', '돌진', '6칸 안 적에게 뛰어들어 첫 타 ×3', 4e5, { d_dash: 1 }, 'd_pair'),
+    PAIR('d_exec', 4.6, -5.8, 'd_crit', 'u_sword', '처형', '체력 25% 이하 적은 즉사', 4e5, { d_exec: 1 }, 'd_pair'),
+    // 대현자
+    N('archmage', 6, -2.4, 'party', 'u_archmage', '대현자', '합류 · 연쇄 번개', 1, 400000, 1, { ally_archmage: 1 }),
+    N('a_atk', 6, -3.5, 'archmage', 'fx_zap', '번개 숙련', '대현자 피해 +25%', 15, 450000, 1.45, { archmageAtk: 0.25 }),
+    N('a_chain', 6, -4.6, 'a_atk', 'a_thunder', '연쇄 확장', '연쇄 +1', 3, 1e6, 3, { a_chain: 1 }),
+    PAIR('a_warp', 5.4, -5.8, 'a_chain', 'st_haste', '시간 왜곡', '15초마다 5초간 파티 공격 속도 +50%', 3e6, { a_warp: 1 }, 'a_pair'),
+    PAIR('a_overload', 6.6, -5.8, 'a_chain', 'fx_zap', '과부하', '연쇄 +2, 튈 때 피해가 줄지 않는다', 3e6, { a_overload: 1 }, 'a_pair'),
+
+    // ── 남: 기사(리더)와 파티 전체 (동료 공격력·체력은 기사를 따라간다) ──
+    N('atk1', 0.9, 1.4, 'root', 'u_sword', '예리한 검', '파티 공격력 +15%', 10, 10, 1.45, { atk: 0.15 }),
+    N('aspd1', 1.9, 2.3, 'atk1', 'n_auto_duel', '연속 베기', '파티 공격 속도 +8%', 10, 60, 1.6, { aspd: 0.08 }),
+    N('crit1', 0.9, 2.6, 'atk1', 'g_dagger', '급소 찌르기', '기사 치명 +3%', 10, 80, 1.6, { crit: 0.03 }),
+    N('atk2', 1.6, 3.5, 'aspd1 crit1', 'u_sword', '명검 단련', '파티 공격력 +20%', 15, 300, 1.5, { atk: 0.2 }),
+    N('critd', 2.7, 4.0, 'atk2', 'g_dagger', '일격필살', '치명 피해 +25%', 15, 1500, 1.6, { critd: 0.25 }),
+    N('atk3', 1.6, 4.7, 'atk2', 'u_sword', '성검', '파티 공격력 +35%', 20, 10000, 1.6, { atk: 0.35 }),
+    N('atk4', 1.6, 6.0, 'atk3', 'u_sword', '용살검', '파티 공격력 +50%', 25, 500000, 1.7, { atk: 0.5 }),
+    N('hp1', -0.9, 1.4, 'root', 'u_armor', '판금 갑옷', '파티 체력 +18%', 10, 15, 1.45, { hp: 0.18 }),
+    N('regen1', -1.9, 2.3, 'hp1', 'r_stew', '붕대', '초당 체력 회복 +0.5%', 10, 120, 1.6, { regen: 0.005 }),
+    N('armor1', -0.9, 2.6, 'hp1', 'd_shield', '방패술', '기사 받는 피해 -3% (최대 75%)', 15, 200, 1.55, { armor: 0.03 }),
+    N('hp2', -1.6, 3.5, 'regen1 armor1', 'u_armor', '미스릴 사슬', '파티 체력 +25%', 15, 1000, 1.5, { hp: 0.25 }),
+    N('hp3', -1.6, 4.7, 'hp2', 'i_scale', '용비늘 갑주', '파티 체력 +40%', 25, 100000, 1.6, { hp: 0.4 }),
+    N('k_pure1', -2.9, 3.0, 'regen1', 'b_regen', '정화', '오염 피해 -8%', 6, 2000, 1.7, { purify: 0.08 }),
+    N('k_pure2', -3.1, 4.2, 'k_pure1', 'fx_holy', '성수', '오염 피해 -10%', 4, 40000, 2, { purify: 0.1 }),
+    NOTE('rage', 0, 3.4, 'atk1 hp1', 'r_dragon', '전투 함성', '기술: 10초간 모든 피해 ×2 (40초)', 6000, { sk_rage: 1 }),
+    N('allyAtk1', -0.5, 4.4, 'rage', 'u_legend', '전우애', '동료 공격력 +18%', 15, 1500, 1.5, { allyAtk: 0.18 }),
+    N('allyHp', 0.5, 4.4, 'rage', 'rl_herb', '진형', '동료 체력 +20%', 15, 1500, 1.5, { allyHp: 0.2 }),
+    N('allyAtk2', 0, 5.4, 'allyAtk1 allyHp', 'u_god', '영웅단', '동료 공격력 +35%', 25, 200000, 1.6, { allyAtk: 0.35 }),
+    NOTE('autocast', 0, 6.4, 'allyAtk2', 'n_auto_build', '전투 본능', '기술을 재사용마다 알아서 쓴다', 200000, { autocast: 1 }),
+    N('slot', 0, 7.4, 'autocast', 'u_legend', '대원정', '출전 동료 +1', 2, 2e6, 40, { slot: 1 }),
+
+    // ── 동: 벼락 (클릭) ──
+    N('smite1', 1.3, 0, 'root', 'n_auto_break', '벼락 일격', '벼락 피해 +30%', 20, 20, 1.45, { smite: 0.3 }),
+    N('smiteR', 2.4, -0.6, 'smite1', 'a_thunder', '낙뢰', '벼락 범위 +0.25칸', 6, 400, 2, { smiteR: 0.25 }),
+    N('s_cd', 2.4, 0.6, 'smite1', 'st_haste', '연속 낙뢰', '벼락 재사용 -10%', 5, 600, 2, { s_cd: 0.1 }),
+    NOTE('s_chain', 3.6, 0, 'smiteR s_cd', 'fx_zap', '연쇄 번개', '벼락이 주변 2마리로 튄다 (60%)', 3000, { s_chain: 1 }),
+    NOTE('s_shock', 4.7, -0.7, 's_chain', 'a_thunder', '감전', '맞은 적은 4초간 받는 피해 +30%', 12000, { s_shock: 1 }),
+    NOTE('s_focus', 4.7, 0.7, 's_chain', 'u_legend', '집중 표적', '파티가 벼락 맞은 적을 노린다 · 피해 +20%', 12000, { s_focus: 1 }),
+    NOTE('s_exec', 5.8, -0.7, 's_shock', 'u_sword', '심판', '벼락 맞은 뒤 체력 20% 이하면 즉사', 60000, { s_exec: 1 }),
+    N('s_crit', 5.8, 0.7, 's_focus', 'g_dagger', '천둥 강타', '벼락 치명(×3) 확률 +8%', 5, 40000, 1.9, { s_crit: 0.08 }),
+    NOTE('s_storm', 7, 0, 's_exec s_crit', 'fx_storm', '낙뢰 폭풍', '8초마다 근처 적에게 자동 벼락', 3e5, { s_storm: 1 }),
+    N('s_storm2', 8.1, 0, 's_storm', 'fx_storm', '폭풍의 눈', '자동 벼락 간격 -12%', 5, 1e6, 2, { s_storm2: 0.12 }),
+
+    // ── 서: 재화 ──
+    N('gold1', -1.3, 0, 'root', 'ui_gold', '약탈', '골드 +15%', 15, 25, 1.5, { gold: 0.15 }),
+    N('speed1', -2.4, -0.6, 'gold1', 'a_escape', '가벼운 발걸음', '이동 속도 +8%', 8, 50, 1.7, { speed: 0.08 }),
+    N('g_boss', -2.4, 0.6, 'gold1', 'b_goblinchief', '현상금', '보스 골드 +100%', 5, 300, 2.2, { g_boss: 1 }),
+    N('gold2', -3.6, 0, 'speed1 g_boss', 'ui_gold', '보물 사냥꾼', '골드 +30%', 20, 5000, 1.55, { gold: 0.3 }),
+    N('g_chest', -4.7, -0.7, 'gold2', 'x_chest', '보물상자', '층마다 보물상자 +1', 3, 2000, 4, { g_chest: 1 }),
+    NOTE('g_mimic', -5.8, -1.3, 'g_chest', 'm_mimic', '미믹 사냥', '상자 30%가 미믹: 잡으면 골드 ×5', 20000, { g_mimic: 1 }),
+    N('g_lucky', -6.9, -0.7, 'g_chest', 'x_chest', '행운의 열쇠', '상자 골드 +50%', 10, 30000, 1.7, { g_lucky: 0.5 }),
+    NOTE('g_skip', -4.7, 0.7, 'gold2', 'f_stairs', '층 도약', '30초 안에 층을 정리하면 한 층 더 내려간다', 15000, { g_skip: 1 }),
+    N('essf', -5.8, 0.9, 'g_skip', 'ui_ess', '심연의 기운', '이 세계의 정수 +15%', 10, 50000, 1.9, { ess: 0.15 }),
   ], { get: () => S().w.fantasy.gold, spend: n => { S().w.fantasy.gold -= n; }, tile: 'ui_gold', name: '골드' });
 
   // ───── 무협 (깨달음: 회귀해도 남는다) ─────

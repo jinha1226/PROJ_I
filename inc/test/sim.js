@@ -77,7 +77,7 @@ for (let t = 0; t < MIN * 60; t++) {
   const m = (t + 1) / 60;
   if (marks.includes(m)) {
     const S = G.S, f = S.w.fantasy, w = S.w.wuxia, x = S.w.xianxia, s = S.w.scifi, c = S.w.cthulhu, U = G.U;
-    const nodes = id => Object.values(S.w[id].tree).reduce((a, b) => a + b, 0);
+    const nodes = id => Object.values(S.w[id].tree).filter(v => typeof v === 'number').reduce((a, b) => a + b, 0);
     console.log(`${String(m).padStart(3)}분 | 정수 ${U.fmt(S.ess).padStart(6)} (누적 ${U.fmt(S.runEss)}) 인장 ${S.signs} 유물 ${Object.keys(S.relics).length} | ` +
       `던전 ${f.maxFloor}층 노드${nodes('fantasy')} | ` +
       (S.unlocked.wuxia ? `무협 ${w.lives + 1}생 ${G.Wuxia.status(w)} 깨달음${U.fmt(w.ins)} | ` : '') +

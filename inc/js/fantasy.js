@@ -1,25 +1,30 @@
 'use strict';
 // 판타지 · 끝없는 던전 (2D 던전 맵, 자동 전투)
-// 층마다 방과 복도로 된 던전이 새로 생긴다. 기사와 동료들이 몬스터를 찾아가 싸우고, 모두 잡으면 계단으로 내려간다.
-// 5층마다 계단 앞에 보스. 기사가 쓰러지면 같은 층을 다시 시작하고, 세 번 쓰러지면 한 층 물러난다.
-// 맵 클릭 = 벼락 일격(범위 피해). 스킬트리에서 동료·기술을 연다. 버프는 음유시인의 노래와 성직자의 축복.
-// 기사 주변 칸은 「본 칸」으로 남는다(안개·미니맵).
+// 층마다 방과 복도로 된 던전이 새로 생긴다. 원정대(기사 + 출전 동료)가 몬스터를 찾아가 싸우고, 모두 잡으면 계단으로 내려간다.
+// 5층마다 계단 앞에 보스. 파티원은 각자 체력이 있고 쓰러지면 잠시 뒤 일어난다. 전원이 쓰러지면 패배(같은 층 다시, 세 번이면 한 층 후퇴).
+// 6층부터 던전 오염이 파티 전원의 체력을 최대치의 %씩 계속 깎는다(깊을수록 짙다). 재생·치유·정화로 버틴다.
+// 동료는 트리에서 열고, 출전 칸(기사 + 3명, 트리로 +)에 들어간 동료만 싸운다. 기본은 자동 편성.
+// 맵 클릭 = 벼락 일격. 동료별 기술과 ★택1 짝 노드는 트리에서. 기사 주변 칸은 「본 칸」으로 남는다(안개·미니맵).
 G.RT = G.RT || {};
 G.Fantasy = (() => {
   const D = G.D.F, U = G.U, GR = G.Grid;
   const tm = k => G.Tree.mul('fantasy', G.S.w.fantasy.tree, k);
   const ta = k => G.Tree.add('fantasy', G.S.w.fantasy.tree, k);
-  const MW = 40, MH = 26, REVIVE = 4, SMITE_CD = 0.6, SIGHT = 5, SONG_CD = 12, BLESS_CD = 15;
+  const MW = 40, MH = 26, REVIVE = 4, ALLY_REVIVE = 8, SMITE_CD = 0.6, SIGHT = 5, SONG_CD = 12, BLESS_CD = 15, WARP_CD = 15, DASH_CD = 5, SKIP_T = 30;
+  // 구간별 오염: 초당 최대 체력의 몇 %
+  const CORRUPT = [0, 0.004, 0.008, 0.012, 0.016, 0.022];
   const SKILLS = {
-    heal: { n: '치유의 빛', t: 'fx_holy', cd: 30, need: 'sk_heal' },
+    heal: { n: '치유의 빛', t: 'fx_holy', cd: 30, need: 'sk_heal', who: 'cleric' },
     rage: { n: '전투 함성', t: 'r_dragon', cd: 40, need: 'sk_rage' },
-    meteor: { n: '유성 낙하', t: 'fx_fire', cd: 25, need: 'sk_meteor' },
+    meteor: { n: '유성 낙하', t: 'fx_fire', cd: 25, need: 'sk_meteor', who: 'mage' },
   };
+  // 자동 편성 우선순위: 치유가 있어야 오염을 버티므로 수도사 먼저, 그다음 강한 순
+  const AUTO = ['cleric', 'archmage', 'dragoon', 'paladin', 'mage', 'bard', 'archer'];
 
   const F = {
-    SKILLS,
+    SKILLS, CORRUPT,
     init(head = 0) {
-      return { floor: 1, maxFloor: 1, gold: 5 * Math.pow(10, head), tree: G.Tree.init('fantasy'), buffs: {}, deaths: 0, auto: true, kills: 0, cds: {} };
+      return { floor: 1, maxFloor: 1, gold: 5 * Math.pow(10, head), tree: G.Tree.init('fantasy'), buffs: {}, deaths: 0, auto: true, kills: 0, cds: {}, autoParty: true, lineup: [] };
     },
     rt(f) { return G.RT.fantasy || (G.RT.fantasy = F.boot(f)); },
     isBoss: fl => fl % 5 === 0,
@@ -29,17 +34,40 @@ G.Fantasy = (() => {
     monGold: (fl, boss) => 2 * Math.pow(1.14, fl - 1) * (boss ? 10 : 1),
     floorEss: fl => 0.25 * Math.pow(fl, 1.3) * (F.isBoss(fl) ? 3 : 1),
 
+    // ── 원정대 편성 ──
+    slots: () => 3 + ta('slot'),
+    roster: () => Object.keys(D.allies).filter(id => ta('ally_' + id)),
+    lineup(f) {
+      const have = F.roster(), n = F.slots();
+      if (f.autoParty !== false) return AUTO.filter(id => have.includes(id)).slice(0, n);
+      return (f.lineup || []).filter(id => have.includes(id)).slice(0, n);
+    },
+    // 자동 편성을 끄고 그 동료를 넣거나 뺀다
+    toggleMember(f, id) {
+      const cur = F.lineup(f);
+      f.autoParty = false;
+      f.lineup = cur.includes(id) ? cur.filter(x => x !== id) : cur.length < F.slots() ? [...cur, id] : cur;
+      F.syncAllies(f);
+    },
+    setAuto(f, v) { f.autoParty = v; F.syncAllies(f); },
+    inParty: (rt, id) => rt.allies.some(a => a.id === id && !a.dead),
+
     dmgMult(f) {
       const S = G.S;
       let m = G.globalMult() * (1 + G.relicVal('f_atk'));
       if (G.synergy('syn_sword')) m *= 1 + 0.01 * G.Wuxia.mastery(S.w.wuxia);
       if (G.synergy('syn_madblade')) m *= 1 + 1.5 * (1 - S.w.cthulhu.san / G.Cthulhu.maxSan(S.w.cthulhu));
-      for (const k in f.buffs) if (D.buffs[k] && D.buffs[k].dmg) m *= D.buffs[k].dmg;
+      for (const k in f.buffs) {
+        if (k === 'atk') m *= 1.5 + ta('songPow');
+        else if (D.buffs[k] && D.buffs[k].dmg) m *= D.buffs[k].dmg;
+      }
       return m;
     },
     heroAtk: f => 5 * tm('atk') * F.dmgMult(f),
     heroHP: f => 60 * tm('hp') * G.globalMult() * (1 + G.relicVal('f_hp')),
-    aspd: () => tm('aspd'),
+    allyAtk: (f, a) => F.heroAtk(f) * a.def.atk * 0.5 * tm('allyAtk') * tm(a.id + 'Atk'),
+    allyHP: (f, a) => F.heroHP(f) * a.def.hp * tm('allyHp') * tm(a.id + 'Hp'),
+    aspd: f => tm('aspd') * (f.buffs.haste ? 1.5 : 1),
     crit: () => Math.min(0.75, 0.05 + ta('crit')),
     critD: () => 2 + ta('critd'),
     armor: () => Math.min(0.75, ta('armor')),
@@ -47,66 +75,90 @@ G.Fantasy = (() => {
     goldMult: f => G.globalMult() * tm('gold') * (1 + G.relicVal('f_gold')) * (f.buffs.gold ? 2 : 1),
     smiteDmg: f => F.heroAtk(f) * 2 * tm('smite'),
     smiteR: () => 1 + ta('smiteR'),
+    smiteCd: () => SMITE_CD * Math.max(0.3, 1 - ta('s_cd')),
+    stormT: () => 8 * Math.max(0.3, 1 - ta('s_storm2')),
+    // 오염: 초당 최대 체력의 비율 (정화 노드, 성역)
+    corruption(f, rt) {
+      const base = CORRUPT[F.band(f.floor)] || 0;
+      const sanct = ta('c_sanct') && F.inParty(rt, 'cleric') ? 0.5 : 1;
+      return base * Math.max(0.2, 1 - ta('purify')) * sanct;
+    },
     gain(f, n) { f.gold += n; G.tally('fantasy', n); },
     // 음유시인이 번갈아 부르는 노래
-    songs: () => ['atk', 'gold'].concat(ta('songWar') ? ['fury'] : []),
+    songs: () => ['atk', 'gold'].concat(ta('songWar') ? ['fury'] : ta('songRegen') ? ['regen'] : []),
     songDur: () => 8 * (1 + ta('songDur')),
+    // 파티 합산: 체력·초당 피해 (화면 표시용)
+    partyHP(rt) {
+      let hp = 0, max = 0;
+      for (const p of rt.party) { max += p.max || 0; if (!p.dead) hp += Math.max(0, p.hp); }
+      return { hp, max };
+    },
+    partyDps(f, rt) {
+      const sp = F.aspd(f);
+      let d = F.heroAtk(f) * sp * (1 + F.crit() * (F.critD() - 1));
+      for (const a of rt.allies) if (!a.def.heal) d += F.allyAtk(f, a) / F.allyCd(a) * sp * (a.def.splash || a.def.chain ? 1.6 : 1);
+      return d;
+    },
+    allyCd(a) {
+      let cd = a.def.cd;
+      if (a.id === 'archer') cd /= 1 + 0.1 * ta('r_range');
+      if (a.id === 'mage' && ta('m_quick')) cd *= 0.7;
+      return cd;
+    },
 
     // ── 층 만들기 ──
     boot(f) {
-      const rt = { fx: [], ents: [], mons: [], party: [], allies: [], phase: 'explore', reviveT: 0, smiteCd: 0, focus: null, target: null, song: 0 };
+      const rt = { fx: [], ents: [], mons: [], party: [], allies: [], chests: [], phase: 'explore', reviveT: 0, smiteCd: 0, stormT: 4, warpT: WARP_CD, focus: null, target: null, song: 0, floorT: 0 };
       F.newFloor(f, rt);
       return rt;
+    },
+    newAlly(f, id, x, y) {
+      const def = D.allies[id];
+      const a = { kind: 'ally', id, def, t: def.t, wpn: def.wpn, s: 0.95, bar: true, x, y, atkT: Math.random(), dead: false, reviveT: 0, skT: 3, dashT: 0 };
+      a.max = a.hp = F.allyHP(f, a);
+      return a;
     },
     newFloor(f, rt) {
       const fl = f.floor, boss = F.isBoss(fl), m = GR.dungeon(MW, MH);
       rt.map = m;
       rt.mons = [];
+      rt.chests = [];
       rt.seen = new Uint8Array(m.w * m.h);
       rt.seenVer = 0;
+      rt.floorT = 0;
       const st = m.start;
       const hero = rt.hero || { kind: 'hero', t: 'knight', wpn: 'w_sword', s: 1.15, bar: true };
-      Object.assign(hero, { x: st.cx, y: st.cy, max: F.heroHP(f), atkT: 0, dead: false });
+      Object.assign(hero, { x: st.cx, y: st.cy, max: F.heroHP(f), atkT: 0, dead: false, reviveT: 0 });
       hero.hp = hero.max;
       rt.hero = hero;
-      rt.party = [hero];
-      const keep = {};
-      for (const a of rt.allies) keep[a.id] = a;
-      rt.allies = [];
-      Object.keys(D.allies).forEach((id, i) => {
-        if (!ta('ally_' + id)) return;
-        const def = D.allies[id];
-        const a = keep[id] || { kind: 'ally', id, def, t: def.t, wpn: def.wpn, s: 0.95, bar: true };
-        Object.assign(a, { x: st.cx + (i % 3) - 1, y: st.cy + (i > 2 ? 1 : 0), atkT: Math.random(), dead: false, reviveT: 0, skT: (a.skT || 3) });
-        a.max = a.hp = F.heroHP(f) * def.hp * tm('allyHp');
-        rt.allies.push(a);
-        rt.party.push(a);
-      });
+      rt.allies = F.lineup(f).map((id, i) => F.newAlly(f, id, st.cx + (i % 3) - 1, st.cy + (i > 2 ? 1 : 0)));
+      rt.party = [hero, ...rt.allies];
       const band = D.bands[F.band(fl)];
       const n = 10 + Math.min(12, Math.floor(fl / 4));
-      for (let i = 0; i < n; i++) {
-        const room = m.rooms[1 + U.rand(m.rooms.length - 1)];
-        const x = room.x + U.rand(room.w), y = room.y + U.rand(room.h);
-        if (m.c[y * m.w + x] !== '.') continue;
-        F.spawnMon(rt, fl, U.pick(band.mons), x, y, false);
-      }
-      if (boss) {
-        const d = D.bosses[(fl / 5 - 1) % D.bosses.length];
-        F.spawnMon(rt, fl, d, m.end.cx - 1, m.end.cy, true);
+      const spot = () => { const room = m.rooms[1 + U.rand(m.rooms.length - 1)]; const x = room.x + U.rand(room.w), y = room.y + U.rand(room.h); return m.c[y * m.w + x] === '.' ? [x, y] : null; };
+      for (let i = 0; i < n; i++) { const p = spot(); if (p) F.spawnMon(rt, fl, U.pick(band.mons), p[0], p[1], false); }
+      if (boss) F.spawnMon(rt, fl, D.bosses[(fl / 5 - 1) % D.bosses.length], m.end.cx - 1, m.end.cy, true);
+      // 보물상자: 층마다 트리 레벨만큼. 미믹 사냥을 배우면 30%는 미믹
+      for (let i = 0; i < ta('g_chest'); i++) {
+        const p = spot();
+        if (p) rt.chests.push({ kind: 'obj', chest: true, t: 'x_chest', x: p[0], y: p[1], s: 0.9, mimic: ta('g_mimic') > 0 && U.chance(0.3) });
       }
       rt.phase = 'explore';
       rt.focus = null;
       rt.target = null;
-      rt.ents = [...rt.party, ...rt.mons];
+      F.refreshEnts(rt);
       F.look(rt);
       G.emit('f_floor', fl);
     },
-    spawnMon(rt, fl, d, x, y, boss) {
+    refreshEnts(rt) { rt.ents = [...rt.chests, ...rt.party, ...rt.mons]; },
+    spawnMon(rt, fl, d, x, y, boss, extra) {
       const hp = F.monHP(fl, boss);
-      rt.mons.push({
+      const mo = {
         kind: 'mon', n: d.n, t: d.t, wpn: d.wpn, x, y, s: boss ? d.s || 1.6 : 1, hp, max: hp, atk: F.monAtk(fl, boss), gold: F.monGold(fl, boss),
-        boss, aggro: false, atkT: Math.random(), bar: true, label: boss ? d.n : null,
-      });
+        boss, aggro: false, atkT: Math.random(), bar: true, label: boss ? d.n : null, dots: [], shock: 0,
+      };
+      rt.mons.push(Object.assign(mo, extra));
+      return mo;
     },
     // 기사 주변 SIGHT칸을 본 칸으로
     look(rt) {
@@ -119,44 +171,52 @@ G.Fantasy = (() => {
       }
       if (added) rt.seenVer++;
     },
-    // 동료 목록이 트리 구매로 바뀌면 다음 층부터 반영된다. 지금 층에도 바로 합류시킨다.
+    // 편성이 바뀌면(트리 구매·직접 편성) 지금 층에도 바로 반영: 빠진 동료는 돌아가고 새 동료가 기사 옆에 합류
     syncAllies(f) {
-      const rt = F.rt(f), have = new Set(rt.allies.map(a => a.id));
-      Object.keys(D.allies).forEach(id => {
-        if (have.has(id) || !ta('ally_' + id)) return;
-        const def = D.allies[id], h = rt.hero;
-        const a = { kind: 'ally', id, def, t: def.t, wpn: def.wpn, s: 0.95, bar: true, x: h.x, y: h.y, atkT: 0, dead: false, reviveT: 0, skT: 2 };
-        a.max = a.hp = F.heroHP(f) * def.hp * tm('allyHp');
-        rt.allies.push(a);
-        rt.party.push(a);
-        rt.ents = [...rt.party, ...rt.mons];
+      const rt = F.rt(f), want = F.lineup(f), h = rt.hero;
+      const keep = rt.allies.filter(a => want.includes(a.id));
+      for (const id of want) if (!keep.some(a => a.id === id)) {
+        keep.push(F.newAlly(f, id, h.x, h.y));
         G.fx(rt, { k: 'tile', key: 'fx_holy', x: h.x, y: h.y, t: 0.8 });
         G.J.sfx('fantasy', 'chime');
-      });
+      }
+      rt.allies = want.map(id => keep.find(a => a.id === id));
+      rt.party = [h, ...rt.allies];
+      F.refreshEnts(rt);
     },
 
     // ── 전투 ──
     hurt(f, rt, m, dmg, src, from) {
       if (m.hp <= 0) return;
+      if (m.shock > 0) dmg *= 1.3;
+      if (ta('s_focus') && rt.focus === m) dmg *= 1.2;
       m.hp -= dmg;
       m.aggro = true;
       // 숫자 크기로 위계: 치명타·벼락은 크게 튀고, 보통 타격은 체력 대비 피해만큼 커진다
-      const big = src !== 'hit';
-      G.fx(rt, { k: 'text', x: m.x, y: m.y - 0.6, s: U.fmt(dmg) + (src === 'crit' ? '!' : ''), col: src === 'crit' ? '#ffd24a' : src === 'smite' ? '#bfe8ff' : '#fff', t: 0.8, sz: (big ? 1.3 : 0.85) + 0.5 * Math.min(1, dmg / m.max), pop: big });
-      G.J.hit('fantasy', m, src === 'smite' ? 0.5 : src === 'crit' ? 0.25 : 0, from);
-      // 피 튀김(맞은 반대쪽으로), 치명타·벼락은 별 모양 충격
-      const dx = from ? m.x - from.x : 0, dy = from ? m.y - from.y : 0;
-      G.fx(rt, { k: 'splat', x: m.x, y: m.y, dx, dy, n: big ? 9 : 5, s: big ? 1.3 : 0.9, t: 0.5 });
-      if (big) G.fx(rt, { k: 'impact', x: m.x, y: m.y - 0.1, s: src === 'smite' ? 1.8 : 1.4, col: src === 'smite' ? '#d8f0ff' : '#fff3b0', t: 0.22 });
+      const big = src !== 'hit' && src !== 'dot';
+      if (src !== 'dot' || Math.random() < 0.3) G.fx(rt, { k: 'text', x: m.x, y: m.y - 0.6, s: U.fmt(dmg) + (src === 'crit' ? '!' : ''), col: src === 'crit' ? '#ffd24a' : src === 'smite' ? '#bfe8ff' : src === 'dot' ? '#9fe79f' : '#fff', t: 0.8, sz: (big ? 1.3 : src === 'dot' ? 0.7 : 0.85) + 0.5 * Math.min(1, dmg / m.max), pop: big });
+      if (src !== 'dot') {
+        G.J.hit('fantasy', m, src === 'smite' ? 0.5 : src === 'crit' ? 0.25 : 0, from);
+        const dx = from ? m.x - from.x : 0, dy = from ? m.y - from.y : 0;
+        G.fx(rt, { k: 'splat', x: m.x, y: m.y, dx, dy, n: big ? 9 : 5, s: big ? 1.3 : 0.9, t: 0.5 });
+        if (big) G.fx(rt, { k: 'impact', x: m.x, y: m.y - 0.1, s: src === 'smite' ? 1.8 : 1.4, col: src === 'smite' ? '#d8f0ff' : '#fff3b0', t: 0.22 });
+      }
       if (src === 'crit') G.J.sfx('fantasy', 'crit');
       if (m.hp <= 0) F.kill(f, rt, m);
     },
+    // 지속 피해(독·화상): 같은 종류는 새로 걸면 덮어쓴다
+    dot(m, kind, dps, t) {
+      const d = m.dots.find(x => x.kind === kind);
+      if (d) { d.dps = Math.max(d.dps, dps); d.t = t; } else m.dots.push({ kind, dps, t });
+    },
     kill(f, rt, m) {
-      const g = m.gold * F.goldMult(f);
+      let g = m.gold * F.goldMult(f);
+      if (m.boss) g *= 1 + ta('g_boss');
+      if (m.mimic) g *= 5;
       F.gain(f, g);
       f.kills++;
       G.fx(rt, { k: 'die', spr: m.t, x: m.x, y: m.y, s: m.s, flip: m.flip, t: 0.45 });
-      G.fx(rt, { k: 'text', x: m.x, y: m.y - 1, s: '+' + U.fmt(g), col: '#ffd24a', t: 1.1 });
+      G.fx(rt, { k: 'text', x: m.x, y: m.y - 1, s: '+' + U.fmt(g), col: '#ffd24a', t: 1.1, sz: m.mimic ? 1.4 : 1, pop: !!m.mimic });
       G.J.sfx('fantasy', 'coin');
       if (m.boss) {
         G.J.finish('fantasy', m.x, m.y);
@@ -167,7 +227,24 @@ G.Fantasy = (() => {
       rt.mons = rt.mons.filter(x => x !== m);
       if (rt.focus === m) rt.focus = null;
       if (rt.target === m) rt.target = null;
-      rt.ents = [...rt.party, ...rt.mons];
+      F.refreshEnts(rt);
+    },
+    // 상자 열기: 골드, 또는 미믹이 깨어난다
+    openChest(f, rt, c) {
+      rt.chests = rt.chests.filter(x => x !== c);
+      if (c.mimic) {
+        F.spawnMon(rt, f.floor, { n: '미믹', t: 'm_mimic' }, c.x, c.y, false, { hp: F.monHP(f.floor) * 3, max: F.monHP(f.floor) * 3, atk: F.monAtk(f.floor) * 1.5, mimic: true, aggro: true, s: 1.2 });
+        G.fx(rt, { k: 'text', x: c.x, y: c.y - 1, s: '미믹!', col: '#ff6a6a', t: 1.2, sz: 1.3, pop: true });
+        G.J.shake('fantasy', 6);
+        G.J.sfx('fantasy', 'hurt');
+      } else {
+        const g = F.monGold(f.floor) * 8 * (1 + ta('g_lucky')) * F.goldMult(f);
+        F.gain(f, g);
+        G.fx(rt, { k: 'tile', key: 'x_chest_open', x: c.x, y: c.y, t: 1.2, s: 0.9 });
+        G.fx(rt, { k: 'text', x: c.x, y: c.y - 1, s: '+' + U.fmt(g), col: '#ffd24a', t: 1.3, sz: 1.3, pop: true });
+        G.J.sfx('fantasy', 'jackpot');
+      }
+      F.refreshEnts(rt);
     },
     nearestMon(rt, e, maxD = 1e9) {
       let best = null, bd = maxD;
@@ -191,7 +268,10 @@ G.Fantasy = (() => {
       G.addEss(F.floorEss(f.floor), 'fantasy');
       G.J.sfx('fantasy', 'wave');
       if (f.auto) {
-        f.floor++;
+        // 층 도약: 빨리 정리하면 한 층 더
+        const skip = ta('g_skip') && rt.floorT < SKIP_T && !F.isBoss(f.floor + 1) ? 2 : 1;
+        if (skip > 1) G.fx(rt, { k: 'text', x: rt.hero.x, y: rt.hero.y - 1.2, s: '도약!', col: '#9fe0ff', t: 1.2, sz: 1.3, pop: true });
+        f.floor += skip;
         if (f.floor > f.maxFloor) f.maxFloor = f.floor;
       }
       f.deaths = 0;
@@ -203,27 +283,50 @@ G.Fantasy = (() => {
       F.newFloor(f, F.rt(f));
     },
 
-    // ── 기술 ──
+    // ── 벼락 (클릭·낙뢰 폭풍) ──
     click(f, x, y) {
       const rt = F.rt(f);
       if (rt.phase === 'dead' || rt.smiteCd > 0) return false;
-      rt.smiteCd = SMITE_CD;
-      const r = F.smiteR(), dmg = F.smiteDmg(f);
-      G.fx(rt, { k: 'bolt', x, y, t: 0.35, col: '#bfe8ff' });
-      G.fx(rt, { k: 'ring', x, y, r, t: 0.35, col: '#bfe8ff' });
-      G.J.sfx('fantasy', 'smite');
-      G.J.shake('fantasy', 5, 0, 1, 0.2);
-      let last = null;
-      for (const m of [...rt.mons]) if (Math.hypot(m.x - x, m.y - y) <= r) { last = m; F.hurt(f, rt, m, dmg, 'smite', { x, y: y - 1 }); }
-      if (last && last.hp > 0) rt.focus = last;
+      rt.smiteCd = F.smiteCd();
+      F.smite(f, rt, x, y, true);
       return true;
     },
+    smite(f, rt, x, y, manual) {
+      const r = F.smiteR(), crit = U.chance(ta('s_crit')), dmg = F.smiteDmg(f) * (crit ? 3 : 1) * (manual ? 1 : 0.6);
+      G.fx(rt, { k: 'bolt', x, y, t: 0.35, col: crit ? '#ffe08a' : '#bfe8ff' });
+      G.fx(rt, { k: 'ring', x, y, r, t: 0.35, col: '#bfe8ff' });
+      G.J.sfx('fantasy', 'smite');
+      if (manual) G.J.shake('fantasy', crit ? 9 : 5, 0, 1, 0.2);
+      const hit = rt.mons.filter(m => Math.hypot(m.x - x, m.y - y) <= r);
+      for (const m of hit) F.zap(f, rt, m, dmg, { x, y: y - 1 });
+      // 연쇄 번개: 맞은 적마다 주변 2마리로 튄다
+      if (ta('s_chain')) {
+        const done = new Set(hit);
+        for (const m of hit) {
+          const near = rt.mons.filter(o => !done.has(o) && GR.dist(o, m) <= 3).sort((p, q) => GR.dist(p, m) - GR.dist(q, m)).slice(0, 2);
+          for (const o of near) { done.add(o); G.fx(rt, { k: 'chain', pts: [[m.x, m.y], [o.x, o.y]], col: '#bfe8ff', t: 0.25 }); F.zap(f, rt, o, dmg * 0.6, m); }
+        }
+      }
+      const last = hit.filter(m => m.hp > 0).pop();
+      if (last && (manual || ta('s_focus'))) rt.focus = last;
+    },
+    zap(f, rt, m, dmg, from) {
+      if (ta('s_shock')) m.shock = 4;
+      F.hurt(f, rt, m, dmg, 'smite', from);
+      if (m.hp > 0 && ta('s_exec') && m.hp < m.max * 0.2) { G.fx(rt, { k: 'text', x: m.x, y: m.y - 1.2, s: '심판', col: '#ffe08a', t: 1, pop: true }); F.hurt(f, rt, m, m.hp + 1, 'smite', from); }
+    },
+
+    // ── 기술 ──
     unlocked: id => ta(SKILLS[id].need) > 0,
-    canCast: (f, id) => F.unlocked(id) && !(f.cds[id] > 0),
+    // 동료 기술은 그 동료가 출전해 서 있어야 쓴다
+    canCast(f, id) {
+      const sk = SKILLS[id];
+      return F.unlocked(id) && !(f.cds[id] > 0) && (!sk.who || F.inParty(F.rt(f), sk.who));
+    },
     cast(f, id) {
       const rt = F.rt(f);
       if (!F.canCast(f, id) || rt.phase === 'dead') return false;
-      f.cds[id] = SKILLS[id].cd;
+      f.cds[id] = SKILLS[id].cd * (id === 'meteor' && ta('m_quick') ? 0.7 : 1);
       if (id === 'heal') {
         for (const p of rt.party) if (!p.dead) { p.hp = Math.min(p.max, p.hp + p.max * 0.5); G.fx(rt, { k: 'tile', key: 'fx_holy', x: p.x, y: p.y, t: 0.8 }); }
         G.J.sfx('fantasy', 'bell');
@@ -241,7 +344,7 @@ G.Fantasy = (() => {
       }
       return true;
     },
-    // 음유시인의 노래 / 성직자의 축복: 버프를 건다
+    // 음유시인의 노래 / 수도사의 축복 / 대현자의 시간 왜곡: 버프를 건다
     buff(f, rt, who, k, dur) {
       f.buffs[k] = dur;
       const B = D.buffs[k];
@@ -264,6 +367,34 @@ G.Fantasy = (() => {
       }
     },
 
+    // 파티원이 맞는다 (몬스터 공격·오염). 쓰러지면 잠시 뒤 부활, 전원이 쓰러지면 패배.
+    hurtMember(f, rt, p, dmg, mo) {
+      if (p.dead) return;
+      if (mo) {
+        if (p === rt.hero) dmg *= 1 - F.armor();
+        if (p.id === 'paladin') dmg *= Math.max(0.3, 1 - ta('p_guard'));
+        G.J.hit('fantasy', p, 0, mo);
+        G.J.lunge('fantasy', mo, p);
+        G.fx(rt, { k: 'splat', x: p.x, y: p.y, dx: p.x - mo.x, dy: p.y - mo.y, n: 4, s: 0.8, t: 0.45 });
+        G.fx(rt, { k: 'slash', x: p.x, y: p.y, t: 0.22, rot: Math.random() - 0.5, flip: mo.x > p.x });
+        G.fx(rt, { k: 'text', x: p.x, y: p.y - 0.6, s: '-' + U.fmt(dmg), col: '#ff6b6b', t: 0.7 });
+        if (p.id === 'paladin' && ta('p_counter')) F.hurt(f, rt, mo, dmg * 0.5, 'hit', p);
+        if (p === rt.hero) G.J.sfx('fantasy', 'hurt');
+      }
+      p.hp -= dmg;
+      if (p.hp > 0) return;
+      p.dead = true;
+      p.reviveT = ALLY_REVIVE * (ta('c_revive') ? 0.5 : 1);
+      if (rt.party.every(q => q.dead)) {
+        rt.phase = 'dead';
+        rt.reviveT = REVIVE;
+        f.deaths++;
+        G.J.sfx('fantasy', 'lose');
+        G.J.shake('fantasy', 8, 1, 0, 0.4);
+        G.log(`원정대가 전멸했다 (${f.floor}층)`, 'fantasy', 'bad');
+      }
+    },
+
     tick(f, dt) {
       const rt = F.rt(f);
       G.fxTick(rt, dt);
@@ -273,92 +404,107 @@ G.Fantasy = (() => {
       if (ta('autocast') && rt.phase !== 'dead') {
         if (rt.mons.length && F.canCast(f, 'rage')) F.cast(f, 'rage');
         if (rt.mons.length && F.canCast(f, 'meteor')) F.cast(f, 'meteor');
-        if (rt.hero.hp < rt.hero.max * 0.5 && F.canCast(f, 'heal')) F.cast(f, 'heal');
+        const ph = F.partyHP(rt);
+        if (ph.hp < ph.max * 0.5 && F.canCast(f, 'heal')) F.cast(f, 'heal');
       }
       if (rt.phase === 'dead') {
         if ((rt.reviveT -= dt) <= 0) {
           if (f.deaths >= 3) {
             f.floor = Math.max(1, f.floor - 1);
             f.deaths = 0;
-            G.log(`세 번 쓰러졌다 — ${f.floor}층으로 물러나 힘을 기른다`, 'fantasy', 'bad');
+            G.log(`세 번 전멸했다 — ${f.floor}층으로 물러나 힘을 기른다`, 'fantasy', 'bad');
           }
           F.newFloor(f, rt);
         }
         return;
       }
+      rt.floorT += dt;
       const m = rt.map, hero = rt.hero;
-      const aspd = F.aspd(), speed = 3.2 * tm('speed');
+      const aspd = F.aspd(f), speed = 3.2 * tm('speed');
       const hmax = F.heroHP(f) * (f.buffs.hp ? 1.6 : 1);
       hero.max = hmax;
+      // 재생과 오염 (오염은 최대 체력 비율이라 체력이 커져도 늘 의미가 있다)
+      const corr = F.corruption(f, rt);
       for (const p of rt.party) {
-        if (p.dead) continue;
-        if (p !== hero) p.max = hmax * p.def.hp * tm('allyHp');
+        if (p.dead) {
+          if ((p.reviveT -= dt) <= 0) {
+            p.dead = false; p.hp = p.max * 0.5;
+            const lead = hero.dead ? rt.party.find(q => !q.dead && q !== p) || hero : hero;
+            p.x = lead.x; p.y = lead.y;
+          }
+          continue;
+        }
+        if (p !== hero) p.max = F.allyHP(f, p);
         p.hp = Math.min(p.max, p.hp + p.max * F.regen(f) * dt);
+        if (corr > 0) F.hurtMember(f, rt, p, p.max * corr * dt, null);
       }
-      // 몬스터: 가까이 오면 깨어나 가장 가까운 파티원을 쫓는다
+      if (rt.phase === 'dead') return;
+      // 지속 피해와 감전
+      for (const mo of [...rt.mons]) {
+        if (mo.shock > 0) mo.shock -= dt;
+        for (const d of mo.dots) { d.t -= dt; F.hurt(f, rt, mo, d.dps * dt, 'dot', null); }
+        mo.dots = mo.dots.filter(d => d.t > 0);
+      }
+      // 낙뢰 폭풍: 방치 중에도 일정 간격으로 근처 적에게 벼락
+      if (ta('s_storm') && rt.mons.length && (rt.stormT -= dt) <= 0) {
+        rt.stormT = F.stormT();
+        const near = rt.mons.filter(o => GR.dist(o, hero) < 8);
+        if (near.length) { const t = U.pick(near); F.smite(f, rt, t.x, t.y, false); }
+      }
+      // 시간 왜곡
+      if (ta('a_warp') && F.inParty(rt, 'archmage') && rt.mons.length && (rt.warpT -= dt) <= 0) {
+        rt.warpT = WARP_CD;
+        F.buff(f, rt, rt.allies.find(a => a.id === 'archmage'), 'haste', 5);
+      }
+      // 몬스터: 가까이 오면 깨어나 가장 가까운 파티원을 쫓는다 (도발 중이면 성기사)
+      const pal = ta('p_taunt') ? rt.allies.find(a => a.id === 'paladin' && !a.dead) : null;
       for (const mo of rt.mons) {
         mo.moving = false;
         if (!mo.aggro && GR.dist(mo, hero) < (mo.boss ? 4 : 6)) mo.aggro = true;
         if (!mo.aggro) continue;
-        let tg = null, bd = 1e9;
-        for (const p of rt.party) if (!p.dead) { const d = GR.dist(mo, p); if (d < bd) { bd = d; tg = p; } }
+        let tg = pal && GR.dist(mo, pal) < 6 ? pal : null, bd = tg ? GR.dist(mo, tg) : 1e9;
+        if (!tg) for (const p of rt.party) if (!p.dead) { const d = GR.dist(mo, p); if (d < bd) { bd = d; tg = p; } }
         if (!tg) continue;
         if (bd > 1.1 + mo.s * 0.2) { GR.moveTo(m, mo, tg.x, tg.y, mo.boss ? 1.8 : 2.2, dt, 1); continue; }
         mo.flip = tg.x < mo.x;
         if ((mo.atkT -= dt) <= 0) {
           mo.atkT = 1;
-          const dmg = mo.atk * (tg === hero ? 1 - F.armor() : 1);
-          tg.hp -= dmg;
-          G.J.lunge('fantasy', mo, tg);
-          G.J.hit('fantasy', tg, 0, mo);
-          G.fx(rt, { k: 'splat', x: tg.x, y: tg.y, dx: tg.x - mo.x, dy: tg.y - mo.y, n: 4, s: 0.8, t: 0.45 });
-          G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.22, rot: Math.random() - 0.5, flip: mo.x > tg.x });
-          G.fx(rt, { k: 'text', x: tg.x, y: tg.y - 0.6, s: '-' + U.fmt(dmg), col: '#ff6b6b', t: 0.7 });
-          if (tg === hero) G.J.sfx('fantasy', 'hurt');
-          if (tg.hp <= 0) {
-            tg.dead = true;
-            if (tg === hero) {
-              rt.phase = 'dead';
-              rt.reviveT = REVIVE;
-              f.deaths++;
-              G.J.sfx('fantasy', 'lose');
-              G.J.shake('fantasy', 8, 1, 0, 0.4);
-              G.log(`${mo.n}에게 쓰러졌다 (${f.floor}층)`, 'fantasy', 'bad');
-              return;
-            }
-            tg.reviveT = 8;
-          }
+          F.hurtMember(f, rt, tg, mo.atk, mo);
+          if (rt.phase === 'dead') return;
         }
       }
-      // 기사: 지정한 적 또는 길로 가장 가까운 적. 적이 없으면 계단으로.
+      // 기사: 지정한 적 또는 길로 가장 가까운 적. 적이 없으면 상자, 그다음 계단.
       hero.moving = false;
-      const target = (rt.focus && rt.focus.hp > 0) ? rt.focus : F.pickTarget(rt);
-      if (target) {
-        if (GR.dist(hero, target) > 1.2 + target.s * 0.2) GR.moveTo(m, hero, target.x, target.y, speed, dt, 1);
-        else {
-          hero.flip = target.x < hero.x;
-          if ((hero.atkT -= dt * aspd) <= 0) {
-            hero.atkT = 1;
-            const c = U.chance(F.crit());
-            G.fx(rt, { k: 'slash', x: target.x, y: target.y, t: 0.3, crit: c, rot: Math.random() - 0.5, flip: hero.x > target.x });
-            G.J.lunge('fantasy', hero, target);
-            if (!c) G.J.sfx('fantasy', 'tap');
-            F.hurt(f, rt, target, F.heroAtk(f) * (c ? F.critD() : 1), c ? 'crit' : 'hit', hero);
+      if (!hero.dead) {
+        const target = (rt.focus && rt.focus.hp > 0) ? rt.focus : F.pickTarget(rt);
+        const chest = !target && rt.chests[0];
+        if (target) {
+          if (GR.dist(hero, target) > 1.2 + target.s * 0.2) GR.moveTo(m, hero, target.x, target.y, speed, dt, 1);
+          else {
+            hero.flip = target.x < hero.x;
+            if ((hero.atkT -= dt * aspd) <= 0) {
+              hero.atkT = 1;
+              const c = U.chance(F.crit());
+              G.fx(rt, { k: 'slash', x: target.x, y: target.y, t: 0.3, crit: c, rot: Math.random() - 0.5, flip: hero.x > target.x });
+              G.J.lunge('fantasy', hero, target);
+              if (!c) G.J.sfx('fantasy', 'tap');
+              F.hurt(f, rt, target, F.heroAtk(f) * (c ? F.critD() : 1), c ? 'crit' : 'hit', hero);
+            }
           }
+        } else if (chest) {
+          if (GR.moveTo(m, hero, chest.x, chest.y, speed, dt, 0.9)) F.openChest(f, rt, chest);
+        } else if (GR.moveTo(m, hero, m.end.cx, m.end.cy, speed, dt, 0.2)) {
+          F.descend(f, rt);
+          return;
         }
-      } else if (GR.moveTo(m, hero, m.end.cx, m.end.cy, speed, dt, 0.2)) {
-        F.descend(f, rt);
-        return;
+        F.look(rt);
       }
-      F.look(rt);
-      // 동료
+      // 동료: 기사를 따라다니며 각자 싸운다
       for (const a of rt.allies) {
         a.moving = false;
-        if (a.dead) {
-          if ((a.reviveT -= dt) <= 0) { a.dead = false; a.hp = a.max; a.x = hero.x; a.y = hero.y; }
-          continue;
-        }
+        if (a.dead) continue;
         const def = a.def;
+        if (a.dashT > 0) a.dashT -= dt;
         // 음유시인: 노래를 번갈아 부른다
         if (def.song && rt.mons.length && (a.skT -= dt) <= 0) {
           a.skT = SONG_CD;
@@ -366,14 +512,14 @@ G.Fantasy = (() => {
           F.buff(f, rt, a, k, F.songDur() * (k === 'fury' ? 0.6 : 1));
         }
         if (def.heal) {
-          // 성직자: 축복(트리)으로 파티 재생
+          // 수도사: 축복(트리)으로 파티 재생, 가장 다친 파티원을 치유
           if (ta('bless') && (a.skT -= dt) <= 0) { a.skT = BLESS_CD; F.buff(f, rt, a, 'regen', 10 * (1 + ta('songDur'))); }
           if ((a.atkT -= dt) <= 0) {
             let low = null;
             for (const p of rt.party) if (!p.dead && p.hp < p.max * 0.9 && (!low || p.hp / p.max < low.hp / low.max)) low = p;
             a.atkT = low ? def.cd : 0.3;
             if (low) {
-              low.hp = Math.min(low.max, low.hp + low.max * def.heal);
+              low.hp = Math.min(low.max, low.hp + low.max * def.heal * tm('clericHeal'));
               G.J.lunge('fantasy', a, low);
               G.fx(rt, { k: 'tile', key: 'fx_holy', x: low.x, y: low.y, t: 0.5 });
             }
@@ -381,45 +527,71 @@ G.Fantasy = (() => {
           if (GR.dist(a, hero) > 1.8) GR.moveTo(m, a, hero.x, hero.y, speed * 1.1, dt, 1.4);
           continue;
         }
-        const tg = F.nearestMon(rt, a, def.range + 4);
+        const range = def.range + (a.id === 'archer' ? ta('r_range') : 0);
+        const prefer = ta('s_focus') && rt.focus && rt.focus.hp > 0 && GR.dist(rt.focus, a) < range + 4 ? rt.focus : null;
+        const tg = prefer || F.nearestMon(rt, a, range + 4);
         if (tg && GR.dist(tg, hero) < 9) {
-          if (GR.dist(a, tg) > def.range) { GR.moveTo(m, a, tg.x, tg.y, speed, dt, def.range * 0.8); continue; }
+          // 용기병 돌진: 사거리 밖 6칸 안의 적에게 뛰어든다
+          if (a.id === 'dragoon' && ta('d_dash') && a.dashT <= 0 && GR.dist(a, tg) > range && GR.dist(a, tg) <= 6) {
+            a.dashT = DASH_CD;
+            G.fx(rt, { k: 'beam', x: a.x, y: a.y, x2: tg.x, y2: tg.y, col: '#ffe08a', w: 3, t: 0.2 });
+            a.x = tg.x + (a.x > tg.x ? 0.8 : -0.8); a.y = tg.y;
+            a.atkT = 0; a.dashHit = true;
+          }
+          if (GR.dist(a, tg) > range) { GR.moveTo(m, a, tg.x, tg.y, speed, dt, range * 0.8); continue; }
           a.flip = tg.x < a.x;
           if ((a.atkT -= dt * aspd) <= 0) {
-            a.atkT = def.cd;
-            const dmg = F.heroAtk(f) * def.atk * 0.5 * tm('allyAtk');
-            if (def.proj) { G.fx(rt, { k: 'proj', key: def.proj, x: a.x, y: a.y, x2: tg.x, y2: tg.y, t: def.proj === 'fx_arrow' ? 0.3 : 0.25 }); G.J.lunge('fantasy', a, tg); }
-            else { G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.25, rot: Math.random() - 0.5, flip: a.x > tg.x }); G.J.lunge('fantasy', a, tg); }
-            if (def.splash) { for (const mo of [...rt.mons]) if (GR.dist(mo, tg) <= def.splash) F.hurt(f, rt, mo, dmg, 'hit', a); }
-            else if (def.chain) {
-              const hit = rt.mons.slice().sort((p, q) => GR.dist(p, tg) - GR.dist(q, tg)).slice(0, def.chain);
-              for (const mo of hit) F.hurt(f, rt, mo, dmg, 'hit', a);
-            } else F.hurt(f, rt, tg, dmg, 'hit', a);
+            a.atkT = F.allyCd(a);
+            F.allyAttack(f, rt, a, tg);
           }
         } else if (GR.dist(a, hero) > 1.8) GR.moveTo(m, a, hero.x, hero.y, speed * 1.1, dt, 1.4);
       }
       F.spread(m, rt.party, 0.75);
       F.spread(m, rt.mons, 0.8);
     },
+    // 동료 한 번 공격: 동료마다·택1 노드마다 다르게
+    allyAttack(f, rt, a, tg) {
+      const def = a.def;
+      let dmg = F.allyAtk(f, a);
+      if (def.proj) G.fx(rt, { k: 'proj', key: def.proj, x: a.x, y: a.y, x2: tg.x, y2: tg.y, t: def.proj === 'fx_arrow' ? 0.3 : 0.25 });
+      else G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.25, rot: Math.random() - 0.5, flip: a.x > tg.x });
+      G.J.lunge('fantasy', a, tg);
+      if (a.id === 'archer') {
+        F.hurt(f, rt, tg, dmg, 'hit', a);
+        if (ta('r_poison')) F.dot(tg, 'poison', dmg * 0.3, 4);
+        if (ta('r_pierce')) for (const o of rt.mons.filter(o => o !== tg && GR.dist(o, tg) <= 2).slice(0, 2)) F.hurt(f, rt, o, dmg * 0.6, 'hit', a);
+      } else if (def.splash) {
+        const r = def.splash + ta('m_area');
+        G.fx(rt, { k: 'ring', x: tg.x, y: tg.y, r, t: 0.3, col: '#ff8a3a' });
+        for (const mo of [...rt.mons]) if (GR.dist(mo, tg) <= r) { F.hurt(f, rt, mo, dmg, 'hit', a); if (ta('m_burn')) F.dot(mo, 'burn', dmg * 0.25, 3); }
+      } else if (def.chain) {
+        const over = ta('a_overload') > 0, n = def.chain + ta('a_chain') + (over ? 2 : 0);
+        const hit = rt.mons.slice().sort((p, q) => GR.dist(p, tg) - GR.dist(q, tg)).slice(0, n);
+        G.fx(rt, { k: 'chain', pts: [[a.x, a.y], ...hit.map(o => [o.x, o.y])], col: '#c9a6ff', t: 0.2 });
+        hit.forEach((mo, i) => F.hurt(f, rt, mo, dmg * (over ? 1 : Math.pow(0.85, i)), 'hit', a));
+      } else if (a.id === 'dragoon') {
+        if (a.dashHit) { dmg *= 3; a.dashHit = false; }
+        const c = U.chance(ta('d_crit'));
+        if (ta('d_exec') && tg.hp < tg.max * 0.25) { G.fx(rt, { k: 'text', x: tg.x, y: tg.y - 1.2, s: '처형', col: '#ffe08a', t: 1, pop: true }); dmg = tg.hp + 1; }
+        F.hurt(f, rt, tg, dmg * (c ? F.critD() : 1), c ? 'crit' : 'hit', a);
+      } else F.hurt(f, rt, tg, dmg, 'hit', a);
+    },
     view(f) {
       const rt = F.rt(f), b = F.band(f.floor), m = rt.map;
       if (m._band !== b) { m._band = b; m.ver++; }
       return {
-        map: m, ents: rt.ents, fx: rt.fx, cam: rt.hero, viewH: 13, dimAll: rt.phase === 'dead',
+        map: m, ents: rt.ents, fx: rt.fx, cam: rt.hero.dead ? rt.party.find(p => !p.dead) || rt.hero : rt.hero, viewH: 13, dimAll: rt.phase === 'dead',
         fog: { seen: rt.seen, ver: rt.seenVer, light: rt.hero },
         mini: { seen: rt.seen, ver: rt.seenVer, end: m.end, party: rt.party, mons: rt.mons },
         terrain(x, y) {
           const c = m.c[y * m.w + x];
           if (c === '#') {
-            // 0x72 벽: 아래가 바닥이면 앞면(벽돌이 보인다), 그 밖에 바닥과 닿으면 윗면
             const open = (dx, dy) => '.>'.includes(GR.at(m, x + dx, y + dy));
-            // 0x72 자동 타일(47조각): 맵 밖도 벽으로 친다
-            // 바닥과 닿은 벽 칸은 밑에 바닥을 깐다 (0x72 벽은 칸 가운데에 얇게 그려져 양옆이 비어 있다)
+            // 0x72 자동 타일(47조각): 맵 밖도 벽으로 친다. 바닥과 닿은 벽 칸은 밑에 바닥을 깐다(벽이 칸 가운데에 얇게 그려져 있다)
             if (G.ARTSET['f_hw0' + b]) {
               const k = 'f_hw' + GR.blob(x, y, (xx, yy) => xx < 0 || yy < 0 || xx >= m.w || yy >= m.h || m.c[yy * m.w + xx] === '#') + b;
               return GR.DIR.some(([dx, dy]) => open(dx, dy)) ? ['f_floor' + b, k] : [k];
             }
-            if (G.ARTSET['f_wface' + b]) return GR.wallKeys(x, y, (xx, yy) => GR.at(m, xx, yy) === '#', (xx, yy) => '.>'.includes(GR.at(m, xx, yy)), 'f_', b);
             for (const [dx, dy] of GR.DIR) if (open(dx, dy)) return ['f_wall' + b];
             return null;
           }

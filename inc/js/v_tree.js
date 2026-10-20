@@ -33,7 +33,7 @@ G.UI.tree = function (treeId, getSt) {
   let sel = null;
   const ui = nodes.map(n => {
     const lvEl = h('span.tn-lv'), icon = G.T.el(n.t, 'tn-ic');
-    const el = h('button.tnode' + (n.root ? '.root' : ''), {
+    const el = h('button.tnode' + (n.root ? '.root' : '') + (n.notable ? '.notable' : '') + (n.pair ? '.pair' : ''), {
       style: `left:${px(n)}px;top:${py(n)}px`,
       on: { click: e => { e.stopPropagation(); select(n); }, dblclick: e => { e.stopPropagation(); buy(n); } },
     }, icon, lvEl);
@@ -45,8 +45,11 @@ G.UI.tree = function (treeId, getSt) {
   const iName = h('b'), iLv = h('small'), iDesc = h('p'), iCostV = h('span'), iCost = h('div.cost', null, G.T.el(wallet.tile, 'xs'), ' ', iCostV), buyBtn = h('button.btn.big', { on: { click: () => { if (sel) buy(sel); } } }, '배우기');
   const info = h('div.tree-info.hidden', null, h('div.ti-h', null, iName, iLv), iDesc, iCost, buyBtn);
   function select(n) { sel = n; update(); }
+  // 짝 노드(택1): 배운 것 중 고르지 않은 쪽은 다시 누르면 공짜로 바꾼다
+  const swappable = n => n.pair && T.lv(getSt(), n.id) > 0 && T.picked(getSt(), n) !== n.id;
   // 배우면 소리와 함께 노드가 튀어 오른다
   function buy(n) {
+    if (swappable(n)) { T.pick(treeId, getSt(), n.id); if (G.SFX) G.SFX.play('select'); update(); return; }
     if (!T.buy(treeId, getSt(), n.id)) { if (G.SFX) G.SFX.play('error'); return; }
     if (G.SFX) G.SFX.play(n.id.startsWith('open_') ? 'unlock' : 'buy');
     const u = ui.find(x => x.n === n);
@@ -101,6 +104,7 @@ G.UI.tree = function (treeId, getSt) {
       tog(u.el, 'locked', !open);
       tog(u.el, 'sel', sel === n);
       tog(u.el, 'coach', coachId === n.id);
+      tog(u.el, 'off', !!n.pair && lv > 0 && T.picked(st, n) !== n.id);
       tog(u.icon, 'q', !open);
       setText(u.lvEl, n.root ? '' : max > 1 ? `${lv}/${max}` : lv ? '✓' : '');
     }
@@ -115,12 +119,15 @@ G.UI.tree = function (treeId, getSt) {
     if (sel) {
       const n = sel, lv = T.lv(st, n.id), max = n.max || 1, open = T.open(treeId, st, n.id);
       setText(iName, open ? n.n : '???');
-      setText(iLv, n.root ? '' : max > 1 ? ` Lv ${lv} / ${max}` : lv ? ' 습득' : '');
+      setText(iLv, (n.root ? '' : max > 1 ? ` Lv ${lv} / ${max}` : lv ? ' 습득' : '') + (n.pair ? ' · ⇄ 택1' : ''));
       setText(iDesc, open ? n.d : `🔒 ${(n.req || []).map(r => T.idx[treeId][r].n).join(n.reqAll ? ' + ' : ' / ')}`);
       const maxed = lv >= max;
       setText(iCostV, maxed ? 'MAX' : open ? U.fmt(T.cost(treeId, st, n.id)) : '');
-      buyBtn.disabled = !T.canBuy(treeId, st, n.id);
-      tog(buyBtn, 'hidden', maxed || n.root);
+      const sw = swappable(n);
+      setText(buyBtn, sw ? '이걸로 바꾸기' : '배우기');
+      buyBtn.disabled = !sw && !T.canBuy(treeId, st, n.id);
+      tog(buyBtn, 'hidden', (maxed && !sw) || n.root);
+      if (sw) setText(iCostV, '무료');
     }
     return n2buy;
   }

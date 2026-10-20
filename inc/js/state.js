@@ -163,6 +163,8 @@ G.deserialize = function (json) {
   for (const k in MOVE) if (ft[k]) { ft[MOVE[k]] = Math.max(ft[MOVE[k]] || 0, 1); delete ft[k]; }
   if (ft.chef) { ft.songDur = (ft.songDur || 0) + ft.chef; delete ft.chef; }
   delete G.S.w.fantasy.ing;
+  // 원정대 노드가 생기기 전 저장: 동료를 이미 열었으면 원정대도 연 것으로
+  if (['archer', 'bard', 'cleric', 'mage', 'paladin', 'dragoon', 'archmage'].some(k => ft[k])) ft.party = 1;
   G.RT = {};
   return G.S;
 };
