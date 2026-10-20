@@ -47,10 +47,12 @@ G.Xianxia = (() => {
     // 영구 배율은 출처끼리 더한다 (트리·차원·유물·시너지). 트리 안의 같은 효과 노드끼리도 더한다 (곱하면 노드 수만큼 폭주)
     sum: parts => 1 + parts.reduce((a, p) => a + p[1] - 1, 0),
     parts(k) {
-      const dim = ['차원', G.globalMult()];
-      if (k === 'qi') return [['트리', 1 + ta('qi')], dim, ['유물', 1 + G.relicVal('x_qi')], ['시너지', G.synergy('syn_tactics') ? 1 + 0.04 * (G.S.w.scifi.maxWave - 1) : 1]];
-      if (k === 'stone') return [['트리', 1 + ta('stone')], dim, ['유물', 1 + G.relicVal('x_stone')]];
-      if (k === 'power') return [['트리', 1 + ta('power')], dim, ['유물', 1 + G.relicVal('x_power')]];
+      // 테스트용 끄기(⚙): 넥서스(차원·시너지)·유물을 수선에서만 뺀다
+      const xs = G.S.w.xianxia, noN = xs.noNexus, noR = xs.noRelic;
+      const dim = ['차원', noN ? 1 : G.globalMult() / (noR ? 1 + G.relicVal('all') : 1)], rv = k2 => (noR ? 1 : 1 + G.relicVal(k2));
+      if (k === 'qi') return [['트리', 1 + ta('qi')], dim, ['유물', rv('x_qi')], ['시너지', !noN && G.synergy('syn_tactics') ? 1 + 0.04 * (G.S.w.scifi.maxWave - 1) : 1]];
+      if (k === 'stone') return [['트리', 1 + ta('stone')], dim, ['유물', rv('x_stone')]];
+      if (k === 'power') return [['트리', 1 + ta('power')], dim, ['유물', rv('x_power')]];
       return [];
     },
     slotCount: () => BASE_SLOTS + ta('slots'),
@@ -129,6 +131,10 @@ G.Xianxia = (() => {
     // 초기화 (수선만): 설정 화면에서 바로 처음부터 해 보려고
     resetWorld() { G.S.w.xianxia = X.init(); G.RT.xianxia = null; },
     HERB_T, ALCH_T,
+    // 영초 밭 하나의 성장 속도 (목 진기 · 트리 · 제자 +25%씩)
+    herbGrow: (x, L = X.layout(x)) => (1 + 0.5 * L.sum.wood) * (1 + ta('herb')) * (1 + 0.25 * Math.min(6, ta('disciple'))),
+    herbEvery: (x, L = X.layout(x)) => HERB_T / (X.herbGrow(x, L) * Math.max(1, X.rt(x).plots.length)),
+    alchEvery: (x, L = X.layout(x)) => ALCH_T / ((1 + 0.5 * L.sum.fire) * (1 + ta('alch'))),
 
     // ── 수치 ──
     qiBase(x) {
@@ -144,7 +150,7 @@ G.Xianxia = (() => {
     pillUse: () => 4 + ta('pillMax'),
     breakChance(x, pills = Math.min(X.pillUse(), x.pills)) {
       let c = Math.max(0.2, 0.62 - 0.04 * x.realm) + (0.08 + ta('pillPow')) * pills + ta('trib') + Math.min(0.15, 0.015 * X.layout(x).sum.earth);
-      if (G.synergy('syn_regress')) c += 0.03 * Math.min(10, G.S.w.wuxia.lives);
+      if (G.synergy('syn_regress') && !x.noNexus) c += 0.03 * Math.min(10, G.S.w.wuxia.lives);
       return Math.min(0.95, c);
     },
     beastHp: r => 12 * Math.pow(2.8, r),
@@ -284,7 +290,10 @@ G.Xianxia = (() => {
         G.fx(rt, { k: 'mote', x: s.x, y: s.y, x2: me.x, y2: me.y, col: D.el[p.el].col, t: 1.2 });
       }
       // 영초(목)와 단로(화)
-      for (const p of rt.plots) if (p.g < HERB_T) p.g += dt * (1 + 0.5 * L.sum.wood) * (1 + ta('herb'));
+      // 영초: 익으면 저절로 거둔다. 한 개 나오는 시간 = 영초 생산 주기 (쿨타임 막대)
+      const hg = X.herbGrow(x, L);
+      for (const p of rt.plots) { p.g += dt * hg; if (p.g >= HERB_T) { p.g = 0; x.herbs++; if (G.J.live('xianxia')) G.fx(rt, { k: 'text', x: p.x, y: p.y - 0.6, s: '+1', col: '#9fe79f', t: 0.8 }); } }
+      rt.herbClock = ((rt.herbClock || 0) + dt / X.herbEvery(x, L)) % 1;
       if (x.herbs >= 3 && (rt.alchT += dt * (1 + 0.5 * L.sum.fire) * (1 + ta('alch'))) >= ALCH_T) {
         rt.alchT = 0; x.herbs -= 3; x.pills = Math.min(20, x.pills + 1);
         const [fx, fy] = m.poi.F[0];
@@ -386,7 +395,8 @@ G.Xianxia = (() => {
     view(x) {
       const rt = X.rt(x), L = X.layout(x), n = X.slotCount();
       const ents = [];
-      for (const p of rt.plots) if (p.g >= HERB_T) ents.push({ t: 'q_herb', x: p.x, y: p.y, s: 0.9 });
+      // 자라는 영초: 반쯤 자라면 보이고 점점 커진다
+      for (const p of rt.plots) if (p.g >= HERB_T * 0.4) ents.push({ t: 'q_herb', x: p.x, y: p.y, s: 0.5 + 0.45 * p.g / HERB_T });
       // 진법 칸: 빈 칸은 고리, 놓인 진기는 보석(꺼진 것은 어둡게), 잠긴 칸은 아무것도 없다
       // 영맥 칸은 늘 빛나게(잠긴 것도 흐리게) — 어디를 노려야 하는지 보이게. 잠긴 진법 칸은 아주 흐린 고리
       for (const s of rt.slots) {

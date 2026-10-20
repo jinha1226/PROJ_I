@@ -1079,3 +1079,8 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .xdesign .dcmp.up { color: var(--good); } .xdesign .dcmp.down { color: #ff8a7a; }
 .xdesign .dhelp { margin-top: 4px; font-size: 10px; }
 @media (max-width: 760px) { .xdesign { right: 6px; left: 6px; width: auto; top: 40%; } .dbtn { top: 35%; } }
+.xcds { flex-direction: column; gap: 2px; }
+.xcd span { width: 26px; color: var(--dim); }
+.xcd .bar { width: 90px; }
+.xhov { position: absolute; left: 50%; bottom: 80px; transform: translateX(-50%); background: #000e; border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: 12px; pointer-events: none; z-index: 20; max-width: 560px; }
+.xdesign .wheel { display: flex; justify-content: center; }

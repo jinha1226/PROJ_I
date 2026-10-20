@@ -46,6 +46,11 @@ G.UI.worldScreen = function (id, spec) {
     if (!(spec.click && spec.click(p, e)) && mod.click) mod.click(G.S.w[id], p.x, p.y);
     G.Coach.clicked(id, p, ct);
   });
+  // 올리기: spec.hover(칸, 이벤트) — 칸 위 설명 (진법 칸·영맥 등). 떠나면 null
+  if (spec.hover) {
+    cv.addEventListener('pointermove', e => { if (e.pointerType === 'touch') return; const r = cv.getBoundingClientRect(); spec.hover(mv.toTile(e.clientX - r.left, e.clientY - r.top), e); });
+    cv.addEventListener('pointerleave', () => spec.hover(null));
+  }
   // 끌기: 누른 채 움직이면 spec.drag (낚싯바늘 조종 등). 끌기를 쓰는 맵은 터치 스크롤을 막는다.
   if (spec.drag) {
     cv.style.touchAction = 'none';

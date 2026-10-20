@@ -467,6 +467,19 @@ G.MapView = function (canvas, id) {
         if (l.good) { ctx.shadowColor = l.col; ctx.shadowBlur = 6; }
         ctx.beginPath(); ctx.moveTo(sx(l.x), sy(l.y)); ctx.lineTo(sx(l.x2), sy(l.y2)); ctx.stroke();
         ctx.shadowBlur = 0;
+        // 방향: 상생은 받는 쪽 앞에 화살촉, 상극은 가운데 ✕
+        const ax = sx(l.x + (l.x2 - l.x) * 0.62), ay = sy(l.y + (l.y2 - l.y) * 0.62), ang = Math.atan2(l.y2 - l.y, l.x2 - l.x), w = TS * 0.16;
+        ctx.setLineDash([]); ctx.globalAlpha = 0.95;
+        if (l.good) {
+          ctx.fillStyle = l.col; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(ax + Math.cos(ang) * w, ay + Math.sin(ang) * w);
+          ctx.lineTo(ax + Math.cos(ang + 2.5) * w, ay + Math.sin(ang + 2.5) * w); ctx.lineTo(ax + Math.cos(ang - 2.5) * w, ay + Math.sin(ang - 2.5) * w); ctx.closePath();
+          ctx.stroke(); ctx.fill();
+        } else {
+          const mx = sx((l.x + l.x2) / 2), my = sy((l.y + l.y2) / 2), r = TS * 0.1;
+          ctx.strokeStyle = '#ff5050'; ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.moveTo(mx - r, my - r); ctx.lineTo(mx + r, my + r); ctx.moveTo(mx + r, my - r); ctx.lineTo(mx - r, my + r); ctx.stroke();
+        }
       }
       ctx.setLineDash([]); ctx.globalAlpha = 1;
       if (view.lines) for (const l of view.lines) {
