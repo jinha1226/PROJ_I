@@ -14,7 +14,7 @@ G.newState = function (keep) {
     ess: 0, runEss: 0, totalEss: 0, essBy: { fantasy: 0, wuxia: 0, xianxia: 0, scifi: 0, cthulhu: 0 },
     stars: 0, starsEarned: 0, signs: 0, pulls: 0, pity: 0, relics: {},
     unlocked: { fantasy: true, wuxia: false, xianxia: false, scifi: false, cthulhu: false },
-    ntree: G.Tree.init('nexus'), stree, prestiges: 0, w: {}, rates: {}, coach: {},
+    ntree: G.Tree.init('nexus'), stree, prestiges: 0, w: {}, rates: {}, coach: {}, mig: { xx2: 1 },
   };
   for (const id in G.MODS) G.S.w[id] = G.MODS[id].init(head);
   if (keep) {
@@ -214,6 +214,9 @@ G.deserialize = function (json) {
   }
   if (MERGE[wx.skill] === undefined && Object.values(MERGE).some(l => l.includes(wx.skill))) wx.skill = Object.keys(MERGE).find(k => MERGE[k].includes(wx.skill));
   if (!data.w || !data.w.wuxia || data.w.wuxia.fameT == null) { const j = G.D.WX.jobs.find(x => x.id === wx.job) || G.D.WX.jobs[0]; wx.job = j.id; wx.fameT = j.fame; }
+  // 수선 개편(무대·천겁·트리) 전 저장: 수선만 한 번 처음부터 (사용자 요청 — 이미 화신이라 새 흐름을 처음부터 보려고)
+  G.S.mig = G.S.mig || {};
+  if (!(data.mig && data.mig.xx2)) { G.S.w.xianxia = G.Xianxia.init(); G.S.mig.xx2 = 1; }
   // 수선 트리 레벨 상한이 낮아졌다(최대 10): 넘친 레벨은 상한으로
   const xt = G.S.w.xianxia.tree;
   for (const n of G.Tree.defs.xianxia) if (xt[n.id] > (n.max || 1)) xt[n.id] = n.max || 1;

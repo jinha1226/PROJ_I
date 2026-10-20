@@ -34,7 +34,7 @@ G.Xianxia = (() => {
       const at = {};
       slots.forEach((s, i) => { s.i = i; at[s.x + ',' + s.y] = i; });
       const rt = {
-        map, slots, at, fx: [], me: { kind: 'hero', t: 'cultivator', x: vx, y: vy, s: 1.15, bar: false }, beasts: [], disciples: [], demons: [],
+        map, slots, at, fx: [], me: { kind: 'hero', t: 'cultivator', art: 'xx_hero' + stage, x: vx, y: vy, s: 1.15, bar: false }, beasts: [], disciples: [], demons: [],
         plots: (map.poi.h || []).map(([px, py]) => ({ x: px, y: py, g: Math.random() * HERB_T })),
         state: 'meditate', beastT: 4, alchT: 0, swordT: 0, trib: 0, penalty: 0, zapT: 0, ver: 0, stage,
       };
@@ -205,7 +205,7 @@ G.Xianxia = (() => {
       const n = X.demonCount(x), hp = X.power(x) * 1.2;
       for (let k = 0; k < n; k++) {
         const a = k / n * Math.PI * 2 + Math.random() * 0.5, r = 4.5;
-        rt.demons.push({ kind: 'mon', demon: true, t: 'q_demon', x: rt.me.x + Math.cos(a) * r * 1.4, y: rt.me.y + Math.sin(a) * r * 0.8, s: 1, hp, max: hp, bar: true, alpha: 0.85, spd: 0.55 + Math.random() * 0.3 });
+        rt.demons.push({ kind: 'mon', demon: true, t: 'q_demon', art: 'm_lich', x: rt.me.x + Math.cos(a) * r * 1.4, y: rt.me.y + Math.sin(a) * r * 0.8, s: 1, hp, max: hp, bar: true, alpha: 0.85, spd: 0.55 + Math.random() * 0.3 });
       }
       G.fx(rt, { k: 'text', x: rt.me.x, y: rt.me.y - 1.4, s: '심마', col: '#c7a6ff', t: 1.5, sz: 1.4, pop: true });
       G.J.sfx('xianxia', 'gurgle');
@@ -276,7 +276,7 @@ G.Xianxia = (() => {
       const nd = Math.min(6, ta('disciple'));
       while (rt.disciples.length < nd) {
         const [qx, qy] = m.poi.Q[0];
-        rt.disciples.push({ kind: 'ally', t: ['wb_human', 'wl_white', 'q_disciple', 'wh_topknot'], art: 'x_disciple', x: qx, y: qy, s: 0.9, carry: 0, goal: null });
+        rt.disciples.push({ kind: 'ally', t: ['wb_human', 'wl_white', 'q_disciple', 'wh_topknot'], art: 'xx_disc', x: qx, y: qy, s: 0.9, carry: 0, goal: null });
       }
       for (const d of rt.disciples) {
         d.moving = false;
@@ -294,7 +294,9 @@ G.Xianxia = (() => {
       if (rt.state !== 'trib' && (rt.beastT -= dt) <= 0 && rt.beasts.length < cap) {
         rt.beastT = BEAST_T;
         const [gx, gy] = m.poi.G[0], hp = X.beastHp(x.realm);
-        rt.beasts.push({ kind: 'mon', t: { k: 'q_beast', v: x.realm % 6 }, x: gx, y: gy, s: 1, hp, max: hp, r: x.realm, bar: true, atkT: 2, goal: null });
+        // 요수: 무대마다 다른 짐승 (산기슭 늑대 → 영산 곰 → 봉우리 와르그 → 선궁 수호 골렘 → 선계 마수)
+        const BEAST = ['m_wolf', 'm_bear', 'm_warg', 'm_golem2', 'm_demon'];
+        rt.beasts.push({ kind: 'mon', t: { k: 'q_beast', v: x.realm % 6 }, art: BEAST[rt.stage], x: gx, y: gy, s: 1, hp, max: hp, r: x.realm, bar: true, atkT: 2, goal: null });
       }
       for (const b of rt.beasts) {
         b.moving = false;

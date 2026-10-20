@@ -236,6 +236,13 @@ const SPEC = {
       wx_shero7: M({ robe: ['#4a3a20', '#d9a62e'], collar: '#4ba747' }),                    // 사도련주
       wx_shero8: M({ robe: ['#2b2b33', '#4ba747'], collar: '#facb3e' }),                    // 천하제일도
       wx_shero9: M({ robe: ['#1f3a2a', '#facb3e'], collar: '#97da3f' }),                    // 사왕
+      // 수선 수도자: 같은 사람(흰 머리 상투), 무대가 오를수록 도포가 희고 빛난다 — 산기슭 회청 → 영산 청백 → 봉우리 하늘빛 → 선궁 백금 → 선계 금빛
+      xx_hero0: M({ hair: ['#2b2b33', '#4a4a58'], robe: ['#7f8fa3', '#4e5a6a'], collar: '#c9c3b8' }),
+      xx_hero1: M({ hair: ['#2b2b33', '#4a4a58'], robe: ['#d6dde6', '#7f8fa3'], collar: '#5698cc' }),
+      xx_hero2: M({ hair: ['#2b2b33', '#4a4a58'], robe: ['#bfe0f5', '#5698cc'], collar: '#e8eef5', hat: 'crown' }),
+      xx_hero3: M({ hair: ['#c9c3b8', '#e8e2d0'], robe: ['#f2eee4', '#d9a62e'], collar: '#facb3e', hat: 'crown' }),
+      xx_hero4: M({ hair: ['#e8e2d0', '#ffffff'], robe: ['#fff8e0', '#facb3e'], collar: '#ffffff', hat: 'crown' }),
+      xx_disc: M({ hair: ['#2b2b33', '#4a4a58'], robe: ['#c9c3b8', '#7f8fa3'], collar: '#5698cc' }),
       wx_vil_m: M({ robe: ['#5b7fa0', '#3e5670'], collar: '#c8c2b0' }),
       wx_vil_f: F({ robe: ['#d77fa0', '#a3506e'], collar: '#e8e2d0', ribbon: '#c0392b' }),
       wx_merchant: M({ robe: ['#4a6a8a', '#2e4560'], collar: '#facb3e', hat: 'crown' }),

@@ -1043,3 +1043,20 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .realmfx.asc .rays { animation: rays 6s linear forwards; }
 .realmfx.asc .rglow { animation-duration: 6s; }
 .realmfx.asc .rtext { animation-duration: 6s; }
+/* 수선: 아래 가운데 오행 진기 줄 + 천겁 */
+.xxbar { display: flex; align-items: flex-end; gap: 10px; }
+.xxpal { display: flex; align-items: center; gap: 4px; background: #000b; border: 1px solid #ffffff22; border-radius: 12px; padding: 4px 6px; }
+.xxpal .slots { font-size: 11px; color: var(--dim); writing-mode: horizontal-tb; margin-right: 4px; white-space: nowrap; }
+.xxpal .el-pick.ovp { width: auto; min-width: 96px; }
+.xxpal .el-pick.erase.ovp { min-width: 32px; height: auto; align-self: stretch; }
+.tribbtn { min-width: 90px; }
+@media (max-width: 760px) {
+  .xianxia .fover .oact.xxbar { position: absolute; left: 6px; right: 60px; bottom: 6px; transform: none; flex-direction: column; align-items: stretch; gap: 4px; }
+  .xxpal { flex-wrap: wrap; }
+  .xxpal .el-pick.ovp { min-width: 0; flex: 1 1 28%; }
+  .xxpal .el-pick.ovp span small { display: none; }
+  .xianxia .fleft { top: auto; bottom: 150px; }
+}
+@media (max-width: 760px) {
+  .xianxia .fover .fhud .minis { position: static; width: auto; flex-wrap: wrap; }
+}
