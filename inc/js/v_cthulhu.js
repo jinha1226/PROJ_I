@@ -13,7 +13,7 @@ G.UI.views.cthulhu = function () {
   const hud = h('div.fhud', null, h('div.floorrow', null, depthEl, infoEl), h('div.tgls', null, h('small.dim', null, '자동'), tAuto.el));
 
   // ── 위 가운데: 이성
-  const san = G.UI.ov.bar('이성: 바닥나면 광기에 빠진다', '어획 배율: 이성이 낮을수록 커진다');
+  const san = G.UI.ov.bar('이성: 물속에서 깊이와 시간만큼 깎인다. 바닥나면 항구에서 쉰다', '어획 배율: 이성이 낮을수록 커진다');
   const st = G.UI.ov.stats([['coin', 'c_coin', '동전'], ['line', 'item_line', '줄 길이'], ['catch', 'fs_cod', '한 번에 잡는 수'], ['reel', 'n_auto_build', '감는 속도'], ['best', 'sea_w3', '최고 깊이']]);
   const top = h('div.ftop', null, san.el, st.el);
 
@@ -40,7 +40,7 @@ G.UI.views.cthulhu = function () {
     drag(p) { C.steer(c(), p.x); },
     update() {
       const s = c(), rt = C.rt(s), d = Math.max(0, Math.round((rt.hook.y - C.SURF) * D.M_PER_TILE)), z = D.zones[C.zoneOf(rt.hook.y - C.SURF)] || D.zones[0];
-      setText(depthEl, s.madT > 0 ? `광기 ${Math.ceil(s.madT)}초` : `${d}m`);
+      setText(depthEl, s.madT > 0 ? `휴식 ${Math.ceil(s.madT)}초` : `${d}m`);
       setText(infoEl, ` · ${z.n} · ${PHASE[rt.phase]} · 🐟 ${rt.hooked.length}/${C.maxCatch()}`);
       tAuto.update();
       const ms = C.maxSan();

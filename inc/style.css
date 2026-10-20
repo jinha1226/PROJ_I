@@ -957,3 +957,19 @@ details.card summary { cursor: pointer; font-weight: 700; }
 }
 .fhud .floorrow .role { color: #ffe08a; font-size: 12px; font-weight: 700; margin-left: 6px; }
 .ftop .mini[data-tip]:hover::after { left: 50%; right: auto; transform: translateX(-50%); }
+/* 무협 생애 계획표 */
+.php.clickable { cursor: pointer; }
+.php.clickable:hover .bar { box-shadow: 0 0 0 1px #ffe08a, 0 0 8px #ffe08a88; }
+.plan { display: flex; flex-direction: column; gap: 6px; }
+.plan-h { display: flex; align-items: center; gap: 6px; }
+.prow2 { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: #ffffff06; }
+.prow2.on { border-color: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.prow2 small { color: var(--dim); font-size: 11px; white-space: nowrap; }
+.pin { width: 52px; background: #000c; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 2px 4px; }
+.psel { flex: 1; min-width: 0; background: #000c; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 3px 4px; font-size: 12px; }
+.psel.f { flex: none; width: 70px; }
+.padd { align-self: flex-start; }
+@media (max-width: 760px) {
+  .wuxia .fover .ftop { margin-right: 132px; }
+  .psel { font-size: 11px; }
+}

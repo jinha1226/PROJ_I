@@ -1,7 +1,7 @@
 'use strict';
 // 무협 화면: 지역 지도가 화면 전체, 그 위에 HUD (판타지와 같은 구성 원리)
 //  왼쪽 위: 지역 이름 옆에 그 지역의 역할(명성 ×n / 계열 수련 ×n / 원정) · 그 아래 경지·명성·깨달음
-//  위 가운데: 나이 막대(천수까지 차오른다) + 남은 햇수, 아래 한 줄: 계열 숙련·명성·전투력·여정·깨달음 총 배율(무공·특산·트리·넥서스·유물·붕괴 모두)
+//  위 가운데: 나이 막대(천수까지 차오른다, 누르면 생애 계획표) + 남은 햇수, 아래 한 줄: 계열 숙련·명성·전투력·여정·깨달음 총 배율(무공·특산·트리·넥서스·유물·붕괴 모두)
 //  왼쪽 가운데: 자동 단추(판타지 편성 단추 자리) → 자동 이동·수련·구입, 장래(정파·사파·마교)
 //  아래 가운데: 지위 · 무공 · 특산 — 누르면 게임 화면 위에 크게 펼쳐진다
 //  오른쪽 위: 강호 지도 — 지금 지역을 밝히고, 여정 중이면 길 위에 점. 지역을 누르면 그곳에 머문다(📍), 다시 누르면 풀린다
@@ -15,7 +15,10 @@ G.UI.views.wuxia = function () {
   const hud = h('div.fhud', null, h('div.floorrow', null, hudMode, hudRole), res.el);
 
   // ── 위 가운데: 나이 (천수까지 차오른다) + 스킬트리 배율
-  const age = G.UI.ov.bar('나이: 천수에 닿으면 이번 생이 끝나고 회귀한다', '남은 햇수');
+  const age = G.UI.ov.bar('눌러서 생애 계획표', '남은 햇수');
+  const ageBox = age.el.querySelector('.php');
+  ageBox.classList.add('clickable');
+  ageBox.addEventListener('click', e => { e.stopPropagation(); openPanel(openK === 'plan' ? null : 'plan'); });
   const bonus = G.UI.ov.stats([['심법', 's_naegong', '심법 숙련'], ['외공', 's_geom', '외공 숙련'], ['경공', 's_gyeong', '경공 숙련'], ['잡학', 's_yangsaeng', '잡학 숙련'], ['fame', 'c_coin', '명성'], ['combat', 'u_sword', '전투력'], ['walk', 'st_haste', '여정'], ['ins', 'ui_star', '깨달음']]);
   const top = h('div.ftop', null, age.el, bonus.el);
 
@@ -52,7 +55,7 @@ G.UI.views.wuxia = function () {
   const jbox = h('div.jbox', null, jmap, tripEl);
 
   // ── 왼쪽 가운데: 자동 단추 → 자동 이동·수련·구입, 장래
-  const tPromote = G.UI.toggle('이동', () => w().autoPromote, v => { w().autoPromote = v; }, '자동 이동: 지위·특산·천하제일 비무에 따라 지역을 알아서 옮긴다');
+  const tPromote = G.UI.toggle('이동', () => w().autoPromote, v => { w().autoPromote = v; }, '계획표대로 지역을 옮긴다');
   const tSkill = G.UI.toggle('수련', () => w().autoSkill, v => { w().autoSkill = v; }, '자동 수련: 경지가 모자라면 가장 빨리 오르는 무공을 고른다');
   const tBuy = G.UI.toggle('구입', () => w().autoBuy, v => { w().autoBuy = v; }, '자동 구입: 특산·영단');
   const pathBtns = Object.entries(D.paths).map(([k, n]) =>
@@ -95,7 +98,31 @@ G.UI.views.wuxia = function () {
   });
   const elixCnt = h('b'), elixCost = h('small.c');
   const elixBtn = h('button.shop-it.elix', { title: '영단', on: { click: () => W.buyElixir(w()) } }, G.T.el('q_pill', 'md'), h('span.si', null, h('b', null, '영단 · 숙련 +10% (어디서나)'), elixCost), elixCnt);
-  const bodies = { rank: h('div.olist.wide', null, ranks.map(x => x.el)), skill: h('div.olist.wide', null, skills.map(x => x.el)), shop: h('div.shop.wide', null, shop.map(x => x.el), elixBtn) };
+  // 생애 계획표: 구간마다 시작 나이 · 지역 · 집중. 고치면 내 코스(회귀해도 남는다)
+  const planBody = h('div.plan');
+  let planKey = '';
+  function renderPlan() {
+    const s = w(), P = W.plan(s);
+    const key = JSON.stringify(P) + s.planAuto + W.pathOf(s);
+    if (key === planKey) return;
+    planKey = key;
+    planBody.innerHTML = '';
+    planBody.append(h('div.plan-h', null, h('b', null, s.planAuto ? '추천 코스' : '내 코스'), h('small.dim', null, ` · ${D.paths[W.pathOf(s)]}`), h('span.sp'),
+      h('button.btn.sm', { on: { click: () => { W.resetPlan(w()); planKey = ''; } } }, '추천 코스로')));
+    P.forEach((b, i) => {
+      const from = h('input.pin', { type: 'number', min: 10, max: 200, value: b.from, on: { change: e => { W.editPlan(w(), p => { p[i].from = Math.max(10, +e.target.value || 10); }); planKey = ''; } } });
+      if (i === 0) from.disabled = true;
+      const reg = h('select.psel', { on: { change: e => { W.editPlan(w(), p => { p[i].r = e.target.value; }); planKey = ''; } } },
+        Object.entries(D.regions).map(([id, R]) => h('option', { value: id, selected: id === b.r }, `${R.n} — ${role(s, id)}`)));
+      const foc = h('select.psel.f', { on: { change: e => { W.editPlan(w(), p => { p[i].f = e.target.value; }); planKey = ''; } } },
+        W.FOCUS.map(f => h('option', { value: f, selected: f === b.f }, W.focusName(f))));
+      const del = h('button.fbtn', { 'data-tip': '구간 빼기', on: { click: () => { W.editPlan(w(), p => { p.splice(i, 1); }); planKey = ''; } } }, '✕');
+      del.disabled = P.length <= 1;
+      planBody.append(h('div.prow2', { 'data-i': i }, from, h('small', null, '세부터'), reg, foc, del));
+    });
+    planBody.append(h('button.btn.sm.padd', { on: { click: () => { W.editPlan(w(), p => { const l = p[p.length - 1]; p.push({ from: l.from + 10, r: l.r, f: l.f }); }); planKey = ''; } } }, '+ 구간'));
+  }
+  const bodies = { plan: planBody, rank: h('div.olist.wide', null, ranks.map(x => x.el)), skill: h('div.olist.wide', null, skills.map(x => x.el)), shop: h('div.shop.wide', null, shop.map(x => x.el), elixBtn) };
   function openPanel(k) {
     openK = k;
     tog(panel, 'hidden', !k);
@@ -103,7 +130,8 @@ G.UI.views.wuxia = function () {
     if (!k) return;
     panelBody.innerHTML = '';
     panelBody.append(bodies[k]);
-    setText(panelTitle, tabs[k].label);
+    setText(panelTitle, k === 'plan' ? '생애 계획표' : tabs[k].label);
+    if (k === 'plan') { planKey = ''; renderPlan(); }
   }
 
   const overlay = h('div.fover', null, hud, top, left, jbox, bottom, panel);
@@ -179,6 +207,12 @@ G.UI.views.wuxia = function () {
       setText(tabs.skill.n, sd.n); setText(tabs.skill.sub, `Lv ${W.L(s, s.skill)}`);
       const buyable = D.items.filter(it => !s.items[it.id] && it.r === rt.region).length;
       setText(tabs.shop.n, '특산'); setText(tabs.shop.sub, buyable ? `${R.n} ${buyable}` : '영단');
+      if (openK === 'plan') {
+        renderPlan();
+        // 지금 구간 밝히기
+        const cur = W.plan(s).indexOf(W.block(s));
+        for (const r of planBody.querySelectorAll('.prow2')) tog(r, 'on', +r.dataset.i === cur);
+      }
       if (openK === 'rank') for (const x of ranks) {
         const d = x.d;
         tog(x.el, 'hidden', !!d.path && d.path !== path);

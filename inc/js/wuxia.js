@@ -5,6 +5,7 @@
 // 명성: 쓰는 돈(w.gold)이자, 이번 생에 쌓은 양(w.fameT)이 지위(점소이 … 매화검선·천마신)를 정한다 — 써도 지위는 안 내려간다.
 // 지위마다 녹봉(초당 명성)과 숙련 보너스. 점소이·표사·낭인 다음 정파(화산)·사파(녹림)·마교(십만대산)로 갈린다(w.path).
 // 무공 레벨 합이 경지(삼류 … 생사경). 다른 지역으로 가면 강호로 나가 여정 — 세월이 흐른다(경공·경지로 줄인다).
+// 생애 계획표(w.plan): 나이 구간마다 어느 지역에서 무엇(명성·심법·외공·경공·잡학)에 집중할지. 회귀해도 남는다.
 // 천수가 다하면 회귀: 전생 최고 무공 레벨이 다음 생의 숙련 속도, 이번 생의 업적이 「깨달음」(스킬트리).
 G.RT = G.RT || {};
 G.Wuxia = (() => {
@@ -20,7 +21,7 @@ G.Wuxia = (() => {
     YEAR,
     init(head = 0) {
       return {
-        age: 16, gold: 5 * Math.pow(10, head), fameT: 0, job: 'jumso', skill: 'tuna', lvl: {}, xp: {}, peak: {}, items: {}, path: 'jeong', hold: null, errand: null, champ: false,
+        age: 16, gold: 5 * Math.pow(10, head), fameT: 0, job: 'jumso', skill: 'tuna', lvl: {}, xp: {}, peak: {}, items: {}, path: 'jeong', hold: null, errand: null, champ: false, plan: null, planAuto: true,
         lives: 0, ins: 0, tree: G.Tree.init('wuxia'), dead: false, bestJob: 0, autoPromote: true, autoSkill: true, autoBuy: true, mode: 'work', elix: 0, goal: null,
       };
     },
@@ -189,7 +190,7 @@ G.Wuxia = (() => {
       let sum = 0;
       for (const sk of D.skills) { const id = sk.id; sum += w.lvl[id] || 0; w.peak[id] = Math.max(w.peak[id] || 0, w.lvl[id] || 0); }
       W.gainIns(w, sum / 10 + 0.5 * Math.pow(jobDef(w.job).tier, 2));
-      const keep = { peak: w.peak, lives: w.lives + 1, ins: w.ins, tree: w.tree, bestJob: w.bestJob, autoPromote: w.autoPromote, autoSkill: w.autoSkill, autoBuy: w.autoBuy, path: w.path };
+      const keep = { peak: w.peak, lives: w.lives + 1, ins: w.ins, tree: w.tree, bestJob: w.bestJob, autoPromote: w.autoPromote, autoSkill: w.autoSkill, autoBuy: w.autoBuy, path: w.path, plan: w.plan, planAuto: w.planAuto };
       Object.assign(w, W.init(G.S.stree ? G.Tree.add('stars', G.S.stree, 'head') : 0), keep);
       w.age = W.startAge();
       // 「전생의 이름」: 회귀해도 앞 지위 몇 단계는 건너뛴다
@@ -236,18 +237,39 @@ G.Wuxia = (() => {
 
     // ── 어디서 무엇을 ──
     // 가야 할 지역: 직접 고른 곳(📍) → 심부름(다른 지역 특산) → 천하제일 비무가 필요하면 천산 → 지위의 근거지
-    // 가야 할 지역: 직접 고른 곳(📍) → 심부름 → 천하제일 비무 → 지금 모자란 것(경지면 수련 지역, 명성이면 명성 지역).
-    // 한 번 정한 곳은 그 조건을 채우거나 지위가 바뀔 때까지 지킨다 (오락가락하며 길에서 세월을 버리지 않게)
+    // ── 생애 계획표 ──
+    // 블록: { from: 시작 나이, r: 지역, f: 집중('fame' | 심법 | 외공 | 경공 | 잡학) }. 다음 블록 시작 전까지 이어진다.
+    FOCUS: ['fame', '심법', '외공', '경공', '잡학'],
+    focusName: f => (f === 'fame' ? '명성' : f),
+    // 추천 코스 (진로마다): 마을에서 기반 → 수련 세 구간(계열을 바꿔 가며) → 말년 낙양 명성
+    recommend(path) {
+      const R = {
+        jeong: [[16, 'hwaeum', 'fame'], [21, 'hwasan', '심법'], [34, 'wudang', '외공'], [48, 'hwasan', '심법'], [62, 'nakyang', 'fame']],
+        sa: [[16, 'hwaeum', 'fame'], [21, 'noklim', '외공'], [34, 'noklim', '심법'], [48, 'sacheon', '외공'], [62, 'nakyang', 'fame']],
+        ma: [[16, 'hwaeum', 'fame'], [21, 'sipman', '심법'], [34, 'sipman', '외공'], [48, 'sipman', '심법'], [62, 'nakyang', 'fame']],
+      }[path] || [];
+      return R.map(([from, r, f]) => ({ from, r, f }));
+    },
+    plan(w) {
+      if (w.planAuto || !w.plan || !w.plan.length) w.plan = W.recommend(W.pathOf(w));
+      return w.plan;
+    },
+    // 지금 나이의 블록
+    block(w) {
+      const P = W.plan(w);
+      let b = P[0];
+      for (const x of P) if (w.age >= x.from) b = x;
+      return b;
+    },
+    // 계획표를 직접 고치면 추천 코스에서 내 코스로 (회귀해도 남는다)
+    editPlan(w, fn) { W.plan(w); w.planAuto = false; fn(w.plan); w.plan.sort((a, b) => a.from - b.from); },
+    resetPlan(w) { w.planAuto = true; w.plan = null; W.plan(w); },
+    // 가야 할 지역: 직접 고른 곳(📍) → 천하제일 비무(조건이 되면) → 계획표의 지금 블록
     target(w) {
       if (w.hold) return w.hold;
-      if (w.errand) return w.errand;
       const nx = W.nextJob(w);
       if (nx && nx.champ && !w.champ && w.fameT >= W.fameNeed(nx) && W.realm(w) >= (nx.realm || 0)) return 'cheonsan';
-      if (jobDef(w.job).tier < 3) return 'hwaeum';
-      const need = nx && W.realm(w) >= (nx.realm || 0) && w.fameT < W.fameNeed(nx) ? 'fame' : 'realm';
-      if (w.goal && w.goal.need === need && w.goal.job === w.job) return w.goal.r;
-      w.goal = { need, job: w.job, r: need === 'fame' ? W.bestFame(w) : W.bestTrain(w) };
-      return w.goal.r;
+      return W.block(w).r;
     },
     // 지금 있는 곳에서 가는 햇수만큼 깎아 비교 (먼 곳은 그만큼 손해)
     far: (w, r) => 1 + 0.08 * W.route(w.region || 'hwaeum', r).years,
@@ -299,7 +321,10 @@ G.Wuxia = (() => {
       const boosted = here.filter(sk => W.regionTrain(w, W.rt(w).region, sk.fam) > 1);
       const low = () => here.reduce((a, b) => (speed(b) > speed(a) ? b : a)).id;
       let best = null;
-      if (nx && (nx.realm || 0) > W.realm(w)) best = low();
+      // 계획표 집중 계열이 있으면 그 계열에서 가장 빨리 오르는 무공
+      const f = W.block(w).f, fam = here.filter(sk => sk.fam === f);
+      if (fam.length) best = fam.reduce((a, b) => (speed(b) > speed(a) ? b : a)).id;
+      if (!best && nx && (nx.realm || 0) > W.realm(w)) best = low();
       if (!best && boosted.length) best = boosted.reduce((a, b) => (speed(b) > speed(a) ? b : a)).id;
       if (!best) best = (here.find(sk => sk.eff.xp) || {}).id || low();
       w.skill = best;
@@ -410,19 +435,14 @@ G.Wuxia = (() => {
       // 명성 쓰기: 여기서 파는 특산, 남으면 영단. 다른 지역 특산을 살 만하면 심부름을 간다(자동 이동일 때)
       if (w.autoBuy && !rt.travel) {
         for (const it of D.items) if (!w.items[it.id] && it.r === rt.region && w.gold >= W.itemCost(it)) W.buyItem(w, it.id);
-        if (!w.errand && w.autoPromote && !w.hold) {
-          const want = D.items.filter(it => !w.items[it.id] && it.r !== rt.region && w.gold >= W.itemCost(it) * 1.2).sort((p, q) => p.cost - q.cost)[0];
-          if (want) { w.errand = want.r; G.log(`${D.regions[want.r].n}에 「${want.n}」을 사러 간다`, 'wuxia'); }
-        }
-        if (w.gold >= W.elixCost(w) * 2 && !w.errand) W.buyElixir(w);
+        if (w.gold >= W.elixCost(w) * 2) W.buyElixir(w);
       }
-      if (w.errand && rt.region === w.errand && !D.items.some(it => !w.items[it.id] && it.r === rt.region && w.gold >= W.itemCost(it))) w.errand = null;
       if (w.autoSkill) W.pickSkill(w);
       h.max = W.maxHp(w);
       const jd = jobDef(w.job);
 
       // 여정: 가야 할 지역이 다르면 강호 길목(X)으로 걸어 나가 길을 떠난다. 길 위에서도 세월은 흐른다.
-      const goal = w.autoPromote || w.hold || w.errand ? W.target(w) : rt.region;
+      const goal = w.autoPromote || w.hold ? W.target(w) : rt.region;
       if (rt.travel) {
         h.hidden = true;
         if ((rt.travel.t += dt) >= rt.travel.T) {
@@ -545,7 +565,9 @@ G.Wuxia = (() => {
             }
             else if (ta('twin') && W.localSkills(w, rt.region).length) W.gain(w, w.skill, W.skillXp(w, w.skill) * ta('twin') * dt);
             if (Math.random() < dt * 1.5) G.fx(rt, { k: 'text', x: h.x + (Math.random() - 0.5), y: h.y - 0.8, s: w.mode === 'work' ? '…' : '気', col: w.mode === 'work' ? '#ccc' : '#9fe0ff', t: 0.8 });
-            if (rt.stay >= (w.mode === 'work' ? WORK_T : TRAIN_T)) {
+            // 명성 블록은 주로 일, 계열 블록은 주로 수련
+            const fameB = W.block(w).f === 'fame';
+            if (rt.stay >= (w.mode === 'work' ? (fameB ? WORK_T * 2.5 : WORK_T * 0.5) : (fameB ? TRAIN_T * 0.25 : TRAIN_T))) {
               // 이 지역에 익힐 무공이 없으면 활동만 한다
               const canTrain = W.localSkills(w, rt.region).some(s => s.id === w.skill);
               w.mode = w.mode === 'work' && canTrain ? 'train' : 'work';
