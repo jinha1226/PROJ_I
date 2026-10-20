@@ -697,3 +697,13 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .pf-buffs { left: 0; top: auto; bottom: calc(100% + 2px); flex-direction: column; }
   .pf-card { left: 0; bottom: calc(100% + 6px); }
 }
+
+/* 파티 공용 능력치: HP 막대 바로 아래 4×2 (막대 폭에 맞춰) */
+.ftop { flex-direction: column; align-items: flex-start; gap: 3px; }
+.ftop-r { display: flex; align-items: center; gap: 8px; }
+.ftop .minis { display: grid; grid-template-columns: repeat(4, 85px); gap: 1px 0; max-width: none; margin: 0; font-size: 11px; }
+.ftop .mini { pointer-events: auto; }
+@media (max-width: 760px) {
+  .ftop .minis { grid-template-columns: repeat(4, 1fr); width: calc(100vw - 32px); }
+  .ftop-r { width: 100%; }
+}

@@ -1,6 +1,6 @@
 'use strict';
 // 판타지 화면: 옆 대시보드 없이 전부 맵 위에 (파티 게임 UI — Baldur's Gate 3·Divinity의 왼쪽 초상 줄, 아래 기술 줄)
-//  왼쪽 위: 층 이동·자동 하강, 능력치 한 줄 / 위 가운데: 원정대 합산 체력(제한 시간처럼 줄어드는 막대) + 오른쪽에 오염 피해
+//  왼쪽 위: 층 이동·자동 하강 / 위 가운데: 원정대 합산 체력(제한 시간처럼 줄어드는 막대) + 오른쪽에 오염 피해, 바로 아래 파티 공용 능력치 4×2
 //  왼쪽: 편성 단추 + 파티 초상(체력·쓰러짐), 초상마다 오른쪽에 걸린 버프. 초상에 올리면(누르면) 그 캐릭터 능력치 카드 / 아래: 기술
 //  오른쪽 아래 스킬트리 단추는 세계 화면 틀(v_world)이 단다
 G.UI.views.fantasy = function () {
@@ -18,11 +18,10 @@ G.UI.views.fantasy = function () {
     .map(([k, t, l]) => h('span.mini', { 'data-tip': l }, k === 'matk' ? (stats.matkIc = G.T.el(t, 'xs')) : G.T.el(t, 'xs'), stats[k] = h('b'))));
   const hud = h('div.fhud', null,
     h('div.floorrow', null, prev, floorEl, next, auto.el),
-    h('div.hud-sub', null, hudMon, hudLeft, maxEl),
-    statEl);
+    h('div.hud-sub', null, hudMon, hudLeft, maxEl));
   // ── 위 가운데: 원정대 체력 (다 닳면 전멸) + 오염 피해
   const hpBar = bar('hp'), hpTxt = h('b.php-t'), corrEl = h('span.corr', { 'data-tip': '던전 오염: 깊을수록 초당 최대 체력의 일정 비율이 깎인다' });
-  const top = h('div.ftop', null, h('div.php', null, hpBar, hpTxt), corrEl);
+  const top = h('div.ftop', null, h('div.ftop-r', null, h('div.php', null, hpBar, hpTxt), corrEl), statEl);
 
 
   // ── 기술 단축 버튼
