@@ -201,7 +201,7 @@ G.Wuxia = (() => {
       let sum = 0;
       for (const sk of D.skills) { const id = sk.id; sum += w.lvl[id] || 0; w.peak[id] = Math.max(w.peak[id] || 0, w.lvl[id] || 0); }
       W.gainIns(w, sum / 10 + 0.5 * Math.pow(jobDef(w.job).tier, 2));
-      const keep = { peak: w.peak, lives: w.lives + 1, ins: w.ins, tree: w.tree, bestJob: w.bestJob, autoPromote: w.autoPromote, autoSkill: w.autoSkill, autoBuy: w.autoBuy, path: w.path, plan: w.plan, planAuto: w.planAuto, hist: w.hist };
+      const keep = { peak: w.peak, lives: w.lives + 1, ins: w.ins, tree: w.tree, bestJob: w.bestJob, autoPromote: w.autoPromote, autoSkill: w.autoSkill, autoBuy: w.autoBuy, path: w.path, plan: w.plan, planAuto: w.planAuto, hist: w.hist, bestRealm: w.bestRealm || 0 };
       Object.assign(w, W.init(G.S.stree ? G.Tree.add('stars', G.S.stree, 'head') : 0), keep);
       w.age = W.startAge();
       W.pathChanged(w);
@@ -213,6 +213,7 @@ G.Wuxia = (() => {
       const rt = W.rt(w);
       rt.travel = null;
       W.enter(w, rt, 'hwaeum', 'i');
+      rt.lastRealm = 0;
       const { x, y } = rt.hero;
       W.heal(w, rt);
       G.fx(rt, { k: 'ring', x, y, r: 2, t: 1, col: '#ffe08a' });
@@ -380,6 +381,7 @@ G.Wuxia = (() => {
       if (!auto) c.plan = JSON.parse(JSON.stringify(plan || w.plan || W.autoPlan(w)));
       c.autoBuy = w.autoBuy; c.autoSkill = w.autoSkill; c.autoPromote = true; c.hold = null;
       // 바깥에 흔적을 남기는 것들은 잠시 막는다
+      W.sim = true;
       const keep = { rt: G.RT.wuxia, ess: G.addEss, log: G.log, signs: G.addSigns, tally: G.tally, J: G.J, rnd: Math.random, S: G.S.w.wuxia };
       let seed = 12345;
       Math.random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -405,6 +407,7 @@ G.Wuxia = (() => {
         // 이번 생 깨달음: 생 동안 얻은 것 + 회귀할 때 받을 것
         out.ins = c.ins - insStart + (W.realmSum(c) / 10 + 0.5 * Math.pow(jobDef(c.job).tier, 2)) * tm('ins');
       } finally {
+        W.sim = false;
         G.RT.wuxia = keep.rt; G.addEss = keep.ess; G.log = keep.log; G.addSigns = keep.signs; G.tally = keep.tally; G.J = keep.J; Math.random = keep.rnd; G.S.w.wuxia = keep.S;
       }
       return out;
@@ -632,9 +635,37 @@ G.Wuxia = (() => {
           }
         }
       }
+      // 경지 돌파: 오르는 순간을 잡아 연출
+      const rl = W.realm(w);
+      if (rt.lastRealm == null) rt.lastRealm = rl;
+      if (rl > rt.lastRealm) W.breakthrough(w, rt, rl);
+      rt.lastRealm = rl;
       W.ageUp(w, rt);
     },
-    // 천수: 다하면 쓰러지고 잠시 뒤 회귀
+    // 경지 돌파 연출: 경지가 높을수록 화려하게. 처음 넘는 경지는 크게, 전생에 넘어 본 경지는 짧게 (회귀 직후 연달아 뜨므로)
+    REALM_COL: ['#ffffff', '#e8e2d0', '#9fe0ff', '#ffd24a', '#c78bff', '#ff7a3a', '#7dffcf', '#ffffff'],
+    breakthrough(w, rt, rl) {
+      const first = rl > (w.bestRealm || 0), h = rt.hero, col = W.REALM_COL[rl];
+      if (first) w.bestRealm = rl;
+      if (W.sim) return;
+      const n = first ? rl : 1;
+      for (let i = 0; i < n + 1; i++) G.fx(rt, { k: 'ring', x: h.x, y: h.y, r: 1.5 + i * 1.2, t: 0.6 + i * 0.25, col });
+      // 사방의 기운이 주인공에게 빨려 든다
+      for (let i = 0; i < (first ? 10 + rl * 6 : 8); i++) {
+        const a = Math.random() * 6.28, d = 3 + Math.random() * 5;
+        G.fx(rt, { k: 'mote', x: h.x + Math.cos(a) * d, y: h.y + Math.sin(a) * d, x2: h.x, y2: h.y, col, t: 0.6 + Math.random() * 0.8 });
+      }
+      // 처음 넘는 경지는 화면 가운데 큰 배너가 맡고, 맵 위 글씨는 짧은 연출에만
+      if (!first) G.fx(rt, { k: 'text', x: h.x, y: h.y - 1.6, s: `경지 · ${W.realmName(rl)}`, col, t: 1.2, sz: 1.1, pop: true });
+      if (first) {
+        G.J.finish('wuxia', h.x, h.y, 1.3 + rl * 0.08);
+        G.J.flash('wuxia', col);
+        if (rl >= 4) G.J.shake('wuxia', 4 + rl * 1.5, 0, 0, 0.4 + rl * 0.08);
+        G.J.sfx('wuxia', rl >= 5 ? 'finish' : 'unlock');
+        G.log(`경지 돌파: 「${W.realmName(rl)}」`, 'wuxia', 'good');
+      } else G.J.sfx('wuxia', 'chime');
+      G.emit('wx_realm', { rl, first });
+    },
     ageUp(w, rt) {
       const h = rt.hero;
       if (w.age >= W.lifespan(w) && !w.dead) {

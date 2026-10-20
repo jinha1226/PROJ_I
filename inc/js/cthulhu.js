@@ -58,6 +58,7 @@ G.Cthulhu = (() => {
     // 낮은 이성의 물고기 값 배율: 바닥에서 ×(1 + 상한). 「공포의 탐닉」은 보너스 ×2, 「평정심」은 절반
     sanMult: c => 1 + (1.5 + ta('madVal')) * (1 - c.san / C.maxSan()) * (ta('pact') ? 2 : ta('calm') ? 0.5 : 1),
     // 물속에서 초당 깎이는 이성: 기본 0.5 + 깊이(m)의 제곱근 비례. 빨리 내리고 감을수록 덜 깎인다
+    drainRaw: hd => 0.5 + 0.15 * Math.sqrt(hd * D.M_PER_TILE),
     drain(hd) {
       const base = 0.5 * Math.max(0.1, 1 - ta('salt')), deep = 0.15 * Math.sqrt(hd * D.M_PER_TILE) * Math.max(0.1, 1 - ta('ward'));
       return (base + deep) * (1 + 0.3 * ta('pact')) * (1 - 0.3 * ta('calm')) / (1 + G.relicVal('c_san'));
@@ -69,11 +70,10 @@ G.Cthulhu = (() => {
     speciesMult(c, sp) {
       return (1 + (sp.z === 0 ? ta('shallow') : 0)) * (1 + (sp.v >= 60 ? ta('bigfish') : 0)) * (1 + ta('collector') * Object.keys(c.dex).length);
     },
-    valueMult(c) {
-      let m = tm('value') * (1 + G.relicVal('c_prize')) * G.globalMult() * C.sanMult(c);
-      if (G.synergy('syn_heaven')) m *= 1 + 0.15 * G.S.w.xianxia.realm;
-      return m;
-    },
+    // 물고기 값 배율의 내역 (HUD 말풍선에도 쓴다)
+    valueParts: c => [['트리', tm('value')], ['유물', 1 + G.relicVal('c_prize')], ['넥서스·붕괴', G.globalMult()], ['낮은 이성', C.sanMult(c)],
+      ['천기누설', G.synergy('syn_heaven') ? 1 + 0.15 * G.S.w.xianxia.realm : 1]],
+    valueMult: c => C.valueParts(c).reduce((m, p) => m * p[1], 1),
     value: (c, f) => f.sp.v * C.depthMult(f.d) * C.valueMult(c) * C.speciesMult(c, f.sp),
     // 도감 표시가: 그 어종이 나오는 가장 얕은 깊이, 이성 가득일 때 (더 깊이·이성이 낮을수록 비싸진다)
     dexPrice(c, sp) {

@@ -173,7 +173,19 @@ G.UI.views.wuxia = function () {
     if (k === 'plan') { planKey = ''; renderPlan(); }
   }
 
-  const overlay = h('div.fover', null, hud, top, left, jbox, bottom, panel);
+  // 경지 돌파 배너: 화면 가운데 큰 붓글씨. 경지가 높을수록 크고 오래, 절정부터 빛살, 화경부터 화면 진동, 생사경은 무지갯빛
+  const rfx = h('div.realmfx.hidden');
+  let rfxT = 0;
+  G.on('wx_realm', e => {
+    if (G.UI.cur !== 'wuxia') return;
+    rfx.className = `realmfx lv${e.rl}${e.first ? '' : ' mini'}`;
+    rfx.style.setProperty('--rc', W.REALM_COL[e.rl]);
+    rfx.innerHTML = '';
+    rfx.append(h('div.rays'), h('div.rglow'), h('div.rtext', null, h('small', null, '경지 돌파'), h('b', null, W.realmName(e.rl))));
+    clearTimeout(rfxT);
+    rfxT = setTimeout(() => rfx.classList.add('hidden'), e.first ? 1800 + e.rl * 350 : 1100);
+  });
+  const overlay = h('div.fover', null, hud, top, left, jbox, bottom, panel, rfx);
   const req = d => !d.req ? '' : Object.entries(d.req).filter(([id, lv]) => W.L(w(), id) < lv).map(([id, lv]) => (id === 'realm' ? `경지 ${W.realmName(lv)}` : `${W.skillDef(id).n} ${lv}`)).join(' · ');
   // 말풍선 내역: 「무공 ×1.3 · 지위 ×1.2 · …」 (1인 것은 뺀다)
   const tipOf = (s, k) => W.parts(s, k).filter(p => p[1] !== 1).map(([n, v]) => `${n} ×${U.fmt(v)}`).join(' · ') || '기본';

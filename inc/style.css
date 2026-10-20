@@ -998,3 +998,35 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .fcrow { grid-template-columns: 1fr 1fr; }
   .phist .hrow { grid-template-columns: repeat(3, 1fr); }
 }
+/* 크툴루 왼쪽 위: 바다·단계 다음의 물고기 값 배율 (올리면 내역) */
+.fhud .cval { pointer-events: auto; color: #e8d48a; }
+@media (max-width: 760px) {
+  /* 크툴루는 동전·줄·잡는 수·빛이 왼쪽 위 상자 안 (판타지처럼 따로 띄우지 않는다) */
+  .cthulhu .fhud .minis { position: static; width: auto; }
+  .cthulhu .fhud .cval[data-tip]:hover::after { left: auto; right: 0; }
+}
+
+/* ── 무협 경지 돌파 배너 ── 경지가 높을수록 크고 오래, 절정(3)부터 빛살, 화경(5)부터 진동, 생사경(7)은 무지갯빛 */
+.realmfx { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 40; overflow: hidden; }
+.realmfx .rglow { position: absolute; width: 70%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--rc) 55%, transparent), transparent 65%); animation: rglow 1.8s ease-out forwards; }
+.realmfx .rays { position: absolute; width: 160%; aspect-ratio: 1; opacity: 0; background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--rc) 45%, transparent) 0deg 6deg, transparent 6deg 18deg);
+  -webkit-mask: radial-gradient(circle, #000 15%, transparent 60%); mask: radial-gradient(circle, #000 15%, transparent 60%); }
+.realmfx .rtext { position: relative; display: flex; flex-direction: column; align-items: center; animation: rtext 2s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+.realmfx .rtext small { font-size: 15px; letter-spacing: 8px; color: #fff; text-shadow: 0 0 8px #000, 0 0 16px var(--rc); }
+.realmfx .rtext b { font-family: 'Noto Serif KR', serif; font-weight: 900; font-size: 72px; line-height: 1.1; color: var(--rc); letter-spacing: 6px;
+  text-shadow: 0 2px 0 #000, 0 0 10px #000, 0 0 24px var(--rc), 0 0 48px var(--rc); }
+.realmfx.lv3 .rays, .realmfx.lv4 .rays, .realmfx.lv5 .rays, .realmfx.lv6 .rays, .realmfx.lv7 .rays { animation: rays 3s linear forwards; }
+.realmfx.lv4 .rtext b { font-size: 84px; }
+.realmfx.lv5 .rtext b { font-size: 96px; } .realmfx.lv6 .rtext b { font-size: 108px; } .realmfx.lv7 .rtext b { font-size: 120px; }
+.realmfx.lv5, .realmfx.lv6, .realmfx.lv7 { animation: rshake .5s linear 2; background: radial-gradient(circle, transparent 30%, color-mix(in srgb, var(--rc) 22%, transparent)); }
+.realmfx.lv6 .rtext b { animation: rpulse .9s ease-in-out infinite; }
+.realmfx.lv7 .rtext b { background: linear-gradient(90deg, #ff7a7a, #ffe08a, #9fffd8, #bfe8ff, #e0b8ff, #ff7a7a); background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 2px 0 #000) drop-shadow(0 0 18px #fff8); animation: rrainbow 1.5s linear infinite; }
+.realmfx.lv7 .rglow { background: radial-gradient(circle, #fff8, transparent 65%); }
+.realmfx.mini .rtext b { font-size: 40px; } .realmfx.mini .rays { display: none; } .realmfx.mini { animation: none; background: none; }
+@keyframes rtext { 0% { transform: scale(2.6); opacity: 0; } 18% { transform: scale(1); opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(1.05); } }
+@keyframes rglow { 0% { transform: scale(.2); opacity: 0; } 20% { opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+@keyframes rays { 0% { transform: rotate(0deg) scale(.6); opacity: 0; } 20% { opacity: 1; } 100% { transform: rotate(70deg) scale(1.2); opacity: 0; } }
+@keyframes rshake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-6px, 3px); } 50% { transform: translate(5px, -4px); } 75% { transform: translate(-3px, -3px); } }
+@keyframes rpulse { 50% { filter: brightness(1.6); } }
+@keyframes rrainbow { to { background-position: 300% 0; } }
+@media (max-width: 760px) { .realmfx .rtext b { font-size: 52px !important; } }
