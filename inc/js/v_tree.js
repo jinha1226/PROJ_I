@@ -1,6 +1,6 @@
 'use strict';
 // 스킬트리 화면 부품: 끌어서 이동, 휠로 확대, 노드를 누르면 정보창, 두 번 누르면 바로 배운다.
-// 아직 못 여는 노드는 한 칸 앞까지만 '?'로 보인다.
+// 모든 노드가 처음부터 보인다. 못 여는 노드는 흐리게, 누르면 선행 노드와 거기까지 가는 총비용.
 G.UI.tree = function (treeId, getSt) {
   const U = G.U, UNIT = 88, T = G.Tree;
   const nodes = T.defs[treeId], wallet = T.wallet[treeId];
@@ -118,11 +118,13 @@ G.UI.tree = function (treeId, getSt) {
     tog(info, 'hidden', !sel);
     if (sel) {
       const n = sel, lv = T.lv(st, n.id), max = n.max || 1, open = T.open(treeId, st, n.id);
-      setText(iName, open ? n.n : '???');
+      setText(iName, n.n);
       setText(iLv, (n.root ? '' : max > 1 ? ` Lv ${lv} / ${max}` : lv ? ' 습득' : '') + (n.pair ? ' · ⇄ 택1' : ''));
-      setText(iDesc, open ? n.d : `🔒 ${(n.req || []).map(r => T.idx[treeId][r].n).join(n.reqAll ? ' + ' : ' / ')}`);
+      setText(iDesc, open ? n.d : `${n.d}\n🔒 ${(n.req || []).map(r => T.idx[treeId][r].n).join(n.reqAll ? ' + ' : ' / ')}`);
       const maxed = lv >= max;
-      setText(iCostV, maxed ? 'MAX' : open ? U.fmt(T.cost(treeId, st, n.id)) : '');
+      // 못 여는 노드: 거기까지 가는 총비용과 지금 가진 양 대비 %
+      const reach = open ? 0 : T.reachCost(treeId, st, n.id);
+      setText(iCostV, maxed ? 'MAX' : open ? U.fmt(T.cost(treeId, st, n.id)) : `총 ${U.fmt(reach)} (${Math.min(100, Math.floor(wallet.get() / reach * 100))}%)`);
       const sw = swappable(n);
       setText(buyBtn, sw ? '이걸로 바꾸기' : '배우기');
       buyBtn.disabled = !sw && !T.canBuy(treeId, st, n.id);

@@ -53,6 +53,7 @@ G.D.F = {
     regen: { n: '축복', t: 'b_regen', col: '#9fe79f', d: '초당 체력 +4%' },
     rage: { n: '전투 함성', t: 'r_dragon', dmg: 2, col: '#ff7a5a', d: '피해 ×2' },
     haste: { n: '시간 왜곡', t: 'st_haste', col: '#c9a6ff', d: '공격 속도 ×1.5' },
+    static: { n: '정전기 장막', t: 'st_haste', col: '#bfe8ff', d: '공격 속도 ×1.2' },
     assault: { n: '총공세', t: 'u_god', col: '#ffd24a', d: '열어 둔 동료 전원 출전' },
   },
 };

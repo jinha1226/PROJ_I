@@ -70,11 +70,17 @@ G.Tree = {
     const ok = r => G.Tree.lv(st, r) > 0;
     return n.reqAll ? n.req.every(ok) : n.req.some(ok);
   },
-  // 화면에 보이는가: 열려 있거나, 부모 중 하나가 열려 있으면 (한 칸 앞은 흐릿하게 보인다)
-  visible(id, st, nid) {
-    if (G.Tree.lv(st, nid) > 0 || G.Tree.open(id, st, nid)) return true;
+  // 모든 노드가 처음부터 보인다 (어디까지 얼마를 모아야 하는지 계획할 수 있게). 못 여는 노드는 흐리게.
+  visible: () => true,
+  // 그 노드까지 가는 총비용: 아직 안 배운 선행 노드를 가장 싼 경로로 (reqAll이면 전부) + 그 노드 1레벨
+  reachCost(id, st, nid, memo = {}) {
+    if (nid in memo) return memo[nid];
     const n = G.Tree.idx[id][nid];
-    return (n.req || []).some(r => G.Tree.open(id, st, r));
+    if (G.Tree.lv(st, nid) > 0) return (memo[nid] = 0);
+    memo[nid] = Infinity;
+    const reqs = (n.req || []).map(r => G.Tree.reachCost(id, st, r, memo));
+    const pre = !reqs.length ? 0 : n.reqAll ? reqs.reduce((a, b) => a + b, 0) : Math.min(...reqs);
+    return (memo[nid] = pre + G.Tree.cost(id, st, nid));
   },
   canBuy(id, st, nid) {
     if (!G.Tree.open(id, st, nid) || G.Tree.maxed(id, st, nid)) return false;

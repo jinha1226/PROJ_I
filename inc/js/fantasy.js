@@ -33,7 +33,7 @@ G.Fantasy = (() => {
     monHP: (fl, boss) => 10 * Math.pow(1.13, fl - 1) * (boss ? 8 : 1),
     monAtk: (fl, boss) => 1.6 * Math.pow(1.105, fl - 1) * (boss ? 2 : 1),
     monGold: (fl, boss) => 2 * Math.pow(1.14, fl - 1) * (boss ? 10 : 1),
-    floorEss: fl => 0.25 * Math.pow(fl, 1.3) * (F.isBoss(fl) ? 3 : 1) * tm('floorEss'),
+    floorEss: fl => 0.25 * Math.pow(fl, 1.3) * (F.isBoss(fl) ? 3 * (1 + ta('bossEss')) : 1) * tm('floorEss'),
 
     // ── 원정대 편성 ──
     slots: () => 3 + ta('slot'),
@@ -71,7 +71,7 @@ G.Fantasy = (() => {
     heroHP: f => 60 * tm('hp') * G.globalMult() * (1 + G.relicVal('f_hp')),
     allyAtk: (f, a) => F.heroAtk(f) * a.def.atk * 0.5 * tm('allyAtk') * tm(a.id + 'Atk'),
     allyHP: (f, a) => F.heroHP(f) * a.def.hp * tm('allyHp') * tm(a.id + 'Hp'),
-    aspd: f => tm('aspd') * (f.buffs.haste ? 1.5 : 1),
+    aspd: f => tm('aspd') * (f.buffs.haste ? 1.5 : 1) * (f.buffs.static ? 1.2 : 1),
     crit: () => Math.min(0.75, 0.05 + ta('crit')),
     critD: () => 2 + ta('critd'),
     armor: () => Math.min(0.75, ta('armor')),
@@ -112,7 +112,7 @@ G.Fantasy = (() => {
 
     // ── 층 만들기 ──
     boot(f) {
-      const rt = { fx: [], ents: [], mons: [], party: [], allies: [], chests: [], phase: 'explore', reviveT: 0, smiteCd: 0, charges: 1, smiteN: 0, stormT: 4, warpT: WARP_CD, focus: null, target: null, song: 0, floorT: 0 };
+      const rt = { fx: [], ents: [], mons: [], party: [], allies: [], chests: [], phase: 'explore', reviveT: 0, smiteCd: 0, charges: 1, smiteN: 0, killN: 0, stormT: 4, warpT: WARP_CD, focus: null, target: null, song: 0, floorT: 0 };
       F.newFloor(f, rt);
       return rt;
     },
@@ -149,7 +149,7 @@ G.Fantasy = (() => {
         if (p) rt.chests.push({ kind: 'obj', chest: true, t: 'x_chest', x: p[0], y: p[1], s: 0.9, mimic: ta('g_mimic') > 0 && U.chance(0.3) });
       }
       // 황금 고블린: 가끔 나타나 파티에게서 달아난다. 20초 안에 잡지 못하면 사라진다
-      if (ta('g_goblin') && U.chance(0.25)) {
+      if (ta('g_goblin') && U.chance(0.25 + ta('g_goblin2'))) {
         const p = spot();
         if (p) F.spawnMon(rt, fl, { n: '황금 고블린', t: 'm_ggoblin' }, p[0], p[1], false, { hp: F.monHP(fl) * 2, max: F.monHP(fl) * 2, atk: 0, gold: F.monGold(fl) * 30, flee: 20, label: '황금 고블린' });
       }
@@ -222,8 +222,10 @@ G.Fantasy = (() => {
     kill(f, rt, m, src) {
       let g = m.gold * F.goldMult(f);
       if (m.boss) g *= 1 + ta('g_boss');
-      if (m.mimic) g *= 5;
+      if (m.mimic) g *= ta('g_mimic2') ? 10 : 5;
       if (src === 'smite' && ta('s_mark')) g *= 1.5;
+      // 황금열: 30마리마다 10초간 골드 ×2
+      if (ta('g_fever') && ++rt.killN % 30 === 0) F.buff(f, rt, rt.hero, 'gold', 10);
       if (ta('g_jack') && U.chance(0.03)) { g *= 5; G.fx(rt, { k: 'text', x: m.x, y: m.y - 1.6, s: '대박!', col: '#ffe08a', t: 1.3, sz: 1.4, pop: true }); G.J.sfx('fantasy', 'jackpot'); }
       F.gain(f, g);
       f.kills++;
@@ -314,11 +316,14 @@ G.Fantasy = (() => {
       if (manual) G.J.shake('fantasy', crit ? 9 : 5, 0, 1, 0.2);
       const hit = rt.mons.filter(m => Math.hypot(m.x - x, m.y - y) <= r);
       for (const m of hit) F.zap(f, rt, m, dmg, { x, y: y - 1 });
+      // 정전기 장막: 파티 공격 속도 / 정화의 벼락: 맞힌 수만큼 파티 회복
+      if (manual && ta('s_static')) f.buffs.static = 3;
+      if (ta('s_purge') && hit.length) for (const p of rt.party) if (!p.dead) p.hp = Math.min(p.max, p.hp + p.max * Math.min(0.05, 0.01 * hit.length));
       // 연쇄 번개: 맞은 적마다 주변 2마리로 튄다
       if (ta('s_chain')) {
         const done = new Set(hit);
         for (const m of hit) {
-          const near = rt.mons.filter(o => !done.has(o) && GR.dist(o, m) <= 3).sort((p, q) => GR.dist(p, m) - GR.dist(q, m)).slice(0, 2);
+          const near = rt.mons.filter(o => !done.has(o) && GR.dist(o, m) <= 3 + ta('s_bounce')).sort((p, q) => GR.dist(p, m) - GR.dist(q, m)).slice(0, 2 + ta('s_bounce'));
           for (const o of near) { done.add(o); G.fx(rt, { k: 'chain', pts: [[m.x, m.y], [o.x, o.y]], col: '#bfe8ff', t: 0.25 }); F.zap(f, rt, o, dmg * 0.6, m); }
         }
       }
@@ -328,7 +333,7 @@ G.Fantasy = (() => {
     zap(f, rt, m, dmg, from) {
       if (ta('s_shock')) m.shock = 4;
       if (ta('s_stun')) m.stun = 1;
-      F.hurt(f, rt, m, dmg, 'smite', from);
+      F.hurt(f, rt, m, dmg * (m.boss ? 1 + ta('s_boss') : 1), 'smite', from);
       if (m.hp > 0 && ta('s_exec') && m.hp < m.max * 0.2) { G.fx(rt, { k: 'text', x: m.x, y: m.y - 1.2, s: '심판', col: '#ffe08a', t: 1, pop: true }); F.hurt(f, rt, m, m.hp + 1, 'smite', from); }
     },
 
@@ -363,7 +368,9 @@ G.Fantasy = (() => {
         G.fx(rt, { k: 'tile', key: 'fx_fire', x, y, t: 0.9, s: 3 });
         G.J.sfx('fantasy', 'boom');
         G.J.shake('fantasy', 10, 0, 1, 0.35);
-        for (const m of [...rt.mons]) if (Math.hypot(m.x - x, m.y - y) <= 2.5) F.hurt(f, rt, m, F.smiteDmg(f) * 20, 'smite', { x, y: y - 1 });
+        // 마법사 기술이라 마법사 공격력 기준 (벼락 가지가 유성까지 키우지 않게)
+        const mage = rt.allies.find(q => q.id === 'mage'), dmg = mage ? F.allyAtk(f, mage) * 30 : 0;
+        for (const m of [...rt.mons]) if (Math.hypot(m.x - x, m.y - y) <= 2.5) F.hurt(f, rt, m, dmg, 'smite', { x, y: y - 1 });
       }
       return true;
     },
@@ -480,7 +487,7 @@ G.Fantasy = (() => {
       // 낙뢰 폭풍: 방치 중에도 일정 간격으로 근처 적에게 벼락
       if (ta('s_storm') && rt.mons.length && (rt.stormT -= dt) <= 0) {
         rt.stormT = F.stormT();
-        const near = rt.mons.filter(o => GR.dist(o, hero) < 8);
+        const near = rt.mons.filter(o => GR.dist(o, hero) < 8 + ta('s_storm_r'));
         for (let k = 0; k < (ta('s_storm3') ? 2 : 1) && near.length; k++) { const t = U.pick(near); F.smite(f, rt, t.x, t.y, false); }
       }
       // 시간 왜곡
