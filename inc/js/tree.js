@@ -43,15 +43,18 @@ G.Tree = {
   mul(id, st, key) {
     const c = G.Tree.cache(st), ck = 'm' + key;
     if (c[ck] !== undefined) return c[ck];
+    // opts.active(n): 지금 켜져 있나 (무협 진로 가지처럼 조건부로 꺼지는 노드)
+    const act = G.Tree.opts[id] && G.Tree.opts[id].active;
     let v = 1;
-    for (const n of G.Tree.defs[id]) if (n.eff && n.eff[key] && G.Tree.on(st, n)) v *= 1 + n.eff[key] * st[n.id];
+    for (const n of G.Tree.defs[id]) if (n.eff && n.eff[key] && G.Tree.on(st, n) && (!act || act(n))) v *= 1 + n.eff[key] * st[n.id];
     return (c[ck] = v);
   },
   add(id, st, key) {
     const c = G.Tree.cache(st), ck = 'a' + key;
     if (c[ck] !== undefined) return c[ck];
+    const act = G.Tree.opts[id] && G.Tree.opts[id].active;
     let v = 0;
-    for (const n of G.Tree.defs[id]) if (n.eff && n.eff[key] && G.Tree.on(st, n)) v += n.eff[key] * st[n.id];
+    for (const n of G.Tree.defs[id]) if (n.eff && n.eff[key] && G.Tree.on(st, n) && (!act || act(n))) v += n.eff[key] * st[n.id];
     return (c[ck] = v);
   },
   has: (id, st, key) => G.Tree.add(id, st, key) > 0,

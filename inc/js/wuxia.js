@@ -155,6 +155,9 @@ G.Wuxia = (() => {
     atkCd: () => 0.7 / (1 + 0.3 * ta('oe_combo')),
     jobIdx: w => jobDef(w.job).tier,
     pathOf: w => jobDef(w.job).path || w.path,
+    // 진로가 바뀌면 트리 배율을 다시 셈 (진로 가지는 지금 진로일 때만 켜진다)
+    pathChanged(w) { if (w.tree) w.tree._c = {}; },
+    setPath(w, k) { if (jobDef(w.job).tier >= 3) return false; w.path = k; W.pathChanged(w); return true; },
     // 진로 전용 트리 노드: 지금 진로의 것만 켜진다 (예: 'plum' → 정파 jeong_plum · 사파 sa_plum · 마교 ma_plum)
     pathNote: (w, k) => ta(W.pathOf(w) + '_' + k),
     // 무공을 이 지역에서 익힐 수 있는 장소 (없으면 null)
@@ -193,6 +196,7 @@ G.Wuxia = (() => {
       const keep = { peak: w.peak, lives: w.lives + 1, ins: w.ins, tree: w.tree, bestJob: w.bestJob, autoPromote: w.autoPromote, autoSkill: w.autoSkill, autoBuy: w.autoBuy, path: w.path, plan: w.plan, planAuto: w.planAuto };
       Object.assign(w, W.init(G.S.stree ? G.Tree.add('stars', G.S.stree, 'head') : 0), keep);
       w.age = W.startAge();
+      W.pathChanged(w);
       // 「전생의 이름」: 회귀해도 앞 지위 몇 단계는 건너뛴다
       const skip = D.jobs.filter(j => !j.path && j.tier <= ta('reg_rank'));
       if (skip.length) { const top = skip[skip.length - 1]; w.fameT = top.fame; w.job = top.id; }
@@ -430,6 +434,7 @@ G.Wuxia = (() => {
       for (let nx = W.nextJob(w); nx && W.rankOk(w, nx); nx = W.nextJob(w)) {
         w.job = nx.id;
         if (nx.path) w.path = nx.path;
+        W.pathChanged(w);
         if (nx.tier > w.bestJob) {
           w.bestJob = nx.tier;
           G.addEss(2 * Math.pow(nx.tier, 2), 'wuxia');

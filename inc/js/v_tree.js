@@ -105,7 +105,8 @@ G.UI.tree = function (treeId, getSt) {
       tog(u.el, 'locked', !open);
       tog(u.el, 'sel', sel === n);
       tog(u.el, 'coach', coachId === n.id);
-      tog(u.el, 'off', !!n.pair && lv > 0 && T.picked(st, n) !== n.id);
+      const act = T.opts[treeId] && T.opts[treeId].active;
+      tog(u.el, 'off', (!!n.pair && lv > 0 && T.picked(st, n) !== n.id) || (!!act && !act(n)));
       tog(u.icon, 'q', !open);
       setText(u.lvEl, n.root ? '' : max > 1 ? `${lv}/${max}` : lv ? '✓' : '');
     }

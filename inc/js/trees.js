@@ -146,10 +146,10 @@
   // ───── 무협 (깨달음: 회귀해도 남는다) ─────
   // ───── 무협 (깨달음) ─────
   // 북: 진로(왼쪽 위 화산 · 오른쪽 위 마교) · 남: 무공 계열(심법·외공·경공·잡학) · 동: 회귀 · 서: 강호(활동·여정·특산)
-  // 깨달음 비용 눈금: 노드 값은 처음 적은 그대로 두고 여기서 한 번에 줄인다 — 비용 0.6×값^0.3, 오름폭 ×0.15, 최대 8레벨.
-  // 목표(사용자): 모든 노드 최대까지 2시간 안. 봇(깨달음을 바로 씀): 정파 108분 · 사파 101분 · 마교 89분, 1시간에 절반쯤.
+  // 깨달음 비용 눈금: 노드 값은 처음 적은 그대로 두고 여기서 한 번에 줄인다 — 비용 0.55×값^0.3, 오름폭 ×0.15, 최대 8레벨.
+  // 목표(사용자): 모든 노드 최대까지 2시간 안. 봇(깨달음을 바로 씀): 정파·사파 117분 · 마교 103분.
   // 원래 눈금은 노드 하나씩만 사도 13만 — 대부분을 영영 못 봤다.
-  const WX = list => list.map(n => (n.root ? n : Object.assign(n, { base: Math.max(1, Math.round(0.6 * Math.pow(n.base, 0.3))), g: 1 + ((n.g || 1) - 1) * 0.15, max: Math.min(n.max || 1, 8) })));
+  const WX = list => list.map(n => (n.root ? n : Object.assign(n, { base: Math.max(1, Math.round(0.55 * Math.pow(n.base, 0.3))), g: 1 + ((n.g || 1) - 1) * 0.15, max: Math.min(n.max || 1, 8) })));
   G.Tree.define('wuxia', WX([
     N('root', 0, 0, '', 'w_wuxia', '회귀자', '', 1, 0, 1, {}, { root: true }),
 
@@ -261,7 +261,9 @@
     N('work2', -4, -2, 'bounty', 'x_table', '부지런함', '일·임무 명성 +30%', 10, 120, 1.8, { work: 0.3 }),
     N('gh_top', -8.2, 1.4, 'boss2 gh_legend', 'j_maengju', '무림지존', '명성 +80%', 10, 15000, 2, { fame: 0.8 }),
 
-  ]), { get: () => S().w.wuxia.ins, spend: n => { S().w.wuxia.ins -= n; }, tile: 'ui_star', name: '깨달음' });
+  ]), { get: () => S().w.wuxia.ins, spend: n => { S().w.wuxia.ins -= n; }, tile: 'ui_star', name: '깨달음' },
+  // 진로 가지(jeong_·sa_·ma_)는 지금 진로일 때만 켜진다 — 셋 다 찍어도 합쳐지지 않는다 (다른 가지는 다음 생에 진로를 바꾸면 쓴다)
+  { active: n => { const m = /^(jeong|sa|ma)_/.exec(n.id); return !m || !G.Wuxia || G.Wuxia.pathOf(S().w.wuxia) === m[1]; } });
 
   // ───── 수선 (영석): 경맥도 ─────
   // 사람 몸 위에 경맥을 그린다. 임맥(가운데 위)은 진법 칸·영기·천겁, 팔다리와 아랫배는 오행 경맥.

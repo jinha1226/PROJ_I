@@ -59,7 +59,7 @@ G.UI.views.wuxia = function () {
   const tSkill = G.UI.toggle('수련', () => w().autoSkill, v => { w().autoSkill = v; }, '자동 수련: 경지가 모자라면 가장 빨리 오르는 무공을 고른다');
   const tBuy = G.UI.toggle('구입', () => w().autoBuy, v => { w().autoBuy = v; }, '자동 구입: 특산·영단');
   const pathBtns = Object.entries(D.paths).map(([k, n]) =>
-    h('button.tgl.pathbtn', { 'data-k': k, on: { click: () => { const s = w(); if (W.jobDef(s.job).tier >= 3) return; s.path = k; } } }, n));
+    h('button.tgl.pathbtn', { 'data-k': k, on: { click: () => W.setPath(w(), k) } }, n));
   const autoPop = h('div.fpop.lpop.hidden', null,
     h('div.card-h', null, h('b', null, '자동')), h('div.tgls', null, tPromote.el, tSkill.el, tBuy.el),
     h('div.card-h', null, h('b', null, '장래'), h('small.dim', null, ' 낭인 다음 갈 길 (낭인까지 바꿀 수 있다)')), h('div.tgls.paths', null, pathBtns));
