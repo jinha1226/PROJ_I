@@ -943,3 +943,13 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .wuxia .fover .fhud .minis { position: static; width: auto; flex-wrap: wrap; }
   .wuxia .fover .fhud { margin-right: 132px; }
 }
+/* 무협 왼쪽 위: 지역 메리트 */
+.fhud .merits { display: flex; flex-direction: column; gap: 1px; margin: 2px 0; max-width: 360px; }
+.fhud .merit { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #ffe9b0; }
+.fhud .merit .tl { width: 16px; height: 16px; flex: none; }
+.fhud .merit span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fhud .gain { color: var(--dim); font-size: 11px; }
+@media (max-width: 760px) {
+  .fhud .merits { max-width: none; }
+  .fhud .merit { font-size: 11px; }
+}

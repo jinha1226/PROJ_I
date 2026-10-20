@@ -1,6 +1,6 @@
 'use strict';
 // 무협 화면: 지역 지도가 화면 전체, 그 위에 HUD (판타지와 같은 구성 원리)
-//  왼쪽 위: 지역 · 활동 · 그 활동으로 얻는 것 / 그 아래 경지·명성·깨달음
+//  왼쪽 위: 지역 이름과 그 지역의 메리트(활동으로 얻는 것 · 수련할 수 있는 무공 · 특산) / 지금 하는 일 / 경지·명성·깨달음
 //  위 가운데: 나이 막대(천수까지 차오른다) + 남은 햇수, 아래 한 줄: 스킬트리로 얻은 배율
 //  왼쪽 가운데: 자동 단추(판타지 편성 단추 자리) → 자동 이동·수련·구입, 장래(정파·사파·마교)
 //  아래 가운데: 지위 · 무공 · 특산 — 누르면 게임 화면 위에 크게 펼쳐진다
@@ -10,9 +10,9 @@ G.UI.views.wuxia = function () {
   const tm = k => G.Tree.mul('wuxia', w().tree, k), ta = k => G.Tree.add('wuxia', w().tree, k);
 
   // ── 왼쪽 위: 지역·활동·이득, 경지·명성·깨달음
-  const hudMode = h('b'), hudGain = h('small.gain');
+  const hudMode = h('b'), hudGain = h('small.gain'), merit = h('div.merits');
   const res = G.UI.ov.stats([['realm', 's_naegong', '경지: 무공 레벨 합으로 오른다. 경지마다 전투력 +30%·여정 +15%, 화경부터 천수 +4년'], ['gold', 'c_coin', '명성: 특산·영단에 쓴다. 지위는 이번 생에 쌓은 명성으로 정해져 써도 내려가지 않는다'], ['ins', 'ui_star', '깨달음: 회귀해도 남아 스킬트리에 쓴다']]);
-  const hud = h('div.fhud', null, h('div.floorrow', null, hudMode), hudGain, res.el);
+  const hud = h('div.fhud', null, h('div.floorrow', null, hudMode), merit, hudGain, res.el);
 
   // ── 위 가운데: 나이 (천수까지 차오른다) + 스킬트리 배율
   const age = G.UI.ov.bar('나이: 천수에 닿으면 이번 생이 끝나고 회귀한다', '남은 햇수');
@@ -109,6 +109,14 @@ G.UI.views.wuxia = function () {
   const overlay = h('div.fover', null, hud, top, left, jbox, bottom, panel);
   const req = d => !d.req ? '' : Object.entries(d.req).filter(([id, lv]) => W.L(w(), id) < lv).map(([id, lv]) => (id === 'realm' ? `경지 ${W.realmName(lv)}` : `${W.skillDef(id).n} ${lv}`)).join(' · ');
   const rankReq = (s, d) => [s.fameT < W.fameNeed(d) ? `명성 ${U.fmt(s.fameT)}/${U.fmt(W.fameNeed(d))}` : '', W.realm(s) < (d.realm || 0) ? `경지 ${W.realmName(d.realm)}` : '', d.champ && !s.champ ? '천산 비무 승리' : ''].filter(Boolean).join(' · ');
+  // 지역 메리트: [아이콘, 글] 셋 — 활동으로 얻는 것 · 그 지역에서 익히는 무공 · 특산
+  const merits = (s, id) => {
+    const a = W.act(s, id);
+    const sk = D.skills.filter(k => W.skillAt(k, id) && a.kind !== 'raid' && (!k.unlock || ta(k.unlock))).map(k => k.n);
+    const it = D.items.filter(i => i.r === id).map(i => i.n + (s.items[i.id] ? '✓' : ''));
+    return [['c_coin', `${a.n} · ${gainText(s, a)}`], ...(sk.length ? [['s_tuna', `수련 ${sk.join('·')}`]] : []), ...(it.length ? [['it_pill', `특산 ${it.join('·')}`]] : [])];
+  };
+  let meritKey = '';
   // 활동으로 얻는 것 (한 줄)
   const gainText = (s, a) => {
     const st = W.stipend(s);
@@ -125,8 +133,17 @@ G.UI.views.wuxia = function () {
       const rt = W.rt(s), R = D.regions[rt.region], jr = W.journey(s), act = W.act(s, rt.region);
       const place = ch => (R.places[ch] || ['?'])[0];
       const training = s.mode === 'train' && W.skillAt(sd, rt.region);
-      setText(hudMode, s.dead ? '천수를 다했다' : jr ? `여정 · ${D.regions[jr.to].n}(으)로` : `${R.n} · ${training ? `${place(W.dest(s))} · ${sd.n} 수련` : act.n}`);
-      setText(hudGain, s.dead || jr ? '' : training ? `${sd.n} Lv ${W.L(s, sd.id)} · ${sd.d}` : gainText(s, act));
+      // 지역 이름 + 메리트 (여정 중이면 가는 곳)
+      const mid = jr ? jr.to : rt.region;
+      setText(hudMode, s.dead ? '천수를 다했다' : jr ? `여정 → ${D.regions[mid].n}` : R.n);
+      const ms = merits(s, mid), mk = ms.map(m => m[1]).join('|');
+      if (mk !== meritKey) {
+        meritKey = mk;
+        merit.innerHTML = '';
+        for (const [t, txt] of ms) merit.append(h('div.merit', null, G.T.el(t, 'xs'), h('span', null, txt)));
+      }
+      // 지금 하는 일
+      setText(hudGain, s.dead || jr ? '' : training ? `지금: ${place(W.dest(s))}에서 ${sd.n} 수련 (Lv ${W.L(s, sd.id)})` : `지금: ${place(W.dest(s))} · ${act.n}`);
       res.set('realm', `${W.realmName(W.realm(s))} ${W.realmSum(s)}`);
       res.set('gold', U.fmt(s.gold));
       res.set('ins', U.fmt(s.ins));
@@ -148,7 +165,7 @@ G.UI.views.wuxia = function () {
       // 강호 지도
       for (const [id, g] of Object.entries(nodes)) {
         g.setAttribute('class', 'jn' + (id === rt.region && !jr ? ' cur' : '') + (id === jd.home ? ' home' : '') + (s.hold === id ? ' hold' : ''));
-        setText(g._tip, `${D.regions[id].n} · ${W.act(s, id).n}${s.hold === id ? ' · 머무는 중 (다시 누르면 풀림)' : ''}`);
+        setText(g._tip, `${D.regions[id].n}\n${merits(s, id).map(m => m[1]).join('\n')}${s.hold === id ? '\n📍 머무는 중 (다시 누르면 풀림)' : ''}`);
       }
       const trip = W.travelMult(s);
       for (const y of yearT) setText(y.t, `${(y.yr / trip).toFixed(1)}년`);
