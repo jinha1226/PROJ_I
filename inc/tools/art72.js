@@ -73,6 +73,37 @@ const OPS = {
       d[i] = d[i] * a + (v >> 16) * (1 - a); d[i + 1] = d[i + 1] * a + ((v >> 8) & 255) * (1 - a); d[i + 2] = d[i + 2] * a + (v & 255) * (1 - a); d[i + 3] = 255;
     }
   },
+  // 0x72 엘프를 무협 인물로: 색 바꾸기 + 머리 모양(상투·삿갓·관)·수염·머리띠를 프레임마다 머리 꼭대기에 맞춰 그린다.
+  // 엘프 색: 머리 #ee8e2e·#facb3e, 눈 #5698cc, 옷깃 #314152, 상의 #4ba747, 허리·바지 #3d734f, (여) 리본 #da4e38
+  // o: { hair:[어두운, 밝은], robe:[상의, 바지], collar, ribbon, eyes, knot, hat:'straw'|'crown', beard, band }
+  wx(im, o) {
+    const { w, h, d } = im, at = (x, y) => (y * w + x) * 4;
+    const set = (x, y, c) => { if (x < 0 || y < 0 || x >= w || y >= h) return; const v = parseInt(c.slice(1), 16), i = at(x, y); d[i] = v >> 16; d[i + 1] = (v >> 8) & 255; d[i + 2] = v & 255; d[i + 3] = 255; };
+    const col = (x, y) => { const i = at(x, y); return d[i + 3] ? '#' + [0, 1, 2].map(j => d[i + j].toString(16).padStart(2, '0')).join('') : null; };
+    let top = 0;
+    while (top < h && ![...Array(w).keys()].some(x => d[at(x, top) + 3])) top++;
+    // 서양식 뾰족한 머리 끝(머리 오른쪽 바깥) 지우기
+    for (let y = top; y < top + 5; y++) for (let x = 14; x < w; x++) d[at(x, y) + 3] = 0;
+    const MAP = { '#ee8e2e': o.hair[0], '#facb3e': o.hair[1], '#5698cc': o.eyes || '#3a2a2a', '#314152': o.collar, '#4ba747': o.robe[0], '#3d734f': o.robe[1], '#da4e38': o.ribbon || o.hair[0] };
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const c = col(x, y); if (c && MAP[c]) set(x, y, MAP[c]); }
+    const ink = '#222222';
+    if (o.band) for (let x = 3; x <= 12; x++) if (col(x, top + 3) && col(x, top + 3) !== ink) set(x, top + 3, o.band);
+    if (o.beard) for (const [dx, dy] of [[0, 9], [1, 9], [2, 9], [3, 9], [4, 9], [1, 10], [2, 10], [3, 10], [2, 11]]) set(5 + dx, top + dy, dy === 9 && (dx === 0 || dx === 4) ? '#c9c3b8' : '#e8e2d0');
+    if (o.knot && !o.hat) {
+      // 상투: 정수리 가운데 작은 머리 뭉치 + 비녀
+      for (const [x, y, c] of [[7, -3, ink], [8, -3, ink], [6, -2, ink], [7, -2, o.hair[1]], [8, -2, o.hair[0]], [9, -2, ink], [6, -1, ink], [7, -1, o.hair[0]], [8, -1, o.hair[0]], [9, -1, ink], [5, -2, o.pin || '#d9b44a'], [10, -2, o.pin || '#d9b44a']]) set(x, top + y, c);
+    }
+    if (o.hat === 'straw') {
+      // 삿갓: 넓은 원뿔, 짚 색
+      const rows = [[7, 8], [5, 10], [3, 12], [1, 14]];
+      rows.forEach(([a, b], i) => { for (let x = a; x <= b; x++) set(x, top - 2 + i, x === a || x === b || i === rows.length - 1 ? ink : i === 1 && x < 8 ? '#f0d58a' : '#d9b44a'); });
+    }
+    if (o.hat === 'crown') {
+      // 관: 검은 사모 + 금 띠
+      for (let y = -4; y <= 0; y++) for (let x = 5; x <= 10; x++) set(x, top + y, x === 5 || x === 10 || y === -4 ? ink : y === -1 ? '#facb3e' : '#2b2b33');
+      set(3, top - 2, ink); set(4, top - 2, '#2b2b33'); set(11, top - 2, '#2b2b33'); set(12, top - 2, ink);
+    }
+  },
   // 다른 프레임을 위에 얹기: { src, x, y }
   over(im, { src, x = 0, y = 0 }) {
     const o = load(src);
@@ -161,22 +192,30 @@ const SPEC = {
   v_wall: { src: ['wall_mid', 'wall_mid', 'wall_hole_1'], ed: [{ op: 'hue', deg: 18, sat: 1.25, light: 0.06 }] },
   v_mwall: { src: ['wall_mid'], ed: [{ op: 'hue', deg: 160, sat: 0.25, light: 0.32 }] },
   v_marble: { src: ['floor_1', 'floor_1', 'floor_1', 'floor_2'], ed: [{ op: 'hue', deg: 150, sat: 0.2, light: 0.38 }] },
-  // 무협 인물: Superdark 캐릭터를 무협 옷 색으로 (주인공은 직업 단계마다)
-  wx_hero0: { src: 'sd_townsfolk_m_idle_anim', run: 'sd_townsfolk_m_run_anim' },
-  wx_hero1: { src: 'sd_blacksmith_idle_anim', run: 'sd_blacksmith_run_anim' },
-  wx_hero2: { src: 'sd_thief_idle_anim', run: 'sd_thief_run_anim', ed: [{ op: 'hue', deg: -40, only: [180, 300], sat: 1.4 }] },
-  wx_hero3: { src: 'sd_knight_idle_anim', run: 'sd_knight_run_anim', ed: [{ op: 'hue', deg: 0, sat: 0.2, light: 0.15 }] },
-  wx_hero4: { src: 'sd_elven_knight_idle_anim', run: 'sd_elven_knight_run_anim', ed: [{ op: 'hue', deg: -110, only: [60, 180], sat: 1.2 }] },
-  wx_hero5: { src: 'sd_alchemist_idle_anim', run: 'sd_alchemist_run_anim' },
-  wx_hero6: { src: 'sd_high_elf_m_idle_anim', ed: [{ op: 'hue', deg: -120, only: [60, 200], sat: 1.3 }] },
-  wx_hero7: { src: 'sd_king_idle_anim', run: 'sd_king_run_anim' },
-  wx_hero8: { src: 'sd_mountain_king_idle_anim' },
-  wx_hero9: { src: 'sd_forest_guardian_idle_anim', run: 'sd_forest_guardian_run_anim', ed: [{ op: 'hue', deg: -60, sat: 0.35, light: 0.18 }] },
-  wx_vil_m: { src: 'sd_townsfolk_m_idle_anim', run: 'sd_townsfolk_m_run_anim', ed: [{ op: 'hue', deg: 120, only: [180, 280] }] },
-  wx_vil_f: { src: 'sd_townsfolk_f_idle_anim', run: 'sd_townsfolk_f_run_anim' },
-  wx_merchant: { src: 'sd_merchant_idle_anim', run: 'sd_merchant_run_anim' },
-  wx_bandit0: { src: 'sd_bandit_idle_anim', run: 'sd_bandit_run_anim' },
-  wx_bandit1: { src: 'sd_thief_idle_anim', run: 'sd_thief_run_anim', ed: [{ op: 'hue', deg: 150, sat: 0.6, light: -0.08 }] },
+  // 무협 인물: 0x72 엘프를 바탕으로 옷·머리를 바꾼다 (OPS.wx). 주인공은 직업 단계마다.
+  ...(() => {
+    const BLACK = ['#2b2b33', '#4a4a58'], WHITE = ['#c9c3b8', '#e8e2d0'];
+    const M = (o, ex = {}) => ({ src: 'elf_m_idle_anim', run: 'elf_m_run_anim', hit: 'elf_m_hit_anim_f0', ed: [{ op: 'wx', hair: BLACK, knot: true, ...o }], ...ex });
+    const F = o => ({ src: 'elf_f_idle_anim', run: 'elf_f_run_anim', hit: 'elf_f_hit_anim_f0', ed: [{ op: 'wx', hair: BLACK, ...o }] });
+    return {
+      // 주인공은 한 사람: 머리(검은 상투)·얼굴은 그대로, 직업이 오를 때마다 옷(상의·바지·깃) 색만 바뀐다
+      wx_hero0: M({ robe: ['#c8c2b0', '#775c55'], collar: '#e8e2d0' }),   // 점소이: 무명 저고리
+      wx_hero1: M({ robe: ['#775c55', '#483b3a'], collar: '#aa8d7a' }),   // 표사: 가죽옷
+      wx_hero2: M({ robe: ['#2b2b33', '#222222'], collar: '#c0392b' }),   // 낭인: 검은 옷, 붉은 깃
+      wx_hero3: M({ robe: ['#e8e2d0', '#aa8d7a'], collar: '#c0392b' }),   // 화산파 제자: 흰 도포, 매화색 깃
+      wx_hero4: M({ robe: ['#e8e2d0', '#c0392b'], collar: '#c0392b' }),   // 대제자: 붉은 허리띠
+      wx_hero5: M({ robe: ['#5c5a66', '#3a3842'], collar: '#e8e2d0' }),   // 장로: 회색 도포
+      wx_hero6: M({ robe: ['#c0392b', '#7a2420'], collar: '#facb3e' }),   // 장문인: 붉은 장포, 금 깃
+      wx_hero7: M({ robe: ['#d9a62e', '#8a6420'], collar: '#c0392b' }),   // 무림맹주: 금빛 장포
+      wx_hero8: M({ robe: ['#2b2b33', '#facb3e'], collar: '#facb3e' }),   // 천하제일인: 검은 장포, 금 띠
+      wx_hero9: M({ robe: ['#f2eee4', '#f4a6c0'], collar: '#f4a6c0' }),   // 매화검선: 흰 도포, 매화 분홍
+      wx_vil_m: M({ robe: ['#5b7fa0', '#3e5670'], collar: '#c8c2b0' }),
+      wx_vil_f: F({ robe: ['#d77fa0', '#a3506e'], collar: '#e8e2d0', ribbon: '#c0392b' }),
+      wx_merchant: M({ robe: ['#4a6a8a', '#2e4560'], collar: '#facb3e', hat: 'crown' }),
+      wx_bandit0: M({ robe: ['#5a4632', '#3a2e22'], collar: '#2b2b33', band: '#c0392b', knot: false }),
+      wx_bandit1: M({ robe: ['#3a3842', '#222222'], collar: '#7a2420', band: '#2b2b33', knot: false }),
+    };
+  })(),
   w_katana: { src: 'weapon_katana' }, w_duel: { src: 'weapon_duel_sword' },
   // 화살 (날아가는 방향으로 돌려 그린다)
   fx_arrow: { src: 'weapon_arrow' },
