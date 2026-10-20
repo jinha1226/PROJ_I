@@ -980,3 +980,21 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .prow2 { flex-wrap: wrap; }
   .psel.u { width: auto; flex: 1; }
 }
+/* 크툴루 이번 어획: 종류별 아이콘 + 마리 수 */
+.catch-row .cg { display: inline-flex; align-items: center; gap: 1px; margin-right: 4px; }
+.catch-row .cg small { font-weight: 700; color: #e8d48a; }
+/* 계획표: 자동/내 코스, 예상, 전생 기록 */
+.plan-h .tgl { font-size: 12px; padding: 2px 10px; }
+.prow2.ro { opacity: .8; }
+.fcast { display: flex; flex-direction: column; gap: 3px; min-height: 40px; }
+.fcrow { display: grid; grid-template-columns: 80px 1fr 110px 110px 60px; gap: 6px; align-items: center; font-size: 12px; padding: 3px 6px; border-radius: 6px; background: #ffffff08; }
+.fcrow.mine { background: #ffd24a14; }
+.fcrow .delta.up { color: var(--good); font-weight: 800; }
+.fcrow .delta.down { color: #ff8a7a; font-weight: 800; }
+.phist .hrows { display: flex; flex-direction: column; gap: 2px; max-height: 140px; overflow-y: auto; }
+.phist .hrow { display: grid; grid-template-columns: 40px 56px 1fr 90px 50px 90px; gap: 6px; font-size: 11px; color: var(--dim); }
+.phist .hrow span { color: var(--text); }
+@media (max-width: 760px) {
+  .fcrow { grid-template-columns: 1fr 1fr; }
+  .phist .hrow { grid-template-columns: repeat(3, 1fr); }
+}

@@ -12,7 +12,7 @@ G.Cthulhu = (() => {
   const tm = k => G.Tree.mul('cthulhu', G.S.w.cthulhu.tree, k);
   const ta = k => G.Tree.add('cthulhu', G.S.w.cthulhu.tree, k);
   // W: 바다 폭 (양옆 벽 없음). 물고기·바늘은 LO~HI 안에서 움직인다
-  const W = 16, LO = 1.5, HI = W - 2.5, MID = W / 2, SURF = 3, MAXD = 300, DOWN = 18, UP = 3, FULL_UP = 15, STEER = 7, IDLE_T = 1, REST = 10, LANE = 2;
+  const W = 16, LO = 1.5, HI = W - 2.5, MID = W / 2, SURF = 3, MAXD = 300, DOWN = 18, UP = 3.5, FULL_UP = 15, STEER = 7, IDLE_T = 1, REST = 10, LANE = 2;
 
   const C = {
     SURF,
@@ -48,7 +48,11 @@ G.Cthulhu = (() => {
     maxCatch: () => 3 + ta('catch'),
     // 감는 속도는 느리게 고정 (올라오며 고르는 재미). 다 잡았거나 이성이 바닥나면 빠르게 끌어올린다
     reel: () => UP,
-    upSpeed: (c, rt) => (rt.hooked.length >= C.maxCatch() || c.madT > 0 ? FULL_UP : UP),
+    // 「자동 릴」: 자동 던지기를 켜 두고 손대지 않을 때만 빨라진다 (직접 바늘을 몰면 기본 속도로)
+    autoReel: c => UP * (c.auto ? 1 + ta('autoReel') : 1),
+    upSpeed: (c, rt) => (rt.hooked.length >= C.maxCatch() || c.madT > 0 ? FULL_UP : rt.steerT > 0 ? UP : C.autoReel(c)),
+    lampR: () => 3 + ta('lamp'),
+    magR: () => 1 + ta('magR'),
     sink: () => DOWN * tm('sink'),
     maxSan: () => 100 + ta('sanMax'),
     // 낮은 이성의 물고기 값 배율: 바닥에서 ×(1 + 상한). 「공포의 탐닉」은 보너스 ×2, 「평정심」은 절반
@@ -196,7 +200,7 @@ G.Cthulhu = (() => {
     },
     // 촉수 한 대: 클릭 또는 「자동 퇴마」
     hitTent(c, rt, o) {
-      o.hp--;
+      o.hp -= 1 + ta('harpoon');
       G.J.hit('cthulhu', o, 0.4, rt.hook);
       G.fx(rt, { k: 'splat', x: o.x, y: o.y, n: 8, ichor: true, s: 1.3, t: 0.5 });
       G.fx(rt, { k: 'impact', x: o.x, y: o.y, s: 1.5, col: '#e8d48a', t: 0.22 });
@@ -219,13 +223,23 @@ G.Cthulhu = (() => {
       if (c.madT > 0 && (c.madT -= dt) <= 0) { c.madT = 0; c.san = C.maxSan() * (1 + ta('dream')); }
       // 물고기·촉수 움직임
       for (const f of rt.fish) {
-        f.x += f.dir * f.spd * dt;
+        // 감아 올릴 때: 「유인등」 빛 안의 물고기는 바늘 쪽으로, 「자석 바늘」 가까운 것은 바늘로 끌려온다
+        let pull = 0;
+        if (rt.phase === 'up' && rt.hooked.length < C.maxCatch()) {
+          const dx = h.x - f.x, dy = h.y - f.y, dist = Math.hypot(dx, dy);
+          if (ta('lure') && Math.abs(dy) < C.lampR()) pull += Math.sign(dx) * Math.min(Math.abs(dx), ta('lure'));
+          if (ta('magnet') && dist < C.magR() && dist > 0.01) {
+            pull += dx / dist * ta('magnet');
+            f.y += dy / dist * Math.min(dist, ta('magnet') * dt);
+          }
+        }
+        f.x += (f.dir * f.spd + pull) * dt;
         if (f.x < LO || f.x > HI) { f.dir *= -1; f.x = U.clamp(f.x, LO, HI); }
-        f.vx = f.dir * f.spd;
+        f.vx = f.dir * f.spd + pull;
         f.flip = f.dir > 0;
         f.moving = true;
       }
-      for (const o of rt.tents) { o.ph += dt; o.x = U.clamp(o.x0 + Math.sin(o.ph * 0.7) * 2, LO, HI); }
+      for (const o of rt.tents) { o.ph += dt * (1 - Math.min(0.6, ta('flare'))); o.x = U.clamp(o.x0 + Math.sin(o.ph * 0.7) * 2, LO, HI); }
       // 이성: 물속에 있는 동안 깊이와 시간만큼 깎인다. 저절로 돌아오지 않는다
       const hd = h.y - SURF;
       if (c.madT <= 0 && hd > 0) C.hurt(c, C.drain(hd) * dt);
@@ -268,7 +282,7 @@ G.Cthulhu = (() => {
         if (tn && rt.hooked.length && !tn.hitT) {
           tn.hitT = 1;
           if (U.chance(ta('charm'))) G.fx(rt, { k: 'text', x: h.x, y: h.y - 0.6, s: '부적!', col: '#e8d48a', t: 1, pop: true });
-          else { C.snap(c, rt, '줄이 끊겼다'); C.hurt(c, 10); }
+          else { C.snap(c, rt, '줄이 끊겼다', ta('grip')); C.hurt(c, 10 * (1 - Math.min(0.75, ta('clawWard')))); }
         }
         if (h.y <= SURF) { h.y = SURF; h.vy = 0; rt.phase = 'land'; C.land(c, rt); }
       }
@@ -288,7 +302,7 @@ G.Cthulhu = (() => {
       return {
         map: rt.map, ents, fx: rt.fx, cam: { x: MID, y: Math.max(SURF + 3, hy + rt.camOff), k: 1 }, viewH: 13,
         lines: [{ x: rt.boat.rod.x, y: rt.boat.rod.y, to: h, dy: -0.3, col: 'rgba(230,230,210,0.7)', w: 1 }],
-        lamp: { x: h.x, y: h.y, r: 3 + ta('lamp'), a: Math.min(0.9, Math.max(0, (hd - 6) / 70)) },
+        lamp: { x: h.x, y: h.y, r: C.lampR(), a: Math.min(0.9, Math.max(0, (hd - 6) / 70)) },
         terrain(x, y) {
           const ch = GR.at(rt.map, x, y);
           if (ch === ' ') return null;

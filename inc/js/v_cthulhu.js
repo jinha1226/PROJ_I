@@ -1,6 +1,6 @@
 'use strict';
 // 크툴루 화면: 바다 단면 지도가 화면 전체, 그 위에 HUD (판타지와 같은 구성 원리)
-//  위 가운데: 이성 막대(바닥나면 휴식, 회복까지 초읽기) + 물고기 값 배율, 아래 한 줄: 동전·줄 길이·한 번에 잡는 수·최고 깊이
+//  위 가운데: 이성 막대(바닥나면 휴식, 회복까지 초읽기) + 물고기 값 배율, 아래 한 줄: 동전·줄 길이·잡는 수·값 배율·이성 소모·내리기·감기·빛
 //  왼쪽 위: 깊이·바다·단계·걸린 수, 자동 던지기 / 왼쪽 가운데: 이번 어획, 도감 단추
 //  맵: 누르거나 끌면 바늘을 그쪽으로, 촉수를 누르면 퇴치, 배가 쉬고 있을 때 누르면 바로 던진다.
 G.UI.views.cthulhu = function () {
@@ -14,7 +14,12 @@ G.UI.views.cthulhu = function () {
 
   // ── 위 가운데: 이성
   const san = G.UI.ov.bar('이성: 물속에서 깊이와 시간만큼 깎인다. 바닥나면 항구에서 쉰다', '물고기 값 배율: 이성이 낮을수록 커진다');
-  const st = G.UI.ov.stats([['coin', 'c_coin', '동전'], ['line', 'item_line', '줄 길이'], ['catch', 'fs_cod', '한 번에 잡는 수'], ['best', 'sea_w3', '최고 깊이']]);
+  const st = G.UI.ov.stats([
+    ['coin', 'c_coin', '동전'], ['line', 'item_line', '줄 길이'], ['catch', 'fs_cod', '한 번에 잡는 수'],
+    ['val', 'ui_gold', '물고기 값 배율 (노드·유물·낮은 이성 포함)'], ['drain', 'c_horror', '이성 소모: 줄 끝에서 초당'],
+    ['sink', 'sea_rock', '내리는 속도 (초당)'], ['reel', 'n_auto_build', '감는 속도 (초당). 다 차면 빠르게 끌어올린다'],
+    ['lamp', 'x_lantern', '빛 반경'],
+  ]);
   const top = h('div.ftop', null, san.el, st.el);
 
   // ── 왼쪽 가운데: 이번 어획 + 도감
@@ -50,12 +55,23 @@ G.UI.views.cthulhu = function () {
       st.set('coin', U.fmt(s.coins));
       st.set('line', `${C.lineD() * D.M_PER_TILE}m`);
       st.set('catch', `×${C.maxCatch()}`);
-      st.set('best', `${s.best}m`);
+      const M = D.M_PER_TILE;
+      st.set('val', `×${U.fmt(C.valueMult(s))}`);
+      st.set('drain', `${C.drain(C.lineD()).toFixed(1)}/초`);
+      st.set('sink', `${U.fmt(C.sink() * M)}m/초`);
+      st.set('reel', `${U.fmt(C.autoReel(s) * M)}m/초`);
+      st.set('lamp', `${C.lampR()}칸`);
       const lk = s.last.join();
       if (lk !== lastKey) {
         lastKey = lk;
         lastEl.innerHTML = '';
-        for (const id of s.last) { const sp = D.fish.find(f => f.id === id); lastEl.append(G.T.el(sp.t, 'md')); }
+        // 종류별로 묶어 마리 수만 (잡은 순서대로)
+        const cnt = new Map();
+        for (const id of s.last) cnt.set(id, (cnt.get(id) || 0) + 1);
+        for (const [id, n] of cnt) {
+          const sp = D.fish.find(f => f.id === id);
+          lastEl.append(h('span.cg', { title: sp.n }, G.T.el(sp.t, 'md'), h('small', null, '×' + n)));
+        }
       }
       let have = 0;
       for (const x of dex) {

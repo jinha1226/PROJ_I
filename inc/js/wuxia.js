@@ -122,7 +122,7 @@ G.Wuxia = (() => {
     skillXp(w, id, region) {
       const sk = skillDef(id);
       // 계획표 집중 계열이면 트리 「집중 수련」만큼 더
-      const focus = w.plan && w.plan.length && sk.fam === W.block(w).f ? 1 + ta('focusXp') : 1;
+      const focus = sk.fam === W.curFocus(w) ? 1 + ta('focusXp') : 1;
       return 15 * W.famXp(w, sk.fam) * W.peakMult(w, id) * W.regionTrain(w, region || w.region || 'hwaeum', sk.fam) * focus;
     },
     // 녹봉: 지위의 초당 명성 × 무공·물건·트리
@@ -195,10 +195,13 @@ G.Wuxia = (() => {
       w.lvl[id] = lv;
     },
     rebirth(w) {
+      // 전생 기록 (최근 12생): 코스 · 도달 지위 · 경지 · 천수 · 이번 생 깨달음
+      const insGain = (W.realmSum(w) / 10 + 0.5 * Math.pow(jobDef(w.job).tier, 2)) * tm('ins');
+      w.hist = [...(w.hist || []), { n: w.lives + 1, auto: !!w.planAuto, job: w.job, realm: W.realm(w), sum: W.realmSum(w), age: Math.floor(w.age), ins: +insGain.toFixed(1) }].slice(-12);
       let sum = 0;
       for (const sk of D.skills) { const id = sk.id; sum += w.lvl[id] || 0; w.peak[id] = Math.max(w.peak[id] || 0, w.lvl[id] || 0); }
       W.gainIns(w, sum / 10 + 0.5 * Math.pow(jobDef(w.job).tier, 2));
-      const keep = { peak: w.peak, lives: w.lives + 1, ins: w.ins, tree: w.tree, bestJob: w.bestJob, autoPromote: w.autoPromote, autoSkill: w.autoSkill, autoBuy: w.autoBuy, path: w.path, plan: w.plan, planAuto: w.planAuto };
+      const keep = { peak: w.peak, lives: w.lives + 1, ins: w.ins, tree: w.tree, bestJob: w.bestJob, autoPromote: w.autoPromote, autoSkill: w.autoSkill, autoBuy: w.autoBuy, path: w.path, plan: w.plan, planAuto: w.planAuto, hist: w.hist };
       Object.assign(w, W.init(G.S.stree ? G.Tree.add('stars', G.S.stree, 'head') : 0), keep);
       w.age = W.startAge();
       W.pathChanged(w);
@@ -263,16 +266,21 @@ G.Wuxia = (() => {
     },
     // 단계 칸: 기본 4, 트리 「계획표」 가지로 늘린다
     maxSteps: () => 4 + ta('pl_steps'),
+    // 자동 코스: 추천 코스를 칸 수에 맞춰 줄인 것 (4칸: 1·2·4·6단계, 5칸: 1·2·3·4·6단계, 6칸 이상: 전부)
+    // 상황을 보고 그때그때 정하는 방식도 봇으로 재 봤지만 이 고정 코스보다 느렸다 — 손대지 않는 사람에게 가장 검증된 길을 준다.
+    autoPlan(w) {
+      const full = W.recommend(W.pathOf(w)), n = W.maxSteps();
+      return n >= full.length ? full : n === 5 ? [0, 1, 2, 3, 5].map(i => full[i]) : [0, 1, 3, 5].map(i => full[i]);
+    },
+    // 지금 따르는 계획: 자동이면 자동 코스, 아니면 내 코스(w.plan — 처음 고칠 때 자동 코스를 복사해 시작)
     plan(w) {
-      // 나이 구간 계획표(옛 저장)는 추천 코스로
-      if (w.plan && w.plan.some(b => b.u == null)) { w.plan = null; w.planAuto = true; }
-      if (w.planAuto || !w.plan || !w.plan.length) {
-        // 추천 코스는 칸 수에 맞춰 줄인다 (4칸: 1·2·4·6단계, 5칸: 1·2·3·4·6단계)
-        const full = W.recommend(W.pathOf(w)), n = W.maxSteps();
-        w.plan = n >= full.length ? full : n === 5 ? [0, 1, 2, 3, 5].map(i => full[i]) : [0, 1, 3, 5].map(i => full[i]);
-      }
+      if (w.planAuto) return W.autoPlan(w);
+      if (w.plan && w.plan.some(b => b.u == null)) w.plan = null;
+      if (!w.plan || !w.plan.length) w.plan = W.autoPlan(w);
       return w.plan;
     },
+    // 지금 집중 (자동 코스도 집중이 있다 — 계획표 가지 노드가 자동에도 듣게)
+    curFocus: w => W.block(w).f,
     stepDone: (w, b) => (b.u === 'rank' ? jobDef(w.job).tier >= b.v : b.u === 'realm' ? W.realm(w) >= b.v : false),
     // 지금 단계 (모두 이뤘으면 마지막)
     stepIdx(w) { const P = W.plan(w); const i = P.findIndex(b => !W.stepDone(w, b)); return i < 0 ? P.length - 1 : i; },
@@ -283,34 +291,17 @@ G.Wuxia = (() => {
       const path = W.pathOf(w), j = D.jobs.find(x => x.tier === b.v && (!x.path || x.path === path));
       return `지위 ${j ? j.n : b.v + '단계'}까지`;
     },
-    // 계획표를 직접 고치면 추천 코스에서 내 코스로 (회귀해도 남는다)
-    editPlan(w, fn) { W.plan(w); w.planAuto = false; fn(w.plan); },
-    resetPlan(w) { w.planAuto = true; w.plan = null; W.plan(w); },
+    // 계획표를 직접 고치면 내 코스로 (회귀해도 남는다). 자동 코스로 돌아가도 내 코스는 남아 있다
+    editPlan(w, fn) { if (w.planAuto) { w.planAuto = false; W.plan(w); } fn(w.plan); },
+    setAuto(w, on) { w.planAuto = on; if (!on) W.plan(w); },
+    // 내 코스를 자동 코스로 덮어쓴다
+    resetPlan(w) { w.plan = JSON.parse(JSON.stringify(W.autoPlan(w))); },
     // 가야 할 지역: 직접 고른 곳(📍) → 천하제일 비무(조건이 되면) → 계획표의 지금 블록
     target(w) {
       if (w.hold) return w.hold;
       const nx = W.nextJob(w);
       if (nx && nx.champ && !w.champ && w.fameT >= W.fameNeed(nx) && W.realm(w) >= (nx.realm || 0)) return 'cheonsan';
       return W.block(w).r;
-    },
-    // 지금 있는 곳에서 가는 햇수만큼 깎아 비교 (먼 곳은 그만큼 손해)
-    far: (w, r) => 1 + 0.08 * W.route(w.region || 'hwaeum', r).years,
-    // 명성이 가장 잘 오르는 곳 (원정·천산은 위험해서 자동으로는 안 간다)
-    bestFame(w) {
-      let best = null, bs = 0;
-      for (const r in D.regions) { const a = W.act(w, r); if (a.kind === 'raid' || a.kind === 'boss') continue; const sc = (a.fame || 1) / W.far(w, r); if (sc > bs) { bs = sc; best = r; } }
-      return best || 'hwaeum';
-    },
-    // 수련이 가장 잘 되는 곳: 거기서 가장 빨리 오르는 무공의 속도
-    bestTrain(w) {
-      let best = null, bs = 0;
-      for (const r in D.regions) {
-        const sk = W.localSkills(w, r);
-        if (!sk.length) continue;
-        const sc = Math.max(...sk.map(k => W.skillXp(w, k.id, r) / W.need(W.L(w, k.id)))) / W.far(w, r);
-        if (sc > bs) { bs = sc; best = r; }
-      }
-      return best || 'hwaeum';
     },
     // 그 지역의 활동 (진로마다 다를 수 있다)
     act(w, region) {
@@ -343,7 +334,7 @@ G.Wuxia = (() => {
       const low = () => here.reduce((a, b) => (speed(b) > speed(a) ? b : a)).id;
       let best = null;
       // 계획표 집중 계열이 있으면 그 계열에서 가장 빨리 오르는 무공
-      const f = W.block(w).f, fam = here.filter(sk => sk.fam === f);
+      const f = W.curFocus(w), fam = here.filter(sk => sk.fam === f);
       if (fam.length) best = fam.reduce((a, b) => (speed(b) > speed(a) ? b : a)).id;
       if (!best && nx && (nx.realm || 0) > W.realm(w)) best = low();
       if (!best && boosted.length) best = boosted.reduce((a, b) => (speed(b) > speed(a) ? b : a)).id;
@@ -380,6 +371,43 @@ G.Wuxia = (() => {
       G.fx(rt, { k: 'ring', x: rt.map.poi[best][0][0], y: rt.map.poi[best][0][1], r: 1, t: 0.6, col: '#ffe08a' });
       G.J.sfx('wuxia', 'select');
       return true;
+    },
+    // ── 이번 생 예상: 지금 상태를 복사해 이번 생을 끝까지 빠르게 돌린다 (실제 게임에는 영향 없음) ──
+    // auto: 자동 코스로 / plan: 이 계획표로. 같은 난수(시드)로 돌려 두 코스를 공정하게 비교한다.
+    forecast(w, auto, plan) {
+      const c = JSON.parse(JSON.stringify(w));
+      c.planAuto = auto; c.goal = null;
+      if (!auto) c.plan = JSON.parse(JSON.stringify(plan || w.plan || W.autoPlan(w)));
+      c.autoBuy = w.autoBuy; c.autoSkill = w.autoSkill; c.autoPromote = true; c.hold = null;
+      // 바깥에 흔적을 남기는 것들은 잠시 막는다
+      const keep = { rt: G.RT.wuxia, ess: G.addEss, log: G.log, signs: G.addSigns, tally: G.tally, J: G.J, rnd: Math.random, S: G.S.w.wuxia };
+      let seed = 12345;
+      Math.random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      const noop = () => {};
+      G.addEss = noop; G.log = noop; G.addSigns = noop; G.tally = noop;
+      G.J = new Proxy({}, { get: () => noop });
+      G.S.w.wuxia = c;
+      G.RT.wuxia = null;
+      const out = { marks: [] };
+      try {
+        W.rt(c);
+        let lastJob = c.job, lastRealm = W.realm(c), steps = 0;
+        const insStart = c.ins;
+        while (!c.dead && steps < 20000) {
+          W.tick(c, 0.25);
+          steps++;
+          if (c.job !== lastJob) { lastJob = c.job; out.marks.push({ age: Math.floor(c.age), s: jobDef(c.job).n }); }
+          const rl = W.realm(c);
+          if (rl !== lastRealm) { lastRealm = rl; out.marks.push({ age: Math.floor(c.age), s: W.realmName(rl) }); }
+        }
+        out.job = jobDef(c.job).n; out.tier = jobDef(c.job).tier;
+        out.realm = W.realm(c); out.sum = W.realmSum(c); out.age = Math.floor(c.age);
+        // 이번 생 깨달음: 생 동안 얻은 것 + 회귀할 때 받을 것
+        out.ins = c.ins - insStart + (W.realmSum(c) / 10 + 0.5 * Math.pow(jobDef(c.job).tier, 2)) * tm('ins');
+      } finally {
+        G.RT.wuxia = keep.rt; G.addEss = keep.ess; G.log = keep.log; G.addSigns = keep.signs; G.tally = keep.tally; G.J = keep.J; Math.random = keep.rnd; G.S.w.wuxia = keep.S;
+      }
+      return out;
     },
     // 여정 상태 (강호 지도 그리기용): { from, to, frac, path }
     journey(w) { const t = W.rt(w).travel; return t ? { ...t, frac: Math.min(1, t.t / t.T) } : null; },
@@ -439,7 +467,7 @@ G.Wuxia = (() => {
       // 녹봉: 늘 들어온다(일터에서는 그 지역 일 배수로, 그 밖에서는 절반)
       const a = W.act(w, rt.region), atWork = !rt.travel && w.mode === 'work' && (a.kind === 'work' || a.kind === 'duel') && rt.stay > 0;
       const home = a.kind === 'work' && W.pathNote(w, 'sect') && jd0.home === rt.region ? 2 : 1;
-      const focusF = W.block(w).f === 'fame' ? 1 + ta('focusFame') : 1;
+      const focusF = W.curFocus(w) === 'fame' ? 1 + ta('focusFame') : 1;
       W.addFame(w, W.stipend(w) * dt * (atWork ? (a.fame || 1) * tm('work') * home * focusF : 0.5));
       // 지위: 쌓은 명성·경지가 차면 오른다
       for (let nx = W.nextJob(w); nx && W.rankOk(w, nx); nx = W.nextJob(w)) {

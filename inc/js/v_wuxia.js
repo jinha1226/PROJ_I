@@ -98,17 +98,20 @@ G.UI.views.wuxia = function () {
   });
   const elixCnt = h('b'), elixCost = h('small.c');
   const elixBtn = h('button.shop-it.elix', { title: '영단', on: { click: () => W.buyElixir(w()) } }, G.T.el('q_pill', 'md'), h('span.si', null, h('b', null, '영단 · 숙련 +10% (어디서나)'), elixCost), elixCnt);
-  // 생애 계획표: 단계마다 지역 · 집중 · 끝나는 조건(지위 ○○까지 / 경지 ○○까지 / 끝까지). 고치면 내 코스(회귀해도 남는다)
-  const planBody = h('div.plan');
-  let planKey = '';
+  // 생애 계획표: [자동 코스 | 내 코스], 단계(지역·집중·끝나는 조건), 이번 생 예상(내 코스 vs 자동 코스), 전생 기록
+  const planBody = h('div.plan'), fcBox = h('div.fcast'), histBox = h('div.phist');
+  let planKey = '', fcKey = '', fcT = 0;
   function renderPlan() {
-    const s = w(), P = W.plan(s), path = W.pathOf(s);
-    const key = JSON.stringify(P) + s.planAuto + path;
+    const s = w(), P = W.plan(s), path = W.pathOf(s), auto = !!s.planAuto;
+    const key = JSON.stringify(P) + auto + path + W.maxSteps();
     if (key === planKey) return;
     planKey = key;
+    fcKey = '';
     planBody.innerHTML = '';
-    planBody.append(h('div.plan-h', null, h('b', null, s.planAuto ? '추천 코스' : '내 코스'), h('small.dim', null, ` · ${D.paths[path]} · 위에서부터, 이룬 단계는 건너뛴다`), h('span.sp'),
-      h('button.btn.sm', { on: { click: () => { W.resetPlan(w()); planKey = ''; } } }, '추천 코스로')));
+    const modeBtn = (on, label, tip) => h('button.tgl' + (auto === on ? '.on' : ''), { 'data-tip': tip, on: { click: () => { W.setAuto(w(), on); planKey = ''; } } }, label);
+    planBody.append(h('div.plan-h', null, modeBtn(true, '자동 코스', '추천 코스를 그대로 따른다 (칸이 늘면 코스도 길어진다)'), modeBtn(false, '내 코스', '직접 짠 코스 (회귀해도 남는다)'),
+      h('small.dim', null, ` · ${D.paths[path]} · 위에서부터, 이룬 단계는 건너뛴다`), h('span.sp'),
+      auto ? null : h('button.btn.sm', { 'data-tip': '내 코스를 자동 코스로 덮어쓴다', on: { click: () => { W.resetPlan(w()); planKey = ''; } } }, '자동 코스 복사')));
     const edit = fn => { W.editPlan(w(), fn); planKey = ''; };
     const ranks = D.jobs.filter(j => !j.path || j.path === path);
     P.forEach((b, i) => {
@@ -116,7 +119,6 @@ G.UI.views.wuxia = function () {
         Object.entries(D.regions).map(([id, R]) => h('option', { value: id, selected: id === b.r }, `${R.n} — ${role(s, id)}`)));
       const foc = h('select.psel.f', { on: { change: e => edit(p => { p[i].f = e.target.value; }) } },
         W.FOCUS.map(f => h('option', { value: f, selected: f === b.f }, W.focusName(f))));
-      // 끝나는 조건: 지위 단계 / 경지 / 끝까지 (한 목록으로)
       const opts = [...ranks.map(j => ['rank:' + j.tier, `지위 ${j.n}까지`]), ...D.realms.map((r, k) => ['realm:' + k, `경지 ${r[0]}까지`]), ['end:0', '끝까지']];
       const until = h('select.psel.u', { on: { change: e => { const [u, v] = e.target.value.split(':'); edit(p => { p[i].u = u; p[i].v = +v; }); } } },
         opts.map(([v, t]) => h('option', { value: v, selected: v === `${b.u}:${b.v}` }, t)));
@@ -124,12 +126,40 @@ G.UI.views.wuxia = function () {
       const del = h('button.fbtn', { 'data-tip': '단계 빼기', on: { click: () => edit(p => { p.splice(i, 1); }) } }, '✕');
       up.disabled = i === 0;
       del.disabled = P.length <= 1;
-      planBody.append(h('div.prow2', { 'data-i': i }, h('b.pno', null, i + 1), reg, foc, until, up, del));
+      // 자동 코스를 고치면 내 코스로 넘어간다 (자동 코스를 시작점으로)
+      planBody.append(h('div.prow2' + (auto ? '.ro' : ''), { 'data-i': i }, h('b.pno', null, i + 1), reg, foc, until, up, del));
     });
     const full = P.length >= W.maxSteps();
     const add = h('button.btn.sm.padd', { on: { click: () => edit(p => { if (p.length >= W.maxSteps()) return; const l = p[p.length - 1]; p.push({ r: l.r, f: l.f, u: 'end', v: 0 }); }) } }, full ? `단계 ${P.length}/${W.maxSteps()} · 칸은 스킬트리 「한 단계 더」` : `+ 단계 (${P.length}/${W.maxSteps()})`);
     add.disabled = full;
-    planBody.append(add);
+    planBody.append(add, h('div.card-h', null, h('b', null, '이번 생 예상'), h('small.dim', null, ' 지금 상태에서 끝까지 빠르게 돌려 본 것 (같은 조건)')), fcBox, histBox);
+  }
+  // 예상: 계획표가 바뀌고 0.5초 뒤 한 번 (자동 코스와 내 코스를 같은 난수로)
+  function renderForecast() {
+    const s = w();
+    const key = planKey + '|' + JSON.stringify(s.plan) + '|' + Math.floor(s.age / 5);
+    if (key === fcKey || s.dead || W.journey(s)) return;
+    if (!fcT) { fcT = setTimeout(() => {
+      fcT = 0; fcKey = key;
+      const a = W.forecast(s, true), mine = s.plan ? W.forecast(s, false, s.plan) : null;
+      const row = (label, r, base) => h('div.fcrow' + (label === '자동 코스' ? '' : '.mine'), null, h('b', null, label),
+        h('span', null, r.job), h('span', null, `${W.realmName(r.realm)} ${r.sum}`), h('span', null, `깨달음 +${U.fmt(r.ins)}`),
+        base ? h('span.delta' + (r.ins >= base.ins ? '.up' : '.down'), null, `${r.ins >= base.ins ? '+' : ''}${Math.round((r.ins / Math.max(0.01, base.ins) - 1) * 100)}%`) : h('span'));
+      fcBox.innerHTML = '';
+      fcBox.append(row('자동 코스', a));
+      if (mine) fcBox.append(row('내 코스', mine, a));
+      const m = (s.planAuto || !mine ? a : mine).marks.slice(0, 8).map(x => `${x.s} ${x.age}세`).join(' · ');
+      fcBox.append(h('small.dim', null, m ? `이정표: ${m}` : ''));
+    }, 500); }
+  }
+  function renderHist() {
+    const s = w(), H = s.hist || [], key = H.length + ':' + (H[H.length - 1] || {}).n;
+    if (histBox._k === key) return;
+    histBox._k = key;
+    histBox.innerHTML = '';
+    if (!H.length) return;
+    histBox.append(h('div.card-h', null, h('b', null, '전생 기록')),
+      h('div.hrows', null, [...H].reverse().map(x => h('div.hrow', null, h('small', null, `${x.n}생`), h('small', null, x.auto ? '자동' : '내 코스'), h('span', null, W.jobDef(x.job).n), h('small', null, `${W.realmName(x.realm)} ${x.sum}`), h('small', null, `${x.age}세`), h('small', null, `깨달음 +${U.fmt(x.ins)}`)))));
   }
   const bodies = { plan: planBody, rank: h('div.olist.wide', null, ranks.map(x => x.el)), skill: h('div.olist.wide', null, skills.map(x => x.el)), shop: h('div.shop.wide', null, shop.map(x => x.el), elixBtn) };
   function openPanel(k) {
@@ -219,6 +249,8 @@ G.UI.views.wuxia = function () {
       setText(tabs.shop.n, '특산'); setText(tabs.shop.sub, buyable ? `${R.n} ${buyable}` : '영단');
       if (openK === 'plan') {
         renderPlan();
+        renderForecast();
+        renderHist();
         // 지금 단계 밝히기, 이룬 단계는 흐리게
         const cur = W.stepIdx(s), P = W.plan(s);
         for (const r of planBody.querySelectorAll('.prow2')) { const i = +r.dataset.i; tog(r, 'on', i === cur); tog(r, 'done', i < cur || (P[i] && W.stepDone(s, P[i]))); }
