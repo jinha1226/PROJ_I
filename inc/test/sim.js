@@ -1,4 +1,4 @@
-// 밸런스 봇: node test/sim.js [분] [--seed=N] [--order=wuxia,xianxia,scifi,cthulhu] [--prestige] [-v]
+// 밸런스 봇: node test/sim.js [분] [--seed=N] [--order=wuxia,xianxia,scifi,cthulhu] [--block=노드,...] [--prestige] [-v]
 // 화면 없이 맵 시뮬레이션을 돌리며, 스킬트리에서 가장 싼 노드를 사는 플레이어처럼 진행한다.
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const arg = k => (process.argv.find(a => a.startsWith(k + '=')) || '').slice(k.length + 1);
@@ -23,9 +23,11 @@ G.on('log', e => logs.push(`[${fmtT(G.S.runTime)}] ${e.msg}`));
 function fmtT(s) { return `${Math.floor(s / 60)}m${String(Math.floor(s % 60)).padStart(2, '0')}`; }
 const firstUnlock = {};
 
+// --block=노드1,노드2 : 그 노드는 사지 않는다 (밸런스 원인 찾기용)
+const BLOCK = (arg('--block') || '').split(',').filter(Boolean);
 function buyTree(id, st) {
   for (let i = 0; i < 30; i++) {
-    const c = G.Tree.cheapest(id, st);
+    const c = G.Tree.cheapest(id, st, n => !BLOCK.includes(n.id));
     if (!c || !G.Tree.buy(id, st, c.node.id)) return;
   }
 }

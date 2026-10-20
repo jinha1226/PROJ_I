@@ -10,13 +10,14 @@ G.Fantasy = (() => {
   const D = G.D.F, U = G.U, GR = G.Grid;
   const tm = k => G.Tree.mul('fantasy', G.S.w.fantasy.tree, k);
   const ta = k => G.Tree.add('fantasy', G.S.w.fantasy.tree, k);
-  const MW = 40, MH = 26, REVIVE = 4, ALLY_REVIVE = 8, SMITE_CD = 0.6, SIGHT = 5, SONG_CD = 12, BLESS_CD = 15, WARP_CD = 15, DASH_CD = 5, SKIP_T = 30;
+  const MW = 40, MH = 26, REVIVE = 4, ALLY_REVIVE = 8, SMITE_CD = 0.6, SIGHT = 5, SONG_CD = 12, BLESS_CD = 15, WARP_CD = 15, DASH_CD = 5, SKIP_T = 20;
   // 구간별 오염: 초당 최대 체력의 몇 %
-  const CORRUPT = [0, 0.004, 0.008, 0.012, 0.016, 0.022];
+  const CORRUPT = [0, 0.01, 0.018, 0.026, 0.034, 0.042];
   const SKILLS = {
     heal: { n: '치유의 빛', t: 'fx_holy', cd: 30, need: 'sk_heal', who: 'cleric' },
     rage: { n: '전투 함성', t: 'r_dragon', cd: 40, need: 'sk_rage' },
     meteor: { n: '유성 낙하', t: 'fx_fire', cd: 25, need: 'sk_meteor', who: 'mage' },
+    assault: { n: '총공세', t: 'u_god', cd: 90, need: 'sk_assault' },
   };
   // 자동 편성 우선순위: 치유가 있어야 오염을 버티므로 수도사 먼저, 그다음 강한 순
   const AUTO = ['cleric', 'archmage', 'dragoon', 'paladin', 'mage', 'bard', 'archer'];
@@ -32,7 +33,7 @@ G.Fantasy = (() => {
     monHP: (fl, boss) => 10 * Math.pow(1.13, fl - 1) * (boss ? 8 : 1),
     monAtk: (fl, boss) => 1.6 * Math.pow(1.105, fl - 1) * (boss ? 2 : 1),
     monGold: (fl, boss) => 2 * Math.pow(1.14, fl - 1) * (boss ? 10 : 1),
-    floorEss: fl => 0.25 * Math.pow(fl, 1.3) * (F.isBoss(fl) ? 3 : 1),
+    floorEss: fl => 0.25 * Math.pow(fl, 1.3) * (F.isBoss(fl) ? 3 : 1) * tm('floorEss'),
 
     // ── 원정대 편성 ──
     slots: () => 3 + ta('slot'),
@@ -50,6 +51,8 @@ G.Fantasy = (() => {
       F.syncAllies(f);
     },
     setAuto(f, v) { f.autoParty = v; F.syncAllies(f); },
+    // 지금 맵에 나와 있어야 할 동료: 평소엔 편성, 총공세 중엔 열어 둔 전원
+    members: f => (f.buffs.assault ? [...F.lineup(f), ...F.roster().filter(id => !F.lineup(f).includes(id))] : F.lineup(f)),
     inParty: (rt, id) => rt.allies.some(a => a.id === id && !a.dead),
 
     dmgMult(f) {
@@ -59,6 +62,7 @@ G.Fantasy = (() => {
       if (G.synergy('syn_madblade')) m *= 1 + 1.5 * (1 - S.w.cthulhu.san / G.Cthulhu.maxSan(S.w.cthulhu));
       for (const k in f.buffs) {
         if (k === 'atk') m *= 1.5 + ta('songPow');
+        else if (k === 'assault') m *= 1 + ta('k_rally');
         else if (D.buffs[k] && D.buffs[k].dmg) m *= D.buffs[k].dmg;
       }
       return m;
@@ -108,7 +112,7 @@ G.Fantasy = (() => {
 
     // ── 층 만들기 ──
     boot(f) {
-      const rt = { fx: [], ents: [], mons: [], party: [], allies: [], chests: [], phase: 'explore', reviveT: 0, smiteCd: 0, stormT: 4, warpT: WARP_CD, focus: null, target: null, song: 0, floorT: 0 };
+      const rt = { fx: [], ents: [], mons: [], party: [], allies: [], chests: [], phase: 'explore', reviveT: 0, smiteCd: 0, charges: 1, smiteN: 0, stormT: 4, warpT: WARP_CD, focus: null, target: null, song: 0, floorT: 0 };
       F.newFloor(f, rt);
       return rt;
     },
@@ -131,7 +135,8 @@ G.Fantasy = (() => {
       Object.assign(hero, { x: st.cx, y: st.cy, max: F.heroHP(f), atkT: 0, dead: false, reviveT: 0 });
       hero.hp = hero.max;
       rt.hero = hero;
-      rt.allies = F.lineup(f).map((id, i) => F.newAlly(f, id, st.cx + (i % 3) - 1, st.cy + (i > 2 ? 1 : 0)));
+      rt.undying = false;
+      rt.allies = F.members(f).map((id, i) => F.newAlly(f, id, st.cx + (i % 3) - 1, st.cy + (i > 2 ? 1 : 0)));
       rt.party = [hero, ...rt.allies];
       const band = D.bands[F.band(fl)];
       const n = 10 + Math.min(12, Math.floor(fl / 4));
@@ -142,6 +147,11 @@ G.Fantasy = (() => {
       for (let i = 0; i < ta('g_chest'); i++) {
         const p = spot();
         if (p) rt.chests.push({ kind: 'obj', chest: true, t: 'x_chest', x: p[0], y: p[1], s: 0.9, mimic: ta('g_mimic') > 0 && U.chance(0.3) });
+      }
+      // 황금 고블린: 가끔 나타나 파티에게서 달아난다. 20초 안에 잡지 못하면 사라진다
+      if (ta('g_goblin') && U.chance(0.25)) {
+        const p = spot();
+        if (p) F.spawnMon(rt, fl, { n: '황금 고블린', t: 'm_ggoblin' }, p[0], p[1], false, { hp: F.monHP(fl) * 2, max: F.monHP(fl) * 2, atk: 0, gold: F.monGold(fl) * 30, flee: 20, label: '황금 고블린' });
       }
       rt.phase = 'explore';
       rt.focus = null;
@@ -173,7 +183,7 @@ G.Fantasy = (() => {
     },
     // 편성이 바뀌면(트리 구매·직접 편성) 지금 층에도 바로 반영: 빠진 동료는 돌아가고 새 동료가 기사 옆에 합류
     syncAllies(f) {
-      const rt = F.rt(f), want = F.lineup(f), h = rt.hero;
+      const rt = F.rt(f), want = F.members(f), h = rt.hero;
       const keep = rt.allies.filter(a => want.includes(a.id));
       for (const id of want) if (!keep.some(a => a.id === id)) {
         keep.push(F.newAlly(f, id, h.x, h.y));
@@ -202,17 +212,19 @@ G.Fantasy = (() => {
         if (big) G.fx(rt, { k: 'impact', x: m.x, y: m.y - 0.1, s: src === 'smite' ? 1.8 : 1.4, col: src === 'smite' ? '#d8f0ff' : '#fff3b0', t: 0.22 });
       }
       if (src === 'crit') G.J.sfx('fantasy', 'crit');
-      if (m.hp <= 0) F.kill(f, rt, m);
+      if (m.hp <= 0) F.kill(f, rt, m, src);
     },
     // 지속 피해(독·화상): 같은 종류는 새로 걸면 덮어쓴다
     dot(m, kind, dps, t) {
       const d = m.dots.find(x => x.kind === kind);
       if (d) { d.dps = Math.max(d.dps, dps); d.t = t; } else m.dots.push({ kind, dps, t });
     },
-    kill(f, rt, m) {
+    kill(f, rt, m, src) {
       let g = m.gold * F.goldMult(f);
       if (m.boss) g *= 1 + ta('g_boss');
       if (m.mimic) g *= 5;
+      if (src === 'smite' && ta('s_mark')) g *= 1.5;
+      if (ta('g_jack') && U.chance(0.03)) { g *= 5; G.fx(rt, { k: 'text', x: m.x, y: m.y - 1.6, s: '대박!', col: '#ffe08a', t: 1.3, sz: 1.4, pop: true }); G.J.sfx('fantasy', 'jackpot'); }
       F.gain(f, g);
       f.kills++;
       G.fx(rt, { k: 'die', spr: m.t, x: m.x, y: m.y, s: m.s, flip: m.flip, t: 0.45 });
@@ -286,13 +298,16 @@ G.Fantasy = (() => {
     // ── 벼락 (클릭·낙뢰 폭풍) ──
     click(f, x, y) {
       const rt = F.rt(f);
-      if (rt.phase === 'dead' || rt.smiteCd > 0) return false;
-      rt.smiteCd = F.smiteCd();
+      if (rt.phase === 'dead' || rt.charges <= 0) return false;
+      if (rt.charges-- >= 1 + ta('s_charge')) rt.smiteCd = F.smiteCd();
+      if (rt.smiteCd <= 0) rt.smiteCd = F.smiteCd();
       F.smite(f, rt, x, y, true);
       return true;
     },
     smite(f, rt, x, y, manual) {
-      const r = F.smiteR(), crit = U.chance(ta('s_crit')), dmg = F.smiteDmg(f) * (crit ? 3 : 1) * (manual ? 1 : 0.6);
+      const over = manual && ta('s_over') && ++rt.smiteN % 5 === 0;
+      const r = F.smiteR(), crit = U.chance(ta('s_crit')), dmg = F.smiteDmg(f) * (crit ? 3 : 1) * (manual ? 1 : 0.6) * (over ? 5 : 1);
+      if (over) G.fx(rt, { k: 'text', x, y: y - 1.5, s: '과충전!', col: '#ffe08a', t: 1, sz: 1.4, pop: true });
       G.fx(rt, { k: 'bolt', x, y, t: 0.35, col: crit ? '#ffe08a' : '#bfe8ff' });
       G.fx(rt, { k: 'ring', x, y, r, t: 0.35, col: '#bfe8ff' });
       G.J.sfx('fantasy', 'smite');
@@ -312,6 +327,7 @@ G.Fantasy = (() => {
     },
     zap(f, rt, m, dmg, from) {
       if (ta('s_shock')) m.shock = 4;
+      if (ta('s_stun')) m.stun = 1;
       F.hurt(f, rt, m, dmg, 'smite', from);
       if (m.hp > 0 && ta('s_exec') && m.hp < m.max * 0.2) { G.fx(rt, { k: 'text', x: m.x, y: m.y - 1.2, s: '심판', col: '#ffe08a', t: 1, pop: true }); F.hurt(f, rt, m, m.hp + 1, 'smite', from); }
     },
@@ -334,6 +350,13 @@ G.Fantasy = (() => {
         f.buffs.rage = 10;
         G.fx(rt, { k: 'ring', x: rt.hero.x, y: rt.hero.y, r: 2.5, t: 0.6, col: '#ff5a3a' });
         G.J.sfx('fantasy', 'chime');
+      } else if (id === 'assault') {
+        f.buffs.assault = 15 + ta('k_assault2');
+        F.syncAllies(f);
+        G.fx(rt, { k: 'ring', x: rt.hero.x, y: rt.hero.y, r: 4, t: 0.8, col: '#ffd24a' });
+        G.fx(rt, { k: 'text', x: rt.hero.x, y: rt.hero.y - 1.5, s: '총공세!', col: '#ffd24a', t: 1.5, sz: 1.5, pop: true });
+        G.J.finish('fantasy', rt.hero.x, rt.hero.y, 1.2);
+        G.J.sfx('fantasy', 'finish');
       } else if (id === 'meteor') {
         const tg = rt.focus || F.nearestMon(rt, rt.hero) || rt.hero;
         const x = tg.x, y = tg.y;
@@ -383,6 +406,13 @@ G.Fantasy = (() => {
       }
       p.hp -= dmg;
       if (p.hp > 0) return;
+      if (p === rt.hero && ta('k_undying') && !rt.undying) {
+        rt.undying = true;
+        p.hp = p.max * 0.3;
+        G.fx(rt, { k: 'text', x: p.x, y: p.y - 1.3, s: '불굴!', col: '#ffe08a', t: 1.3, sz: 1.3, pop: true });
+        G.J.sfx('fantasy', 'chime');
+        return;
+      }
       p.dead = true;
       p.reviveT = ALLY_REVIVE * (ta('c_revive') ? 0.5 : 1);
       if (rt.party.every(q => q.dead)) {
@@ -398,12 +428,14 @@ G.Fantasy = (() => {
     tick(f, dt) {
       const rt = F.rt(f);
       G.fxTick(rt, dt);
-      for (const k in f.buffs) if ((f.buffs[k] -= dt) <= 0) delete f.buffs[k];
+      for (const k in f.buffs) if ((f.buffs[k] -= dt) <= 0) { delete f.buffs[k]; if (k === 'assault') F.syncAllies(f); }
       for (const k in f.cds) if ((f.cds[k] -= dt) <= 0) delete f.cds[k];
-      if (rt.smiteCd > 0) rt.smiteCd -= dt;
+      const maxCh = 1 + ta('s_charge');
+      if (rt.charges < maxCh && (rt.smiteCd -= dt) <= 0) { rt.charges++; rt.smiteCd = rt.charges < maxCh ? F.smiteCd() : 0; }
       if (ta('autocast') && rt.phase !== 'dead') {
         if (rt.mons.length && F.canCast(f, 'rage')) F.cast(f, 'rage');
         if (rt.mons.length && F.canCast(f, 'meteor')) F.cast(f, 'meteor');
+        if (rt.mons.length >= 4 && F.canCast(f, 'assault')) F.cast(f, 'assault');
         const ph = F.partyHP(rt);
         if (ph.hp < ph.max * 0.5 && F.canCast(f, 'heal')) F.cast(f, 'heal');
       }
@@ -449,7 +481,7 @@ G.Fantasy = (() => {
       if (ta('s_storm') && rt.mons.length && (rt.stormT -= dt) <= 0) {
         rt.stormT = F.stormT();
         const near = rt.mons.filter(o => GR.dist(o, hero) < 8);
-        if (near.length) { const t = U.pick(near); F.smite(f, rt, t.x, t.y, false); }
+        for (let k = 0; k < (ta('s_storm3') ? 2 : 1) && near.length; k++) { const t = U.pick(near); F.smite(f, rt, t.x, t.y, false); }
       }
       // 시간 왜곡
       if (ta('a_warp') && F.inParty(rt, 'archmage') && rt.mons.length && (rt.warpT -= dt) <= 0) {
@@ -458,8 +490,16 @@ G.Fantasy = (() => {
       }
       // 몬스터: 가까이 오면 깨어나 가장 가까운 파티원을 쫓는다 (도발 중이면 성기사)
       const pal = ta('p_taunt') ? rt.allies.find(a => a.id === 'paladin' && !a.dead) : null;
-      for (const mo of rt.mons) {
+      for (const mo of [...rt.mons]) {
         mo.moving = false;
+        if (mo.stun > 0) { mo.stun -= dt; continue; }
+        if (mo.flee) {
+          // 황금 고블린: 파티 반대쪽으로 달아나다 시간이 다 되면 사라진다
+          if ((mo.flee -= dt) <= 0) { rt.mons = rt.mons.filter(o => o !== mo); F.refreshEnts(rt); G.fx(rt, { k: 'text', x: mo.x, y: mo.y - 1, s: '놓쳤다…', col: '#aaa', t: 1 }); continue; }
+          const dx = mo.x - hero.x, dy = mo.y - hero.y, l = Math.hypot(dx, dy) || 1;
+          if (l < 7) GR.moveTo(m, mo, U.clamp(Math.round(mo.x + dx / l * 3), 1, m.w - 2), U.clamp(Math.round(mo.y + dy / l * 3), 1, m.h - 2), 2.6, dt, 0.3);
+          continue;
+        }
         if (!mo.aggro && GR.dist(mo, hero) < (mo.boss ? 4 : 6)) mo.aggro = true;
         if (!mo.aggro) continue;
         let tg = pal && GR.dist(mo, pal) < 6 ? pal : null, bd = tg ? GR.dist(mo, tg) : 1e9;
@@ -488,7 +528,10 @@ G.Fantasy = (() => {
               G.fx(rt, { k: 'slash', x: target.x, y: target.y, t: 0.3, crit: c, rot: Math.random() - 0.5, flip: hero.x > target.x });
               G.J.lunge('fantasy', hero, target);
               if (!c) G.J.sfx('fantasy', 'tap');
-              F.hurt(f, rt, target, F.heroAtk(f) * (c ? F.critD() : 1), c ? 'crit' : 'hit', hero);
+              const dmg = F.heroAtk(f) * (c ? F.critD() : 1);
+              F.hurt(f, rt, target, dmg, c ? 'crit' : 'hit', hero);
+              if (ta('k_cleave')) { const o = rt.mons.find(q => q !== target && GR.dist(q, hero) < 1.8); if (o) F.hurt(f, rt, o, dmg * 0.5, 'hit', hero); }
+              if (ta('k_leech')) hero.hp = Math.min(hero.max, hero.hp + dmg * ta('k_leech'));
             }
           }
         } else if (chest) {

@@ -84,7 +84,14 @@
     N('allyHp', 0.5, 4.4, 'rage', 'rl_herb', '진형', '동료 체력 +20%', 15, 1500, 1.5, { allyHp: 0.2 }),
     N('allyAtk2', 0, 5.4, 'allyAtk1 allyHp', 'u_god', '영웅단', '동료 공격력 +35%', 25, 200000, 1.6, { allyAtk: 0.35 }),
     NOTE('autocast', 0, 6.4, 'allyAtk2', 'n_auto_build', '전투 본능', '기술을 재사용마다 알아서 쓴다', 200000, { autocast: 1 }),
-    N('slot', 0, 7.4, 'autocast', 'u_legend', '대원정', '출전 동료 +1', 2, 2e6, 40, { slot: 1 }),
+    N('slot', 0, 7.4, 'autocast', 'u_legend', '대원정', '출전 동료 +1 (최대 4명)', 1, 2e6, 1, { slot: 1 }),
+    NOTE('k_cleave', 2.8, 2.6, 'aspd1', 'w_waraxe', '휩쓸기', '기사 공격이 옆의 적에게도 50%', 3000, { k_cleave: 1 }),
+    N('k_leech', -2.9, 1.7, 'hp1', 'r_dragon', '흡혈', '기사가 준 피해의 2%만큼 회복', 5, 800, 1.9, { k_leech: 0.02 }),
+    NOTE('k_undying', -2.7, 5.7, 'hp3', 'u_armor', '불굴', '층마다 한 번, 기사가 쓰러질 때 체력 30%로 버틴다', 3e5, { k_undying: 1 }),
+    N('k_crit2', 2.8, 5.3, 'critd', 'g_dagger', '약점 간파', '기사 치명 +2%', 10, 2e5, 1.7, { crit: 0.02 }),
+    NOTE('k_assault', 0, 8.5, 'slot', 'u_god', '총공세', '기술: 열어 둔 동료 전원이 15초간 함께 싸운다 (90초)', 5e6, { sk_assault: 1 }),
+    N('k_assault2', 1.1, 9.4, 'k_assault', 'st_haste', '끝없는 진격', '총공세 지속 +3초', 5, 8e6, 2.2, { k_assault2: 3 }),
+    N('k_rally', -1.1, 9.4, 'k_assault', 'b_fury', '함성의 물결', '총공세 중 피해 +10%', 10, 8e6, 1.9, { k_rally: 0.1 }),
 
     // ── 동: 벼락 (클릭) ──
     N('smite1', 1.3, 0, 'root', 'n_auto_break', '벼락 일격', '벼락 피해 +30%', 20, 20, 1.45, { smite: 0.3 }),
@@ -97,6 +104,13 @@
     N('s_crit', 5.8, 0.7, 's_focus', 'g_dagger', '천둥 강타', '벼락 치명(×3) 확률 +8%', 5, 40000, 1.9, { s_crit: 0.08 }),
     NOTE('s_storm', 7, 0, 's_exec s_crit', 'fx_storm', '낙뢰 폭풍', '8초마다 근처 적에게 자동 벼락', 3e5, { s_storm: 1 }),
     N('s_storm2', 8.1, 0, 's_storm', 'fx_storm', '폭풍의 눈', '자동 벼락 간격 -12%', 5, 1e6, 2, { s_storm2: 0.12 }),
+    NOTE('s_stun', 3.6, -1.4, 'smiteR', 'a_seal', '기절', '벼락 맞은 적은 1초간 멈춘다', 2500, { s_stun: 1 }),
+    NOTE('s_charge', 3.6, 1.4, 's_cd', 'n_auto_break', '벼락 충전', '벼락을 2번까지 모아 연달아 쓴다', 2500, { s_charge: 1 }),
+    N('s_power2', 6.9, -1.4, 's_exec', 'a_thunder', '뇌신의 분노', '벼락 피해 +25%', 10, 2e5, 1.8, { smite: 0.25 }),
+    NOTE('s_over', 6.9, 1.4, 's_crit', 'fx_zap', '과충전', '5번째 벼락마다 피해 ×5', 1.5e5, { s_over: 1 }),
+    NOTE('s_mark', 8.1, -1.3, 's_storm', 'ui_gold', '번개 표식', '벼락으로 쓰러뜨린 적은 골드 ×1.5', 1.5e6, { s_mark: 1 }),
+    N('s_r2', 8.1, 1.3, 's_storm', 'a_thunder', '광역 낙뢰', '벼락 범위 +0.25칸', 4, 1.5e6, 2.2, { smiteR: 0.25 }),
+    NOTE('s_storm3', 9.3, 0, 's_storm2', 'fx_storm', '폭풍 쌍뢰', '자동 벼락이 2발씩 떨어진다', 5e6, { s_storm3: 1 }),
 
     // ── 서: 재화 ──
     N('gold1', -1.3, 0, 'root', 'ui_gold', '약탈', '골드 +15%', 15, 25, 1.5, { gold: 0.15 }),
@@ -106,9 +120,16 @@
     N('g_chest', -4.7, -0.7, 'gold2', 'x_chest', '보물상자', '층마다 보물상자 +1', 3, 2000, 4, { g_chest: 1 }),
     NOTE('g_mimic', -5.8, -1.3, 'g_chest', 'm_mimic', '미믹 사냥', '상자 30%가 미믹: 잡으면 골드 ×5', 20000, { g_mimic: 1 }),
     N('g_lucky', -6.9, -0.7, 'g_chest', 'x_chest', '행운의 열쇠', '상자 골드 +50%', 10, 30000, 1.7, { g_lucky: 0.5 }),
-    NOTE('g_skip', -4.7, 0.7, 'gold2', 'f_stairs', '층 도약', '30초 안에 층을 정리하면 한 층 더 내려간다', 15000, { g_skip: 1 }),
+    NOTE('g_skip', -4.7, 0.7, 'gold2', 'f_stairs', '층 도약', '20초 안에 층을 정리하면 한 층 더 내려간다', 1.5e5, { g_skip: 1 }),
     N('essf', -5.8, 0.9, 'g_skip', 'ui_ess', '심연의 기운', '이 세계의 정수 +15%', 10, 50000, 1.9, { ess: 0.15 }),
-  ], { get: () => S().w.fantasy.gold, spend: n => { S().w.fantasy.gold -= n; }, tile: 'ui_gold', name: '골드' });
+    N('g_kill', -3.6, -1.4, 'speed1', 'u_sword', '전리품', '처치 골드 +10%', 10, 1500, 1.6, { gold: 0.1 }),
+    NOTE('g_jack', -3.6, 1.4, 'g_boss', 'b_gold', '대박', '처치의 3%는 골드 ×5', 4000, { g_jack: 1 }),
+    NOTE('g_goblin', -6.9, -1.9, 'g_mimic', 'm_ggoblin', '황금 고블린', '층마다 25% 확률로 나타나 달아난다 · 잡으면 골드 ×30', 2e5, { g_goblin: 1 }),
+    N('g_bargain', -6.9, 0.3, 'g_lucky g_skip', 'ui_gold', '흥정', '이 트리 비용 -3%', 10, 1e5, 1.8, { g_bargain: 0.03 }),
+    N('g_floor', -4.7, 1.9, 'g_skip', 'f_stairs', '층 보상', '층을 내려갈 때 정수 +10%', 10, 2e5, 1.9, { floorEss: 0.1 }),
+    N('ess2', -8, 0.9, 'essf g_bargain', 'ui_ess', '심연의 정수', '이 세계의 정수 +25%', 10, 1e6, 2, { ess: 0.25 }),
+  ], { get: () => S().w.fantasy.gold, spend: n => { S().w.fantasy.gold -= n; }, tile: 'ui_gold', name: '골드' },
+  { costMul: st => Math.max(0.5, 1 - G.Tree.add('fantasy', st, 'g_bargain')) });
 
   // ───── 무협 (깨달음: 회귀해도 남는다) ─────
   G.Tree.define('wuxia', [

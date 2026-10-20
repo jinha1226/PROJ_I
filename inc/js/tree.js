@@ -59,7 +59,8 @@ G.Tree = {
   cost(id, st, nid) {
     const n = G.Tree.idx[id][nid];
     if (n.costFn) return n.costFn();
-    return n.base * Math.pow(n.g || 1, G.Tree.lv(st, nid));
+    const cm = G.Tree.opts[id] && G.Tree.opts[id].costMul;
+    return n.base * Math.pow(n.g || 1, G.Tree.lv(st, nid)) * (cm ? cm(st) : 1);
   },
   maxed: (id, st, nid) => G.Tree.lv(st, nid) >= (G.Tree.idx[id][nid].max || 1),
   // 살 수 있는 위치인가 (부모 조건)
