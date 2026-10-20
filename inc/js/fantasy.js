@@ -176,15 +176,19 @@ G.Fantasy = (() => {
     inView(rt, x, y) {
       return rt.party.some(p => !p.dead && (p.x - x) ** 2 + (p.y - y) ** 2 <= SIGHT * SIGHT && GR.los(rt.map, p.x, p.y, x, y));
     },
-    // 기사 시야 안의 칸을 본 칸으로
+    // 살아 있는 파티원 모두의 시야 안 칸을 본 칸으로 (기사가 쓰러져도 동료가 보는 곳은 밝다)
     look(rt) {
-      const m = rt.map, hx = Math.round(rt.hero.x), hy = Math.round(rt.hero.y);
+      const m = rt.map;
       let added = false;
-      for (let y = hy - SIGHT; y <= hy + SIGHT; y++) for (let x = hx - SIGHT; x <= hx + SIGHT; x++) {
-        if (x < 0 || y < 0 || x >= m.w || y >= m.h || (x - hx) ** 2 + (y - hy) ** 2 > SIGHT * SIGHT) continue;
-        if (!GR.los(m, hx, hy, x, y)) continue;
-        const i = y * m.w + x;
-        if (!rt.seen[i]) { rt.seen[i] = 1; added = true; }
+      for (const p of rt.party) {
+        if (p.dead) continue;
+        const hx = Math.round(p.x), hy = Math.round(p.y);
+        for (let y = hy - SIGHT; y <= hy + SIGHT; y++) for (let x = hx - SIGHT; x <= hx + SIGHT; x++) {
+          if (x < 0 || y < 0 || x >= m.w || y >= m.h || (x - hx) ** 2 + (y - hy) ** 2 > SIGHT * SIGHT) continue;
+          const i = y * m.w + x;
+          if (rt.seen[i] || !GR.los(m, hx, hy, x, y)) continue;
+          rt.seen[i] = 1; added = true;
+        }
       }
       if (added) rt.seenVer++;
     },
@@ -557,8 +561,8 @@ G.Fantasy = (() => {
           F.descend(f, rt);
           return;
         }
-        F.look(rt);
       }
+      F.look(rt);
       // 동료: 기사를 따라다니며 각자 싸운다
       for (const a of rt.allies) {
         a.moving = false;
@@ -643,7 +647,7 @@ G.Fantasy = (() => {
       if (m._band !== b) { m._band = b; m.ver++; }
       return {
         map: m, ents: rt.ents, fx: rt.fx, cam: rt.hero.dead ? rt.party.find(p => !p.dead) || rt.hero : rt.hero, viewH: 13, dimAll: rt.phase === 'dead',
-        fog: { seen: rt.seen, ver: rt.seenVer, light: rt.hero },
+        fog: { seen: rt.seen, ver: rt.seenVer, light: rt.hero.dead ? rt.party.find(p => !p.dead) || rt.hero : rt.hero },
         mini: { seen: rt.seen, ver: rt.seenVer, end: m.end, party: rt.party, mons: rt.mons },
         terrain(x, y) {
           const c = m.c[y * m.w + x];

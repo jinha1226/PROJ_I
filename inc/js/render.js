@@ -353,7 +353,7 @@ G.MapView = function (canvas, id) {
     ctx.imageSmoothingEnabled = false;
     if (fg.light) {
       const lx = sx(fg.light._rx ?? fg.light.x), ly = sy(fg.light._ry ?? fg.light.y);
-      const g = ctx.createRadialGradient(lx, ly, TS * 3, lx, ly, TS * 9);
+      const g = ctx.createRadialGradient(lx, ly, TS * 4, lx, ly, TS * 11);
       g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.5)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     }

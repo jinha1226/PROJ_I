@@ -655,3 +655,30 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .pf-top .fpop { left: 0; bottom: 52px; }
   .minis { max-width: 180px; }
 }
+
+/* 판타지 HUD 2: 위 가운데 원정대 체력 막대 + 오염 피해, 능력치 한 줄, 초상 옆 버프 */
+.ftop { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; pointer-events: auto; text-shadow: 0 1px 3px #000; }
+.php { position: relative; width: 340px; }
+.php .bar { height: 16px; border: 1px solid #000; box-shadow: 0 0 0 1px #c9b48a88, 0 2px 6px #000c; }
+.php-t { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-variant-numeric: tabular-nums; }
+.ftop .corr { display: inline; margin: 0; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.fhud .minis { flex-wrap: nowrap; max-width: none; gap: 8px; margin-top: 3px; }
+.fhud .mini, .fbuffs .buff { pointer-events: auto; }
+.fleft { position: absolute; left: 10px; bottom: 12px; display: flex; align-items: flex-end; gap: 6px; }
+.fleft .pframes { position: static; }
+.fbuffs { display: flex; flex-direction: column-reverse; gap: 4px; margin-bottom: 14px; }
+/* 바로 뜨는 말풍선 (마우스를 올리면) */
+[data-tip] { position: relative; }
+[data-tip]:hover::after { content: attr(data-tip); position: absolute; left: 0; top: calc(100% + 4px); z-index: 40; white-space: nowrap;
+  background: #000e; border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 500; color: var(--text); text-shadow: none; pointer-events: none; }
+.fbuffs [data-tip]:hover::after { left: calc(100% + 6px); top: 50%; transform: translateY(-50%); }
+.ftop [data-tip]:hover::after { left: auto; right: 0; }
+@media (max-width: 760px) {
+  .ftop { left: 8px; right: 124px; top: 46px; transform: none; gap: 4px; }
+  .ftop .corr { font-size: 11px; }
+  .php { flex: 1; width: auto; }
+  .fhud .minis { position: absolute; top: 76px; left: 0; gap: 6px; }
+  .fhud .hud-sub { display: none; }
+  .fleft { left: 8px; bottom: 8px; flex-direction: column-reverse; align-items: flex-start; }
+  .fbuffs { flex-direction: row; margin: 0; }
+}

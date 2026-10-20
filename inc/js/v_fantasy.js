@@ -1,6 +1,7 @@
 'use strict';
 // 판타지 화면: 옆 대시보드 없이 전부 맵 위에 (파티 게임 UI — Baldur's Gate 3·Divinity의 왼쪽 초상 줄, 아래 기술 줄)
-//  왼쪽 위: 층 이동·자동 하강, 원정대 합산 체력, 그 아래 작은 능력치 줄, 오염·버프 / 왼쪽: 편성 단추 + 파티 초상(체력·쓰러짐) / 아래: 기술
+//  왼쪽 위: 층 이동·자동 하강, 능력치 한 줄 / 위 가운데: 원정대 합산 체력(제한 시간처럼 줄어드는 막대) + 오른쪽에 오염 피해
+//  왼쪽: 편성 단추 + 파티 초상(체력·쓰러짐), 그 오른쪽에 버프 / 아래: 기술
 //  오른쪽 아래 스킬트리 단추는 세계 화면 틀(v_world)이 단다
 G.UI.views.fantasy = function () {
   const f = () => G.S.w.fantasy, F = G.Fantasy, D = G.D.F, U = G.U;
@@ -11,15 +12,18 @@ G.UI.views.fantasy = function () {
   const next = h('button.fbtn', { on: { click: () => F.goto(f(), f().floor + 1) } }, '▶');
   const auto = G.UI.toggle('⤓', () => f().auto, v => { f().auto = v; }, '자동 하강');
   auto.el.classList.add('fbtn');
-  const hudHp = G.UI.meter(''), corrEl = h('small.corr'), buffEl = h('div.buffs');
-  // 파티 능력치: 아이콘 + 숫자, 합산 체력 바로 아래 작게
+  // 파티 능력치: 아이콘 + 숫자 한 줄, 올리면 뜻이 뜬다
   const stats = {};
-  const statEl = h('div.minis', null, [['dps', 'u_sword', '파티 초당 피해'], ['aspd', 'st_haste', '공격 속도'], ['crit', 'g_dagger', '기사 치명'], ['smite', 'a_thunder', '벼락'], ['gold', 'ui_gold', '골드 배율'], ['matk', 'm_rat', '적 공격']]
-    .map(([k, t, l]) => h('span.mini', { title: l }, k === 'matk' ? (stats.matkIc = G.T.el(t, 'xs')) : G.T.el(t, 'xs'), stats[k] = h('b'))));
+  const statEl = h('div.minis', null, [['dps', 'u_sword', '파티 초당 피해'], ['aspd', 'st_haste', '공격 속도 (초당 공격)'], ['crit', 'g_dagger', '기사 치명 확률'], ['smite', 'a_thunder', '벼락 피해'], ['gold', 'ui_gold', '골드 배율'], ['matk', 'm_rat', '이 층 적의 공격력']]
+    .map(([k, t, l]) => h('span.mini', { 'data-tip': l }, k === 'matk' ? (stats.matkIc = G.T.el(t, 'xs')) : G.T.el(t, 'xs'), stats[k] = h('b'))));
   const hud = h('div.fhud', null,
     h('div.floorrow', null, prev, floorEl, next, auto.el),
     h('div.hud-sub', null, hudMon, hudLeft, maxEl),
-    h('div.hud-hp', null, hudHp.el), statEl, corrEl, buffEl);
+    statEl);
+  // ── 위 가운데: 원정대 체력 (다 닳면 전멸) + 오염 피해
+  const hpBar = bar('hp'), hpTxt = h('b.php-t'), corrEl = h('span.corr', { 'data-tip': '던전 오염: 깊을수록 초당 최대 체력의 일정 비율이 깎인다' });
+  const top = h('div.ftop', null, h('div.php', null, hpBar, hpTxt), corrEl);
+  const buffEl = h('div.fbuffs');
 
   // ── 기술 단축 버튼
   const skillBtns = Object.entries(F.SKILLS).map(([id, sk]) => {
@@ -68,7 +72,7 @@ G.UI.views.fantasy = function () {
   const partyBtn = h('button.fbtn.pbtn', { title: '편성', on: { click: e => { e.stopPropagation(); open = !open; tog(pop, 'hidden', !open); tog(partyBtn, 'on', open); } } }, '⇄');
   frames.append(h('div.pf-top', null, partyBtn, pop));
 
-  const overlay = h('div.fover', null, hud, frames);
+  const overlay = h('div.fover', null, hud, top, h('div.fleft', null, frames, buffEl));
   let buffKey = '';
   return G.UI.worldScreen('fantasy', {
     overlay, hotbar,
@@ -81,15 +85,18 @@ G.UI.views.fantasy = function () {
       G.T.set(hudMon, band.mons[0].t);
       setText(hudLeft, rt.phase === 'dead' ? ` 전멸 · ${Math.ceil(rt.reviveT)}` : ` ${rt.mons.length}`);
       setText(maxEl, ` · 최고 ${s.maxFloor}`);
-      hudHp.set(ph.hp / ph.max, `${U.fmt(ph.hp)} / ${U.fmt(ph.max)}`);
-      tog(hudHp.bar, 'low', ph.hp / ph.max < 0.3);
-      setText(corrEl, corr > 0 ? `☣ -${(corr * 100).toFixed(1)}%/초` : '');
+      setW(hpBar.fill, ph.hp / ph.max);
+      tog(hpBar, 'low', ph.hp / ph.max < 0.3);
+      setText(hpTxt, `${U.fmt(Math.max(0, ph.hp))} / ${U.fmt(ph.max)}`);
+      // 오염 피해: 살아 있는 파티원 최대 체력 합 × 비율 (초당)
+      const alive = rt.party.reduce((a, p) => a + (p.dead ? 0 : p.max || 0), 0);
+      setText(corrEl, corr > 0 ? `☣ -${U.fmt(alive * corr)}/초` : '');
       // 지금 걸린 버프: 아이콘 + 남은 초
       const bk = Object.keys(s.buffs).filter(k => D.buffs[k]).join();
       if (bk !== buffKey) {
         buffKey = bk;
         buffEl.innerHTML = '';
-        for (const k of bk ? bk.split(',') : []) buffEl.append(h('span.buff', { title: `${D.buffs[k].n} · ${D.buffs[k].d}`, 'data-k': k, style: `--bc:${D.buffs[k].col}` }, G.T.el(D.buffs[k].t, 'xs'), h('small')));
+        for (const k of bk ? bk.split(',') : []) buffEl.append(h('span.buff', { 'data-tip': `${D.buffs[k].n} · ${D.buffs[k].d}`, 'data-k': k, style: `--bc:${D.buffs[k].col}` }, G.T.el(D.buffs[k].t, 'xs'), h('small')));
       }
       for (const el of buffEl.children) setText(el.lastChild, Math.ceil(s.buffs[el.dataset.k] || 0));
       for (const x of skillBtns) {
