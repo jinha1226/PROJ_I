@@ -907,3 +907,39 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .lrow.rrow.on { border-color: var(--accent); }
 
 .ocard .om small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── 무협 3: 활동 이득 줄, 아래 가운데 지위·무공·특산, 게임 화면 위 큰 판 ── */
+.fhud .gain { color: #ffe08a; font-size: 12px; }
+.fhud .minis { flex-wrap: nowrap; gap: 10px; margin-top: 2px; }
+.wtabs2 { gap: 6px; }
+.wtabbtn { display: flex; align-items: center; gap: 6px; min-width: 150px; padding: 4px 10px 4px 6px; border-radius: 12px; background: #000c; border: 1px solid #ffffff2a; color: var(--text); text-align: left; }
+.wtabbtn span { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.wtabbtn b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wtabbtn small { font-size: 11px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wtabbtn.on { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+.wpanel { position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%); width: min(640px, calc(100% - 40px)); max-height: 66%; display: flex; flex-direction: column;
+  background: #0b0a08ee; border: 1px solid var(--accent); border-radius: 14px; box-shadow: 0 10px 40px #000; pointer-events: auto; z-index: 15; }
+.wpanel-h { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 15px; }
+.wpanel-b { overflow-y: auto; padding: 10px 12px; }
+.olist.wide { width: auto; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 8px; }
+.shop.wide { width: auto; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.tgls.paths .pathbtn.on { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.tgls.paths .pathbtn.fixed { opacity: .35; }
+.wuxia .fleft .pf-top .fpop { width: 270px; }
+/* 강호 지도: 윤곽 높이로 자르고 여정 글씨는 지도 위 오른쪽 아래에 */
+.jbox { padding: 3px; }
+.jtrip { position: absolute; right: 6px; bottom: 3px; padding: 0; text-shadow: 0 1px 2px #000; }
+@media (max-width: 760px) {
+  .wtabbtn { min-width: 0; flex: 1; padding: 3px 6px; }
+  .wtabbtn .tl { width: 26px; height: 26px; }
+  .wtabs2 { left: 8px; right: 64px; transform: none; bottom: 8px; }
+  .olist.wide { grid-template-columns: 1fr; }
+  .wpanel { top: 50%; max-height: 70%; }
+  .wuxia .fleft { top: auto; bottom: 64px; }
+}
+.wpanel { z-index: 30; }
+.fover.travel .jtrip { display: none; }
+@media (max-width: 760px) {
+  .wuxia .fover .fhud .minis { position: static; width: auto; flex-wrap: wrap; }
+  .wuxia .fover .fhud { margin-right: 132px; }
+}

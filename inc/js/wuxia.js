@@ -3,7 +3,7 @@
 // 강호는 지역(화음현·화산·낙양·십만대산·천산)마다 타일 지도 하나. 주인공은 한 지역에 머물며
 // 그 지역의 활동(일·문파 임무·원정·비무·천하제일 비무)과 수련터(그 지역 무공)를 번갈아 오간다. 1년은 8초.
 // 명성: 쓰는 돈(w.gold)이자, 이번 생에 쌓은 양(w.fameT)이 지위(점소이 … 매화검선·천마신)를 정한다 — 써도 지위는 안 내려간다.
-// 지위마다 녹봉(초당 명성)과 숙련 보너스. 점소이·표사·낭인 다음 화산·마교로 갈린다(w.path).
+// 지위마다 녹봉(초당 명성)과 숙련 보너스. 점소이·표사·낭인 다음 정파(화산)·사파(녹림)·마교(십만대산)로 갈린다(w.path).
 // 무공 레벨 합이 경지(삼류 … 생사경). 다른 지역으로 가면 강호로 나가 여정 — 세월이 흐른다(경공·경지로 줄인다).
 // 천수가 다하면 회귀: 전생 최고 무공 레벨이 다음 생의 숙련 속도, 이번 생의 업적이 「깨달음」(스킬트리).
 G.RT = G.RT || {};
@@ -99,6 +99,7 @@ G.Wuxia = (() => {
       if (w.items.manor) m *= 2;
       if (w.items.daehwan) m *= 1.5;
       if (w.items.hyeoldan) m *= 1.6;
+      if (w.items.taegukbi) m *= 1.5;
       return m * (1 + (0.1 + ta('elixEff')) * w.elix);
     },
     skillXp(w, id) {
@@ -110,7 +111,8 @@ G.Wuxia = (() => {
       const j = jobDef(w.job);
       let m = j.inc * (1 + 0.01 * W.eff(w, 'fame')) * G.globalMult() * (1 + G.relicVal('w_gold')) * tm('fame') * tm('stipend');
       if (w.items.sword) m *= 1.5;
-      if (ta('ma_dom')) m *= 1.5;
+      if (w.items.nokbo) m *= 1.5;
+      m *= 1 + 0.5 * W.pathNote(w, 'dom');
       return m;
     },
     income: w => W.stipend(w),
@@ -123,6 +125,7 @@ G.Wuxia = (() => {
       if (w.items.pill) y += 8;
       if (w.items.daehwan) y += 15;
       if (w.items.hyeoldan) y -= 1;
+      if (w.items.dokryong) y += 3;
       if (G.synergy('syn_marrow')) y += 5 * G.S.w.xianxia.realm;
       return Math.max(W.startAge() + 10, y);
     },
@@ -133,11 +136,13 @@ G.Wuxia = (() => {
       return s;
     },
     // 경지마다 전투력 +30%. 화산 「매화개화」: 화산 진로면 ×1.3
-    power: w => (3 + W.eff(w, 'pow')) * (1 + 0.3 * W.realm(w)) * tm('combat') * G.globalMult() * (ta('hw_plum') && W.pathOf(w) === 'jeong' ? 1.3 : 1),
+    power: w => (3 + W.eff(w, 'pow')) * (1 + 0.3 * W.realm(w)) * tm('combat') * G.globalMult() * (w.items.dokryong ? 1.5 : 1) * (1 + 0.3 * W.pathNote(w, 'plum')),
     maxHp: w => (40 + W.eff(w, 'hp')) * tm('combat') * tm('hp') * G.globalMult(),
     atkCd: () => 0.7 / (1 + 0.3 * ta('oe_combo')),
     jobIdx: w => jobDef(w.job).tier,
     pathOf: w => jobDef(w.job).path || w.path,
+    // 진로 전용 트리 노드: 지금 진로의 것만 켜진다 (예: 'plum' → 정파 jeong_plum · 사파 sa_plum · 마교 ma_plum)
+    pathNote: (w, k) => ta(W.pathOf(w) + '_' + k),
     // 무공을 이 지역에서 익힐 수 있는 장소 (없으면 null)
     skillAt: (s, region) => (s.at.find(a => a[0] === region) || [])[1] || null,
     reqMet(w, def) {
@@ -293,9 +298,10 @@ G.Wuxia = (() => {
     // kind: bandit(화음현 산적) · raid(적 본산 문도) · duel(비무대 고수) · boss(천하제일 비무)
     spawnFoe(w, rt, kind, x, y) {
       const P = W.power(w), H = W.maxHp(w), region = rt.region;
-      const art = kind === 'raid' ? (region === 'hwasan' ? 'wx_hero3' : 'wx_mhero4') : kind === 'duel' ? 'wx_hero' + (2 + U.rand(5)) : kind === 'boss' ? 'wx_mhero8' : 'wx_bandit' + U.rand(2);
+      const RAID = { hwasan: 'wx_hero3', sipman: 'wx_mhero4', noklim: 'wx_shero3', wudang: 'wx_hero5' };
+      const art = kind === 'raid' ? RAID[region] || 'wx_bandit0' : kind === 'duel' ? 'wx_hero' + (2 + U.rand(5)) : kind === 'boss' ? 'wx_mhero8' : 'wx_bandit' + U.rand(2);
       const st = {
-        bandit: [P * 6, H / 14], raid: [P * 7 * (ta('ma_fear') && W.pathOf(w) === 'ma' ? 0.7 : 1), H / 12],
+        bandit: [P * 6, H / 14], raid: [P * 7 * (1 - 0.3 * W.pathNote(w, 'fear')), H / 12],
         duel: [P * 14, H / 9], boss: [P * 12 * Math.pow(0.85, ta('gh_boss')), H / 16],
       }[kind];
       const f = { kind: 'mon', foe: kind, t: 'wx_bandit0', art, wpn: kind === 'bandit' ? 'w_knife' : 'w_katana', x, y, s: kind === 'boss' ? 1.25 : 1, hp: st[0], max: st[0], atk: st[1], bar: true, goal: null, atkT: 1, aggro: kind !== 'bandit', label: kind === 'boss' ? '천하제일 고수' : null };
@@ -310,7 +316,7 @@ G.Wuxia = (() => {
         g = s * 8 * tm('bounty') * (ta('gh_hero') ? 3 : 1);
         W.gain(w, w.skill, 20 * (W.jobIdx(w) + 1) * tm('bounty'));
       } else if (f.foe === 'raid') {
-        g = s * 20 * tm('raid') * (ta('ma_blood') && W.pathOf(w) === 'ma' ? 2 : 1) * (ta('hw_purge') && W.pathOf(w) === 'jeong' ? 2 : 1);
+        g = s * 20 * tm('raid') * (1 + W.pathNote(w, 'blood'));
         W.gainIns(w, 0.03);
       } else if (f.foe === 'duel') {
         g = s * 60 * tm('duel');
@@ -330,7 +336,7 @@ G.Wuxia = (() => {
       G.fxTick(rt, dt);
       const jd0 = jobDef(w.job);
       h.t = D.outfits[jd0.tier];
-      h.art = (jd0.path === 'ma' ? 'wx_mhero' : 'wx_hero') + jd0.tier;
+      h.art = ({ ma: 'wx_mhero', sa: 'wx_shero' }[jd0.path] || 'wx_hero') + jd0.tier;
       h.wpn = jd0.tier >= 2 ? (jd0.tier >= 6 ? 'w_duel' : 'w_katana') : null;
       h.moving = false;
       if (w.dead) {
@@ -342,7 +348,7 @@ G.Wuxia = (() => {
       w.age += dt / YEAR;
       // 녹봉: 늘 들어온다(일터에서는 그 지역 일 배수로, 그 밖에서는 절반)
       const a = W.act(w, rt.region), atWork = !rt.travel && w.mode === 'work' && a.kind === 'work' && rt.stay > 0;
-      const home = a.kind === 'work' && ta('hw_sect') && jd0.home === rt.region ? 2 : 1;
+      const home = a.kind === 'work' && W.pathNote(w, 'sect') && jd0.home === rt.region ? 2 : 1;
       W.addFame(w, W.stipend(w) * dt * (atWork ? a.mult * tm('work') * home : 0.5));
       // 지위: 쌓은 명성·경지가 차면 오른다
       for (let nx = W.nextJob(w); nx && W.rankOk(w, nx); nx = W.nextJob(w)) {

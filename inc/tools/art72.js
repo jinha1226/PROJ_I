@@ -218,6 +218,14 @@ const SPEC = {
       wx_mhero7: M({ robe: ['#2b2b33', '#c0392b'], collar: '#facb3e' }),   // 교주: 흑포, 붉은 띠, 금 깃
       wx_mhero8: M({ robe: ['#c0392b', '#222222'], collar: '#2b2b33' }),   // 천하제일마: 붉은 장포
       wx_mhero9: M({ robe: ['#1a1a1f', '#7a2420'], collar: '#ff5a3a' }),   // 천마신: 칠흑, 불꽃 깃
+      // 사파 진로(녹림): 같은 사람, 흙빛·녹색 산적 옷
+      wx_shero3: M({ robe: ['#6a5a3a', '#3a2e22'], collar: '#4ba747', band: '#3d734f' }),   // 녹림 졸개
+      wx_shero4: M({ robe: ['#5a4632', '#2b2b33'], collar: '#4ba747', band: '#c0392b' }),   // 두목
+      wx_shero5: M({ robe: ['#3d734f', '#2c5240'], collar: '#facb3e' }),                    // 채주: 녹포
+      wx_shero6: M({ robe: ['#2c5240', '#222222'], collar: '#c0392b', band: '#facb3e' }),   // 총표파자
+      wx_shero7: M({ robe: ['#4a3a20', '#d9a62e'], collar: '#4ba747' }),                    // 사도련주
+      wx_shero8: M({ robe: ['#2b2b33', '#4ba747'], collar: '#facb3e' }),                    // 천하제일도
+      wx_shero9: M({ robe: ['#1f3a2a', '#facb3e'], collar: '#97da3f' }),                    // 사왕
       wx_vil_m: M({ robe: ['#5b7fa0', '#3e5670'], collar: '#c8c2b0' }),
       wx_vil_f: F({ robe: ['#d77fa0', '#a3506e'], collar: '#e8e2d0', ribbon: '#c0392b' }),
       wx_merchant: M({ robe: ['#4a6a8a', '#2e4560'], collar: '#facb3e', hat: 'crown' }),

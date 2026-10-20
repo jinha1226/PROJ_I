@@ -174,6 +174,14 @@ G.deserialize = function (json) {
     wx.tree = G.Tree.init('wuxia');
     wx.ins += back;
   }
+  // 두 갈래(화산·마교) 트리 때 저장(hw1 노드가 있다): 그때 쓴 깨달음을 돌려주고 비운다 (세 갈래로 바뀌며 노드 비용이 달라졌다)
+  const V2 = {'path': [2, 1.78], 'hw1': [4, 1.78], 'hw_work': [8, 1.91], 'hw_naegong': [10, 1.91], 'hw_sect': [120, 1], 'hw_geom': [25, 1.91], 'hw_plum': [300, 1], 'hw_combat': [60, 2.04], 'hw_purge': [800, 1], 'hw_raid': [1500, 2.17], 'hw_sword': [2500, 1], 'hw_qi': [2500, 1], 'hw_life': [400, 2.56], 'hw_top': [8000, 2.3], 'ma1': [4, 1.78], 'ma_work': [8, 1.91], 'ma_cheonma': [10, 1.91], 'ma_free': [120, 1], 'ma_geom': [25, 1.91], 'ma_fear': [300, 1], 'ma_combat': [60, 2.04], 'ma_blood': [800, 1], 'ma_raid': [1500, 2.17], 'ma_kill': [2500, 1], 'ma_dom': [2500, 1], 'ma_hp': [400, 2.04], 'ma_top': [8000, 2.3], 'mu': [1, 1.585], 'realm1': [30, 2.17], 'realm2': [600, 1], 'sim1': [3, 1.65], 'sim2': [50, 2.04], 'sim_cycle': [400, 1], 'sim_hp': [120, 2.04], 'oe1': [3, 1.65], 'oe2': [40, 2.04], 'oe_combo': [400, 1], 'oe3': [120, 2.04], 'gg1': [40, 1.91], 'gg2': [100, 2.04], 'gg_fly': [900, 1], 'jh1': [40, 1.91], 'yang': [60, 1], 'jh_med': [900, 1], 'magong': [700, 1], 'mu_in': [3000, 1], 'mu_out': [3000, 1], 'mu_top': [6000, 2.3], 'twin': [20, 2.3], 'elix1': [25, 2.04], 'reg': [1, 1.715], 'life1': [3, 1.91], 'young': [10, 2.69], 'ins1': [20, 2.04], 'reg_rank': [150, 1], 'reg_rank2': [2500, 1], 'head': [30, 2.17], 'peak2': [300, 2.17], 'life2': [250, 2.56], 'reg_soul': [4000, 1], 'reg_fast': [3000, 1], 'reg_long': [3000, 1], 'essw': [200, 2.17], 'essw2': [5000, 2.3], 'reg_top': [12000, 2.3], 'ins2': [600, 2.17], 'young2': [200, 2.82], 'rankEase': [100, 2.17], 'gh': [1, 1.65], 'stip1': [3, 1.78], 'walk': [4, 2.04], 'bounty': [15, 2.04], 'gh_hero': [400, 1], 'gh_merchant': [400, 1], 'shop1': [30, 2.17], 'duel1': [60, 2.04], 'gh_duelist': [700, 1], 'raid1': [600, 2.17], 'combat_gh': [150, 2.04], 'boss1': [1500, 2.56], 'boss2': [4000, 2.3], 'walk2': [200, 2.17], 'fame2': [3000, 2.3], 'stip2': [2000, 2.3], 'gh_legend': [9000, 1], 'work2': [120, 2.04], 'hp_gh': [250, 2.04], 'gh_top': [15000, 2.3], 'hw_stip': [300, 2.17], 'hw_realm': [1200, 2.56], 'ma_stip': [300, 2.17], 'ma_life': [1200, 2.56], 'sim3': [2000, 2.3], 'oe4': [2000, 2.3], 'gg3': [2500, 2.3], 'jh2': [2500, 2.3], 'life3': [3000, 2.69], 'ins3': [4000, 2.3], 'shop2': [500, 2.82]};
+  if (wx.tree && wx.tree.hw1 != null) {
+    let back = 0;
+    for (const [k, [b, g]] of Object.entries(V2)) for (let i = 0; i < (wx.tree[k] || 0); i++) back += b * Math.pow(g, i);
+    wx.tree = G.Tree.init('wuxia');
+    wx.ins += back;
+  }
   if (!data.w || !data.w.wuxia || data.w.wuxia.fameT == null) { const j = G.D.WX.jobs.find(x => x.id === wx.job) || G.D.WX.jobs[0]; wx.job = j.id; wx.fameT = j.fame; }
   G.RT = {};
   return G.S;
