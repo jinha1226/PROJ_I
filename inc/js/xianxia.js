@@ -177,9 +177,11 @@ G.Xianxia = (() => {
       G.J.sfx('xianxia', power ? 'sword' : 'tap');
       for (const o of hit) {
         G.fx(rt, { k: 'proj', key: 'fx_sword', x: from.x, y: from.y, x2: o.x, y2: o.y, t: 0.25 });
-        X.hurt(x, rt, o, dmg, power ? 0.45 : 0, from);
+        G.fx(rt, { k: 'beam', x: from.x, y: from.y, x2: o.x, y2: o.y, col: power ? '#d8f0ff' : '#9fd0ff', w: power ? 3 : 1.5, t: power ? 0.22 : 0.12 });
+        X.hurt(x, rt, o, dmg, power ? 0.45 : 0.12, from);
         from = o;
       }
+      if (power) G.J.lunge('xianxia', rt.me, b);
     },
     hurt(x, rt, b, dmg, power = 0, from) {
       if (b.hp <= 0) return;
@@ -187,9 +189,10 @@ G.Xianxia = (() => {
       G.fx(rt, { k: 'text', x: b.x, y: b.y - 0.6, s: U.fmt(dmg), col: '#cfe9ff', t: 0.7, sz: (power ? 1.3 : 0.85) + 0.5 * Math.min(1, dmg / b.max), pop: power > 0 });
       G.J.hit('xianxia', b, power, from);
       G.fx(rt, { k: 'splat', x: b.x, y: b.y, dx: from ? b.x - from.x : 0, dy: from ? b.y - from.y : 0, n: power ? 8 : 4, ichor: !!b.demon, t: 0.5 });
-      if (power) G.fx(rt, { k: 'impact', x: b.x, y: b.y - 0.1, s: 1.4, col: '#d8f0ff', t: 0.22 });
+      G.fx(rt, { k: 'impact', x: b.x, y: b.y - 0.1, s: power ? 1.4 : 0.9, col: '#d8f0ff', t: power ? 0.22 : 0.15 });
       if (b.hp > 0) return;
-      G.fx(rt, { k: 'die', spr: b.t, x: b.x, y: b.y, s: b.s, flip: b.flip, t: 0.45 });
+      G.fx(rt, { k: 'die', spr: b.art || b.t, x: b.x, y: b.y, s: b.s, flip: b.flip, t: 0.45 });
+      G.J.shake('xianxia', b.demon ? 4 : 5, from && b.x > from.x ? 1 : -1, 0, 0.18);
       if (b.demon) {
         rt.demons = rt.demons.filter(o => o !== b);
         G.J.sfx('xianxia', 'banish');
@@ -292,7 +295,12 @@ G.Xianxia = (() => {
 
     tick(x, dt) {
       // 경지가 무대 경계를 넘으면 새 동부로 (진법은 자동 배치면 새로 깐다)
-      if (G.RT.xianxia && G.RT.xianxia.stage !== X.stageOf(x.realm) && G.RT.xianxia.state !== 'trib') { G.RT.xianxia = null; x.arrN = -1; }
+      if (G.RT.xianxia && G.RT.xianxia.stage !== X.stageOf(x.realm) && G.RT.xianxia.state !== 'trib') {
+        const from = G.RT.xianxia.stage;
+        G.RT.xianxia = null; x.arrN = -1;
+        // 무대가 오른다: 구름을 뚫고 올라가는 장면 (화면이 그린다)
+        if (X.stageOf(x.realm) > from) G.emit('xx_stage', { stage: X.stageOf(x.realm) });
+      }
       const rt = X.rt(x), m = rt.map, me = rt.me;
       G.fxTick(rt, dt);
       if (x.devT > 0) x.devT -= dt;
@@ -360,6 +368,9 @@ G.Xianxia = (() => {
           b.goal.off = BREAK_T * (1 - Math.min(0.7, ta('guard')));
           rt.ver++;
           G.fx(rt, { k: 'ring', x: b.goal.x, y: b.goal.y, r: 0.8, t: 0.5, col: '#ff6a6a' });
+          G.fx(rt, { k: 'impact', x: b.goal.x, y: b.goal.y, s: 1.2, col: '#ff6a6a', t: 0.2 });
+          G.fx(rt, { k: 'text', x: b.goal.x, y: b.goal.y - 0.7, s: '진기 깨짐', col: '#ff8a8a', t: 1 });
+          G.J.shake('xianxia', 3, 0, 1, 0.15);
           G.J.sfx('xianxia', 'hurt');
           b.goal = null;
         }
@@ -437,6 +448,7 @@ G.Xianxia = (() => {
     },
     status: x => X.realmName(x.realm),
     stageName: x => D.stages[X.stageOf(x.realm)].n,
+    realmLore: r => (r < D.realmLore.length ? D.realmLore[r] : '선계의 하늘을 하나씩 오른다'),
   };
   return X;
 })();

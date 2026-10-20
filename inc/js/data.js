@@ -397,11 +397,24 @@ G.D.X = {
     water: { n: '수', t: 'e_water', col: '#4fb4ff', d: '영기' },
   },
   realms: ['연기', '축기', '결단', '원영', '화신', '연허', '합체', '대승', '도겁', '진선'],
+  // 경지 한 줄 (세계관): 무엇이 바뀌는 단계인가
+  realmLore: [
+    '천지의 영기를 몸에 끌어들인다',
+    '끌어들인 영기로 단전에 터를 닦는다',
+    '기운이 맺혀 금단을 이룬다',
+    '금단이 깨지고 작은 나, 원영이 태어난다',
+    '원영이 몸 밖으로 나와 천지를 노닌다',
+    '허공의 이치를 다스린다',
+    '원영과 육신이 다시 하나가 된다',
+    '도의 끝자락을 엿본다',
+    '하늘이 내리는 마지막 시험',
+    '신선이 되어 하늘에 오른다',
+  ],
   // 무대: 경지가 오르면 동부가 위로 올라간다 (산기슭 동굴 → 영산 중턱 → 구름 위 봉우리 → 선궁 → 선계). 진법 칸 모양도 매번 새 판.
   // 글자는 모든 무대 공통(M 바깥 · T 바깥 장식 · c 바닥 · o 진법 칸 · v 영맥 · V 좌선대 · h 영초밭 · F 단로 · Q 제자 · G 입구), 타일만 다르다
   stages: [
-    { n: '산기슭 동굴', from: 0 },
-    { n: '영산 중턱', from: 2, map: [
+    { n: '산기슭 동굴', from: 0, lore: '세속을 떠나 산 아래 동굴에 동부를 연다' },
+    { n: '영산 중턱', from: 2, lore: '영기가 짙은 산 중턱으로 동부를 옮긴다', map: [
       'TMMMMTMMMMTMMMMTMMMMTMMMMTM',
       'MTMMMMTMMMcccccccMMMMTMMMMT',
       'MMTMMMcccccccccccccccMTMMMM',
@@ -419,7 +432,7 @@ G.D.X = {
       'MMMMTMMMMTMMMGTMMMMTMMMMTMM',
     ],
       tiles: { M: ['v_rock'], T: ['v_grass', 'v_tree'], c: ['v_grass'], o: ['q_floor'], v: ['q_veinfloor'], V: ['q_floor', 'q_vein'], h: ['v_grass', 'q_herbplot'], F: ['v_grass', 'q_furnace'], Q: ['v_grass'], G: ['v_path', 'q_gate'] } },
-    { n: '구름 위 봉우리', from: 4, tint: 'rgba(180,210,255,0.08)', map: [
+    { n: '구름 위 봉우리', from: 4, lore: '구름 바다 위 외딴 봉우리, 하늘이 가깝다', tint: 'rgba(180,210,255,0.08)', map: [
       'MMMMMMMMMMMMMMMMMMMMMMMMMMM',
       'MMMMMMMMMMMMcccMMMMMMMMMMMM',
       'MMMMMMMMMMcccccccMMMMMMMMMM',
@@ -437,7 +450,7 @@ G.D.X = {
       'MMMMMMMMMMMMMGMMMMMMMMMMMMM',
     ],
       tiles: { M: ['v_cloud'], c: ['v_path'], o: ['q_floor'], v: ['q_veinfloor'], V: ['q_floor', 'q_vein'], h: ['v_path', 'q_herbplot'], F: ['v_path', 'q_furnace'], Q: ['v_path'], G: ['v_path', 'q_gate'] } },
-    { n: '선궁', from: 6, tint: 'rgba(255,240,200,0.06)', map: [
+    { n: '선궁', from: 6, lore: '하늘에 뜬 궁전, 선인들이 머무는 곳', tint: 'rgba(255,240,200,0.06)', map: [
       'MMMMMMMMMMMMMMMMMMMMMMMMMMM',
       'McccccccccccccccccccccccccM',
       'McQcccccccccccccccccccccccM',
@@ -455,7 +468,7 @@ G.D.X = {
       'MMMMMMMMMMMMMGMMMMMMMMMMMMM',
     ],
       tiles: { M: ['v_cloud'], c: ['v_marble'], o: ['x_marble'], v: ['q_veinfloor'], V: ['x_marble', 'q_vein'], h: ['v_marble', 'q_herbplot'], F: ['v_marble', 'q_furnace'], Q: ['v_marble', 'q_pagoda'], G: ['v_marble', 'q_gate'] } },
-    { n: '선계', from: 8, tint: 'rgba(255,215,130,0.13)', map: [
+    { n: '선계', from: 8, lore: '인간 세상의 끝, 신선의 땅', tint: 'rgba(255,215,130,0.13)', map: [
       'MMMMMMMMMMMMMMMMMMMMMMMMMMM',
       'MMMMMMMcccccccccccccMMMMMMM',
       'MMMMMcccccccccccccccccMMMMM',

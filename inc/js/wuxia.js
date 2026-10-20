@@ -552,8 +552,11 @@ G.Wuxia = (() => {
           else if ((b.atkT -= dt) <= 0) {
             b.atkT = 1;
             h.hp -= b.atk;
+            G.J.lunge('wuxia', b, h);
             G.fx(rt, { k: 'text', x: h.x, y: h.y - 0.6, s: '-' + U.fmt(b.atk), col: '#ff6b6b', t: 0.7 });
-            G.J.hit('wuxia', h);
+            G.fx(rt, { k: 'impact', x: h.x, y: h.y - 0.1, s: 0.9, col: '#ff6b6b', t: 0.18 });
+            G.J.hit('wuxia', h, 0.15, b);
+            G.J.shake('wuxia', 2.5, h.x > b.x ? 1 : -1, 0, 0.12);
             G.J.sfx('wuxia', 'hurt');
           }
         } else if (!b.goal || GR.moveTo(m, b, b.goal[0], b.goal[1], 1.4, dt)) b.goal = U.pick(m.poi['='] || m.poi.S || m.poi.X);
@@ -577,17 +580,26 @@ G.Wuxia = (() => {
             h.flip = foe.x < h.x;
             if ((rt.atkT = (rt.atkT || 0) - dt) <= 0) {
               rt.atkT = W.atkCd();
-              const dmg = W.power(w);
+              // 타격: 치명(15%, ×2)·연타 세 번째는 크게 — 판타지와 같은 손맛(히트스톱·넉백·충격·결정타 확대)
+              rt.combo = ((rt.combo || 0) + 1) % 3;
+              const crit = Math.random() < 0.15, big = crit || rt.combo === 0;
+              const dmg = W.power(w) * (crit ? 2 : 1);
               foe.hp -= dmg;
-              G.fx(rt, { k: 'slash', x: foe.x, y: foe.y, t: 0.3, rot: Math.random() - 0.5, flip: h.x > foe.x });
+              const kill = foe.hp <= 0, heavy = kill || big, dir = foe.x > h.x ? 1 : -1;
+              G.fx(rt, { k: 'slash', x: foe.x, y: foe.y, t: 0.3, crit: big, rot: Math.random() - 0.5, flip: h.x > foe.x });
               G.J.lunge('wuxia', h, foe);
-              G.fx(rt, { k: 'splat', x: foe.x, y: foe.y, dx: foe.x - h.x, dy: foe.y - h.y, n: 5, t: 0.5 });
-              G.fx(rt, { k: 'text', x: foe.x, y: foe.y - 0.6, s: U.fmt(dmg), col: '#fff', t: 0.7, sz: 0.85 + 0.5 * Math.min(1, dmg / foe.max) });
-              G.J.hit('wuxia', foe, foe.hp <= 0 ? 0.45 : 0);
-              G.J.sfx('wuxia', foe.hp <= 0 ? 'hit' : 'tap');
-              if (foe.hp <= 0) {
+              G.fx(rt, { k: 'splat', x: foe.x, y: foe.y, dx: foe.x - h.x, dy: foe.y - h.y, n: heavy ? 9 : 5, t: 0.5 });
+              G.fx(rt, { k: 'impact', x: foe.x, y: foe.y - 0.1, s: heavy ? 1.6 : 1, col: crit ? '#ffe08a' : '#ffffff', t: 0.2 });
+              G.fx(rt, { k: 'text', x: foe.x, y: foe.y - 0.6, s: U.fmt(dmg) + (crit ? '!' : ''), col: crit ? '#ffe08a' : '#fff', t: 0.8, sz: (crit ? 1.25 : 0.85) + 0.5 * Math.min(1, dmg / foe.max), pop: heavy });
+              G.J.hit('wuxia', foe, kill ? 0.6 : big ? 0.35 : 0.12, h);
+              G.J.sfx('wuxia', kill ? 'hit' : big ? 'hit' : 'tap');
+              if (big && !kill) G.J.shake('wuxia', 3, dir, 0, 0.12);
+              if (kill) {
                 W.reward(w, rt, foe);
-                G.J.shake('wuxia', 5, foe.x > h.x ? 1 : -1, 0, 0.2);
+                G.fx(rt, { k: 'die', spr: foe.art || foe.t, x: foe.x, y: foe.y, s: foe.s, flip: foe.flip, t: 0.5 });
+                // 결정타: 비무·천하제일 비무·원정 마지막 한 방은 느려지며 다가간다
+                if (foe.foe === 'boss' || foe.foe === 'duel') G.J.finish('wuxia', foe.x, foe.y, foe.foe === 'boss' ? 1.6 : 1.4);
+                else G.J.shake('wuxia', 6, dir, 0, 0.22);
                 rt.foes = rt.foes.filter(b => b !== foe);
                 if (rt.focus === foe) rt.focus = null;
               }

@@ -1087,3 +1087,23 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .fhud .neck { display: block; color: #ffb36b; font-size: 11px; margin-top: 2px; }
 .xdesign .tribbp { display: flex; align-items: center; gap: 4px; }
 .xdesign .tribbp .btn { white-space: nowrap; }
+/* 수선 무대 오름: 구름을 뚫고 올라간다 (구름이 위에서 아래로 흘러 지나가고 하늘이 밝아진다) */
+.stagefx { position: absolute; inset: 0; z-index: 45; pointer-events: none; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(#5d8fd0, #a9cdf0); animation: sfbg 4.2s ease-in-out forwards; }
+.stagefx.s3, .stagefx.s4 { background: linear-gradient(#f2d9a0, #fff4d8); }
+.stagefx .clouds { position: absolute; left: -10%; right: -10%; height: 70%;
+  background: radial-gradient(ellipse 18% 30% at 15% 50%, #fff 60%, transparent 62%), radial-gradient(ellipse 22% 34% at 45% 40%, #fff 60%, transparent 62%),
+    radial-gradient(ellipse 20% 28% at 75% 55%, #fff 60%, transparent 62%), radial-gradient(ellipse 16% 26% at 95% 40%, #f4f8ff 60%, transparent 62%);
+  animation: sfcloud 3s cubic-bezier(.3, .2, .6, 1) forwards; opacity: .95; }
+.stagefx .c1 { top: -70%; } .stagefx .c2 { top: -110%; animation-delay: .35s; opacity: .8; transform: scaleX(-1); } .stagefx .c3 { top: -150%; animation-delay: .7s; opacity: .7; }
+.stagefx .stitle { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0; animation: sftitle 4.2s ease forwards; text-shadow: 0 2px 0 #0006, 0 0 20px #fff; }
+.stagefx .stitle small { font-size: 14px; color: #1d3550; letter-spacing: 2px; }
+.stagefx .stitle b { font-family: 'Noto Serif KR', serif; font-size: 76px; font-weight: 900; color: #fff; letter-spacing: 10px; text-shadow: 0 3px 0 #2a4a70, 0 0 30px #fff; }
+.stagefx .stitle span { font-size: 16px; color: #1d3550; }
+@keyframes sfcloud { to { transform: translateY(260%); } }
+@keyframes sftitle { 0%, 30% { opacity: 0; transform: translateY(20px); } 45% { opacity: 1; transform: none; } 85% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes sfbg { 0% { opacity: 0; } 10% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
+@media (max-width: 760px) { .stagefx .stitle b { font-size: 48px; } }
+.stagefx .clouds { background: url(assets/art/v_cloud_1.png) repeat-x; background-size: 160px 160px; image-rendering: pixelated; height: 160px; }
+.stagefx .c2 { background-image: url(assets/art/v_cloud_2.png); background-size: 220px 220px; height: 220px; }
+.stagefx .c3 { background-image: url(assets/art/v_cloud_3.png); background-size: 120px 120px; height: 120px; }
