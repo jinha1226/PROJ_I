@@ -41,8 +41,11 @@
       const r = G.catchUp(dt);
       G.UI.toast(`${G.U.fmtTime(r.sec)} 진행 · 정수 +${G.U.fmt(r.ess)}`);
     } else G.tick(dt);
+    G.tickAt = performance.now();
     G.UI.update();
   }, 100);
+  // 마지막 틱 뒤로 흐른 초: 빠르게 움직이는 것(vx·vy)을 그 사이에도 미끄러지게 그린다 (틱은 초당 10번뿐)
+  G.tickLead = () => (G.tickAt ? Math.min(0.15, (performance.now() - G.tickAt) / 1000) : 0);
 
   const loop = t => { G.UI.frame(t); requestAnimationFrame(loop); };
   requestAnimationFrame(loop);

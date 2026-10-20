@@ -417,7 +417,8 @@ G.MapView = function (canvas, id) {
         TS = baseTS * z;
         const c = view.cam;
         if (!cam.ok || Math.hypot(c.x - cam.x, c.y - cam.y) > 12) { cam.x = c.x; cam.y = c.y; cam.ok = true; }
-        cam.x += (c.x - cam.x) * 0.12; cam.y += (c.y - cam.y) * 0.12;
+        const ck = c.k || 0.12;  // k: 1이면 지연 없이 딱 붙는다 (빠르게 움직이는 바늘을 따라갈 때)
+        cam.x += (c.x - cam.x) * ck; cam.y += (c.y - cam.y) * ck;
         ox = W / 2 - (cam.x + 0.5) * TS; oy = H / 2 - (cam.y + 0.5) * TS;
         // view.center: 캐릭터를 늘 화면 가운데에 (던전처럼 바깥이 어둠이어도 되는 맵). 아니면 맵 가장자리에서 멈춘다
         if (!view.center) {
@@ -441,10 +442,15 @@ G.MapView = function (canvas, id) {
       ctx.fillStyle = '#05060a'; ctx.fillRect(0, 0, W, H);
       ctx.drawImage(bg, ox, oy, m.w * TS, m.h * TS);
       // 그릴 위치를 로직 위치 쪽으로 부드럽게 (멀리 순간이동하면 바로 붙인다)
-      const k = 1 - Math.exp(-fdt * 18);
+      //  vx·vy가 있으면 마지막 틱 뒤로 흐른 만큼 앞서 그린다 (틱 사이에 뚝뚝 끊기지 않게)
+      const k = 1 - Math.exp(-fdt * 18), lead = G.tickLead ? G.tickLead() : 0;
       for (const e of view.ents) {
-        if (e._rx === undefined || Math.abs(e.x - e._rx) + Math.abs(e.y - e._ry) > 2.5) { e._rx = e.x; e._ry = e.y; }
-        else { e._rx += (e.x - e._rx) * k; e._ry += (e.y - e._ry) * k; }
+        const tx = e.x + (e.vx || 0) * lead, ty = e.y + (e.vy || 0) * lead;
+        if (e._rx === undefined || Math.abs(tx - e._rx) + Math.abs(ty - e._ry) > 2.5) { e._rx = tx; e._ry = ty; }
+        else {
+          e._rx = e.vx ? tx : e._rx + (tx - e._rx) * k;
+          e._ry = e.vy ? ty : e._ry + (ty - e._ry) * k;
+        }
       }
       const fog = view.fog;
       const hidden = e => fog && e.kind === 'mon' && !fog.seen[Math.round(e.y) * m.w + Math.round(e.x)];
@@ -465,7 +471,9 @@ G.MapView = function (canvas, id) {
       ctx.setLineDash([]); ctx.globalAlpha = 1;
       if (view.lines) for (const l of view.lines) {
         ctx.strokeStyle = l.col; ctx.lineWidth = l.w || 1;
-        ctx.beginPath(); ctx.moveTo(sx(l.x), sy(l.y)); ctx.lineTo(sx(l.x2), sy(l.y2)); ctx.stroke();
+        // to: 끝을 엔티티에 묶는다 (그려지는 부드러운 위치를 따라가야 바늘과 줄이 따로 놀지 않는다)
+        const x2 = l.to ? l.to._rx : l.x2, y2 = l.to ? l.to._ry + (l.dy || 0) : l.y2;
+        ctx.beginPath(); ctx.moveTo(sx(l.x), sy(l.y)); ctx.lineTo(sx(x2), sy(y2)); ctx.stroke();
       }
       for (const e of ents) if (!e.under) drawEnt(e, t, now);
       if (fog) drawFog(view);

@@ -1,6 +1,6 @@
 'use strict';
 // 크툴루 화면: 바다 단면 지도가 화면 전체, 그 위에 HUD (판타지와 같은 구성 원리)
-//  위 가운데: 이성 막대(바닥나면 광기) + 어획 배율, 아래 한 줄: 동전·줄 길이·한 번에 잡는 수·감는 속도·최고 깊이
+//  위 가운데: 이성 막대(바닥나면 휴식, 회복까지 초읽기) + 물고기 값 배율, 아래 한 줄: 동전·줄 길이·한 번에 잡는 수·최고 깊이
 //  왼쪽 위: 깊이·바다·단계·걸린 수, 자동 던지기 / 왼쪽 가운데: 이번 어획, 도감 단추
 //  맵: 누르거나 끌면 바늘을 그쪽으로, 촉수를 누르면 퇴치, 배가 쉬고 있을 때 누르면 바로 던진다.
 G.UI.views.cthulhu = function () {
@@ -13,8 +13,8 @@ G.UI.views.cthulhu = function () {
   const hud = h('div.fhud', null, h('div.floorrow', null, depthEl, infoEl), h('div.tgls', null, h('small.dim', null, '자동'), tAuto.el));
 
   // ── 위 가운데: 이성
-  const san = G.UI.ov.bar('이성: 물속에서 깊이와 시간만큼 깎인다. 바닥나면 항구에서 쉰다', '어획 배율: 이성이 낮을수록 커진다');
-  const st = G.UI.ov.stats([['coin', 'c_coin', '동전'], ['line', 'item_line', '줄 길이'], ['catch', 'fs_cod', '한 번에 잡는 수'], ['reel', 'n_auto_build', '감는 속도'], ['best', 'sea_w3', '최고 깊이']]);
+  const san = G.UI.ov.bar('이성: 물속에서 깊이와 시간만큼 깎인다. 바닥나면 항구에서 쉰다', '물고기 값 배율: 이성이 낮을수록 커진다');
+  const st = G.UI.ov.stats([['coin', 'c_coin', '동전'], ['line', 'item_line', '줄 길이'], ['catch', 'fs_cod', '한 번에 잡는 수'], ['best', 'sea_w3', '최고 깊이']]);
   const top = h('div.ftop', null, san.el, st.el);
 
   // ── 왼쪽 가운데: 이번 어획 + 도감
@@ -44,11 +44,12 @@ G.UI.views.cthulhu = function () {
       setText(infoEl, ` · ${z.n} · ${PHASE[rt.phase]} · 🐟 ${rt.hooked.length}/${C.maxCatch()}`);
       tAuto.update();
       const ms = C.maxSan();
-      san.set(s.san / ms, `${Math.floor(s.san)} / ${ms}`, `🐟 ×${C.sanMult(s).toFixed(2)}`, s.san / ms < 0.3);
+      // 휴식 중: 막대가 차오르며 회복까지 남은 초를 센다
+      if (s.madT > 0) san.set(1 - s.madT / C.restT(), `회복까지 ${Math.ceil(s.madT)}초`, `🐟 ×${C.sanMult(s).toFixed(2)}`, true);
+      else san.set(s.san / ms, `${Math.floor(s.san)} / ${ms}`, `🐟 ×${C.sanMult(s).toFixed(2)}`, s.san / ms < 0.3);
       st.set('coin', U.fmt(s.coins));
       st.set('line', `${C.lineD() * D.M_PER_TILE}m`);
       st.set('catch', `×${C.maxCatch()}`);
-      st.set('reel', `×${(C.reel() / 4.5).toFixed(2)}`);
       st.set('best', `${s.best}m`);
       const lk = s.last.join();
       if (lk !== lastKey) {

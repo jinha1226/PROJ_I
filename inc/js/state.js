@@ -182,6 +182,22 @@ G.deserialize = function (json) {
     wx.tree = G.Tree.init('wuxia');
     wx.ins += back;
   }
+  // 진로 셋을 소속(맛)으로 합치기 전 저장: 진로 가지(jeong_·sa_·ma_) 노드에 쓴 깨달음을 돌려주고, 진로 무공 레벨은 합친 소속 무공으로
+  const PC = {"1": [1, 1.117], "work": [1, 1.1365], "xp": [1, 1.1365], "sect": [2, 1], "combat": [1, 1.156], "plum": [3, 1], "blood": [4, 1], "raid": [5, 1.1755], "pa": [6, 1], "pb": [6, 1], "top": [8, 1.195]};
+  for (const k of Object.keys(wx.tree || {})) {
+    const m = /^@?(jeong|sa|ma)_(\w+)$/.exec(k);
+    if (!m) continue;
+    const c = PC[m[2]];
+    if (c && k[0] !== '@') for (let i = 0; i < wx.tree[k]; i++) wx.ins += c[0] * Math.pow(c[1], i);
+    delete wx.tree[k];
+  }
+  const MERGE = { p_sim1: ['naegong', 'heuksal', 'cheonma'], p_sim2: ['yangui', 'heupjeong', 'heupseong'], p_oe1: ['geom', 'nokdo', 'hyeolgeom'], p_oe2: ['taeguk', 'nokjang', 'cheonmasu'], p_gg: ['gyeong', 'biyeong', 'hyeolyeong'] };
+  for (const [to, from] of Object.entries(MERGE)) for (const f of from) for (const box of ['lvl', 'peak', 'xp']) {
+    if (!wx[box] || wx[box][f] == null) continue;
+    wx[box][to] = Math.max(wx[box][to] || 0, wx[box][f]);
+    delete wx[box][f];
+  }
+  if (MERGE[wx.skill] === undefined && Object.values(MERGE).some(l => l.includes(wx.skill))) wx.skill = Object.keys(MERGE).find(k => MERGE[k].includes(wx.skill));
   if (!data.w || !data.w.wuxia || data.w.wuxia.fameT == null) { const j = G.D.WX.jobs.find(x => x.id === wx.job) || G.D.WX.jobs[0]; wx.job = j.id; wx.fameT = j.fame; }
   G.RT = {};
   return G.S;

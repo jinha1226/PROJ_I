@@ -146,51 +146,36 @@
   // ───── 무협 (깨달음: 회귀해도 남는다) ─────
   // ───── 무협 (깨달음) ─────
   // 북: 진로(왼쪽 위 화산 · 오른쪽 위 마교) · 남: 무공 계열(심법·외공·경공·잡학) · 동: 회귀 · 서: 강호(활동·여정·특산)
-  // 깨달음 비용 눈금: 노드 값은 처음 적은 그대로 두고 여기서 한 번에 줄인다 — 비용 0.55×값^0.3, 오름폭 ×0.15, 최대 8레벨.
+  // 깨달음 비용 눈금: 노드 값은 처음 적은 그대로 두고 여기서 한 번에 줄인다 — 비용 0.6×값^0.3, 오름폭 ×0.15, 최대 8레벨.
   // 목표(사용자): 모든 노드 최대까지 2시간 안. 봇(깨달음을 바로 씀): 정파·사파 117분 · 마교 103분.
   // 원래 눈금은 노드 하나씩만 사도 13만 — 대부분을 영영 못 봤다.
-  const WX = list => list.map(n => (n.root ? n : Object.assign(n, { base: Math.max(1, Math.round(0.55 * Math.pow(n.base, 0.3))), g: 1 + ((n.g || 1) - 1) * 0.15, max: Math.min(n.max || 1, 8) })));
+  const WX = list => list.map(n => (n.root ? n : Object.assign(n, { base: Math.max(1, Math.round(0.6 * Math.pow(n.base, 0.3))), g: 1 + ((n.g || 1) - 1) * 0.15, max: Math.min(n.max || 1, 8) })));
   G.Tree.define('wuxia', WX([
     N('root', 0, 0, '', 'w_wuxia', '회귀자', '', 1, 0, 1, {}, { root: true }),
 
-    // ── 북: 진로 (왼쪽 위 정파 · 위 사파 · 오른쪽 위 마교). 진로 전용 노드(<진로>_plum 등)는 지금 진로일 때만 켜진다 ──
+    // ── 북: 왼쪽 위 계획표(생애 계획표를 넓힌다) · 오른쪽 위 소속(어느 소속이든 같은 효과) ──
     N('path', 0, -1.8, 'root', 'j_nangin', '강호행', '명성 +15%', 10, 2, 1.6, { fame: 0.15 }),
-    // 정파
-    N('jeong_1', -2.20, -2.67, 'path', 'j_jeja', '정파 입문', '명성 +20%', 10, 4, 1.6, { fame: 0.2 }),
-    N('jeong_work', -3.39, -2.85, 'jeong_1', 'j_jangro', '문파 임무', '일·임무 명성 +30%', 10, 8, 1.7, { work: 0.3 }),
-    N('jeong_xp', -2.17, -3.88, 'jeong_1', 's_naegong', '자하의 기운', '심법 숙련 +25%', 10, 10, 1.7, { xp_sim: 0.25 }),
-    NOTE('jeong_sect', -4.42, -3.29, 'jeong_work', 'x_statue', '문파의 지원', '근거지에서 일하면 명성 ×2', 120, { jeong_sect: 1 }),
-    N('jeong_combat', -2.80, -4.78, 'jeong_xp', 's_geom', '매화검로', '전투력 +25%', 10, 25, 1.8, { combat: 0.25 }),
-    NOTE('jeong_plum', -4, -4.82, 'jeong_sect jeong_combat', 'v_plum', '매화개화', '이 진로면 전투력 ×1.3', 300, { jeong_plum: 1 }),
-    NOTE('jeong_blood', -5.35, -3.94, 'jeong_sect', 'a_sword', '마교 토벌령', '이 진로면 원정(녹림·마교 토벌) 명성 ×2', 800, { jeong_blood: 1 }),
-    N('jeong_raid', -6.06, -4.78, 'jeong_blood', 'w_katana', '정의의 검', '원정 명성 +40%', 10, 1500, 1.9, { raid: 0.4 }),
-    PAIR('jeong_pa', -4.48, -5.85, 'jeong_plum', 'ww_sword2', '검의 길', '전투력 +50%', 2500, { combat: 0.5 }, 'jeong_pair'),
-    PAIR('jeong_pb', -3.31, -6.18, 'jeong_plum', 'q_qi', '기의 길', '무공 숙련 +30%', 2500, { sxp: 0.3 }, 'jeong_pair'),
-    N('jeong_top', -5.72, -6.25, 'jeong_raid jeong_pa jeong_pb', 'j_geomseon', '매화검선의 꿈', '명성 +50%', 10, 8000, 2, { fame: 0.5 }),
-    // 사파
-    N('sa_1', 0, -4.30, 'path', 'j_pyosa', '녹림 입산', '명성 +20%', 10, 4, 1.6, { fame: 0.2 }),
-    N('sa_work', -0.80, -5.20, 'sa_1', 'x_table', '산채 일', '일·임무 명성 +30%', 10, 8, 1.7, { work: 0.3 }),
-    N('sa_xp', 0.80, -5.20, 'sa_1', 's_magong', '흑살의 숨', '외공 숙련 +25%', 10, 10, 1.7, { xp_oe: 0.25 }),
-    NOTE('sa_sect', -1.30, -6.20, 'sa_work', 'wx_bandit0', '산채의 의리', '근거지에서 일하면 명성 ×2', 120, { sa_sect: 1 }),
-    N('sa_combat', 0.90, -6.30, 'sa_xp', 's_geom', '녹림도로', '전투력 +25%', 10, 25, 1.8, { combat: 0.25 }),
-    NOTE('sa_plum', 0, -7.10, 'sa_sect sa_combat', 'w_waraxe', '도객의 혼', '이 진로면 전투력 ×1.3', 300, { sa_plum: 1 }),
-    NOTE('sa_blood', -1.60, -7.30, 'sa_sect', 'w_knife', '털이꾼', '이 진로면 원정(화산 털기·무당 습격) 명성 ×2', 800, { sa_blood: 1 }),
-    N('sa_raid', -1.60, -8.40, 'sa_blood', 'w_katana', '약탈', '원정 명성 +40%', 10, 1500, 1.9, { raid: 0.4 }),
-    PAIR('sa_pa', 0.30, -8.20, 'sa_plum', 'm_demon', '공포', '원정 적 체력 -30%', 2500, { sa_fear: 1 }, 'sa_pair'),
-    PAIR('sa_pb', 1.40, -7.70, 'sa_plum', 'wa_crown', '두목의 몫', '녹봉 ×1.5', 2500, { sa_dom: 1 }, 'sa_pair'),
-    N('sa_top', -0.40, -9.30, 'sa_raid sa_pa sa_pb', 'j_geomseon', '사왕의 꿈', '명성 +50%', 10, 8000, 2, { fame: 0.5 }),
-    // 마교
-    N('ma_1', 2.20, -2.67, 'path', 'j_nangin', '흑도 입문', '명성 +20%', 10, 4, 1.6, { fame: 0.2 }),
-    N('ma_work', 2.17, -3.88, 'ma_1', 'x_altar', '교단 임무', '일·임무 명성 +30%', 10, 8, 1.7, { work: 0.3 }),
-    N('ma_xp', 3.39, -2.85, 'ma_1', 's_magong', '천마의 숨', '심법 숙련 +25%', 10, 10, 1.7, { xp_sim: 0.25 }),
-    NOTE('ma_sect', 2.43, -4.96, 'ma_work', 'r_dragon', '교단의 지원', '근거지에서 일하면 명성 ×2', 120, { ma_sect: 1 }),
-    N('ma_combat', 4.17, -3.63, 'ma_xp', 's_geom', '혈영검로', '전투력 +25%', 10, 25, 1.8, { combat: 0.25 }),
-    NOTE('ma_plum', 4, -4.82, 'ma_sect ma_combat', 'fx_fire', '혈마의 힘', '이 진로면 전투력 ×1.3', 300, { ma_plum: 1 }),
-    NOTE('ma_blood', 2.90, -6, 'ma_sect', 'fx_fire', '혈겁', '이 진로면 원정(화산·무당 습격) 명성 ×2', 800, { ma_blood: 1 }),
-    N('ma_raid', 3.61, -6.84, 'ma_blood', 'w_duel', '혈살 원정', '원정 명성 +40%', 10, 1500, 1.9, { raid: 0.4 }),
-    PAIR('ma_pa', 4.94, -5.47, 'ma_plum', 'r_dragon', '천마 해방', '마교 무공의 천수 감소 절반', 2500, { ma_free: 1 }, 'ma_pair'),
-    PAIR('ma_pb', 5.46, -4.38, 'ma_plum', 'wa_crown', '군림', '녹봉 ×1.5', 2500, { ma_dom: 1 }, 'ma_pair'),
-    N('ma_top', 5.11, -6.76, 'ma_raid ma_pa ma_pb', 'j_geomseon', '천마신의 꿈', '명성 +50%', 10, 8000, 2, { fame: 0.5 }),
+    // 계획표
+    N('pl1', -1.4, -2.7, 'path', 'x_table', '계획', '집중한 계열 숙련 +10%', 10, 4, 1.6, { focusXp: 0.1 }),
+    N('pl_fame', -2.6, -2.2, 'pl1', 'c_coin', '명성 집중', '명성 단계에서 명성 +15%', 10, 8, 1.7, { focusFame: 0.15 }),
+    NOTE('pl_steps', -2.3, -3.6, 'pl1', 'x_table', '한 단계 더', '계획표 단계 칸 +1', 60, { pl_steps: 1 }),
+    N('pl_steps2', -3.5, -4.2, 'pl_steps', 'x_table', '더 긴 계획', '계획표 단계 칸 +1', 2, 500, 3, { pl_steps: 1 }),
+    N('pl_walk', -3.8, -2.9, 'pl_fame pl_steps', 'a_escape', '이정표', '이동·여정 +15%', 10, 60, 1.8, { walk: 0.15 }),
+    NOTE('pl_mix', -1.4, -4.4, 'pl_steps', 'a_gong', '두 계열 섞기', '수련하는 동안 다른 계열에서 가장 빨리 오르는 무공도 30%', 400, { pl_mix: 1 }),
+    N('pl_catch', -2.4, -5.3, 'pl_mix pl_steps2', 'ui_star', '전생의 길', '전생 레벨까지 따라잡기 +0.5배', 4, 600, 2.2, { pl_catch: 0.5 }),
+    N('pl_top', -4.6, -5.0, 'pl_steps2 pl_walk', 'j_geomseon', '천하를 그리다', '집중한 계열 숙련 +30%', 10, 6000, 2, { focusXp: 0.3 }),
+    // 소속
+    N('sect1', 1.4, -2.7, 'path', 'j_jeja', '입문', '명성 +20%', 10, 4, 1.6, { fame: 0.2 }),
+    N('sect_work', 2.6, -2.2, 'sect1', 'j_jangro', '본산 임무', '일·임무 명성 +30%', 10, 8, 1.7, { work: 0.3 }),
+    N('sect_xp', 1.4, -3.9, 'sect1', 's_naegong', '본산 무학', '심법 숙련 +25%', 10, 10, 1.7, { xp_sim: 0.25 }),
+    NOTE('sect_home', 3.7, -2.7, 'sect_work', 'x_statue', '본산의 지원', '근거지에서 일하면 명성 ×2', 120, { sect: 1 }),
+    N('sect_combat', 2.5, -4.6, 'sect_xp', 's_geom', '본산 무예', '전투력 +25%', 10, 25, 1.8, { combat: 0.25 }),
+    NOTE('sect_plum', 3.6, -4.0, 'sect_home sect_combat', 'v_plum', '독문절기', '전투력 ×1.3', 300, { plum: 1 }),
+    NOTE('sect_blood', 4.9, -3.3, 'sect_home', 'a_sword', '원정령', '원정 명성 ×2', 800, { blood: 1 }),
+    N('sect_raid', 5.8, -4.1, 'sect_blood', 'w_katana', '원정대', '원정 명성 +40%', 10, 1500, 1.9, { raid: 0.4 }),
+    PAIR('sect_fear', 4.6, -5.2, 'sect_plum', 'm_demon', '공포', '원정 적 체력 -30%', 2500, { fear: 1 }, 'sect_pair'),
+    PAIR('sect_dom', 3.4, -5.6, 'sect_plum', 'wa_crown', '군림', '녹봉 ×1.5', 2500, { dom: 1 }, 'sect_pair'),
+    N('sect_top', 5.6, -5.6, 'sect_raid sect_fear sect_dom', 'j_geomseon', '천하의 주인', '명성 +50%', 10, 8000, 2, { fame: 0.5 }),
 
     // ── 남: 무공 계열 ──
     N('mu', 0, 1.8, 'root', 's_tuna', '무학의 길', '무공 숙련 +15%', 15, 1, 1.45, { sxp: 0.15 }),
@@ -261,9 +246,7 @@
     N('work2', -4, -2, 'bounty', 'x_table', '부지런함', '일·임무 명성 +30%', 10, 120, 1.8, { work: 0.3 }),
     N('gh_top', -8.2, 1.4, 'boss2 gh_legend', 'j_maengju', '무림지존', '명성 +80%', 10, 15000, 2, { fame: 0.8 }),
 
-  ]), { get: () => S().w.wuxia.ins, spend: n => { S().w.wuxia.ins -= n; }, tile: 'ui_star', name: '깨달음' },
-  // 진로 가지(jeong_·sa_·ma_)는 지금 진로일 때만 켜진다 — 셋 다 찍어도 합쳐지지 않는다 (다른 가지는 다음 생에 진로를 바꾸면 쓴다)
-  { active: n => { const m = /^(jeong|sa|ma)_/.exec(n.id); return !m || !G.Wuxia || G.Wuxia.pathOf(S().w.wuxia) === m[1]; } });
+  ]), { get: () => S().w.wuxia.ins, spend: n => { S().w.wuxia.ins -= n; }, tile: 'ui_star', name: '깨달음' });
 
   // ───── 수선 (영석): 경맥도 ─────
   // 사람 몸 위에 경맥을 그린다. 임맥(가운데 위)은 진법 칸·영기·천겁, 팔다리와 아랫배는 오행 경맥.
@@ -362,24 +345,24 @@
     N('line3', 0, 4.0, 'line2', 'sea_w3', '심연용 줄', '+40m', 40, 1e6, 1.5, { line: 8 }),
     N('lamp', 1.2, 3.2, 'line2', 'c_candle', '심해 등불', '빛 반경 +1칸', 3, 3000, 3, { lamp: 1 }),
     N('sink', -1.2, 3.2, 'line2', 'sea_rock', '무거운 추', '내리는 속도 +15%', 10, 200, 1.6, { sink: 0.15 }),
-    // 오른쪽: 바늘·릴·손
+    // 오른쪽: 바늘·밑밥·손 (감는 속도 노드는 없다: 다 잡으면 저절로 빠르게 올라온다)
     N('hook1', 1.2, 0, 'root', 'fs_cod', '바늘 추가', '한 번에 +1마리', 8, 40, 2.2, { catch: 1 }),
-    N('reel1', 2.3, -0.8, 'hook1', 'n_auto_build', '릴', '감는 속도 +15%', 10, 60, 1.6, { reel: 0.15 }),
-    N('reel2', 3.4, -1.6, 'reel1', 'n_auto_tier', '고속 릴', '감는 속도 +15%', 10, 5000, 1.7, { reel: 0.15 }),
+    N('reel1', 2.3, -0.8, 'hook1', 'n_auto_build', '쌍바늘', '한 번에 +1마리', 4, 300, 3, { catch: 1 }),
+    N('reel2', 3.4, -1.6, 'reel1', 'n_auto_tier', '밑밥', '물고기가 나올 확률 +4%p', 5, 5000, 2, { school: 0.04 }),
     N('skill1', 2.3, 0.8, 'hook1', 'c_investigator', '노련한 손', '자동 조종이 1칸 더 멀리 본다', 6, 100, 2, { skill: 1 }),
     N('sonar', 3.4, 1.6, 'skill1', 'c_lamp', '음파 탐지기', '자동 조종이 1칸 더 멀리 본다', 4, 3000, 2, { skill: 1 }),
     N('exorcise', 2.4, 2.4, 'skill1', 'cu_cultist', '자동 퇴마', '바늘 가까이 온 촉수를 저절로 친다 (6초 → 레벨마다 빨라짐)', 3, 1e4, 3, { exorcise: 1 }),
     N('bait1', 3.5, 0, 'reel1 skill1', 'fs_kraken', '심해 미끼', '희귀 어종 +20%', 10, 2000, 1.7, { bait: 0.2 }),
     N('net', 4.7, 0, 'bait1', 'fs_bone', '그물', '감아 올릴 때 걸리는 범위 +15%', 3, 2e4, 2.5, { net: 0.15 }),
     // 왼쪽: 값
-    N('value1', -1.2, 0, 'root', 'c_coin', '어시장', '어획 +20%', 20, 30, 1.45, { value: 0.2 }),
-    N('value2', -2.4, 0, 'value1', 'fs_deepone', '인스머스 상회', '어획 +40%', 20, 1e4, 1.55, { value: 0.4 }),
+    N('value1', -1.2, 0, 'root', 'c_coin', '어시장', '물고기 값 +20%', 20, 30, 1.45, { value: 0.2 }),
+    N('value2', -2.4, 0, 'value1', 'fs_deepone', '인스머스 상회', '물고기 값 +40%', 20, 1e4, 1.55, { value: 0.4 }),
     N('essc', -3.6, 0, 'value2', 'ui_ess', '심연의 부름', '이 세계의 정수 +15%', 10, 5e4, 1.9, { ess: 0.15 }),
-    N('shallow', -1.8, 1.0, 'value1', 'fs_crab', '얕은 바다 어부', '얕은 바다 어종 값 +20%', 10, 100, 1.6, { shallow: 0.2 }),
-    N('chain', -3.0, 1.2, 'value2', 'fs_jelly', '줄줄이 낚시', '한 번에 둘째 마리부터 마리당 값 +5%', 5, 1500, 1.8, { chain: 0.05 }),
-    N('collector', -4.2, 1.0, 'chain', 'cu_luck', '수집가', '도감 1종마다 어획 +1%', 5, 8000, 2, { collector: 0.01 }),
-    N('bigfish', -4.8, 0, 'essc', 'fs_dagon', '대어 전문', '크라켄급 이상(기본 값 60+) 값 +30%', 5, 1e5, 2, { bigfish: 0.3 }),
-    N('value3', -6.0, 0, 'bigfish', 'ui_gold', '르뤼에 경매장', '어획 +60%', 20, 5e5, 1.6, { value: 0.6 }),
+    N('shallow', -1.8, 1.0, 'value1', 'fs_crab', '얕은 바다 어부', '얕은 바다 물고기 값 +20%', 10, 100, 1.6, { shallow: 0.2 }),
+    N('chain', -3.0, 1.2, 'value2', 'fs_jelly', '줄줄이 낚시', '한 번에 둘째 마리부터 물고기 값 +5%', 5, 1500, 1.8, { chain: 0.05 }),
+    N('collector', -4.2, 1.0, 'chain', 'cu_luck', '수집가', '도감 1종마다 물고기 값 +1%', 5, 8000, 2, { collector: 0.01 }),
+    N('bigfish', -4.8, 0, 'essc', 'fs_dagon', '대어 전문', '크라켄급 이상(기본 값 60+) 물고기 값 +30%', 5, 1e5, 2, { bigfish: 0.3 }),
+    N('value3', -6.0, 0, 'bigfish', 'ui_gold', '르뤼에 경매장', '물고기 값 +60%', 20, 5e5, 1.6, { value: 0.6 }),
     N('runes', -4.8, -1.0, 'essc', 'ui_sign', '고대 문자 해독', '고대 인장이 걸릴 확률 +50%', 5, 2e4, 2, { runes: 0.5 }),
     N('essc2', -6.0, -1.0, 'runes', 'ui_ess', '심연의 부름 II', '이 세계의 정수 +15%', 10, 5e5, 2, { ess: 0.15 }),
     // 위: 이성 — 최대치(가운데 줄), 소모 감소(왼쪽), 회복·휴식(오른쪽)
@@ -396,12 +379,12 @@
     N('rum', 2.4, -4.0, 'song', 'c_kiosk', '독한 럼', '잡은 물고기 1마리마다 이성 +0.5', 5, 3000, 1.9, { rum: 0.5 }),
     N('bunk', 1.2, -4.8, 'song', 'c_house', '선실 침상', '휴식 -2초', 3, 1500, 2, { bunk: 2 }),
     // 광기 활용: 이성이 낮을수록 값이 오르는 것을 키운다. 끝의 택1
-    N('madval', -2.4, -4.2, 'salt', 'c_horror', '광기의 값어치', '낮은 이성의 어획 배율 상한 +30%p', 5, 5000, 1.8, { madVal: 0.3 }),
+    N('madval', -2.4, -4.2, 'salt', 'c_horror', '광기의 값어치', '낮은 이성의 물고기 값 배율 상한 +30%p', 5, 5000, 1.8, { madVal: 0.3 }),
     N('edge', -3.6, -4.8, 'madval', 'c_tentacle', '위태로운 줄타기', '이성 30% 아래에서 희귀 어종 +25%', 5, 2e4, 2, { edge: 0.25 }),
     N('whisper', -2.4, -5.4, 'madval', 'cu_ritual', '속삭임 듣기', '이성 50% 아래에서 정수 +20%', 5, 3e4, 2, { whisper: 0.2 }),
     N('bless', -3.6, -6.2, 'edge whisper', 'fs_eye', '광기의 축복', '이성이 바닥나도 걸린 것의 절반은 건진다', 1, 2e5, 1, { bless: 0.5 }),
-    N('pact', -1.7, -6.8, 'whisper', 'c_cultist', '공포의 탐닉', '낮은 이성의 어획 보너스 ×2, 대신 이성 소모 +30%', 1, 1e5, 1, { pact: 1 }, { pair: 'c_mad' }),
-    N('calm', -0.5, -6.8, 'whisper', 'c_ward', '평정심', '이성 소모 -30%, 대신 낮은 이성의 어획 보너스 절반', 1, 1e5, 1, { calm: 1 }, { pair: 'c_mad' }),
+    N('pact', -1.7, -6.8, 'whisper', 'c_cultist', '공포의 탐닉', '낮은 이성의 물고기 값 보너스 ×2, 대신 이성 소모 +30%', 1, 1e5, 1, { pact: 1 }, { pair: 'c_mad' }),
+    N('calm', -0.5, -6.8, 'whisper', 'c_ward', '평정심', '이성 소모 -30%, 대신 낮은 이성의 물고기 값 보너스 절반', 1, 1e5, 1, { calm: 1 }, { pair: 'c_mad' }),
   ], { get: () => S().w.cthulhu.coins, spend: n => { S().w.cthulhu.coins -= n; }, tile: 'c_coin', name: '동전' });
 
   // ───── 차원 넥서스 (정수) ─────
@@ -426,7 +409,7 @@
     SYN('syn_tactics', 3.4, 0, 'open_scifi open_xianxia', 'w_scifi', '전술 데이터', '최고 웨이브 1마다 영기 수련 +4%', 120),
     SYN('syn_magitech', 3.4, 1.9, 'open_scifi', 'w_fantasy', '마도공학', '던전 최고층 1층마다 포탑 피해 +3%', 120),
     SYN('syn_madblade', -3.4, 1.9, 'open_cthulhu', 'w_cthulhu', '광기의 검', '잃은 이성 1%마다 던전 피해 +1.5%', 200),
-    SYN('syn_heaven', -1.1, 2.6, 'open_xianxia open_cthulhu', 'w_xianxia', '천기누설', '수선 경지 1마다 어획 +15%', 200),
+    SYN('syn_heaven', -1.1, 2.6, 'open_xianxia open_cthulhu', 'w_xianxia', '천기누설', '수선 경지 1마다 물고기 값 +15%', 200),
     SYN('syn_void', 1.1, 2.6, 'open_cthulhu open_scifi', 'w_cthulhu', '공허 통신', '인장 1개당 크레딧 +2% (최대 200%)', 300),
   ], { get: () => S().ess, spend: n => { S().ess -= n; }, tile: 'ui_ess', name: '정수' });
 

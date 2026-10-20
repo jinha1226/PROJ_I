@@ -2,7 +2,7 @@
 // 무협 화면: 지역 지도가 화면 전체, 그 위에 HUD (판타지와 같은 구성 원리)
 //  왼쪽 위: 지역 이름 옆에 그 지역의 역할(명성 ×n / 계열 수련 ×n / 원정) · 그 아래 경지·명성·깨달음
 //  위 가운데: 나이 막대(천수까지 차오른다, 누르면 생애 계획표) + 남은 햇수, 아래 한 줄: 계열 숙련·명성·전투력·여정·깨달음 총 배율(무공·특산·트리·넥서스·유물·붕괴 모두)
-//  왼쪽 가운데: 자동 단추(판타지 편성 단추 자리) → 자동 이동·수련·구입, 장래(정파·사파·마교)
+//  왼쪽 가운데: 자동 단추(판타지 편성 단추 자리) → 자동 이동·수련·구입, 소속(정파·사파·마교 — 이름·옷·근거지만 다르다)
 //  아래 가운데: 지위 · 무공 · 특산 — 누르면 게임 화면 위에 크게 펼쳐진다
 //  오른쪽 위: 강호 지도 — 지금 지역을 밝히고, 여정 중이면 길 위에 점. 지역을 누르면 그곳에 머문다(📍), 다시 누르면 풀린다
 G.UI.views.wuxia = function () {
@@ -62,9 +62,9 @@ G.UI.views.wuxia = function () {
     h('button.tgl.pathbtn', { 'data-k': k, on: { click: () => W.setPath(w(), k) } }, n));
   const autoPop = h('div.fpop.lpop.hidden', null,
     h('div.card-h', null, h('b', null, '자동')), h('div.tgls', null, tPromote.el, tSkill.el, tBuy.el),
-    h('div.card-h', null, h('b', null, '장래'), h('small.dim', null, ' 낭인 다음 갈 길 (낭인까지 바꿀 수 있다)')), h('div.tgls.paths', null, pathBtns));
+    h('div.card-h', null, h('b', null, '소속'), h('small.dim', null, ' 낭인 다음 들어갈 곳 (낭인까지 바꿀 수 있다)')), h('div.tgls.paths', null, pathBtns));
   let autoOpen = false;
-  const autoBtn = h('button.fbtn.pbtn', { 'data-tip': '자동 · 장래', on: { click: e => { e.stopPropagation(); autoOpen = !autoOpen; tog(autoPop, 'hidden', !autoOpen); tog(autoBtn, 'on', autoOpen); } } }, '⚙');
+  const autoBtn = h('button.fbtn.pbtn', { 'data-tip': '자동 · 소속', on: { click: e => { e.stopPropagation(); autoOpen = !autoOpen; tog(autoPop, 'hidden', !autoOpen); tog(autoBtn, 'on', autoOpen); } } }, '⚙');
   const left = h('div.fleft', null, h('div.pf-top', null, autoBtn, autoPop));
 
   // ── 아래 가운데: 지위 · 무공 · 특산 (누르면 게임 화면 위에 크게)
@@ -86,10 +86,10 @@ G.UI.views.wuxia = function () {
     return { d, el, sub };
   });
   const skills = D.skills.map(d => {
-    const lv = h('span.lv'), xb = bar('xp'), sub = h('small');
+    const lv = h('span.lv'), xb = bar('xp'), sub = h('small'), nm = h('b');
     const el = h('button.lrow', { on: { click: () => W.setSkill(w(), d.id) } },
-      G.T.el(d.t || 's_' + d.id, 'sm'), h('span.lm', null, h('span.ln', null, h('b', null, d.n), h('small.rg', null, ` ${d.fam}`), lv), xb, sub));
-    return { d, el, lv, xb, sub };
+      G.T.el(d.t || 's_' + d.id, 'sm'), h('span.lm', null, h('span.ln', null, nm, h('small.rg', null, ` ${d.fam}`), lv), xb, sub));
+    return { d, el, lv, xb, sub, nm };
   });
   const shop = D.items.map(it => {
     const cost = h('small.c');
@@ -126,7 +126,10 @@ G.UI.views.wuxia = function () {
       del.disabled = P.length <= 1;
       planBody.append(h('div.prow2', { 'data-i': i }, h('b.pno', null, i + 1), reg, foc, until, up, del));
     });
-    planBody.append(h('button.btn.sm.padd', { on: { click: () => edit(p => { const l = p[p.length - 1]; p.push({ r: l.r, f: l.f, u: 'end', v: 0 }); }) } }, '+ 단계'));
+    const full = P.length >= W.maxSteps();
+    const add = h('button.btn.sm.padd', { on: { click: () => edit(p => { if (p.length >= W.maxSteps()) return; const l = p[p.length - 1]; p.push({ r: l.r, f: l.f, u: 'end', v: 0 }); }) } }, full ? `단계 ${P.length}/${W.maxSteps()} · 칸은 스킬트리 「한 단계 더」` : `+ 단계 (${P.length}/${W.maxSteps()})`);
+    add.disabled = full;
+    planBody.append(add);
   }
   const bodies = { plan: planBody, rank: h('div.olist.wide', null, ranks.map(x => x.el)), skill: h('div.olist.wide', null, skills.map(x => x.el)), shop: h('div.shop.wide', null, shop.map(x => x.el), elixBtn) };
   function openPanel(k) {
@@ -211,7 +214,7 @@ G.UI.views.wuxia = function () {
       setText(tabs.rank.n, jd.n); setText(tabs.rank.sub, nx ? `→ ${nx.n}` : '정점');
       tabs.rank.b.dataset.tip = nx ? `다음 지위 ${nx.n}: ${rankReq(s, nx) || '곧'}` : '정점';
       G.T.set(tabs.skill.ic, sd.t || 's_' + s.skill);
-      setText(tabs.skill.n, sd.n); setText(tabs.skill.sub, `Lv ${W.L(s, s.skill)}`);
+      setText(tabs.skill.n, W.skillName(s, sd)); setText(tabs.skill.sub, `Lv ${W.L(s, s.skill)}`);
       const buyable = D.items.filter(it => !s.items[it.id] && it.r === rt.region).length;
       setText(tabs.shop.n, '특산'); setText(tabs.shop.sub, buyable ? `${R.n} ${buyable}` : '영단');
       if (openK === 'plan') {
@@ -229,6 +232,7 @@ G.UI.views.wuxia = function () {
       }
       if (openK === 'skill') for (const x of skills) {
         const d = x.d, lv = W.L(s, d.id), pk = s.peak[d.id] || 0;
+        setText(x.nm, W.skillName(s, d));
         const here = W.localSkills(s, rt.region).includes(d), ok = W.reqMet(s, d) && here, rm = W.regionTrain(s, rt.region, d.fam);
         tog(x.el, 'on', s.skill === d.id);
         tog(x.el, 'locked', !ok);
@@ -236,7 +240,7 @@ G.UI.views.wuxia = function () {
         setText(x.lv, ` ${lv}` + (pk ? ` (전생 ${pk})` : ''));
         setW(x.xb.fill, (s.xp[d.id] || 0) / W.need(lv));
         const tags = [W.catchingUp(s, d.id) ? '전생 레벨까지 ×2' : '', rm > 1 ? `이 지역 수련 ×${rm}` : ''].filter(Boolean).join(' · ');
-        setText(x.sub, !W.reqMet(s, d) ? `🔒 ${d.unlock && !G.Tree.add('wuxia', s.tree, d.unlock) ? '스킬트리' : req(d)}` : d.path && (d.path !== path || jd.tier < 3) ? `${D.paths[d.path]} 무공${d.path === path ? ' · 입문 후' : ''}` : !here ? '원정 중에는 수련 못 함' : `${d.d}${tags ? ' · ' + tags : ''}`);
+        setText(x.sub, !W.reqMet(s, d) ? `🔒 ${d.unlock && !G.Tree.add('wuxia', s.tree, d.unlock) ? '스킬트리' : req(d)}` : d.sect && jd.tier < 3 ? `${D.paths[path]} 무공 · 입문 후` : !here ? '원정 중에는 수련 못 함' : `${d.d}${tags ? ' · ' + tags : ''}`);
       }
       if (openK === 'shop') {
         for (const x of shop) {

@@ -12,7 +12,7 @@ G.Cthulhu = (() => {
   const tm = k => G.Tree.mul('cthulhu', G.S.w.cthulhu.tree, k);
   const ta = k => G.Tree.add('cthulhu', G.S.w.cthulhu.tree, k);
   // W: 바다 폭 (양옆 벽 없음). 물고기·바늘은 LO~HI 안에서 움직인다
-  const W = 16, LO = 1.5, HI = W - 2.5, MID = W / 2, SURF = 3, MAXD = 300, DOWN = 7, UP = 4.5, STEER = 7, IDLE_T = 1, REST = 10, LANE = 2;
+  const W = 16, LO = 1.5, HI = W - 2.5, MID = W / 2, SURF = 3, MAXD = 300, DOWN = 18, UP = 3, FULL_UP = 15, STEER = 7, IDLE_T = 1, REST = 10, LANE = 2;
 
   const C = {
     SURF,
@@ -46,10 +46,12 @@ G.Cthulhu = (() => {
     zoneOf: d => D.zones.findIndex(z => d <= z.to),
     lineD: () => Math.min(MAXD, 6 + ta('line')),
     maxCatch: () => 3 + ta('catch'),
-    reel: () => UP * tm('reel'),
+    // 감는 속도는 느리게 고정 (올라오며 고르는 재미). 다 잡았거나 이성이 바닥나면 빠르게 끌어올린다
+    reel: () => UP,
+    upSpeed: (c, rt) => (rt.hooked.length >= C.maxCatch() || c.madT > 0 ? FULL_UP : UP),
     sink: () => DOWN * tm('sink'),
     maxSan: () => 100 + ta('sanMax'),
-    // 낮은 이성의 어획 배율: 바닥에서 ×(1 + 상한). 「공포의 탐닉」은 보너스 ×2, 「평정심」은 절반
+    // 낮은 이성의 물고기 값 배율: 바닥에서 ×(1 + 상한). 「공포의 탐닉」은 보너스 ×2, 「평정심」은 절반
     sanMult: c => 1 + (1.5 + ta('madVal')) * (1 - c.san / C.maxSan()) * (ta('pact') ? 2 : ta('calm') ? 0.5 : 1),
     // 물속에서 초당 깎이는 이성: 기본 0.5 + 깊이(m)의 제곱근 비례. 빨리 내리고 감을수록 덜 깎인다
     drain(hd) {
@@ -89,13 +91,14 @@ G.Cthulhu = (() => {
           rt.tents.push({ kind: 'mon', tent: true, t: { k: 'sea_tent', v: U.rand(8) }, x0: 2 + Math.random() * (W - 4), x: 0, y, s: 1.4, hp, max: hp, bar: true, ph: Math.random() * 6 });
           continue;
         }
-        if (!U.chance(0.75)) continue;
+        if (!U.chance(Math.min(0.95, 0.75 + ta('school')))) continue;
         const pool = D.fish.filter(f => (f.zMax != null ? z >= f.z && z <= f.zMax : f.z === z));
         const sp = U.wpick(pool, f => f.w * (f.sign ? (ta('deal') ? 2 : 1) * (1 + ta('runes')) : f.w < 1 ? rare : 1));
         const dir = U.chance(0.5) ? 1 : -1;
         rt.fish.push({ kind: 'mon', sp, t: sp.t, tint: sp.tint, x: 1.8 + Math.random() * (W - 3.6), y, d, dir, spd: sp.spd * (0.7 + Math.random() * 0.6), s: (sp.s || 0.9), glow: sp.sign ? '#c78bff' : null });
       }
       rt.phase = 'down';
+      rt.hook.vy = C.sink();
       c.trips++;
       G.J.sfx('cthulhu', 'select');
       return true;
@@ -160,16 +163,16 @@ G.Cthulhu = (() => {
       rt.t = IDLE_T;
     },
 
-    // ── 바늘 조종: 내려갈 때는 피하고, 올라올 때는 값진 것을 노린다 ──
+    // ── 바늘 조종 (감아 올릴 때만): 촉수는 피하고 값진 것을 노린다 ──
     autoX(c, rt) {
-      const h = rt.hook, look = 1.5 + ta('skill'), down = rt.phase === 'down';
-      const vy = down ? C.sink() : C.reel();
-      const ahead = o => (down ? o.y - h.y : h.y - o.y);
+      const h = rt.hook, look = 1.5 + ta('skill');
+      const vy = C.reel();
+      const ahead = o => h.y - o.y;
       const px = (o, tt) => (o.tent ? o.x : U.clamp(o.x + o.dir * o.spd * tt, LO, HI));
-      const danger = [...(down ? rt.fish : []), ...rt.tents].filter(o => ahead(o) > 0 && ahead(o) < look);
+      const danger = rt.tents.filter(o => ahead(o) > 0 && ahead(o) < look);
       const full = rt.hooked.length >= C.maxCatch();
       let goal = null;
-      if (!down && !full) {
+      if (!full) {
         let bv = 0;
         for (const f of rt.fish) { const a = ahead(f); if (a > 0 && a < look + 1.5 && f.sp.v * C.depthMult(f.d) > bv) { bv = f.sp.v * C.depthMult(f.d); goal = f; } }
       }
@@ -177,7 +180,7 @@ G.Cthulhu = (() => {
       for (let x = LO; x <= HI; x += 0.5) {
         let md = 9;
         for (const o of danger) md = Math.min(md, Math.abs(px(o, ahead(o) / vy) - x));
-        let sc = Math.min(md, 2.2) * (down || rt.hooked.length ? 1 : 0.3) - Math.abs(x - h.x) * 0.04;
+        let sc = Math.min(md, 2.2) * (rt.hooked.length ? 1 : 0.3) - Math.abs(x - h.x) * 0.04;
         if (goal) sc -= Math.abs(px(goal, ahead(goal) / vy) - x) * 0.8;
         if (sc > bs) { bs = sc; best = x; }
       }
@@ -218,6 +221,7 @@ G.Cthulhu = (() => {
       for (const f of rt.fish) {
         f.x += f.dir * f.spd * dt;
         if (f.x < LO || f.x > HI) { f.dir *= -1; f.x = U.clamp(f.x, LO, HI); }
+        f.vx = f.dir * f.spd;
         f.flip = f.dir > 0;
         f.moving = true;
       }
@@ -230,37 +234,27 @@ G.Cthulhu = (() => {
         const o = rt.tents.filter(q => Math.hypot(q.x - h.x, q.y - h.y) < 3).sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y))[0];
         if (o) { C.hitTent(c, rt, o); rt.exoT = 6 / ta('exorcise'); }
       }
-      // 바늘 조종
-      if (rt.phase === 'down' || rt.phase === 'up') {
+      // 바늘 조종: 내려갈 때는 곧장 수직으로, 감을 때만 좌우로
+      if (rt.phase === 'up') {
         if (rt.steerT > 0) rt.steerT -= dt;
         const gx = rt.steerT > 0 ? rt.steerX : C.autoX(c, rt);
-        h.x += U.clamp(gx - h.x, -STEER * dt, STEER * dt);
-      }
+        const dx = U.clamp(gx - h.x, -STEER * dt, STEER * dt);
+        h.x += dx; h.vx = dt > 0 ? dx / dt : 0;
+      } else h.vx = 0;
       if (rt.phase === 'idle') {
         h.x += (rt.boat.x + 1.1 - h.x) * Math.min(1, dt * 5); h.y = SURF;
         if (c.madT <= 0 && c.auto && (rt.t -= dt) <= 0) C.cast(c);
       } else if (rt.phase === 'down') {
-        h.y += C.sink() * dt;
+        // 물고기·촉수에 상관없이 줄 끝까지 곧장 내려간다
+        h.y = Math.min(SURF + C.lineD(), h.y + C.sink() * dt);
+        h.vy = Math.min(C.sink(), (SURF + C.lineD() - h.y) / 0.1);
         rt.deepest = Math.max(rt.deepest, h.y - SURF);
         c.best = Math.max(c.best, Math.round((h.y - SURF) * D.M_PER_TILE));
-        const f = rt.fish.find(o => Math.hypot(o.x - h.x, o.y - h.y) < 0.6);
-        const tn = rt.tents.find(o => Math.hypot(o.x - h.x, o.y - h.y) < 0.8);
-        if (f) {
-          // 내려가다 물렸다: 여기서 감는다
-          rt.fish = rt.fish.filter(o => o !== f);
-          rt.hooked.push(f);
-          G.J.hit('cthulhu', f, 0.2, h);
-          G.J.sfx('cthulhu', 'pop');
-          rt.phase = 'up';
-        } else if (tn) {
-          C.hurt(c, 8);
-          G.J.hit('cthulhu', tn, 0.3, h);
-          G.J.shake('cthulhu', 5);
-          G.J.sfx('cthulhu', 'hurt');
-          rt.phase = 'up';
-        } else if (h.y - SURF >= C.lineD()) rt.phase = 'up';
+        if (h.y - SURF >= C.lineD()) rt.phase = 'up';
       } else if (rt.phase === 'up') {
-        h.y -= C.reel() * (c.madT > 0 ? 3 : 1) * dt;
+        const up = C.upSpeed(c, rt);
+        h.y -= up * dt;
+        h.vy = -Math.min(up, (h.y - SURF) / 0.1);
         if (rt.hooked.length < C.maxCatch()) {
           const f = rt.fish.find(o => Math.hypot(o.x - h.x, o.y - h.y) < 0.65 * (1 + ta('net')));
           if (f) {
@@ -276,17 +270,24 @@ G.Cthulhu = (() => {
           if (U.chance(ta('charm'))) G.fx(rt, { k: 'text', x: h.x, y: h.y - 0.6, s: '부적!', col: '#e8d48a', t: 1, pop: true });
           else { C.snap(c, rt, '줄이 끊겼다'); C.hurt(c, 10); }
         }
-        if (h.y <= SURF) { h.y = SURF; rt.phase = 'land'; C.land(c, rt); }
+        if (h.y <= SURF) { h.y = SURF; h.vy = 0; rt.phase = 'land'; C.land(c, rt); }
       }
       // 걸린 것들은 바늘 아래에 매달린다
-      rt.hooked.forEach((f, i) => { f.x = h.x + Math.sin(i * 2.1) * 0.25; f.y = h.y + 0.45 + i * 0.35; f.moving = true; });
+      if (rt.phase === 'idle') h.vy = 0;
+      rt.hooked.forEach((f, i) => { f.x = h.x + Math.sin(i * 2.1) * 0.25; f.y = h.y + 0.45 + i * 0.35; f.vx = h.vx; f.vy = h.vy; f.moving = true; });
     },
     view(c) {
       const rt = C.rt(c), h = rt.hook, hd = Math.max(0, h.y - SURF), lowSan = 1 - c.san / C.maxSan();
+      const hy = h.y + (h.vy || 0) * (G.tickLead ? G.tickLead() : 0);  // 카메라도 바늘처럼 틱 사이를 미끄러진다
+      // 카메라는 바늘에 딱 붙고(지연 없음), 앞을 내다보는 거리만 천천히 바뀐다 (내릴 때 아래 3.5칸, 감을 때 위 2칸)
+      const now = typeof performance !== 'undefined' ? performance.now() : 0, fdt = Math.min(0.1, (now - (rt.camT || now)) / 1000);
+      rt.camT = now;
+      const goal = rt.phase === 'down' ? 3.5 : rt.phase === 'up' ? -2 : 0;
+      rt.camOff = (rt.camOff || 0) + (goal - (rt.camOff || 0)) * (1 - Math.exp(-fdt * 3));
       const ents = [rt.boat, rt.fisher, ...rt.fish, ...rt.tents, ...rt.hooked, h];
       return {
-        map: rt.map, ents, fx: rt.fx, cam: { x: MID, y: Math.max(SURF + 3, h.y + (rt.phase === 'down' ? 3.5 : rt.phase === 'up' ? -2 : 0)) }, viewH: 13,
-        lines: [{ x: rt.boat.rod.x, y: rt.boat.rod.y, x2: h.x, y2: h.y - 0.3, col: 'rgba(230,230,210,0.7)', w: 1 }],
+        map: rt.map, ents, fx: rt.fx, cam: { x: MID, y: Math.max(SURF + 3, hy + rt.camOff), k: 1 }, viewH: 13,
+        lines: [{ x: rt.boat.rod.x, y: rt.boat.rod.y, to: h, dy: -0.3, col: 'rgba(230,230,210,0.7)', w: 1 }],
         lamp: { x: h.x, y: h.y, r: 3 + ta('lamp'), a: Math.min(0.9, Math.max(0, (hd - 6) / 70)) },
         terrain(x, y) {
           const ch = GR.at(rt.map, x, y);
