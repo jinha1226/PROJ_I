@@ -13,30 +13,37 @@ G.UI.views.wuxia = function () {
   const tSkill = G.UI.toggle('수련', () => w().autoSkill, v => { w().autoSkill = v; }, '자동 수련: 다음 직업에 필요한 무공을 알아서 고른다');
   const tBuy = G.UI.toggle('구입', () => w().autoBuy, v => { w().autoBuy = v; }, '자동 구입');
   // 진로: 낭인 다음 어느 쪽으로 오를지 (이번 생, 회귀해도 기억)
-  const pathBtn = h('button.tgl.pathbtn', { 'data-tip': '진로: 낭인 다음 어느 쪽으로 오를지', on: { click: () => { const s = w(); if (W.jobDef(s.job).path) return; s.path = s.path === 'ma' ? 'jeong' : 'ma'; } } });
+  const pathBtn = h('button.tgl.pathbtn', { 'data-tip': '진로: 낭인 다음 화산파와 마교 중 어느 쪽으로 오를지', on: { click: () => { const s = w(); if (W.jobDef(s.job).path) return; s.path = s.path === 'ma' ? 'jeong' : 'ma'; } } });
   const hud = h('div.fhud', null, h('div.floorrow', null, hudMode, hudAge), h('div.tgls', null, pathBtn, h('small.dim', null, '자동'), tPromote.el, tSkill.el, tBuy.el));
 
-  // ── 오른쪽 위: 강호 지도
+  // ── 오른쪽 위: 강호 지도 (중국 윤곽 위에 지역). 길 숫자는 지금 몸으로 걸리는 햇수 — 크게 볼 때(올리거나 여정 중)만 보인다
   const SVGNS = 'http://www.w3.org/2000/svg', svgEl = (t, a) => { const e = document.createElementNS(SVGNS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
-  const jmap = svgEl('svg', { viewBox: '-6 -6 112 72', class: 'jmap' });
-  for (const [a, b, y] of D.links) {
+  const O = D.outline, jmap = svgEl('svg', { viewBox: `0 0 ${O.vb[0]} ${O.vb[1]}`, class: 'jmap' });
+  for (const d of O.paths) jmap.append(svgEl('path', { d, class: 'jland' }));
+  const yearT = [];
+  for (const [a, b] of D.links) {
     const A = D.regions[a].pos, B = D.regions[b].pos;
     jmap.append(svgEl('line', { x1: A[0], y1: A[1], x2: B[0], y2: B[1], class: 'jl' }));
-    const t = svgEl('text', { x: (A[0] + B[0]) / 2, y: (A[1] + B[1]) / 2 - 1.5, class: 'jy' }); t.textContent = `${y}년`; jmap.append(t);
+    const t = svgEl('text', { x: (A[0] + B[0]) / 2, y: (A[1] + B[1]) / 2 - 1, class: 'jy' });
+    jmap.append(t);
+    yearT.push({ t, a, b });
   }
   const nodes = {};
+  const LAB = { up: [0, -3.6], down: [0, 6.2], right: [3.4, 1.4, 'start'], left: [-3.4, 1.4, 'end'] };
   for (const [id, R] of Object.entries(D.regions)) {
     const g = svgEl('g', { class: 'jn', transform: `translate(${R.pos[0]},${R.pos[1]})` });
-    g.append(svgEl('circle', { r: 4.2 }));
-    // 맨 위 지역(천산)은 이름을 동그라미 위에 (아래로 가는 길 숫자와 겹치지 않게)
-    const t = svgEl('text', { y: R.pos[1] < 15 ? -6.5 : 10 }); t.textContent = R.n; g.append(t);
+    g.append(svgEl('circle', { r: 2.2 }));
+    const [lx, ly, an] = LAB[R.lab || 'down'];
+    const t = svgEl('text', { x: lx, y: ly, 'text-anchor': an || 'middle' }); t.textContent = R.n; g.append(t);
     g.addEventListener('click', e => { e.stopPropagation(); if (!W.goRegion(w(), id)) { G.UI.toast(`${R.n}: 아직 할 일이 없다`); G.SFX.play('error'); } else G.SFX.play('select'); });
     jmap.append(g);
     nodes[id] = g;
   }
-  const dot = svgEl('circle', { r: 2.4, class: 'jdot' });
+  const dot = svgEl('circle', { r: 1.6, class: 'jdot' });
   jmap.append(dot);
-  const jbox = h('div.jbox', { 'data-tip': '강호 지도' }, jmap);
+  // 여정 배율: 경지·경공·트리 (올리면 자세히)
+  const tripEl = h('small.jtrip');
+  const jbox = h('div.jbox', null, jmap, tripEl);
 
   // ── 위 가운데: 수명
   const life = G.UI.ov.bar('수명: 다하면 이번 생이 끝나고 회귀한다', '남은 햇수');
@@ -83,14 +90,19 @@ G.UI.views.wuxia = function () {
       const place = ch => (R.places[ch] || ['?'])[0];
       setText(hudMode, s.dead ? '천수를 다했다' : jr ? `여정 · ${D.regions[jr.to].n}(으)로` : `${R.n} · ${s.mode === 'work' ? `${place(jd.at)} · ${jd.n}` : `${place(W.dest(s))} · ${sd.n}`}`);
       const locked = !!jd.path;
-      setText(pathBtn, (jd.path || s.path) === 'ma' ? '마도' : '정파');
+      setText(pathBtn, (jd.path || s.path) === 'ma' ? '마교' : '화산');
       tog(pathBtn, 'ma', (jd.path || s.path) === 'ma');
       tog(pathBtn, 'fixed', locked);
       // 강호 지도: 지금 지역 밝게, 할 일이 있는 지역은 보통, 없는 곳은 흐리게. 여정 중이면 길 위 점
       for (const [id, g] of Object.entries(nodes)) {
         const can = D.jobs.some(j => j.r === id && W.reqMet(s, j));
-        g.setAttribute('class', 'jn' + (id === rt.region && !jr ? ' cur' : '') + (id === jd.r ? ' home' : '') + (can ? '' : ' dim'));
+        g.setAttribute('class', 'jn' + (id === rt.region && !jr ? ' cur' : '') + (id === jd.r ? ' home' : '') + (s.hold === id ? ' hold' : '') + (can ? '' : ' dim'));
       }
+      // 길마다 지금 몸으로 걸리는 햇수, 여정 배율
+      const tm = W.travelMult(s);
+      for (const y of yearT) setText(y.t, `${(D.links.find(l => l[0] === y.a && l[1] === y.b)[2] / tm).toFixed(1)}년`);
+      setText(tripEl, `여정 ×${(1 / tm).toFixed(2)}`);
+      tripEl.dataset.tip = `경지 ${W.realmName(W.realm(s))}: ×${(1 / W.realmTravel(s)).toFixed(2)} · 경공 무공·트리: ×${(W.realmTravel(s) / tm).toFixed(2)}`;
       tog(overlay, 'travel', !!jr);
       if (jr) {
         // 경로를 이어 붙인 선 위에서 진행률만큼

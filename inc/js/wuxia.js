@@ -72,8 +72,11 @@ G.Wuxia = (() => {
       while (path[0] !== a && prev[path[0]]) path.unshift(prev[path[0]]);
       return { path, years: dist[b] || 0 };
     },
-    // 여정 속도: 경공 무공 + 트리 「경공 입문」
-    travelMult: w => (1 + 0.01 * W.eff(w, 'walk')) * tm('walk'),
+    // 여정 속도: 경공 무공 × 트리 「경공 입문」 × 경지(한 단계마다 +15%)
+    realmTravel: w => 1 + 0.15 * W.realm(w),
+    travelMult: w => (1 + 0.01 * W.eff(w, 'walk')) * tm('walk') * W.realmTravel(w),
+    // 지금 이 몸으로 두 지역 사이 걸리는 햇수
+    tripYears: (w, a, b) => W.route(a, b).years / W.travelMult(w),
     startAge: () => Math.max(10, 16 - ta('young')),
     // 레벨. 'realm'은 지금 경지 (직업 조건에 쓴다)
     L: (w, id) => (id === 'realm' ? W.realm(w) : w.lvl[id] || 0),
@@ -210,7 +213,7 @@ G.Wuxia = (() => {
       if (!best) best = (here.find(sk => sk.eff.xp) || {}).id || low();
       w.skill = best;
     },
-    setJob(w, id) { const d = jobDef(id); if (W.reqMet(w, d)) { w.job = id; w.mode = 'work'; if (d.path) w.path = d.path; W.rt(w).stay = 0; } },
+    setJob(w, id, hold) { const d = jobDef(id); if (W.reqMet(w, d)) { w.job = id; w.mode = 'work'; if (d.path) w.path = d.path; w.hold = hold || null; W.rt(w).stay = 0; } },
     // 무공은 지금 지역에서 익힐 수 있는 것만 (다른 지역 무공은 그 지역에 살 때)
     setSkill(w, id) {
       const d = skillDef(id);
@@ -222,7 +225,8 @@ G.Wuxia = (() => {
     goRegion(w, id) {
       const jobs = D.jobs.filter(j => j.r === id && W.reqMet(w, j) && (!j.path || j.path === (jobDef(w.job).path || w.path) || jobDef(w.job).tier < 3));
       if (!jobs.length) return false;
-      W.setJob(w, jobs.reduce((a, b) => (b.tier > a.tier ? b : a)).id);
+      // 그 지역에 머문다(📍): 자동 승진이 다른 지역 직업으로 데려가지 않는다. 직업 목록에서 고르거나 회귀하면 풀린다
+      W.setJob(w, jobs.reduce((a, b) => (b.tier > a.tier ? b : a)).id, id);
       return true;
     },
     // 맵 클릭: 산적이면 공격 지시, 장소면 그 장소의 직업·무공으로
@@ -273,7 +277,7 @@ G.Wuxia = (() => {
       // 승진·자동 수련
       if (w.autoPromote) {
         const nx = W.nextJob(w);
-        if (nx && W.reqMet(w, nx)) {
+        if (nx && W.reqMet(w, nx) && (!w.hold || nx.r === w.hold)) {
           w.job = nx.id;
           if (nx.path) w.path = nx.path;
           const idx = nx.tier;

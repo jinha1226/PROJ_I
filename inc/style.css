@@ -882,3 +882,23 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .wuxia .fhud .floorrow b { font-size: 13px; }
   .wuxia .fhud .floorrow small { font-size: 11px; }
 }
+
+/* 강호 지도 2: 중국 윤곽 바탕, 작게. 올리거나 여정 중이면 크게 (길마다 햇수) */
+.jbox { width: 190px; padding: 3px 3px 1px; transform-origin: top right; }
+.jbox:hover { transform: scale(1.7); z-index: 25; }
+.jmap .jland { fill: #3a2f20; stroke: #c9b48a; stroke-width: 0.35; stroke-linejoin: round; }
+.jmap .jl { stroke: #e8d6a8aa; stroke-width: 0.45; stroke-dasharray: 1.2 0.9; }
+.jmap .jy { display: none; fill: #ffe9b0; font-size: 2.4px; text-anchor: middle; paint-order: stroke; stroke: #000; stroke-width: 0.6px; }
+.jbox:hover .jmap .jy, .fover.travel .jmap .jy { display: block; }
+.jmap .jn circle { stroke-width: 0.5; }
+.jmap .jn text { font-size: 3.4px; stroke-width: 0.8px; }
+.jmap .jn.cur circle { stroke-width: 0.7; }
+.jmap .jn.hold text::after { content: '📍'; }
+.jmap .jn.hold circle { stroke: #ff8a7a; stroke-width: 0.8; }
+.jtrip { display: block; text-align: right; font-size: 10px; color: var(--dim); padding: 0 4px; pointer-events: auto; }
+.fover.travel .jbox { transform: translate(50%, -50%) scale(2.6); transform-origin: center; }
+@media (max-width: 760px) {
+  .jbox { width: 128px; }
+  .jbox:hover { transform: none; }
+  .fover.travel .jbox { transform: translate(50%, -50%) scale(2.5); }
+}
