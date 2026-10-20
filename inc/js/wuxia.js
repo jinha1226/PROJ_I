@@ -323,12 +323,9 @@ G.Wuxia = (() => {
           }
           if (pre && G.ARTSET[pre + 'wface']) return GR.wallKeys(x, y, (xx, yy) => GR.at(rt.map, xx, yy) === ch, (xx, yy) => !'#WM '.includes(GR.at(rt.map, xx, yy)), pre, '', true);
           const base = D.tiles[ch];
-          // 땅 그림자: 위나 왼쪽이 벽이면 그쪽 가장자리가 어둡다 (벽이 땅에 서 있게)
-          if (!base || !G.ARTSET.sh_N || ch === 'M') return base || null;
-          const L = [...base];
-          if (isWall(x, y - 1)) L.splice(1, 0, 'sh_N');
-          if (isWall(x - 1, y)) L.splice(1, 0, 'sh_W');
-          return L;
+          // 땅 그림자: 바로 위가 벽(앞면)이면 그 밑동만 살짝 어둡다. 좌우 그림자는 0x72 벽과 어울리지 않아 쓰지 않는다.
+          if (!base || !G.ARTSET.sh_N || ch === 'M' || !isWall(x, y - 1)) return base || null;
+          return [base[0], 'sh_N', ...base.slice(1)];
         },
         labels: Object.entries(D.places).map(([ch, n]) => ({ x: rt.map.poi[ch][0][0], y: rt.map.poi[ch][0][1], s: n, on: W.dest(w) === ch })),
       };
