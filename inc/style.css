@@ -545,6 +545,7 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .catch-row { display: flex; flex-wrap: wrap; gap: 2px; min-height: 36px; }
 .dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 4px; }
 .dx { display: flex; flex-direction: column; align-items: center; padding: 3px 0; border-radius: 8px; background: var(--panel2); font-size: 10px; color: var(--dim); }
+.dx .dxp { color: #e8d48a; font-weight: 700; white-space: nowrap; }
 .dx.unknown .tl img { filter: brightness(0) drop-shadow(0 0 1px #8f5bd6aa); opacity: .7; }
 
 /* 0x72 그림(assets/art)은 세로로 긴 것도 있어 비율을 지켜 넣는다 */
@@ -955,3 +956,4 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .fhud .merit { font-size: 11px; }
 }
 .fhud .floorrow .role { color: #ffe08a; font-size: 12px; font-weight: 700; margin-left: 6px; }
+.ftop .mini[data-tip]:hover::after { left: 50%; right: auto; transform: translateX(-50%); }

@@ -104,9 +104,10 @@ G.UI.ov = {
   },
   // 능력치 한 줄: [[키, 그림, 뜻]] → 아이콘 + 숫자, 올리면 뜻
   stats(defs) {
-    const v = {}, ic = {};
-    const el = h('div.minis', null, defs.map(([k, t, tip]) => h('span.mini', { 'data-tip': tip }, ic[k] = G.T.el(t, 'xs'), v[k] = h('b'))));
-    return { el, set(k, txt) { setText(v[k], txt); }, icon: k => ic[k] };
+    const v = {}, ic = {}, sp = {};
+    const el = h('div.minis', null, defs.map(([k, t, tip]) => (sp[k] = h('span.mini', { 'data-tip': tip }, ic[k] = G.T.el(t, 'xs'), v[k] = h('b')))));
+    // tip(k, 글): 말풍선을 바꾼다 (값마다 내역이 달라질 때)
+    return { el, set(k, txt) { setText(v[k], txt); }, icon: k => ic[k], tip(k, txt) { if (sp[k].dataset.tip !== txt) sp[k].dataset.tip = txt; } };
   },
   // 작은 단추 + 옆으로 열리는 창. 같은 묶음(group) 안에서는 하나만 열린다
   pop(label, title, body, group) {

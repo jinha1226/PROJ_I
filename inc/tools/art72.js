@@ -98,6 +98,15 @@ const OPS = {
       const rows = [[7, 8], [5, 10], [3, 12], [1, 14]];
       rows.forEach(([a, b], i) => { for (let x = a; x <= b; x++) set(x, top - 2 + i, x === a || x === b || i === rows.length - 1 ? ink : i === 1 && x < 8 ? '#f0d58a' : '#d9b44a'); });
     }
+    if (o.hat === 'souwester') {
+      // 방수 모자(뱃사람): 둥근 정수리, 앞은 짧고 뒤로 길게 처진 챙
+      const [hd, hl] = o.hatc || ['#4a4528', '#6b6236'];
+      for (let y = -3; y <= 0; y++) for (let x = 5; x <= 10; x++) set(x, top + y, x === 5 || x === 10 || y === -3 ? ink : y === -2 && x < 8 ? hl : hd);
+      for (let x = 2; x <= 13; x++) set(x, top + 1, x === 2 || x === 13 ? ink : hd);
+      for (let x = 2; x <= 13; x++) set(x, top + 2, ink);
+      for (const [x, y] of [[1, 2], [1, 3], [2, 3], [3, 3]]) set(x, top + y, ink);
+      set(2, top + 2, hd);
+    }
     if (o.hat === 'crown') {
       // 관: 검은 사모 + 금 띠
       for (let y = -4; y <= 0; y++) for (let x = 5; x <= 10; x++) set(x, top + y, x === 5 || x === 10 || y === -4 ? ink : y === -1 ? '#facb3e' : '#2b2b33');
@@ -230,6 +239,9 @@ const SPEC = {
       wx_vil_f: F({ robe: ['#d77fa0', '#a3506e'], collar: '#e8e2d0', ribbon: '#c0392b' }),
       wx_merchant: M({ robe: ['#4a6a8a', '#2e4560'], collar: '#facb3e', hat: 'crown' }),
       wx_bandit0: M({ robe: ['#5a4632', '#3a2e22'], collar: '#2b2b33', band: '#c0392b', knot: false }),
+      // 크툴루 낚시꾼: 같은 엘프 바탕, 수염 난 늙은 뱃사람. 방수복·방수 모자, 전체를 어둡고 푸르게
+      c_fisher: (f => ({ ...f, ed: [...f.ed, { op: 'tint', c: [18, 28, 40, 0.3] }] }))(
+        M({ hair: ['#3a3a3a', '#55524c'], robe: ['#3b4a3e', '#262a2e'], collar: '#5a5040', hat: 'souwester', beard: true, knot: false, eyes: '#9fd3c7' })),
       wx_bandit1: M({ robe: ['#3a3842', '#222222'], collar: '#7a2420', band: '#2b2b33', knot: false }),
     };
   })(),

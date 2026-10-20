@@ -10,7 +10,8 @@ G.Cthulhu = (() => {
   const D = G.D.C, U = G.U, GR = G.Grid;
   const tm = k => G.Tree.mul('cthulhu', G.S.w.cthulhu.tree, k);
   const ta = k => G.Tree.add('cthulhu', G.S.w.cthulhu.tree, k);
-  const W = 16, SURF = 3, MAXD = 300, DOWN = 7, UP = 4.5, STEER = 7, IDLE_T = 1, MAD = 12, LANE = 2, CALM = 12;
+  // W: 낚시하는 폭. 양옆에 X0칸씩 그냥 바다를 더 깔아 넓은 화면에서도 물이 끝까지 이어진다 (벽 없음)
+  const W = 16, X0 = 10, LO = X0 + 1.5, HI = X0 + W - 2.5, MID = X0 + W / 2, SURF = 3, MAXD = 300, DOWN = 7, UP = 4.5, STEER = 7, IDLE_T = 1, MAD = 12, LANE = 2, CALM = 12;
 
   const C = {
     SURF,
@@ -19,25 +20,26 @@ G.Cthulhu = (() => {
     },
     rt(c) { return G.RT.cthulhu || (G.RT.cthulhu = C.boot(c)); },
     boot() {
-      // 바다 단면: 위 3줄 밤하늘, 수면, 깊이별 물. 양옆은 들쭉날쭉한 절벽.
+      // 바다 단면: 위 3줄 밤하늘, 수면, 깊이별 물, 맨 아래 바닥. 양옆은 벽 없이 탁 트인 바다.
       const rows = [];
       for (let y = 0; y < SURF + MAXD + 2; y++) {
         let r = '';
-        const d = y - SURF, z = C.zoneOf(d), cl = d > 2 ? 1 + (Math.sin(y * 0.37) + Math.sin(y * 0.13) > 1.2 ? 1 : 0) : 0;
-        for (let x = 0; x < W; x++) {
+        const d = y - SURF, z = C.zoneOf(d);
+        for (let x = 0; x < W + 2 * X0; x++) {
           if (y < SURF) r += ' ';
           else if (y === SURF) r += '~';
-          else if (y >= SURF + MAXD + 1 || x < cl || x >= W - cl) r += 'R';
+          else if (y >= SURF + MAXD + 1) r += 'R';
           else r += String(z);
         }
         rows.push(r);
       }
       const map = GR.fromAscii(rows, '~0123');
-      const boat = { shape: 'boat', x: W / 2 - 0.5, y: SURF - 0.45, s: 1.6, rod: { x: W / 2 + 0.6, y: SURF - 1.9 } };
+      const boat = { shape: 'boat', x: MID - 0.5, y: SURF - 0.45, s: 1.6, rod: { x: MID + 0.6, y: SURF - 1.9 } };
       return {
         map, fx: [], phase: 'idle', t: IDLE_T, boat,
-        fisher: { kind: 'hero', t: ['wb_human', 'c_investigator', 'c_hat'], art: 'c_fisher', x: W / 2 - 0.9, y: SURF - 1.15, s: 1 },
-        hook: { shape: 'hook', x: W / 2, y: SURF, s: 1 }, fish: [], tents: [], hooked: [], steerX: null, steerT: 0, deepest: 0,
+        // 낚시꾼: 주인공 외곽선 없이 어둡게 (0x72 그림 c_fisher, 없으면 DCSS 타일)
+        fisher: { kind: 'ally', t: ['wb_human', 'c_investigator', 'c_hat'], art: 'c_fisher', x: MID - 0.9, y: SURF - 1.08, s: 0.85 },
+        hook: { shape: 'hook', x: MID, y: SURF, s: 1 }, fish: [], tents: [], hooked: [], steerX: null, steerT: 0, deepest: 0,
       };
     },
     zoneOf: d => D.zones.findIndex(z => d <= z.to),
@@ -53,6 +55,11 @@ G.Cthulhu = (() => {
       return m;
     },
     value: (c, f) => f.sp.v * C.depthMult(f.d) * C.valueMult(c),
+    // 도감 표시가: 그 어종이 나오는 가장 얕은 깊이, 이성 가득일 때 (더 깊이·이성이 낮을수록 비싸진다)
+    dexPrice(c, sp) {
+      const d = sp.z === 0 ? 3 : D.zones[sp.z - 1].to + 1;
+      return sp.v * C.depthMult(d) * C.valueMult(c) / C.sanMult(c);
+    },
     gain(c, n) { c.coins += n; G.tally('cthulhu', n); },
 
     // ── 던지기: 줄 길이까지 물고기와 촉수를 채운다 ──
@@ -65,14 +72,14 @@ G.Cthulhu = (() => {
         const z = C.zoneOf(d), y = SURF + d + Math.random() * 0.8;
         if (z >= 2 && U.chance(0.12)) {
           const hp = 3;
-          rt.tents.push({ kind: 'mon', tent: true, t: { k: 'sea_tent', v: U.rand(8) }, x0: 2 + Math.random() * (W - 4), x: 0, y, s: 1.4, hp, max: hp, bar: true, ph: Math.random() * 6 });
+          rt.tents.push({ kind: 'mon', tent: true, t: { k: 'sea_tent', v: U.rand(8) }, x0: X0 + 2 + Math.random() * (W - 4), x: 0, y, s: 1.4, hp, max: hp, bar: true, ph: Math.random() * 6 });
           continue;
         }
         if (!U.chance(0.75)) continue;
         const pool = D.fish.filter(f => (f.zMax != null ? z >= f.z && z <= f.zMax : f.z === z));
         const sp = U.wpick(pool, f => f.w * (f.sign ? (ta('deal') ? 2 : 1) : f.w < 1 ? 1 + ta('bait') : 1));
         const dir = U.chance(0.5) ? 1 : -1;
-        rt.fish.push({ kind: 'mon', sp, t: sp.t, tint: sp.tint, x: 1.8 + Math.random() * (W - 3.6), y, d, dir, spd: sp.spd * (0.7 + Math.random() * 0.6), s: (sp.s || 0.9), glow: sp.sign ? '#c78bff' : null });
+        rt.fish.push({ kind: 'mon', sp, t: sp.t, tint: sp.tint, x: X0 + 1.8 + Math.random() * (W - 3.6), y, d, dir, spd: sp.spd * (0.7 + Math.random() * 0.6), s: (sp.s || 0.9), glow: sp.sign ? '#c78bff' : null });
       }
       rt.phase = 'down';
       c.trips++;
@@ -138,7 +145,7 @@ G.Cthulhu = (() => {
       const h = rt.hook, look = 1.5 + ta('skill'), down = rt.phase === 'down';
       const vy = down ? DOWN : C.reel();
       const ahead = o => (down ? o.y - h.y : h.y - o.y);
-      const px = (o, tt) => (o.tent ? o.x : U.clamp(o.x + o.dir * o.spd * tt, 1.5, W - 2.5));
+      const px = (o, tt) => (o.tent ? o.x : U.clamp(o.x + o.dir * o.spd * tt, LO, HI));
       const danger = [...(down ? rt.fish : []), ...rt.tents].filter(o => ahead(o) > 0 && ahead(o) < look);
       const full = rt.hooked.length >= C.maxCatch();
       let goal = null;
@@ -147,7 +154,7 @@ G.Cthulhu = (() => {
         for (const f of rt.fish) { const a = ahead(f); if (a > 0 && a < look + 1.5 && f.sp.v * C.depthMult(f.d) > bv) { bv = f.sp.v * C.depthMult(f.d); goal = f; } }
       }
       let best = h.x, bs = -1e9;
-      for (let x = 1.5; x <= W - 2.5; x += 0.5) {
+      for (let x = LO; x <= HI; x += 0.5) {
         let md = 9;
         for (const o of danger) md = Math.min(md, Math.abs(px(o, ahead(o) / vy) - x));
         let sc = Math.min(md, 2.2) * (down || rt.hooked.length ? 1 : 0.3) - Math.abs(x - h.x) * 0.04;
@@ -179,7 +186,7 @@ G.Cthulhu = (() => {
       C.steer(c, x);
       return true;
     },
-    steer(c, x) { const rt = C.rt(c); rt.steerX = U.clamp(x, 1.5, W - 2.5); rt.steerT = 1.5; },
+    steer(c, x) { const rt = C.rt(c); rt.steerX = U.clamp(x, LO, HI); rt.steerT = 1.5; },
 
     tick(c, dt) {
       const rt = C.rt(c), h = rt.hook;
@@ -188,11 +195,11 @@ G.Cthulhu = (() => {
       // 물고기·촉수 움직임
       for (const f of rt.fish) {
         f.x += f.dir * f.spd * dt;
-        if (f.x < 1.5 || f.x > W - 2.5) { f.dir *= -1; f.x = U.clamp(f.x, 1.5, W - 2.5); }
+        if (f.x < LO || f.x > HI) { f.dir *= -1; f.x = U.clamp(f.x, LO, HI); }
         f.flip = f.dir > 0;
         f.moving = true;
       }
-      for (const o of rt.tents) { o.ph += dt; o.x = U.clamp(o.x0 + Math.sin(o.ph * 0.7) * 2, 1.5, W - 2.5); }
+      for (const o of rt.tents) { o.ph += dt; o.x = U.clamp(o.x0 + Math.sin(o.ph * 0.7) * 2, LO, HI); }
       // 이성: 60m 아래에서는 깎이고, 얕은 곳·수면에서는 돌아온다
       const hd = h.y - SURF;
       if (c.madT <= 0) {
@@ -254,7 +261,7 @@ G.Cthulhu = (() => {
       const rt = C.rt(c), h = rt.hook, hd = Math.max(0, h.y - SURF), lowSan = 1 - c.san / C.maxSan();
       const ents = [rt.boat, rt.fisher, ...rt.fish, ...rt.tents, ...rt.hooked, h];
       return {
-        map: rt.map, ents, fx: rt.fx, cam: { x: W / 2, y: Math.max(SURF + 3, h.y + (rt.phase === 'down' ? 3.5 : rt.phase === 'up' ? -2 : 0)) }, viewH: 13,
+        map: rt.map, ents, fx: rt.fx, cam: { x: MID, y: Math.max(SURF + 3, h.y + (rt.phase === 'down' ? 3.5 : rt.phase === 'up' ? -2 : 0)) }, viewH: 13,
         lines: [{ x: rt.boat.rod.x, y: rt.boat.rod.y, x2: h.x, y2: h.y - 0.3, col: 'rgba(230,230,210,0.7)', w: 1 }],
         lamp: { x: h.x, y: h.y, r: 3 + ta('lamp'), a: Math.min(0.9, Math.max(0, (hd - 6) / 70)) },
         terrain(x, y) {

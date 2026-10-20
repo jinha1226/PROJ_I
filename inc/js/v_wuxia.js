@@ -11,12 +11,12 @@ G.UI.views.wuxia = function () {
 
   // ── 왼쪽 위: 지역·활동·이득, 경지·명성·깨달음
   const hudMode = h('b'), hudRole = h('span.role');
-  const res = G.UI.ov.stats([['realm', 's_naegong', '경지: 경지마다 전투력 +30%, 여정 +15%, 화경부터 천수 +4년'], ['gold', 'c_coin', '명성: 특산·영단 구매 포인트'], ['ins', 'ui_star', '깨달음: 스킬트리 포인트']]);
+  const res = G.UI.ov.stats([['realm', 's_naegong', '경지: 경지마다 전투력 +30%, 여정 +15%, 화경부터 천수 +4년'], ['pow', 'u_sword', '전투력'], ['gold', 'c_coin', '명성: 특산·영단 구매 포인트'], ['ins', 'ui_star', '깨달음: 스킬트리 포인트']]);
   const hud = h('div.fhud', null, h('div.floorrow', null, hudMode, hudRole), res.el);
 
   // ── 위 가운데: 나이 (천수까지 차오른다) + 스킬트리 배율
   const age = G.UI.ov.bar('나이: 천수에 닿으면 이번 생이 끝나고 회귀한다', '남은 햇수');
-  const bonus = G.UI.ov.stats([['심법', 's_naegong', '심법 숙련'], ['외공', 's_geom', '외공 숙련'], ['경공', 's_gyeong', '경공 숙련'], ['잡학', 's_yangsaeng', '잡학 숙련'], ['fame', 'c_coin', '명성'], ['combat', 'ww_sword', '전투력'], ['walk', 'st_haste', '여정'], ['ins', 'ui_star', '깨달음']]);
+  const bonus = G.UI.ov.stats([['심법', 's_naegong', '심법 숙련'], ['외공', 's_geom', '외공 숙련'], ['경공', 's_gyeong', '경공 숙련'], ['잡학', 's_yangsaeng', '잡학 숙련'], ['fame', 'c_coin', '명성'], ['combat', 'u_sword', '전투력'], ['walk', 'st_haste', '여정'], ['ins', 'ui_star', '깨달음']]);
   const top = h('div.ftop', null, age.el, bonus.el);
 
   // ── 오른쪽 위: 강호 지도 (중국 윤곽 위에 지역). 상자는 윤곽 높이에 맞춰 자른다
@@ -108,6 +108,8 @@ G.UI.views.wuxia = function () {
 
   const overlay = h('div.fover', null, hud, top, left, jbox, bottom, panel);
   const req = d => !d.req ? '' : Object.entries(d.req).filter(([id, lv]) => W.L(w(), id) < lv).map(([id, lv]) => (id === 'realm' ? `경지 ${W.realmName(lv)}` : `${W.skillDef(id).n} ${lv}`)).join(' · ');
+  // 말풍선 내역: 「무공 ×1.3 · 지위 ×1.2 · …」 (1인 것은 뺀다)
+  const tipOf = (s, k) => W.parts(s, k).filter(p => p[1] !== 1).map(([n, v]) => `${n} ×${U.fmt(v)}`).join(' · ') || '기본';
   const rankReq = (s, d) => [s.fameT < W.fameNeed(d) ? `명성 ${U.fmt(s.fameT)}/${U.fmt(W.fameNeed(d))}` : '', W.realm(s) < (d.realm || 0) ? `경지 ${W.realmName(d.realm)}` : '', d.champ && !s.champ ? '천산 비무 승리' : ''].filter(Boolean).join(' · ');
   // 지역의 역할 (이름 옆): 명성 ×n · 계열 수련 ×n · 원정 / 비무 / 천하제일 비무
   const role = (s, id) => {
@@ -131,17 +133,19 @@ G.UI.views.wuxia = function () {
       setText(hudMode, s.dead ? '천수를 다했다' : jr ? `여정 → ${D.regions[mid].n}` : R.n);
       setText(hudRole, s.dead ? '' : role(s, mid));
       res.set('realm', `${W.realmName(W.realm(s))} ${W.realmSum(s)}`);
+      res.set('pow', U.fmt(W.power(s)));
+      res.tip('pow', `전투력 ${U.fmt(W.power(s))} · 체력 ${U.fmt(W.maxHp(s))} — ${tipOf(s, 'pow')}`);
       res.set('gold', U.fmt(s.gold));
       res.set('ins', U.fmt(s.ins));
       // 나이: 천수까지 차오르는 막대
       const leftY = Math.max(0, lifeN - s.age);
       age.set((s.age - W.startAge()) / (lifeN - W.startAge()), `${Math.floor(s.age)} / ${Math.floor(lifeN)}세`, `⌛ ${Math.ceil(leftY)}년`, leftY < 8);
       // 총 배율: 무공 효과 × 특산 × 트리 × 넥서스·유물·붕괴 (지역·전생 레벨은 빼고)
-      for (const f of ['심법', '외공', '경공', '잡학']) bonus.set(f, `×${U.fmt(W.famXp(s, f))}`);
-      bonus.set('fame', `×${U.fmt(W.fameMult(s))}`);
-      bonus.set('combat', `×${U.fmt(W.powMult(s))}`);
-      bonus.set('walk', `×${W.travelMult(s).toFixed(2)}`);
-      bonus.set('ins', `×${tm('ins').toFixed(2)}`);
+      for (const f of ['심법', '외공', '경공', '잡학']) { bonus.set(f, `×${U.fmt(W.famXp(s, f))}`); bonus.tip(f, `${f} 숙련 — ${tipOf(s, f)}`); }
+      bonus.set('fame', `×${U.fmt(W.fameMult(s))}`); bonus.tip('fame', `명성 — ${tipOf(s, 'fame')}`);
+      bonus.set('combat', `×${U.fmt(W.powMult(s))}`); bonus.tip('combat', `전투력 배율 — ${tipOf(s, 'pow').replace(/무공\(기본\) ×[\d.]+ · /, '')}`);
+      bonus.set('walk', `×${W.travelMult(s).toFixed(2)}`); bonus.tip('walk', `여정 — ${tipOf(s, 'walk')}`);
+      bonus.set('ins', `×${tm('ins').toFixed(2)}`); bonus.tip('ins', `깨달음 — ${tipOf(s, 'ins')}`);
       // 자동 · 장래
       tPromote.update(); tSkill.update(); tBuy.update();
       const path = W.pathOf(s), fixed = jd.tier >= 3;
@@ -190,7 +194,7 @@ G.UI.views.wuxia = function () {
         x.el.disabled = !ok;
         setText(x.lv, ` ${lv}` + (pk ? ` (전생 ${pk})` : ''));
         setW(x.xb.fill, (s.xp[d.id] || 0) / W.need(lv));
-        const tags = [W.catchingUp(s, d.id) ? '따라잡기 ×2' : '', rm > 1 ? `여기서 ×${rm}` : ''].filter(Boolean).join(' · ');
+        const tags = [W.catchingUp(s, d.id) ? '전생 레벨까지 ×2' : '', rm > 1 ? `이 지역 수련 ×${rm}` : ''].filter(Boolean).join(' · ');
         setText(x.sub, !W.reqMet(s, d) ? `🔒 ${d.unlock && !G.Tree.add('wuxia', s.tree, d.unlock) ? '스킬트리' : req(d)}` : d.path && (d.path !== path || jd.tier < 3) ? `${D.paths[d.path]} 무공${d.path === path ? ' · 입문 후' : ''}` : !here ? '원정 중에는 수련 못 함' : `${d.d}${tags ? ' · ' + tags : ''}`);
       }
       if (openK === 'shop') {

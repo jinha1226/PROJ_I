@@ -19,14 +19,14 @@ G.UI.views.cthulhu = function () {
 
   // ── 왼쪽 가운데: 이번 어획 + 도감
   const lastEl = h('div.catch-row');
-  // 도감: 잡은 적 없는 어종은 검은 실루엣
+  // 도감: 잡은 적 없는 어종은 검은 실루엣. 잡은 수 아래에 판매가 (그 구역 가장 얕은 곳 기준)
   const dexEl = h('div.dex'), dexCnt = h('small');
   const dex = D.fish.map(sp => {
-    const ic = G.T.el(sp.t, 'md'), n = h('small');
+    const ic = G.T.el(sp.t, 'md'), n = h('small'), pv = h('small.dxp');
     if (sp.tint) ic.style.filter = 'hue-rotate(180deg) saturate(1.6)';
-    const el = h('div.dx', null, ic, n);
+    const el = h('div.dx', null, ic, n, pv);
     dexEl.append(el);
-    return { sp, el, n };
+    return { sp, el, n, pv };
   });
   const group = [];
   const dexPop = G.UI.ov.pop([G.T.el('fs_eye', 'xs'), dexCnt], '도감', h('div.odex', null, dexEl), group);
@@ -62,7 +62,9 @@ G.UI.views.cthulhu = function () {
         tog(x.el, 'unknown', n == null);
         if (n != null) have++;
         setText(x.n, n == null ? '?' : U.fmt(n));
-        x.el.title = n == null ? '???' : x.sp.n;
+        const price = x.sp.sign ? '인장' : `🪙${U.fmt(C.dexPrice(s, x.sp))}`;
+        setText(x.pv, n == null ? '' : price);
+        x.el.title = n == null ? '???' : x.sp.sign ? `${x.sp.n} · 잡으면 인장 +1` : `${x.sp.n} · ${price}부터 (더 깊이, 이성이 낮을수록 비싸다)`;
       }
       setText(dexCnt, ` ${have}/${dex.length}`);
     },

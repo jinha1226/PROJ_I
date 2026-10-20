@@ -107,6 +107,17 @@ G.Wuxia = (() => {
     },
     // 계열 숙련 배율 (전생 레벨·지역을 뺀 것): 무공 효과 × 특산 × 트리 × 넥서스·유물·붕괴(globalMult)
     famXp(w, fam) { return W.xpMult(w) * (1 + 0.01 * W.eff(w, 'sxp')) * tm('sxp') * tm(FAM[fam]) * W.itemFam(w, fam); },
+    // 배율이 어디서 왔나: [[이름, 배수], ...] — 곱하면 화면의 총 배율 (말풍선용)
+    parts(w, k) {
+      const dim = G.globalMult(), x = v => +v.toFixed(2);
+      if (FAM[k]) return [['무공', x((1 + 0.01 * W.eff(w, 'xp')) * (1 + 0.01 * W.eff(w, 'sxp')))], ['지위', x(W.rankXp(w))], ['영단', x(1 + (0.1 + ta('elixEff')) * w.elix)],
+        ['특산', x(W.itemMul(w, 'xp') * W.itemFam(w, k))], ['트리', x(tm('sxp') * tm(FAM[k]))], ['차원', x(dim * (1 + G.relicVal('w_xp')))]];
+      if (k === 'fame') return [['무공', x(1 + 0.01 * W.eff(w, 'fame'))], ['특산', x(W.itemMul(w, 'fame'))], ['트리', x(tm('fame'))], ['차원', x(dim * (1 + G.relicVal('w_gold')))]];
+      if (k === 'pow') return [['무공(기본)', x(3 + W.eff(w, 'pow'))], ['경지', x(1 + 0.3 * W.realm(w))], ['트리', x(tm('combat') * (1 + 0.3 * W.pathNote(w, 'plum')))], ['특산', x(W.itemMul(w, 'pow'))], ['차원', x(dim)]];
+      if (k === 'walk') return [['무공', x(1 + 0.01 * W.eff(w, 'walk'))], ['경지', x(W.realmTravel(w))], ['트리', x(tm('walk') * (1 + 0.25 * ta('gg_fly')))]];
+      if (k === 'ins') return [['트리', x(tm('ins'))]];
+      return [];
+    },
     skillXp(w, id, region) {
       const sk = skillDef(id);
       return 15 * W.famXp(w, sk.fam) * W.peakMult(w, id) * W.regionTrain(w, region || w.region || 'hwaeum', sk.fam);
