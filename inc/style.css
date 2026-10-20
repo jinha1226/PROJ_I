@@ -846,3 +846,39 @@ details.card summary { cursor: pointer; font-weight: 700; }
 @media (max-width: 760px) {
   .cthulhu .fover { justify-content: flex-end; padding-bottom: 76px; }
 }
+/* 무협: 강호 지도 (오른쪽 위, 판타지 미니맵 자리) */
+.jbox { position: absolute; right: 10px; top: 8px; width: 270px; transition: transform .45s ease, right .45s ease, top .45s ease; background: #000c; border: 1px solid #c9b48a66; border-radius: 10px; padding: 4px; pointer-events: auto; }
+.jmap { display: block; width: 100%; height: auto; }
+.jmap .jl { stroke: #c9b48a99; stroke-width: 1; stroke-dasharray: 2 1.5; }
+.jmap .jy { fill: #c9b48acc; font-size: 4px; text-anchor: middle; }
+.jmap .jn { cursor: pointer; }
+.jmap .jn circle { fill: #2a241c; stroke: #c9b48a; stroke-width: 0.8; }
+.jmap .jn text { fill: #e8e2d0; font-size: 5.6px; text-anchor: middle; font-weight: 800; paint-order: stroke; stroke: #000; stroke-width: 1.2px; }
+.jmap .jn.dim { opacity: .4; }
+.jmap .jn.home circle { stroke: #ffd24a; stroke-width: 1.2; }
+.jmap .jn.cur circle { fill: #ffd24a; stroke: #fff3c4; stroke-width: 1.4; filter: drop-shadow(0 0 2px #ffd24a); }
+.jmap .jn.cur text { fill: #ffd24a; }
+.jmap .jn:hover circle { stroke: #fff; }
+.jmap .jdot { fill: #ffd24a; stroke: #000; stroke-width: 0.6; }
+.pathbtn { font-weight: 800; }
+.pathbtn.ma { border-color: #c0392b; color: #ff8a7a; }
+.pathbtn.fixed { opacity: .75; cursor: default; }
+.lrow .rg { color: var(--dim); font-size: 10px; margin-left: 4px; font-weight: 500; }
+@media (max-width: 760px) {
+  .jbox { width: 150px; right: 6px; top: 6px; }
+  .wuxia .fover .fhud, .wuxia .fover .ftop { margin-right: 156px; }
+  .wuxia .fover .ftop { margin-right: 0; }
+}
+
+/* 여정: 강호 지도가 가운데로 크게 나온다 */
+.fover.travel .jbox { right: 50%; top: 45%; transform: translate(50%, -50%) scale(1.9); z-index: 20; border-color: #ffd24a; }
+.fover.travel .jmap .jdot { r: 3; }
+@media (max-width: 760px) {
+  .fover.travel .jbox { transform: translate(50%, -50%) scale(2.2); }
+}
+@media (max-width: 760px) {
+  .jbox { width: 128px; }
+  .wuxia .fover .fhud { margin-right: 132px; }
+  .wuxia .fhud .floorrow b { font-size: 13px; }
+  .wuxia .fhud .floorrow small { font-size: 11px; }
+}

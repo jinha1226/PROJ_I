@@ -210,6 +210,14 @@ const SPEC = {
       wx_hero7: M({ robe: ['#d9a62e', '#8a6420'], collar: '#c0392b' }),   // 무림맹주: 금빛 장포
       wx_hero8: M({ robe: ['#2b2b33', '#facb3e'], collar: '#facb3e' }),   // 천하제일인: 검은 장포, 금 띠
       wx_hero9: M({ robe: ['#f2eee4', '#f4a6c0'], collar: '#f4a6c0' }),   // 매화검선: 흰 도포, 매화 분홍
+      // 마도 진로: 같은 사람, 검붉은 옷
+      wx_mhero3: M({ robe: ['#3a2e2a', '#222222'], collar: '#7a2420' }),   // 흑도 무사: 거친 흑의
+      wx_mhero4: M({ robe: ['#2b2b33', '#7a2420'], collar: '#c0392b' }),   // 마교 교도: 흑의, 붉은 띠
+      wx_mhero5: M({ robe: ['#7a2420', '#3a1010'], collar: '#2b2b33' }),   // 혈마대: 핏빛 무복
+      wx_mhero6: M({ robe: ['#4a1a2a', '#222222'], collar: '#c0392b' }),   // 마교 장로: 검자줏빛 장포
+      wx_mhero7: M({ robe: ['#2b2b33', '#c0392b'], collar: '#facb3e' }),   // 교주: 흑포, 붉은 띠, 금 깃
+      wx_mhero8: M({ robe: ['#c0392b', '#222222'], collar: '#2b2b33' }),   // 천하제일마: 붉은 장포
+      wx_mhero9: M({ robe: ['#1a1a1f', '#7a2420'], collar: '#ff5a3a' }),   // 천마신: 칠흑, 불꽃 깃
       wx_vil_m: M({ robe: ['#5b7fa0', '#3e5670'], collar: '#c8c2b0' }),
       wx_vil_f: F({ robe: ['#d77fa0', '#a3506e'], collar: '#e8e2d0', ribbon: '#c0392b' }),
       wx_merchant: M({ robe: ['#4a6a8a', '#2e4560'], collar: '#facb3e', hat: 'crown' }),
