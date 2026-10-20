@@ -185,6 +185,7 @@ const SPEC = {
   v_grass: { draw: ['grass', 6] }, v_flowers: { draw: ['flowers', 4] }, v_road: { draw: ['road', 4] }, v_path: { draw: ['path', 4] },
   v_tree: { draw: ['tree', 3] }, v_plum: { draw: ['tree', 2, { blossom: true }] },
   v_rock: { draw: ['rock', 4] }, v_water: { draw: ['water', 4] }, v_falls: { draw: ['falls', 3] }, v_inner: { draw: ['planks', 3] },
+  ui_tree: { draw: ['skilltree', 1] },
   v_door: { draw: ['door', 1] }, x_table: { draw: ['table', 1] }, x_cart: { draw: ['cart', 1] }, w_board: { draw: ['board', 1] },
   w_dummy: { draw: ['dummy', 1] }, x_statue: { draw: ['statue', 1] }, x_altar: { draw: ['altar', 1] }, x_lantern: { draw: ['lantern', 1] },
   q_herb: { draw: ['herb', 1] }, w_cave: { draw: ['cave', 1] },

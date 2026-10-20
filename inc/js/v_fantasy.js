@@ -1,6 +1,7 @@
 'use strict';
 // 판타지 화면: 옆 대시보드 없이 전부 맵 위에 (파티 게임 UI — Baldur's Gate 3·Divinity의 왼쪽 초상 줄, 아래 기술 줄)
-//  왼쪽 위: 층 이동·자동 하강, 원정대 합산 체력·오염·버프 / 왼쪽: 파티 초상(체력·쓰러짐) / 아래: 기술 / 오른쪽 아래: 편성·능력치 창
+//  왼쪽 위: 층 이동·자동 하강, 원정대 합산 체력, 그 아래 작은 능력치 줄, 오염·버프 / 왼쪽: 편성 단추 + 파티 초상(체력·쓰러짐) / 아래: 기술
+//  오른쪽 아래 스킬트리 단추는 세계 화면 틀(v_world)이 단다
 G.UI.views.fantasy = function () {
   const f = () => G.S.w.fantasy, F = G.Fantasy, D = G.D.F, U = G.U;
 
@@ -11,10 +12,14 @@ G.UI.views.fantasy = function () {
   const auto = G.UI.toggle('⤓', () => f().auto, v => { f().auto = v; }, '자동 하강');
   auto.el.classList.add('fbtn');
   const hudHp = G.UI.meter(''), corrEl = h('small.corr'), buffEl = h('div.buffs');
+  // 파티 능력치: 아이콘 + 숫자, 합산 체력 바로 아래 작게
+  const stats = {};
+  const statEl = h('div.minis', null, [['dps', 'u_sword', '파티 초당 피해'], ['aspd', 'st_haste', '공격 속도'], ['crit', 'g_dagger', '기사 치명'], ['smite', 'a_thunder', '벼락'], ['gold', 'ui_gold', '골드 배율'], ['matk', 'm_rat', '적 공격']]
+    .map(([k, t, l]) => h('span.mini', { title: l }, k === 'matk' ? (stats.matkIc = G.T.el(t, 'xs')) : G.T.el(t, 'xs'), stats[k] = h('b'))));
   const hud = h('div.fhud', null,
     h('div.floorrow', null, prev, floorEl, next, auto.el),
     h('div.hud-sub', null, hudMon, hudLeft, maxEl),
-    h('div.hud-hp', null, hudHp.el), corrEl, buffEl);
+    h('div.hud-hp', null, hudHp.el), statEl, corrEl, buffEl);
 
   // ── 기술 단축 버튼
   const skillBtns = Object.entries(F.SKILLS).map(([id, sk]) => {
@@ -28,14 +33,15 @@ G.UI.views.fantasy = function () {
   let partyKey = '';
   const rows = [];
   function buildParty() {
+    // 층이 바뀌면 파티원 객체를 새로 만드므로, 이름이 같아도 객체가 다르면 다시 묶는다 (예전 객체를 붙잡으면 쓰러진 채 멈춘다)
     const rt = F.rt(f()), key = rt.party.map(p => p.id || 'hero').join();
-    if (key === partyKey) return;
+    if (key === partyKey && rows.every((r, i) => r.p === rt.party[i])) return;
     partyKey = key;
-    frames.innerHTML = '';
+    frames.querySelectorAll('.pf').forEach(e => e.remove());
     rows.length = 0;
     for (const p of rt.party) {
       const b = bar('hp'), dead = h('b.pf-dead');
-      const el = h('div.pf' + (p.kind === 'hero' ? '.lead' : ''), null, h('div.pf-ic', null, G.T.el(p.t, 'pf'), dead), b);
+      const el = h('div.pf' + (p.kind === 'hero' ? '.lead' : ''), null, h('div.pf-ic', null, G.T.el(p.t, 'pf-img'), dead), b);
       frames.append(el);
       rows.push({ p, b, dead, el });
     }
@@ -57,19 +63,12 @@ G.UI.views.fantasy = function () {
       rosterEl.append(rosterBtns[id]);
     }
   }
-  const stats = {};
-  const statEl = h('div.istats', null, [['dps', 'u_sword', '파티 초당 피해'], ['aspd', 'st_haste', '공격 속도'], ['crit', 'g_dagger', '기사 치명'], ['smite', 'a_thunder', '벼락'], ['gold', 'ui_gold', '골드 배율'], ['matk', 'm_rat', '적 공격']]
-    .map(([k, t, l]) => h('div.istat', { title: l }, k === 'matk' ? (stats.matkIc = G.T.el(t, 'xs')) : G.T.el(t, 'xs'), stats[k] = h('b'))));
-  const pops = {
-    party: h('div.fpop.hidden', null, h('div.card-h', null, slotEl, h('span.sp'), tAutoParty.el), rosterEl),
-    stats: h('div.fpop.hidden', null, statEl),
-  };
-  let open = null;
-  const popBtn = (k, tile, title) => h('button.fbtn.pbtn', { title, on: { click: e => { e.stopPropagation(); open = open === k ? null : k; for (const q in pops) tog(pops[q], 'hidden', q !== open); } } }, G.T.el(tile, 'md'));
-  const corner = h('div.fcorner', null, pops.party, pops.stats,
-    h('div.fcbtns', null, popBtn('party', 'u_archer', '편성'), popBtn('stats', 'u_sword', '능력치')));
+  const pop = h('div.fpop.hidden', null, h('div.card-h', null, slotEl, h('span.sp'), tAutoParty.el), rosterEl);
+  let open = false;
+  const partyBtn = h('button.fbtn.pbtn', { title: '편성', on: { click: e => { e.stopPropagation(); open = !open; tog(pop, 'hidden', !open); tog(partyBtn, 'on', open); } } }, '⇄');
+  frames.append(h('div.pf-top', null, partyBtn, pop));
 
-  const overlay = h('div.fover', null, hud, frames, corner);
+  const overlay = h('div.fover', null, hud, frames);
   let buffKey = '';
   return G.UI.worldScreen('fantasy', {
     overlay, hotbar,
@@ -109,21 +108,20 @@ G.UI.views.fantasy = function () {
         const atk = p.kind === 'hero' ? F.heroAtk(s) : p.def.heal ? 0 : F.allyAtk(s, p);
         r.el.title = `${p.kind === 'hero' ? '기사' : p.def.n} · ${U.fmt(Math.max(0, p.hp))}/${U.fmt(p.max)}${atk ? ` · ⚔ ${U.fmt(atk)}` : ''}`;
       }
-      // 편성·능력치 창은 열려 있을 때만 채운다
-      if (open === 'party') {
+      setText(stats.dps, U.fmt(F.partyDps(s, rt)));
+      setText(stats.aspd, F.aspd(s).toFixed(2));
+      setText(stats.crit, U.pct(F.crit()));
+      setText(stats.smite, U.fmt(F.smiteDmg(s)));
+      setText(stats.gold, `×${U.fmt(F.goldMult(s))}`);
+      G.T.set(stats.matkIc, band.mons[0].t);
+      setText(stats.matk, U.fmt(F.monAtk(s.floor, false)));
+      // 편성 창은 열려 있을 때만 채운다
+      if (open) {
         buildRoster();
         const lineup = F.lineup(s);
         setText(slotEl, `${lineup.length} / ${F.slots()}`);
         tAutoParty.update();
         for (const id in rosterBtns) tog(rosterBtns[id], 'on', lineup.includes(id));
-      } else if (open === 'stats') {
-        setText(stats.dps, U.fmt(F.partyDps(s, rt)));
-        setText(stats.aspd, `${F.aspd(s).toFixed(2)}/초`);
-        setText(stats.crit, `${U.pct(F.crit())} ×${F.critD().toFixed(1)}`);
-        setText(stats.smite, U.fmt(F.smiteDmg(s)));
-        setText(stats.gold, `×${U.fmt(F.goldMult(s))}`);
-        G.T.set(stats.matkIc, band.mons[0].t);
-        setText(stats.matk, U.fmt(F.monAtk(s.floor, false)));
       }
     },
   });

@@ -1,5 +1,5 @@
 'use strict';
-// 세계 화면 틀: [맵 | 스킬트리] 탭. 맵 탭은 캔버스(+HUD, 단축 버튼) 와 세계별 옆 패널, 트리 탭은 그 세계의 스킬트리.
+// 세계 화면 틀: 맵(캔버스 + HUD, 단축 버튼, 세계별 옆 패널)이 기본. 스킬트리는 맵 오른쪽 아래 단추로 열고 같은 자리 단추로 닫는다 (탭 없이).
 // spec: { side: 요소, hud: 요소, hotbar: 요소, click(tile, ev) → 처리했으면 true, update() }
 G.UI.tabs = G.UI.tabs || {};
 G.UI.worldScreen = function (id, spec) {
@@ -9,19 +9,18 @@ G.UI.worldScreen = function (id, spec) {
   const tree = G.UI.tree(id, () => G.S.w[id].tree);
   let tab = G.UI.tabs[id] || 'map';
 
+  // 스킬트리 단추: 살 수 있는 노드 수를 배지로
   const badge = h('span.badge');
-  const mapBtn = h('button.wtab', { on: { click: () => setTab('map') } }, '맵');
-  const treeBtn = h('button.wtab', { on: { click: () => setTab('tree') } }, '스킬트리', badge);
+  const treeBtn = h('button.treebtn', { title: '스킬트리', 'aria-label': '스킬트리', on: { click: () => setTab('tree') } }, G.T.el('ui_tree', 'md'), badge);
+  const backBtn = h('button.treebtn.back', { title: '맵', 'aria-label': '맵', on: { click: () => setTab('map') } }, '✕');
   const mapPane = h('div.wmap', null,
-    h('div.mapbox', null, cv, spec.hud ? h('div.hud', null, spec.hud) : null, spec.hotbar ? h('div.hotbar', null, spec.hotbar) : null),
+    h('div.mapbox', null, cv, spec.hud ? h('div.hud', null, spec.hud) : null, spec.hotbar ? h('div.hotbar', null, spec.hotbar) : null, treeBtn),
     spec.side ? h('div.wside', null, spec.side) : null);
-  const treePane = h('div.wtree', null, tree.el);
+  const treePane = h('div.wtree', null, tree.el, backBtn);
   function setTab(t) {
     tab = G.UI.tabs[id] = t;
     tog(mapPane, 'hidden', t !== 'map');
     tog(treePane, 'hidden', t !== 'tree');
-    tog(mapBtn, 'on', t === 'map');
-    tog(treeBtn, 'on', t === 'tree');
     if (t === 'tree') { tree.center(); G.Coach.openedTree(id); }
   }
   // 확대·축소: 휠, 두 손가락 벌리기·오므리기 (두 번째 손가락은 클릭으로 치지 않는다)
@@ -57,12 +56,10 @@ G.UI.worldScreen = function (id, spec) {
     });
   }
 
-  // 세계 이름·장르 문구는 왼쪽 차원 막대 아이콘이 대신한다. 맵 위에는 탭만.
+  // 세계 이름·장르 문구는 왼쪽 차원 막대 아이콘이 대신한다
   if (!spec.side) mapPane.classList.add('solo');
-  if (spec.overlay) mapPane.querySelector('.mapbox').append(spec.overlay);
-  const el = h('section.world.' + id, null,
-    h('div.wtabs', null, mapBtn, treeBtn),
-    mapPane, treePane);
+  if (spec.overlay) mapPane.querySelector('.mapbox').insertBefore(spec.overlay, treeBtn);
+  const el = h('section.world.' + id, null, mapPane, treePane);
   setTab(tab);
   return {
     el,

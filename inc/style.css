@@ -369,13 +369,10 @@ select { background: var(--panel2); color: var(--text); border: 1px solid var(--
 }
 
 /* ───── 맵 + 스킬트리 화면 ───── */
-.wtabs { display: flex; gap: 4px; margin-left: auto; }
-.wtab { background: var(--panel); border: 1px solid var(--line); border-radius: 8px 8px 0 0; padding: 7px 18px; font-weight: 700; color: var(--dim); position: relative; }
-.wtab.on { color: var(--text); border-color: var(--accent); background: var(--panel2); }
-.badge { position: absolute; top: -7px; right: -7px; background: var(--good); color: #062; border-radius: 99px; font-size: 11px; padding: 0 6px; font-weight: 800; }
+.badge { position: absolute; top: -6px; right: -6px; background: var(--good); color: #062; border-radius: 99px; font-size: 11px; padding: 0 6px; font-weight: 800; }
 .wmap { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 14px; align-items: start; }
-.mapbox { position: relative; height: calc(100vh - 190px); min-height: 420px; border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); background: #05060a; }
-.mapbox.fit { height: auto; min-height: 0; max-height: calc(100vh - 190px); }
+.mapbox { position: relative; height: calc(100vh - 100px); min-height: 420px; border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); background: #05060a; }
+.mapbox.fit { height: auto; min-height: 0; max-height: calc(100vh - 100px); }
 .mapcv { display: block; width: 100%; height: 100%; cursor: crosshair; image-rendering: pixelated; touch-action: manipulation; }
 .hud { position: absolute; left: 10px; top: 8px; pointer-events: none; text-shadow: 0 1px 3px #000, 0 0 6px #000; display: flex; flex-direction: column; }
 .hud > div { display: block; }
@@ -388,7 +385,7 @@ select { background: var(--panel2); color: var(--text); border: 1px solid var(--
 .hot small { font-size: 10px; color: var(--dim); }
 .hot:disabled { opacity: .55; }
 .hot .cd { position: absolute; top: 10px; font-weight: 900; font-size: 18px; text-shadow: 0 0 4px #000; }
-.wside { display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 190px); overflow-y: auto; }
+.wside { display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 100px); overflow-y: auto; }
 .wside > div { display: flex; flex-direction: column; gap: 10px; }
 .wside .card { padding: 10px 12px; }
 .sp { flex: 1; }
@@ -433,7 +430,7 @@ select { background: var(--panel2); color: var(--text); border: 1px solid var(--
 details.card summary { cursor: pointer; font-weight: 700; }
 
 /* 스킬트리 */
-.wtree { position: relative; height: calc(100vh - 190px); min-height: 440px; }
+.wtree { position: relative; height: calc(100vh - 100px); min-height: 440px; }
 .wtree.tall { height: calc(100vh - 290px); }
 .meta .wtree { height: 520px; margin-top: 12px; }
 .tree { position: relative; width: 100%; height: 100%; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden;
@@ -477,10 +474,10 @@ details.card summary { cursor: pointer; font-weight: 700; }
 }
 @media (max-width: 760px) {
   .mapbox { height: 56vh; min-height: 320px; }
-  .wtree, .wtree.tall, .meta .wtree { height: 70vh; }
+  .wtree { height: calc(100dvh - 150px); }
+  .wtree.tall, .meta .wtree { height: 70vh; }
   .tree-info { width: auto; right: 12px; }
-  .wtabs { margin-left: 0; width: 100%; }
-}
+  }
 
 /* ── 손맛 · 코치 ── */
 /* 처음 할 일을 가리키는 반짝임 (글 대신) */
@@ -510,9 +507,6 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .prow .hpt { font-size: 10px; color: var(--dim); font-variant-numeric: tabular-nums; }
 .prow .pst { color: #ff8a8a; }
 .bar.hp.low > i { background: linear-gradient(90deg, #c9702a, #e3a13a); }
-.istats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.istat { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 8px; background: var(--panel2); font-size: 12px; font-variant-numeric: tabular-nums; }
-.istat b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── 무협: 은자 상점 ── */
 .shop { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; margin-top: 6px; }
@@ -591,9 +585,8 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .rail-item:hover .rtip { display: flex; }
 
 /* ── 세계 화면: 탭만, 옆 패널이 없으면 맵이 가득 ── */
-.world > .wtabs { margin: 0 0 8px; }
-.wmap.solo { grid-template-columns: minmax(0, 1fr); }
-.wmap.solo .mapbox { height: calc(100vh - 120px); }
+.world > .wmap.solo { grid-template-columns: minmax(0, 1fr); }
+.wmap.solo .mapbox { height: calc(100vh - 100px); }
 
 /* ── 판타지: 맵 위 파티 UI ── */
 .fover { position: absolute; inset: 0; pointer-events: none; }
@@ -611,12 +604,10 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .pf { width: 56px; display: flex; flex-direction: column; gap: 2px; }
 .pf-ic { position: relative; width: 56px; height: 56px; border-radius: 10px; border: 2px solid #c9b48a; background: radial-gradient(circle at 50% 35%, #3a3326, #14110c); box-shadow: 0 2px 6px #000c; overflow: hidden; }
 .pf.lead .pf-ic { border-color: var(--accent); box-shadow: 0 0 0 1px #000, 0 0 8px var(--accent); }
-.pf-ic .tl.pf { width: 100%; height: 100%; transform: scale(1.25) translateY(6%); }
+.pf-ic .tl.pf-img { width: 100%; height: 100%; transform: scale(1.25) translateY(6%); }
 .pf .bar { height: 6px; border: 1px solid #000; }
 .pf.down .pf-ic .tl { filter: grayscale(1) brightness(.5); }
 .pf-dead { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #ff8a8a; text-shadow: 0 0 4px #000; }
-.fcorner { position: absolute; right: 10px; bottom: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-.fcbtns { display: flex; flex-direction: column; gap: 6px; }
 .pbtn { width: 46px; height: 46px; padding: 3px; }
 .pbtn .tl { width: 100%; height: 100%; }
 .fpop { background: #000d; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; width: 260px; }
@@ -628,14 +619,39 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .rail-sep { width: 1px; height: 28px; margin: 0 2px; }
   .rail-item { width: 44px; height: 44px; }
   .rail-item:hover .rtip { display: none; }
-  .wmap.solo .mapbox { height: calc(100dvh - 200px); min-height: 380px; }
+  .wmap.solo .mapbox { height: calc(100dvh - 150px); min-height: 380px; }
   .main { padding: 10px 10px 20px; }
   .pframes { flex-direction: row; left: 8px; bottom: 8px; gap: 4px; }
   .pf, .pf-ic { width: 42px; }
   .pf-ic { height: 42px; }
   .solo .hotbar { bottom: 78px; }
   .hot { min-width: 54px; }
-  .fcorner { right: 8px; bottom: 8px; }
-  .pbtn { width: 40px; height: 40px; }
+    .pbtn { width: 40px; height: 40px; }
   .fpop { width: min(260px, calc(100vw - 80px)); }
+}
+
+/* 스킬트리 단추: 맵 오른쪽 아래, 트리에서는 같은 자리에 닫기 */
+.treebtn { position: absolute; right: 12px; bottom: 12px; z-index: 6; width: 56px; height: 56px; padding: 6px; border-radius: 14px;
+  background: #000c; border: 2px solid var(--accent); box-shadow: 0 2px 8px #000c; color: var(--text); font-size: 22px; }
+.treebtn .tl { width: 100%; height: 100%; }
+.treebtn:hover { filter: brightness(1.2); }
+.treebtn .badge.hidden { display: none; }
+.wtree .treebtn.back { position: absolute; }
+.mapbox .treebtn.coach { z-index: 7; }
+/* 판타지: 합산 체력 아래 작은 능력치 줄 */
+.minis { display: flex; flex-wrap: wrap; gap: 2px 8px; max-width: 220px; font-size: 11px; margin: 1px 0 2px; }
+.mini { display: inline-flex; align-items: center; gap: 1px; font-variant-numeric: tabular-nums; }
+.mini .tl { width: 16px; height: 16px; }
+.mini b { font-weight: 700; }
+/* 편성 단추: 초상 줄 맨 위, 창은 오른쪽으로 */
+.pf-top { position: relative; order: 99; }
+.pf-top .pbtn { width: 56px; height: 34px; font-size: 18px; }
+.pf-top .pbtn.on { border-color: var(--accent); color: var(--accent); }
+.pf-top .fpop { position: absolute; left: 64px; bottom: 0; }
+@media (max-width: 760px) {
+  .treebtn { width: 48px; height: 48px; right: 8px; bottom: 8px; }
+  .pf-top { order: -1; }
+  .pf-top .pbtn { width: 42px; height: 42px; }
+  .pf-top .fpop { left: 0; bottom: 52px; }
+  .minis { max-width: 180px; }
 }

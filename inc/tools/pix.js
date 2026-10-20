@@ -182,4 +182,19 @@ function shade(seed, { side, depth = 5, a = 0.45 }) {
   }
   return im;
 }
-module.exports = { PAL, cap, edge, shade, grass, flowers, road, path, tree, rock, water, falls, planks, door, table, cart, board, dummy, statue, altar, lantern, herb, cave };
+// 스킬트리 단추 아이콘: 뿌리 하나에서 세 갈래로 뻗은 노드 (금빛 원 + 검은 테)
+function skilltree() {
+  const im = img(16, 16);
+  const line = (x0, y0, x1, y1) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)); for (let i = 0; i <= n; i++) put(im, Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), 'soil3', false); };
+  const node = (cx, cy, c) => {
+    for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) {
+      if (Math.abs(x) === 2 && Math.abs(y) === 2) continue;
+      const edge = Math.abs(x) === 2 || Math.abs(y) === 2 || (Math.abs(x) === 1 && Math.abs(y) === 2);
+      put(im, cx + x, cy + y, edge ? 'ink' : (x < 0 && y < 0) ? 'white' : c, false);
+    }
+  };
+  line(8, 12, 3, 4); line(8, 12, 13, 4); line(8, 12, 8, 3);
+  node(8, 12, 'orange'); node(3, 4, 'yellow'); node(13, 4, 'yellow'); node(8, 3, 'yellow');
+  return im;
+}
+module.exports = { PAL, skilltree, cap, edge, shade, grass, flowers, road, path, tree, rock, water, falls, planks, door, table, cart, board, dummy, statue, altar, lantern, herb, cave };
