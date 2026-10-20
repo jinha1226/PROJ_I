@@ -1,7 +1,8 @@
 'use strict';
 // 수선 화면: 동부 지도가 화면 전체, 그 위에 HUD (판타지·무협과 같은 구성 원리)
 //  왼쪽 위: 경지 · 무대 · 상태, 그 아래 영석·단약·영초 / 위 가운데: 영기 막대(다 차면 천겁) + 초당 영기, 아래 한 줄: 총 배율(올리면 내역)
-//  왼쪽 가운데: ⚙ 자동(천겁·기준·배치) / 아래 가운데: 오행 진기 줄(고르고 진법 칸을 누른다) + 천겁
+//  왼쪽 가운데: ⚙ 자동(천겁·기준·배치)·초기화 / 아래 가운데: 오행 진기 줄(고르고 진법 칸을 누른다) + 천겁
+//  오른쪽: 진법 설계 패널(Factorio 생산 통계처럼) — 효율·연결·영맥·오행별 출력·자동 대비, 켜 두면 맵 위 진기마다 출력
 //  같은 진기를 다시 누르거나 지우개면 뺀다.
 G.UI.views.xianxia = function () {
   const x = () => G.S.w.xianxia, X = G.Xianxia, D = G.D.X, U = G.U;
@@ -12,7 +13,10 @@ G.UI.views.xianxia = function () {
   // ── 왼쪽 위: 경지 · 무대 · 상태, 영석·단약·영초
   const realmEl = h('b'), stageEl = h('span.role'), stateEl = h('small'), devEl = h('small.warn');
   const res = G.UI.ov.stats([['stone', 'q_stone', '영석: 스킬트리 포인트'], ['pill', 'q_pill', '단약: 천겁에 쓴다'], ['herb', 'q_herb', '영초: 3개로 단약 1개']]);
-  const hud = h('div.fhud', null, h('div.floorrow', null, realmEl, stageEl, stateEl), res.el, devEl);
+  // 영초·연단 쿨타임
+  const herbBar = bar('xp'), alchBar = bar('xp'), alchTxt = h('small');
+  const cds = h('div.xcds', null, h('div.xcd', { 'data-tip': '영초가 익을 때까지 (가장 빠른 밭)' }, G.T.el('q_herb', 'xs'), herbBar), h('div.xcd', { 'data-tip': '연단: 영초 3개로 단약 1개' }, G.T.el('q_furnace', 'xs'), alchBar, alchTxt));
+  const hud = h('div.fhud', null, h('div.floorrow', null, realmEl, stageEl, stateEl), res.el, cds, devEl);
 
   // ── 위 가운데: 영기 + 총 배율
   const qi = G.UI.ov.bar('영기: 다 차면 천겁에 도전한다', '초당 영기');
@@ -25,7 +29,8 @@ G.UI.views.xianxia = function () {
   const thr = h('select.othr', { on: { change: e => { x().autoThr = +e.target.value; } } },
     [0.25, 0.4, 0.5, 0.6, 0.75, 0.9].map(v => h('option', { value: v, selected: x().autoThr === v }, `≥ ${v * 100}%`)));
   const tArr = G.UI.toggle('배치', () => x().autoArr, v => { x().autoArr = v; if (v) X.autoArrange(x()); }, '자동 배치: 상생 사슬로 깐다 (직접 놓으면 꺼진다)');
-  const autoPop = h('div.fpop.lpop.hidden', null, h('div.card-h', null, h('b', null, '자동')), h('div.tgls', null, tAuto.el, thr, tArr.el));
+  const resetBtn = h('button.btn.sm.danger', { on: { click: () => { if (confirm('수선만 처음(연기)부터 다시 시작할까요? 다른 세계는 그대로입니다.')) { X.resetWorld(); G.UI.show('xianxia'); } } } }, '수선 처음부터');
+  const autoPop = h('div.fpop.lpop.hidden', null, h('div.card-h', null, h('b', null, '자동')), h('div.tgls', null, tAuto.el, thr, tArr.el), h('div.card-h', null, resetBtn));
   let autoOpen = false;
   const autoBtn = h('button.fbtn.pbtn', { 'data-tip': '자동', on: { click: e => { e.stopPropagation(); autoOpen = !autoOpen; tog(autoPop, 'hidden', !autoOpen); tog(autoBtn, 'on', autoOpen); } } }, '⚙');
   const left = h('div.fleft', null, h('div.pf-top', null, autoBtn, autoPop));
@@ -61,7 +66,23 @@ G.UI.views.xianxia = function () {
     else banner('lv' + Math.min(6, Math.floor(e.r * 0.7)), COL[Math.min(9, e.r)] || '#ffe08a', e.stage ? `천겁 돌파 · ${X.stageName(x())}` : '천겁 돌파', X.realmName(e.r), 2000 + Math.min(9, e.r) * 300);
   });
   G.on('xx_fail', () => banner('lv0 fail', '#ff6a6a', '천겁 실패 · 영기가 흩어졌다', '실패', 1800));
-  const overlay = h('div.fover', null, hud, top, left, act, rfx);
+  // ── 오른쪽: 진법 설계 패널
+  const dz = {};
+  const drow = (k, label) => { dz[k] = h('b'); return h('div.drow', null, h('span', null, label), dz[k]); };
+  const elRows = D.els.map(el => {
+    const b = bar('xp'), v = h('b'), c = h('small');
+    b.fill.style.background = D.el[el].col;
+    return { el, b, v, c, row: h('div.delr', null, G.T.el(D.el[el].t, 'xs'), c, b, v) };
+  });
+  const cmp = h('div.dcmp');
+  const design = h('div.xdesign.hidden', null,
+    h('div.card-h', null, h('b', null, '진법 설계'), h('span.sp'), h('small.dim', null, '맵 위 숫자 = 진기 출력')),
+    drow('total', '총 출력'), drow('eff', '진기당 효율'), drow('gen', '상생 연결'), drow('over', '상극 연결'), drow('vein', '영맥 사용'),
+    h('div.dsub', null, '오행별 출력 · 효과'), ...elRows.map(r => r.row),
+    h('div.dsub', null, '자동 배치 대비'), cmp,
+    h('small.dim.dhelp', null, '상생(목→화→토→금→수→목)으로 이웃하면 +50%, 상극이면 -40%, 영맥 칸 위는 ×2'));
+  const designBtn = h('button.fbtn.dbtn', { 'data-tip': '진법 설계', on: { click: e => { e.stopPropagation(); X.showNums = !X.showNums; tog(design, 'hidden', !X.showNums); tog(designBtn, 'on', X.showNums); } } }, '📐');
+  const overlay = h('div.fover', null, hud, top, left, act, rfx, design, designBtn);
   return G.UI.worldScreen('xianxia', {
     overlay,
     click(p) {
@@ -97,6 +118,28 @@ G.UI.views.xianxia = function () {
       for (const p of pal) { tog(p.b, 'on', pick === p.el); setText(p.v, L.sum[p.el].toFixed(1)); setText(p.eff, ` ${effTxt[p.el]}`); }
       tog(eraser, 'on', pick === null);
       setText(slotEl, `진법 ${Object.keys(s.arr).filter(i => i < X.slotCount()).length}/${X.slotCount()}`);
+      // 쿨타임: 영초(가장 빠른 밭), 연단
+      const best = rt.plots.reduce((a, p) => Math.max(a, p.g), 0);
+      setW(herbBar.fill, best / X.HERB_T);
+      setW(alchBar.fill, s.herbs >= 3 ? rt.alchT / X.ALCH_T : 0);
+      setText(alchTxt, s.herbs >= 3 ? '' : ` 영초 ${s.herbs}/3`);
+      // 진법 설계
+      if (X.showNums) {
+        const sc = X.score(s, L), auto = X.score(s, X.layoutOf(s, X.autoArr(s), rt, true)), mine = X.score(s, X.layoutOf(s, s.arr, rt, true));
+        setText(dz.total, sc.total.toFixed(1));
+        setText(dz.eff, `×${sc.eff.toFixed(2)}`);
+        setText(dz.gen, sc.gen);
+        setText(dz.over, sc.over);
+        const allV = rt.slots.filter(q => q.vein).length;
+        setText(dz.vein, `${sc.veinUse} / 열린 ${sc.veinN} (맵 ${allV} · 진법 칸이 늘면 닿는다)`);
+        const maxv = Math.max(1, ...D.els.map(e => L.sum[e]));
+        const cnt = {};
+        for (const p of L.per) cnt[p.el] = (cnt[p.el] || 0) + 1;
+        for (const r of elRows) { setW(r.b.fill, L.sum[r.el] / maxv); setText(r.v, `${L.sum[r.el].toFixed(1)} → ${effTxt[r.el]}`); setText(r.c, ` ${cnt[r.el] || 0}`); }
+        const d = auto.total ? mine.total / auto.total - 1 : 0;
+        setText(cmp, `내 진법 ${mine.total.toFixed(1)} · 자동 ${auto.total.toFixed(1)} → ${d >= 0 ? '+' : ''}${Math.round(d * 100)}%  (영맥 ${mine.veinUse} vs ${auto.veinUse})`);
+        tog(cmp, 'up', d > 0.005); tog(cmp, 'down', d < -0.005);
+      }
     },
   });
 };

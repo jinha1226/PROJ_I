@@ -21,7 +21,7 @@ G.Xianxia = (() => {
   const X = {
     gen, over,
     init(head = 0) {
-      return { qi: 0, stone: 10 * Math.pow(10, head), realm: 0, pills: 0, herbs: 0, devT: 0, tree: G.Tree.init('xianxia'), autoBreak: true, autoThr: 0.6, fails: 0, arr: {}, autoArr: true, arrN: 0 };
+      return { qi: 0, stone: 10 * Math.pow(10, head), realm: 0, pills: 0, herbs: 0, devT: 0, tree: G.Tree.init('xianxia'), autoBreak: false, autoThr: 0.6, fails: 0, arr: {}, autoArr: true, arrN: 0 };
     },
     rt(x) { return G.RT.xianxia || (G.RT.xianxia = X.boot(x)); },
     boot(x) {
@@ -67,6 +67,12 @@ G.Xianxia = (() => {
     },
     // 상생 사슬: 좌선대 근처에서 시작해 이웃 칸을 따라가며 목→화→토→금→수 순서로 채운다
     autoArrange(x, rt = X.rt(x)) {
+      x.arr = X.autoArr(x, rt);
+      x.arrN = X.slotCount();
+      rt.ver++;
+    },
+    // 자동 배치가 깔 진법 (적용하지 않고 계산만 — 설계 패널의 「자동 대비」에도 쓴다)
+    autoArr(x, rt = X.rt(x)) {
       const n = Math.min(X.slotCount(), rt.slots.length), left = new Set(rt.slots.slice(0, n).map(s => s.i)), path = [];
       let cur = rt.slots[0];
       while (cur) {
@@ -80,36 +86,49 @@ G.Xianxia = (() => {
         if (!next && left.size) next = [...left].map(j => rt.slots[j]).reduce((a, b) => (Math.hypot(a.x - cur.x, a.y - cur.y) <= Math.hypot(b.x - cur.x, b.y - cur.y) ? a : b));
         cur = next;
       }
-      x.arr = {};
-      path.forEach((s, k) => { x.arr[s.i] = ELS[k % 5]; });
-      x.arrN = n;
-      rt.ver++;
+      const arr = {};
+      path.forEach((s, k) => { arr[s.i] = ELS[k % 5]; });
+      return arr;
     },
     // 진기마다 출력과 이웃 관계(선)를 계산한다
     layout(x) {
       const rt = X.rt(x), n = X.slotCount(), key = rt.ver + ':' + n + ':' + rt.slots.map(s => (s.off > 0 ? 1 : 0)).join('') + ':' + JSON.stringify(x.tree);
       if (rt._lay && rt._layKey === key) return rt._lay;
+      rt._lay = X.layoutOf(x, x.arr, rt);
+      rt._layKey = key;
+      return rt._lay;
+    },
+    // 어떤 배치든 계산: 오행별 합, 진기마다 출력(상생 g·상극 o·영맥), 연결선
+    layoutOf(x, arr, rt = X.rt(x), ignoreOff = false) {
+      const n = X.slotCount();
       const sum = { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 }, per = [], links = [];
       for (let i = 0; i < n && i < rt.slots.length; i++) {
-        const el = x.arr[i];
+        const el = arr[i];
         if (!el) continue;
         const s = rt.slots[i];
         let g = 0, o = 0;
         for (const [dx, dy] of [[1, 0], [0, 1], [-1, 0], [0, -1]]) {
           const j = rt.at[(s.x + dx) + ',' + (s.y + dy)];
-          if (j == null || j >= n || !x.arr[j] || rt.slots[j].off > 0) continue;
-          const nb = x.arr[j];
+          if (j == null || j >= n || !arr[j] || (!ignoreOff && rt.slots[j].off > 0)) continue;
+          const nb = arr[j];
           if (gen[el] === nb) { g++; links.push({ x: rt.slots[j].x, y: rt.slots[j].y, x2: s.x, y2: s.y, good: true, col: D.el[nb].col }); }
           if (over[el] === nb) { o++; links.push({ x: rt.slots[j].x, y: rt.slots[j].y, x2: s.x, y2: s.y, good: false }); }
         }
-        const out = s.off > 0 ? 0 : (s.vein ? 2 + ta('vein') : 1) * Math.max(0.2, 1 + (0.5 + ta('gen')) * g - 0.4 * (1 - Math.min(0.9, ta('over'))) * o) * X.elMult(el);
+        const out = !ignoreOff && s.off > 0 ? 0 : (s.vein ? 2 + ta('vein') : 1) * Math.max(0.2, 1 + (0.5 + ta('gen')) * g - 0.4 * (1 - Math.min(0.9, ta('over'))) * o) * X.elMult(el);
         sum[el] += out;
-        per.push({ i, el, out, g, o });
+        per.push({ i, el, out, g, o, vein: s.vein });
       }
-      rt._lay = { sum, per, links };
-      rt._layKey = key;
-      return rt._lay;
+      return { sum, per, links };
     },
+    // 진법 성적: 총 출력, 진기당 효율, 상생·상극 연결, 영맥 사용 (설계 패널)
+    score(x, L) {
+      const n = Math.min(X.slotCount(), X.rt(x).slots.length), veins = X.rt(x).slots.filter(s => s.vein && s.i < n);
+      const total = L.per.reduce((a, p) => a + p.out, 0), g = L.per.reduce((a, p) => a + p.g, 0), o = L.per.reduce((a, p) => a + p.o, 0);
+      return { total, eff: L.per.length ? total / L.per.length : 0, gen: g, over: o, veinUse: L.per.filter(p => p.vein).length, veinN: veins.length, placed: L.per.length, n };
+    },
+    // 초기화 (수선만): 설정 화면에서 바로 처음부터 해 보려고
+    resetWorld() { G.S.w.xianxia = X.init(); G.RT.xianxia = null; },
+    HERB_T, ALCH_T,
 
     // ── 수치 ──
     qiBase(x) {
@@ -369,16 +388,21 @@ G.Xianxia = (() => {
       const ents = [];
       for (const p of rt.plots) if (p.g >= HERB_T) ents.push({ t: 'q_herb', x: p.x, y: p.y, s: 0.9 });
       // 진법 칸: 빈 칸은 고리, 놓인 진기는 보석(꺼진 것은 어둡게), 잠긴 칸은 아무것도 없다
+      // 영맥 칸은 늘 빛나게(잠긴 것도 흐리게) — 어디를 노려야 하는지 보이게. 잠긴 진법 칸은 아주 흐린 고리
       for (const s of rt.slots) {
-        if (s.i >= n) continue;
+        const locked = s.i >= n;
+        if (s.vein) ents.push({ t: 'q_vein', x: s.x, y: s.y, s: 1, alpha: locked ? 0.35 : 0.9, glow: locked ? null : '#7fd7ff', under: true });
+        if (locked) { if (!s.vein) ents.push({ t: 'q_peak', x: s.x, y: s.y, s: 0.6, alpha: 0.1, under: true }); continue; }
         const el = x.arr[s.i];
         if (!el) ents.push({ t: 'q_peak', x: s.x, y: s.y, s: 0.8, alpha: 0.35, under: true });
         else ents.push({ t: D.el[el].t, x: s.x, y: s.y, s: 0.72, glow: s.off > 0 ? null : D.el[el].col, dim: s.off > 0, under: true });
       }
+      // 설계 보기: 진기마다 출력 숫자 (Factorio alt 모드처럼)
+      const labels = X.showNums ? L.per.map(p => ({ x: rt.slots[p.i].x, y: rt.slots[p.i].y + 0.45, s: p.out.toFixed(1), on: p.g > 0 && !p.o })) : [];
       ents.push({ t: { k: 'q_aura' + Math.min(3, Math.floor(x.realm / 3)), v: Math.floor(Date.now() / 250) }, x: rt.me.x, y: rt.me.y, s: 2.2, alpha: 0.6, under: true });
       ents.push(...rt.disciples, ...rt.beasts, ...rt.demons, rt.me);
       return {
-        map: rt.map, ents, fx: rt.fx, fit: true, cam: rt.me, links: L.links,
+        map: rt.map, ents, fx: rt.fx, fit: true, cam: rt.me, links: L.links, labels,
         terrain: (cx, cy) => (D.stages[rt.stage].tiles || D.tiles)[GR.at(rt.map, cx, cy)] || null,
         tint: x.devT > 0 ? 'rgba(120,0,40,0.18)' : rt.state === 'trib' ? `rgba(40,10,60,${0.25 + Math.min(0.3, x.realm * 0.03)})` : D.stages[rt.stage].tint || null,
       };

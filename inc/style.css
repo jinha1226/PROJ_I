@@ -1060,3 +1060,22 @@ details.card summary { cursor: pointer; font-weight: 700; }
 @media (max-width: 760px) {
   .xianxia .fover .fhud .minis { position: static; width: auto; flex-wrap: wrap; }
 }
+/* 수선: 영초·연단 쿨타임, 진법 설계 패널 (오른쪽) */
+.xcds { display: flex; gap: 8px; margin-top: 3px; pointer-events: auto; }
+.xcd { display: flex; align-items: center; gap: 3px; font-size: 11px; }
+.xcd .bar { width: 60px; height: 5px; }
+.xcd .tl { width: 16px; height: 16px; }
+.dbtn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; font-size: 18px; pointer-events: auto; }
+.dbtn.on { border-color: var(--accent); }
+.xdesign { position: absolute; right: 60px; top: 50%; transform: translateY(-50%); width: 290px; background: #000d; border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; font-size: 12px; pointer-events: auto; display: flex; flex-direction: column; gap: 3px; }
+.xdesign .drow { display: flex; justify-content: space-between; }
+.xdesign .drow span { color: var(--dim); }
+.xdesign .dsub { margin-top: 6px; color: var(--accent); font-weight: 700; font-size: 11px; }
+.xdesign .delr { display: grid; grid-template-columns: 18px 18px 1fr 120px; gap: 4px; align-items: center; }
+.xdesign .delr .bar { height: 7px; }
+.xdesign .delr b { text-align: right; font-size: 11px; white-space: nowrap; }
+.xdesign .delr .tl { width: 16px; height: 16px; }
+.xdesign .dcmp { font-size: 12px; }
+.xdesign .dcmp.up { color: var(--good); } .xdesign .dcmp.down { color: #ff8a7a; }
+.xdesign .dhelp { margin-top: 4px; font-size: 10px; }
+@media (max-width: 760px) { .xdesign { right: 6px; left: 6px; width: auto; top: 40%; } .dbtn { top: 35%; } }
