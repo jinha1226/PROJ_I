@@ -308,8 +308,15 @@ G.Wuxia = (() => {
         terrain(x, y) {
           // 민가 벽(#)·화산파 전각 벽(W)은 0x72식으로 방향마다 다른 조각 (바위·벽이 아닌 칸이 트인 쪽)
           const ch = GR.at(rt.map, x, y), pre = ch === '#' ? 'vw_' : ch === 'W' ? 'vm_' : null;
-          if (pre && G.ARTSET[pre + 'wface']) return GR.wallKeys(x, y, (xx, yy) => GR.at(rt.map, xx, yy) === ch, (xx, yy) => !'#WM '.includes(GR.at(rt.map, xx, yy)), pre);
-          return D.tiles[ch] || null;
+          const isWall = (xx, yy) => '#W'.includes(GR.at(rt.map, xx, yy)) && GR.at(rt.map, xx, yy) !== ' ';
+          if (pre && G.ARTSET[pre + 'wface']) return GR.wallKeys(x, y, (xx, yy) => GR.at(rt.map, xx, yy) === ch, (xx, yy) => !'#WM '.includes(GR.at(rt.map, xx, yy)), pre, '', true);
+          const base = D.tiles[ch];
+          // 땅 그림자: 위나 왼쪽이 벽이면 그쪽 가장자리가 어둡다 (벽이 땅에 서 있게)
+          if (!base || !G.ARTSET.sh_N || ch === 'M') return base || null;
+          const L = [...base];
+          if (isWall(x, y - 1)) L.splice(1, 0, 'sh_N');
+          if (isWall(x - 1, y)) L.splice(1, 0, 'sh_W');
+          return L;
         },
         labels: Object.entries(D.places).map(([ch, n]) => ({ x: rt.map.poi[ch][0][0], y: rt.map.poi[ch][0][1], s: n, on: W.dest(w) === ch })),
       };

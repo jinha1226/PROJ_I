@@ -247,8 +247,15 @@ function wallSet(pre, suf, ed, dark, face) {
   SPEC[pre + 'cW' + suf] = { src: ['wall_edge_mid_left'], ed };
 }
 // 무협: 민가는 따뜻한 흙벽돌, 화산파 전각은 밝은 대리석 (0x72 벽돌을 다시 칠한다)
-wallSet('vw_', '', [{ op: 'hue', deg: 18, sat: 1.25, light: 0.06 }], '#3a2418', ['wall_mid', 'wall_mid', 'wall_mid', 'wall_hole_1']);
+wallSet('vw_', '', [{ op: 'hue', deg: 18, sat: 1.2, light: 0.13 }], '#3a2418', ['wall_mid', 'wall_mid', 'wall_mid', 'wall_hole_1']);
 wallSet('vm_', '', [{ op: 'hue', deg: 160, sat: 0.25, light: 0.32 }], '#56606a', ['wall_mid', 'wall_mid', 'wall_mid', 'wall_banner_red']);
+// 마을 벽은 윗면을 재질로 채운다(cap) + 트인 쪽 가장자리 선(oN·oE·oW) + 땅 그림자(sh_N·sh_W)
+for (const [pre, c] of [['vw_', { base: '#b08a62', joint: '#7d5c40', hi: '#c9a77c' }], ['vm_', { base: '#cfd5d8', joint: '#99a2a8', hi: '#e6eaec' }]]) {
+  SPEC[pre + 'cap'] = { draw: ['cap', 3, c] };
+  for (const sd of ['N', 'E', 'W']) SPEC[pre + 'o' + sd] = { draw: ['edge', 1, { side: sd, hi: c.hi }] };
+}
+SPEC.sh_N = { draw: ['shade', 1, { side: 'N', depth: 6, a: 0.5 }] };
+SPEC.sh_W = { draw: ['shade', 1, { side: 'W', depth: 4, a: 0.35 }] };
 for (let b = 0; b < 6; b++) {
   SPEC['f_floor' + b] = { src: FLOOR, ed: BAND[b] };
   wallSet('f_', b, BAND[b], '#1d1518', ['wall_mid', 'wall_mid', 'wall_mid', 'wall_hole_1', 'wall_mid', 'wall_banner_red', 'wall_mid', 'wall_hole_2']);

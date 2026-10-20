@@ -95,8 +95,15 @@ G.Grid = {
   },
   // 0x72식 벽 조각 고르기: 아래가 트였으면 앞면, 아니면 속(어두움) 위에 트인 쪽마다 테두리,
   // 앞면 바로 위 칸에는 앞면의 윗단. wall(x, y)·open(x, y)는 맵마다 다르다. 키는 <pre><조각><suf>.
-  wallKeys(x, y, wall, open, pre, suf = '') {
+  // cap이면 마을 벽: 윗면을 재질로 채우고(빈 어둠 대신) 트인 쪽에 가장자리 선
+  wallKeys(x, y, wall, open, pre, suf = '', cap = false) {
     if (open(x, y + 1)) return [pre + 'wface' + suf];
+    if (cap) {
+      const L = [pre + 'cap' + suf];
+      if (wall(x, y + 1) && open(x, y + 2)) L.push(pre + 'cS' + suf);
+      for (const [sd, dx, dy] of [['N', 0, -1], ['E', 1, 0], ['W', -1, 0]]) if (open(x + dx, y + dy)) L.push(pre + 'o' + sd + suf);
+      return L;
+    }
     const face = wall(x, y + 1) && open(x, y + 2);
     if (!face && !G.Grid.DIR.some(([dx, dy]) => open(x + dx, y + dy))) return null;
     const L = [pre + 'wdark' + suf];

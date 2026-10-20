@@ -153,4 +153,33 @@ const herb = () => sprite([
 const cave = () => sprite([
   '', '    kkkkkkkk', '   kSSSSSSSSk', '  kSSkkkkkkSSk', ' kSSkkkkkkkkSSk', ' kSkkkkkkkkkkSk', ' kSkkkkkkkkkkSk', 'kSSkkkkkkkkkkSSk', 'kSkkkkkkkkkkkkSk',
   'kSkkkkkkkkkkkkSk', 'kSkkkkkkkkkkkkSk', 'kSskkkkkkkkkksSk', 'kSskkkkkkkkkksSk', 'kssskkkkkkkkksssk', 'kkkkkkkkkkkkkkkk'].map(r => r.slice(0, 16)), { k: 'ink', S: 'soil2', s: 'soil1' });
-module.exports = { PAL, grass, flowers, road, path, tree, rock, water, falls, planks, door, table, cart, board, dummy, statue, altar, lantern, herb, cave };
+// ── 마을 벽(한 칸 두께) 윗면과 가장자리, 땅 그림자 ──
+// 윗면: 재질로 꽉 채우고 이음매 몇 줄 (던전과 달리 벽 위가 비어 있지 않다)
+function cap(seed, { base, joint, hi }) {
+  const im = img(16, 16, base), R = rng(seed);
+  for (let r = 0; r < 4; r++) { const y = r * 4 + 3; for (let x = 0; x < 16; x++) put(im, x, y, joint); const j = (r * 5 + ((R() * 8) | 0)) % 16; for (let k = 0; k < 3; k++) put(im, j, y - 1 - k, joint); }
+  for (let i = 0; i < 6; i++) put(im, (R() * 16) | 0, (R() * 16) | 0, hi);
+  return im;
+}
+// 가장자리 선: 트인 쪽에 검은 1px + 안쪽 밝은 1px (투명 바탕에 겹친다)
+function edge(seed, { side, hi }) {
+  const im = img(16, 16);
+  for (let i = 0; i < 16; i++) {
+    const [x0, y0, x1, y1] = side === 'N' ? [i, 0, i, 1] : side === 'S' ? [i, 15, i, 14] : side === 'E' ? [15, i, 14, i] : [0, i, 1, i];
+    put(im, x0, y0, 'ink', false); put(im, x1, y1, hi, false);
+  }
+  return im;
+}
+// 땅 그림자: 벽 쪽 가장자리에서 안쪽으로 옅어지는 어둠 (알파)
+function shade(seed, { side, depth = 5, a = 0.45 }) {
+  const im = img(16, 16);
+  for (let k = 0; k < depth; k++) {
+    const al = Math.round(255 * a * (1 - k / depth));
+    for (let i = 0; i < 16; i++) {
+      const [x, y] = side === 'N' ? [i, k] : [k, i];
+      im.d.set([20, 16, 24, al], (y * 16 + x) * 4);
+    }
+  }
+  return im;
+}
+module.exports = { PAL, cap, edge, shade, grass, flowers, road, path, tree, rock, water, falls, planks, door, table, cart, board, dummy, statue, altar, lantern, herb, cave };
