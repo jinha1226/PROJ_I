@@ -238,31 +238,38 @@ G.Wuxia = (() => {
     // ── 어디서 무엇을 ──
     // 가야 할 지역: 직접 고른 곳(📍) → 심부름(다른 지역 특산) → 천하제일 비무가 필요하면 천산 → 지위의 근거지
     // ── 생애 계획표 ──
-    // 블록: { from: 시작 나이, r: 지역, f: 집중('fame' | 심법 | 외공 | 경공 | 잡학) }. 다음 블록 시작 전까지 이어진다.
+    // 단계: { r: 지역, f: 집중('fame' | 심법 | 외공 | 경공 | 잡학), u: 끝나는 조건('rank' 지위 단계 | 'realm' 경지 | 'end' 끝까지), v: 그 값 }
+    // 위에서부터 차례로. 이미 이룬 단계는 건너뛴다(지위·경지는 이번 생에 내려가지 않으니 매번 계산해도 된다). 회귀하면 처음부터.
+    // 나이로 나누지 않는 이유: 천수가 늘면 구간이 어긋나고, 따라잡기로 같은 목표를 생마다 더 일찍 이룬다.
     FOCUS: ['fame', '심법', '외공', '경공', '잡학'],
     focusName: f => (f === 'fame' ? '명성' : f),
-    // 추천 코스 (진로마다): 마을에서 기반 → 수련 세 구간(계열을 바꿔 가며) → 말년 낙양 명성
+    // 추천 코스 (진로마다): 마을 명성 → 본산 수련 → 수련지 → 낙양 명성 → 본산 수련 → 낙양 끝까지
     recommend(path) {
       const R = {
-        jeong: [[16, 'hwaeum', 'fame'], [21, 'hwasan', '심법'], [34, 'wudang', '외공'], [48, 'hwasan', '심법'], [62, 'nakyang', 'fame']],
-        sa: [[16, 'hwaeum', 'fame'], [21, 'noklim', '외공'], [34, 'noklim', '심법'], [48, 'sacheon', '외공'], [62, 'nakyang', 'fame']],
-        ma: [[16, 'hwaeum', 'fame'], [21, 'sipman', '심법'], [34, 'sipman', '외공'], [48, 'sipman', '심법'], [62, 'nakyang', 'fame']],
+        jeong: [['hwaeum', 'fame', 'rank', 2], ['hwasan', '심법', 'realm', 3], ['wudang', '외공', 'realm', 4], ['nakyang', 'fame', 'rank', 7], ['hwasan', '심법', 'realm', 6], ['nakyang', 'fame', 'end', 0]],
+        sa: [['hwaeum', 'fame', 'rank', 2], ['noklim', '외공', 'realm', 3], ['noklim', '심법', 'realm', 4], ['nakyang', 'fame', 'rank', 7], ['noklim', '외공', 'realm', 6], ['nakyang', 'fame', 'end', 0]],
+        ma: [['hwaeum', 'fame', 'rank', 2], ['sipman', '심법', 'realm', 3], ['sipman', '외공', 'realm', 4], ['nakyang', 'fame', 'rank', 7], ['sipman', '심법', 'realm', 6], ['nakyang', 'fame', 'end', 0]],
       }[path] || [];
-      return R.map(([from, r, f]) => ({ from, r, f }));
+      return R.map(([r, f, u, v]) => ({ r, f, u, v }));
     },
     plan(w) {
+      // 나이 구간 계획표(옛 저장)는 추천 코스로
+      if (w.plan && w.plan.some(b => b.u == null)) { w.plan = null; w.planAuto = true; }
       if (w.planAuto || !w.plan || !w.plan.length) w.plan = W.recommend(W.pathOf(w));
       return w.plan;
     },
-    // 지금 나이의 블록
-    block(w) {
-      const P = W.plan(w);
-      let b = P[0];
-      for (const x of P) if (w.age >= x.from) b = x;
-      return b;
+    stepDone: (w, b) => (b.u === 'rank' ? jobDef(w.job).tier >= b.v : b.u === 'realm' ? W.realm(w) >= b.v : false),
+    // 지금 단계 (모두 이뤘으면 마지막)
+    stepIdx(w) { const P = W.plan(w); const i = P.findIndex(b => !W.stepDone(w, b)); return i < 0 ? P.length - 1 : i; },
+    block(w) { return W.plan(w)[W.stepIdx(w)]; },
+    stepGoal(w, b) {
+      if (b.u === 'end') return '끝까지';
+      if (b.u === 'realm') return `경지 ${W.realmName(b.v)}까지`;
+      const path = W.pathOf(w), j = D.jobs.find(x => x.tier === b.v && (!x.path || x.path === path));
+      return `지위 ${j ? j.n : b.v + '단계'}까지`;
     },
     // 계획표를 직접 고치면 추천 코스에서 내 코스로 (회귀해도 남는다)
-    editPlan(w, fn) { W.plan(w); w.planAuto = false; fn(w.plan); w.plan.sort((a, b) => a.from - b.from); },
+    editPlan(w, fn) { W.plan(w); w.planAuto = false; fn(w.plan); },
     resetPlan(w) { w.planAuto = true; w.plan = null; W.plan(w); },
     // 가야 할 지역: 직접 고른 곳(📍) → 천하제일 비무(조건이 되면) → 계획표의 지금 블록
     target(w) {
@@ -565,8 +572,8 @@ G.Wuxia = (() => {
             }
             else if (ta('twin') && W.localSkills(w, rt.region).length) W.gain(w, w.skill, W.skillXp(w, w.skill) * ta('twin') * dt);
             if (Math.random() < dt * 1.5) G.fx(rt, { k: 'text', x: h.x + (Math.random() - 0.5), y: h.y - 0.8, s: w.mode === 'work' ? '…' : '気', col: w.mode === 'work' ? '#ccc' : '#9fe0ff', t: 0.8 });
-            // 명성 블록은 주로 일, 계열 블록은 주로 수련
-            const fameB = W.block(w).f === 'fame';
+            // 명성 단계는 주로 일, 계열 단계는 주로 수련. 명성 단계라도 다음 지위에 경지가 모자라면 수련 위주로 (그 단계에 갇히지 않게)
+            const nxj = W.nextJob(w), fameB = W.block(w).f === 'fame' && !(nxj && W.realm(w) < (nxj.realm || 0));
             if (rt.stay >= (w.mode === 'work' ? (fameB ? WORK_T * 2.5 : WORK_T * 0.5) : (fameB ? TRAIN_T * 0.25 : TRAIN_T))) {
               // 이 지역에 익힐 무공이 없으면 활동만 한다
               const canTrain = W.localSkills(w, rt.region).some(s => s.id === w.skill);

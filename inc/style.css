@@ -973,3 +973,10 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .wuxia .fover .ftop { margin-right: 132px; }
   .psel { font-size: 11px; }
 }
+.prow2 .pno { width: 18px; text-align: center; color: var(--accent); }
+.prow2.done { opacity: .5; }
+.psel.u { flex: none; width: 150px; }
+@media (max-width: 760px) {
+  .prow2 { flex-wrap: wrap; }
+  .psel.u { width: auto; flex: 1; }
+}

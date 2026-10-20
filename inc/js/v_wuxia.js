@@ -98,29 +98,35 @@ G.UI.views.wuxia = function () {
   });
   const elixCnt = h('b'), elixCost = h('small.c');
   const elixBtn = h('button.shop-it.elix', { title: '영단', on: { click: () => W.buyElixir(w()) } }, G.T.el('q_pill', 'md'), h('span.si', null, h('b', null, '영단 · 숙련 +10% (어디서나)'), elixCost), elixCnt);
-  // 생애 계획표: 구간마다 시작 나이 · 지역 · 집중. 고치면 내 코스(회귀해도 남는다)
+  // 생애 계획표: 단계마다 지역 · 집중 · 끝나는 조건(지위 ○○까지 / 경지 ○○까지 / 끝까지). 고치면 내 코스(회귀해도 남는다)
   const planBody = h('div.plan');
   let planKey = '';
   function renderPlan() {
-    const s = w(), P = W.plan(s);
-    const key = JSON.stringify(P) + s.planAuto + W.pathOf(s);
+    const s = w(), P = W.plan(s), path = W.pathOf(s);
+    const key = JSON.stringify(P) + s.planAuto + path;
     if (key === planKey) return;
     planKey = key;
     planBody.innerHTML = '';
-    planBody.append(h('div.plan-h', null, h('b', null, s.planAuto ? '추천 코스' : '내 코스'), h('small.dim', null, ` · ${D.paths[W.pathOf(s)]}`), h('span.sp'),
+    planBody.append(h('div.plan-h', null, h('b', null, s.planAuto ? '추천 코스' : '내 코스'), h('small.dim', null, ` · ${D.paths[path]} · 위에서부터, 이룬 단계는 건너뛴다`), h('span.sp'),
       h('button.btn.sm', { on: { click: () => { W.resetPlan(w()); planKey = ''; } } }, '추천 코스로')));
+    const edit = fn => { W.editPlan(w(), fn); planKey = ''; };
+    const ranks = D.jobs.filter(j => !j.path || j.path === path);
     P.forEach((b, i) => {
-      const from = h('input.pin', { type: 'number', min: 10, max: 200, value: b.from, on: { change: e => { W.editPlan(w(), p => { p[i].from = Math.max(10, +e.target.value || 10); }); planKey = ''; } } });
-      if (i === 0) from.disabled = true;
-      const reg = h('select.psel', { on: { change: e => { W.editPlan(w(), p => { p[i].r = e.target.value; }); planKey = ''; } } },
+      const reg = h('select.psel', { on: { change: e => edit(p => { p[i].r = e.target.value; }) } },
         Object.entries(D.regions).map(([id, R]) => h('option', { value: id, selected: id === b.r }, `${R.n} — ${role(s, id)}`)));
-      const foc = h('select.psel.f', { on: { change: e => { W.editPlan(w(), p => { p[i].f = e.target.value; }); planKey = ''; } } },
+      const foc = h('select.psel.f', { on: { change: e => edit(p => { p[i].f = e.target.value; }) } },
         W.FOCUS.map(f => h('option', { value: f, selected: f === b.f }, W.focusName(f))));
-      const del = h('button.fbtn', { 'data-tip': '구간 빼기', on: { click: () => { W.editPlan(w(), p => { p.splice(i, 1); }); planKey = ''; } } }, '✕');
+      // 끝나는 조건: 지위 단계 / 경지 / 끝까지 (한 목록으로)
+      const opts = [...ranks.map(j => ['rank:' + j.tier, `지위 ${j.n}까지`]), ...D.realms.map((r, k) => ['realm:' + k, `경지 ${r[0]}까지`]), ['end:0', '끝까지']];
+      const until = h('select.psel.u', { on: { change: e => { const [u, v] = e.target.value.split(':'); edit(p => { p[i].u = u; p[i].v = +v; }); } } },
+        opts.map(([v, t]) => h('option', { value: v, selected: v === `${b.u}:${b.v}` }, t)));
+      const up = h('button.fbtn', { 'data-tip': '위로', on: { click: () => edit(p => { if (i > 0) [p[i - 1], p[i]] = [p[i], p[i - 1]]; }) } }, '▲');
+      const del = h('button.fbtn', { 'data-tip': '단계 빼기', on: { click: () => edit(p => { p.splice(i, 1); }) } }, '✕');
+      up.disabled = i === 0;
       del.disabled = P.length <= 1;
-      planBody.append(h('div.prow2', { 'data-i': i }, from, h('small', null, '세부터'), reg, foc, del));
+      planBody.append(h('div.prow2', { 'data-i': i }, h('b.pno', null, i + 1), reg, foc, until, up, del));
     });
-    planBody.append(h('button.btn.sm.padd', { on: { click: () => { W.editPlan(w(), p => { const l = p[p.length - 1]; p.push({ from: l.from + 10, r: l.r, f: l.f }); }); planKey = ''; } } }, '+ 구간'));
+    planBody.append(h('button.btn.sm.padd', { on: { click: () => edit(p => { const l = p[p.length - 1]; p.push({ r: l.r, f: l.f, u: 'end', v: 0 }); }) } }, '+ 단계'));
   }
   const bodies = { plan: planBody, rank: h('div.olist.wide', null, ranks.map(x => x.el)), skill: h('div.olist.wide', null, skills.map(x => x.el)), shop: h('div.shop.wide', null, shop.map(x => x.el), elixBtn) };
   function openPanel(k) {
@@ -167,7 +173,8 @@ G.UI.views.wuxia = function () {
       res.set('ins', U.fmt(s.ins));
       // 나이: 천수까지 차오르는 막대
       const leftY = Math.max(0, lifeN - s.age);
-      age.set((s.age - W.startAge()) / (lifeN - W.startAge()), `${Math.floor(s.age)} / ${Math.floor(lifeN)}세`, `⌛ ${Math.ceil(leftY)}년`, leftY < 8);
+      const st = W.stepIdx(s), sb = W.plan(s)[st];
+      age.set((s.age - W.startAge()) / (lifeN - W.startAge()), `${Math.floor(s.age)} / ${Math.floor(lifeN)}세 · ${st + 1}단계 ${W.focusName(sb.f)} → ${W.stepGoal(s, sb).replace('까지', '')}`, `⌛ ${Math.ceil(leftY)}년`, leftY < 8);
       // 총 배율: 무공 효과 × 특산 × 트리 × 넥서스·유물·붕괴 (지역·전생 레벨은 빼고)
       for (const f of ['심법', '외공', '경공', '잡학']) { bonus.set(f, `×${U.fmt(W.famXp(s, f))}`); bonus.tip(f, `${f} 숙련 — ${tipOf(s, f)}`); }
       bonus.set('fame', `×${U.fmt(W.fameMult(s))}`); bonus.tip('fame', `명성 — ${tipOf(s, 'fame')}`);
@@ -209,9 +216,9 @@ G.UI.views.wuxia = function () {
       setText(tabs.shop.n, '특산'); setText(tabs.shop.sub, buyable ? `${R.n} ${buyable}` : '영단');
       if (openK === 'plan') {
         renderPlan();
-        // 지금 구간 밝히기
-        const cur = W.plan(s).indexOf(W.block(s));
-        for (const r of planBody.querySelectorAll('.prow2')) tog(r, 'on', +r.dataset.i === cur);
+        // 지금 단계 밝히기, 이룬 단계는 흐리게
+        const cur = W.stepIdx(s), P = W.plan(s);
+        for (const r of planBody.querySelectorAll('.prow2')) { const i = +r.dataset.i; tog(r, 'on', i === cur); tog(r, 'done', i < cur || (P[i] && W.stepDone(s, P[i]))); }
       }
       if (openK === 'rank') for (const x of ranks) {
         const d = x.d;
