@@ -176,6 +176,7 @@ G.Fantasy = (() => {
       rt.phase = 'explore';
       rt.focus = null;
       rt.target = null;
+      rt.room = null;
       F.refreshEnts(rt);
       F.look(rt);
       G.emit('f_floor', fl);
@@ -296,18 +297,27 @@ G.Fantasy = (() => {
       for (const m of rt.mons) { const d = GR.dist(e, m); if (d < bd) { bd = d; best = m; } }
       return best;
     },
-    // 길로 잰 가장 가까운 몬스터. 한 번 고르면 쓰러뜨릴 때까지 바꾸지 않는다 (벽 너머 두 적 사이에서 오가지 않게).
-    pickTarget(rt) {
-      const t = rt.target;
-      if (t && t.hp > 0 && rt.mons.includes(t)) return t;
-      const h = rt.hero, d = GR.field(rt.map, Math.round(h.x), Math.round(h.y));
-      let best = null, bd = 1e9;
-      for (const m of rt.mons) {
-        const v = d[Math.round(m.x) + Math.round(m.y) * rt.map.w];
-        const k = v >= 0 ? v : 1e6 + GR.dist(h, m);
-        if (k < bd) { bd = k; best = m; }
-      }
-      return (rt.target = best);
+    // 방 안(문턱 한 칸 포함)에 있나
+    inRoom: (r, o) => o.x >= r.x - 1 && o.x < r.x + r.w + 1 && o.y >= r.y - 1 && o.y < r.y + r.h + 1,
+    // 기사가 다음에 갈 곳: 덤벼 오는 적 → 눈에 띈 상자(곁의 적부터 치우고) → 길로 가장 가까운 방의 적·상자 → 방 밖에 남은 적.
+    // 한 번 고른 적·방은 끝낼 때까지 바꾸지 않는다 (벽 너머 두 곳 사이에서 오가지 않게). 없으면 null (계단으로).
+    plan(rt) {
+      const h = rt.hero, m = rt.map, d = GR.field(m, Math.round(h.x), Math.round(h.y));
+      const far = o => { const v = d[Math.round(o.x) + Math.round(o.y) * m.w]; return v >= 0 ? v : 1e6 + GR.dist(h, o); };
+      const near = list => { let best = null, bd = 1e9; for (const o of list) { const k = far(o); if (k < bd) { bd = k; best = o; } } return best; };
+      const lock = o => (rt.target = o);
+      const t = rt.target, held = t && t.hp > 0 && rt.mons.includes(t) ? t : null;
+      const close = o => o.aggro && GR.dist(o, h) < 6;
+      if (held && close(held)) return held;
+      const fight = near(rt.mons.filter(close));
+      if (fight) return lock(fight);
+      const chest = near(rt.chests.filter(c => rt.seen[c.y * m.w + c.x]));
+      if (chest) return lock(near(rt.mons.filter(o => GR.dist(o, chest) < 4))) || chest;
+      if (held) return held;
+      const busy = r => rt.mons.some(o => F.inRoom(r, o)) || rt.chests.some(c => F.inRoom(r, c));
+      if (!rt.room || !busy(rt.room)) rt.room = near(m.rooms.filter(busy).map(r => ({ x: r.cx, y: r.cy, r })))?.r || null;
+      if (rt.room) return lock(near(rt.mons.filter(o => F.inRoom(rt.room, o)))) || near(rt.chests.filter(c => F.inRoom(rt.room, c)));
+      return lock(near(rt.mons)) || near(rt.chests);
     },
     descend(f, rt) {
       G.addEss(F.floorEss(f.floor), 'fantasy');
@@ -556,11 +566,13 @@ G.Fantasy = (() => {
           if (rt.phase === 'dead') return;
         }
       }
-      // 기사: 지정한 적 또는 길로 가장 가까운 적. 적이 없으면 상자, 그다음 계단.
+      // 기사: 지정한 적, 아니면 F.plan이 고른 적·상자. 둘 다 없으면 계단.
       hero.moving = false;
+      rt.heroTg = null;
       if (!hero.dead) {
-        const target = (rt.focus && rt.focus.hp > 0) ? rt.focus : F.pickTarget(rt);
-        const chest = !target && rt.chests[0];
+        const goal = (rt.focus && rt.focus.hp > 0) ? rt.focus : F.plan(rt);
+        const chest = goal && goal.chest ? goal : null, target = chest ? null : goal;
+        rt.heroTg = target;
         if (target) {
           if (GR.dist(hero, target) > 1.2 + target.s * 0.2 || !F.sees(m, hero, target)) GR.moveTo(m, hero, target.x, target.y, speed, dt, 0.6);
           else {
@@ -585,7 +597,8 @@ G.Fantasy = (() => {
         }
       }
       F.look(rt);
-      // 동료: 기사를 따라다니며 각자 싸운다. 기사가 쓰러지면 살아 있는 전열(성기사·용기병)을 따르고,
+      // 동료: 기사가 노리는 적을 함께 친다 (파티가 갈라져 따로 싸우지 않게). 기사가 싸우지 않을 땐 따라다닌다.
+      // 기사가 쓰러지면 각자 가까운 적과 싸우며 살아 있는 전열(성기사·용기병)을 따르고,
       // 전열도 없으면 제자리를 지킨다 — 쓰러진 기사(대개 적 한가운데)를 따라가 후열이 적진에 뛰어들지 않게
       const front = hero.dead ? rt.allies.find(q => !q.dead && (q.id === 'paladin' || q.id === 'dragoon')) : hero;
       for (const a of rt.allies) {
@@ -618,8 +631,8 @@ G.Fantasy = (() => {
         }
         const range = def.range + (a.id === 'archer' ? ta('r_range') : 0);
         const prefer = ta('s_focus') && rt.focus && rt.focus.hp > 0 && GR.dist(rt.focus, a) < range + 4 ? rt.focus : null;
-        const tg = prefer || F.nearestMon(rt, a, range + 4);
-        if (tg && GR.dist(tg, lead) < 9) {
+        const tg = hero.dead ? prefer || F.nearestMon(rt, a, range + 4) : rt.heroTg;
+        if (tg && (!hero.dead || GR.dist(tg, lead) < 9)) {
           // 원거리: 적이 바로 붙으면 한 걸음 물러나 쏜다 (앞에 막아 줄 동료가 있을 때만 — 혼자면 그냥 싸운다)
           if (range >= 3 && GR.dist(a, tg) < 1.4 && rt.party.some(q => !q.dead && q !== a && GR.dist(q, tg) < 2.5)) {
             const dx = a.x - tg.x, dy = a.y - tg.y, l = Math.hypot(dx, dy) || 1;

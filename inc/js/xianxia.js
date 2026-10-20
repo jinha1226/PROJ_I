@@ -5,6 +5,9 @@
 //   수 → 영기, 금 → 영석, 목 → 영초 성장, 화 → 연단 속도, 토 → 요수 방어·천겁 성공률
 // 요수가 입구로 들어와 진기를 깨뜨린다(잠시 꺼짐). 수도자의 비검이 막고, 클릭하면 크게 벤다.
 // 영기가 차면 천겁: 먼저 심마가 몰려오고(클릭으로 벤다), 닿을 때마다 성공률이 깎인다. 그다음 벼락.
+// 천겁은 리스크다: 실패하면 그 경지의 영기를 처음부터 다시 쌓는다(진행은 잃지 않고 시간만).
+// 경지가 오르면 무대가 위로 올라간다(산기슭 동굴 → 영산 중턱 → 구름 위 봉우리 → 선궁 → 선계) — 진법도 새 판.
+// 최종 목적지는 등선: 진선 경지에 닿으면 신선이 되어 하늘로 오른다. 그 뒤 선계(선제 n중천)는 끝없이.
 G.RT = G.RT || {};
 G.Xianxia = (() => {
   const D = G.D.X, U = G.U, GR = G.Grid, ELS = D.els;
@@ -22,7 +25,8 @@ G.Xianxia = (() => {
     },
     rt(x) { return G.RT.xianxia || (G.RT.xianxia = X.boot(x)); },
     boot(x) {
-      const map = GR.fromAscii(D.map, D.pass);
+      const stage = X.stageOf(x.realm), ST = D.stages[stage];
+      const map = GR.fromAscii(ST.map || D.map, D.pass);
       const [vx, vy] = map.poi.V[0];
       // 진법 칸: 좌선대에서 가까운 순서로 열린다
       const slots = [...(map.poi.o || []), ...(map.poi.v || [])].map(([sx, sy]) => ({ x: sx, y: sy, vein: GR.at(map, sx, sy) === 'v', off: 0 }))
@@ -32,15 +36,26 @@ G.Xianxia = (() => {
       const rt = {
         map, slots, at, fx: [], me: { kind: 'hero', t: 'cultivator', x: vx, y: vy, s: 1.15, bar: false }, beasts: [], disciples: [], demons: [],
         plots: (map.poi.h || []).map(([px, py]) => ({ x: px, y: py, g: Math.random() * HERB_T })),
-        state: 'meditate', beastT: 4, alchT: 0, swordT: 0, trib: 0, penalty: 0, zapT: 0, ver: 0,
+        state: 'meditate', beastT: 4, alchT: 0, swordT: 0, trib: 0, penalty: 0, zapT: 0, ver: 0, stage,
       };
       if (x.autoArr) X.autoArrange(x, rt);
       return rt;
     },
     realmName: r => (r < D.realms.length ? D.realms[r] : `선제 ${r - D.realms.length + 1}중천`),
+    stageOf(r) { let i = 0; D.stages.forEach((st, k) => { if (r >= st.from) i = k; }); return i; },
+    ASCEND: 9,
+    // 영구 배율은 출처끼리 더한다 (트리·차원·유물·시너지). 트리 안의 같은 효과 노드끼리도 더한다 (곱하면 노드 수만큼 폭주)
+    sum: parts => 1 + parts.reduce((a, p) => a + p[1] - 1, 0),
+    parts(k) {
+      const dim = ['차원', G.globalMult()];
+      if (k === 'qi') return [['트리', 1 + ta('qi')], dim, ['유물', 1 + G.relicVal('x_qi')], ['시너지', G.synergy('syn_tactics') ? 1 + 0.04 * (G.S.w.scifi.maxWave - 1) : 1]];
+      if (k === 'stone') return [['트리', 1 + ta('stone')], dim, ['유물', 1 + G.relicVal('x_stone')]];
+      if (k === 'power') return [['트리', 1 + ta('power')], dim, ['유물', 1 + G.relicVal('x_power')]];
+      return [];
+    },
     slotCount: () => BASE_SLOTS + ta('slots'),
     // 오행 하나의 세기: 혈자리(+20%씩) × 경맥 개통 ×2
-    elMult: el => tm(el) * (ta(el + 'Open') ? 2 : 1),
+    elMult: el => (1 + ta(el)) * (ta(el + 'Open') ? 2 : 1),
 
     // ── 진법 ──
     place(x, i, el) {
@@ -87,7 +102,7 @@ G.Xianxia = (() => {
           if (gen[el] === nb) { g++; links.push({ x: rt.slots[j].x, y: rt.slots[j].y, x2: s.x, y2: s.y, good: true, col: D.el[nb].col }); }
           if (over[el] === nb) { o++; links.push({ x: rt.slots[j].x, y: rt.slots[j].y, x2: s.x, y2: s.y, good: false }); }
         }
-        const out = s.off > 0 ? 0 : (s.vein ? 2 : 1) * Math.max(0.2, 1 + 0.5 * g - 0.4 * o) * X.elMult(el);
+        const out = s.off > 0 ? 0 : (s.vein ? 2 + ta('vein') : 1) * Math.max(0.2, 1 + (0.5 + ta('gen')) * g - 0.4 * (1 - Math.min(0.9, ta('over'))) * o) * X.elMult(el);
         sum[el] += out;
         per.push({ i, el, out, g, o });
       }
@@ -98,19 +113,20 @@ G.Xianxia = (() => {
 
     // ── 수치 ──
     qiBase(x) {
-      let m = Math.pow(2.6, x.realm) * tm('qi') * G.globalMult() * (1 + G.relicVal('x_qi'));
-      if (G.synergy('syn_tactics')) m *= 1 + 0.04 * (G.S.w.scifi.maxWave - 1);
+      const m = Math.pow(2.6, x.realm) * X.sum(X.parts('qi'));
       return x.devT > 0 ? m * 0.3 : m;
     },
     qiRate: x => X.qiBase(x) * (1 + 0.35 * X.layout(x).sum.water),
-    stoneMult: () => G.globalMult() * (1 + G.relicVal('x_stone')),
+    stoneMult: () => X.sum(X.parts('stone')),
     stoneRate: x => 0.4 * Math.pow(1.7, x.realm) * X.layout(x).sum.metal * X.stoneMult(),
-    power: x => 10 * Math.pow(3, x.realm) * G.globalMult() * (1 + G.relicVal('x_power')),
-    breakCost: r => 40 * Math.pow(9, r),
-    breakChance(x, pills = Math.min(4, x.pills)) {
-      let c = Math.max(0.25, 0.8 - 0.06 * x.realm) + 0.12 * pills + ta('trib') + Math.min(0.2, 0.02 * X.layout(x).sum.earth);
+    power: x => 10 * Math.pow(3, x.realm) * X.sum(X.parts('power')),
+    breakCost: r => 40 * Math.pow(9.5, r) * (1 - Math.min(0.5, ta('tribCost'))),
+    // 천겁 성공률: 경지가 오를수록 낮아지고(벼락이 세진다), 단약·토 진기·트리로 올린다. 늘 조금은 위험하다(최대 95%)
+    pillUse: () => 4 + ta('pillMax'),
+    breakChance(x, pills = Math.min(X.pillUse(), x.pills)) {
+      let c = Math.max(0.2, 0.62 - 0.04 * x.realm) + (0.08 + ta('pillPow')) * pills + ta('trib') + Math.min(0.15, 0.015 * X.layout(x).sum.earth);
       if (G.synergy('syn_regress')) c += 0.03 * Math.min(10, G.S.w.wuxia.lives);
-      return Math.min(1, c);
+      return Math.min(0.95, c);
     },
     beastHp: r => 12 * Math.pow(2.8, r),
     beastStone: r => 6 * Math.pow(1.7, r),
@@ -120,7 +136,7 @@ G.Xianxia = (() => {
 
     // ── 클릭 ──
     meditateClick(x) {
-      const rt = X.rt(x), g = 1 + X.qiBase(x) * 3;
+      const rt = X.rt(x), g = (1 + X.qiBase(x) * 3) * (1 + ta('click'));
       x.qi += g;
       G.fx(rt, { k: 'text', x: rt.me.x, y: rt.me.y - 1, s: '+' + U.fmt(g), col: '#9fe0ff', t: 0.8, sz: 1.2, pop: true });
       G.fx(rt, { k: 'ring', x: rt.me.x, y: rt.me.y, r: 1.2, t: 0.4, col: '#9fe0ff' });
@@ -196,7 +212,7 @@ G.Xianxia = (() => {
       return true;
     },
     resolveTrib(x, rt) {
-      const used = Math.min(4, x.pills), cost = X.breakCost(x.realm);
+      const used = Math.min(X.pillUse(), x.pills), cost = X.breakCost(x.realm);
       const ok = U.chance(Math.max(0.05, X.breakChance(x, used) - rt.penalty));
       x.pills -= used;
       if (ok) {
@@ -205,23 +221,35 @@ G.Xianxia = (() => {
         x.fails = 0;
         G.addEss(3 * Math.pow(x.realm, 2.2), 'xianxia');
         G.addSigns(2, 'xianxia');
-        G.log(`천겁을 넘었다! 「${X.realmName(x.realm)}」 경지`, 'xianxia', 'good');
-        G.fx(rt, { k: 'ring', x: rt.me.x, y: rt.me.y, r: 4, t: 1.2, col: '#ffe08a' });
-        G.J.finish('xianxia', rt.me.x, rt.me.y);
+        const asc = x.realm === X.ASCEND && !x.ascended;
+        if (asc) { x.ascended = true; G.addEss(500, 'xianxia'); G.log('등선! 신선이 되어 하늘로 오른다', 'xianxia', 'good'); }
+        else G.log(`천겁을 넘었다! 「${X.realmName(x.realm)}」 경지`, 'xianxia', 'good');
+        for (let i = 0; i < 2 + Math.min(6, x.realm); i++) G.fx(rt, { k: 'ring', x: rt.me.x, y: rt.me.y, r: 1.5 + i * 1.1, t: 0.7 + i * 0.2, col: '#ffe08a' });
+        G.J.finish('xianxia', rt.me.x, rt.me.y, 1.3 + Math.min(0.8, x.realm * 0.07));
+        G.J.flash('xianxia', '#fff3c4');
+        if (x.realm >= 4) G.J.shake('xianxia', 4 + x.realm, 0, 0, 0.5);
         G.J.sfx('xianxia', 'finish');
+        G.emit('xx_realm', { r: x.realm, asc, stage: X.stageOf(x.realm) !== rt.stage });
       } else {
-        x.qi -= cost * 0.4 * (1 - ta('tribSafe'));
-        x.devT = DEVIATION;
+        // 실패: 그 경지의 영기를 처음부터 (「백회혈」이면 일부 남긴다)
+        x.qi = Math.min(x.qi, cost) * Math.min(0.6, ta('tribSafe'));
+        x.devT = DEVIATION * (1 - Math.min(0.7, ta('dev')));
         x.fails++;
+        x.failsT = (x.failsT || 0) + 1;
+        G.fx(rt, { k: 'text', x: rt.me.x, y: rt.me.y - 1.4, s: '천겁 실패 · 영기 흩어짐', col: '#ff8a8a', t: 2, sz: 1.3, pop: true });
+        G.J.flash('xianxia', '#ff3a3a');
         G.J.sfx('xianxia', 'lose');
-        G.J.shake('xianxia', 10, 0, 0, 0.5);
-        G.log('천겁에 실패했다… 도심이 흔들린다', 'xianxia', 'bad');
+        G.J.shake('xianxia', 12, 0, 0, 0.6);
+        G.log('천겁에 실패했다… 영기가 흩어져 다시 쌓아야 한다', 'xianxia', 'bad');
+        G.emit('xx_fail', { r: x.realm });
       }
       rt.demons = [];
       rt.state = 'meditate';
     },
 
     tick(x, dt) {
+      // 경지가 무대 경계를 넘으면 새 동부로 (진법은 자동 배치면 새로 깐다)
+      if (G.RT.xianxia && G.RT.xianxia.stage !== X.stageOf(x.realm) && G.RT.xianxia.state !== 'trib') { G.RT.xianxia = null; x.arrN = -1; }
       const rt = X.rt(x), m = rt.map, me = rt.me;
       G.fxTick(rt, dt);
       if (x.devT > 0) x.devT -= dt;
@@ -237,8 +265,8 @@ G.Xianxia = (() => {
         G.fx(rt, { k: 'mote', x: s.x, y: s.y, x2: me.x, y2: me.y, col: D.el[p.el].col, t: 1.2 });
       }
       // 영초(목)와 단로(화)
-      for (const p of rt.plots) if (p.g < HERB_T) p.g += dt * (1 + 0.5 * L.sum.wood);
-      if (x.herbs >= 3 && (rt.alchT += dt * (1 + 0.5 * L.sum.fire)) >= ALCH_T) {
+      for (const p of rt.plots) if (p.g < HERB_T) p.g += dt * (1 + 0.5 * L.sum.wood) * (1 + ta('herb'));
+      if (x.herbs >= 3 && (rt.alchT += dt * (1 + 0.5 * L.sum.fire) * (1 + ta('alch'))) >= ALCH_T) {
         rt.alchT = 0; x.herbs -= 3; x.pills = Math.min(20, x.pills + 1);
         const [fx, fy] = m.poi.F[0];
         G.fx(rt, { k: 'tile', key: 'fx_fire', x: fx, y: fy, t: 0.8 });
@@ -281,7 +309,7 @@ G.Xianxia = (() => {
         if ((b.atkT -= dt) <= 0) {
           b.atkT = 2.5;
           G.J.lunge('xianxia', b, b.goal);
-          b.goal.off = BREAK_T;
+          b.goal.off = BREAK_T * (1 - Math.min(0.7, ta('guard')));
           rt.ver++;
           G.fx(rt, { k: 'ring', x: b.goal.x, y: b.goal.y, r: 0.8, t: 0.5, col: '#ff6a6a' });
           G.J.sfx('xianxia', 'hurt');
@@ -301,7 +329,7 @@ G.Xianxia = (() => {
       if ((rt.swordT -= dt) <= 0) {
         const foes = [...rt.demons, ...rt.beasts];
         if (foes.length) {
-          rt.swordT = AUTO_SWORD / (rt.state === 'trib' ? 2 : 1);
+          rt.swordT = AUTO_SWORD / (1 + ta('sword')) / (rt.state === 'trib' ? 2 : 1);
           X.flySword(x, foes.reduce((a, b) => (GR.dist(me, a) <= GR.dist(me, b) ? a : b)), false);
         }
       }
@@ -321,12 +349,15 @@ G.Xianxia = (() => {
         rt.demons = rt.demons.filter(d => d.hp > 0);
         if (!rt.demons.length) {
           rt.trib += dt;
-          if (Math.random() < dt * 5) {
-            G.fx(rt, { k: 'bolt', x: me.x + (Math.random() - 0.5) * 3, y: me.y + (Math.random() - 0.5) * 2, t: 0.3, col: '#d9c2ff' });
+          // 벼락: 경지가 높을수록 많고 굵고 길다 (구천뇌겁)
+          const r = x.realm, spread = 3 + r * 0.4;
+          if (Math.random() < dt * (5 + r * 1.5)) {
+            G.fx(rt, { k: 'bolt', x: me.x + (Math.random() - 0.5) * spread, y: me.y + (Math.random() - 0.5) * spread * 0.6, t: 0.3 + r * 0.02, col: r >= 6 ? '#fff3c4' : '#d9c2ff' });
             G.J.sfx('xianxia', 'thunder');
-            G.J.shake('xianxia', 3, 0, 1, 0.15);
+            G.J.shake('xianxia', 3 + r * 0.6, 0, 1, 0.15);
           }
-          if (rt.trib >= 2.5) X.resolveTrib(x, rt);
+          if (r >= 3 && Math.random() < dt * (0.6 + r * 0.15)) { G.fx(rt, { k: 'bolt', x: me.x, y: me.y, t: 0.5, col: '#ffffff' }); G.J.flash('xianxia', '#e8dcff'); }
+          if (rt.trib >= 2.5 + r * 0.25) X.resolveTrib(x, rt);
         }
       } else if (x.autoBreak && x.devT <= 0 && x.qi >= X.breakCost(x.realm) && X.breakChance(x) >= x.autoThr) X.breakthrough(x);
       if (Math.random() < dt * 1.5) G.fx(rt, { k: 'text', x: me.x + (Math.random() - 0.5) * 1.4, y: me.y - 0.6, s: '氣', col: '#9fe0ff', t: 0.9 });
@@ -346,11 +377,12 @@ G.Xianxia = (() => {
       ents.push(...rt.disciples, ...rt.beasts, ...rt.demons, rt.me);
       return {
         map: rt.map, ents, fx: rt.fx, fit: true, cam: rt.me, links: L.links,
-        terrain: (cx, cy) => D.tiles[GR.at(rt.map, cx, cy)] || null,
-        tint: x.devT > 0 ? 'rgba(120,0,40,0.18)' : rt.state === 'trib' ? 'rgba(40,10,60,0.25)' : null,
+        terrain: (cx, cy) => (D.stages[rt.stage].tiles || D.tiles)[GR.at(rt.map, cx, cy)] || null,
+        tint: x.devT > 0 ? 'rgba(120,0,40,0.18)' : rt.state === 'trib' ? `rgba(40,10,60,${0.25 + Math.min(0.3, x.realm * 0.03)})` : D.stages[rt.stage].tint || null,
       };
     },
     status: x => X.realmName(x.realm),
+    stageName: x => D.stages[X.stageOf(x.realm)].n,
   };
   return X;
 })();

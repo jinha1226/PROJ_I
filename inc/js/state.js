@@ -214,6 +214,9 @@ G.deserialize = function (json) {
   }
   if (MERGE[wx.skill] === undefined && Object.values(MERGE).some(l => l.includes(wx.skill))) wx.skill = Object.keys(MERGE).find(k => MERGE[k].includes(wx.skill));
   if (!data.w || !data.w.wuxia || data.w.wuxia.fameT == null) { const j = G.D.WX.jobs.find(x => x.id === wx.job) || G.D.WX.jobs[0]; wx.job = j.id; wx.fameT = j.fame; }
+  // 수선 트리 레벨 상한이 낮아졌다(최대 10): 넘친 레벨은 상한으로
+  const xt = G.S.w.xianxia.tree;
+  for (const n of G.Tree.defs.xianxia) if (xt[n.id] > (n.max || 1)) xt[n.id] = n.max || 1;
   G.RT = {};
   return G.S;
 };

@@ -1037,3 +1037,9 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .pcond.ok { color: var(--good); }
 .pcond .tl { width: 22px; height: 22px; flex: none; }
 .pconds > small { display: block; margin-bottom: 4px; }
+/* 수선 천겁 배너: 실패는 붉게, 등선은 하늘빛 무지개 */
+.realmfx.fail .rtext b { font-size: 64px; }
+.realmfx.asc .rtext b { font-size: 140px; letter-spacing: 24px; }
+.realmfx.asc .rays { animation: rays 6s linear forwards; }
+.realmfx.asc .rglow { animation-duration: 6s; }
+.realmfx.asc .rtext { animation-duration: 6s; }

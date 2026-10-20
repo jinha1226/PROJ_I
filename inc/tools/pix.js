@@ -197,4 +197,19 @@ function skilltree() {
   node(8, 12, 'orange'); node(3, 4, 'yellow'); node(13, 4, 'yellow'); node(8, 3, 'yellow');
   return im;
 }
-module.exports = { PAL, skilltree, cap, edge, shade, grass, flowers, road, path, tree, rock, water, falls, planks, door, table, cart, board, dummy, statue, altar, lantern, herb, cave };
+// 선계 하늘: 옅은 하늘빛 바탕에 흰 뭉게구름 (이음새 없이 감는다)
+function cloud(seed) {
+  const R = rng(seed + 7), im = img(16, 16, '#7fb2e0');
+  for (let i = 0; i < 10; i++) put(im, (R() * 16) | 0, (R() * 16) | 0, '#8fc0ea');
+  const puffs = 2 + ((R() * 2) | 0);
+  for (let k = 0; k < puffs; k++) {
+    const cx = R() * 16, cy = R() * 16, rx = 2.5 + R() * 2.5, ry = 1.5 + R() * 1.2;
+    for (let y = -4; y <= 4; y++) for (let x = -6; x <= 6; x++) {
+      const d = (x / rx) ** 2 + (y / ry) ** 2;
+      if (d > 1) continue;
+      put(im, Math.round(cx + x), Math.round(cy + y), d < 0.45 && y < 0 ? '#ffffff' : y > ry * 0.4 ? '#c9dcef' : '#eef4fb');
+    }
+  }
+  return im;
+}
+module.exports = { PAL, skilltree, cloud, cap, edge, shade, grass, flowers, road, path, tree, rock, water, falls, planks, door, table, cart, board, dummy, statue, altar, lantern, herb, cave };

@@ -13,11 +13,12 @@ G.UI.views.xianxia = function () {
   const tAuto = G.UI.toggle('천겁', () => x().autoBreak, v => { x().autoBreak = v; }, '자동 천겁: 성공률이 기준 이상이면 스스로 넘는다');
   const thr = h('select.othr', { on: { change: e => { x().autoThr = +e.target.value; } } },
     [0.25, 0.4, 0.5, 0.6, 0.75, 0.9, 1].map(v => h('option', { value: v, selected: x().autoThr === v }, `≥ ${v * 100}%`)));
-  const hud = h('div.fhud', null, h('div.floorrow', null, realmEl, stateEl), h('div.tgls', null, h('small.dim', null, '자동'), tAuto.el, thr), devEl);
+  const stageEl = h('span.role');
+  const hud = h('div.fhud', null, h('div.floorrow', null, realmEl, stageEl, stateEl), h('div.tgls', null, h('small.dim', null, '자동'), tAuto.el, thr), devEl);
 
   // ── 위 가운데: 영기
   const qi = G.UI.ov.bar('영기: 다 차면 천겁에 도전할 수 있다', '초당 영기');
-  const st = G.UI.ov.stats([['chance', 'a_thunder', '천겁 성공률'], ['pill', 'q_pill', '단약: 천겁에 4개까지, 개당 성공률 +12%'], ['herb', 'q_herb', '영초'], ['stone', 'q_stone', '영석']]);
+  const st = G.UI.ov.stats([['chance', 'a_thunder', '천겁 성공률 · 실패하면 그 경지의 영기를 처음부터 다시 쌓는다'], ['pill', 'q_pill', '단약: 천겁에 4개까지(트리로 더), 개당 성공률 +8%'], ['herb', 'q_herb', '영초'], ['stone', 'q_stone', '영석']]);
   const top = h('div.ftop', null, qi.el, st.el);
 
   // ── 왼쪽 가운데: 오행 팔레트. 보석 + 그 오행의 총 출력, 올리면 효과
@@ -37,7 +38,25 @@ G.UI.views.xianxia = function () {
   const breakBtn = h('button.btn.big', { on: { click: () => X.breakthrough(x()) } }, '천겁');
   const act = h('div.oact', null, breakBtn);
 
-  const overlay = h('div.fover', null, hud, top, left, act);
+  // 천겁 돌파·실패·등선 배너 (무협 경지 돌파와 같은 판: 경지가 높을수록 화려하게)
+  const rfx = h('div.realmfx.hidden');
+  let rfxT = 0;
+  const COL = ['#ffffff', '#e8e2d0', '#9fe0ff', '#9fffd8', '#ffd24a', '#c78bff', '#ff9a5a', '#7dffcf', '#bfe8ff', '#ffffff'];
+  const banner = (cls, col, small, big, ms) => {
+    if (G.UI.cur !== 'xianxia') return;
+    rfx.className = 'realmfx ' + cls;
+    rfx.style.setProperty('--rc', col);
+    rfx.innerHTML = '';
+    rfx.append(h('div.rays'), h('div.rglow'), h('div.rtext', null, h('small', null, small), h('b', null, big)));
+    clearTimeout(rfxT);
+    rfxT = setTimeout(() => rfx.classList.add('hidden'), ms);
+  };
+  G.on('xx_realm', e => {
+    if (e.asc) banner('lv7 asc', '#ffffff', '천겁을 넘어 신선이 되다', '등선', 6000);
+    else banner('lv' + Math.min(6, Math.floor(e.r * 0.7)), COL[Math.min(9, e.r)] || '#ffe08a', e.stage ? `천겁 돌파 · ${X.stageName(x())}` : '천겁 돌파', X.realmName(e.r), 2000 + Math.min(9, e.r) * 300);
+  });
+  G.on('xx_fail', () => banner('lv0 fail', '#ff6a6a', '천겁 실패 · 영기가 흩어졌다', '실패', 1800));
+  const overlay = h('div.fover', null, hud, top, left, act, rfx);
   return G.UI.worldScreen('xianxia', {
     overlay,
     click(p) {
@@ -55,6 +74,7 @@ G.UI.views.xianxia = function () {
     update() {
       const s = x(), rt = X.rt(s), cost = X.breakCost(s.realm), L = X.layout(s);
       setText(realmEl, X.realmName(s.realm));
+      setText(stageEl, X.stageName(s) + (s.ascended ? ' · 등선' : ''));
       setText(stateEl, ` · ${rt.state === 'trib' ? (rt.demons.length ? `심마 ${rt.demons.length}` : '천겁') : STATE[rt.state]} → ${X.realmName(s.realm + 1)}`);
       setText(devEl, s.devT > 0 ? `도심 동요 ${Math.ceil(s.devT)}초 · 영기 30%` : '');
       tAuto.update(); tArr.update();
