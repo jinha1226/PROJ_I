@@ -1,7 +1,7 @@
 'use strict';
 // 무협 · 화산귀환록 (회귀 루프 — Increlution, Progress Knight 계열을 강호 지도 위에서)
-// 강호는 지역(화음현·화산·낙양·십만대산·천산)마다 타일 지도 하나. 주인공은 한 지역에 머물며
-// 그 지역의 활동(일·문파 임무·원정·비무·천하제일 비무)과 수련터(그 지역 무공)를 번갈아 오간다. 1년은 8초.
+// 강호는 지역마다 타일 지도 하나. 주인공은 한 지역에 머물며 그 지역의 활동(일·임무·원정·비무·천하제일 비무)과
+// 수련을 번갈아 한다. 지역마다 역할이 다르다(진로마다도): 명성이 잘 오르는 곳 / 심법·외공·경공·잡학 수련이 잘 되는 곳. 1년은 8초.
 // 명성: 쓰는 돈(w.gold)이자, 이번 생에 쌓은 양(w.fameT)이 지위(점소이 … 매화검선·천마신)를 정한다 — 써도 지위는 안 내려간다.
 // 지위마다 녹봉(초당 명성)과 숙련 보너스. 점소이·표사·낭인 다음 정파(화산)·사파(녹림)·마교(십만대산)로 갈린다(w.path).
 // 무공 레벨 합이 경지(삼류 … 생사경). 다른 지역으로 가면 강호로 나가 여정 — 세월이 흐른다(경공·경지로 줄인다).
@@ -21,7 +21,7 @@ G.Wuxia = (() => {
     init(head = 0) {
       return {
         age: 16, gold: 5 * Math.pow(10, head), fameT: 0, job: 'jumso', skill: 'tuna', lvl: {}, xp: {}, peak: {}, items: {}, path: 'jeong', hold: null, errand: null, champ: false,
-        lives: 0, ins: 0, tree: G.Tree.init('wuxia'), dead: false, bestJob: 0, autoPromote: true, autoSkill: true, autoBuy: true, mode: 'work', elix: 0,
+        lives: 0, ins: 0, tree: G.Tree.init('wuxia'), dead: false, bestJob: 0, autoPromote: true, autoSkill: true, autoBuy: true, mode: 'work', elix: 0, goal: null,
       };
     },
     rt(w) { return G.RT.wuxia || (G.RT.wuxia = W.boot(w)); },
@@ -90,42 +90,44 @@ G.Wuxia = (() => {
     realm(w) { const t = W.realmSum(w); let i = 0; while (i + 1 < D.realms.length && t >= W.realmNeed(i + 1)) i++; return i; },
     realmName: i => D.realms[i][0],
     need: lv => 10 * (lv + 1) * Math.pow(1.025, lv),
-    peakMult: (w, id) => 1 + (w.peak[id] || 0) / 10 * (1 + ta('peak')),
+    // 전생 최고 레벨: 늘 조금(+2.5%/레벨), 그리고 그 레벨까지는 ×2로 따라잡는다 (Increlution·Progress Knight처럼)
+    peakMult: (w, id) => (1 + (w.peak[id] || 0) / 40 * (1 + ta('peak'))) * ((w.lvl[id] || 0) < (w.peak[id] || 0) ? 2 : 1),
+    catchingUp: (w, id) => (w.lvl[id] || 0) < (w.peak[id] || 0),
+    // 특산 효과: 가진 물건의 배수 곱 / 계열 배수 / 천수 합
+    itemMul(w, k) { let m = 1; for (const it of D.items) if (w.items[it.id] && it.eff[k]) m *= it.eff[k]; return m; },
+    itemFam(w, f) { let m = 1; for (const it of D.items) if (w.items[it.id] && it.eff.fam && it.eff.fam[f]) m *= it.eff.fam[f]; return m; },
+    itemLife(w) { let y = 0; for (const it of D.items) if (w.items[it.id] && it.eff.life) y += it.eff.life; return y; },
+    // 지역 수련 배수 (그 지역 그 진로의 train 표)
+    regionTrain: (w, region, fam) => ((W.act(w, region).train || {})[fam] || 1),
     // 지위 보너스: 단계마다 숙련 +10%
     rankXp: w => 1 + 0.1 * jobDef(w.job).tier,
     xpMult(w) {
-      let m = (1 + 0.01 * W.eff(w, 'xp')) * G.globalMult() * (1 + G.relicVal('w_xp')) * W.rankXp(w);
-      if (w.items.manual) m *= 2;
-      if (w.items.manor) m *= 2;
-      if (w.items.daehwan) m *= 1.5;
-      if (w.items.hyeoldan) m *= 1.6;
-      if (w.items.taegukbi) m *= 1.5;
+      const m = (1 + 0.01 * W.eff(w, 'xp')) * G.globalMult() * (1 + G.relicVal('w_xp')) * W.rankXp(w) * W.itemMul(w, 'xp');
       return m * (1 + (0.1 + ta('elixEff')) * w.elix);
     },
-    skillXp(w, id) {
+    // 계열 숙련 배율 (전생 레벨·지역을 뺀 것): 무공 효과 × 특산 × 트리 × 넥서스·유물·붕괴(globalMult)
+    famXp(w, fam) { return W.xpMult(w) * (1 + 0.01 * W.eff(w, 'sxp')) * tm('sxp') * tm(FAM[fam]) * W.itemFam(w, fam); },
+    skillXp(w, id, region) {
       const sk = skillDef(id);
-      return 15 * W.xpMult(w) * W.peakMult(w, id) * (1 + 0.01 * W.eff(w, 'sxp')) * (w.items.room ? 1.5 : 1) * tm('sxp') * tm(FAM[sk.fam]);
+      return 15 * W.famXp(w, sk.fam) * W.peakMult(w, id) * W.regionTrain(w, region || w.region || 'hwaeum', sk.fam);
     },
     // 녹봉: 지위의 초당 명성 × 무공·물건·트리
     stipend(w) {
       const j = jobDef(w.job);
-      let m = j.inc * (1 + 0.01 * W.eff(w, 'fame')) * G.globalMult() * (1 + G.relicVal('w_gold')) * tm('fame') * tm('stipend');
-      if (w.items.sword) m *= 1.5;
-      if (w.items.nokbo) m *= 1.5;
+      let m = j.inc * W.fameMult(w) * tm('stipend');
       m *= 1 + 0.5 * W.pathNote(w, 'dom');
       return m;
     },
     income: w => W.stipend(w),
+    // 명성 배율 (녹봉 빼고): 무공 효과 × 특산 × 트리 × 넥서스·유물·붕괴
+    fameMult: w => (1 + 0.01 * W.eff(w, 'fame')) * G.globalMult() * (1 + G.relicVal('w_gold')) * tm('fame') * W.itemMul(w, 'fame'),
     addFame(w, n) { w.gold += n; w.fameT += n; },
     lifespan(w) {
       // 마교 무공의 천수 감소는 「천마 해방」으로 절반
       let neg = 0, pos = 0;
       for (const sk of D.skills) { const v = (w.lvl[sk.id] || 0) * (sk.eff.life || 0); if (v < 0) neg += v; else pos += v; }
       let y = BASE_LIFE + ta('life') + pos + neg * (1 - 0.5 * ta('ma_free')) + 4 * Math.max(0, W.realm(w) - 4) + 3 * ta('jh_med');
-      if (w.items.pill) y += 8;
-      if (w.items.daehwan) y += 15;
-      if (w.items.hyeoldan) y -= 1;
-      if (w.items.dokryong) y += 3;
+      y += W.itemLife(w);
       if (G.synergy('syn_marrow')) y += 5 * G.S.w.xianxia.realm;
       return Math.max(W.startAge() + 10, y);
     },
@@ -136,8 +138,9 @@ G.Wuxia = (() => {
       return s;
     },
     // 경지마다 전투력 +30%. 화산 「매화개화」: 화산 진로면 ×1.3
-    power: w => (3 + W.eff(w, 'pow')) * (1 + 0.3 * W.realm(w)) * tm('combat') * G.globalMult() * (w.items.dokryong ? 1.5 : 1) * (1 + 0.3 * W.pathNote(w, 'plum')),
-    maxHp: w => (40 + W.eff(w, 'hp')) * tm('combat') * tm('hp') * G.globalMult(),
+    powMult: w => (1 + 0.3 * W.realm(w)) * tm('combat') * G.globalMult() * W.itemMul(w, 'pow') * (1 + 0.3 * W.pathNote(w, 'plum')),
+    power: w => (3 + W.eff(w, 'pow')) * W.powMult(w),
+    maxHp: w => (40 + W.eff(w, 'hp')) * tm('combat') * tm('hp') * G.globalMult() * W.itemMul(w, 'hp'),
     atkCd: () => 0.7 / (1 + 0.3 * ta('oe_combo')),
     jobIdx: w => jobDef(w.job).tier,
     pathOf: w => jobDef(w.job).path || w.path,
@@ -166,7 +169,7 @@ G.Wuxia = (() => {
         w.xp[id] -= W.need(lv);
         lv++;
         if (lv > (w.peak[id] || 0)) {
-          G.addEss(0.004 * lv * (1 + jobDef(w.job).tier * 0.5), 'wuxia');
+          G.addEss(0.002 * lv * (1 + jobDef(w.job).tier * 0.5), 'wuxia');
           W.gainIns(w, 0.05);
         }
       }
@@ -175,7 +178,7 @@ G.Wuxia = (() => {
     rebirth(w) {
       let sum = 0;
       for (const sk of D.skills) { const id = sk.id; sum += w.lvl[id] || 0; w.peak[id] = Math.max(w.peak[id] || 0, w.lvl[id] || 0); }
-      W.gainIns(w, Math.pow(sum / 10, 1.2) + 0.5 * Math.pow(jobDef(w.job).tier, 2));
+      W.gainIns(w, sum / 10 + 0.5 * Math.pow(jobDef(w.job).tier, 2));
       const keep = { peak: w.peak, lives: w.lives + 1, ins: w.ins, tree: w.tree, bestJob: w.bestJob, autoPromote: w.autoPromote, autoSkill: w.autoSkill, autoBuy: w.autoBuy, path: w.path };
       Object.assign(w, W.init(G.S.stree ? G.Tree.add('stars', G.S.stree, 'head') : 0), keep);
       w.age = W.startAge();
@@ -208,8 +211,8 @@ G.Wuxia = (() => {
       G.J.sfx('wuxia', 'coin');
       return true;
     },
-    // 영단: 생마다 몇 번이고 산다. 하나에 모든 숙련 +10%, 값은 ×3씩 (어디서나)
-    elixCost: w => 50 * Math.pow(3, w.elix),
+    // 영단: 생마다 몇 번이고 산다. 하나에 모든 숙련 +10%, 값은 ×4씩 (어디서나)
+    elixCost: w => 50 * Math.pow(4, w.elix),
     buyElixir(w) {
       const c = W.elixCost(w);
       if (w.gold < c) return false;
@@ -223,12 +226,37 @@ G.Wuxia = (() => {
 
     // ── 어디서 무엇을 ──
     // 가야 할 지역: 직접 고른 곳(📍) → 심부름(다른 지역 특산) → 천하제일 비무가 필요하면 천산 → 지위의 근거지
+    // 가야 할 지역: 직접 고른 곳(📍) → 심부름 → 천하제일 비무 → 지금 모자란 것(경지면 수련 지역, 명성이면 명성 지역).
+    // 한 번 정한 곳은 그 조건을 채우거나 지위가 바뀔 때까지 지킨다 (오락가락하며 길에서 세월을 버리지 않게)
     target(w) {
       if (w.hold) return w.hold;
       if (w.errand) return w.errand;
       const nx = W.nextJob(w);
       if (nx && nx.champ && !w.champ && w.fameT >= W.fameNeed(nx) && W.realm(w) >= (nx.realm || 0)) return 'cheonsan';
-      return jobDef(w.job).home;
+      if (jobDef(w.job).tier < 3) return 'hwaeum';
+      const need = nx && W.realm(w) >= (nx.realm || 0) && w.fameT < W.fameNeed(nx) ? 'fame' : 'realm';
+      if (w.goal && w.goal.need === need && w.goal.job === w.job) return w.goal.r;
+      w.goal = { need, job: w.job, r: need === 'fame' ? W.bestFame(w) : W.bestTrain(w) };
+      return w.goal.r;
+    },
+    // 지금 있는 곳에서 가는 햇수만큼 깎아 비교 (먼 곳은 그만큼 손해)
+    far: (w, r) => 1 + 0.08 * W.route(w.region || 'hwaeum', r).years,
+    // 명성이 가장 잘 오르는 곳 (원정·천산은 위험해서 자동으로는 안 간다)
+    bestFame(w) {
+      let best = null, bs = 0;
+      for (const r in D.regions) { const a = W.act(w, r); if (a.kind === 'raid' || a.kind === 'boss') continue; const sc = (a.fame || 1) / W.far(w, r); if (sc > bs) { bs = sc; best = r; } }
+      return best || 'hwaeum';
+    },
+    // 수련이 가장 잘 되는 곳: 거기서 가장 빨리 오르는 무공의 속도
+    bestTrain(w) {
+      let best = null, bs = 0;
+      for (const r in D.regions) {
+        const sk = W.localSkills(w, r);
+        if (!sk.length) continue;
+        const sc = Math.max(...sk.map(k => W.skillXp(w, k.id, r) / W.need(W.L(w, k.id)))) / W.far(w, r);
+        if (sc > bs) { bs = sc; best = r; }
+      }
+      return best || 'hwaeum';
     },
     // 그 지역의 활동 (진로마다 다를 수 있다)
     act(w, region) {
@@ -238,14 +266,17 @@ G.Wuxia = (() => {
     // 지금 가야 할 장소 (이 지역 지도의 글자)
     dest(w) {
       const rt = W.rt(w), a = W.act(w, rt.region);
-      if (w.mode === 'train') { const at = W.skillAt(skillDef(w.skill), rt.region); if (at) return at; }
+      if (w.mode === 'train' && W.localSkills(w, rt.region).length) return a.ta || a.at;
       return a.at0 && jobDef(w.job).tier === 0 ? a.at0 : a.at;
     },
     spot(rt, ch) { return rt.map.poi[ch][0]; },
-    // 이 지역에서 익힐 수 있는 무공 (적 본산에서는 수련하지 않는다)
+    // 익힐 수 있는 무공: 진로가 맞고 조건을 채운 것 (어디서든). 적 본산에서는 수련하지 않는다
     localSkills(w, region) {
       if (W.act(w, region).kind === 'raid') return [];
-      return D.skills.filter(sk => W.skillAt(sk, region) && W.reqMet(w, sk));
+      const path = W.pathOf(w);
+      // 진로 무공은 그 진로에 들어선 뒤(지위 4단계부터)
+      const inPath = jobDef(w.job).tier >= 3;
+      return D.skills.filter(sk => (!sk.path || (inPath && sk.path === path)) && W.reqMet(w, sk));
     },
     // 자동 수련: 경지가 모자라면 지금 가장 빨리 오르는 무공(숙련 속도 ÷ 다음 레벨 필요량 — 전생 최고 레벨 보너스까지 따진다)
     // → 아니면 모든 숙련을 올리는 심법 → 가장 빨리 오르는 무공
@@ -254,9 +285,12 @@ G.Wuxia = (() => {
       if (!here.length) return;
       const nx = W.nextJob(w);
       const speed = sk => W.skillXp(w, sk.id) / W.need(W.L(w, sk.id));
+      // 지역이 밀어 주는 계열부터 (경지가 모자라지 않아도)
+      const boosted = here.filter(sk => W.regionTrain(w, W.rt(w).region, sk.fam) > 1);
       const low = () => here.reduce((a, b) => (speed(b) > speed(a) ? b : a)).id;
       let best = null;
       if (nx && (nx.realm || 0) > W.realm(w)) best = low();
+      if (!best && boosted.length) best = boosted.reduce((a, b) => (speed(b) > speed(a) ? b : a)).id;
       if (!best) best = (here.find(sk => sk.eff.xp) || {}).id || low();
       w.skill = best;
     },
@@ -284,8 +318,8 @@ G.Wuxia = (() => {
         if (d < bd) { bd = d; best = ch; }
       }
       if (!best) return false;
-      const sk = W.localSkills(w, rt.region).find(s => W.skillAt(s, rt.region) === best);
-      if (sk) W.setSkill(w, sk.id);
+      const a = W.act(w, rt.region);
+      if (best === a.ta && W.localSkills(w, rt.region).length) { w.mode = 'train'; rt.stay = 0; }
       else { w.mode = 'work'; rt.stay = 0; }
       G.fx(rt, { k: 'ring', x: rt.map.poi[best][0][0], y: rt.map.poi[best][0][1], r: 1, t: 0.6, col: '#ffe08a' });
       G.J.sfx('wuxia', 'select');
@@ -347,9 +381,9 @@ G.Wuxia = (() => {
       h.dim = false;
       w.age += dt / YEAR;
       // 녹봉: 늘 들어온다(일터에서는 그 지역 일 배수로, 그 밖에서는 절반)
-      const a = W.act(w, rt.region), atWork = !rt.travel && w.mode === 'work' && a.kind === 'work' && rt.stay > 0;
+      const a = W.act(w, rt.region), atWork = !rt.travel && w.mode === 'work' && (a.kind === 'work' || a.kind === 'duel') && rt.stay > 0;
       const home = a.kind === 'work' && W.pathNote(w, 'sect') && jd0.home === rt.region ? 2 : 1;
-      W.addFame(w, W.stipend(w) * dt * (atWork ? a.mult * tm('work') * home : 0.5));
+      W.addFame(w, W.stipend(w) * dt * (atWork ? (a.fame || 1) * tm('work') * home : 0.5));
       // 지위: 쌓은 명성·경지가 차면 오른다
       for (let nx = W.nextJob(w); nx && W.rankOk(w, nx); nx = W.nextJob(w)) {
         w.job = nx.id;

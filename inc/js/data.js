@@ -264,7 +264,7 @@ G.D.WX = {
   // 강호 지도 바탕: 중국 윤곽 (tools/outline.js로 참고 지도에서 땄다). viewBox 0~100 × 0~90.6
   outline: {"vb":[100,90.6],"paths":["M76.1 4.9L79.5 5.3L79.9 6.0L80.6 6.0L81.8 8.6L82.5 8.6L82.5 9.4L84.0 10.5L83.6 10.9L84.0 11.6L87.0 11.3L88.5 12.0L89.3 13.9L91.5 13.5L91.5 12.4L92.6 12.0L92.6 11.3L94.1 11.3L93.8 18.4L91.9 18.4L91.5 19.1L91.9 21.0L92.3 21.0L91.9 24.8L91.5 24.0L90.8 24.0L89.6 26.3L88.5 26.3L89.3 27.8L86.6 27.4L86.6 28.5L84.0 30.8L84.0 31.5L81.0 33.0L81.0 33.8L79.9 34.9L79.1 34.5L80.3 33.8L79.9 33.0L80.3 30.8L78.8 30.4L78.0 32.3L76.5 33.0L76.5 34.1L77.3 34.1L77.3 35.3L76.9 34.9L74.3 35.3L74.6 36.8L75.0 36.4L76.1 36.8L77.3 38.3L78.4 36.8L82.5 37.1L82.1 38.3L81.0 38.3L80.6 39.0L79.9 39.0L81.4 39.8L81.8 40.5L78.8 40.1L78.8 41.3L78.0 41.6L78.8 42.4L78.4 43.5L79.5 43.5L79.9 45.0L80.6 45.4L80.6 46.5L82.9 48.0L82.9 48.8L81.8 48.8L81.8 49.1L84.0 49.5L84.4 51.8L84.8 51.4L87.8 51.8L88.9 51.0L88.9 52.1L88.5 52.5L86.3 52.1L85.5 52.9L83.6 52.5L84.0 52.9L84.0 53.6L83.3 54.0L83.6 55.9L82.1 56.3L82.1 58.1L81.4 58.1L81.4 59.6L80.6 59.6L81.0 61.1L80.6 61.1L80.6 62.3L79.5 62.6L79.5 63.8L78.4 63.8L78.0 64.9L75.8 66.4L75.4 67.9L72.8 68.3L71.6 69.4L70.5 69.0L70.5 69.8L69.0 69.8L69.0 70.5L67.9 70.5L67.1 71.3L65.3 71.3L65.3 72.0L64.5 72.0L64.5 73.9L63.0 73.1L63.0 71.3L62.6 71.6L58.1 71.3L57.0 70.5L57.0 68.6L55.1 68.6L55.1 68.3L54.4 68.3L53.3 69.4L48.0 69.8L48.0 72.4L47.3 72.4L46.9 71.3L45.0 71.6L44.6 70.5L43.5 70.5L43.5 68.3L43.1 68.3L42.8 66.0L40.5 66.4L40.9 63.8L43.1 61.9L43.1 59.3L42.4 59.3L42.0 57.8L40.9 57.8L40.9 58.5L39.4 58.5L39.0 57.8L36.8 57.8L34.5 59.6L31.1 60.0L31.1 58.5L30.0 57.0L27.4 56.3L26.3 57.8L25.5 57.8L25.5 56.6L22.9 56.6L22.1 55.9L20.6 55.9L20.3 55.1L18.4 54.4L18.0 52.9L16.9 52.9L16.9 52.1L15.4 51.0L15.0 49.9L13.1 50.3L10.9 47.6L10.1 47.6L10.1 44.3L10.9 44.6L11.6 44.3L11.3 43.5L11.6 40.5L10.9 39.8L10.9 38.3L9.4 37.9L9.0 36.8L8.3 36.8L8.3 34.9L7.1 33.8L6.4 33.8L6.4 33.0L7.5 33.0L7.5 30.4L6.4 30.4L6.4 29.3L7.1 28.9L7.5 27.4L9.4 27.0L9.4 26.6L10.1 27.4L11.6 27.4L11.6 26.6L12.8 26.6L13.9 25.9L14.3 26.3L17.6 25.9L18.0 24.0L19.1 23.3L18.8 22.5L19.1 19.9L22.5 19.9L22.5 18.8L24.4 16.5L25.9 16.9L26.3 17.6L27.8 17.6L28.1 15.0L29.6 15.0L30.4 13.5L31.9 13.9L32.6 16.5L34.5 16.9L34.5 18.4L34.9 18.4L34.5 22.5L37.1 22.9L38.6 23.6L39.4 25.1L40.5 25.1L41.3 28.1L44.6 28.5L46.1 29.3L49.1 28.9L49.5 29.6L51.4 30.0L51.8 30.8L55.5 30.8L55.9 30.0L57.4 29.3L61.5 29.3L63.4 27.0L64.1 27.0L64.1 25.9L63.4 25.5L63.4 24.4L64.1 23.6L67.1 24.0L68.3 22.5L69.4 22.5L70.1 21.8L70.1 20.6L72.4 19.9L72.8 19.1L74.6 19.1L74.6 18.4L73.5 18.0L72.8 16.9L71.6 16.9L71.6 17.6L68.6 17.6L68.6 16.5L69.0 16.5L69.8 13.1L71.6 13.5L72.0 12.8L72.8 12.8L72.8 10.5L73.9 8.3L73.1 7.5L73.1 6.4Z","M63.0 74.3L65.6 74.3L65.6 76.9L64.1 76.9L63.4 77.6L62.6 78.0L61.1 77.3L61.5 75.0Z"]},
   // 경지: 무공 레벨 합으로 오른다. 고위 직업의 조건
-  realms: [['삼류', 0], ['이류', 20], ['일류', 50], ['절정', 100], ['초절정', 180], ['화경', 300], ['현경', 500], ['생사경', 800]],
+  realms: [['삼류', 0], ['이류', 30], ['일류', 100], ['절정', 200], ['초절정', 450], ['화경', 900], ['현경', 1600], ['생사경', 2600]],
   // 지위: 이번 생에 쌓은 명성(fame)과 경지(realm)로 오른다. 점소이·표사·낭인은 공통, 그다음 정파(jeong, 화산)·사파(sa, 녹림)·마교(ma, 십만대산)로 갈린다.
   // tier: 단계(옷·정수) · inc: 녹봉(초당 명성) · home: 자동으로 머무는 지역 · champ: 천산 천하제일 비무에서 이겨야
   jobs: [
@@ -293,18 +293,20 @@ G.D.WX = {
     { id: 'cheonhama', n: '천하제일마', tier: 8, path: 'ma', home: 'sipman', inc: 4e6, fame: 2.5e8, realm: 5, champ: true, t: 'j_cheonha' },
     { id: 'cheonmasin', n: '천마신', tier: 9, path: 'ma', home: 'sipman', inc: 6e7, fame: 4e9, realm: 6, t: 'j_geomseon' },
   ],
-  // 지역 활동 (명성 버는 일). 진로마다 다를 수 있다: kind work(일, ×mult) · raid(적 본산 원정: 끊임없이 싸운다) · duel(비무대 결투) · boss(천하제일 비무)
+  // 지역의 역할 (진로마다 다르다). kind: work 일 · raid 적 본산 원정(끊임없이 싸운다) · duel 비무대 · boss 천하제일 비무
+  // fame: 일할 때 명성 배수 · train: { 계열: 수련 배수 } · ta: 수련하는 곳 · at: 활동하는 곳
+  // 명성이 잘 오르는 곳과 수련이 잘 되는 곳을 나눴다 — 한 곳에 머무는 게 늘 최선이 되지 않게
   acts: {
-    hwaeum: { any: { kind: 'work', at: 'e', at0: 'i', mult: 1, n: '일' } },
-    hwasan: { jeong: { kind: 'work', at: 'h', mult: 1.5, n: '문파 임무' }, sa: { kind: 'raid', at: 'd', n: '화산 털기' }, ma: { kind: 'raid', at: 'd', n: '화산 습격' } },
-    sipman: { ma: { kind: 'work', at: 'j', mult: 1.5, n: '교단 임무' }, jeong: { kind: 'raid', at: 'l', n: '마교 토벌' }, sa: { kind: 'work', at: 'g', mult: 1.2, n: '마교 거래' } },
-    noklim: { sa: { kind: 'work', at: 's', mult: 1.5, n: '산채 일' }, jeong: { kind: 'raid', at: 'd', n: '녹림 토벌' }, ma: { kind: 'work', at: 's', mult: 1.2, n: '공물 징수' } },
-    wudang: { jeong: { kind: 'work', at: 'z', mult: 1.2, n: '무당 객원' }, sa: { kind: 'raid', at: 't', n: '무당 습격' }, ma: { kind: 'raid', at: 't', n: '무당 습격' } },
-    sacheon: { any: { kind: 'work', at: 'k', mult: 1.2, n: '당가 거래' } },
-    nakyang: { any: { kind: 'duel', at: 'o', work: 'a', mult: 1.2, n: '비무대' } },
-    cheonsan: { any: { kind: 'boss', at: 'p', n: '천하제일 비무' } },
+    hwaeum: { any: { kind: 'work', at: 'e', at0: 'i', fame: 1, train: { 잡학: 1.5 }, ta: 'g', n: '일' } },
+    hwasan: { jeong: { kind: 'work', at: 'h', fame: 1, train: { 심법: 1.5 }, ta: 'w', n: '문파 임무' }, sa: { kind: 'raid', at: 'd', n: '화산 털기' }, ma: { kind: 'raid', at: 'd', n: '화산 습격' } },
+    wudang: { jeong: { kind: 'work', at: 'z', fame: 0.8, train: { 외공: 1.5, 경공: 1.5 }, ta: 't', n: '무당 객원' }, sa: { kind: 'raid', at: 't', n: '무당 습격' }, ma: { kind: 'raid', at: 't', n: '무당 습격' } },
+    noklim: { sa: { kind: 'work', at: 's', fame: 1, train: { 외공: 1.5, 심법: 1.5 }, ta: 'd', n: '산채 일' }, jeong: { kind: 'raid', at: 'd', n: '녹림 토벌' }, ma: { kind: 'work', at: 's', fame: 1.6, n: '공물 징수' } },
+    sipman: { ma: { kind: 'work', at: 'j', fame: 1, train: { 심법: 1.5, 외공: 1.5 }, ta: 'r', n: '교단 임무' }, jeong: { kind: 'raid', at: 'l', n: '마교 토벌' }, sa: { kind: 'work', at: 'g', fame: 1.6, n: '마교 거래' } },
+    nakyang: { any: { kind: 'duel', at: 'o', fame: 2, n: '비무대' } },
+    sacheon: { any: { kind: 'work', at: 'k', fame: 1, train: { 잡학: 1.5, 외공: 1.3 }, ta: 'a', n: '당가 거래' } },
+    cheonsan: { any: { kind: 'boss', at: 'p', fame: 1, train: { 경공: 1.5, 심법: 1.3 }, ta: 'q', n: '천하제일 비무' } },
   },
-  // 무공: 계열(fam)과 익히는 곳(at: [[지역, 장소], ...]). eff: 레벨마다 — xp 모든 숙련 %, sxp 무공 숙련 %,
+  // 무공: 계열(fam)과 고향(at: [[지역, 장소], ...] — 설명용, 어디서든 익히고 지역은 계열 배수를 준다). eff: 레벨마다 — xp 모든 숙련 %, sxp 무공 숙련 %,
   // fame 명성 %, pow 전투력, hp 체력, walk 이동·여정 %, life 천수(년)
   skills: [
     { id: 'tuna', n: '토납법', fam: '심법', at: [['hwaeum', 'g'], ['cheonsan', 'q']], d: '무공 숙련 +1%', eff: { sxp: 1, hp: 1 } },
@@ -326,18 +328,29 @@ G.D.WX = {
     { id: 'magong', n: '천마혈공', fam: '심법', path: 'ma', at: [['hwaeum', 'c'], ['sipman', 'v']], d: '모든 숙련 +3%, 천수 -0.1년', eff: { xp: 3, life: -0.1 }, unlock: 'unlock_magong', req: { tuna: 30 } },
   ],
   // 지역 특산: 그 지역에서만 판다 (이번 생에 한 번). 명성을 쓴다 — 지위는 쌓은 명성으로 정해지니 써도 내려가지 않는다
+  // 지역 특산: 그 지역에서만 판다 (이번 생에 한 번). 명성을 쓴다 — 지위는 쌓은 명성으로 정해지니 써도 내려가지 않는다
+  // eff: xp 모든 숙련 ×, fam { 계열: × }, fame 명성 ×, pow 전투력 ×, hp 체력 ×, life 천수 +년
   items: [
-    { id: 'room', n: '객잔 독방', r: 'hwaeum', cost: 40, d: '무공 숙련 ×1.5' },
-    { id: 'sword', n: '청강검', r: 'hwaeum', cost: 600, d: '명성 ×1.5' },
-    { id: 'manual', n: '낡은 비급', r: 'nakyang', cost: 8000, d: '모든 숙련 ×2' },
-    { id: 'pill', n: '소환단', r: 'hwasan', cost: 1.2e5, d: '천수 +8년' },
-    { id: 'hyeoldan', n: '혈단', r: 'sipman', cost: 1.2e5, t: 'it_pill', d: '모든 숙련 ×1.6 · 천수 -1년' },
-    { id: 'manor', n: '장원', r: 'nakyang', cost: 2e6, d: '모든 숙련 ×2' },
-    { id: 'nokbo', n: '녹림 보물', r: 'noklim', cost: 1e5, t: 'it_sword', d: '명성 ×1.5' },
-    { id: 'taegukbi', n: '태극 비급', r: 'wudang', cost: 5e5, t: 'it_manual', d: '모든 숙련 ×1.5' },
-    { id: 'dokryong', n: '독룡단', r: 'sacheon', cost: 3e5, t: 'it_pill', d: '전투력 ×1.5 · 천수 +3년' },
-    { id: 'daehwan', n: '대환단', r: 'cheonsan', cost: 5e7, d: '천수 +15년, 모든 숙련 ×1.5' },
+    { id: 'room', n: '객잔 독방', r: 'hwaeum', cost: 40, d: '무공 숙련 ×1.3', eff: { xp: 1.3 } },
+    { id: 'sword', n: '청강검', r: 'hwaeum', cost: 600, d: '명성 ×1.5', eff: { fame: 1.5 } },
+    { id: 'samjaebo', n: '삼재검보', r: 'hwaeum', cost: 2500, t: 'it_manual', d: '외공 숙련 ×1.3', eff: { fam: { 외공: 1.3 } } },
+    { id: 'manual', n: '낡은 비급', r: 'nakyang', cost: 2.5e4, d: '모든 숙련 ×1.4', eff: { xp: 1.4 } },
+    { id: 'pill', n: '소환단', r: 'hwasan', cost: 1.2e5, d: '천수 +8년', eff: { life: 8 } },
+    { id: 'jaha', n: '자하비록', r: 'hwasan', cost: 3e5, t: 'it_manual', d: '심법 숙련 ×1.3', eff: { fam: { 심법: 1.3 } } },
+    { id: 'hyeoldan', n: '혈단', r: 'sipman', cost: 1.2e5, t: 'it_pill', d: '모든 숙련 ×1.3 · 천수 -1년', eff: { xp: 1.3, life: -1 } },
+    { id: 'cheonmabi', n: '천마비록', r: 'sipman', cost: 3e5, t: 'it_manual', d: '심법 숙련 ×1.3', eff: { fam: { 심법: 1.3 } } },
+    { id: 'nokbo', n: '녹림 보물', r: 'noklim', cost: 1e5, t: 'it_sword', d: '명성 ×1.5', eff: { fame: 1.5 } },
+    { id: 'nokdobo', n: '녹림도보', r: 'noklim', cost: 3e5, t: 'it_manual', d: '외공 숙련 ×1.3', eff: { fam: { 외공: 1.3 } } },
+    { id: 'taegukbi', n: '태극 비급', r: 'wudang', cost: 2e6, t: 'it_manual', d: '모든 숙련 ×1.3', eff: { xp: 1.3 } },
+    { id: 'yangui', n: '양의도해', r: 'wudang', cost: 1e6, t: 'it_manual', d: '경공 숙련 ×1.5', eff: { fam: { 경공: 1.5 } } },
+    { id: 'manor', n: '장원', r: 'nakyang', cost: 1e7, d: '모든 숙련 ×1.4', eff: { xp: 1.4 } },
+    { id: 'geumgangk', n: '금강경', r: 'nakyang', cost: 1e6, t: 'it_manual', d: '체력 ×1.5 · 천수 +2년', eff: { hp: 1.5, life: 2 } },
+    { id: 'dokryong', n: '독룡단', r: 'sacheon', cost: 3e5, t: 'it_pill', d: '전투력 ×1.5 · 천수 +3년', eff: { pow: 1.5, life: 3 } },
+    { id: 'manchun', n: '만천화우', r: 'sacheon', cost: 1e6, t: 'it_manual', d: '잡학 숙련 ×1.5 · 전투력 ×1.2', eff: { fam: { 잡학: 1.5 }, pow: 1.2 } },
+    { id: 'daehwan', n: '대환단', r: 'cheonsan', cost: 2e8, d: '천수 +15년, 모든 숙련 ×1.3', eff: { life: 15, xp: 1.3 } },
+    { id: 'seolyeon', n: '천산설련', r: 'cheonsan', cost: 1e8, t: 'it_pill', d: '천수 +10년 · 체력 ×2', eff: { life: 10, hp: 2 } },
   ],
+
 
   // 직업 단계별 옷차림 (인형 겹치기)
   outfits: [

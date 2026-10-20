@@ -432,7 +432,8 @@ details.card summary { cursor: pointer; font-weight: 700; }
 /* 스킬트리 */
 .wtree { position: relative; height: calc(100vh - 100px); min-height: 440px; }
 .wtree.tall { height: calc(100vh - 290px); }
-.meta .wtree { height: 520px; margin-top: 12px; }
+/* 넥서스·붕괴: 위 카드(약 300px)를 빼고 화면에 맞춘다. 고정 520px이면 낮은 화면에서 아래 정보창이 화면 밖으로 나갔다 */
+.meta .wtree { height: clamp(360px, calc(100vh - 340px), 620px); margin-top: 12px; }
 .tree { position: relative; width: 100%; height: 100%; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden;
   background: radial-gradient(circle at 50% 50%, var(--panel2), var(--bg) 75%); }
 .tree-vp { position: absolute; inset: 0; cursor: grab; touch-action: none; }
@@ -953,3 +954,4 @@ details.card summary { cursor: pointer; font-weight: 700; }
   .fhud .merits { max-width: none; }
   .fhud .merit { font-size: 11px; }
 }
+.fhud .floorrow .role { color: #ffe08a; font-size: 12px; font-weight: 700; margin-left: 6px; }

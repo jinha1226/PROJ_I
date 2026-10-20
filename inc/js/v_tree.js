@@ -44,7 +44,8 @@ G.UI.tree = function (treeId, getSt) {
   // 정보창
   const iName = h('b'), iLv = h('small'), iDesc = h('p'), iCostV = h('span'), iCost = h('div.cost', null, G.T.el(wallet.tile, 'xs'), ' ', iCostV), buyBtn = h('button.btn.big', { on: { click: () => { if (sel) buy(sel); } } }, '배우기');
   const info = h('div.tree-info.hidden', null, h('div.ti-h', null, iName, iLv), iDesc, iCost, buyBtn);
-  function select(n) { sel = n; update(); }
+  // 정보창이 화면 밖(트리 아래쪽)에 있으면 보이도록 살짝 스크롤한다
+  function select(n) { sel = n; update(); info.scrollIntoView({ block: 'nearest' }); }
   // 짝 노드(택1): 배운 것 중 고르지 않은 쪽은 다시 누르면 공짜로 바꾼다
   const swappable = n => n.pair && T.lv(getSt(), n.id) > 0 && T.picked(getSt(), n) !== n.id;
   // 배우면 소리와 함께 노드가 튀어 오른다

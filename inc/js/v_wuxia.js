@@ -1,7 +1,7 @@
 'use strict';
 // 무협 화면: 지역 지도가 화면 전체, 그 위에 HUD (판타지와 같은 구성 원리)
-//  왼쪽 위: 지역 이름과 그 지역의 메리트(활동으로 얻는 것 · 수련할 수 있는 무공 · 특산) / 지금 하는 일 / 경지·명성·깨달음
-//  위 가운데: 나이 막대(천수까지 차오른다) + 남은 햇수, 아래 한 줄: 스킬트리로 얻은 배율
+//  왼쪽 위: 지역 이름 옆에 그 지역의 역할(명성 ×n / 계열 수련 ×n / 원정) · 그 아래 경지·명성·깨달음
+//  위 가운데: 나이 막대(천수까지 차오른다) + 남은 햇수, 아래 한 줄: 계열 숙련·명성·전투력·여정·깨달음 총 배율(무공·특산·트리·넥서스·유물·붕괴 모두)
 //  왼쪽 가운데: 자동 단추(판타지 편성 단추 자리) → 자동 이동·수련·구입, 장래(정파·사파·마교)
 //  아래 가운데: 지위 · 무공 · 특산 — 누르면 게임 화면 위에 크게 펼쳐진다
 //  오른쪽 위: 강호 지도 — 지금 지역을 밝히고, 여정 중이면 길 위에 점. 지역을 누르면 그곳에 머문다(📍), 다시 누르면 풀린다
@@ -10,13 +10,13 @@ G.UI.views.wuxia = function () {
   const tm = k => G.Tree.mul('wuxia', w().tree, k), ta = k => G.Tree.add('wuxia', w().tree, k);
 
   // ── 왼쪽 위: 지역·활동·이득, 경지·명성·깨달음
-  const hudMode = h('b'), hudGain = h('small.gain'), merit = h('div.merits');
-  const res = G.UI.ov.stats([['realm', 's_naegong', '경지: 무공 레벨 합으로 오른다. 경지마다 전투력 +30%·여정 +15%, 화경부터 천수 +4년'], ['gold', 'c_coin', '명성: 특산·영단에 쓴다. 지위는 이번 생에 쌓은 명성으로 정해져 써도 내려가지 않는다'], ['ins', 'ui_star', '깨달음: 회귀해도 남아 스킬트리에 쓴다']]);
-  const hud = h('div.fhud', null, h('div.floorrow', null, hudMode), merit, hudGain, res.el);
+  const hudMode = h('b'), hudRole = h('span.role');
+  const res = G.UI.ov.stats([['realm', 's_naegong', '경지: 경지마다 전투력 +30%, 여정 +15%, 화경부터 천수 +4년'], ['gold', 'c_coin', '명성: 특산·영단 구매 포인트'], ['ins', 'ui_star', '깨달음: 스킬트리 포인트']]);
+  const hud = h('div.fhud', null, h('div.floorrow', null, hudMode, hudRole), res.el);
 
   // ── 위 가운데: 나이 (천수까지 차오른다) + 스킬트리 배율
   const age = G.UI.ov.bar('나이: 천수에 닿으면 이번 생이 끝나고 회귀한다', '남은 햇수');
-  const bonus = G.UI.ov.stats([['sxp', 's_tuna', '스킬트리: 무공 숙련 배율'], ['fame', 'c_coin', '스킬트리: 명성 배율'], ['stip', 'wa_band', '스킬트리: 녹봉 배율'], ['work', 'x_table', '스킬트리: 일·임무 명성 배율'], ['raid', 'w_katana', '스킬트리: 원정 명성 배율'], ['combat', 'ww_sword', '스킬트리: 전투력 배율'], ['walk', 'st_haste', '스킬트리: 이동·여정 배율'], ['ins', 'ui_star', '스킬트리: 깨달음 배율']]);
+  const bonus = G.UI.ov.stats([['심법', 's_naegong', '심법 숙련'], ['외공', 's_geom', '외공 숙련'], ['경공', 's_gyeong', '경공 숙련'], ['잡학', 's_yangsaeng', '잡학 숙련'], ['fame', 'c_coin', '명성'], ['combat', 'ww_sword', '전투력'], ['walk', 'st_haste', '여정'], ['ins', 'ui_star', '깨달음']]);
   const top = h('div.ftop', null, age.el, bonus.el);
 
   // ── 오른쪽 위: 강호 지도 (중국 윤곽 위에 지역). 상자는 윤곽 높이에 맞춰 자른다
@@ -109,21 +109,15 @@ G.UI.views.wuxia = function () {
   const overlay = h('div.fover', null, hud, top, left, jbox, bottom, panel);
   const req = d => !d.req ? '' : Object.entries(d.req).filter(([id, lv]) => W.L(w(), id) < lv).map(([id, lv]) => (id === 'realm' ? `경지 ${W.realmName(lv)}` : `${W.skillDef(id).n} ${lv}`)).join(' · ');
   const rankReq = (s, d) => [s.fameT < W.fameNeed(d) ? `명성 ${U.fmt(s.fameT)}/${U.fmt(W.fameNeed(d))}` : '', W.realm(s) < (d.realm || 0) ? `경지 ${W.realmName(d.realm)}` : '', d.champ && !s.champ ? '천산 비무 승리' : ''].filter(Boolean).join(' · ');
-  // 지역 메리트: [아이콘, 글] 셋 — 활동으로 얻는 것 · 그 지역에서 익히는 무공 · 특산
-  const merits = (s, id) => {
-    const a = W.act(s, id);
-    const sk = D.skills.filter(k => W.skillAt(k, id) && a.kind !== 'raid' && (!k.unlock || ta(k.unlock))).map(k => k.n);
-    const it = D.items.filter(i => i.r === id).map(i => i.n + (s.items[i.id] ? '✓' : ''));
-    return [['c_coin', `${a.n} · ${gainText(s, a)}`], ...(sk.length ? [['s_tuna', `수련 ${sk.join('·')}`]] : []), ...(it.length ? [['it_pill', `특산 ${it.join('·')}`]] : [])];
-  };
-  let meritKey = '';
-  // 활동으로 얻는 것 (한 줄)
-  const gainText = (s, a) => {
-    const st = W.stipend(s);
-    if (a.kind === 'work') return `명성 +${U.fmt(st * a.mult * tm('work'))}/초`;
-    if (a.kind === 'raid') return `처치마다 명성 +${U.fmt(st * 20 * tm('raid') * (1 + W.pathNote(s, 'blood')))} · 깨달음`;
-    if (a.kind === 'duel') return `결투 승리 명성 +${U.fmt(st * 60 * tm('duel'))}`;
-    return `${s.champ ? '' : '이기면 천하제일 · '}명성 +${U.fmt(st * 200 * tm('boss'))}`;
+  // 지역의 역할 (이름 옆): 명성 ×n · 계열 수련 ×n · 원정 / 비무 / 천하제일 비무
+  const role = (s, id) => {
+    const a = W.act(s, id), out = [];
+    if (a.kind === 'raid') return `${a.n} · 처치마다 명성·깨달음`;
+    if (a.kind === 'boss') out.push(s.champ ? '천하제일 비무' : '천하제일 비무 (이기면 다음 지위)');
+    if (a.kind === 'duel') out.push('비무 결투');
+    if ((a.fame || 1) !== 1) out.push(`명성 ×${a.fame}`);
+    for (const [f, m] of Object.entries(a.train || {})) out.push(`${f} ×${m}`);
+    return out.join(' · ') || a.n;
   };
 
   return G.UI.worldScreen('wuxia', {
@@ -131,32 +125,22 @@ G.UI.views.wuxia = function () {
     update() {
       const s = w(), lifeN = W.lifespan(s), jd = W.jobDef(s.job), sd = W.skillDef(s.skill);
       const rt = W.rt(s), R = D.regions[rt.region], jr = W.journey(s), act = W.act(s, rt.region);
-      const place = ch => (R.places[ch] || ['?'])[0];
-      const training = s.mode === 'train' && W.skillAt(sd, rt.region);
-      // 지역 이름 + 메리트 (여정 중이면 가는 곳)
+
+      // 지역 이름 옆에 그 지역의 역할 (여정 중이면 가는 곳)
       const mid = jr ? jr.to : rt.region;
       setText(hudMode, s.dead ? '천수를 다했다' : jr ? `여정 → ${D.regions[mid].n}` : R.n);
-      const ms = merits(s, mid), mk = ms.map(m => m[1]).join('|');
-      if (mk !== meritKey) {
-        meritKey = mk;
-        merit.innerHTML = '';
-        for (const [t, txt] of ms) merit.append(h('div.merit', null, G.T.el(t, 'xs'), h('span', null, txt)));
-      }
-      // 지금 하는 일
-      setText(hudGain, s.dead || jr ? '' : training ? `지금: ${place(W.dest(s))}에서 ${sd.n} 수련 (Lv ${W.L(s, sd.id)})` : `지금: ${place(W.dest(s))} · ${act.n}`);
+      setText(hudRole, s.dead ? '' : role(s, mid));
       res.set('realm', `${W.realmName(W.realm(s))} ${W.realmSum(s)}`);
       res.set('gold', U.fmt(s.gold));
       res.set('ins', U.fmt(s.ins));
       // 나이: 천수까지 차오르는 막대
       const leftY = Math.max(0, lifeN - s.age);
       age.set((s.age - W.startAge()) / (lifeN - W.startAge()), `${Math.floor(s.age)} / ${Math.floor(lifeN)}세`, `⌛ ${Math.ceil(leftY)}년`, leftY < 8);
-      bonus.set('sxp', `×${tm('sxp').toFixed(2)}`);
-      bonus.set('fame', `×${U.fmt(tm('fame'))}`);
-      bonus.set('stip', `×${tm('stipend').toFixed(2)}`);
-      bonus.set('work', `×${tm('work').toFixed(2)}`);
-      bonus.set('raid', `×${tm('raid').toFixed(2)}`);
-      bonus.set('combat', `×${tm('combat').toFixed(2)}`);
-      bonus.set('walk', `×${(tm('walk') * (1 + 0.25 * ta('gg_fly'))).toFixed(2)}`);
+      // 총 배율: 무공 효과 × 특산 × 트리 × 넥서스·유물·붕괴 (지역·전생 레벨은 빼고)
+      for (const f of ['심법', '외공', '경공', '잡학']) bonus.set(f, `×${U.fmt(W.famXp(s, f))}`);
+      bonus.set('fame', `×${U.fmt(W.fameMult(s))}`);
+      bonus.set('combat', `×${U.fmt(W.powMult(s))}`);
+      bonus.set('walk', `×${W.travelMult(s).toFixed(2)}`);
       bonus.set('ins', `×${tm('ins').toFixed(2)}`);
       // 자동 · 장래
       tPromote.update(); tSkill.update(); tBuy.update();
@@ -165,7 +149,7 @@ G.UI.views.wuxia = function () {
       // 강호 지도
       for (const [id, g] of Object.entries(nodes)) {
         g.setAttribute('class', 'jn' + (id === rt.region && !jr ? ' cur' : '') + (id === jd.home ? ' home' : '') + (s.hold === id ? ' hold' : ''));
-        setText(g._tip, `${D.regions[id].n}\n${merits(s, id).map(m => m[1]).join('\n')}${s.hold === id ? '\n📍 머무는 중 (다시 누르면 풀림)' : ''}`);
+        setText(g._tip, `${D.regions[id].n} · ${role(s, id)}${s.hold === id ? ' · 📍' : ''}`);
       }
       const trip = W.travelMult(s);
       for (const y of yearT) setText(y.t, `${(y.yr / trip).toFixed(1)}년`);
@@ -200,13 +184,14 @@ G.UI.views.wuxia = function () {
       }
       if (openK === 'skill') for (const x of skills) {
         const d = x.d, lv = W.L(s, d.id), pk = s.peak[d.id] || 0;
-        const here = W.localSkills(s, rt.region).includes(d), ok = W.reqMet(s, d) && here;
+        const here = W.localSkills(s, rt.region).includes(d), ok = W.reqMet(s, d) && here, rm = W.regionTrain(s, rt.region, d.fam);
         tog(x.el, 'on', s.skill === d.id);
         tog(x.el, 'locked', !ok);
         x.el.disabled = !ok;
-        setText(x.lv, ` ${lv}` + (pk ? ` (${pk})` : ''));
+        setText(x.lv, ` ${lv}` + (pk ? ` (전생 ${pk})` : ''));
         setW(x.xb.fill, (s.xp[d.id] || 0) / W.need(lv));
-        setText(x.sub, !W.reqMet(s, d) ? `🔒 ${d.unlock && !G.Tree.add('wuxia', s.tree, d.unlock) ? '스킬트리' : req(d)}` : !here ? `📍 ${d.at.map(a => D.regions[a[0]].n).join(' · ')}` : d.d);
+        const tags = [W.catchingUp(s, d.id) ? '따라잡기 ×2' : '', rm > 1 ? `여기서 ×${rm}` : ''].filter(Boolean).join(' · ');
+        setText(x.sub, !W.reqMet(s, d) ? `🔒 ${d.unlock && !G.Tree.add('wuxia', s.tree, d.unlock) ? '스킬트리' : req(d)}` : d.path && (d.path !== path || jd.tier < 3) ? `${D.paths[d.path]} 무공${d.path === path ? ' · 입문 후' : ''}` : !here ? '원정 중에는 수련 못 함' : `${d.d}${tags ? ' · ' + tags : ''}`);
       }
       if (openK === 'shop') {
         for (const x of shop) {
