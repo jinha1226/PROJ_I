@@ -19,7 +19,8 @@ G.UI.views.xianxia = function () {
   const cds = h('div.xcds', null,
     h('div.xcd', { 'data-tip': '영초: 밭에서 저절로 거둔다 (목 진기·트리·제자로 빨라진다)' }, G.T.el('q_herb', 'xs'), h('span', null, '영초'), herbBar, herbTxt),
     h('div.xcd', { 'data-tip': '연단: 영초 3개로 단약 1개 (화 진기·트리로 빨라진다)' }, G.T.el('q_furnace', 'xs'), h('span', null, '단약'), alchBar, alchTxt));
-  const hud = h('div.fhud', null, h('div.floorrow', null, realmEl, stageEl, stateEl), res.el, cds, devEl);
+  const neckEl = h('small.neck');
+  const hud = h('div.fhud', null, h('div.floorrow', null, realmEl, stageEl, stateEl), res.el, cds, devEl, neckEl);
 
   // ── 위 가운데: 영기 + 총 배율
   const qi = G.UI.ov.bar('영기: 다 차면 천겁에 도전한다', '초당 영기');
@@ -92,11 +93,16 @@ G.UI.views.xianxia = function () {
     return { el, b, v, c, row: h('div.delr', null, G.T.el(D.el[el].t, 'xs'), c, b, v) };
   });
   const cmp = h('div.dcmp');
+  // 천겁 진법(청사진 한 장): 천겁이 시작되면 이 진법으로 바꿔 깔고, 끝나면 원래대로
+  const tribTxt = h('small');
+  const saveBtn = h('button.btn.sm', { 'data-tip': '지금 깔린 진법을 천겁용으로 저장 (토·화 위주로 깔아 두고 누르면 좋다)', on: { click: () => { X.saveTrib(x()); G.SFX.play('select'); } } }, '지금 진법 저장');
+  const clearBtn = h('button.btn.sm', { on: { click: () => { X.clearTrib(x()); } } }, '지우기');
   const design = h('div.xdesign.hidden', null,
     h('div.card-h', null, h('b', null, '진법 설계'), h('span.sp'), h('small.dim', null, '맵 위 숫자 = 진기 출력')),
     drow('total', '총 출력'), drow('eff', '진기당 효율'), drow('gen', '상생 연결'), drow('over', '상극 연결'), drow('vein', '영맥 사용'),
     h('div.dsub', null, '오행별 출력 · 효과'), ...elRows.map(r => r.row),
     h('div.dsub', null, '자동 배치 대비'), cmp,
+    h('div.dsub', null, '천겁 진법'), h('div.tribbp', null, tribTxt, h('span.sp'), saveBtn, clearBtn),
     h('div.dsub', null, '규칙'), h('div.wheel', { html: WHEEL }),
     h('small.dim.dhelp', null, '화살표 방향으로 이웃하면 받는 쪽 +50% (맵의 금빛 화살표) · 붉은 ✕ 상극 이웃은 -40% · 영맥 칸 위 ×2 · 진기 순서가 곧 사슬'));
   const designBtn = h('button.fbtn.dbtn', { 'data-tip': '진법 설계', on: { click: e => { e.stopPropagation(); X.showNums = !X.showNums; tog(design, 'hidden', !X.showNums); tog(designBtn, 'on', X.showNums); } } }, '📐');
@@ -161,8 +167,12 @@ G.UI.views.xianxia = function () {
       setText(herbTxt, ` ${X.herbEvery(s, L).toFixed(1)}초마다`);
       setW(alchBar.fill, s.herbs >= 3 ? rt.alchT / X.ALCH_T : 0);
       setText(alchTxt, s.herbs >= 3 ? ` ${X.alchEvery(s, L).toFixed(1)}초마다` : ` 영초 ${s.herbs}/3`);
+      const nk = X.bottleneck(s);
+      setText(neckEl, nk ? `병목 · ${nk}` : '');
       // 진법 설계
       if (X.showNums) {
+        setText(tribTxt, s.arrTrib ? `저장됨 · 진기 ${Object.keys(s.arrTrib).length}개` : '없음 · 지금 진법을 저장');
+        clearBtn.disabled = !s.arrTrib;
         const sc = X.score(s, L), auto = X.score(s, X.layoutOf(s, X.autoArr(s), rt, true)), mine = X.score(s, X.layoutOf(s, s.arr, rt, true));
         setText(dz.total, sc.total.toFixed(1));
         setText(dz.eff, `×${sc.eff.toFixed(2)}`);

@@ -227,6 +227,8 @@ G.Xianxia = (() => {
       rt.state = 'trib';
       rt.trib = 0;
       rt.penalty = 0;
+      // 천겁 진법(청사진)이 있으면 바꿔 깐다
+      if (x.arrTrib) { x.arrMain = x.arr; x.arr = { ...x.arrTrib }; rt.ver++; }
       const n = X.demonCount(x), hp = X.power(x) * 1.2;
       for (let k = 0; k < n; k++) {
         const a = k / n * Math.PI * 2 + Math.random() * 0.5, r = 4.5;
@@ -270,6 +272,22 @@ G.Xianxia = (() => {
       }
       rt.demons = [];
       rt.state = 'meditate';
+      if (x.arrMain) { x.arr = x.arrMain; x.arrMain = null; rt.ver++; }
+    },
+    // 천겁 진법 저장·지우기 (지금 깔린 진법을 그대로)
+    saveTrib(x) { x.arrTrib = { ...x.arr }; },
+    clearTrib(x) { x.arrTrib = null; },
+    // 병목: 지금 진행을 가장 크게 막는 것 하나 (Factorio의 막힌 벨트 경고처럼)
+    bottleneck(x) {
+      const rt = X.rt(x), L = X.layout(x), cost = X.breakCost(x.realm), rate = X.qiRate(x);
+      const ch = X.breakChance(x);
+      if (rt.slots.some(s => s.off > 0 && s.i < X.slotCount())) return '요수가 진기를 깨는 중 → 토 진기(요격)·비검';
+      if (x.qi >= cost && ch < (x.autoThr || 0.6)) return `천겁 성공률 ${Math.round(ch * 100)}% → 토 진기·단약을 늘리거나 천겁 진법을 저장`;
+      if (x.pills < X.pillUse() && x.herbs < 3 && L.sum.wood < 1) return '단약이 영초 부족으로 멈춤 → 목 진기';
+      if (x.pills < X.pillUse() && L.sum.fire < 1) return '연단이 느림 → 화 진기';
+      const t = (cost - x.qi) / Math.max(1e-9, rate);
+      if (t > 300) return `영기가 천겁까지 ${Math.round(t / 60)}분 → 수 진기·영맥`;
+      return '';
     },
 
     tick(x, dt) {

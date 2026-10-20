@@ -1084,3 +1084,6 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .xcd .bar { width: 90px; }
 .xhov { position: absolute; left: 50%; bottom: 80px; transform: translateX(-50%); background: #000e; border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: 12px; pointer-events: none; z-index: 20; max-width: 560px; }
 .xdesign .wheel { display: flex; justify-content: center; }
+.fhud .neck { display: block; color: #ffb36b; font-size: 11px; margin-top: 2px; }
+.xdesign .tribbp { display: flex; align-items: center; gap: 4px; }
+.xdesign .tribbp .btn { white-space: nowrap; }
