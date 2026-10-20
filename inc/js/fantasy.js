@@ -10,7 +10,7 @@ G.Fantasy = (() => {
   const D = G.D.F, U = G.U, GR = G.Grid;
   const tm = k => G.Tree.mul('fantasy', G.S.w.fantasy.tree, k);
   const ta = k => G.Tree.add('fantasy', G.S.w.fantasy.tree, k);
-  const MW = 40, MH = 26, REVIVE = 4, ALLY_REVIVE = 8, SMITE_CD = 0.6, SIGHT = 5, SONG_CD = 12, BLESS_CD = 15, WARP_CD = 15, DASH_CD = 5, SKIP_T = 20;
+  const MW = 40, MH = 26, REVIVE = 4, ALLY_REVIVE = 8, SMITE_CD = 0.6, SIGHT = 7, SONG_CD = 12, BLESS_CD = 15, WARP_CD = 15, DASH_CD = 5, SKIP_T = 20;
   // 구간별 오염: 초당 최대 체력의 몇 %
   const CORRUPT = [0, 0.01, 0.018, 0.026, 0.034, 0.042];
   const SKILLS = {
@@ -170,12 +170,19 @@ G.Fantasy = (() => {
       rt.mons.push(Object.assign(mo, extra));
       return mo;
     },
-    // 기사 주변 SIGHT칸을 본 칸으로
+    // 시야: SIGHT칸 안에서 벽에 가리지 않은 칸만. 공격도 시야 안에서만 (벽 너머로 치지 않는다)
+    sees: (m, a, b) => GR.los(m, a.x, a.y, b.x, b.y),
+    // 지금 원정대 누군가에게 보이는 칸인가 (벼락을 내릴 수 있는 곳)
+    inView(rt, x, y) {
+      return rt.party.some(p => !p.dead && (p.x - x) ** 2 + (p.y - y) ** 2 <= SIGHT * SIGHT && GR.los(rt.map, p.x, p.y, x, y));
+    },
+    // 기사 시야 안의 칸을 본 칸으로
     look(rt) {
       const m = rt.map, hx = Math.round(rt.hero.x), hy = Math.round(rt.hero.y);
       let added = false;
       for (let y = hy - SIGHT; y <= hy + SIGHT; y++) for (let x = hx - SIGHT; x <= hx + SIGHT; x++) {
         if (x < 0 || y < 0 || x >= m.w || y >= m.h || (x - hx) ** 2 + (y - hy) ** 2 > SIGHT * SIGHT) continue;
+        if (!GR.los(m, hx, hy, x, y)) continue;
         const i = y * m.w + x;
         if (!rt.seen[i]) { rt.seen[i] = 1; added = true; }
       }
@@ -300,7 +307,7 @@ G.Fantasy = (() => {
     // ── 벼락 (클릭·낙뢰 폭풍) ──
     click(f, x, y) {
       const rt = F.rt(f);
-      if (rt.phase === 'dead' || rt.charges <= 0) return false;
+      if (rt.phase === 'dead' || rt.charges <= 0 || !F.inView(rt, x, y)) return false;
       if (rt.charges-- >= 1 + ta('s_charge')) rt.smiteCd = F.smiteCd();
       if (rt.smiteCd <= 0) rt.smiteCd = F.smiteCd();
       F.smite(f, rt, x, y, true);
@@ -363,7 +370,8 @@ G.Fantasy = (() => {
         G.J.finish('fantasy', rt.hero.x, rt.hero.y, 1.2);
         G.J.sfx('fantasy', 'finish');
       } else if (id === 'meteor') {
-        const tg = rt.focus || F.nearestMon(rt, rt.hero) || rt.hero;
+        const seen = rt.mons.filter(o => F.inView(rt, o.x, o.y));
+        const tg = (rt.focus && seen.includes(rt.focus) ? rt.focus : seen.sort((p, q) => GR.dist(p, rt.hero) - GR.dist(q, rt.hero))[0]) || rt.hero;
         const x = tg.x, y = tg.y;
         G.fx(rt, { k: 'tile', key: 'fx_fire', x, y, t: 0.9, s: 3 });
         G.J.sfx('fantasy', 'boom');
@@ -468,8 +476,10 @@ G.Fantasy = (() => {
         if (p.dead) {
           if ((p.reviveT -= dt) <= 0) {
             p.dead = false; p.hp = p.max * 0.5;
+            // 쓰러진 자리에서 일어난다. 원정대가 멀리 가 버렸으면 곁으로
             const lead = hero.dead ? rt.party.find(q => !q.dead && q !== p) || hero : hero;
-            p.x = lead.x; p.y = lead.y;
+            if (GR.dist(p, lead) > 8) { p.x = lead.x; p.y = lead.y; }
+            G.fx(rt, { k: 'tile', key: 'fx_holy', x: p.x, y: p.y, t: 0.6 });
           }
           continue;
         }
@@ -487,7 +497,7 @@ G.Fantasy = (() => {
       // 낙뢰 폭풍: 방치 중에도 일정 간격으로 근처 적에게 벼락
       if (ta('s_storm') && rt.mons.length && (rt.stormT -= dt) <= 0) {
         rt.stormT = F.stormT();
-        const near = rt.mons.filter(o => GR.dist(o, hero) < 8 + ta('s_storm_r'));
+        const near = rt.mons.filter(o => GR.dist(o, hero) < 8 + ta('s_storm_r') && F.inView(rt, o.x, o.y));
         for (let k = 0; k < (ta('s_storm3') ? 2 : 1) && near.length; k++) { const t = U.pick(near); F.smite(f, rt, t.x, t.y, false); }
       }
       // 시간 왜곡
@@ -507,12 +517,12 @@ G.Fantasy = (() => {
           if (l < 7) GR.moveTo(m, mo, U.clamp(Math.round(mo.x + dx / l * 3), 1, m.w - 2), U.clamp(Math.round(mo.y + dy / l * 3), 1, m.h - 2), 2.6, dt, 0.3);
           continue;
         }
-        if (!mo.aggro && GR.dist(mo, hero) < (mo.boss ? 4 : 6)) mo.aggro = true;
+        if (!mo.aggro && GR.dist(mo, hero) < (mo.boss ? 4 : 6) && F.sees(m, mo, hero)) mo.aggro = true;
         if (!mo.aggro) continue;
         let tg = pal && GR.dist(mo, pal) < 6 ? pal : null, bd = tg ? GR.dist(mo, tg) : 1e9;
         if (!tg) for (const p of rt.party) if (!p.dead) { const d = GR.dist(mo, p); if (d < bd) { bd = d; tg = p; } }
         if (!tg) continue;
-        if (bd > 1.1 + mo.s * 0.2) { GR.moveTo(m, mo, tg.x, tg.y, mo.boss ? 1.8 : 2.2, dt, 1); continue; }
+        if (bd > 1.1 + mo.s * 0.2 || !F.sees(m, mo, tg)) { GR.moveTo(m, mo, tg.x, tg.y, mo.boss ? 1.8 : 2.2, dt, 0.6); continue; }
         mo.flip = tg.x < mo.x;
         if ((mo.atkT -= dt) <= 0) {
           mo.atkT = 1;
@@ -526,7 +536,7 @@ G.Fantasy = (() => {
         const target = (rt.focus && rt.focus.hp > 0) ? rt.focus : F.pickTarget(rt);
         const chest = !target && rt.chests[0];
         if (target) {
-          if (GR.dist(hero, target) > 1.2 + target.s * 0.2) GR.moveTo(m, hero, target.x, target.y, speed, dt, 1);
+          if (GR.dist(hero, target) > 1.2 + target.s * 0.2 || !F.sees(m, hero, target)) GR.moveTo(m, hero, target.x, target.y, speed, dt, 0.6);
           else {
             hero.flip = target.x < hero.x;
             if ((hero.atkT -= dt * aspd) <= 0) {
@@ -582,13 +592,15 @@ G.Fantasy = (() => {
         const tg = prefer || F.nearestMon(rt, a, range + 4);
         if (tg && GR.dist(tg, hero) < 9) {
           // 용기병 돌진: 사거리 밖 6칸 안의 적에게 뛰어든다
-          if (a.id === 'dragoon' && ta('d_dash') && a.dashT <= 0 && GR.dist(a, tg) > range && GR.dist(a, tg) <= 6) {
+          if (a.id === 'dragoon' && ta('d_dash') && a.dashT <= 0 && GR.dist(a, tg) > range && GR.dist(a, tg) <= 6 && F.sees(m, a, tg)) {
             a.dashT = DASH_CD;
             G.fx(rt, { k: 'beam', x: a.x, y: a.y, x2: tg.x, y2: tg.y, col: '#ffe08a', w: 3, t: 0.2 });
             a.x = tg.x + (a.x > tg.x ? 0.8 : -0.8); a.y = tg.y;
             a.atkT = 0; a.dashHit = true;
           }
+          // 사거리 밖이거나 벽에 가리면 다가간다 (보이는 자리까지)
           if (GR.dist(a, tg) > range) { GR.moveTo(m, a, tg.x, tg.y, speed, dt, range * 0.8); continue; }
+          if (!F.sees(m, a, tg)) { GR.moveTo(m, a, tg.x, tg.y, speed, dt, 0.6); continue; }
           a.flip = tg.x < a.x;
           if ((a.atkT -= dt * aspd) <= 0) {
             a.atkT = F.allyCd(a);

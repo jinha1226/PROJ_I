@@ -66,6 +66,21 @@ G.Grid = {
   },
   DIR: [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]],
 
+  // 시야선: 두 칸 사이(끝 칸 제외)가 모두 뚫려 있나. 대각선으로 넘어갈 때 양옆이 다 벽이면 막힌다 (모서리 너머로 못 본다).
+  los(m, x0, y0, x1, y1) {
+    let x = Math.round(x0), y = Math.round(y0);
+    const tx = Math.round(x1), ty = Math.round(y1), dx = Math.abs(tx - x), dy = -Math.abs(ty - y), sx = x < tx ? 1 : -1, sy = y < ty ? 1 : -1;
+    let err = dx + dy;
+    while (x !== tx || y !== ty) {
+      const e2 = 2 * err, px = x, py = y;
+      if (e2 >= dy) { err += dy; x += sx; }
+      if (e2 <= dx) { err += dx; y += sy; }
+      if (x !== px && y !== py && !G.Grid.pass(m, x, py) && !G.Grid.pass(m, px, y)) return false;
+      if ((x !== tx || y !== ty) && !G.Grid.pass(m, x, y)) return false;
+    }
+    return true;
+  },
+
   // 엔티티 e(x, y는 칸 중심 기준 실수 좌표)를 목표 칸 쪽으로 speed만큼 옮긴다. 도착하면 true.
   moveTo(m, e, tx, ty, speed, dt, stopAt = 0.05) {
     const dx0 = tx - e.x, dy0 = ty - e.y, dd = Math.hypot(dx0, dy0);

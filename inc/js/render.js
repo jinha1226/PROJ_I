@@ -2,8 +2,10 @@
 // 2D 타일 맵 그리기. 세계 로직의 view()가 주는 { map, terrain(x,y), ents, fx, cam|fit, tint, labels }를 캔버스에 그린다.
 // 좌표: 엔티티 x, y는 칸 좌표(정수 = 칸 중심). 지형은 32px 원본 크기로 한 번 그려 두고 확대해서 찍는다(픽셀 그대로).
 // 로직은 10Hz라 엔티티 위치를 그릴 때 부드럽게 따라가게(_rx, _ry) 한다. 손맛 효과(G.J)는 세계 id로 찾는다.
-G.MapView = function (canvas) {
+G.MapView = function (canvas, id) {
   const ctx = canvas.getContext('2d');
+  G.UI.zoom = G.UI.zoom || {};
+  let camMode = false, baseTS = 32, minZ = 0.3;
   const MIN_TS = 28;
   let W = 0, H = 0, TS = 32, ox = 0, oy = 0, lastT = 0;
   const cam = { x: 0, y: 0, ok: false };
@@ -143,8 +145,15 @@ G.MapView = function (canvas) {
       cx += (e._kx || 0) * kb + Math.sin(now / 11) * TS * 0.05 * (1 - hq);
       cy += (e._ky || 0) * kb;
     }
+    // 쓰러짐: 옆으로 눕고 흑백, 부활하면 다시 일어선다 (_down 0 → 1을 부드럽게)
+    e._down = (e._down || 0) + ((e.dead ? 1 : 0) - (e._down || 0)) * 0.18;
+    const down = e._down > 0.02 ? e._down : 0;
     ctx.globalAlpha = e.alpha == null ? 1 : e.alpha;
-    if (!e.under && e.kind) {
+    if (down) {
+      ctx.save();
+      ctx.translate(cx, foot); ctx.rotate((e.flip ? -1 : 1) * down * Math.PI / 2); ctx.translate(-cx, -foot);
+    }
+    if (!e.under && e.kind && !down) {
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
       ctx.beginPath(); ctx.ellipse(cx, foot, size * 0.3, size * 0.1, 0, 0, 7); ctx.fill();
     }
@@ -162,11 +171,18 @@ G.MapView = function (canvas) {
     }
     if (e.glow) { ctx.shadowColor = e.glow; ctx.shadowBlur = 14; }
     if (e.dim) ctx.filter = 'grayscale(1) brightness(0.45)';
+    if (down) ctx.filter = `grayscale(${down}) brightness(${1 - 0.35 * down})`;
     const tc = e.tint && tinted(spec, e.tint);
     const top = tc ? blit(tc, cx, cy, size, e.flip) : drawSprite(spec, cx, cy, size, e.flip);
     if (e.wpn && G.ARTSET[e.wpn]) drawWeapon(e, cx, cy, size, lq);
     ctx.filter = 'none';
     ctx.shadowBlur = 0;
+    if (down) {
+      ctx.restore();
+      // 다시 일어날 때까지 남은 초
+      // 누운 몸 한가운데 위 (발을 축으로 90° 돌았으니 몸 중심은 발 옆으로 간다)
+      if (e.dead && e.reviveT > 0) text(Math.ceil(e.reviveT), cx + (e.flip ? -1 : 1) * (foot - cy) * down, foot - size * 0.32, '#ff9a9a', Math.max(11, TS * 0.32), true);
+    }
     if (hq < 1) {
       // 몬스터는 하얗게, 아군은 붉게 번쩍
       const sil = silhouette(spec, e.kind === 'mon' ? '#ffffff' : '#ff6060');
@@ -393,7 +409,12 @@ G.MapView = function (canvas) {
         TS = fitTS;
         ox = (W - m.w * TS) / 2; oy = (H - m.h * TS) / 2;
       } else {
-        TS = view.fit ? MIN_TS : H / view.viewH;
+        // 확대·축소: 기본 크기 × 배율. 가장 작게는 맵 전체가 한 화면에 들어올 때까지
+        baseTS = view.fit ? MIN_TS : H / view.viewH;
+        minZ = Math.min(1, fitTS / baseTS);
+        camMode = true;
+        const z = G.UI.zoom[id] = G.U.clamp(G.UI.zoom[id] || 1, minZ, 2.5);
+        TS = baseTS * z;
         const c = view.cam;
         if (!cam.ok || Math.hypot(c.x - cam.x, c.y - cam.y) > 12) { cam.x = c.x; cam.y = c.y; cam.ok = true; }
         cam.x += (c.x - cam.x) * 0.12; cam.y += (c.y - cam.y) * 0.12;
@@ -424,7 +445,7 @@ G.MapView = function (canvas) {
       }
       const fog = view.fog;
       const hidden = e => fog && e.kind === 'mon' && !fog.seen[Math.round(e.y) * m.w + Math.round(e.x)];
-      const ents = view.ents.filter(e => !hidden(e)).sort((a, b) => (b.under ? 1 : 0) - (a.under ? 1 : 0) || a._ry - b._ry);
+      const ents = view.ents.filter(e => !hidden(e)).sort((a, b) => (b.under || b.dead ? 1 : 0) - (a.under || a.dead ? 1 : 0) || a._ry - b._ry);
       // 바닥에 깔린 것(진기 등) → 오행 선 → 나머지
       for (const e of ents) if (e.under) drawEnt(e, t, now);
       // 오행 상생(빛나는 흐름)·상극(붉은 금) 선
@@ -472,6 +493,9 @@ G.MapView = function (canvas) {
       const fa = G.J.flashA(id, now);
       if (fa > 0) { ctx.fillStyle = G.J.st[id].flC; ctx.globalAlpha = fa; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
     },
+    // 휠·손가락 확대: f배 (1보다 크면 확대)
+    zoomBy(f) { if (camMode) G.UI.zoom[id] = G.U.clamp((G.UI.zoom[id] || 1) * f, minZ, 2.5); },
+    canZoom: () => camMode,
     // 화면 좌표 → 칸 좌표(실수)
     toTile(px, py) { return { x: (px - ox) / TS - 0.5, y: (py - oy) / TS - 0.5 }; },
   };

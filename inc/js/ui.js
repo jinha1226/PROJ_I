@@ -1,5 +1,5 @@
 'use strict';
-// 화면 뼈대: DOM 도우미, 상단 자원 막대, 세계 목록, 로그, 토스트, 모달
+// 화면 뼈대: DOM 도우미, 상단 자원 막대, 왼쪽 차원 막대(아이콘), 토스트, 모달
 const h = G.h = function (tag, attrs, ...kids) {
   const [t, ...cls] = tag.split('.');
   const el = document.createElement(t || 'div');
@@ -28,15 +28,14 @@ G.UI = {
   init() {
     const app = document.getElementById('app');
     this.res = h('div.res');
-    this.nav = h('nav.nav');
-    this.logEl = h('div.log');
+    this.nav = h('nav.rail');
     this.main = h('main.main');
     app.append(
       h('header.top', null,
         h('div.brand', null, h('b', null, '차원 균열'), h('small', null, 'INFINITE RIFT')),
         this.res,
         h('button.icon-btn', { title: '설정', on: { click: () => this.settings() } }, '⚙')),
-      h('div.shell', null, h('aside.left', null, this.nav, h('div.log-wrap', null, h('div.log-title', null, '기록'), this.logEl)), this.main));
+      h('div.shell', null, this.nav, this.main));
     this.buildRes();
     this.buildNav();
     G.on('log', e => this.addLog(e));
@@ -53,18 +52,19 @@ G.UI = {
     this.rSign = item('ui_sign', '인장', '고대 인장: 유물 제단에서 유물을 소환한다');
     this.rStar = item('ui_star', '별', '별의 파편: 차원 붕괴로 얻는다. 개당 모든 생산 +10%');
   },
+  // 차원 막대: 세계마다 차원문 아이콘 하나. 이름·상태는 올려 두면 뜬다. 살 것이 있으면 초록 점, 붕괴 준비되면 빛난다.
+  // 이유: 목록·부제 글자가 붙은 대시보드 대신, 세계를 오가는 버튼만 남겨 맵이 화면을 차지하게 (Idleon 캐릭터 막대 같은 아이콘 줄)
   buildNav() {
     this.navItems = {};
-    const add = (id, tile, name, sub, group) => {
+    const add = (id, tile, name) => {
       const st = h('small');
-      const el = h('button.nav-item' + (group ? '.' + group : ''), { 'data-id': id, on: { click: () => this.show(id) } },
-        G.T.el(tile, 'ni'), h('span.nt', null, h('b', null, name), st));
+      const el = h('button.rail-item', { 'data-id': id, 'aria-label': name, on: { click: () => this.show(id) } },
+        G.T.el(tile, 'ri-ic'), h('i.rdot'), h('span.rtip', null, h('b', null, name), st));
       this.nav.append(el);
-      this.navItems[id] = { el, st, sub };
+      this.navItems[id] = { el, st };
     };
-    this.nav.append(h('div.nav-h', null, '차원'));
-    for (const w of G.D.WORLDS) add(w.id, 'w_' + w.id, w.name, null, 'world');
-    this.nav.append(h('div.nav-h', null, '균열'));
+    for (const w of G.D.WORLDS) add(w.id, 'w_' + w.id, w.name);
+    this.nav.append(h('div.rail-sep'));
     add('nexus', 'ui_nexus', '차원 넥서스');
     add('altar', 'ui_altar', '유물 제단');
     add('prestige', 'ui_prestige', '차원 붕괴');
@@ -98,7 +98,6 @@ G.UI = {
       tog(it.el, 'dot', !!(c && G.Tree.wallet[w.id].get() >= c.cost));
     }
     const nc = G.Tree.cheapest('nexus', S.ntree);
-    setText(this.navItems.nexus.st, nc && S.ess >= nc.cost ? '✦' : '');
     tog(this.navItems.nexus.el, 'dot', !!(nc && S.ess >= nc.cost));
     setText(this.navItems.altar.st, `소환 ×${Math.floor(S.signs / G.D.SUMMON_COST)}`);
     setText(this.navItems.prestige.st, G.Prestige.can() ? `★ +${G.Prestige.gain()}` : `${G.U.fmt(S.runEss)} / ${G.U.fmt(G.D.PRESTIGE_MIN)}`);
@@ -107,10 +106,9 @@ G.UI = {
   },
   frame(t) { if (this.view && this.view.frame) this.view.frame(t); },
 
+  // 기록 목록은 없앴다. 큰 소식만 오른쪽 아래 알림으로
   addLog(e) {
     const tile = e.world && G.D.WORLD[e.world] ? 'w_' + e.world : 'ui_nexus';
-    this.logEl.prepend(h('div.log-line' + (e.cls ? '.' + e.cls : ''), null, G.T.el(tile, 'li'), ' ', e.msg));
-    while (this.logEl.childNodes.length > 40) this.logEl.lastChild.remove();
     if (e.cls === 'good' && (e.world === 'nexus' || /돌파|천겁을|토벌|격추|당첨|강호/.test(e.msg))) this.toast([G.T.el(tile, 'li'), ' ', e.msg], 'good');
   },
   toast(msg, cls = '') {

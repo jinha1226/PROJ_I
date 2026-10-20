@@ -42,7 +42,7 @@ function bot(dt) {
   for (const id in G.MODS) if (S.unlocked[id]) buyTree(id, S.w[id].tree);
   // 판타지: 초반엔 몬스터를 직접 친다
   const f = S.w.fantasy, rt = G.Fantasy.rt(f);
-  if (S.runTime < 900 && rt.mons.length) { const m = G.Fantasy.nearestMon(rt, rt.hero); if (m) G.Fantasy.click(f, m.x, m.y); }
+  if (S.runTime < 900 && rt.mons.length) { const m = rt.mons.find(o => G.Fantasy.inView(rt, o.x, o.y)); if (m) G.Fantasy.click(f, m.x, m.y); }
   for (const k of ['heal', 'rage', 'meteor']) if (rt.mons.length) G.Fantasy.cast(f, k);
   if (S.unlocked.scifi) {
     const s = S.w.scifi, SF = G.Scifi;
