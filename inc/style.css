@@ -1030,3 +1030,10 @@ details.card summary { cursor: pointer; font-weight: 700; }
 @keyframes rpulse { 50% { filter: brightness(1.6); } }
 @keyframes rrainbow { to { background-position: 300% 0; } }
 @media (max-width: 760px) { .realmfx .rtext b { font-size: 52px !important; } }
+/* 차원 붕괴 조건 */
+.pconds { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.pcond { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dim); }
+.pcond span { flex: 1; }
+.pcond.ok { color: var(--good); }
+.pcond .tl { width: 22px; height: 22px; flex: none; }
+.pconds > small { display: block; margin-bottom: 4px; }

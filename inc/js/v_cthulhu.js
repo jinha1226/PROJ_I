@@ -49,7 +49,7 @@ G.UI.views.cthulhu = function () {
     drag(p) { C.steer(c(), p.x); },
     update() {
       const s = c(), rt = C.rt(s), d = Math.max(0, Math.round((rt.hook.y - C.SURF) * D.M_PER_TILE)), z = D.zones[C.zoneOf(rt.hook.y - C.SURF)] || D.zones[0];
-      setText(depthEl, s.madT > 0 ? `휴식 ${Math.ceil(s.madT)}초` : `${d}m`);
+      setText(depthEl, s.madT > 0 ? `${s.rest ? '귀항' : '광기'} 휴식 ${Math.ceil(s.madT)}초` : `${d}m`);
       setText(infoEl, ` · ${z.n} · ${PHASE[rt.phase]}`);
       tAuto.update();
       const ms = C.maxSan();
@@ -63,7 +63,7 @@ G.UI.views.cthulhu = function () {
       res.set('lamp', `${C.lampR()}칸`);
       // 물고기 값 배율 (왼쪽 위, 바다·단계 다음)
       setText(valEl, ` · 물고기 값 ${x(C.valueMult(s))}`);
-      const vt = `물고기 값 — ${parts(C.valueParts(s))}`;
+      const vt = `물고기 값 — ${parts(C.valueParts(s))} (더한 값 ${x(C.valueBase(s))}) · 낮은 이성 ${x(C.sanMult(s))}`;
       if (valEl.dataset.tip !== vt) valEl.dataset.tip = vt;
       // 이성 아래: 스킬트리 배율
       const L = C.lineD(), dm = C.drain(L) / C.drainRaw(L), relic = 1 / (1 + G.relicVal('c_san'));

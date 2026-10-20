@@ -92,9 +92,21 @@ G.Relic = {
 };
 
 // ───── 차원 붕괴 ─────
+// 작은 차원 붕괴: 세계마다 작은 조건 하나. 판타지·무협은 늘, 나머지는 연 세계만 (판타지·무협만 열고 붕괴할 수도, 더 열고 할 수도)
+// 크툴루 각성으로 일어나는 큰 붕괴(세계 융합)는 나중 콘텐츠
 G.Prestige = {
-  gain: () => Math.floor(Math.sqrt(G.S.runEss / 200)),
-  can: () => G.S.runEss >= G.D.PRESTIGE_MIN,
+  conds() {
+    const S = G.S, w = S.w, out = [
+      { id: 'fantasy', n: '판타지 · 최고 30층', v: w.fantasy.maxFloor, need: 30 },
+      { id: 'wuxia', n: '무협 · 지위 6단계 (장문인급)', v: G.Wuxia.jobDef(w.wuxia.job).tier, need: 6 },
+      { id: 'xianxia', n: `수선 · 경지 ${G.D.X.realms[4]}`, v: w.xianxia.realm, need: 4 },
+      { id: 'scifi', n: 'SF · 15웨이브', v: w.scifi.maxWave, need: 15 },
+      { id: 'cthulhu', n: '크툴루 · 해구 (200m)', v: w.cthulhu.best, need: 200 },
+    ];
+    return out.filter(c => c.id === 'fantasy' || c.id === 'wuxia' || S.unlocked[c.id]).map(c => ({ ...c, ok: c.v >= c.need }));
+  },
+  gain: () => Math.max(1, Math.floor(Math.sqrt(G.S.runEss / 200))),
+  can: () => G.Prestige.conds().every(c => c.ok),
   go() {
     if (!G.Prestige.can()) return false;
     const old = G.S, gain = G.Prestige.gain();

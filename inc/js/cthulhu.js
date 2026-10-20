@@ -64,21 +64,31 @@ G.Cthulhu = (() => {
       return (base + deep) * (1 + 0.3 * ta('pact')) * (1 - 0.3 * ta('calm')) / (1 + G.relicVal('c_san'));
     },
     restT: () => Math.max(2, REST - ta('bunk')),
+    // 줄 끝까지 다녀오는 데 드는 이성 (깊이를 따라 적분, 내리기+감기 시간)
+    tripSan(c) {
+      const L = C.lineD(), t = 1 / C.sink() + 1 / C.autoReel(c);
+      let s = 0;
+      for (let i = 0; i < 20; i++) s += C.drain((i + 0.5) / 20 * L) * t * L / 20;
+      return s;
+    },
     heal(c, n) { if (n > 0) c.san = Math.min(Math.max(C.maxSan(), c.san), c.san + n); },
-    depthMult: d => Math.pow(1.06, d),
+    // 깊이 값 배율: 완만하게 (지수 1.06^칸이면 바닥에서 3,900만 배로 폭주한다 — 깊은 어종은 기본값부터 높다)
+    depthMult: d => Math.pow(1 + d / 15, 1.5),
     // 어종별 배율: 얕은 바다 어부 · 대어 전문 · 수집가
     speciesMult(c, sp) {
       return (1 + (sp.z === 0 ? ta('shallow') : 0)) * (1 + (sp.v >= 60 ? ta('bigfish') : 0)) * (1 + ta('collector') * Object.keys(c.dex).length);
     },
-    // 물고기 값 배율의 내역 (HUD 말풍선에도 쓴다)
-    valueParts: c => [['트리', tm('value')], ['유물', 1 + G.relicVal('c_prize')], ['넥서스·붕괴', G.globalMult()], ['낮은 이성', C.sanMult(c)],
+    // 물고기 값 배율: 영구 배율(트리·유물·차원·시너지)은 출처끼리 더하고, 낮은 이성 배율은 따로 곱한다 (상황에 따라 켜지는 것)
+    // 트리의 값 노드끼리도 더한다 (곱하면 어시장·상회·경매장이 서로를 키워 ×860까지 폭주했다)
+    valueParts: c => [['트리', 1 + ta('value')], ['유물', 1 + G.relicVal('c_prize')], ['차원', G.globalMult()],
       ['천기누설', G.synergy('syn_heaven') ? 1 + 0.15 * G.S.w.xianxia.realm : 1]],
-    valueMult: c => C.valueParts(c).reduce((m, p) => m * p[1], 1),
+    valueBase: c => 1 + C.valueParts(c).reduce((a, p) => a + p[1] - 1, 0),
+    valueMult: c => C.valueBase(c) * C.sanMult(c),
     value: (c, f) => f.sp.v * C.depthMult(f.d) * C.valueMult(c) * C.speciesMult(c, f.sp),
     // 도감 표시가: 그 어종이 나오는 가장 얕은 깊이, 이성 가득일 때 (더 깊이·이성이 낮을수록 비싸진다)
     dexPrice(c, sp) {
       const d = sp.z === 0 ? 3 : D.zones[sp.z - 1].to + 1;
-      return sp.v * C.depthMult(d) * C.valueMult(c) / C.sanMult(c) * C.speciesMult(c, sp);
+      return sp.v * C.depthMult(d) * C.valueBase(c) * C.speciesMult(c, sp);
     },
     gain(c, n) { c.coins += n; G.tally('cthulhu', n); },
 
@@ -220,7 +230,7 @@ G.Cthulhu = (() => {
       const rt = C.rt(c), h = rt.hook;
       G.fxTick(rt, dt);
       // 휴식이 끝나면 이성을 가득 채워 다시 출항 (「꿈 없는 잠」은 최대치보다 더)
-      if (c.madT > 0 && (c.madT -= dt) <= 0) { c.madT = 0; c.san = C.maxSan() * (1 + ta('dream')); }
+      if (c.madT > 0 && (c.madT -= dt) <= 0) { c.madT = 0; c.rest = false; c.san = C.maxSan() * (1 + ta('dream')); }
       // 물고기·촉수 움직임
       for (const f of rt.fish) {
         // 감아 올릴 때: 「유인등」 빛 안의 물고기는 바늘 쪽으로, 「자석 바늘」 가까운 것은 바늘로 끌려온다
@@ -257,7 +267,12 @@ G.Cthulhu = (() => {
       } else h.vx = 0;
       if (rt.phase === 'idle') {
         h.x += (rt.boat.x + 1.1 - h.x) * Math.min(1, dt * 5); h.y = SURF;
-        if (c.madT <= 0 && c.auto && (rt.t -= dt) <= 0) C.cast(c);
+        // 자동 던지기는 안전하게: 다음 왕복에 이성이 모자라면 던지지 않고 귀항해 쉰다(어획을 잃지 않는다).
+        // 직접 누르면 막지 않는다 — 낮은 이성 보너스를 노리고 버티는 건 플레이어가 고르는 리스크
+        if (c.madT <= 0 && c.auto && (rt.t -= dt) <= 0) {
+          if (c.san < C.tripSan(c) * 1.1 && c.san < C.maxSan()) { c.madT = C.restT(); c.rest = true; G.fx(rt, { k: 'text', x: rt.boat.x, y: SURF - 2, s: '귀항 · 휴식', col: '#bfe8ff', t: 1.2 }); }
+          else C.cast(c);
+        }
       } else if (rt.phase === 'down') {
         // 물고기·촉수에 상관없이 줄 끝까지 곧장 내려간다
         h.y = Math.min(SURF + C.lineD(), h.y + C.sink() * dt);
