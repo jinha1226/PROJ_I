@@ -3,15 +3,16 @@
 //  위 가운데: 코어 내구도 막대(무너지면 끝) + 남은 적, 아래 한 줄: 크레딧·최고 웨이브·궤도 폭격
 //  왼쪽 위: WAVE, 웨이브 시작·자동 진행 / 왼쪽 가운데: 고른 포대 자리의 건설 메뉴, 적 정보 단추
 //  지도에서 포대 자리를 누르면 그 자리를 고르고, 빈 곳을 누르면 궤도 폭격.
+//  「옮기기」를 누른 뒤 다른 포대 자리를 누르면 포탑을 그리로 옮긴다 (있으면 서로 바꾼다).
 G.UI.views.scifi = function () {
   const s = () => G.S.w.scifi, SF = G.Scifi, D = G.D.S, U = G.U;
-  let sel = G.S.w.scifi.selPad || 0;
+  let sel = G.S.w.scifi.selPad || 0, moving = null;
 
   // ── 왼쪽 위
-  const waveEl = h('b'), stateEl = h('small');
+  const waveEl = h('b'), stateEl = h('small'), sectorEl = h('small.dim');
   const startBtn = h('button.fbtn', { 'data-tip': '웨이브 시작', on: { click: () => SF.startWave(s()) } }, '▶');
   const tAuto = G.UI.toggle('진행', () => s().auto, v => { s().auto = v; }, '자동 진행');
-  const hud = h('div.fhud', null, h('div.floorrow', null, waveEl, stateEl), h('div.tgls', null, startBtn, h('small.dim', null, '자동'), tAuto.el));
+  const hud = h('div.fhud', null, h('div.floorrow', null, waveEl, stateEl), sectorEl, h('div.tgls', null, startBtn, h('small.dim', null, '자동'), tAuto.el));
 
   // ── 위 가운데: 코어
   const core = G.UI.ov.bar('코어 내구도: 0이 되면 기지가 무너진다', '남은 적');
@@ -22,7 +23,7 @@ G.UI.views.scifi = function () {
   const padTitle = h('b'), padBody = h('div.padbody');
   let padKey = '';
   function renderPad() {
-    const stt = s(), t = stt.towers[sel], key = `${sel}:${t}:${SF.padCount()}:` + Object.keys(D.turrets).map(SF.unlocked).join();
+    const stt = s(), t = stt.towers[sel], key = `${sel}:${t}:${moving}:${SF.padCount()}:` + Object.keys(D.turrets).map(SF.unlocked).join();
     if (key === padKey) return;
     padKey = key;
     padBody.innerHTML = '';
@@ -31,7 +32,11 @@ G.UI.views.scifi = function () {
     if (t) {
       const T = D.turrets[t];
       padBody.append(h('div.opp-row', null, G.T.el(T.t, 'md'), h('div', null, h('b', null, T.n), h('small', null, ` ${T.d}`))),
-        h('button.btn.sm', { on: { click: () => { if (confirm(`${T.n}을 철거할까요? 환불은 없습니다.`)) { SF.scrap(stt, sel); padKey = ''; } } } }, '철거'));
+        moving === sel
+          ? h('div', null, h('small', null, '옮길 포대 자리를 누르세요 '), h('button.btn.sm', { on: { click: () => { moving = null; padKey = ''; } } }, '취소'))
+          : h('div', null,
+            h('button.btn.sm', { on: { click: () => { moving = sel; padKey = ''; } } }, '옮기기'), ' ',
+            h('button.btn.sm', { on: { click: () => { if (confirm(`${T.n}을 철거할까요? 환불은 없습니다.`)) { SF.scrap(stt, sel); padKey = ''; } } } }, '철거')));
       return;
     }
     for (const [k, T] of Object.entries(D.turrets)) {
@@ -53,6 +58,11 @@ G.UI.views.scifi = function () {
     overlay,
     click(p) {
       const i = SF.padAt(s(), p.x, p.y);
+      if (moving != null) {
+        if (i >= 0 && SF.move(s(), moving, i)) sel = s().selPad = i;
+        moving = null; padKey = '';
+        return true;
+      }
       if (i >= 0) { sel = s().selPad = i; padKey = ''; return true; }
       SF.strike(s(), p.x, p.y);
       return true;
@@ -61,6 +71,7 @@ G.UI.views.scifi = function () {
       const stt = s(), rt = SF.rt(stt), cm = SF.coreMax();
       setText(waveEl, `WAVE ${stt.wave}`);
       setText(stateEl, rt.state === 'wave' ? ' · 교전' : ' · 대기');
+      setText(sectorEl, `구역 ${rt.sector + 1} · ${SF.sectorName(rt.sector)}`);
       startBtn.disabled = rt.state === 'wave';
       tAuto.update();
       core.set(stt.core / cm, `${U.fmt(Math.max(0, stt.core))} / ${U.fmt(cm)}`, rt.state === 'wave' ? `👾 ${rt.queue.length + rt.en.length}` : '', stt.core / cm < 0.3);

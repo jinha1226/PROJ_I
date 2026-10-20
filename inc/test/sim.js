@@ -18,6 +18,8 @@ function boot() {
 }
 const G = boot();
 G.newState();
+// 봇은 수선 자동 천겁을 켠다 (사람은 처음에 꺼져 있다 — 천겁은 직접 고르는 리스크)
+G.S.w.xianxia.autoBreak = true;
 const logs = [];
 G.on('log', e => logs.push(`[${fmtT(G.S.runTime)}] ${e.msg}`));
 function fmtT(s) { return `${Math.floor(s / 60)}m${String(Math.floor(s % 60)).padStart(2, '0')}`; }
@@ -49,7 +51,7 @@ function bot(dt) {
     const types = ['laser', 'rail', 'cryo', 'mortar', 'tesla'].filter(SF.unlocked);
     for (let i = 0; i < SF.padCount(); i++) if (!s.towers[i]) SF.build(s, i, types[i % types.length]);
     const srt = SF.rt(s);
-    if (srt.en.length) { const e = srt.en.reduce((a, b) => (a.d > b.d ? a : b)); SF.strike(s, e.x, e.y); }
+    if (srt.en.length) { const e = srt.en.reduce((a, b) => (a.rem < b.rem ? a : b)); SF.strike(s, e.x, e.y); }
   }
   if (S.unlocked.xianxia) {
     const x = S.w.xianxia, xr = G.Xianxia.rt(x);

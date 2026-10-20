@@ -1,13 +1,30 @@
 'use strict';
 // SF · 최후의 방어선 (경로형 타워디펜스 — The Tower, Sir We Have an Orc Problem 계열)
-// 적은 출현 지점(S)에서 금속 통로(=)를 따라 코어(C)로 간다. 포대 자리(O)에 포탑을 짓는다.
+// 적은 출현 지점(S, 여럿이면 번갈아)에서 금속 통로(=)를 따라 코어(C)로 간다. 갈림길·합류는 코어까지 남은 거리(흐름장)를 따른다.
+// 포대 자리(O)에 포탑을 짓는다. 10웨이브(모선)마다 다음 구역으로 넘어가 맵이 바뀌고, 포탑은 비싼 것부터 좋은 자리로 다시 놓인다.
 // 포탑 종류와 위력은 스킬트리로 연다. 맵 빈 곳 클릭 = 궤도 폭격. 코어가 무너지면 3웨이브 물러난다.
 G.RT = G.RT || {};
 G.Scifi = (() => {
   const D = G.D.S, U = G.U, GR = G.Grid;
   const tm = k => G.Tree.mul('scifi', G.S.w.scifi.tree, k);
   const ta = k => G.Tree.add('scifi', G.S.w.scifi.tree, k);
-  const PAUSE = 2.5, BASE_PADS = 4;
+  const PAUSE = 2.5, BASE_PADS = 4, SECTOR_WAVES = 10, LANE = '=SC';
+  const DIR4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  // 통로만 따라 코어까지 남은 칸 수 (4방향 BFS, 통로 밖은 -1)
+  const flow = (map, [cx, cy]) => {
+    const d = new Int16Array(map.w * map.h).fill(-1), q = [cx + cy * map.w];
+    d[q[0]] = 0;
+    for (let qi = 0; qi < q.length; qi++) {
+      const i = q[qi], x = i % map.w, y = (i / map.w) | 0;
+      for (const [dx, dy] of DIR4) {
+        const nx = x + dx, ny = y + dy;
+        if (!LANE.includes(GR.at(map, nx, ny)) || d[nx + ny * map.w] >= 0) continue;
+        d[nx + ny * map.w] = d[i] + 1;
+        q.push(nx + ny * map.w);
+      }
+    }
+    return d;
+  };
 
   const S = {
     init(head = 0) {
@@ -15,22 +32,49 @@ G.Scifi = (() => {
     },
     rt(s) { return G.RT.scifi || (G.RT.scifi = S.boot(s)); },
     boot(s) {
-      const map = GR.fromAscii(D.map, D.pass);
-      // 통로를 S에서 C까지 따라가며 경로를 만든다
-      const path = [map.poi.S[0]], seen = new Set([path[0].join()]);
-      for (let guard = 0; guard < 500; guard++) {
-        const [x, y] = path[path.length - 1];
-        if (GR.at(map, x, y) === 'C') break;
-        const nx = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => [x + dx, y + dy]).find(p => '=C'.includes(GR.at(map, p[0], p[1])) && !seen.has(p.join()));
-        if (!nx) break;
-        seen.add(nx.join());
-        path.push(nx);
-      }
+      const rt = { fx: [], en: [], queue: [], spawnT: 0, spawnI: 0, state: 'pause', pauseT: PAUSE, cds: {}, strikeCd: 0, frame: 0 };
+      S.loadSector(s, rt, S.sectorOf(s.wave));
+      return rt;
+    },
+    // ── 구역 ──
+    sectorOf: w => Math.floor((w - 1) / SECTOR_WAVES),
+    // 한 바퀴 돌 때마다 좌우(1)·상하(2)로 뒤집는다
+    sectorRows(k) {
+      const n = D.sectors.length, flip = Math.floor(k / n) % 4;
+      let rows = D.sectors[k % n].map;
+      if (flip & 1) rows = rows.map(r => [...r].reverse().join(''));
+      if (flip & 2) rows = rows.slice().reverse();
+      return rows;
+    },
+    sectorName(k) {
+      const n = D.sectors.length, r = Math.floor(k / n);
+      return D.sectors[k % n].n + (r ? ` ${r + 1}차` : '');
+    },
+    loadSector(s, rt, k) {
+      const map = GR.fromAscii(S.sectorRows(k), D.pass), dist = flow(map, map.poi.C[0]);
+      const path = [];
+      for (let i = 0; i < dist.length; i++) if (dist[i] >= 0) path.push([i % map.w, (i / map.w) | 0]);
       // 포대 자리: 사거리 3 안에 통로가 많은 자리부터 쓴다
       const cover = ([px, py]) => path.filter(([x, y]) => Math.hypot(x - px, y - py) <= 3).length;
       const pads = (map.poi.O || []).slice().sort((a, b) => cover(b) - cover(a));
-      const rt = { map, path, pads, fx: [], en: [], queue: [], spawnT: 0, state: 'pause', pauseT: PAUSE, cds: {}, strikeCd: 0, frame: 0 };
-      return rt;
+      Object.assign(rt, { map, dist, path, pads, spawns: map.poi.S, sector: k, cds: {} });
+      // 예전 저장(구역 없음)은 첫 구역에 지은 것으로 본다
+      if ((s.mapKey ?? 0) !== k) S.redeploy(s);
+      s.mapKey = k;
+    },
+    // 새 맵: 가진 포탑을 비싼 것부터 좋은 자리(앞 번호)에 다시 놓는다
+    redeploy(s) {
+      const list = Object.values(s.towers).sort((a, b) => D.turrets[b].cost - D.turrets[a].cost);
+      s.towers = {};
+      list.forEach((t, i) => { s.towers[i] = t; });
+    },
+    // 웨이브가 바뀐 뒤(클리어·후퇴) 구역이 달라졌으면 맵을 바꾼다
+    checkSector(s, rt) {
+      const k = S.sectorOf(s.wave);
+      if (k === rt.sector) return;
+      const fwd = k > rt.sector;
+      S.loadSector(s, rt, k);
+      G.log(`${fwd ? '새 구역' : '구역 후퇴'}: ${S.sectorName(k)}`, 'scifi', fwd ? 'good' : 'bad');
     },
     padCount: () => BASE_PADS + ta('pads'),
     unlocked: t => !D.turrets[t].unlock || ta(D.turrets[t].unlock) > 0,
@@ -75,15 +119,32 @@ G.Scifi = (() => {
       G.J.sfx('scifi', 'wave');
       rt.spawnT = 0;
     },
-    // 경로 위 거리 d(칸)의 좌표
-    pos(rt, d) {
-      const p = rt.path, i = Math.min(p.length - 2, Math.max(0, Math.floor(d))), f = Math.min(1, d - i);
-      return [p[i][0] + (p[i + 1][0] - p[i][0]) * f, p[i][1] + (p[i + 1][1] - p[i][1]) * f];
+    // 코어 쪽 다음 칸. 갈림길에서 남은 거리가 같으면 아무 쪽으로나
+    next(rt, e) {
+      const m = rt.map, here = rt.dist[e.tx + e.ty * m.w];
+      const opts = DIR4.map(([dx, dy]) => [e.tx + dx, e.ty + dy]).filter(([x, y]) => GR.at(m, x, y) !== ' ' && rt.dist[x + y * m.w] === here - 1);
+      if (opts.length) [e.tx, e.ty] = U.pick(opts);
+    },
+    // len칸만큼 통로를 따라 걷는다. 코어에 닿으면 true
+    walk(rt, e, len) {
+      const w = rt.map.w;
+      while (len > 0) {
+        if (e.x === e.tx && e.y === e.ty) {
+          if (rt.dist[e.tx + e.ty * w] <= 0) return true;
+          S.next(rt, e);
+          if (e.x === e.tx && e.y === e.ty) break;
+        }
+        const dx = e.tx - e.x, dy = e.ty - e.y, l = Math.hypot(dx, dy);
+        if (Math.abs(dx) > 0.001) e.flip = dx < 0;
+        if (l <= len) { e.x = e.tx; e.y = e.ty; len -= l; } else { e.x += dx / l * len; e.y += dy / l * len; len = 0; }
+      }
+      e.rem = rt.dist[e.tx + e.ty * w] + Math.hypot(e.tx - e.x, e.ty - e.y);
+      return false;
     },
     spawn(s, rt, type) {
       const T = D.enemies[type], hp = T.hp * S.hpScale(s.wave);
-      const e = { kind: 'mon', type, t: 'e_' + type, s: T.s, hp, max: hp, d: 0, spd: T.spd * Math.min(1.6, 1 + s.wave * 0.004), slow: 0, bounty: T.bounty * S.bounty(s.wave), dmg: T.dmg, bar: true };
-      [e.x, e.y] = S.pos(rt, 0);
+      const [x, y] = rt.spawns[rt.spawnI++ % rt.spawns.length];
+      const e = { kind: 'mon', type, t: 'e_' + type, s: T.s, hp, max: hp, x, y, tx: x, ty: y, rem: rt.dist[x + y * rt.map.w], spd: T.spd * Math.min(1.6, 1 + s.wave * 0.004), slow: 0, bounty: T.bounty * S.bounty(s.wave), dmg: T.dmg, bar: true };
       rt.en.push(e);
     },
     // power > 0: 궤도 폭격처럼 직접 때린 것 (히트스톱)
@@ -101,7 +162,7 @@ G.Scifi = (() => {
     },
     fire(s, rt, i, t) {
       const T = D.turrets[t], [px, py] = rt.pads[i];
-      const tg = rt.en.filter(e => e.hp > 0 && Math.hypot(e.x - px, e.y - py) <= T.range).sort((a, b) => b.d - a.d);
+      const tg = rt.en.filter(e => e.hp > 0 && Math.hypot(e.x - px, e.y - py) <= T.range).sort((a, b) => a.rem - b.rem);
       if (!tg.length) return false;
       const dmg = S.turretDmg(t), from = { x: px, y: py };
       G.J.sfx('scifi', 'zap');
@@ -139,6 +200,17 @@ G.Scifi = (() => {
       return true;
     },
     scrap(s, i) { delete s.towers[i]; },
+    // 포탑 옮기기 (무료). 옮길 자리에 포탑이 있으면 서로 바꾼다
+    move(s, from, to) {
+      if (from === to || !s.towers[from] || to >= S.padCount()) return false;
+      [s.towers[from], s.towers[to]] = [s.towers[to], s.towers[from]];
+      if (!s.towers[from]) delete s.towers[from];
+      const rt = S.rt(s), [px, py] = rt.pads[to];
+      rt.cds[from] = rt.cds[to] = 0;
+      G.fx(rt, { k: 'ring', x: px, y: py, r: 1.2, t: 0.5, col: '#3ef0ff' });
+      G.J.sfx('scifi', 'build');
+      return true;
+    },
     padAt(s, x, y) {
       const rt = S.rt(s);
       return rt.pads.findIndex(([px, py]) => Math.abs(px - x) < 0.6 && Math.abs(py - y) < 0.6);
@@ -170,6 +242,7 @@ G.Scifi = (() => {
       rt.state = 'pause';
       rt.pauseT = PAUSE;
       s.core = Math.min(S.coreMax(), s.core + S.coreMax() * 0.25);
+      S.checkSector(s, rt);
     },
     failWave(s, rt) {
       G.log(`WAVE ${s.wave} 방어 실패 — 코어 재가동, 3웨이브 후퇴`, 'scifi', 'bad');
@@ -181,6 +254,7 @@ G.Scifi = (() => {
       s.core = S.coreMax();
       rt.state = 'pause';
       rt.pauseT = PAUSE * 2;
+      S.checkSector(s, rt);
     },
 
     tick(s, dt) {
@@ -198,15 +272,11 @@ G.Scifi = (() => {
         S.spawn(s, rt, rt.queue.shift());
         rt.spawnT = s.wave < 20 ? 0.7 : 0.5;
       }
-      const end = rt.path.length - 1;
       for (const e of rt.en) {
-        e.d += e.spd * (e.slow > 0 ? 1 - D.turrets.cryo.slow - ta('slow') : 1) * dt;
+        const v = e.spd * (e.slow > 0 ? 1 - D.turrets.cryo.slow - ta('slow') : 1);
         if (e.slow > 0) e.slow -= dt;
-        const [nx, ny] = S.pos(rt, e.d);
-        if (Math.abs(nx - e.x) > 0.001) e.flip = nx < e.x;
-        e.x = nx; e.y = ny;
         e.moving = true;
-        if (e.d >= end && e.hp > 0) {
+        if (S.walk(rt, e, v * dt) && e.hp > 0) {
           s.core -= e.dmg;
           e.hp = 0;
           e.leak = true;
