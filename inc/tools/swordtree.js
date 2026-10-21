@@ -8,29 +8,33 @@ const SRC = __dirname + '/../js/trees.js';
 const L = {};               // id → [x, y, req]
 const put = (id, x, y, req) => { L[id] = [+x.toFixed(2), +y.toFixed(2), req]; };
 
-// ── 검신
-const EDGE = 2.3, IN = 1.2, ST = 1.1;
-put('party', 0, -1.9, 'root');
-const spine = [['party', -1.9], ['allyAtk1', -6.0], ['allyHp', -11.2], ['allyAtk2', -15.3]];
-put('allyAtk1', 0, -6.0, 'party'); put('allyHp', 0, -11.2, 'allyAtk1'); put('allyAtk2', 0, -15.3, 'allyHp');
-// 가로대 하나: 동료(안쪽) → 강화 사슬(날) → 짝(날 위·안쪽 위)
-function rung(s, ys, side, ally, chain, pair) {
-  put(ally, side * IN, ys - 0.7, s);
-  let prev = ally, y = ys - 1.5;
+// ── 검신: 마디(ys)마다 가로대 한 쌍. 동료마다 강화 둘 + 택1 짝 (모두 같은 꼴 — 동료를 모듈로 다루기 쉽게)
+const EDGE = 2.3, IN = 1.2, ST = 1.2;
+const RUNG = 2 * ST + 1.5 + 0.35;              // 가로대 하나의 높이 (동료·강화 둘·짝 + 다음 동료와의 틈)
+const ys = [-1.9, -1.9 - RUNG, -1.9 - 2 * RUNG, -1.9 - 3 * RUNG];
+put('party', 0, ys[0], 'root');
+put('allyAtk1', 0, ys[1], 'party'); put('allyHp', 0, ys[2], 'allyAtk1'); put('allyAtk2', 0, ys[3], 'allyHp');
+// 가로대 하나: 동료(안쪽) → 강화 둘(날) → 짝(날 위·안쪽 위)
+function rung(s, y0, side, ally, chain, pair) {
+  put(ally, side * IN, y0 - 0.7, s);
+  let prev = ally, y = y0 - 1.5;
   for (const c of chain) { put(c, side * EDGE, y, prev); prev = c; y -= ST; }
-  if (pair) { put(pair[0], side * EDGE, y, prev); put(pair[1], side * IN, y, prev); }
+  put(pair[0], side * EDGE, y, prev); put(pair[1], side * IN, y, prev);
+  return y;
 }
-rung('party', -1.9, -1, 'archer', ['r_atk', 'r_range'], ['r_pierce', 'r_poison']);
-rung('party', -1.9, 1, 'bard', ['songDur', 'songPow'], ['songWar', 'songRegen']);
-rung('allyAtk1', -6.0, -1, 'cleric', ['c_heal', 'bless', 'heal'], ['c_sanct', 'c_revive']);
-rung('allyAtk1', -6.0, 1, 'mage', ['m_atk', 'm_area', 'meteor'], ['m_burn', 'm_quick']);
-rung('allyHp', -11.2, -1, 'paladin', ['p_hp', 'p_guard'], ['p_counter', 'p_taunt']);
-rung('allyHp', -11.2, 1, 'dragoon', ['d_atk', 'd_crit'], ['d_exec', 'd_dash']);
-rung('allyAtk2', -15.3, -1, 'autocast', ['slot']);
-rung('allyAtk2', -15.3, 1, 'k_assault', ['k_assault2', 'k_rally']);
-// 검 끝: 대현자
-put('archmage', 0, -16.7, 'allyAtk2'); put('a_atk', 0, -17.8, 'archmage'); put('a_chain', 0, -18.9, 'a_atk');
-put('a_warp', -0.9, -20.0, 'a_chain'); put('a_overload', 0.9, -20.0, 'a_chain');
+rung('party', ys[0], -1, 'archer', ['r_atk', 'r_range'], ['r_pierce', 'r_poison']);
+rung('party', ys[0], 1, 'bard', ['songDur', 'songPow'], ['songWar', 'songRegen']);
+rung('allyAtk1', ys[1], -1, 'cleric', ['c_heal', 'heal'], ['c_sanct', 'c_revive']);
+rung('allyAtk1', ys[1], 1, 'mage', ['m_atk', 'meteor'], ['m_burn', 'm_quick']);
+rung('allyHp', ys[2], -1, 'paladin', ['p_hp', 'p_guard'], ['p_counter', 'p_taunt']);
+rung('allyHp', ys[2], 1, 'dragoon', ['d_atk', 'd_crit'], ['d_exec', 'd_dash']);
+rung('allyAtk2', ys[3], -1, 'archmage', ['a_atk', 'a_chain'], ['a_warp', 'a_overload']);
+const top = rung('allyAtk2', ys[3], 1, 'rogue', ['ro_atk', 'ro_steal'], ['ro_twin', 'ro_mark']);
+// 검 끝: 전투 본능 → 총공세(마지막 짝과 같은 높이) → 끝없는 진격·함성의 물결 → 대원정(끝)
+put('autocast', 0, (ys[3] + top) / 2, 'allyAtk2');
+put('k_assault', 0, top, 'autocast');
+put('k_assault2', -0.7, top - 1.1, 'k_assault'); put('k_rally', 0.7, top - 1.1, 'k_assault');
+put('slot', 0, top - 2.3, 'k_assault2 k_rally');
 
 // ── 가드: 세 줄 (가운데 y=0, 위 -0.95, 아래 0.95), 칸 k → x = ±(1.3 + k)
 function rails(side, center, upper, lower) {

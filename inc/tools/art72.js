@@ -142,6 +142,7 @@ const SPEC = {
   u_paladin: { src: 'sd_heavy_knight_idle_anim', run: 'sd_heavy_knight_run_anim' },
   u_dragoon: { src: 'lizard_m_idle_anim', run: 'lizard_m_run_anim', hit: 'lizard_m_hit_anim_f0' },
   u_archmage: { src: 'sd_wizard_idle_anim' },
+  u_rogue: { src: 'sd_thief_idle_anim', run: 'sd_thief_run_anim' },
   // 판타지: 몬스터 (구간 순서)
   m_rat: { src: 'tiny_zombie_idle_anim', run: 'tiny_zombie_run_anim' },
   m_slime: { src: 'swampy_anim' },

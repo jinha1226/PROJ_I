@@ -44,6 +44,7 @@ G.D.F = {
     paladin: { n: '성기사', t: 'u_paladin', wpn: 'w_hammer', atk: 0.8, hp: 1.6, range: 1.3, cd: 1.0 },
     dragoon: { n: '용기병', t: 'u_dragoon', wpn: 'w_spear', atk: 3, hp: 1.2, range: 1.5, cd: 1.4 },
     archmage: { n: '대현자', t: 'u_archmage', wpn: 'w_arcstaff', atk: 2.5, hp: 0.7, range: 6, cd: 1.6, chain: 4, proj: 'fx_zap' },
+    rogue: { n: '암살자', t: 'u_rogue', wpn: 'w_knife', atk: 2.5, hp: 0.8, range: 1.3, cd: 0.8 },
   },
   // 버프: 음유시인의 노래, 성직자의 축복, 기술 「전투 함성」. dmg는 모든 피해 배율.
   buffs: {

@@ -10,7 +10,7 @@ G.Fantasy = (() => {
   const D = G.D.F, U = G.U, GR = G.Grid;
   const tm = k => G.Tree.mul('fantasy', G.S.w.fantasy.tree, k);
   const ta = k => G.Tree.add('fantasy', G.S.w.fantasy.tree, k);
-  const MW = 40, MH = 26, REVIVE = 4, ALLY_REVIVE = 8, SMITE_CD = 0.6, SIGHT = 7, SONG_CD = 12, BLESS_CD = 15, WARP_CD = 15, DASH_CD = 5, SKIP_T = 20;
+  const MW = 40, MH = 26, REVIVE = 4, ALLY_REVIVE = 8, SMITE_CD = 0.6, SIGHT = 7, SONG_CD = 12, WARP_CD = 15, DASH_CD = 5, SKIP_T = 20;
   // 구간별 오염: 초당 최대 체력의 몇 %
   const CORRUPT = [0, 0.01, 0.018, 0.026, 0.034, 0.042];
   const SKILLS = {
@@ -20,7 +20,7 @@ G.Fantasy = (() => {
     assault: { n: '총공세', t: 'u_god', cd: 90, need: 'sk_assault' },
   };
   // 자동 편성 우선순위: 치유가 있어야 오염을 버티므로 수도사 먼저, 그다음 강한 순
-  const AUTO = ['cleric', 'archmage', 'dragoon', 'paladin', 'mage', 'bard', 'archer'];
+  const AUTO = ['cleric', 'archmage', 'rogue', 'dragoon', 'paladin', 'mage', 'bard', 'archer'];
 
   const F = {
     SKILLS, CORRUPT,
@@ -232,6 +232,7 @@ G.Fantasy = (() => {
       if (m.hp <= 0) return;
       if (m.shock > 0) dmg *= 1.3;
       if (ta('s_focus') && rt.focus === m) dmg *= 1.2;
+      if (m.mark > 0) dmg *= 1.25;
       m.hp -= dmg;
       m.aggro = true;
       // 숫자 크기로 위계: 치명타·벼락은 크게 튀고, 보통 타격은 체력 대비 피해만큼 커진다
@@ -527,6 +528,7 @@ G.Fantasy = (() => {
       // 지속 피해와 감전
       for (const mo of [...rt.mons]) {
         if (mo.shock > 0) mo.shock -= dt;
+        if (mo.mark > 0) mo.mark -= dt;
         for (const d of mo.dots) { d.t -= dt; F.hurt(f, rt, mo, d.dps * dt, 'dot', null); }
         mo.dots = mo.dots.filter(d => d.t > 0);
       }
@@ -614,8 +616,7 @@ G.Fantasy = (() => {
           F.buff(f, rt, a, k, F.songDur() * (k === 'fury' ? 0.6 : 1));
         }
         if (def.heal) {
-          // 수도사: 축복(트리)으로 파티 재생, 가장 다친 파티원을 치유
-          if (ta('bless') && (a.skT -= dt) <= 0) { a.skT = BLESS_CD; F.buff(f, rt, a, 'regen', 10 * (1 + ta('songDur'))); }
+          // 수도사: 가장 다친 파티원을 치유
           if ((a.atkT -= dt) <= 0) {
             let low = null;
             for (const p of rt.party) if (!p.dead && p.hp < p.max * 0.9 && (!low || p.hp / p.max < low.hp / low.max)) low = p;
@@ -671,7 +672,7 @@ G.Fantasy = (() => {
         if (ta('r_poison')) F.dot(tg, 'poison', dmg * 0.3, 4);
         if (ta('r_pierce')) for (const o of rt.mons.filter(o => o !== tg && GR.dist(o, tg) <= 2).slice(0, 2)) F.hurt(f, rt, o, dmg * 0.6, 'hit', a);
       } else if (def.splash) {
-        const r = def.splash + ta('m_area');
+        const r = def.splash;
         G.fx(rt, { k: 'ring', x: tg.x, y: tg.y, r, t: 0.3, col: '#ff8a3a' });
         for (const mo of [...rt.mons]) if (GR.dist(mo, tg) <= r) { F.hurt(f, rt, mo, dmg, 'hit', a); if (ta('m_burn')) F.dot(mo, 'burn', dmg * 0.25, 3); }
       } else if (def.chain) {
@@ -684,6 +685,12 @@ G.Fantasy = (() => {
         const c = U.chance(ta('d_crit'));
         if (ta('d_exec') && tg.hp < tg.max * 0.25) { G.fx(rt, { k: 'text', x: tg.x, y: tg.y - 1.2, s: '처형', col: '#ffe08a', t: 1, pop: true }); dmg = tg.hp + 1; }
         F.hurt(f, rt, tg, dmg * (c ? F.critD() : 1), c ? 'crit' : 'hit', a);
+      } else if (a.id === 'rogue') {
+        // 암살자: 빠른 칼질, 때릴 때마다 골드를 훔친다 / ★쌍검(한 번 더 60%) ↔ 표식(4초간 받는 피해 +25%)
+        F.hurt(f, rt, tg, dmg, 'hit', a);
+        if (ta('ro_twin') && tg.hp > 0) F.hurt(f, rt, tg, dmg * 0.6, 'hit', a);
+        if (ta('ro_mark')) tg.mark = 4;
+        if (ta('ro_steal')) F.gain(f, F.monGold(f.floor) * ta('ro_steal') * F.goldMult(f));
       } else F.hurt(f, rt, tg, dmg, 'hit', a);
     },
     view(f) {
