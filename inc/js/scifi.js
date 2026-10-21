@@ -8,7 +8,8 @@ G.Scifi = (() => {
   const D = G.D.S, U = G.U, GR = G.Grid;
   const tm = k => G.Tree.mul('scifi', G.S.w.scifi.tree, k);
   const ta = k => G.Tree.add('scifi', G.S.w.scifi.tree, k);
-  const PAUSE = 2.5, BASE_PADS = 4, SECTOR_WAVES = 10, LANE = '=SC';
+  // TEMPO: 전투 시간 배속 (적·포탑·투사체가 함께 빨라진다 — 난이도는 그대로, 웨이브 하나 20~30초)
+  const PAUSE = 1.5, BASE_PADS = 4, SECTOR_WAVES = 10, LANE = '=SC', TEMPO = +(G.SF_TEMPO || 1.7);
   const DIR4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
   // 통로만 따라 코어까지 남은 칸 수 (4방향 BFS, 통로 밖은 -1)
   const flow = (map, [cx, cy]) => {
@@ -345,8 +346,10 @@ G.Scifi = (() => {
     tick(s, dt) {
       const rt = S.rt(s);
       G.fxTick(rt, dt);
-      rt.frame += dt;
+      // 궤도 폭격 재사용은 실제 시간 (누르는 손은 빨라지지 않는다)
       if (rt.strikeCd > 0) rt.strikeCd -= dt;
+      dt *= TEMPO;
+      rt.frame += dt;
       const cm = S.coreMax();
       s.core = Math.min(cm, s.core + cm * ta('coreRegen') * dt);
       if (rt.state === 'pause') {
@@ -355,7 +358,7 @@ G.Scifi = (() => {
       }
       if (rt.queue.length && (rt.spawnT -= dt) <= 0) {
         S.spawn(s, rt, rt.queue.shift());
-        rt.spawnT = s.wave < 20 ? 0.7 : 0.5;
+        rt.spawnT = s.wave < 20 ? 0.45 : 0.3;
       }
       for (const e of rt.en) {
         if (e.shock > 0) e.shock -= dt;
