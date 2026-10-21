@@ -96,6 +96,7 @@ module.exports = {
   e_shield: ['mon/nonliving/phalanx_beetle'], e_boss: ['mon/nonliving/platinum_paragon'],
   t_laser: ['mon/statues/lightning_spire'], t_rail: ['mon/statues/shadow_turret'], t_cryo: ['mon/statues/hoarfrost_cannon'],
   t_mortar: ['mon/statues/hellfire_mortar'], t_tesla: ['mon/nonliving/fulminant_prism[1-4]'],
+  t_amp: ['mon/nonliving/battlesphere'], t_drone: ['mon/nonliving/clockwork_bee'], t_missile: ['mon/statues/obelisk'],
   rs_core: ['gui/spells/ice/frozen_ramparts'], rs_regen: ['item/gizmo/gizmo3'], rs_salvage: ['item/gold/10'],
   rs_overclock: ['gui/spells/fire/ignition'], rs_slots: ['gui/spells/forgecraft/construct_spike_launcher'],
   s_credit: ['item/gizmo/gizmo0'],

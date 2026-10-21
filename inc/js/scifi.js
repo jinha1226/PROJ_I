@@ -28,11 +28,12 @@ G.Scifi = (() => {
 
   const S = {
     init(head = 0) {
-      return { wave: 1, maxWave: 1, credits: 30 * Math.pow(10, head), core: 100, towers: {}, tree: G.Tree.init('scifi'), auto: true };
+      // 펄스 레이저는 처음부터 지을 수 있다 (트리의 레이저 노드를 배운 채로 시작)
+      return { wave: 1, maxWave: 1, credits: 30 * Math.pow(10, head), core: 100, towers: {}, tree: Object.assign(G.Tree.init('scifi'), { laser: 1 }), auto: true };
     },
     rt(s) { return G.RT.scifi || (G.RT.scifi = S.boot(s)); },
     boot(s) {
-      const rt = { fx: [], en: [], queue: [], spawnT: 0, spawnI: 0, state: 'pause', pauseT: PAUSE, cds: {}, strikeCd: 0, frame: 0 };
+      const rt = { fx: [], en: [], queue: [], spawnT: 0, spawnI: 0, state: 'pause', pauseT: PAUSE, cds: {}, strikeCd: 0, frame: 0, fields: [], sk: {}, boost: {}, idle: {}, heat: {}, rebuilt: false };
       S.loadSector(s, rt, S.sectorOf(s.wave));
       return rt;
     },
@@ -57,7 +58,7 @@ G.Scifi = (() => {
       // 포대 자리: 사거리 3 안에 통로가 많은 자리부터 쓴다
       const cover = ([px, py]) => path.filter(([x, y]) => Math.hypot(x - px, y - py) <= 3).length;
       const pads = (map.poi.O || []).slice().sort((a, b) => cover(b) - cover(a));
-      Object.assign(rt, { map, dist, path, pads, spawns: map.poi.S, sector: k, cds: {} });
+      Object.assign(rt, { map, dist, path, pads, spawns: map.poi.S, sector: k, cds: {}, sk: {}, boost: {}, idle: {}, heat: {}, fields: [] });
       // 예전 저장(구역 없음)은 첫 구역에 지은 것으로 본다
       if ((s.mapKey ?? 0) !== k) S.redeploy(s);
       s.mapKey = k;
@@ -91,8 +92,29 @@ G.Scifi = (() => {
       if (G.synergy('syn_void')) m *= 1 + Math.min(2, 0.02 * G.S.signs);
       return m;
     },
-    turretDmg: t => D.turrets[t].dmg * tm(t) * S.dmgMult(),
+    turretDmg: t => D.turrets[t].dmg * S.dmgMult(),
     rate: t => D.turrets[t].rate * tm('rate'),
+    // 포탑 i 둘레의 증폭기 (UNITS.md 증폭기 = 음유시인): 연사 +25% · 공명 피해 +20% · 과충전 중 연사 ×2
+    amps(s, rt, i) {
+      const [px, py] = rt.pads[i], r = D.turrets.amp.range + (ta('am_wide') ? 1.5 : 0), out = [];
+      for (const [j, t] of Object.entries(s.towers)) if (t === 'amp' && +j !== i && +j < S.padCount()) { const [ax, ay] = rt.pads[j]; if (Math.hypot(ax - px, ay - py) <= r) out.push(+j); }
+      return out;
+    },
+    towerRate(s, rt, i, t) {
+      const am = S.amps(s, rt, i);
+      let r = S.rate(t) * (1 + 0.25 * am.length);
+      if (am.some(j => rt.boost[j] > 0)) r *= 2;
+      if (t === 'laser' && rt.boost[i] > 0) r *= 2;
+      if (t === 'rail' && ta('r_rapid')) r *= 2;
+      return r;
+    },
+    towerDmg(s, rt, i, t) {
+      let d = S.turretDmg(t) * (1 + (ta('am_res') ? 0.2 : 0) * S.amps(s, rt, i).length);
+      if (t === 'rail' && ta('r_rapid')) d *= 0.6;
+      if (t === 'laser' && ta('l_focus')) d *= 2;
+      if (t === 'drone' && ta('d_combat')) d *= 4;
+      return d;
+    },
     hpScale: w => 6 * Math.pow(1.14, w - 1),
     bounty: w => 1.5 * Math.pow(1.12, w - 1),
     clearBonus: w => 4 * Math.pow(1.12, w),
@@ -144,49 +166,110 @@ G.Scifi = (() => {
     spawn(s, rt, type) {
       const T = D.enemies[type], hp = T.hp * S.hpScale(s.wave);
       const [x, y] = rt.spawns[rt.spawnI++ % rt.spawns.length];
-      const e = { kind: 'mon', type, t: 'e_' + type, s: T.s, hp, max: hp, x, y, tx: x, ty: y, rem: rt.dist[x + y * rt.map.w], spd: T.spd * Math.min(1.6, 1 + s.wave * 0.004), slow: 0, bounty: T.bounty * S.bounty(s.wave), dmg: T.dmg, bar: true };
+      const e = { kind: 'mon', type, t: 'e_' + type, s: T.s, hp, max: hp, x, y, tx: x, ty: y, rem: rt.dist[x + y * rt.map.w], spd: T.spd * Math.min(1.6, 1 + s.wave * 0.004), slow: 0, chill: 0, shock: 0, freeze: 0, bounty: T.bounty * S.bounty(s.wave), dmg: T.dmg, bar: true };
       rt.en.push(e);
     },
     // power > 0: 궤도 폭격처럼 직접 때린 것 (히트스톱)
-    hit(s, rt, e, dmg, power = 0) {
+    hit(s, rt, e, dmg, power = 0, cash = 1) {
       if (e.hp <= 0) return;
+      if (e.shock > 0) dmg *= 1.2;
+      if (ta('c_brittle') && e.slow > 0) dmg *= 1.5;
       e.hp -= dmg;
       G.J.hit('scifi', e, power);
       if (e.hp <= 0) {
-        const g = e.bounty * S.creditMult();
+        const g = e.bounty * S.creditMult() * cash;
         S.gain(s, g);
         G.fx(rt, { k: 'text', x: e.x, y: e.y - 0.7, s: '+' + U.fmt(g), col: '#7ff0ff', t: 0.9, sz: e.type === 'boss' ? 1.6 : 1, pop: e.type === 'boss' });
         G.J.sfx('scifi', 'pop');
         if (e.type === 'boss') { G.J.finish('scifi', e.x, e.y); G.J.sfx('scifi', 'finish'); }
       }
     },
+    range: t => D.turrets[t].range + (t === 'cryo' && ta('c_zone') ? 1 : 0),
+    inRange(rt, i, t) { const [px, py] = rt.pads[i], r = S.range(t); return rt.en.filter(e => e.hp > 0 && Math.hypot(e.x - px, e.y - py) <= r); },
     fire(s, rt, i, t) {
       const T = D.turrets[t], [px, py] = rt.pads[i];
-      const tg = rt.en.filter(e => e.hp > 0 && Math.hypot(e.x - px, e.y - py) <= T.range).sort((a, b) => a.rem - b.rem);
+      if (T.support) return false;
+      const near = S.inRange(rt, i, t);
+      // 미사일은 체력이 가장 낮은 적부터, 나머지는 코어에 가장 가까운 적부터
+      const tg = T.seek ? near.sort((a, b) => a.hp - b.hp) : near.sort((a, b) => a.rem - b.rem);
       if (!tg.length) return false;
-      const dmg = S.turretDmg(t), from = { x: px, y: py };
+      let dmg = S.towerDmg(s, rt, i, t);
+      const from = { x: px, y: py }, cash = ta('am_cash') && S.amps(s, rt, i).length ? 1.5 : 1;
+      // 레일건 충전: 3초 넘게 쉬었으면 ×3
+      if (t === 'rail' && ta('r_charge') && rt.idle[i] >= 3) dmg *= 3;
+      rt.idle[i] = 0;
       G.J.sfx('scifi', 'zap');
       if (T.pierce) {
-        for (const e of tg.slice(0, T.pierce)) S.hit(s, rt, e, dmg);
+        for (const e of tg.slice(0, T.pierce)) S.hit(s, rt, e, dmg, 0, cash);
         G.fx(rt, { k: 'beam', x: px, y: py, x2: tg[0].x, y2: tg[0].y, col: T.col, w: 3, t: 0.25 });
+        if (ta('r_orbit')) S.blast(s, rt, tg[0].x, tg[0].y, 1.2, S.strikeDmg(s) * 0.5);
       } else if (T.splash) {
-        const c = tg[0];
-        for (const e of rt.en) if (Math.hypot(e.x - c.x, e.y - c.y) <= T.splash) S.hit(s, rt, e, dmg);
+        const c = tg[0], r = T.splash * (ta('m_big') ? 2 : 1);
+        for (const e of rt.en) if (Math.hypot(e.x - c.x, e.y - c.y) <= r) S.hit(s, rt, e, dmg, 0, cash);
         G.fx(rt, { k: 'proj', key: 'fx_dart', x: px, y: py, x2: c.x, y2: c.y, t: 0.3 });
-        G.fx(rt, { k: 'ring', x: c.x, y: c.y, r: T.splash, t: 0.4, col: T.col });
+        G.fx(rt, { k: 'ring', x: c.x, y: c.y, r, t: 0.4, col: T.col });
+        if (ta('m_fire')) rt.fields.push({ x: c.x, y: c.y, r, t: 3, dps: dmg * 0.3 });
+        if (ta('m_cluster')) for (let k = 0; k < 4; k++) S.blast(s, rt, c.x + Math.cos(k * 1.57) * r, c.y + Math.sin(k * 1.57) * r, 0.7, dmg * 0.5);
       } else if (T.slow) {
-        for (const e of tg) { S.hit(s, rt, e, dmg); e.slow = 1.5; }
-        G.fx(rt, { k: 'ring', x: px, y: py, r: T.range, t: 0.3, col: T.col });
+        for (const e of tg) {
+          S.hit(s, rt, e, dmg, 0, cash); e.slow = 1.5;
+          if (ta('c_freeze') && ++e.chill >= 3) { e.chill = 0; e.freeze = 1; }
+        }
+        G.fx(rt, { k: 'ring', x: px, y: py, r: S.range(t), t: 0.3, col: T.col });
       } else if (T.chain) {
         let d = dmg;
         const pts = [from];
-        for (const e of tg.slice(0, T.chain)) { S.hit(s, rt, e, d); d *= 0.85; pts.push(e); }
+        for (const e of tg.slice(0, T.chain + (ta('t_more') ? 5 : 0))) { S.hit(s, rt, e, d, 0, cash); if (ta('t_shock')) e.shock = 4; d *= 0.85; pts.push(e); }
         G.fx(rt, { k: 'chain', pts: pts.map(p => [p.x, p.y]), col: T.col, t: 0.2 });
+      } else if (T.seek) {
+        S.missile(s, rt, from, tg[0], dmg);
+      } else if (t === 'laser') {
+        // 가열: 같은 적을 계속 쏘면 +10%씩 / 분광: 세 갈래
+        const h = rt.heat[i] || (rt.heat[i] = { e: null, n: 0 });
+        if (h.e === tg[0]) h.n = Math.min(10, h.n + 1); else { h.e = tg[0]; h.n = 0; }
+        const hm = ta('l_heat') ? 1 + 0.1 * h.n : 1;
+        for (const e of tg.slice(0, ta('l_split') ? 3 : 1)) { S.hit(s, rt, e, dmg * hm, 0, cash); G.fx(rt, { k: 'beam', x: px, y: py, x2: e.x, y2: e.y, col: T.col, w: 1.5 + h.n * 0.15, t: 0.12 }); }
       } else {
-        S.hit(s, rt, tg[0], dmg);
+        S.hit(s, rt, tg[0], dmg, 0, cash);
         G.fx(rt, { k: 'beam', x: px, y: py, x2: tg[0].x, y2: tg[0].y, col: T.col, w: 1.5, t: 0.12 });
       }
       return true;
+    },
+    // 범위 폭발 (궤도 표적·집속탄)
+    blast(s, rt, x, y, r, dmg) {
+      G.fx(rt, { k: 'ring', x, y, r, t: 0.3, col: '#ff9a3a' });
+      for (const e of rt.en) if (Math.hypot(e.x - x, e.y - y) <= r) S.hit(s, rt, e, dmg);
+    },
+    // 미사일 한 발: 처형 탄두(25% 이하 즉사) · 분열 탄두(처치하면 곁에 50%) · 현상금(크레딧 ×2)
+    missile(s, rt, from, e, dmg) {
+      G.fx(rt, { k: 'proj', key: 'fx_dart', x: from.x, y: from.y, x2: e.x, y2: e.y, t: 0.35 });
+      if (ta('mi_exec') && e.hp < e.max * 0.25) dmg = e.hp + 1;
+      S.hit(s, rt, e, dmg, 0, ta('mi_bounty') ? 2 : 1);
+      if (e.hp <= 0 && ta('mi_split')) for (const o of rt.en) if (o !== e && o.hp > 0 && Math.hypot(o.x - e.x, o.y - e.y) <= 1.5) S.hit(s, rt, o, dmg * 0.5);
+    },
+    // 포탑 기술 1 (저절로): 사거리 안에 적이 있을 때
+    skill(s, rt, i, t, dt) {
+      const KEY = { laser: 'l_over', amp: 'am_surge', rail: 'r_snipe', cryo: 'c_burst', mortar: 'm_salvo', drone: 'd_nano', tesla: 't_burst', missile: 'mi_volley' }, k = KEY[t];
+      if (rt.boost[i] > 0) rt.boost[i] -= dt;
+      if (!k || !ta(k)) return;
+      const CD = { laser: 20, amp: 20, rail: 15, cryo: 15, mortar: 15, drone: 20, tesla: 15, missile: 20 };
+      if ((rt.sk[i] = (rt.sk[i] == null ? 6 : rt.sk[i]) - dt) > 0) return;
+      const near = S.inRange(rt, i, t), [px, py] = rt.pads[i];
+      if (t !== 'drone' && t !== 'amp' && !near.length) return;
+      if (t === 'drone' && s.core >= S.coreMax() * 0.9) return;
+      if (t === 'amp' && !rt.en.length) return;
+      rt.sk[i] = CD[t];
+      const dmg = S.towerDmg(s, rt, i, t);
+      G.fx(rt, { k: 'ring', x: px, y: py, r: 1.3, t: 0.5, col: D.turrets[t].col });
+      if (t === 'laser') rt.boost[i] = 5;
+      else if (t === 'amp') rt.boost[i] = 8;
+      else if (t === 'rail') { const e = near.sort((a, b) => b.hp - a.hp)[0]; G.fx(rt, { k: 'beam', x: px, y: py, x2: e.x, y2: e.y, col: '#fff3b0', w: 4, t: 0.3 }); S.hit(s, rt, e, dmg * 5, 0.3); }
+      else if (t === 'cryo') for (const e of near) e.freeze = 2;
+      else if (t === 'mortar') for (let n = 0; n < 3; n++) S.fire(s, rt, i, t);
+      else if (t === 'drone') { s.core = Math.min(S.coreMax(), s.core + S.coreMax() * 0.15); G.fx(rt, { k: 'ring', x: rt.map.poi.C[0][0], y: rt.map.poi.C[0][1], r: 1.6, t: 0.6, col: '#9fe79f' }); }
+      else if (t === 'tesla') { for (const e of near) { S.hit(s, rt, e, dmg * 2); if (ta('t_emp')) e.freeze = 1; } G.fx(rt, { k: 'ring', x: px, y: py, r: S.range(t), t: 0.4, col: '#c7a6ff' }); }
+      else if (t === 'missile') for (const e of near.sort((a, b) => a.hp - b.hp).slice(0, 6)) S.missile(s, rt, { x: px, y: py }, e, dmg);
+      G.J.sfx('scifi', 'boom');
     },
     build(s, i, t) {
       if (i >= S.padCount() || s.towers[i] || !S.unlocked(t)) return false;
@@ -238,6 +321,7 @@ G.Scifi = (() => {
       G.J.sfx('scifi', 'chime');
       if (w % 10 === 0) { G.addSigns(1, 'scifi'); G.log(`WAVE ${w} 모선 격추!`, 'scifi', 'good'); }
       s.wave++;
+      rt.rebuilt = false;
       if (s.wave > s.maxWave) s.maxWave = s.wave;
       rt.state = 'pause';
       rt.pauseT = PAUSE;
@@ -273,11 +357,16 @@ G.Scifi = (() => {
         rt.spawnT = s.wave < 20 ? 0.7 : 0.5;
       }
       for (const e of rt.en) {
+        if (e.shock > 0) e.shock -= dt;
+        if (e.freeze > 0) { e.freeze -= dt; e.moving = false; continue; }
         const v = e.spd * (e.slow > 0 ? 1 - D.turrets.cryo.slow - ta('slow') : 1);
         if (e.slow > 0) e.slow -= dt;
         e.moving = true;
         if (S.walk(rt, e, v * dt) && e.hp > 0) {
-          s.core -= e.dmg;
+          const dr = Object.values(s.towers).includes('drone');
+          s.core -= e.dmg * (dr && ta('d_shield') ? 0.85 : 1);
+          // 재건: 웨이브마다 한 번 50%로 버틴다
+          if (s.core <= 0 && dr && ta('d_rebuild') && !rt.rebuilt) { rt.rebuilt = true; s.core = S.coreMax() * 0.5; G.fx(rt, { k: 'text', x: e.x, y: e.y - 1, s: '재건', col: '#9fe79f', t: 1.3, sz: 1.3, pop: true }); }
           e.hp = 0;
           e.leak = true;
           G.fx(rt, { k: 'ring', x: e.x, y: e.y, r: 1, t: 0.4, col: '#ff5a6e' });
@@ -287,12 +376,19 @@ G.Scifi = (() => {
       }
       for (const [i, t] of Object.entries(s.towers)) {
         if (+i >= S.padCount()) continue;
+        if (t === 'drone') s.core = Math.min(S.coreMax(), s.core + S.coreMax() * D.turrets.drone.repair * dt);
+        S.skill(s, rt, +i, t, dt);
+        if (D.turrets[t].support) continue;
+        rt.idle[i] = (rt.idle[i] || 0) + dt;
         rt.cds[i] = (rt.cds[i] || 0) - dt;
         while (rt.cds[i] <= 0) {
           if (!S.fire(s, rt, +i, t)) { rt.cds[i] = 0; break; }
-          rt.cds[i] += 1 / S.rate(t);
+          rt.cds[i] += 1 / S.towerRate(s, rt, +i, t);
         }
       }
+      // 박격포 불길
+      for (const fd of rt.fields) { fd.t -= dt; for (const e of rt.en) if (e.hp > 0 && Math.hypot(e.x - fd.x, e.y - fd.y) <= fd.r) S.hit(s, rt, e, fd.dps * dt); }
+      rt.fields = rt.fields.filter(fd => fd.t > 0);
       rt.en = rt.en.filter(e => e.hp > 0);
       if (s.core <= 0) return S.failWave(s, rt);
       if (!rt.queue.length && !rt.en.length) S.clearWave(s, rt);

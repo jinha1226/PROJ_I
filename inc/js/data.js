@@ -551,11 +551,15 @@ G.D.S = {
   pass: '.=SCO',
   tiles: { '#': ['s_wall'], '.': ['s_ground'], '=': ['s_path'], 'S': ['s_path', 's_portal'], 'C': ['s_path'], 'O': ['s_ground', 's_pad'] },
   turrets: {
-    laser: { n: '펄스 레이저', t: 't_laser', dmg: 3, rate: 2.2, range: 3.2, cost: 15, col: '#46f0ff', d: '빠른 단일 사격' },
+    // 판타지 동료와 같은 역할 짝 (UNITS.md): 레이저=레인저 · 증폭기=음유시인 · 레일건=용기병 · 냉각=성기사 · 박격포=화염 마법사 · 수리 드론=수도사 · 테슬라=대현자 · 유도 미사일=암살자
+    laser: { n: '펄스 레이저', t: 't_laser', dmg: 3, rate: 2.2, range: 3.2, cost: 15, col: '#46f0ff', d: '빠른 단일 사격', unlock: 't_laser' },
+    amp: { n: '증폭기', t: 't_amp', dmg: 0, rate: 0, range: 2.5, cost: 150, col: '#ff8ad8', d: '곁 포탑 연사 +25%', unlock: 't_amp', support: true },
     rail: { n: '레일건', t: 't_rail', dmg: 24, rate: 0.45, range: 6, pierce: 4, cost: 120, col: '#ffe066', d: '일직선 관통', unlock: 't_rail' },
     cryo: { n: '냉각 투사기', t: 't_cryo', dmg: 1.5, rate: 1, range: 2.6, slow: 0.45, cost: 200, col: '#9ad8ff', d: '범위 감속', unlock: 't_cryo' },
     mortar: { n: '플라즈마 박격포', t: 't_mortar', dmg: 10, rate: 0.6, range: 5, splash: 1.3, cost: 350, col: '#ff7ad9', d: '착탄 범위 피해', unlock: 't_mortar' },
+    drone: { n: '수리 드론', t: 't_drone', dmg: 2, rate: 1, range: 3.5, cost: 1500, col: '#9fe79f', d: '코어 수리 · 약한 사격', unlock: 't_drone', repair: 0.003 },
     tesla: { n: '테슬라 코일', t: 't_tesla', dmg: 16, rate: 1.1, range: 2.8, chain: 5, cost: 2500, col: '#c7a6ff', d: '연쇄 방전', unlock: 't_tesla' },
+    missile: { n: '유도 미사일', t: 't_missile', dmg: 20, rate: 0.5, range: 7, cost: 4000, col: '#ffb36b', d: '체력 낮은 적부터', unlock: 't_missile', seek: true },
   },
   enemies: {
     drone: { n: '정찰 드론', hp: 1, spd: 2.2, bounty: 1, dmg: 6, s: 0.8 },

@@ -185,6 +185,10 @@ G.deserialize = function (json) {
   const GONE = { bless: [800, 1], m_area: [6000, 2.3], r_atk: [60, 1.585], r_range: [500, 2.3], songDur: [1500, 2.04], songPow: [4000, 2.04], c_heal: [400, 1.65], m_atk: [1500, 1.585],
     p_hp: [9000, 1.585], d_atk: [70000, 1.585], d_crit: [150000, 2.04], a_atk: [450000, 1.585], a_chain: [1e6, 3.6], ro_atk: [450000, 1.585], p_guard: [20000, 2.04, 1], ro_steal: [1e6, 2.3, 1] };
   for (const [k, [b, g, keep = 0]] of Object.entries(GONE)) if (ft[k] > keep) { for (let i = keep; i < ft[k]; i++) G.S.w.fantasy.gold += b * Math.pow(g, i); if (keep) ft[k] = keep; else delete ft[k]; }
+  // SF 포탑 시트(UNITS.md): 포탑별 피해 노드를 빼고 쓴 크레딧을 돌려준다. 레이저 노드는 배운 채로
+  const sft = G.S.w.scifi.tree, SGONE = { laser1: [15, 1.585], rail1: [600, 1.65], cryo1: [800, 1.65], mortar1: [6000, 1.65], tesla1: [1e5, 1.65] };
+  for (const [k, [b, g]] of Object.entries(SGONE)) if (sft[k]) { for (let i = 0; i < sft[k]; i++) G.S.w.scifi.credits += b * Math.pow(g, i); delete sft[k]; }
+  if (!sft.laser) sft.laser = 1;
   // 짝이 바뀐 노드: 고른 것이 더는 그 짝이 아니면 고르기를 지운다 (모든 트리)
   for (const [w, id] of [['fantasy', 'fantasy'], ['wuxia', 'wuxia'], ['xianxia', 'xianxia'], ['scifi', 'scifi'], ['cthulhu', 'cthulhu']]) {
     const st = G.S.w[w] && G.S.w[w].tree, idx = G.Tree.idx[id];

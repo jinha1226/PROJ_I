@@ -48,7 +48,7 @@ function bot(dt) {
   for (const k of Object.keys(G.Fantasy.SKILLS)) if (k !== 'assault' && rt.mons.length) G.Fantasy.cast(f, k);
   if (S.unlocked.scifi) {
     const s = S.w.scifi, SF = G.Scifi;
-    const types = ['laser', 'rail', 'cryo', 'mortar', 'tesla'].filter(SF.unlocked);
+    const types = ['laser', 'rail', 'cryo', 'amp', 'mortar', 'drone', 'tesla', 'missile'].filter(SF.unlocked);
     for (let i = 0; i < SF.padCount(); i++) if (!s.towers[i]) SF.build(s, i, types[i % types.length]);
     const srt = SF.rt(s);
     if (srt.en.length) { const e = srt.en.reduce((a, b) => (a.rem < b.rem ? a : b)); SF.strike(s, e.x, e.y); }
