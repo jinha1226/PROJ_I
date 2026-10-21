@@ -71,9 +71,9 @@ G.UI.views.xianxia = function () {
   };
   G.on('xx_realm', e => {
     if (e.asc) banner('lv7 asc', '#ffffff', '천겁을 넘어 신선이 되다', '등선', 6000);
-    else if (!e.stage) banner('lv' + Math.min(6, Math.floor(e.r * 0.7)), COL[Math.min(9, e.r)] || '#ffe08a', `천겁 돌파 · ${X.realmLore(e.r)}`, X.realmName(e.r), 2000 + Math.min(9, e.r) * 300);
+    else if (!e.stage) banner('lv' + Math.min(6, Math.floor(e.r * 0.7)), COL[Math.min(9, e.r)] || '#ffe08a', '천겁 돌파', X.realmName(e.r), 2000 + Math.min(9, e.r) * 300);
   });
-  // 무대가 오를 때: 구름을 뚫고 올라가는 장면 — 구름이 아래로 흘러 지나가고, 새 무대 이름과 한 줄
+  // 무대가 오를 때: 구름을 뚫고 올라가는 장면 — 구름이 아래로 흘러 지나가고, 새 무대 이름
   const sfx = h('div.stagefx.hidden');
   let sfxT = 0;
   G.on('xx_stage', e => {
@@ -82,7 +82,7 @@ G.UI.views.xianxia = function () {
     sfx.className = 'stagefx s' + e.stage;
     sfx.innerHTML = '';
     sfx.append(h('div.clouds.c1'), h('div.clouds.c2'), h('div.clouds.c3'),
-      h('div.stitle', null, h('small', null, `${X.realmName(r)} · ${X.realmLore(r)}`), h('b', null, st.n), h('span', null, st.lore)));
+      h('div.stitle', null, h('small', null, X.realmName(r)), h('b', null, st.n)));
     clearTimeout(sfxT);
     sfxT = setTimeout(() => sfx.classList.add('hidden'), 4200);
     G.SFX.play('finish');
@@ -158,8 +158,6 @@ G.UI.views.xianxia = function () {
     update() {
       const s = x(), rt = X.rt(s), cost = X.breakCost(s.realm), L = X.layout(s);
       setText(realmEl, X.realmName(s.realm));
-      realmEl.dataset.tip = X.realmLore(s.realm);
-      stageEl.dataset.tip = D.stages[X.stageOf(s.realm)].lore;
       setText(stageEl, X.stageName(s) + (s.ascended ? ' · 등선' : ''));
       setText(stateEl, ` · ${rt.state === 'trib' ? (rt.demons.length ? `심마 ${rt.demons.length}` : '천겁') : STATE[rt.state]} → ${X.realmName(s.realm + 1)}`);
       setText(devEl, s.devT > 0 ? `도심 동요 ${Math.ceil(s.devT)}초 · 영기 30%` : '');

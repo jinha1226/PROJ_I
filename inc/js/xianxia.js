@@ -448,7 +448,6 @@ G.Xianxia = (() => {
     },
     status: x => X.realmName(x.realm),
     stageName: x => D.stages[X.stageOf(x.realm)].n,
-    realmLore: r => (r < D.realmLore.length ? D.realmLore[r] : '선계의 하늘을 하나씩 오른다'),
   };
   return X;
 })();
