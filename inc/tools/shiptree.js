@@ -27,10 +27,21 @@ const top = rung('pads3', ys[3], 1, 'missile', ['mi_exec', 'mi_volley'], ['mi_bo
 // 뱃머리
 put('rate', 0, (ys[3] + top) / 2, 'pads3');
 put('over', 0, top - 0.6, 'rate');
-// 날개(뒤로 젖힌다)·엔진
-put('salv1', -1.4, 0.4, 'root'); put('esss', -2.6, 1.2, 'salv1');
-put('core1', 1.4, 0.4, 'root'); put('regen', 2.6, 1.2, 'core1');
-put('strike1', 0, 1.5, 'root'); put('strikeCd', 0, 2.7, 'strike1');
+// 날개: 뒤로 젖힌 세 줄 (가운데 줄기 + 앞·뒤 줄), 엔진: 아래로 불꽃처럼
+function wing(side, center, upper, lower) {
+  const ax = side * 1.4, ay = 0.4, l = Math.hypot(1, 0.5), dx = side / l, dy = 0.5 / l, nx = side * dy, ny = -side * dx;
+  const P = k => [ax + dx * 1.15 * k, ay + dy * 1.15 * k];
+  center.forEach((id, k) => { const [x, y] = P(k); put(id, x, y, k ? center[k - 1] : 'root'); });
+  upper.forEach((id, k) => { const [x, y] = P(k + 1); put(id, x + nx, y + ny, k ? upper[k - 1] : center[0]); });
+  lower.forEach((id, k) => { const [x, y] = P(k + 1); put(id, x - nx, y - ny, k ? lower[k - 1] : center[0]); });
+}
+wing(-1, ['salv1', 'salv2', 'esss', 'salv3', 'esss2'], ['clear1', 'cheap', 'bossC', 'interest', 'refund'], ['waveEss', 'skip', 'bossSign', 'ess3']);
+wing(1, ['core1', 'core2', 'core3', 'core4', 'thorns'], ['regen', 'regen2', 'coreArmor', 'overshield'], ['fallback', 'emerg', 'repair', 'lastStand']);
+put('strike1', 0, 1.6, 'root');
+put('strikeCd', -0.65, 2.7, 'strike1'); put('strikeR', 0.65, 2.7, 'strike1');
+put('strikeCh', 0, 3.8, 'strikeCd strikeR');
+put('strikeAuto', -0.65, 4.9, 'strikeCh'); put('strikeStun', 0.65, 4.9, 'strikeCh');
+put('strikeBoss', 0, 6.0, 'strikeAuto strikeStun');
 
 // ── 검사·쓰기
 let s = fs.readFileSync(SRC, 'utf8');

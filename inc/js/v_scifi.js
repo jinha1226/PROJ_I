@@ -91,7 +91,8 @@ G.UI.views.scifi = function () {
       core.set(stt.core / cm, `${U.fmt(Math.max(0, stt.core))} / ${U.fmt(cm)}`, rt.state === 'wave' ? `👾 ${rt.queue.length + rt.en.length}` : '', stt.core / cm < 0.3);
       st.set('cred', U.fmt(stt.credits));
       st.set('best', stt.maxWave);
-      st.set('strike', rt.strikeCd > 0 ? `${rt.strikeCd.toFixed(1)}초` : '✓');
+      const sc = rt.sc ?? 1, mx = SF.strikeMax();
+      st.set('strike', sc > 0 ? (mx > 1 ? `✓×${sc}` : '✓') : `${rt.strikeCd.toFixed(1)}초`);
       renderPad();
       padBody.querySelectorAll('.tbuild').forEach(b => {
         const k = b.dataset.k, c = SF.buildCost(stt, k);

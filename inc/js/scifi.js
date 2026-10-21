@@ -82,7 +82,9 @@ G.Scifi = (() => {
     padCount: () => BASE_PADS + ta('pads'),
     unlocked: t => !D.turrets[t].unlock || ta(D.turrets[t].unlock) > 0,
     built: (s, t) => Object.values(s.towers).filter(x => x === t).length,
-    buildCost: (s, t) => D.turrets[t].cost * Math.pow(1.5, S.built(s, t)),
+    buildCost: (s, t) => D.turrets[t].cost * Math.pow(1.5, S.built(s, t)) * Math.max(0.5, 1 - ta('cheap')),
+    // 코어 수리: 최대치까지만 (과충전 실드로 넘친 몫은 깎지 않는다)
+    repair(s, n) { const cm = S.coreMax(); if (s.core < cm) s.core = Math.min(cm, s.core + n); },
     coreMax: () => 100 * tm('core') * (1 + G.relicVal('s_core')),
     dmgMult() {
       let m = G.globalMult() * (1 + G.relicVal('s_dmg')) * tm('allDmg');
@@ -106,6 +108,7 @@ G.Scifi = (() => {
       const am = S.amps(s, rt, i);
       let r = S.rate(t) * (1 + 0.25 * am.length);
       if (am.some(j => rt.boost[j] > 0)) r *= 2;
+      if (ta('lastStand') && s.core < S.coreMax() * 0.3) r *= 1.5;
       if (t === 'laser' && rt.boost[i] > 0) r *= 2;
       if (t === 'rail' && ta('r_rapid')) r *= 2;
       return r;
@@ -118,9 +121,9 @@ G.Scifi = (() => {
       return d;
     },
     hpScale: w => 6 * Math.pow(1.14, w - 1),
-    bounty: w => 1.5 * Math.pow(1.12, w - 1),
-    clearBonus: w => 4 * Math.pow(1.12, w),
-    waveEss: w => 0.3 * Math.pow(w / 3, 1.4),
+    bounty: w => 1.5 * Math.pow(1.10, w - 1),
+    clearBonus: w => 4 * Math.pow(1.10, w) * tm('clear'),
+    waveEss: w => 0.3 * Math.pow(w / 3, 1.4) * tm('waveEss'),
     strikeDmg: s => 15 * Math.pow(1.14, s.wave - 1) * tm('strike') * G.globalMult(),
     strikeCdMax: () => 4 * Math.max(0.3, 1 - ta('strikeCd')),
     gain(s, n) { s.credits += n; G.tally('scifi', n); },
@@ -139,6 +142,8 @@ G.Scifi = (() => {
       const rt = S.rt(s);
       if (rt.state === 'wave') return;
       rt.state = 'wave';
+      rt.waveT = 0; rt.emerg = false;
+      if (ta('overshield')) s.core = Math.max(s.core, S.coreMax() * 1.2);
       rt.queue = S.genWave(s.wave);
       G.J.sfx('scifi', 'wave');
       rt.spawnT = 0;
@@ -179,7 +184,7 @@ G.Scifi = (() => {
       e.hp -= dmg;
       G.J.hit('scifi', e, power);
       if (e.hp <= 0) {
-        const g = e.bounty * S.creditMult() * cash;
+        const g = e.bounty * S.creditMult() * cash * (e.type === 'boss' && ta('bossC') ? 3 : 1);
         S.gain(s, g);
         G.fx(rt, { k: 'text', x: e.x, y: e.y - 0.7, s: '+' + U.fmt(g), col: '#7ff0ff', t: 0.9, sz: e.type === 'boss' ? 1.6 : 1, pop: e.type === 'boss' });
         G.J.sfx('scifi', 'pop');
@@ -268,7 +273,7 @@ G.Scifi = (() => {
       else if (t === 'rail') { const e = near.sort((a, b) => b.hp - a.hp)[0]; G.fx(rt, { k: 'beam', x: px, y: py, x2: e.x, y2: e.y, col: '#fff3b0', w: 4, t: 0.3 }); S.hit(s, rt, e, dmg * 5, 0.3); }
       else if (t === 'cryo') for (const e of near) e.freeze = 2;
       else if (t === 'mortar') for (let n = 0; n < 3; n++) S.fire(s, rt, i, t);
-      else if (t === 'drone') { s.core = Math.min(S.coreMax(), s.core + S.coreMax() * 0.15); G.fx(rt, { k: 'ring', x: rt.map.poi.C[0][0], y: rt.map.poi.C[0][1], r: 1.6, t: 0.6, col: '#9fe79f' }); }
+      else if (t === 'drone') { S.repair(s, S.coreMax() * 0.15); G.fx(rt, { k: 'ring', x: rt.map.poi.C[0][0], y: rt.map.poi.C[0][1], r: 1.6, t: 0.6, col: '#9fe79f' }); }
       else if (t === 'tesla') { for (const e of near) { S.hit(s, rt, e, dmg * 2); if (ta('t_emp')) e.freeze = 1; } G.fx(rt, { k: 'ring', x: px, y: py, r: S.range(t), t: 0.4, col: '#c7a6ff' }); }
       else if (t === 'missile') for (const e of near.sort((a, b) => a.hp - b.hp).slice(0, 6)) S.missile(s, rt, { x: px, y: py }, e, dmg);
       G.J.sfx('scifi', 'boom');
@@ -284,7 +289,11 @@ G.Scifi = (() => {
       G.J.sfx('scifi', 'build');
       return true;
     },
-    scrap(s, i) { delete s.towers[i]; },
+    scrap(s, i) {
+      const t = s.towers[i];
+      delete s.towers[i];
+      if (t && ta('refund')) S.gain(s, D.turrets[t].cost * Math.pow(1.5, S.built(s, t)) * 0.7);
+    },
     // 포탑 옮기기 (무료). 옮길 자리에 포탑이 있으면 서로 바꾼다
     move(s, from, to) {
       if (from === to || !s.towers[from] || to >= S.padCount()) return false;
@@ -301,40 +310,53 @@ G.Scifi = (() => {
       return rt.pads.findIndex(([px, py]) => Math.abs(px - x) < 0.6 && Math.abs(py - y) < 0.6);
     },
     // 빈 곳 클릭 = 궤도 폭격
+    strikeMax: () => 1 + ta('strikeCh'),
     strike(s, x, y) {
       const rt = S.rt(s);
-      if (rt.strikeCd > 0) { G.J.sfx('scifi', 'error'); return false; }
-      rt.strikeCd = S.strikeCdMax();
-      const dmg = S.strikeDmg(s);
-      G.fx(rt, { k: 'bolt', x, y, t: 0.4, col: '#ff9a3a' });
-      G.fx(rt, { k: 'ring', x, y, r: 1.5, t: 0.4, col: '#ff9a3a' });
-      G.J.sfx('scifi', 'boom');
+      if (rt.sc == null) rt.sc = S.strikeMax();
+      if (rt.sc <= 0) { G.J.sfx('scifi', 'error'); return false; }
+      rt.sc--;
+      if (rt.strikeCd <= 0) rt.strikeCd = S.strikeCdMax();
+      S.bombard(s, rt, x, y, 1);
       G.J.shake('scifi', 7, 0, 1, 0.3);
-      for (const e of rt.en) if (Math.hypot(e.x - x, e.y - y) <= 1.5) {
-        G.fx(rt, { k: 'text', x: e.x, y: e.y - 0.5, s: U.fmt(dmg), col: '#ffb36b', t: 0.7, sz: 1.3, pop: true });
-        S.hit(s, rt, e, dmg, 0.4);
-      }
       return true;
     },
+    // 폭격 한 번 (클릭·자동 조준·반응 장갑): 범위 1.5 + 광역 포격, 충격파 정지, 모선 대함 탄두
+    bombard(s, rt, x, y, mult) {
+      const dmg = S.strikeDmg(s) * mult, r = 1.5 + ta('strikeR');
+      G.fx(rt, { k: 'bolt', x, y, t: 0.4, col: '#ff9a3a' });
+      G.fx(rt, { k: 'ring', x, y, r, t: 0.4, col: '#ff9a3a' });
+      G.J.sfx('scifi', 'boom');
+      for (const e of rt.en) if (e.hp > 0 && Math.hypot(e.x - x, e.y - y) <= r) {
+        const d = dmg * (e.type === 'boss' ? 1 + ta('strikeBoss') : 1);
+        G.fx(rt, { k: 'text', x: e.x, y: e.y - 0.5, s: U.fmt(d), col: '#ffb36b', t: 0.7, sz: 1.3, pop: true });
+        S.hit(s, rt, e, d, 0.4);
+        if (ta('strikeStun')) e.freeze = Math.max(e.freeze || 0, 1);
+      }
+    },
     clearWave(s, rt) {
-      const w = s.wave;
-      S.gain(s, S.clearBonus(w) * S.creditMult());
+      const w = s.wave, bonus = S.clearBonus(w) * S.creditMult();
+      S.gain(s, bonus);
+      if (ta('interest')) S.gain(s, Math.min(s.credits * ta('interest'), bonus * 10));
       G.addEss(S.waveEss(w), 'scifi');
       G.J.sfx('scifi', 'chime');
-      if (w % 10 === 0) { G.addSigns(1, 'scifi'); G.log(`WAVE ${w} 모선 격추!`, 'scifi', 'good'); }
+      if (w % 10 === 0) { G.addSigns(1 + ta('bossSign'), 'scifi'); G.log(`WAVE ${w} 모선 격추!`, 'scifi', 'good'); }
       s.wave++;
+      // 전격전: 빨리 끝낸 웨이브는 다음 웨이브도 함께 (모선 웨이브는 건너뛰지 않는다)
+      if (ta('skip') && rt.waveT < 12 && s.wave % 10 !== 0) { S.gain(s, S.clearBonus(s.wave) * S.creditMult()); s.wave++; G.log('전격전 — 한 웨이브를 건너뛴다', 'scifi'); }
       rt.rebuilt = false;
       if (s.wave > s.maxWave) s.maxWave = s.wave;
       rt.state = 'pause';
       rt.pauseT = PAUSE;
-      s.core = Math.min(S.coreMax(), s.core + S.coreMax() * 0.25);
+      S.repair(s, S.coreMax() * (0.25 + ta('repair')));
       S.checkSector(s, rt);
     },
     failWave(s, rt) {
-      G.log(`WAVE ${s.wave} 방어 실패 — 코어 재가동, 3웨이브 후퇴`, 'scifi', 'bad');
+      const back = Math.max(1, 3 - ta('fallback'));
+      G.log(`WAVE ${s.wave} 방어 실패 — 코어 재가동, ${back}웨이브 후퇴`, 'scifi', 'bad');
       G.J.sfx('scifi', 'lose');
       G.J.shake('scifi', 10, 0, 0, 0.5);
-      s.wave = Math.max(1, s.wave - 3);
+      s.wave = Math.max(1, s.wave - back);
       rt.en = [];
       rt.queue = [];
       s.core = S.coreMax();
@@ -347,11 +369,15 @@ G.Scifi = (() => {
       const rt = S.rt(s);
       G.fxTick(rt, dt);
       // 궤도 폭격 재사용은 실제 시간 (누르는 손은 빨라지지 않는다)
-      if (rt.strikeCd > 0) rt.strikeCd -= dt;
+      if (rt.sc == null) rt.sc = S.strikeMax();
+      if (rt.sc < S.strikeMax() && (rt.strikeCd -= dt) <= 0) { rt.sc++; rt.strikeCd = rt.sc < S.strikeMax() ? S.strikeCdMax() : 0; }
+      // 자동 조준: 10초마다 가장 앞선 적에게 60%
+      if (ta('strikeAuto') && rt.en.length && (rt.autoT = (rt.autoT ?? 10) - dt) <= 0) { rt.autoT = 10; const e = rt.en.reduce((a, b) => (a.rem < b.rem ? a : b)); S.bombard(s, rt, e.x, e.y, 0.6); }
       dt *= TEMPO;
       rt.frame += dt;
+      rt.waveT = (rt.waveT || 0) + dt;
       const cm = S.coreMax();
-      s.core = Math.min(cm, s.core + cm * ta('coreRegen') * dt);
+      S.repair(s, cm * ta('coreRegen') * dt);
       if (rt.state === 'pause') {
         if (s.auto && (rt.pauseT -= dt) <= 0) S.startWave(s);
         return;
@@ -368,7 +394,10 @@ G.Scifi = (() => {
         e.moving = true;
         if (S.walk(rt, e, v * dt) && e.hp > 0) {
           const dr = Object.values(s.towers).includes('drone');
-          s.core -= e.dmg * (dr && ta('d_shield') ? 0.85 : 1);
+          s.core -= e.dmg * (dr && ta('d_shield') ? 0.85 : 1) * (1 - Math.min(0.5, ta('coreArmor')));
+          if (ta('thorns')) S.bombard(s, rt, e.x, e.y, 0.5);
+          // 비상 정지장: 30% 아래로 처음 떨어지면 5초간 모두 멈춘다
+          if (ta('emerg') && !rt.emerg && s.core > 0 && s.core < S.coreMax() * 0.3) { rt.emerg = true; for (const o of rt.en) o.freeze = 5; G.fx(rt, { k: 'text', x: e.x, y: e.y - 1, s: '비상 정지장', col: '#bfe8ff', t: 1.4, sz: 1.3, pop: true }); }
           // 재건: 웨이브마다 한 번 50%로 버틴다
           if (s.core <= 0 && dr && ta('d_rebuild') && !rt.rebuilt) { rt.rebuilt = true; s.core = S.coreMax() * 0.5; G.fx(rt, { k: 'text', x: e.x, y: e.y - 1, s: '재건', col: '#9fe79f', t: 1.3, sz: 1.3, pop: true }); }
           e.hp = 0;
@@ -380,7 +409,7 @@ G.Scifi = (() => {
       }
       for (const [i, t] of Object.entries(s.towers)) {
         if (+i >= S.padCount()) continue;
-        if (t === 'drone') s.core = Math.min(S.coreMax(), s.core + S.coreMax() * D.turrets.drone.repair * dt);
+        if (t === 'drone') S.repair(s, S.coreMax() * D.turrets.drone.repair * dt);
         S.skill(s, rt, +i, t, dt);
         if (D.turrets[t].support) continue;
         rt.idle[i] = (rt.idle[i] || 0) + dt;
