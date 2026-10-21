@@ -1120,3 +1120,7 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .tree-edges .cthu .tent { fill: none; stroke: #6fe39a1c; stroke-width: 34; stroke-linecap: round; }
 .tree-edges .cthu .head, .tree-edges .cthu .wing { fill: #6fe39a0a; stroke: #6fe39a2a; }
 .tree-edges .cthu .eye { fill: #ffd24a33; stroke: #ffd24a66; }
+.tree-edges .ship .hull, .tree-edges .ship .wing, .tree-edges .ship .engine { fill: #6fd3ff08; stroke: #6fd3ff2a; }
+.tree-edges .ship .flame { fill: #ff9a3a1a; stroke: #ff9a3a44; }
+.tree-edges .ship .mast { stroke: #6fd3ff2a; stroke-width: 3; }
+.tree-edges .ship .stripe { stroke: #6fd3ff33; stroke-width: 5; }
