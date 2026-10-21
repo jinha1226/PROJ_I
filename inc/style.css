@@ -1124,3 +1124,7 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .tree-edges .ship .flame { fill: #ff9a3a1a; stroke: #ff9a3a44; }
 .tree-edges .ship .mast { stroke: #6fd3ff2a; stroke-width: 3; }
 .tree-edges .ship .stripe { stroke: #6fd3ff33; stroke-width: 5; }
+/* SF 트리: 바퀴형 정거장 고리 */
+.tree-edges .station circle { fill: none; stroke: #6fd3ff26; stroke-width: 3; }
+.tree-edges .station .rim2 { stroke: #6fd3ff14; stroke-width: 2; stroke-dasharray: 10 8; }
+.tree-edges .station .hub { fill: #6fd3ff08; stroke: #6fd3ff33; }

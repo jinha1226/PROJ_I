@@ -519,7 +519,14 @@
     NOTE('strikeAuto', 1.65, -5.43, 'strikeCh', 'n_auto_break', '자동 조준', '10초마다 가장 앞선 적에게 폭격 (60%)', 2e6, { strikeAuto: 1 }),
     NOTE('strikeStun', 2.67, -5.01, 'strikeCh', 'a_seal', '충격파', '폭격 맞은 적은 1초 멈춘다', 5e6, { strikeStun: 1 }),
     N('strikeBoss', 2.53, -6.1, 'strikeAuto strikeStun', 'e_boss', '대함 탄두', '모선에게 폭격 피해 +50%', 5, 2e7, 2, { strikeBoss: 0.5 }),
-  ], { get: () => S().w.scifi.credits, spend: n => { S().w.scifi.credits -= n; }, tile: 's_credit', name: '크레딧' });
+  ], { get: () => S().w.scifi.credits, spend: n => { S().w.scifi.credits -= n; }, tile: 's_credit', name: '크레딧' }, {
+    // 회전 바퀴형 정거장: 바퀴살 끝을 잇는 바깥 고리(두 겹)와 가운데 축 — 노드만으로는 고리가 안 읽혀서 고리만 그린다
+    bg(P, U) {
+      const [cx, cy] = P(0, 0);
+      return `<g class="fig station"><circle class="rim" cx="${cx}" cy="${cy}" r="${6.6 * U}" /><circle class="rim2" cx="${cx}" cy="${cy}" r="${7.25 * U}" />
+        <circle class="hub" cx="${cx}" cy="${cy}" r="${1.25 * U}" /></g>`;
+    },
+  });
 
   // ───── 크툴루 (동전): 낚시 ─────
   // 이성이 한 번 출항의 한도다 (판타지의 체력, 무협의 나이). 위: 이성(최대치·소모·회복·휴식), 그 왼쪽 위 끝: 광기 활용
