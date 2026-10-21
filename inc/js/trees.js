@@ -489,6 +489,9 @@
     N('skill1', 2.3, 0.8, 'hook1', 'c_investigator', '노련한 손', '자동 조종 시야 +1칸', 6, 100, 2, { skill: 1 }),
     N('sonar', 3.4, 1.6, 'skill1', 'c_lamp', '음파 탐지기', '자동 조종 시야 +1칸', 4, 3000, 2, { skill: 1 }),
     N('exorcise', 2.4, 2.4, 'skill1', 'cu_cultist', '자동 퇴마', '바늘 근처 촉수 퇴마 (6초 · 3초 · 2초)', 3, 1e4, 3, { exorcise: 1 }),
+    // 낚시꾼 캐릭터 시트 기술 2 (UNITS.md): 줄 끝에서 한 번
+    PAIR('kit_net', 1.0, 1.9, 'exorcise', 'fs_bone', '그물 투척', '줄 끝에서 바늘 2칸 안 물고기를 한꺼번에 건다', 5e4, { kit_net: 1 }, 'c_kit'),
+    PAIR('kit_abyss', 3.9, 2.4, 'exorcise', 'fs_kraken', '심연 낚시', '줄 끝에서 그 깊이의 희귀 어종이 하나 걸린다', 5e4, { kit_abyss: 1 }, 'c_kit'),
     N('bait1', 3.5, 0, 'reel1 skill1', 'fs_kraken', '심해 미끼', '희귀 어종 +20%', 10, 2000, 1.7, { bait: 0.2 }),
     N('net', 4.7, 0, 'bait1', 'fs_bone', '그물', '걸림 범위 +15%', 3, 2e4, 2.5, { net: 0.15 }),
     // 오른쪽 끝: 자석

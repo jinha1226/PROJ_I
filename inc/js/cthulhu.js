@@ -117,6 +117,32 @@ G.Cthulhu = (() => {
       G.J.sfx('cthulhu', 'select');
       return true;
     },
+    // 줄 끝 (낚시꾼 기술 2): 그물 투척 — 바늘 2칸 안을 한꺼번에 / 심연 낚시 — 그 깊이의 희귀 어종 하나
+    bottom(c, rt) {
+      const h = rt.hook, room = () => rt.hooked.length < C.maxCatch();
+      if (ta('kit_net')) {
+        const got = rt.fish.filter(f => Math.hypot(f.x - h.x, f.y - h.y) < 2).slice(0, C.maxCatch() - rt.hooked.length);
+        if (got.length) {
+          rt.fish = rt.fish.filter(f => !got.includes(f));
+          rt.hooked.push(...got);
+          G.fx(rt, { k: 'ring', x: h.x, y: h.y, r: 2, t: 0.6, col: '#bfe8a0' });
+          G.fx(rt, { k: 'text', x: h.x, y: h.y - 0.8, s: `그물 ×${got.length}`, col: '#bfe8a0', t: 1.1, pop: true });
+          G.J.sfx('cthulhu', 'pop');
+        }
+      }
+      if (ta('kit_abyss') && room()) {
+        const d = h.y - SURF, z = C.zoneOf(d);
+        // 그 깊이의 희귀 어종 (얕은 바다엔 없으니 그 깊이에서 가장 값진 것)
+        const here = D.fish.filter(f => !f.sign && (f.zMax != null ? z >= f.z && z <= f.zMax : f.z === z)), rare = here.filter(f => f.w < 1);
+        const pool = rare.length ? rare : here.sort((p, q) => q.v - p.v).slice(0, 1);
+        if (pool.length) {
+          const sp = U.wpick(pool, f => f.w);
+          rt.hooked.push({ kind: 'mon', sp, t: sp.t, tint: sp.tint, x: h.x, y: h.y, d, dir: 1, spd: 0, s: sp.s || 0.9 });
+          G.fx(rt, { k: 'text', x: h.x, y: h.y - 0.8, s: sp.n, col: '#c7a6ff', t: 1.3, pop: true });
+          G.J.sfx('cthulhu', 'chime');
+        }
+      }
+    },
     // 줄이 끊긴다: 걸린 것을 잃는다 (keep: 건지는 비율, 앞에 걸린 것부터)
     snap(c, rt, why, keep = 0) {
       const n = Math.floor(rt.hooked.length * keep);
@@ -279,7 +305,7 @@ G.Cthulhu = (() => {
         h.vy = Math.min(C.sink(), (SURF + C.lineD() - h.y) / 0.1);
         rt.deepest = Math.max(rt.deepest, h.y - SURF);
         c.best = Math.max(c.best, Math.round((h.y - SURF) * D.M_PER_TILE));
-        if (h.y - SURF >= C.lineD()) rt.phase = 'up';
+        if (h.y - SURF >= C.lineD()) { rt.phase = 'up'; C.bottom(c, rt); }
       } else if (rt.phase === 'up') {
         const up = C.upSpeed(c, rt);
         h.y -= up * dt;
