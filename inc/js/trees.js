@@ -8,6 +8,14 @@
     return Object.assign({ id, x, y, req: req ? req.split(' ') : [], t, n, d, max, base, g, eff }, more);
   };
   const S = () => G.S;
+  // 트리 뒤 그림 도우미: P(x, y) → 화면 좌표. 선협 경맥도처럼 노드 배치가 그림의 부위가 되게 그린다
+  const FIG = P => ({
+    pts: pts => pts.map(([x, y]) => P(x, y).join(',')).join(' '),
+    poly(pts, cls = '') { return `<polygon class="${cls}" points="${this.pts(pts)}" />`; },
+    line(pts, cls = '') { return `<polyline class="${cls}" points="${this.pts(pts)}" />`; },
+    circle(x, y, r, U, cls = '') { const [cx, cy] = P(x, y); return `<circle class="${cls}" cx="${cx}" cy="${cy}" r="${r * U}" />`; },
+    path(d, cls = '') { return `<path class="${cls}" d="${d.replace(/(-?[\d.]+) (-?[\d.]+)/g, (m, a, b) => P(+a, +b).join(' '))}" />`; },
+  });
 
   // ───── 판타지 (골드) ─────
   // 북: 원정대(동료 해금 → 그 동료 전용 가지, 끝에 ★택1 짝) · 남: 기사(리더)와 파티 전체 · 동: 벼락(클릭) · 서: 재화
@@ -141,7 +149,18 @@
     N('g_bossEss', -4.7, 3.0, 'g_fever g_jack', 'b_slimeking', '보스 정수', '보스 층 정수 +20%', 5, 1e5, 2.5, { bossEss: 0.2 }),
     N('gold3', -8, 2.2, 'ess2', 'ui_gold', '용의 보고', '골드 +25%', 10, 3e6, 2, { gold: 0.25 }),
   ], { get: () => S().w.fantasy.gold, spend: n => { S().w.fantasy.gold -= n; }, tile: 'ui_gold', name: '골드' },
-  { costMul: st => Math.max(0.5, 1 - G.Tree.add('fantasy', st, 'g_bargain')) });
+  { costMul: st => Math.max(0.5, 1 - G.Tree.add('fantasy', st, 'g_bargain')),
+    bg(P, U) {
+      const f = FIG(P);
+      return `<g class="fig sword">
+        ${f.poly([[-1.1, -1.0], [1.1, -1.0], [1.1, -7.4], [0, -9.2], [-1.1, -7.4]], 'blade')}
+        ${f.line([[0, -1.4], [0, -8.2]], 'fuller')}
+        ${f.poly([[-9.6, -0.9], [-8.6, -1.4], [8.6, -1.4], [9.8, -0.9], [8.6, 0.6], [-8.6, 0.6]], 'guard')}
+        ${f.poly([[-0.75, 0.6], [0.75, 0.6], [0.75, 8.6], [-0.75, 8.6]], 'grip')}
+        ${f.line([[-0.75, 2.4], [0.75, 3.0]], 'wrap')}${f.line([[-0.75, 4.2], [0.75, 4.8]], 'wrap')}${f.line([[-0.75, 6.0], [0.75, 6.6]], 'wrap')}
+        ${f.circle(0, 9.5, 1.0, U, 'pommel')}${f.circle(0, -0.4, 0.75, U, 'gem')}
+      </g>`;
+    } });
 
   // ───── 무협 (깨달음: 회귀해도 남는다) ─────
   // ───── 무협 (깨달음) ─────
@@ -246,7 +265,28 @@
     N('work2', -4, -2, 'bounty', 'x_table', '부지런함', '일·임무 명성 +30%', 10, 120, 1.8, { work: 0.3 }),
     N('gh_top', -8.2, 1.4, 'boss2 gh_legend', 'j_maengju', '무림지존', '명성 +80%', 10, 15000, 2, { fame: 0.8 }),
 
-  ]), { get: () => S().w.wuxia.ins, spend: n => { S().w.wuxia.ins -= n; }, tile: 'ui_star', name: '깨달음' });
+  ]), { get: () => S().w.wuxia.ins, spend: n => { S().w.wuxia.ins -= n; }, tile: 'ui_star', name: '깨달음' }, {
+    bg(P, U) {
+      const f = FIG(P), oct = r => Array.from({ length: 8 }, (_, k) => { const a = (k + 0.5) * Math.PI / 4; return [Math.cos(a) * r, Math.sin(a) * r * 0.85 + 0.9]; });
+      // 괘: 방향마다 막대 셋 (이은 것 —, 끊긴 것 - -)
+      const TRI = ['111', '011', '101', '001', '110', '010', '100', '000'];
+      let bars = '';
+      for (let k = 0; k < 8; k++) {
+        const a = k * Math.PI / 4, cx = Math.cos(a), cy = Math.sin(a) * 0.85, tx = -Math.sin(a), ty = Math.cos(a) * 0.85;
+        for (let j = 0; j < 3; j++) {
+          const r = 7.0 + j * 0.45, mx = cx * r, my = cy * r + 0.9, half = 1.6;
+          const seg = (s0, s1) => f.line([[mx + tx * s0, my + ty * s0], [mx + tx * s1, my + ty * s1]], 'bar');
+          bars += TRI[k][j] === '1' ? seg(-half, half) : seg(-half, -0.3) + seg(0.3, half);
+        }
+      }
+      const [cx0, cy0] = P(0, 0), R = 1.5 * U;
+      return `<g class="fig bagua">
+        ${f.poly(oct(6.4), 'ring')}${f.poly(oct(8.4), 'ring2')}${bars}
+        <circle class="yang" cx="${cx0}" cy="${cy0}" r="${R}" />
+        <path class="yin" d="M ${cx0} ${cy0 - R} A ${R} ${R} 0 0 1 ${cx0} ${cy0 + R} A ${R / 2} ${R / 2} 0 0 1 ${cx0} ${cy0} A ${R / 2} ${R / 2} 0 0 0 ${cx0} ${cy0 - R} Z" />
+      </g>`;
+    },
+  });
 
   // ───── 수선 (영석): 경맥도 ─────
   // 사람 몸 위에 경맥을 그린다. 임맥(가운데 위)은 진법 칸·영기·천겁, 팔다리와 아랫배는 오행 경맥.
@@ -460,7 +500,19 @@
     N('bless', -3.6, -6.2, 'edge whisper', 'fs_eye', '광기의 축복', '이성 소진 손실 -50%', 1, 2e5, 1, { bless: 0.5 }),
     N('pact', -1.7, -6.8, 'whisper', 'c_cultist', '공포의 탐닉', '낮은 이성 물고기 값 보너스 ×2 · 이성 소모 +30%', 1, 1e5, 1, { pact: 1 }, { pair: 'c_mad' }),
     N('calm', -0.5, -6.8, 'whisper', 'c_ward', '평정심', '이성 소모 -30% · 낮은 이성 물고기 값 보너스 ×0.5', 1, 1e5, 1, { calm: 1 }, { pair: 'c_mad' }),
-  ], { get: () => S().w.cthulhu.coins, spend: n => { S().w.cthulhu.coins -= n; }, tile: 'c_coin', name: '동전' });
+  ], { get: () => S().w.cthulhu.coins, spend: n => { S().w.cthulhu.coins -= n; }, tile: 'c_coin', name: '동전' }, {
+    bg(P, U) {
+      const f = FIG(P);
+      const tent = (x0, sway) => f.path(`M ${x0} 0.2 Q ${x0 + sway} 1.8 ${x0 - sway * 0.6} 3.2 Q ${x0 - sway * 1.4} 4.6 ${x0 + sway * 0.4} 5.8`, 'tent');
+      return `<g class="fig cthu">
+        ${f.path('M -1.6 -3.4 Q -4.5 -5.2 -6.8 -3.6 Q -5.8 -2.6 -6.4 -1.4 Q -4.8 -1.6 -4.2 -0.6 Q -2.8 -1.6 -1.6 -1.0 Z', 'wing')}
+        ${f.path('M 1.6 -3.4 Q 4.5 -5.2 7.4 -3.6 Q 6.4 -2.6 7.0 -1.4 Q 5.2 -1.6 4.6 -0.6 Q 3.0 -1.6 1.6 -1.0 Z', 'wing')}
+        ${tent(-1.8, -0.8)}${tent(-0.9, 0.7)}${tent(0, -0.6)}${tent(0.9, 0.8)}${tent(1.8, 0.7)}
+        ${f.path('M -2.4 -0.4 Q -3.0 -4.6 0 -7.2 Q 3.0 -4.6 2.4 -0.4 Q 0 0.8 -2.4 -0.4 Z', 'head')}
+        ${f.circle(-0.9, -2.8, 0.38, U, 'eye')}${f.circle(0.9, -2.8, 0.38, U, 'eye')}
+      </g>`;
+    },
+  });
 
   // ───── 차원 넥서스 (정수) ─────
   const unlockCost = () => G.D.UNLOCK_COST[Object.values(S().unlocked).filter(Boolean).length - 1] || 1e9;

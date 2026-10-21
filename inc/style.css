@@ -1107,3 +1107,16 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .stagefx .clouds { background: url(assets/art/v_cloud_1.png) repeat-x; background-size: 160px 160px; image-rendering: pixelated; height: 160px; }
 .stagefx .c2 { background-image: url(assets/art/v_cloud_2.png); background-size: 220px 220px; height: 220px; }
 .stagefx .c3 { background-image: url(assets/art/v_cloud_3.png); background-size: 120px 120px; height: 120px; }
+/* 스킬트리 뒤 그림 (판타지 검 · 무협 팔괘 · 크툴루) — 선협 경맥도와 같은 결: 옅은 면 + 흐린 선 */
+.tree-edges .fig polygon, .tree-edges .fig path, .tree-edges .fig circle { fill: #ffffff07; stroke: #ffffff1c; stroke-width: 2; stroke-linejoin: round; }
+.tree-edges .fig polyline { fill: none; stroke: #ffffff1c; stroke-width: 2; stroke-linecap: round; }
+.tree-edges .sword .fuller { stroke: #ffffff26; stroke-width: 4; }
+.tree-edges .sword .gem { fill: #d9a62e22; stroke: #d9a62e55; }
+.tree-edges .sword .guard, .tree-edges .sword .pommel { fill: #d9a62e0c; stroke: #d9a62e33; }
+.tree-edges .bagua .ring2 { fill: none; }
+.tree-edges .bagua .bar { stroke: #ffffff30; stroke-width: 7; }
+.tree-edges .bagua .yang { fill: #ffffff10; stroke: #ffffff2a; }
+.tree-edges .bagua .yin { fill: #00000055; stroke: none; }
+.tree-edges .cthu .tent { fill: none; stroke: #6fe39a1c; stroke-width: 34; stroke-linecap: round; }
+.tree-edges .cthu .head, .tree-edges .cthu .wing { fill: #6fe39a0a; stroke: #6fe39a2a; }
+.tree-edges .cthu .eye { fill: #ffd24a33; stroke: #ffd24a66; }
