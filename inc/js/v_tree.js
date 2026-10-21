@@ -122,9 +122,11 @@ G.UI.tree = function (treeId, getSt) {
     tog(info, 'hidden', !sel);
     if (sel) {
       const n = sel, lv = T.lv(st, n.id), max = n.max || 1, open = T.open(treeId, st, n.id);
-      setText(iName, n.n);
+      // 트리마다 이름·설명을 바꿔 보여 줄 수 있다 (무협 소속 무공)
+      const L = T.opts[treeId].label ? T.opts[treeId].label(n) : n;
+      setText(iName, L.n);
       setText(iLv, (n.root ? '' : max > 1 ? ` Lv ${lv} / ${max}` : lv ? ' 습득' : '') + (n.pair ? ' · ⇄ 택1' : ''));
-      setText(iDesc, open ? n.d : `${n.d}\n🔒 ${(n.req || []).map(r => T.idx[treeId][r].n).join(n.reqAll ? ' + ' : ' / ')}`);
+      setText(iDesc, open ? L.d : `${L.d}\n🔒 ${(n.req || []).map(r => T.idx[treeId][r].n).join(n.reqAll ? ' + ' : ' / ')}`);
       const maxed = lv >= max;
       // 못 여는 노드: 거기까지 가는 총비용과 지금 가진 양 대비 %
       const reach = open ? 0 : T.reachCost(treeId, st, n.id);

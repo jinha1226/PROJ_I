@@ -22,8 +22,8 @@
   //  검신 가운데 홈 = 원정대 → 동료 지휘 줄기, 마디마다 좌우 가로대 끝에서 동료 해금 → 강화가 날을 따라 위로 → ★택1 짝, 검 끝 = 대현자
   //  가드 왼쪽 재화 · 오른쪽 벼락(클릭), 각각 세 줄 / 손잡이 왼쪽 체력 · 오른쪽 공격 / 폼멜 전투 함성
   // 짝 노드(pair)는 둘 다 배울 수 있고 효과는 고른 하나만, 바꾸기는 공짜.
-  const PAIR = (id, x, y, req, t, n, d, base, eff, pair) => N(id, x, y, req, t, n, d, 1, base, 1, eff, { pair, notable: true });
-  const NOTE = (id, x, y, req, t, n, d, base, eff) => N(id, x, y, req, t, n, d, 1, base, 1, eff, { notable: true });
+  const PAIR = (id, x, y, req, t, n, d, base, eff, pair, more) => N(id, x, y, req, t, n, d, 1, base, 1, eff, { pair, notable: true, ...more });
+  const NOTE = (id, x, y, req, t, n, d, base, eff, more) => N(id, x, y, req, t, n, d, 1, base, 1, eff, { notable: true, ...more });
   G.Tree.define('fantasy', [
     N('root', 0, 0, '', 'knight', '모험의 시작', '', 1, 0, 1, {}, { root: true }),
 
@@ -191,6 +191,11 @@
     PAIR('sect_fear', 4.6, -5.2, 'sect_plum', 'm_demon', '공포', '원정 적 체력 -30%', 2500, { fear: 1 }, 'sect_pair'),
     PAIR('sect_dom', 3.4, -5.6, 'sect_plum', 'wa_crown', '군림', '녹봉 ×1.5', 2500, { dom: 1 }, 'sect_pair'),
     N('sect_top', 5.6, -5.6, 'sect_raid sect_fear sect_dom', 'j_geomseon', '천하의 주인', '명성 +50%', 10, 8000, 2, { fame: 0.5 }),
+    // 소속 무공 (UNITS.md 캐릭터 시트): 특수 공격 → 기술 1 → 기술 2 ★짝. 이름·설명은 지금 소속(정파·사파·마교)을 따른다. 전투에서 저절로 쓴다
+    NOTE('kit_sp', 0, -3.4, 'sect1', 'v_plum', '독문 수법', '', 30, { kit_sp: 1 }, { names: ['매화 낙화', '분노', '혈흔'], descs: ['치명타 때 주변 적에게 50%', '맞을 때마다 분노, 다섯 번이면 다음 3타 ×2', '체력 50% 이하 적에게 ×1.5'] }),
+    NOTE('kit_sk', 0, -4.8, 'kit_sp', 's_geom', '본산 비기', '', 250, { kit_sk: 1 }, { names: ['이십사수매화검법', '녹림 장법', '혈영마검'], descs: ['12초마다 주변 적 모두에게 ×3', '12초마다 장풍 ×4, 적을 밀어낸다', '12초마다 일직선으로 꿰뚫고 지나가며 ×3'] }),
+    PAIR('kit_a', -0.6, -6.1, 'kit_sk', 's_naegong', '본산 심법', '', 1500, { kit_a: 1 }, 'kit_pair', { names: ['자하신공', '흡정대법', '천마신공'], descs: ['체력 50% 아래면 10초간 받는 피해 -50%·재생 (60초)', '적을 쓰러뜨리면 체력 15% 회복', '공격 ×2, 싸우는 동안 초당 체력 -2%'] }),
+    PAIR('kit_b', 0.6, -6.1, 'kit_sk', 's_gyeong', '본산 경공', '', 1500, { kit_b: 1 }, 'kit_pair', { names: ['암향표', '비영보', '흡성대법'], descs: ['새 적과 붙으면 순식간에 5연타', '공격의 25%를 피한다', '맞힌 적의 공격력 -30%'] }),
 
     // ── 남: 무공 계열 ──
     N('mu', 0, 1.8, 'root', 's_tuna', '무학의 길', '무공 숙련 +15%', 15, 1, 1.45, { sxp: 0.15 }),
@@ -262,6 +267,8 @@
     N('gh_top', -8.2, 1.4, 'boss2 gh_legend', 'j_maengju', '무림지존', '명성 +80%', 10, 15000, 2, { fame: 0.8 }),
 
   ]), { get: () => S().w.wuxia.ins, spend: n => { S().w.wuxia.ins -= n; }, tile: 'ui_star', name: '깨달음' }, {
+    // 소속 무공 노드: 지금 소속의 이름·설명
+    label: n => (n.names ? { n: n.names[['jeong', 'sa', 'ma'].indexOf(G.Wuxia.pathOf(S().w.wuxia))] || n.n, d: n.descs[['jeong', 'sa', 'ma'].indexOf(G.Wuxia.pathOf(S().w.wuxia))] || n.d } : n),
     bg(P, U) {
       const f = FIG(P), oct = r => Array.from({ length: 8 }, (_, k) => { const a = (k + 0.5) * Math.PI / 4; return [Math.cos(a) * r, Math.sin(a) * r * 0.85 + 0.9]; });
       // 괘: 방향마다 막대 셋 (이은 것 —, 끊긴 것 - -)

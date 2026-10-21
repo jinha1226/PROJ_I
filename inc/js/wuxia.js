@@ -28,7 +28,7 @@ G.Wuxia = (() => {
     },
     rt(w) { return G.RT.wuxia || (G.RT.wuxia = W.boot(w)); },
     boot(w) {
-      const rt = { fx: [], foes: [], villagers: [], hero: { kind: 'hero', x: 0, y: 0, s: 1.1, bar: true }, stay: 0, banditT: 4, raidT: 2, duelT: 6, bossT: 4, focus: null, restT: 0, deadT: 0, travel: null };
+      const rt = { fx: [], foes: [], villagers: [], hero: { kind: 'hero', x: 0, y: 0, s: 1.1, bar: true }, stay: 0, banditT: 4, raidT: 2, duelT: 6, bossT: 4, focus: null, restT: 0, deadT: 0, travel: null, rage: 0, rageHits: 0, zixia: 0, zixiaCd: 0 };
       // 처음 켤 때는 가야 할 지역에서 바로 (여정 없이)
       W.enter(w, rt, W.target(w), null);
       W.heal(w, rt);
@@ -429,6 +429,77 @@ G.Wuxia = (() => {
       rt.foes.push(f);
       return f;
     },
+    // ── 소속 무공 (UNITS.md 무협 시트): 정파 검객 · 사파 도객 · 마교 마인 ──
+    kitName(w, id) { const n = G.Tree.idx.wuxia[id]; return n.names[['jeong', 'sa', 'ma'].indexOf(W.pathOf(w))] || n.n; },
+    // 한 번 칠 때의 배율: 분노 ×2 · 혈흔(체력 50% 이하 적) ×1.5 · 천마신공 ×2
+    kitMult(w, rt, foe) {
+      const P = W.pathOf(w);
+      let m = 1;
+      if (P === 'sa' && rt.rageHits > 0) { m *= 2; rt.rageHits--; }
+      if (P === 'ma' && ta('kit_sp') && foe.hp < foe.max * 0.5) m *= 1.5;
+      if (P === 'ma' && ta('kit_a')) m *= 2;
+      return m;
+    },
+    // 친 뒤: 매화 낙화(치명이면 주변 50%) · 사파 기본 앞 범위 50% · 마교 기본 흡혈 10% · 흡성대법(약화)
+    kitOnHit(w, rt, h, foe, dmg, crit) {
+      const P = W.pathOf(w);
+      const around = r => rt.foes.filter(o => o !== foe && GR.dist(o, foe) <= r);
+      if (P === 'jeong' && crit && ta('kit_sp')) for (const o of around(2)) { o.hp -= dmg * 0.5; G.fx(rt, { k: 'tile', key: 'v_plum', x: o.x, y: o.y - 0.3, t: 0.5, s: 0.6 }); W.kitKill(w, rt, o); }
+      if (P === 'sa') for (const o of around(1.5)) { o.hp -= dmg * 0.5; W.kitKill(w, rt, o); }
+      if (P === 'ma') h.hp = Math.min(h.max, h.hp + dmg * 0.1);
+      if (P === 'ma' && ta('kit_b')) foe.weak = true;
+    },
+    // 기술로 쓰러진 적 (주 표적 말고)
+    kitKill(w, rt, o) {
+      if (o.hp > 0) return;
+      W.reward(w, rt, o);
+      G.fx(rt, { k: 'die', spr: o.art || o.t, x: o.x, y: o.y, s: o.s, flip: o.flip, t: 0.5 });
+      rt.foes = rt.foes.filter(b => b !== o);
+      if (rt.focus === o) rt.focus = null;
+    },
+    // 기술 1과 암향표. 쓰면 true (그 틈에는 평타를 치지 않는다)
+    kitCast(w, rt, h, foe, dt) {
+      const P = W.pathOf(w), pw = W.power(w);
+      if (rt.zixia > 0) { rt.zixia -= dt; h.hp = Math.min(h.max, h.hp + h.max * 0.05 * dt); }
+      if (rt.zixiaCd > 0) rt.zixiaCd -= dt;
+      if (P === 'ma' && ta('kit_a')) h.hp -= h.max * 0.02 * dt;
+      // 암향표: 처음 붙는 적에게 5연타
+      if (P === 'jeong' && ta('kit_b') && rt.lastFoe !== foe) {
+        rt.lastFoe = foe;
+        for (let i = 0; i < 5; i++) G.fx(rt, { k: 'slash', x: foe.x + (Math.random() - 0.5) * 0.6, y: foe.y + (Math.random() - 0.5) * 0.6, t: 0.25 + i * 0.05, rot: Math.random() * 2 - 1, flip: i % 2 > 0 });
+        foe.hp -= pw * 5;
+        G.fx(rt, { k: 'text', x: h.x, y: h.y - 1.2, s: W.kitName(w, 'kit_b'), col: '#ffe08a', t: 1, pop: true });
+        G.J.hit('wuxia', foe, 0.3, h);
+        if (foe.hp <= 0) W.kitKill(w, rt, foe);
+        return true;
+      }
+      rt.lastFoe = foe;
+      if (!ta('kit_sk') || (rt.kitT = (rt.kitT == null ? 4 : rt.kitT) - dt) > 0) return false;
+      rt.kitT = 12;
+      G.fx(rt, { k: 'text', x: h.x, y: h.y - 1.3, s: W.kitName(w, 'kit_sk'), col: '#ffe08a', t: 1.2, sz: 1.2, pop: true });
+      G.J.sfx('wuxia', 'hit');
+      G.J.shake('wuxia', 4, 0, 1, 0.18);
+      if (P === 'jeong') {
+        // 이십사수매화검법: 주변 2.5칸 적 모두 ×3
+        for (const o of rt.foes.filter(o => GR.dist(o, h) <= 2.5)) { o.hp -= pw * 3; G.fx(rt, { k: 'tile', key: 'v_plum', x: o.x, y: o.y - 0.3, t: 0.6, s: 0.8 }); G.fx(rt, { k: 'slash', x: o.x, y: o.y, t: 0.3, crit: true }); W.kitKill(w, rt, o); }
+      } else if (P === 'sa') {
+        // 녹림 장법: 장풍 ×4, 2칸 밀어낸다
+        const dx = foe.x - h.x, dy = foe.y - h.y, l = Math.hypot(dx, dy) || 1, m = rt.map;
+        const nx = U.clamp(Math.round(foe.x + dx / l * 2), 1, m.w - 2), ny = U.clamp(Math.round(foe.y + dy / l * 2), 1, m.h - 2);
+        G.fx(rt, { k: 'impact', x: foe.x, y: foe.y, s: 2, col: '#ffd9a0', t: 0.3 });
+        if (GR.pass(m, nx, ny)) { foe.x = nx; foe.y = ny; }
+        foe.hp -= pw * 4;
+        W.kitKill(w, rt, foe);
+      } else {
+        // 혈영마검: 표적을 꿰뚫고 지나간다 — 지나는 길 1칸 안 적 모두 ×3
+        const dx = foe.x - h.x, dy = foe.y - h.y, l = Math.hypot(dx, dy) || 1, m = rt.map;
+        const tx = U.clamp(Math.round(foe.x + dx / l * 1.5), 1, m.w - 2), ty = U.clamp(Math.round(foe.y + dy / l * 1.5), 1, m.h - 2);
+        G.fx(rt, { k: 'beam', x: h.x, y: h.y, x2: tx, y2: ty, col: '#ff4a4a', w: 4, t: 0.25 });
+        for (const o of rt.foes.filter(o => GR.dist(o, foe) <= 1.2 || GR.dist(o, h) <= 1.2)) { o.hp -= pw * 3; W.kitKill(w, rt, o); }
+        if (GR.pass(m, tx, ty)) { h.x = tx; h.y = ty; }
+      }
+      return true;
+    },
     // 쓰러뜨린 적의 보상
     reward(w, rt, f) {
       const s = W.stipend(w);
@@ -551,9 +622,16 @@ G.Wuxia = (() => {
           if (GR.dist(b, h) > 1.1) GR.moveTo(m, b, h.x, h.y, 2.6, dt, 1);
           else if ((b.atkT -= dt) <= 0) {
             b.atkT = 1;
-            h.hp -= b.atk;
+            const P = W.pathOf(w);
+            if (P === 'sa' && ta('kit_b') && Math.random() < 0.25) { G.fx(rt, { k: 'text', x: h.x, y: h.y - 0.8, s: '회피', col: '#9fe0ff', t: 0.6 }); continue; }
+            const dmg = b.atk * (b.weak ? 0.7 : 1) * (rt.zixia > 0 ? 0.5 : 1);
+            h.hp -= dmg;
+            // 사파 분노: 다섯 번 맞으면 다음 3타 ×2
+            if (P === 'sa' && ta('kit_sp') && ++rt.rage >= 5) { rt.rage = 0; rt.rageHits = 3; G.fx(rt, { k: 'text', x: h.x, y: h.y - 1.1, s: '분노!', col: '#ff7a5a', t: 0.9, pop: true }); }
+            // 정파 자하신공: 체력 50% 아래로 떨어지면
+            if (P === 'jeong' && ta('kit_a') && h.hp < h.max * 0.5 && !(rt.zixiaCd > 0)) { rt.zixia = 10; rt.zixiaCd = 60; G.fx(rt, { k: 'ring', x: h.x, y: h.y, r: 1.6, t: 0.7, col: '#c9a6ff' }); G.fx(rt, { k: 'text', x: h.x, y: h.y - 1.2, s: W.kitName(w, 'kit_a'), col: '#c9a6ff', t: 1.2, pop: true }); }
             G.J.lunge('wuxia', b, h);
-            G.fx(rt, { k: 'text', x: h.x, y: h.y - 0.6, s: '-' + U.fmt(b.atk), col: '#ff6b6b', t: 0.7 });
+            G.fx(rt, { k: 'text', x: h.x, y: h.y - 0.6, s: '-' + U.fmt(dmg), col: '#ff6b6b', t: 0.7 });
             G.fx(rt, { k: 'impact', x: h.x, y: h.y - 0.1, s: 0.9, col: '#ff6b6b', t: 0.18 });
             G.J.hit('wuxia', h, 0.15, b);
             G.J.shake('wuxia', 2.5, h.x > b.x ? 1 : -1, 0, 0.12);
@@ -578,13 +656,16 @@ G.Wuxia = (() => {
           if (GR.dist(h, foe) > 1.1) GR.moveTo(m, h, foe.x, foe.y, WALK * tm('walk'), dt, 1);
           else {
             h.flip = foe.x < h.x;
-            if ((rt.atkT = (rt.atkT || 0) - dt) <= 0) {
+            // 소속 기술 1 (12초마다 저절로) / 암향표: 새 적과 붙으면 5연타
+            if (W.kitCast(w, rt, h, foe, dt)) { /* 기술이 이번 틈을 썼다 */ }
+            else if ((rt.atkT = (rt.atkT || 0) - dt) <= 0) {
               rt.atkT = W.atkCd();
               // 타격: 치명(15%, ×2)·연타 세 번째는 크게 — 판타지와 같은 손맛(히트스톱·넉백·충격·결정타 확대)
               rt.combo = ((rt.combo || 0) + 1) % 3;
               const crit = Math.random() < 0.15, big = crit || rt.combo === 0;
-              const dmg = W.power(w) * (crit ? 2 : 1);
+              const dmg = W.power(w) * (crit ? 2 : 1) * W.kitMult(w, rt, foe);
               foe.hp -= dmg;
+              W.kitOnHit(w, rt, h, foe, dmg, crit);
               const kill = foe.hp <= 0, heavy = kill || big, dir = foe.x > h.x ? 1 : -1;
               G.fx(rt, { k: 'slash', x: foe.x, y: foe.y, t: 0.3, crit: big, rot: Math.random() - 0.5, flip: h.x > foe.x });
               G.J.lunge('wuxia', h, foe);
@@ -595,6 +676,7 @@ G.Wuxia = (() => {
               G.J.sfx('wuxia', kill ? 'hit' : big ? 'hit' : 'tap');
               if (big && !kill) G.J.shake('wuxia', 3, dir, 0, 0.12);
               if (kill) {
+                if (W.pathOf(w) === 'sa' && ta('kit_a')) h.hp = Math.min(h.max, h.hp + h.max * 0.15);
                 W.reward(w, rt, foe);
                 G.fx(rt, { k: 'die', spr: foe.art || foe.t, x: foe.x, y: foe.y, s: foe.s, flip: foe.flip, t: 0.5 });
                 // 결정타: 비무·천하제일 비무·원정 마지막 한 방은 느려지며 다가간다
