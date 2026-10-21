@@ -440,7 +440,7 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .tree-vp.drag { cursor: grabbing; }
 .tree-layer { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .tree-edges { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
-.tree-edges line { stroke: #ffffff22; stroke-width: 3; }
+.tree-edges line { stroke: #ffffff3a; stroke-width: 3; }
 .tree-edges line.open { stroke: #ffffff55; stroke-dasharray: 5 5; }
 .tree-edges line.on { stroke: var(--accent); stroke-width: 4; filter: drop-shadow(0 0 4px var(--accent)); }
 .tnode { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; border: 2px solid #ffffff33; background: #0b0b10; padding: 0;
