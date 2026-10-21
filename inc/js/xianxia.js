@@ -36,7 +36,7 @@ G.Xianxia = (() => {
       const rt = {
         map, slots, at, fx: [], me: { kind: 'hero', t: 'cultivator', art: 'xx_hero' + stage, x: vx, y: vy, s: 1.15, bar: false }, beasts: [], disciples: [], demons: [],
         plots: (map.poi.h || []).map(([px, py]) => ({ x: px, y: py, g: Math.random() * HERB_T })),
-        state: 'meditate', beastT: 4, alchT: 0, swordT: 0, trib: 0, penalty: 0, zapT: 0, ver: 0, stage,
+        state: 'meditate', beastT: 4, alchT: 0, swordT: 0, rainT: 6, thunderT: 8, wardT: 0, wardCd: 10, runT: 20, dom: null, trib: 0, penalty: 0, zapT: 0, ver: 0, stage,
       };
       if (x.autoArr) X.autoArrange(x, rt);
       return rt;
@@ -132,7 +132,7 @@ G.Xianxia = (() => {
     resetWorld() { G.S.w.xianxia = X.init(); G.RT.xianxia = null; },
     HERB_T, ALCH_T,
     // 영초 밭 하나의 성장 속도 (목 진기 · 트리 · 제자 +25%씩)
-    herbGrow: (x, L = X.layout(x)) => (1 + 0.5 * L.sum.wood) * (1 + ta('herb')) * (1 + 0.25 * Math.min(6, ta('disciple'))),
+    herbGrow: (x, L = X.layout(x)) => (1 + 0.5 * L.sum.wood) * (1 + ta('herb')) * (1 + 0.25 * Math.min(6, ta('disciple'))) * (ta('disc_farm') ? 2 : 1),
     herbEvery: (x, L = X.layout(x)) => HERB_T / (X.herbGrow(x, L) * Math.max(1, X.rt(x).plots.length)),
     alchEvery: (x, L = X.layout(x)) => ALCH_T / ((1 + 0.5 * L.sum.fire) * (1 + ta('alch'))),
 
@@ -178,10 +178,19 @@ G.Xianxia = (() => {
       for (const o of hit) {
         G.fx(rt, { k: 'proj', key: 'fx_sword', x: from.x, y: from.y, x2: o.x, y2: o.y, t: 0.25 });
         G.fx(rt, { k: 'beam', x: from.x, y: from.y, x2: o.x, y2: o.y, col: power ? '#d8f0ff' : '#9fd0ff', w: power ? 3 : 1.5, t: power ? 0.22 : 0.12 });
-        X.hurt(x, rt, o, dmg, power ? 0.45 : 0.12, from);
+        X.hurt(x, rt, o, dmg * (rt.dom === 'metal' ? 1.3 : 1), power ? 0.45 : 0.12, from);
+        X.element(x, rt, o, dmg);
         from = o;
       }
       if (power) G.J.lunge('xianxia', rt.me, b);
+    },
+    // 오행 특성: 금 피해 ×1.3(위에서) · 목 2초 묶임 · 수 3초 감속 · 화 곁 1.5칸에 50% · 토 1칸 밀어냄
+    element(x, rt, o, dmg) {
+      if (o.hp <= 0 || !rt.dom) return;
+      if (rt.dom === 'wood') o.stun = 2;
+      else if (rt.dom === 'water') o.slow = 3;
+      else if (rt.dom === 'fire') for (const p of [...rt.beasts, ...rt.demons]) { if (p !== o && p.hp > 0 && GR.dist(p, o) <= 1.5) { G.fx(rt, { k: 'tile', key: 'fx_flame', x: p.x, y: p.y, t: 0.4 }); X.hurt(x, rt, p, dmg * 0.5, 0, o); } }
+      else if (rt.dom === 'earth' && !o.demon) { const m = rt.map, dx = o.x - rt.me.x, dy = o.y - rt.me.y, l = Math.hypot(dx, dy) || 1, nx = Math.round(o.x + dx / l), ny = Math.round(o.y + dy / l); if (GR.pass(m, nx, ny)) { o.x = nx; o.y = ny; } }
     },
     hurt(x, rt, b, dmg, power = 0, from) {
       if (b.hp <= 0) return;
@@ -204,6 +213,37 @@ G.Xianxia = (() => {
       G.fx(rt, { k: 'text', x: b.x, y: b.y - 1, s: '+' + U.fmt(g), col: '#e8b8ff', t: 1.1 });
       G.J.sfx('xianxia', 'coin');
       rt.beasts = rt.beasts.filter(o => o !== b);
+    },
+    // 수도자·제자 기술 (저절로): 만검귀종 · 천뢰 ↔ 호신 결계 · 단약 심부름 · 호법
+    kit(x, rt, dt) {
+      const me = rt.me, foes = () => [...rt.demons, ...rt.beasts].filter(o => o.hp > 0);
+      if (ta('xx_rain') && foes().length && (rt.rainT -= dt) <= 0) {
+        rt.rainT = 15;
+        G.fx(rt, { k: 'text', x: me.x, y: me.y - 1.3, s: '만검귀종', col: '#d8f0ff', t: 1.2, sz: 1.2, pop: true });
+        G.J.sfx('xianxia', 'sword');
+        for (const o of foes()) { G.fx(rt, { k: 'proj', key: 'fx_sword', x: o.x, y: o.y - 3, x2: o.x, y2: o.y, t: 0.25 }); X.hurt(x, rt, o, X.power(x) * 2, 0.3, { x: o.x, y: o.y - 1 }); X.element(x, rt, o, X.power(x) * 2); }
+      }
+      if (ta('xx_thunder') && rt.beasts.length && (rt.thunderT -= dt) <= 0) {
+        rt.thunderT = 20;
+        for (const o of rt.beasts.slice().sort(() => Math.random() - 0.5).slice(0, 3)) { G.fx(rt, { k: 'bolt', x: o.x, y: o.y, t: 0.35, col: '#d9c2ff' }); X.hurt(x, rt, o, X.power(x) * 4, 0.4, { x: o.x, y: o.y - 1 }); }
+        G.J.sfx('xianxia', 'thunder');
+        G.J.shake('xianxia', 4, 0, 1, 0.15);
+      }
+      if (rt.wardT > 0) rt.wardT -= dt;
+      if (ta('xx_ward') && rt.beasts.length && (rt.wardCd -= dt) <= 0) {
+        rt.wardCd = 30; rt.wardT = 8;
+        G.fx(rt, { k: 'ring', x: me.x, y: me.y, r: 5, t: 1, col: '#ffe08a' });
+        G.fx(rt, { k: 'text', x: me.x, y: me.y - 1.3, s: '호신 결계', col: '#ffe08a', t: 1.3, sz: 1.2, pop: true });
+      }
+      if (ta('disc_run') && rt.disciples.length && x.pills < 20 && (rt.runT -= dt) <= 0) {
+        rt.runT = 20; x.pills++;
+        const d = rt.disciples[0];
+        G.fx(rt, { k: 'text', x: d.x, y: d.y - 1, s: '단약 +1', col: '#ffd24a', t: 1.2 });
+      }
+      if (ta('disc_guard')) for (const d of rt.disciples) {
+        const o = rt.beasts.find(b => GR.dist(b, d) <= 1.6);
+        if (o) { o.hp -= X.power(x) * 0.3 * dt; if (Math.random() < dt * 2) G.fx(rt, { k: 'slash', x: o.x, y: o.y, t: 0.2 }); if (o.hp <= 0) { o.hp = 1e-9; X.hurt(x, rt, o, 1, 0, d); } }
+      }
     },
     slotAt(x, cx, cy) {
       const j = X.rt(x).at[Math.round(cx) + ',' + Math.round(cy)];
@@ -308,6 +348,8 @@ G.Xianxia = (() => {
       if (x.autoArr && x.arrN !== X.slotCount()) X.autoArrange(x, rt);
       for (const s of rt.slots) if (s.off > 0 && (s.off -= dt) <= 0) { s.off = 0; rt.ver++; }
       const L = X.layout(x);
+      // 특성 오행: 진법에서 가장 센 속성이 비검에 붙는다
+      rt.dom = Object.keys(L.sum).reduce((a, k) => (L.sum[k] > (L.sum[a] || 0) ? k : a), null);
       x.qi += X.qiRate(x) * dt;
       X.gain(x, X.stoneRate(x) * dt);
       // 영기 흐름: 진기에서 좌선대로 빛 알갱이가 흘러간다 (그리기 전용)
@@ -354,14 +396,17 @@ G.Xianxia = (() => {
       }
       for (const b of rt.beasts) {
         b.moving = false;
+        if (b.stun > 0) { b.stun -= dt; continue; }
+        const bsp = b.slow > 0 ? ((b.slow -= dt), 0.5) : 1;
         if (!b.goal || !x.arr[b.goal.i] || b.goal.off > 0 || b.goal.i >= n) {
           b.goal = null;
           let bd = 1e9;
           for (const s of rt.slots) if (s.i < n && x.arr[s.i] && !(s.off > 0)) { const d = Math.hypot(s.x - b.x, s.y - b.y); if (d < bd) { bd = d; b.goal = s; } }
         }
-        if (!b.goal) { GR.moveTo(m, b, me.x, me.y + 1, 1.5, dt, 1.2); continue; }
-        if (!GR.moveTo(m, b, b.goal.x, b.goal.y, 1.6, dt, 0.7)) continue;
+        if (!b.goal) { GR.moveTo(m, b, me.x, me.y + 1, 1.5 * bsp, dt, 1.2); continue; }
+        if (!GR.moveTo(m, b, b.goal.x, b.goal.y, 1.6 * bsp, dt, 0.7)) continue;
         b.flip = b.goal.x < b.x;
+        if (rt.wardT > 0) continue;
         if ((b.atkT -= dt) <= 0) {
           b.atkT = 2.5;
           G.J.lunge('xianxia', b, b.goal);
@@ -384,6 +429,7 @@ G.Xianxia = (() => {
           if (tg) { G.fx(rt, { k: 'beam', x: s.x, y: s.y, x2: tg.x, y2: tg.y, col: D.el.earth.col, w: 2, t: 0.15 }); X.hurt(x, rt, tg, X.power(x) * 0.15 * p.out, 0, s); }
         }
       }
+      X.kit(x, rt, dt);
       // 수도자: 좌선하며 비검으로 가까운 적을 친다
       if ((rt.swordT -= dt) <= 0) {
         const foes = [...rt.demons, ...rt.beasts];
