@@ -76,6 +76,7 @@ G.Scifi = (() => {
       const fwd = k > rt.sector;
       S.loadSector(s, rt, k);
       G.log(`${fwd ? '새 구역' : '구역 후퇴'}: ${S.sectorName(k)}`, 'scifi', fwd ? 'good' : 'bad');
+      if (fwd) G.emit('sf_sector', { k });
     },
     padCount: () => BASE_PADS + ta('pads'),
     unlocked: t => !D.turrets[t].unlock || ta(D.turrets[t].unlock) > 0,
@@ -405,7 +406,9 @@ G.Scifi = (() => {
         if (i === s.selPad) ents.push({ x: px, y: py, s: 1.15, pad: true, sel: true });
       });
       ents.push(...rt.en);
-      return { map: rt.map, ents, fx: rt.fx, fit: true, terrain: (x, y) => D.tiles[GR.at(rt.map, x, y)] || null };
+      // 구역 테마: 바닥·통로·벽 타일을 장소마다 바꾼다 (0번은 기본 타일 그대로)
+      const th = D.sectors[rt.sector % D.sectors.length].th || 0, swap = { s_ground: 's_g' + th, s_path: 's_p' + th, s_wall: 's_w' + th };
+      return { map: rt.map, ents, fx: rt.fx, fit: true, terrain: (x, y) => { const t = D.tiles[GR.at(rt.map, x, y)]; return t ? (th ? t.map(k => swap[k] || k) : t) : null; } };
     },
     status: s => `WAVE ${s.wave}`,
   };

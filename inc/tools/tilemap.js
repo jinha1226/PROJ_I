@@ -166,6 +166,12 @@ module.exports = {
   // SF 기지
   s_path: ['dngn/floor/metal_silver[0-3]'], s_ground: ['dngn/floor/iron[0-3]'], s_pad: ['dngn/floor/tutorial_pad'],
   s_portal: ['dngn/traps/teleport_permanent'],
+  // SF 구역 테마 (바닥 g · 통로 p · 벽 w): 1 붉은 행성 · 2 얼음 위성 · 3 수정 소행성 · 4 외계 군체 · 5 모선 내부 (0 궤도 정거장은 위 s_ground·s_path·s_wall)
+  s_g1: ['dngn/floor/rough_red[0-9]'], s_p1: ['dngn/floor/metal_gold[0-9]'], s_w1: ['dngn/wall/volcanic_wall[0-9]'],
+  s_g2: ['dngn/floor/icy_floor[0-9]'], s_p2: ['dngn/floor/metal_silver[0-9]'], s_w2: ['dngn/wall/ice_wall[0-9]'],
+  s_g3: ['dngn/floor/crystal_floor[0-9]'], s_p3: ['dngn/floor/runelight[0-9]'], s_w3: ['dngn/wall/crystal_wall_cyan'],
+  s_g4: ['dngn/floor/floor_nerves[0-9]'], s_p4: ['dngn/floor/acidic_floor[0-9]'], s_w4: ['dngn/wall/wall_flesh[0-9]'],
+  s_g5: ['dngn/floor/zot_diamonds[0-9]'], s_p5: ['dngn/floor/metal_infernal[0-9]'], s_w5: ['dngn/wall/wall_metal_zot[0-9]'],
   // 크툴루 거리
   c_street: ['dngn/floor/rect_gray[0-3]'], c_house: ['dngn/wall/brick_dark_1_[0-3]'], c_hfloor: ['dngn/floor/crypt[0-3]'],
   c_park: ['dngn/floor/grass/grass-dark[0-5]'], c_deadtree: ['dngn/trees/tree_dead[1-5]'], c_kiosk: ['dngn/shops/shop_general'],

@@ -53,7 +53,21 @@ G.UI.views.scifi = function () {
     h('div.bestiary', null, Object.entries(D.enemies).map(([k, e]) => h('div.be', null, G.T.el('e_' + k, 'sm'), `${e.n} · 체력 ×${e.hp} · 코어 피해 ${e.dmg}`))), group);
   const left = h('div.fleft', null, h('div.ocol', null, h('div.opad', null, padTitle, padBody), best.el));
 
-  const overlay = h('div.fover', null, hud, top, left);
+  // 새 구역: 장소 이름이 크게 뜬다 (수선 경지 돌파와 같은 배너, 장소마다 색)
+  const rfx = h('div.realmfx.hidden');
+  let rfxT = 0;
+  const TH_COL = ['#9fe0ff', '#ff8a5a', '#d8f0ff', '#7dffe8', '#9fe79f', '#c78bff'];
+  G.on('sf_sector', e => {
+    if (G.UI.cur !== 'scifi') return;
+    const th = D.sectors[e.k % D.sectors.length].th || 0;
+    rfx.className = 'realmfx lv3';
+    rfx.style.setProperty('--rc', TH_COL[th]);
+    rfx.innerHTML = '';
+    rfx.append(h('div.rays'), h('div.rglow'), h('div.rtext', null, h('small', null, `구역 ${e.k + 1}`), h('b', null, SF.sectorName(e.k))));
+    clearTimeout(rfxT);
+    rfxT = setTimeout(() => rfx.classList.add('hidden'), 2800);
+  });
+  const overlay = h('div.fover', null, hud, top, left, rfx);
   return G.UI.worldScreen('scifi', {
     overlay,
     click(p) {
