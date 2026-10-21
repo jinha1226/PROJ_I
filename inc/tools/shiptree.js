@@ -1,43 +1,42 @@
-// SF 트리를 인공위성 그림에 맞춰 손으로 배치한다 (좌표와 선행 노드를 함께 정한다). node tools/shiptree.js write
-//  가운데 몸체(세로): 사령부 → 병기 개량 → 포대 증설 I·II·III → 자동 장전 → 오버클럭
-//  태양광 패널 네 장(가로줄 격자): 위 왼쪽 경제 · 위 오른쪽 방어 (사령부에서 바로) / 아래 두 장 포탑 8종 — 한 줄에 포탑 하나
-//    (건설 → 특수 → 기술 1 → 짝 위·아래), 줄마다 몸체의 마디(병기 개량·포대 증설)에서 열린다
-//  꼭대기 안테나 접시: 지휘 · 궤도 폭격
+// SF 트리를 궤도 정거장(바퀴) 그림에 맞춰 손으로 배치한다 (좌표와 선행 노드를 함께 정한다). node tools/shiptree.js write
+//  가운데 사령부에서 바퀴살 16개, 끝이 바깥 고리를 이룬다.
+//  큰 바퀴살 8개(위·아래·좌우·대각선) = 포탑 8종 (건설 → 특수 → 기술 1 → 짝)
+//  그 사이 가는 바퀴살 8개 = 지휘(궤도 폭격) · 방어 셋(오른쪽) · 공용(아래) · 경제 셋(왼쪽)
 const fs = require('fs');
 const SRC = __dirname + '/../js/trees.js';
 const L = {};
 const put = (id, x, y, req) => { L[id] = [+x.toFixed(2), +y.toFixed(2), req]; };
-const X0 = 1.6, DX = 1.1;
-// 몸체
-const ROW = [1.6, 3.5, 5.4, 7.3];
-put('dmg1', 0, ROW[0], 'root'); put('pads1', 0, ROW[1], 'dmg1'); put('pads2', 0, ROW[2], 'pads1'); put('pads3', 0, ROW[3], 'pads2');
-put('rate', 0, 8.7, 'pads3'); put('over', 0, 9.9, 'rate');
-// 아래 패널: 포탑 한 줄
-function turret(side, y, spine, ids) {
-  const [u, sp, sk, a, b] = ids, X = c => side * (X0 + DX * c);
-  put(u, X(0), y, spine); put(sp, X(1), y, u); put(sk, X(2), y, sp);
-  put(a, X(3), y - 0.48, sk); put(b, X(3), y + 0.48, sk);
+const R0 = 2.8, RT = 6.6;                              // 첫 노드 반지름, 바퀴살 끝(바깥 고리) 반지름
+const at = (deg, r, t = 0) => { const a = deg * Math.PI / 180; return [Math.cos(a) * r - Math.sin(a) * t, Math.sin(a) * r + Math.cos(a) * t]; };
+// 바퀴살 하나: 단계마다 노드 하나 또는 갈래 둘(옆으로 ±0.55). 끝 단계가 늘 바깥 고리에 닿게 간격을 나눈다
+function spoke(deg, levels) {
+  const step = (RT - R0) / (levels.length - 1);
+  let prev = ['root'];
+  levels.forEach((lv, k) => {
+    const ids = [].concat(lv), r = R0 + step * k;
+    ids.forEach((id, j) => put(id, ...at(deg, r, ids.length > 1 ? (j ? 0.55 : -0.55) : 0), prev.join(' ')));
+    prev = ids;
+  });
 }
-const SP = ['dmg1', 'pads1', 'pads2', 'pads3'];
-[['laser', 'l_heat', 'l_over', 'l_split', 'l_focus'], ['rail', 'r_charge', 'r_snipe', 'r_rapid', 'r_orbit'], ['mortar', 'm_fire', 'm_salvo', 'm_cluster', 'm_big'], ['tesla', 't_shock', 't_burst', 't_more', 't_emp']]
-  .forEach((ids, r) => turret(-1, ROW[r], SP[r], ids));
-[['amp', 'am_res', 'am_surge', 'am_wide', 'am_cash'], ['cryo', 'c_freeze', 'c_burst', 'c_zone', 'c_brittle'], ['drone', 'd_shield', 'd_nano', 'd_rebuild', 'd_combat'], ['missile', 'mi_exec', 'mi_volley', 'mi_split', 'mi_bounty']]
-  .forEach((ids, r) => turret(1, ROW[r], SP[r], ids));
-// 위 패널: 사령부에서 바로 열리는 가로줄
-const UROW = [-1.6, -3.1, -4.6];
-function row(side, y, ids) { ids.forEach((id, c) => put(id, side * (X0 + DX * c), y, c ? ids[c - 1] : 'root')); }
-row(-1, UROW[0], ['salv1', 'salv2', 'esss', 'salv3', 'esss2']);
-row(-1, UROW[1], ['clear1', 'cheap', 'bossC', 'interest', 'refund']);
-row(-1, UROW[2], ['waveEss', 'skip', 'bossSign', 'ess3']);
-row(1, UROW[0], ['core1', 'core2', 'core3', 'core4', 'thorns']);
-row(1, UROW[1], ['regen', 'regen2', 'coreArmor', 'overshield']);
-row(1, UROW[2], ['fallback', 'emerg', 'repair', 'lastStand']);
-// 안테나 접시: 사령부에서 곧장 위로 올라간 기둥 끝에 오목한 접시
-put('strike1', 0, -6.0, 'root');
-put('strikeCd', -0.7, -7.0, 'strike1'); put('strikeR', 0.7, -7.0, 'strike1');
-put('strikeCh', 0, -8.0, 'strikeCd strikeR');
-put('strikeAuto', -1.5, -8.6, 'strikeCh'); put('strikeStun', 1.5, -8.6, 'strikeCh');
-put('strikeBoss', 0, -9.3, 'strikeCh');
+// 큰 바퀴살 = 포탑 (각도: 0 = 오른쪽, 90 = 아래)
+const T = (u, sp, sk, a, b) => [u, sp, sk, [a, b]];
+spoke(-90, T('laser', 'l_heat', 'l_over', 'l_split', 'l_focus'));
+spoke(-45, T('amp', 'am_res', 'am_surge', 'am_wide', 'am_cash'));
+spoke(0, T('rail', 'r_charge', 'r_snipe', 'r_rapid', 'r_orbit'));
+spoke(45, T('cryo', 'c_freeze', 'c_burst', 'c_zone', 'c_brittle'));
+spoke(90, T('mortar', 'm_fire', 'm_salvo', 'm_cluster', 'm_big'));
+spoke(135, T('drone', 'd_shield', 'd_nano', 'd_rebuild', 'd_combat'));
+spoke(180, T('tesla', 't_shock', 't_burst', 't_more', 't_emp'));
+spoke(225, T('missile', 'mi_exec', 'mi_volley', 'mi_split', 'mi_bounty'));
+// 가는 바퀴살 = 지휘 · 방어 셋 · 공용 · 경제 셋
+spoke(-67.5, ['strike1', ['strikeCd', 'strikeR'], 'strikeCh', ['strikeAuto', 'strikeStun'], 'strikeBoss']);
+spoke(-22.5, ['core1', 'core2', 'core3', 'core4', 'thorns']);
+spoke(22.5, ['regen', 'regen2', 'coreArmor', 'overshield']);
+spoke(67.5, ['fallback', 'emerg', 'repair', 'lastStand']);
+spoke(112.5, ['dmg1', 'pads1', 'pads2', 'pads3', ['rate', 'over']]);
+spoke(157.5, ['waveEss', 'skip', 'bossSign', 'ess3']);
+spoke(202.5, ['clear1', 'cheap', 'bossC', 'interest', 'refund']);
+spoke(247.5, ['salv1', 'salv2', 'esss', 'salv3', 'esss2']);
 
 // ── 검사·쓰기
 let s = fs.readFileSync(SRC, 'utf8');
