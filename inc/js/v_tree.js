@@ -65,8 +65,11 @@ G.UI.tree = function (treeId, getSt) {
     const r = vp.getBoundingClientRect(), root = nodes.find(n => n.root) || nodes[0];
     if (!r.width) return false;
     z = Math.min(1, r.width / ((maxX - minX) * UNIT + 40), r.height / ((maxY - minY) * UNIT + 40));
-    z = Math.max(0.55, z);
-    tx = r.width / 2 - px(root) * z; ty = r.height / 2 - py(root) * z;
+    // 긴 그림(판타지 검)은 처음에 전체가 보이게: 0.55로 다 안 들어가면 더 줄이고 그림 가운데에 맞춘다
+    const fitAll = z < 0.55;
+    z = Math.max(0.3, z);
+    if (fitAll) { tx = r.width / 2 - ((minX + maxX) / 2 - minX) * UNIT * z; ty = r.height / 2 - ((minY + maxY) / 2 - minY) * UNIT * z; }
+    else { tx = r.width / 2 - px(root) * z; ty = r.height / 2 - py(root) * z; }
     apply();
     return true;
   }
@@ -76,7 +79,7 @@ G.UI.tree = function (treeId, getSt) {
   vp.addEventListener('wheel', e => {
     e.preventDefault();
     const r = vp.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-    const nz = U.clamp(z * (e.deltaY < 0 ? 1.12 : 0.89), 0.4, 1.8);
+    const nz = U.clamp(z * (e.deltaY < 0 ? 1.12 : 0.89), 0.3, 1.8);
     tx = mx - (mx - tx) * nz / z; ty = my - (my - ty) * nz / z; z = nz;
     apply();
   }, { passive: false });
