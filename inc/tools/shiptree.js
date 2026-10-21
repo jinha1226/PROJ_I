@@ -1,47 +1,43 @@
-// SF 트리를 우주선 그림에 맞춰 손으로 배치한다 (좌표와 선행 노드를 함께 정한다). node tools/shiptree.js write
-//  선체 가운데 = 공용(병기 개량 → 포대 증설 I·II·III), 마디마다 좌우로 포탑 한 쌍: 포탑(안쪽) → 특수·기술 1(바깥 날) → 짝
-//  (레이저·증폭기 → 레일건·냉각 → 박격포·수리 드론 → 테슬라·미사일), 뱃머리 = 자동 장전 → 오버클럭
-//  날개: 왼쪽 크레딧 · 오른쪽 코어 / 엔진(아래): 궤도 폭격
+// SF 트리를 인공위성 그림에 맞춰 손으로 배치한다 (좌표와 선행 노드를 함께 정한다). node tools/shiptree.js write
+//  가운데 몸체(세로): 사령부 → 병기 개량 → 포대 증설 I·II·III → 자동 장전 → 오버클럭
+//  태양광 패널 네 장(가로줄 격자): 위 왼쪽 경제 · 위 오른쪽 방어 (사령부에서 바로) / 아래 두 장 포탑 8종 — 한 줄에 포탑 하나
+//    (건설 → 특수 → 기술 1 → 짝 위·아래), 줄마다 몸체의 마디(병기 개량·포대 증설)에서 열린다
+//  꼭대기 안테나 접시: 지휘 · 궤도 폭격
 const fs = require('fs');
 const SRC = __dirname + '/../js/trees.js';
 const L = {};
 const put = (id, x, y, req) => { L[id] = [+x.toFixed(2), +y.toFixed(2), req]; };
-const EDGE = 2.3, IN = 1.2, ST = 1.2, RUNG = 2 * ST + 1.5 + 0.35;
-const ys = [-1.9, -1.9 - RUNG, -1.9 - 2 * RUNG, -1.9 - 3 * RUNG];
-put('dmg1', 0, ys[0], 'root'); put('pads1', 0, ys[1], 'dmg1'); put('pads2', 0, ys[2], 'pads1'); put('pads3', 0, ys[3], 'pads2');
-function rung(s, y0, side, ally, chain, pair) {
-  put(ally, side * IN, y0 - 0.7, s);
-  let prev = ally, y = y0 - 1.5;
-  for (const c of chain) { put(c, side * EDGE, y, prev); prev = c; y -= ST; }
-  put(pair[0], side * EDGE, y, prev); put(pair[1], side * IN, y, prev);
-  return y;
+const X0 = 1.6, DX = 1.1;
+// 몸체
+const ROW = [1.6, 3.5, 5.4, 7.3];
+put('dmg1', 0, ROW[0], 'root'); put('pads1', 0, ROW[1], 'dmg1'); put('pads2', 0, ROW[2], 'pads1'); put('pads3', 0, ROW[3], 'pads2');
+put('rate', 0, 8.7, 'pads3'); put('over', 0, 9.9, 'rate');
+// 아래 패널: 포탑 한 줄
+function turret(side, y, spine, ids) {
+  const [u, sp, sk, a, b] = ids, X = c => side * (X0 + DX * c);
+  put(u, X(0), y, spine); put(sp, X(1), y, u); put(sk, X(2), y, sp);
+  put(a, X(3), y - 0.48, sk); put(b, X(3), y + 0.48, sk);
 }
-rung('dmg1', ys[0], -1, 'laser', ['l_heat', 'l_over'], ['l_split', 'l_focus']);
-rung('dmg1', ys[0], 1, 'amp', ['am_res', 'am_surge'], ['am_cash', 'am_wide']);
-rung('pads1', ys[1], -1, 'rail', ['r_charge', 'r_snipe'], ['r_orbit', 'r_rapid']);
-rung('pads1', ys[1], 1, 'cryo', ['c_freeze', 'c_burst'], ['c_brittle', 'c_zone']);
-rung('pads2', ys[2], -1, 'mortar', ['m_fire', 'm_salvo'], ['m_big', 'm_cluster']);
-rung('pads2', ys[2], 1, 'drone', ['d_shield', 'd_nano'], ['d_combat', 'd_rebuild']);
-rung('pads3', ys[3], -1, 'tesla', ['t_shock', 't_burst'], ['t_emp', 't_more']);
-const top = rung('pads3', ys[3], 1, 'missile', ['mi_exec', 'mi_volley'], ['mi_bounty', 'mi_split']);
-// 뱃머리
-put('rate', 0, (ys[3] + top) / 2, 'pads3');
-put('over', 0, top - 0.6, 'rate');
-// 날개: 뒤로 젖힌 세 줄 (가운데 줄기 + 앞·뒤 줄), 엔진: 아래로 불꽃처럼
-function wing(side, center, upper, lower) {
-  const ax = side * 1.4, ay = 0.4, l = Math.hypot(1, 0.5), dx = side / l, dy = 0.5 / l, nx = side * dy, ny = -side * dx;
-  const P = k => [ax + dx * 1.15 * k, ay + dy * 1.15 * k];
-  center.forEach((id, k) => { const [x, y] = P(k); put(id, x, y, k ? center[k - 1] : 'root'); });
-  upper.forEach((id, k) => { const [x, y] = P(k + 1); put(id, x + nx, y + ny, k ? upper[k - 1] : center[0]); });
-  lower.forEach((id, k) => { const [x, y] = P(k + 1); put(id, x - nx, y - ny, k ? lower[k - 1] : center[0]); });
-}
-wing(-1, ['salv1', 'salv2', 'esss', 'salv3', 'esss2'], ['clear1', 'cheap', 'bossC', 'interest', 'refund'], ['waveEss', 'skip', 'bossSign', 'ess3']);
-wing(1, ['core1', 'core2', 'core3', 'core4', 'thorns'], ['regen', 'regen2', 'coreArmor', 'overshield'], ['fallback', 'emerg', 'repair', 'lastStand']);
-put('strike1', 0, 1.6, 'root');
-put('strikeCd', -0.65, 2.7, 'strike1'); put('strikeR', 0.65, 2.7, 'strike1');
-put('strikeCh', 0, 3.8, 'strikeCd strikeR');
-put('strikeAuto', -0.65, 4.9, 'strikeCh'); put('strikeStun', 0.65, 4.9, 'strikeCh');
-put('strikeBoss', 0, 6.0, 'strikeAuto strikeStun');
+const SP = ['dmg1', 'pads1', 'pads2', 'pads3'];
+[['laser', 'l_heat', 'l_over', 'l_split', 'l_focus'], ['rail', 'r_charge', 'r_snipe', 'r_rapid', 'r_orbit'], ['mortar', 'm_fire', 'm_salvo', 'm_cluster', 'm_big'], ['tesla', 't_shock', 't_burst', 't_more', 't_emp']]
+  .forEach((ids, r) => turret(-1, ROW[r], SP[r], ids));
+[['amp', 'am_res', 'am_surge', 'am_wide', 'am_cash'], ['cryo', 'c_freeze', 'c_burst', 'c_zone', 'c_brittle'], ['drone', 'd_shield', 'd_nano', 'd_rebuild', 'd_combat'], ['missile', 'mi_exec', 'mi_volley', 'mi_split', 'mi_bounty']]
+  .forEach((ids, r) => turret(1, ROW[r], SP[r], ids));
+// 위 패널: 사령부에서 바로 열리는 가로줄
+const UROW = [-1.6, -3.1, -4.6];
+function row(side, y, ids) { ids.forEach((id, c) => put(id, side * (X0 + DX * c), y, c ? ids[c - 1] : 'root')); }
+row(-1, UROW[0], ['salv1', 'salv2', 'esss', 'salv3', 'esss2']);
+row(-1, UROW[1], ['clear1', 'cheap', 'bossC', 'interest', 'refund']);
+row(-1, UROW[2], ['waveEss', 'skip', 'bossSign', 'ess3']);
+row(1, UROW[0], ['core1', 'core2', 'core3', 'core4', 'thorns']);
+row(1, UROW[1], ['regen', 'regen2', 'coreArmor', 'overshield']);
+row(1, UROW[2], ['fallback', 'emerg', 'repair', 'lastStand']);
+// 안테나 접시: 사령부에서 곧장 위로 올라간 기둥 끝에 오목한 접시
+put('strike1', 0, -6.0, 'root');
+put('strikeCd', -0.7, -7.0, 'strike1'); put('strikeR', 0.7, -7.0, 'strike1');
+put('strikeCh', 0, -8.0, 'strikeCd strikeR');
+put('strikeAuto', -1.5, -8.6, 'strikeCh'); put('strikeStun', 1.5, -8.6, 'strikeCh');
+put('strikeBoss', 0, -9.3, 'strikeCh');
 
 // ── 검사·쓰기
 let s = fs.readFileSync(SRC, 'utf8');
