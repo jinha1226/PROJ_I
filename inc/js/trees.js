@@ -90,7 +90,7 @@
     N('k_pure1', -0.6, 5.4, 'regen1', 'b_regen', '정화', '오염 피해 -8%', 6, 2000, 1.7, { purify: 0.08 }),
     N('k_pure2', -0.6, 6.4, 'k_pure1', 'fx_holy', '성수', '오염 피해 -10%', 4, 40000, 2, { purify: 0.1 }),
     NOTE('rage', 0, 7.9, 'root', 'r_dragon', '전투 함성', '기술: 10초간 모든 피해 ×2 (40초)', 6000, { sk_rage: 1 }),
-    N('allyAtk1', 0, -6, 'party', 'u_legend', '전우애', '동료 공격력 +18%', 15, 250, 1.5, { allyAtk: 0.18 }),
+    N('allyAtk1', 0, -6, 'party', 'u_legend', '전우애', '동료 공격력 +18%', 15, 1500, 1.5, { allyAtk: 0.18 }),
     N('allyHp', 0, -11.2, 'allyAtk1', 'rl_herb', '진형', '동료 체력 +20%', 15, 1500, 1.5, { allyHp: 0.2 }),
     N('allyAtk2', 0, -15.3, 'allyHp', 'u_god', '영웅단', '동료 공격력 +35%', 25, 200000, 1.6, { allyAtk: 0.35 }),
     NOTE('autocast', -1.2, -16, 'allyAtk2', 'n_auto_build', '전투 본능', '기술을 재사용마다 알아서 쓴다', 200000, { autocast: 1 }),
