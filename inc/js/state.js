@@ -181,8 +181,15 @@ G.deserialize = function (json) {
   // 원정대 노드가 생기기 전 저장: 동료를 이미 열었으면 원정대도 연 것으로
   if (['archer', 'bard', 'cleric', 'mage', 'paladin', 'dragoon', 'archmage'].some(k => ft[k])) ft.party = 1;
   // 동료 강화 노드를 동료마다 둘로 맞추며 뺀 축복·대폭발: 쓴 골드를 돌려준다
-  const GONE = { bless: [800, 1], m_area: [6000, 2.3] };
-  for (const [k, [b, g]] of Object.entries(GONE)) if (ft[k]) { for (let i = 0; i < ft[k]; i++) G.S.w.fantasy.gold += b * Math.pow(g, i); delete ft[k]; }
+  // 캐릭터 시트(UNITS.md)로 바꾸며 뺀 동료별 강화 노드: 쓴 골드를 돌려준다 [기본 비용, 레벨당 배율, 남길 레벨]
+  const GONE = { bless: [800, 1], m_area: [6000, 2.3], r_atk: [60, 1.585], r_range: [500, 2.3], songDur: [1500, 2.04], songPow: [4000, 2.04], c_heal: [400, 1.65], m_atk: [1500, 1.585],
+    p_hp: [9000, 1.585], d_atk: [70000, 1.585], d_crit: [150000, 2.04], a_atk: [450000, 1.585], a_chain: [1e6, 3.6], ro_atk: [450000, 1.585], p_guard: [20000, 2.04, 1], ro_steal: [1e6, 2.3, 1] };
+  for (const [k, [b, g, keep = 0]] of Object.entries(GONE)) if (ft[k] > keep) { for (let i = keep; i < ft[k]; i++) G.S.w.fantasy.gold += b * Math.pow(g, i); if (keep) ft[k] = keep; else delete ft[k]; }
+  // 짝이 바뀐 노드: 고른 것이 더는 그 짝이 아니면 고르기를 지운다 (모든 트리)
+  for (const [w, id] of [['fantasy', 'fantasy'], ['wuxia', 'wuxia'], ['xianxia', 'xianxia'], ['scifi', 'scifi'], ['cthulhu', 'cthulhu']]) {
+    const st = G.S.w[w] && G.S.w[w].tree, idx = G.Tree.idx[id];
+    if (st && idx) for (const k of Object.keys(st)) if (k[0] === '@' && (!idx[st[k]] || idx[st[k]].pair !== k.slice(1))) delete st[k];
+  }
   // 무협: 직업 레벨 → 명성 지위로 바뀌기 전 저장. 옛 트리는 쓴 깨달음을 돌려주고 비운다, 쌓은 명성은 지금 지위만큼 채운다
   const wx = G.S.w.wuxia;
   const OLD = { jxp1: [1, 1.585], gold1: [3, 1.65], jxp2: [60, 1.65], sxp1: [1, 1.585], sxp2: [60, 1.65], twin: [15, 2.3], peak1: [5, 1.78], peak2: [300, 1.91], life1: [2, 1.715], young: [10, 2.3], life2: [250, 1.91], walk: [4, 2.04], fight1: [3, 1.65], bounty: [20, 1.78], fight2: [400, 1.78], yang: [25, 1], magong: [400, 1], ins1: [20, 1.78], essw: [800, 2.17] };

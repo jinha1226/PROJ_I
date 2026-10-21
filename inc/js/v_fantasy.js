@@ -107,7 +107,8 @@ G.UI.views.fantasy = function () {
       setText(corrEl, corr > 0 ? `☣ -${U.fmt(alive * corr)}/초` : '');
       for (const x of skillBtns) {
         const un = F.unlocked(x.id), cd = s.cds[x.id] || 0;
-        tog(x.b, 'hidden', !un);
+        // 동료 기술은 그 동료가 출전 중일 때만 보인다
+        tog(x.b, 'hidden', !un || (x.sk.who && !F.members(s).includes(x.sk.who)));
         x.b.disabled = cd > 0 || !F.canCast(s, x.id);
         setText(x.cd, cd > 0 ? Math.ceil(cd) : '');
       }

@@ -22,14 +22,14 @@ function rung(s, y0, side, ally, chain, pair) {
   put(pair[0], side * EDGE, y, prev); put(pair[1], side * IN, y, prev);
   return y;
 }
-rung('party', ys[0], -1, 'archer', ['r_atk', 'r_range'], ['r_pierce', 'r_poison']);
-rung('party', ys[0], 1, 'bard', ['songDur', 'songPow'], ['songWar', 'songRegen']);
-rung('allyAtk1', ys[1], -1, 'cleric', ['c_heal', 'heal'], ['c_sanct', 'c_revive']);
-rung('allyAtk1', ys[1], 1, 'mage', ['m_atk', 'meteor'], ['m_burn', 'm_quick']);
-rung('allyHp', ys[2], -1, 'paladin', ['p_hp', 'p_guard'], ['p_counter', 'p_taunt']);
-rung('allyHp', ys[2], 1, 'dragoon', ['d_atk', 'd_crit'], ['d_exec', 'd_dash']);
-rung('allyAtk2', ys[3], -1, 'archmage', ['a_atk', 'a_chain'], ['a_warp', 'a_overload']);
-const top = rung('allyAtk2', ys[3], 1, 'rogue', ['ro_atk', 'ro_steal'], ['ro_twin', 'ro_mark']);
+rung('party', ys[0], -1, 'archer', ['r_pierce', 'r_volley'], ['r_poison', 'r_snipe']);
+rung('party', ys[0], 1, 'bard', ['b_encore', 'b_rhap'], ['songWar', 'songRegen']);
+rung('allyAtk1', ys[1], -1, 'cleric', ['c_mass', 'heal'], ['c_sanct', 'c_revive']);
+rung('allyAtk1', ys[1], 1, 'mage', ['m_burn', 'meteor'], ['m_storm', 'm_quick']);
+rung('allyHp', ys[2], -1, 'paladin', ['p_guard', 'p_wall'], ['p_counter', 'p_taunt']);
+rung('allyHp', ys[2], 1, 'dragoon', ['d_dash', 'd_leap'], ['d_exec', 'd_breath']);
+rung('allyAtk2', ys[3], -1, 'archmage', ['a_overload', 'a_storm'], ['a_warp', 'a_stop']);
+const top = rung('allyAtk2', ys[3], 1, 'rogue', ['ro_twin', 'ro_shadow'], ['ro_mark', 'ro_steal']);
 // 검 끝: 전투 본능 → 총공세(마지막 짝과 같은 높이) → 끝없는 진격·함성의 물결 → 대원정(끝)
 put('autocast', 0, (ys[3] + top) / 2, 'allyAtk2');
 put('k_assault', 0, top, 'autocast');

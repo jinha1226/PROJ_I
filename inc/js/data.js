@@ -56,6 +56,7 @@ G.D.F = {
     haste: { n: '시간 왜곡', t: 'st_haste', col: '#c9a6ff', d: '공격 속도 ×1.5' },
     static: { n: '정전기 장막', t: 'st_haste', col: '#bfe8ff', d: '공격 속도 ×1.2' },
     assault: { n: '총공세', t: 'u_god', col: '#ffd24a', d: '열어 둔 동료 전원 출전' },
+    wall: { n: '성벽', t: 'd_shield', col: '#9fd0ff', d: '받는 피해 -50%' },
   },
 };
 
