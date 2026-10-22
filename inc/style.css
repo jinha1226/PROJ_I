@@ -1131,3 +1131,6 @@ details.card summary { cursor: pointer; font-weight: 700; }
 /* 무협 트리: 태극 음양 면 */
 .tree-edges .taiji .yang { fill: #ffffff08; stroke: #ffffff26; stroke-width: 2; }
 .tree-edges .taiji .yin { fill: #00000059; stroke: none; }
+/* 크툴루 트리: 머리 면과 눈빛 */
+.tree-edges .cthu2 .head { fill: #6fe39a0c; stroke: #6fe39a22; stroke-width: 2; }
+.tree-edges .cthu2 .eye { fill: #ffd24a14; stroke: #ffd24a40; stroke-width: 2; }
