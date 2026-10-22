@@ -168,126 +168,115 @@
   G.Tree.define('wuxia', WX([
     N('root', 0, 0, '', 'w_wuxia', '회귀자', '', 1, 0, 1, {}, { root: true }),
 
-    // ── 북: 왼쪽 위 계획표(생애 계획표를 넓힌다 — 자동 코스로 두는 사람에게도 늘 이득이 있게) · 오른쪽 위 소속(어느 소속이든 같은 효과) ──
-    N('path', 0, -1.8, 'root', 'j_nangin', '강호행', '명성 +15%', 10, 2, 1.6, { fame: 0.15 }),
+    // 태극·팔괘 그림 (좌표·선행 노드는 tools/taijitree.js): 가운데 태극(원·S자·눈), 바깥 팔괘(이은 막대 = 노드 셋, 끊긴 막대 = 노드 둘)
+    //  위 = 강호행(계획표·소속), 오른쪽 = 회귀, 아래 = 무학(무공 계열), 왼쪽 = 강호 출도
+    // ── 강호행: 계획표(생애 계획표를 넓힌다) · 소속(어느 소속이든 같은 효과) ──
+    N('path', 0.9, -0.24, 'root', 'j_nangin', '강호행', '명성 +15%', 10, 2, 1.6, { fame: 0.15 }),
     // 계획표
-    N('pl1', -1.4, -2.7, 'path', 'x_table', '계획', '집중한 계열 숙련 +10%', 10, 4, 1.6, { focusXp: 0.1 }),
-    N('pl_fame', -2.6, -2.2, 'pl1', 'c_coin', '명성 집중', '명성 단계에서 명성 +15%', 10, 8, 1.7, { focusFame: 0.15 }),
-    NOTE('pl_steps', -2.3, -3.6, 'pl1', 'x_table', '한 단계 더', '계획표 단계 칸 +1 · 무공 숙련 +10%', 60, { pl_steps: 1, sxp: 0.1 }),
-    N('pl_steps2', -3.5, -4.2, 'pl_steps', 'x_table', '더 긴 계획', '계획표 단계 칸 +1 · 무공 숙련 +10%', 2, 500, 3, { pl_steps: 1, sxp: 0.1 }),
-    N('pl_walk', -3.8, -2.9, 'pl_fame pl_steps', 'a_escape', '이정표', '이동·여정 +15%', 10, 60, 1.8, { walk: 0.15 }),
-    NOTE('pl_mix', -1.4, -4.4, 'pl_steps', 'a_gong', '두 계열 섞기', '수련하는 동안 다른 계열에서 가장 빨리 오르는 무공도 30%', 400, { pl_mix: 1 }),
-    N('pl_catch', -2.4, -5.3, 'pl_mix pl_steps2', 'ui_star', '전생의 길', '전생 레벨까지 따라잡기 +0.5배', 4, 600, 2.2, { pl_catch: 0.5 }),
-    N('pl_top', -4.6, -5.0, 'pl_steps2 pl_walk', 'j_geomseon', '천하를 그리다', '집중한 계열 숙련 +30%', 10, 6000, 2, { focusXp: 0.3 }),
+    N('pl1', 0.45, -1.9, 'path', 'x_table', '계획', '집중한 계열 숙련 +10%', 10, 4, 1.6, { focusXp: 0.1 }),
+    N('pl_fame', -0.55, -1.9, 'pl1', 'c_coin', '명성 집중', '명성 단계에서 명성 +15%', 10, 8, 1.7, { focusFame: 0.15 }),
+    NOTE('pl_steps', 0, -5.2, 'sect_work', 'x_table', '한 단계 더', '계획표 단계 칸 +1 · 무공 숙련 +10%', 60, { pl_steps: 1, sxp: 0.1 }),
+    N('pl_steps2', 4.38, -2.97, 'kit_sp', 'x_table', '더 긴 계획', '계획표 단계 칸 +1 · 무공 숙련 +10%', 2, 500, 3, { pl_steps: 1, sxp: 0.1 }),
+    N('pl_walk', -1, -5.2, 'pl_steps', 'a_escape', '이정표', '이동·여정 +15%', 10, 60, 1.8, { walk: 0.15 }),
+    NOTE('pl_mix', -1, -6.2, 'sect_home', 'a_gong', '두 계열 섞기', '수련하는 동안 다른 계열에서 가장 빨리 오르는 무공도 30%', 400, { pl_mix: 1 }),
+    N('pl_catch', 0, -7.2, 'sect_home', 'ui_star', '전생의 길', '전생 레벨까지 따라잡기 +0.5배', 4, 600, 2.2, { pl_catch: 0.5 }),
+    N('pl_top', 3.68, -5.09, 'sect_blood', 'j_geomseon', '천하를 그리다', '집중한 계열 숙련 +30%', 10, 6000, 2, { focusXp: 0.3 }),
     // 소속
-    N('sect1', 1.4, -2.7, 'path', 'j_jeja', '입문', '명성 +20%', 10, 4, 1.6, { fame: 0.2 }),
-    N('sect_work', 2.6, -2.2, 'sect1', 'j_jangro', '본산 임무', '일·임무 명성 +30%', 10, 8, 1.7, { work: 0.3 }),
-    N('sect_xp', 1.4, -3.9, 'sect1', 's_naegong', '본산 무학', '심법 숙련 +25%', 10, 10, 1.7, { xp_sim: 0.25 }),
-    NOTE('sect_home', 3.7, -2.7, 'sect_work', 'x_statue', '본산의 지원', '근거지에서 일하면 명성 ×2', 120, { sect: 1 }),
-    N('sect_combat', 2.5, -4.6, 'sect_xp', 's_geom', '본산 무예', '전투력 +25%', 10, 25, 1.8, { combat: 0.25 }),
-    NOTE('sect_plum', 3.6, -4.0, 'sect_home sect_combat', 'v_plum', '독문절기', '전투력 ×1.3', 300, { plum: 1 }),
-    NOTE('sect_blood', 4.9, -3.3, 'sect_home', 'a_sword', '원정령', '원정 명성 ×2', 800, { blood: 1 }),
-    N('sect_raid', 5.8, -4.1, 'sect_blood', 'w_katana', '원정대', '원정 명성 +40%', 10, 1500, 1.9, { raid: 0.4 }),
-    PAIR('sect_fear', 4.6, -5.2, 'sect_plum', 'm_demon', '공포', '원정 적 체력 -30%', 2500, { fear: 1 }, 'sect_pair'),
-    PAIR('sect_dom', 3.4, -5.6, 'sect_plum', 'wa_crown', '군림', '녹봉 ×1.5', 2500, { dom: 1 }, 'sect_pair'),
-    N('sect_top', 5.6, -5.6, 'sect_raid sect_fear sect_dom', 'j_geomseon', '천하의 주인', '명성 +50%', 10, 8000, 2, { fame: 0.5 }),
+    N('sect1', 1.77, -1.49, 'path', 'j_jeja', '입문', '명성 +20%', 10, 4, 1.6, { fame: 0.2 }),
+    N('sect_work', 0, -3.6, 'sect1 work2', 'j_jangro', '본산 임무', '일·임무 명성 +30%', 10, 8, 1.7, { work: 0.3 }),
+    N('sect_xp', 1.38, -3.33, 'sect_work', 's_naegong', '본산 무학', '심법 숙련 +25%', 10, 10, 1.7, { xp_sim: 0.25 }),
+    NOTE('sect_home', 0, -6.2, 'pl_steps', 'x_statue', '본산의 지원', '근거지에서 일하면 명성 ×2', 120, { sect: 1 }),
+    N('sect_combat', 1, -5.2, 'pl_steps', 's_geom', '본산 무예', '전투력 +25%', 10, 25, 1.8, { combat: 0.25 }),
+    NOTE('sect_plum', 1, -6.2, 'sect_home', 'v_plum', '독문절기', '전투력 ×1.3', 300, { plum: 1 }),
+    NOTE('sect_blood', 4.38, -4.38, 'kit_sk pl_steps2', 'a_sword', '원정령', '원정 명성 ×2', 800, { blood: 1 }),
+    N('sect_raid', 5.09, -3.68, 'sect_blood', 'w_katana', '원정대', '원정 명성 +40%', 10, 1500, 1.9, { raid: 0.4 }),
+    PAIR('sect_fear', 4.38, -5.8, 'sect_top', 'm_demon', '공포', '원정 적 체력 -30%', 2500, { fear: 1 }, 'sect_pair'),
+    PAIR('sect_dom', 5.8, -4.38, 'sect_top', 'wa_crown', '군림', '녹봉 ×1.5', 2500, { dom: 1 }, 'sect_pair'),
+    N('sect_top', 5.09, -5.09, 'sect_blood', 'j_geomseon', '천하의 주인', '명성 +50%', 10, 8000, 2, { fame: 0.5 }),
     // 소속 무공 (UNITS.md 캐릭터 시트): 특수 공격 → 기술 1 → 기술 2 ★짝. 이름·설명은 지금 소속(정파·사파·마교)을 따른다. 전투에서 저절로 쓴다
-    NOTE('kit_sp', 0, -3.4, 'sect1', 'v_plum', '독문 수법', '', 30, { kit_sp: 1 }, { names: ['매화 낙화', '분노', '혈흔'], descs: ['치명타 때 주변 적에게 50%', '맞을 때마다 분노, 다섯 번이면 다음 3타 ×2', '체력 50% 이하 적에게 ×1.5'] }),
-    NOTE('kit_sk', 0, -4.8, 'kit_sp', 's_geom', '본산 비기', '', 250, { kit_sk: 1 }, { names: ['이십사수매화검법', '녹림 장법', '혈영마검'], descs: ['12초마다 주변 적 모두에게 ×3', '12초마다 장풍 ×4, 적을 밀어낸다', '12초마다 일직선으로 꿰뚫고 지나가며 ×3'] }),
-    PAIR('kit_a', -0.6, -6.1, 'kit_sk', 's_naegong', '본산 심법', '', 1500, { kit_a: 1 }, 'kit_pair', { names: ['자하신공', '흡정대법', '천마신공'], descs: ['체력 50% 아래면 10초간 받는 피해 -50%·재생 (60초)', '적을 쓰러뜨리면 체력 15% 회복', '공격 ×2, 싸우는 동안 초당 체력 -2%'] }),
-    PAIR('kit_b', 0.6, -6.1, 'kit_sk', 's_gyeong', '본산 경공', '', 1500, { kit_b: 1 }, 'kit_pair', { names: ['암향표', '비영보', '흡성대법'], descs: ['새 적과 붙으면 순식간에 5연타', '공격의 25%를 피한다', '맞힌 적의 공격력 -30%'] }),
+    NOTE('kit_sp', 2.55, -2.55, 'sect_xp', 'v_plum', '독문 수법', '', 30, { kit_sp: 1 }, { names: ['매화 낙화', '분노', '혈흔'], descs: ['치명타 때 주변 적에게 50%', '맞을 때마다 분노, 다섯 번이면 다음 3타 ×2', '체력 50% 이하 적에게 ×1.5'] }),
+    NOTE('kit_sk', 2.97, -4.38, 'kit_sp', 's_geom', '본산 비기', '', 250, { kit_sk: 1 }, { names: ['이십사수매화검법', '녹림 장법', '혈영마검'], descs: ['12초마다 주변 적 모두에게 ×3', '12초마다 장풍 ×4, 적을 밀어낸다', '12초마다 일직선으로 꿰뚫고 지나가며 ×3'] }),
+    PAIR('kit_a', -1, -7.2, 'pl_catch', 's_naegong', '본산 심법', '', 1500, { kit_a: 1 }, 'kit_pair', { names: ['자하신공', '흡정대법', '천마신공'], descs: ['체력 50% 아래면 10초간 받는 피해 -50%·재생 (60초)', '적을 쓰러뜨리면 체력 15% 회복', '공격 ×2, 싸우는 동안 초당 체력 -2%'] }),
+    PAIR('kit_b', 1, -7.2, 'pl_catch', 's_gyeong', '본산 경공', '', 1500, { kit_b: 1 }, 'kit_pair', { names: ['암향표', '비영보', '흡성대법'], descs: ['새 적과 붙으면 순식간에 5연타', '공격의 25%를 피한다', '맞힌 적의 공격력 -30%'] }),
 
     // ── 남: 무공 계열 ──
-    N('mu', 0, 1.8, 'root', 's_tuna', '무학의 길', '무공 숙련 +15%', 15, 1, 1.45, { sxp: 0.15 }),
-    N('realm1', 0, 3.8, 'mu', 'q_qi', '경지 깨달음', '경지 문턱 -4%', 10, 30, 1.9, { realmEase: 0.04 }),
-    NOTE('realm2', 0, 5.1, 'realm1', 'a_dao', '심즉검', '경지 문턱 -10%', 600, { realmEase: 0.1 }),
+    N('mu', -0.9, 0.24, 'root', 's_tuna', '무학의 길', '무공 숙련 +15%', 15, 1, 1.45, { sxp: 0.15 }),
+    N('realm1', 0.55, 1.9, 'sim1', 'q_qi', '경지 깨달음', '경지 문턱 -4%', 10, 30, 1.9, { realmEase: 0.04 }),
+    NOTE('realm2', 1, 5.2, 'oe2', 'a_dao', '심즉검', '경지 문턱 -10%', 600, { realmEase: 0.1 }),
     // 심법
-    N('sim1', -1.4, 3.1, 'mu', 's_naegong', '운기조식', '심법 숙련 +25%', 15, 3, 1.5, { xp_sim: 0.25 }),
-    N('sim2', -2.5, 3.7, 'sim1', 'q_qi', '대주천', '심법 숙련 +40%', 10, 50, 1.8, { xp_sim: 0.4 }),
-    NOTE('sim_cycle', -3.5, 3.1, 'sim2', 'a_gong', '주천순환', '심법을 익히면 이 지역 다른 심법도 25%', 400, { sim_cycle: 1 }),
-    N('sim_hp', -2.4, 4.8, 'sim2', 'u_armor', '호신강기', '체력 +25%', 10, 120, 1.8, { hp: 0.25 }),
+    N('sim1', -0.45, 1.9, 'mu', 's_naegong', '운기조식', '심법 숙련 +25%', 15, 3, 1.5, { xp_sim: 0.25 }),
+    N('sim2', -1.38, 3.33, 'twin', 'q_qi', '대주천', '심법 숙련 +40%', 10, 50, 1.8, { xp_sim: 0.4 }),
+    NOTE('sim_cycle', 1, 6.2, 'realm2', 'a_gong', '주천순환', '심법을 익히면 이 지역 다른 심법도 25%', 400, { sim_cycle: 1 }),
+    N('sim_hp', -1, 5.2, 'oe2', 'u_armor', '호신강기', '체력 +25%', 10, 120, 1.8, { hp: 0.25 }),
     // 외공
-    N('oe1', 1.4, 3.1, 'mu', 's_geom', '초식 연마', '외공 숙련 +25%', 15, 3, 1.5, { xp_oe: 0.25 }),
-    N('oe2', 2.5, 3.7, 'oe1', 'ww_sword', '검기', '전투력 +30%', 10, 40, 1.8, { combat: 0.3 }),
-    NOTE('oe_combo', 3.5, 3.1, 'oe2', 'a_sword', '연환검', '공격 속도 +30%', 400, { oe_combo: 1 }),
-    N('oe3', 2.4, 4.8, 'oe2', 'w_duel', '검강', '외공 숙련 +40%', 10, 120, 1.8, { xp_oe: 0.4 }),
+    N('oe1', -1.77, 1.49, 'mu', 's_geom', '초식 연마', '외공 숙련 +25%', 15, 3, 1.5, { xp_oe: 0.25 }),
+    N('oe2', 0, 5.2, 'twin', 'ww_sword', '검기', '전투력 +30%', 10, 40, 1.8, { combat: 0.3 }),
+    NOTE('oe_combo', -1, 6.2, 'sim_hp', 'a_sword', '연환검', '공격 속도 +30%', 400, { oe_combo: 1 }),
+    N('oe3', -3.68, 3.68, 'elix1', 'w_duel', '검강', '외공 숙련 +40%', 10, 120, 1.8, { xp_oe: 0.4 }),
     // 경공
-    N('gg1', -1.1, 5.6, 'realm1 sim_hp', 's_gyeong', '경신술', '경공 숙련 +30%', 10, 40, 1.7, { xp_gg: 0.3 }),
-    N('gg2', -2.3, 6.2, 'gg1', 'st_haste', '답설무흔', '이동·여정 +15%', 10, 100, 1.8, { walk: 0.15 }),
-    NOTE('gg_fly', -3.5, 5.8, 'gg2', 'a_escape', '초상비', '여정 +25% 더 빠르게', 900, { gg_fly: 1 }),
+    N('gg1', -2.97, 4.38, 'oe3', 's_gyeong', '경신술', '경공 숙련 +30%', 10, 40, 1.7, { xp_gg: 0.3 }),
+    N('gg2', -4.38, 4.38, 'oe3', 'st_haste', '답설무흔', '이동·여정 +15%', 10, 100, 1.8, { walk: 0.15 }),
+    NOTE('gg_fly', -5.09, 3.68, 'gg2', 'a_escape', '초상비', '여정 +25% 더 빠르게', 900, { gg_fly: 1 }),
     // 잡학
-    N('jh1', 1.1, 5.6, 'realm1 oe3', 's_yangsaeng', '잡학 박식', '잡학 숙련 +30%', 10, 40, 1.7, { xp_jh: 0.3 }),
-    N('yang', 2.3, 6.2, 'jh1', 's_yangsaeng', '양생술 비전', '무공 「양생술」을 익힐 수 있다', 1, 60, 1, { unlock_yang: 1 }),
-    NOTE('jh_med', 3.5, 5.8, 'yang', 'q_herb', '의술', '천수 +3년 · 쓰러진 뒤 회복 2배', 900, { jh_med: 1 }),
-    N('magong', 3.6, 4.5, 'oe_combo jh1', 's_magong', '천마혈공 비급', '무공 「천마혈공」을 익힐 수 있다', 1, 700, 1, { unlock_magong: 1 }),
-    PAIR('mu_in', -0.9, 6.6, 'gg1 jh1', 'a_gong', '내가', '심법 숙련 ×1.5', 3000, { xp_sim: 0.5 }, 'mu_pair'),
-    PAIR('mu_out', 0.9, 6.6, 'gg1 jh1', 'a_sword', '외가', '외공 숙련 ×1.5', 3000, { xp_oe: 0.5 }, 'mu_pair'),
-    N('mu_top', 0, 7.6, 'mu_in mu_out', 'a_dao', '무학대가', '무공 숙련 +40%', 10, 6000, 2, { sxp: 0.4 }),
-    N('twin', -1.3, 4.4, 'sim1 realm1', 's_gyeong', '일하며 수련', '활동하는 동안에도 무공을 25%씩 익힌다', 4, 20, 2, { twin: 0.25 }),
-    N('elix1', 1.3, 4.4, 'oe1 realm1', 'q_pill', '영단 흡수', '영단 하나의 효과 +3%', 10, 25, 1.8, { elixEff: 0.03 }),
+    N('jh1', -4.38, 2.97, 'oe3', 's_yangsaeng', '잡학 박식', '잡학 숙련 +30%', 10, 40, 1.7, { xp_jh: 0.3 }),
+    N('yang', 0, 7.2, 'sim_cycle oe_combo', 's_yangsaeng', '양생술 비전', '무공 「양생술」을 익힐 수 있다', 1, 60, 1, { unlock_yang: 1 }),
+    NOTE('jh_med', -4.38, 5.8, 'magong', 'q_herb', '의술', '천수 +3년 · 쓰러진 뒤 회복 2배', 900, { jh_med: 1 }),
+    N('magong', -3.68, 5.09, 'gg2', 's_magong', '천마혈공 비급', '무공 「천마혈공」을 익힐 수 있다', 1, 700, 1, { unlock_magong: 1 }),
+    PAIR('mu_in', 1, 7.2, 'yang', 'a_gong', '내가', '심법 숙련 ×1.5', 3000, { xp_sim: 0.5 }, 'mu_pair'),
+    PAIR('mu_out', -1, 7.2, 'yang', 'a_sword', '외가', '외공 숙련 ×1.5', 3000, { xp_oe: 0.5 }, 'mu_pair'),
+    N('mu_top', -5.8, 4.38, 'gg_fly', 'a_dao', '무학대가', '무공 숙련 +40%', 10, 6000, 2, { sxp: 0.4 }),
+    N('twin', 0, 3.6, 'oe1', 's_gyeong', '일하며 수련', '활동하는 동안에도 무공을 25%씩 익힌다', 4, 20, 2, { twin: 0.25 }),
+    N('elix1', -2.55, 2.55, 'sim2', 'q_pill', '영단 흡수', '영단 하나의 효과 +3%', 10, 25, 1.8, { elixEff: 0.03 }),
 
     // ── 동: 회귀 ──
-    N('reg', 1.4, 0, 'root', 'ui_star', '회귀의 기억', '전생 최고 레벨 보너스 +20%', 10, 1, 1.55, { peak: 0.2 }),
-    N('life1', 2.5, 0.6, 'reg', 'it_pill', '섭생', '천수 +2년', 10, 3, 1.7, { life: 2 }),
-    N('young', 2.5, -0.6, 'reg', 'wx_hero0', '조숙', '회귀 나이 -1세 (최소 10세)', 6, 10, 2.3, { young: 1 }),
-    N('ins1', 3.6, 0, 'life1 young', 'ui_star', '대오각성', '깨달음 +25%', 10, 20, 1.8, { ins: 0.25 }),
-    NOTE('reg_rank', 4.7, -0.7, 'ins1', 'j_pyosa', '전생의 이름', '회귀하면 표사부터 (점소이 건너뜀)', 150, { reg_rank: 1 }),
-    N('reg_rank2', 5.8, -1.3, 'reg_rank', 'j_nangin', '전생의 명성', '회귀하면 낭인부터', 1, 2500, 1, { reg_rank: 1 }),
-    N('head', 4.7, 0.7, 'ins1', 'c_coin', '숨겨 둔 재물', '회귀하면 명성 +50로 시작', 10, 30, 1.9, { head: 1 }),
-    N('peak2', 5.8, 0.2, 'reg_rank head', 'ui_star', '회귀의 축복', '전생 최고 레벨 보너스 +50%', 10, 300, 1.9, { peak: 0.5 }),
-    N('life2', 4.6, 1.8, 'head', 'it_daehwan', '반로환동', '천수 +5년', 5, 250, 2.2, { life: 5 }),
-    NOTE('reg_soul', 6.9, 0.8, 'peak2', 'wa_halo', '윤회의 깨달음', '깨달음 ×2', 4000, { ins: 1 }),
-    PAIR('reg_fast', 7, -0.6, 'peak2', 'wx_hero0', '빠른 회귀', '회귀 나이 -2세', 3000, { young: 2 }, 'reg_pair'),
-    PAIR('reg_long', 7.6, 0.2, 'peak2', 'it_pill', '긴 생', '천수 +6년', 3000, { life: 6 }, 'reg_pair'),
-    N('essw', 3.6, 1.3, 'life1', 'ui_ess', '천기', '이 세계의 정수 +15%', 10, 200, 1.9, { ess: 0.15 }),
-    N('essw2', 6, 1.7, 'life2 reg_soul', 'ui_ess', '천기누설', '이 세계의 정수 +25%', 10, 5000, 2, { ess: 0.25 }),
-    N('reg_top', 8.2, 1.2, 'reg_soul essw2', 'j_cheonha', '천년의 회귀', '모든 숙련 +30%', 10, 12000, 2, { sxp: 0.3 }),
-    N('ins2', 5.4, -2.2, 'reg_rank', 'ui_star', '깨우침의 날', '깨달음 +40%', 10, 600, 1.9, { ins: 0.4 }),
-    N('rankEase', 4.2, -1.9, 'young reg_rank', 'j_jangro', '이름값', '지위에 필요한 명성 -8%', 8, 100, 1.9, { rankEase: 0.08 }),
+    N('reg', 1.38, 3.33, 'reg_rank twin', 'ui_star', '회귀의 기억', '전생 최고 레벨 보너스 +20%', 10, 1, 1.55, { peak: 0.2 }),
+    N('life1', 3.33, -1.38, 'kit_sp', 'it_pill', '섭생', '천수 +2년', 10, 3, 1.7, { life: 2 }),
+    N('young', 3.6, 0, 'life1', 'wx_hero0', '조숙', '회귀 나이 -1세 (최소 10세)', 6, 10, 2.3, { young: 1 }),
+    N('ins1', 3.33, 1.38, 'young', 'ui_star', '대오각성', '깨달음 +25%', 10, 20, 1.8, { ins: 0.25 }),
+    NOTE('reg_rank', 2.55, 2.55, 'ins1', 'j_pyosa', '전생의 이름', '회귀하면 표사부터 (점소이 건너뜀)', 150, { reg_rank: 1 }),
+    N('reg_rank2', 7.2, 0, 'rankEase peak2', 'j_nangin', '전생의 명성', '회귀하면 낭인부터', 1, 2500, 1, { reg_rank: 1 }),
+    N('head', 5.2, 1, 'young', 'c_coin', '숨겨 둔 재물', '회귀하면 명성 +50로 시작', 10, 30, 1.9, { head: 1 }),
+    N('peak2', 6.2, 1, 'head', 'ui_star', '회귀의 축복', '전생 최고 레벨 보너스 +50%', 10, 300, 1.9, { peak: 0.5 }),
+    N('life2', 4.38, 2.97, 'reg_rank', 'it_daehwan', '반로환동', '천수 +5년', 5, 250, 2.2, { life: 5 }),
+    NOTE('reg_soul', 5.09, 3.68, 'life2', 'wa_halo', '윤회의 깨달음', '깨달음 ×2', 4000, { ins: 1 }),
+    PAIR('reg_fast', 7.2, -1, 'reg_rank2', 'wx_hero0', '빠른 회귀', '회귀 나이 -2세', 3000, { young: 2 }, 'reg_pair'),
+    PAIR('reg_long', 7.2, 1, 'reg_rank2', 'it_pill', '긴 생', '천수 +6년', 3000, { life: 6 }, 'reg_pair'),
+    N('essw', 5.2, -1, 'young', 'ui_ess', '천기', '이 세계의 정수 +15%', 10, 200, 1.9, { ess: 0.15 }),
+    N('essw2', 5.8, 4.38, 'reg_soul', 'ui_ess', '천기누설', '이 세계의 정수 +25%', 10, 5000, 2, { ess: 0.25 }),
+    N('reg_top', 4.38, 5.8, 'ins_sea', 'j_cheonha', '천년의 회귀', '모든 숙련 +30%', 10, 12000, 2, { sxp: 0.3 }),
+    N('ins2', 2.97, 4.38, 'reg_rank', 'ui_star', '깨우침의 날', '깨달음 +40%', 10, 600, 1.9, { ins: 0.4 }),
+    N('ins_sea', 3.68, 5.09, 'ins2', 'ui_star', '깨달음의 바다', '깨달음 +60%', 10, 3000, 2, { ins: 0.6 }),
+    N('rankEase', 6.2, -1, 'essw', 'j_jangro', '이름값', '지위에 필요한 명성 -8%', 8, 100, 1.9, { rankEase: 0.08 }),
 
     // ── 서: 강호 ──
-    N('gh', -1.4, 0, 'root', 'c_coin', '강호 출도', '명성 +20%', 15, 1, 1.5, { fame: 0.2 }),
-    N('stip1', -2.5, -0.6, 'gh', 'c_coin', '녹봉', '녹봉 +30%', 15, 3, 1.6, { stipend: 0.3 }),
-    N('walk', -2.5, 0.6, 'gh', 'st_haste', '경공 입문', '이동·여정 +15%', 10, 4, 1.8, { walk: 0.15 }),
-    N('bounty', -3.6, -1.1, 'stip1', 'w_board', '현상금 사냥', '산적 명성 +40%, 무공 숙련 +20%', 10, 15, 1.8, { bounty: 0.4 }),
-    PAIR('gh_hero', -4.8, -1.4, 'bounty', 'wx_hero2', '협객', '산적을 쓰러뜨리면 명성 ×3', 400, { gh_hero: 1 }, 'gh_pair'),
-    PAIR('gh_merchant', -4.8, -0.3, 'bounty', 'wx_merchant', '상인의 눈', '특산 값 -30%', 400, { gh_merchant: 1 }, 'gh_pair'),
-    N('shop1', -3.6, 0.1, 'stip1 walk', 'it_manual', '흥정', '특산 값 -5%', 6, 30, 1.9, { shop: 0.05 }),
-    N('duel1', -3.6, 1.3, 'walk', 'w_dummy', '비무 연습', '비무 명성 +50%', 10, 60, 1.8, { duel: 0.5 }),
-    NOTE('gh_duelist', -4.8, 1.8, 'duel1', 'a_sword', '비무광', '비무 명성 ×2 더', 700, { duel: 1 }),
-    N('raid1', -5.9, -0.9, 'gh_hero gh_merchant', 'w_katana', '원정 대장', '원정 명성 +30%', 10, 600, 1.9, { raid: 0.3 }),
-    N('combat_gh', -5.9, 0.4, 'gh_merchant shop1', 'ww_sword', '실전 감각', '전투력 +30%', 10, 150, 1.8, { combat: 0.3 }),
-    N('boss1', -5.9, 1.7, 'gh_duelist combat_gh', 'j_cheonha', '천하제일을 향해', '천하제일 고수 체력 -15%', 5, 1500, 2.2, { gh_boss: 1 }),
-    N('boss2', -7, 2.3, 'boss1', 'wa_crown', '천하제일의 상', '천하제일 비무 명성 +100%', 10, 4000, 2, { boss: 1 }),
-    N('walk2', -2.4, 1.7, 'walk', 'a_escape', '역참', '이동·여정 +20%', 10, 200, 1.9, { walk: 0.2 }),
-    N('fame2', -7, -0.2, 'raid1 combat_gh', 'wa_band', '천하의 이름', '명성 +60%', 10, 3000, 2, { fame: 0.6 }),
-    N('stip2', -7, -1.5, 'raid1', 'c_coin', '봉록', '녹봉 +60%', 10, 2000, 2, { stipend: 0.6 }),
-    NOTE('gh_legend', -8.1, -0.8, 'fame2 stip2', 'u_god', '강호의 전설', '명성 ×2', 9000, { fame: 1 }),
-    N('work2', -4, -2, 'bounty', 'x_table', '부지런함', '일·임무 명성 +30%', 10, 120, 1.8, { work: 0.3 }),
-    N('gh_top', -8.2, 1.4, 'boss2 gh_legend', 'j_maengju', '무림지존', '명성 +80%', 10, 15000, 2, { fame: 0.8 }),
+    N('gh', -3.33, 1.38, 'elix1', 'c_coin', '강호 출도', '명성 +20%', 15, 1, 1.5, { fame: 0.2 }),
+    N('stip1', -3.6, 0, 'gh', 'c_coin', '녹봉', '녹봉 +30%', 15, 3, 1.6, { stipend: 0.3 }),
+    N('walk', -3.33, -1.38, 'stip1', 'st_haste', '경공 입문', '이동·여정 +15%', 10, 4, 1.8, { walk: 0.15 }),
+    N('bounty', -5.2, 1, 'stip1', 'w_board', '현상금 사냥', '산적 명성 +40%, 무공 숙련 +20%', 10, 15, 1.8, { bounty: 0.4 }),
+    PAIR('gh_hero', -6.2, 1, 'walk2', 'wx_hero2', '협객', '산적을 쓰러뜨리면 명성 ×3', 400, { gh_hero: 1 }, 'gh_pair'),
+    PAIR('gh_merchant', -6.2, -1, 'walk2', 'wx_merchant', '상인의 눈', '특산 값 -30%', 400, { gh_merchant: 1 }, 'gh_pair'),
+    N('shop1', -5.2, -1, 'stip1', 'it_manual', '흥정', '특산 값 -5%', 6, 30, 1.9, { shop: 0.05 }),
+    N('duel1', -2.55, -2.55, 'walk', 'w_dummy', '비무 연습', '비무 명성 +50%', 10, 60, 1.8, { duel: 0.5 }),
+    NOTE('gh_duelist', -3.68, -3.68, 'duel1', 'a_sword', '비무광', '비무 명성 ×2 더', 700, { duel: 1 }),
+    N('raid1', -2.97, -4.38, 'gh_duelist', 'w_katana', '원정 대장', '원정 명성 +30%', 10, 600, 1.9, { raid: 0.3 }),
+    N('combat_gh', -4.38, -2.97, 'gh_duelist', 'ww_sword', '실전 감각', '전투력 +30%', 10, 150, 1.8, { combat: 0.3 }),
+    N('boss1', -7.2, 1, 'gh_hero', 'j_cheonha', '천하제일을 향해', '천하제일 고수 체력 -15%', 5, 1500, 2.2, { gh_boss: 1 }),
+    N('boss2', -3.68, -5.09, 'raid1', 'wa_crown', '천하제일의 상', '천하제일 비무 명성 +100%', 10, 4000, 2, { boss: 1 }),
+    N('walk2', -6.2, 0, 'bounty shop1', 'a_escape', '역참', '이동·여정 +20%', 10, 200, 1.9, { walk: 0.2 }),
+    N('fame2', -5.09, -3.68, 'combat_gh', 'wa_band', '천하의 이름', '명성 +60%', 10, 3000, 2, { fame: 0.6 }),
+    N('stip2', -7.2, -1, 'gh_merchant', 'c_coin', '봉록', '녹봉 +60%', 10, 2000, 2, { stipend: 0.6 }),
+    NOTE('gh_legend', -5.8, -4.38, 'fame2', 'u_god', '강호의 전설', '명성 ×2', 9000, { fame: 1 }),
+    N('work2', -1.38, -3.33, 'duel1', 'x_table', '부지런함', '일·임무 명성 +30%', 10, 120, 1.8, { work: 0.3 }),
+    N('gh_top', -4.38, -5.8, 'boss2', 'j_maengju', '무림지존', '명성 +80%', 10, 15000, 2, { fame: 0.8 }),
 
   ]), { get: () => S().w.wuxia.ins, spend: n => { S().w.wuxia.ins -= n; }, tile: 'ui_star', name: '깨달음' }, {
     // 소속 무공 노드: 지금 소속의 이름·설명
     label: n => (n.names ? { n: n.names[['jeong', 'sa', 'ma'].indexOf(G.Wuxia.pathOf(S().w.wuxia))] || n.n, d: n.descs[['jeong', 'sa', 'ma'].indexOf(G.Wuxia.pathOf(S().w.wuxia))] || n.d } : n),
+    // 태극: 노드가 원·S자·괘를 그린다. 배경은 음양 면만 옅게 (원 반지름 3.6 — tools/taijitree.js)
     bg(P, U) {
-      const f = FIG(P), oct = r => Array.from({ length: 8 }, (_, k) => { const a = (k + 0.5) * Math.PI / 4; return [Math.cos(a) * r, Math.sin(a) * r * 0.85 + 0.9]; });
-      // 괘: 방향마다 막대 셋 (이은 것 —, 끊긴 것 - -)
-      const TRI = ['111', '011', '101', '001', '110', '010', '100', '000'];
-      let bars = '';
-      for (let k = 0; k < 8; k++) {
-        const a = k * Math.PI / 4, cx = Math.cos(a), cy = Math.sin(a) * 0.85, tx = -Math.sin(a), ty = Math.cos(a) * 0.85;
-        for (let j = 0; j < 3; j++) {
-          const r = 7.0 + j * 0.45, mx = cx * r, my = cy * r + 0.9, half = 1.6;
-          const seg = (s0, s1) => f.line([[mx + tx * s0, my + ty * s0], [mx + tx * s1, my + ty * s1]], 'bar');
-          bars += TRI[k][j] === '1' ? seg(-half, half) : seg(-half, -0.3) + seg(0.3, half);
-        }
-      }
-      const [cx0, cy0] = P(0, 0), R = 1.5 * U;
-      return `<g class="fig bagua">
-        ${f.poly(oct(6.4), 'ring')}${f.poly(oct(8.4), 'ring2')}${bars}
-        <circle class="yang" cx="${cx0}" cy="${cy0}" r="${R}" />
-        <path class="yin" d="M ${cx0} ${cy0 - R} A ${R} ${R} 0 0 1 ${cx0} ${cy0 + R} A ${R / 2} ${R / 2} 0 0 1 ${cx0} ${cy0} A ${R / 2} ${R / 2} 0 0 0 ${cx0} ${cy0 - R} Z" />
-      </g>`;
+      const R = 3.6 * U, [cx, cy] = P(0, 0), h = R / 2;
+      return `<g class="fig taiji"><circle class="yang" cx="${cx}" cy="${cy}" r="${R}" />
+        <path class="yin" d="M ${cx} ${cy - R} A ${R} ${R} 0 0 0 ${cx} ${cy + R} A ${h} ${h} 0 0 1 ${cx} ${cy} A ${h} ${h} 0 0 0 ${cx} ${cy - R} Z" /></g>`;
     },
   });
 

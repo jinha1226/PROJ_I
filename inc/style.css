@@ -1128,3 +1128,6 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .tree-edges .station circle { fill: none; stroke: #6fd3ff26; stroke-width: 3; }
 .tree-edges .station .rim2 { stroke: #6fd3ff14; stroke-width: 2; stroke-dasharray: 10 8; }
 .tree-edges .station .hub { fill: #6fd3ff08; stroke: #6fd3ff33; }
+/* 무협 트리: 태극 음양 면 */
+.tree-edges .taiji .yang { fill: #ffffff08; stroke: #ffffff26; stroke-width: 2; }
+.tree-edges .taiji .yin { fill: #00000059; stroke: none; }
