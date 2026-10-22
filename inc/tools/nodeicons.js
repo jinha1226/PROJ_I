@@ -9,6 +9,10 @@ const MAT = {
   bone: ['#8a7a5a', '#d8c8a0', '#fff4d8'], skin: ['#8a5a3a', '#d89a70', '#ffd8b8'], dark: ['#1a1a24', '#3a3a4a', '#6a6a80'],
   jade: ['#10503a', '#2aa080', '#a0f0d0'], pink: ['#6a2a4a', '#d86a9a', '#ffc0dc'], orange: ['#7a3a10', '#e07a2a', '#ffc080'],
   sea: ['#0e3a40', '#2a8a8a', '#8ad8d0'], yellow: ['#8a7a10', '#e8d040', '#fff8a0'], brown: ['#3a2a1a', '#6a4a2a', '#9a7a4a'],
+  // 바닥 타일용 어두운 색 (그 위의 포탑·적이 또렷하게)
+  rust: ['#2a120e', '#3e1c14', '#58281c'], sand: ['#4a3e28', '#66563a', '#86724c'], frost: ['#2e3a48', '#3c4a5a', '#566676'], abyss: ['#081a1e', '#0e2a30', '#164048'],
+  flesh: ['#22080e', '#3a1018', '#561a24'], navy: ['#0c1022', '#161c38', '#222c52'], iron: ['#1a1c22', '#262a32', '#363c48'],
+  acid: ['#1e3a12', '#2e5a1a', '#4a8a2a'],
 };
 const OUT = [18, 14, 22];
 const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
@@ -42,8 +46,8 @@ function canvas() {
   };
   return c;
 }
-// 음영과 외곽선을 입혀 그림으로
-function bake(c) {
+// 음영과 외곽선을 입혀 그림으로 (outline=false: 바닥 타일처럼 테두리 없이)
+function bake(c, outline = true) {
   const d = new Uint8Array(N * N * 4), g = c.g;
   const at = (x, y) => (x < 0 || y < 0 || x >= N || y >= N ? null : g[y * N + x]);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
@@ -56,7 +60,7 @@ function bake(c) {
       }
       const col = hex(MAT[p.m][t === 'd' ? 0 : t === 'l' ? 2 : 1]);
       d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = 255;
-    } else if (at(x - 1, y) || at(x + 1, y) || at(x, y - 1) || at(x, y + 1)) {
+    } else if (outline && (at(x - 1, y) || at(x + 1, y) || at(x, y - 1) || at(x, y + 1))) {
       d[i] = OUT[0]; d[i + 1] = OUT[1]; d[i + 2] = OUT[2]; d[i + 3] = 255;
     }
   }
@@ -235,4 +239,4 @@ function draw(key) {
 }
 const icons = {};
 for (const k of Object.keys(R)) icons['ni_' + k] = { img: draw(k) };
-module.exports = icons;
+module.exports = { icons, canvas, bake, MAT, G };

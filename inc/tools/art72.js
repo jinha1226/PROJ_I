@@ -342,9 +342,12 @@ function save(key, list, ed, box) {
   set[key] = list.length;
 }
 // 스킬트리 노드 아이콘 (tools/nodeicons.js — 같은 규칙으로 새로 그린 16×16)
-Object.assign(SPEC, require('./nodeicons'));
+Object.assign(SPEC, require('./nodeicons').icons);
+// SF 그림 (tools/sfart.js — 같은 규칙: 포탑·적·코어·구역 타일)
+Object.assign(SPEC, require('./sfart'));
 for (const [key, s] of Object.entries(SPEC)) {
   if (s.img) { fs.writeFileSync(path.join(OUT, key + '.png'), PNG.write(edit(s.img, s.ed))); set[key] = 1; continue; }
+  if (s.imgs) { s.imgs.forEach((im, i) => fs.writeFileSync(path.join(OUT, s.imgs.length > 1 ? `${key}_${i}.png` : `${key}.png`), PNG.write(edit(im, s.ed)))); set[key] = s.imgs.length; continue; }
   if (s.draw) {
     const [fn, n, opt] = s.draw;
     for (let i = 0; i < n; i++) fs.writeFileSync(path.join(OUT, n > 1 ? `${key}_${i}.png` : `${key}.png`), PNG.write(edit(PIX[fn](i + 1, opt), s.ed)));
