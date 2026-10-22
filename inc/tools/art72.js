@@ -345,6 +345,8 @@ function save(key, list, ed, box) {
 Object.assign(SPEC, require('./nodeicons').icons);
 // SF 그림 (tools/sfart.js — 같은 규칙: 포탑·적·코어·구역 타일)
 Object.assign(SPEC, require('./sfart'));
+// 남은 DCSS 그림 (tools/worldart.js — 유물·물고기·무협 아이콘·수선 바닥·크툴루 바다)
+Object.assign(SPEC, require('./worldart'));
 for (const [key, s] of Object.entries(SPEC)) {
   if (s.img) { fs.writeFileSync(path.join(OUT, key + '.png'), PNG.write(edit(s.img, s.ed))); set[key] = 1; continue; }
   if (s.imgs) { s.imgs.forEach((im, i) => fs.writeFileSync(path.join(OUT, s.imgs.length > 1 ? `${key}_${i}.png` : `${key}.png`), PNG.write(edit(im, s.ed)))); set[key] = s.imgs.length; continue; }
