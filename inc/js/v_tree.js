@@ -32,7 +32,9 @@ G.UI.tree = function (treeId, getSt) {
   // 노드
   let sel = null;
   const ui = nodes.map(n => {
-    const lvEl = h('span.tn-lv'), icon = G.T.el(n.t, 'tn-ic');
+    // 노드 아이콘: 새로 그린 ni_<키>가 있으면 그것 (캐릭터·0x72 무기 그림은 그대로)
+    const ik = typeof n.t === 'string' && G.ARTSET['ni_' + n.t] ? 'ni_' + n.t : n.t;
+    const lvEl = h('span.tn-lv'), icon = G.T.el(ik, 'tn-ic');
     const el = h('button.tnode' + (n.root ? '.root' : '') + (n.notable ? '.notable' : '') + (n.pair ? '.pair' : ''), {
       style: `left:${px(n)}px;top:${py(n)}px`,
       on: { click: e => { e.stopPropagation(); select(n); }, dblclick: e => { e.stopPropagation(); buy(n); } },

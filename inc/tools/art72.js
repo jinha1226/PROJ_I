@@ -341,6 +341,8 @@ function save(key, list, ed, box) {
   });
   set[key] = list.length;
 }
+// 스킬트리 노드 아이콘 (tools/nodeicons.js — 같은 규칙으로 새로 그린 16×16)
+Object.assign(SPEC, require('./nodeicons'));
 for (const [key, s] of Object.entries(SPEC)) {
   if (s.img) { fs.writeFileSync(path.join(OUT, key + '.png'), PNG.write(edit(s.img, s.ed))); set[key] = 1; continue; }
   if (s.draw) {
