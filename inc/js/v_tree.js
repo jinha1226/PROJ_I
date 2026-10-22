@@ -93,13 +93,16 @@ G.UI.tree = function (treeId, getSt) {
       h('button.btn.sm', { on: { click: center } }, '⌖')),
   );
 
+  // 주소에 ?alltree: 전부 배운 모습으로만 보여 준다 (저장은 그대로 — 그림 확인용)
+  const PREVIEW = /[?&]alltree\b/.test(location.search);
+  const LV = id => (PREVIEW ? T.idx[treeId][id].max || 1 : T.lv(getSt(), id));
   let centered = false;
   function update() {
     if (!centered) centered = center();
     const st = getSt(), coachId = G.Coach.treeNode(treeId);
     let n2buy = 0;
     for (const u of ui) {
-      const n = u.n, lv = T.lv(st, n.id), vis = T.visible(treeId, st, n.id), open = T.open(treeId, st, n.id);
+      const n = u.n, lv = LV(n.id), vis = T.visible(treeId, st, n.id), open = (PREVIEW || T.open(treeId, st, n.id));
       const max = n.max || 1, maxed = lv >= max, can = T.canBuy(treeId, st, n.id);
       if (can) n2buy++;
       tog(u.el, 'hidden', !vis);
@@ -117,13 +120,13 @@ G.UI.tree = function (treeId, getSt) {
     for (const e of edges) {
       const vis = T.visible(treeId, st, e.b.id) && T.visible(treeId, st, e.a.id);
       e.ln.style.display = vis ? '' : 'none';
-      e.ln.setAttribute('class', T.lv(st, e.a.id) > 0 && T.lv(st, e.b.id) > 0 ? 'on' : T.open(treeId, st, e.b.id) ? 'open' : '');
+      e.ln.setAttribute('class', LV(e.a.id) > 0 && LV(e.b.id) > 0 ? 'on' : (PREVIEW || T.open(treeId, st, e.b.id)) ? 'open' : '');
     }
     setText(moneyEl, U.fmt(wallet.get()));
     setText(avail, n2buy ? ` · ✦${n2buy}` : '');
     tog(info, 'hidden', !sel);
     if (sel) {
-      const n = sel, lv = T.lv(st, n.id), max = n.max || 1, open = T.open(treeId, st, n.id);
+      const n = sel, lv = LV(n.id), max = n.max || 1, open = (PREVIEW || T.open(treeId, st, n.id));
       // 트리마다 이름·설명을 바꿔 보여 줄 수 있다 (무협 소속 무공)
       const L = T.opts[treeId].label ? T.opts[treeId].label(n) : n;
       setText(iName, L.n);
