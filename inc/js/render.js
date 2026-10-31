@@ -115,6 +115,8 @@ G.MapView = function (canvas, id) {
   function drawEnt(e, t, now) {
     const size = (e.s || 1) * TS;
     let cx = sx(e._rx), cy = sy(e._ry);
+    // 겁쟁이가 물러서는 동안 부들부들 떤다 (DESIGN.md 42)
+    if (e.fleeT > 0) cx += Math.sin(now / 25) * TS * 0.05;
     if (e.pad) {
       const a = 0.35 + 0.25 * Math.sin(t / 300);
       ctx.strokeStyle = e.sel ? `rgba(255,224,138,${a + 0.3})` : `rgba(62,240,255,${a})`; ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
@@ -169,10 +171,17 @@ G.MapView = function (canvas, id) {
         ctx.globalAlpha = e.alpha == null ? 1 : e.alpha;
       }
     }
+    // 라이벌 원정대: 발밑에 그 파티 색 고리
+    if (e.ring && !down) {
+      ctx.strokeStyle = e.ring; ctx.lineWidth = 2; ctx.globalAlpha = 0.85;
+      ctx.beginPath(); ctx.ellipse(cx, foot, size * 0.34, size * 0.12, 0, 0, 7); ctx.stroke();
+      ctx.globalAlpha = e.alpha == null ? 1 : e.alpha;
+    }
     if (e.glow) { ctx.shadowColor = e.glow; ctx.shadowBlur = 14; }
     if (e.dim) ctx.filter = 'grayscale(1) brightness(0.45)';
     if (down) ctx.filter = `grayscale(${down}) brightness(${1 - 0.35 * down})`;
-    const tc = e.tint && tinted(spec, e.tint);
+    // 정지(시간 정지 · 그물)는 얼음빛으로
+    const tint = e.stop > 0 ? '#9fd8ff' : e.tint, tc = tint && tinted(spec, tint);
     const top = tc ? blit(tc, cx, cy, size, e.flip) : drawSprite(spec, cx, cy, size, e.flip);
     if (e.wpn && G.ARTSET[e.wpn]) drawWeapon(e, cx, cy, size, lq);
     ctx.filter = 'none';
@@ -195,10 +204,44 @@ G.MapView = function (canvas, id) {
       e._hpv = e._hpv == null || e._hpv < r ? r : e._hpv + (r - e._hpv) * 0.08;
       ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(cx - bw / 2 - 1, by - 1, bw + 2, 5);
       ctx.fillStyle = '#fff'; ctx.fillRect(cx - bw / 2, by, bw * e._hpv, 3);
-      ctx.fillStyle = e.kind === 'mon' ? '#ff5a5a' : '#5fdc7a';
+      ctx.fillStyle = e.barCol || (e.kind === 'mon' ? '#ff5a5a' : '#5fdc7a');
       ctx.fillRect(cx - bw / 2, by, bw * r, 3);
     }
-    if (e.label) text(e.label, cx, top - 10, '#ffd9a0', 11);
+    if (e.label) text(e.label, cx, top - 10, e.ring || '#ffd9a0', 11);
+    if (e.dots && !down) drawStatus(e, cx, cy, foot, top, size, now);
+  }
+  // 상태이상 (DESIGN.md 43): 글 없이 — 표식 붉은 과녁 · 기절 머리 위 도는 별 · 감전 푸른 번개 · 지속 피해는 체력 막대 밑 색 점(독 초록 · 화상 주황 · 출혈 빨강)
+  const DOT_COL = { poison: '#7fe05a', burn: '#ff9a3a', bleed: '#ff3a4a' };
+  function drawStatus(e, cx, cy, foot, top, size, now) {
+    if (e.mark > 0) {
+      const r = size * 0.42, a = now / 400;
+      ctx.strokeStyle = '#ff4a4a'; ctx.lineWidth = 2; ctx.globalAlpha = 0.85;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.stroke();
+      for (let i = 0; i < 4; i++) { const q = a + i * Math.PI / 2; ctx.beginPath(); ctx.moveTo(cx + Math.cos(q) * r * 0.7, cy + Math.sin(q) * r * 0.7); ctx.lineTo(cx + Math.cos(q) * r * 1.2, cy + Math.sin(q) * r * 1.2); ctx.stroke(); }
+    }
+    if (e.stun > 0) {
+      ctx.fillStyle = '#ffe08a'; ctx.globalAlpha = 1;
+      for (let i = 0; i < 3; i++) { const q = now / 220 + i * 2.1; star(cx + Math.cos(q) * size * 0.3, top - 4 + Math.sin(q) * size * 0.08, Math.max(2.5, size * 0.08)); }
+    }
+    if (e.shock > 0 && Math.floor(now / 90) % 2) {
+      ctx.strokeStyle = '#8fd8ff'; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.9;
+      for (let i = 0; i < 2; i++) {
+        let x = cx + (Math.random() - 0.5) * size * 0.6, y = cy - size * 0.3;
+        ctx.beginPath(); ctx.moveTo(x, y);
+        for (let k = 0; k < 3; k++) { x += (Math.random() - 0.5) * size * 0.3; y += size * 0.18; ctx.lineTo(x, y); }
+        ctx.stroke();
+      }
+    }
+    if (e.dots.length) {
+      const r = Math.max(2, size * 0.06);
+      e.dots.forEach((d, i) => { ctx.globalAlpha = 1; ctx.fillStyle = DOT_COL[d.kind] || '#fff'; ctx.beginPath(); ctx.arc(cx - (e.dots.length - 1) * r * 1.4 + i * r * 2.8, top + 2 + r * 1.6, r, 0, 7); ctx.fill(); });
+    }
+    ctx.globalAlpha = 1;
+  }
+  function star(x, y, r) {
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) { const q = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; ctx.lineTo(x + Math.cos(q) * rr, y + Math.sin(q) * rr); }
+    ctx.closePath(); ctx.fill();
   }
   // 굵은 잉크 붓질 초승달 (베기 그림이 없을 때)
   function inkSlash(x, y, r, rot, p, crit) {
@@ -302,6 +345,40 @@ G.MapView = function (canvas, id) {
       ctx.restore();
     } else if (f.k === 'tile') {
       drawSprite({ k: f.key, v: Math.floor(t / 120) }, sx(f.x), sy(f.y), TS * (f.s || 1), false);
+    } else if (f.k === 'emote') {
+      // 성격 기호 (DESIGN.md 42): 그 사람 머리 위 말풍선 — 톡 튀어나와 떠 있다가 사라진다
+      const e = f.ent, x = sx(e ? e._rx ?? e.x : f.x), pop = Math.min(1, p * 8), y = sy(e ? e._ry ?? e.y : f.y) - TS * (1.15 + 0.08 * Math.sin(p * 12)), r = TS * 0.36 * (0.6 + 0.4 * pop);
+      ctx.globalAlpha = Math.min(1, (1 - p) * 4);
+      ctx.fillStyle = '#f4efe2'; ctx.strokeStyle = '#120e16'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.moveTo(x - r * 0.3, y + r * 0.8); ctx.lineTo(x, y + r * 1.35); ctx.lineTo(x + r * 0.3, y + r * 0.8); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, r - 1, 0, 7); ctx.fill();
+      drawSprite({ k: f.key, v: 0 }, x, y, r * 1.5, false);
+    } else if (f.k === 'banner') {
+      // 그 자리에서 생긴 일 (DESIGN.md 50): 빛기둥이 솟고, 머리 위에 현판(아이콘 + 이름)이 톡 튀어나와 떠 있다가 사라진다
+      const age = p * f.max, w0 = f.wait || 0;
+      if (age < w0) return;
+      const q = (age - w0) / (f.max - w0);
+      const e = f.ent, ex = sx(e ? e._rx ?? e.x : f.x), ey = sy(e ? e._ry ?? e.y : f.y);
+      const px = Math.max(12, TS * 0.32), y = ey - TS * 1.75 - Math.min(1, q * 4) * TS * 0.2;
+      const pop = q < 0.06 ? 0.4 + q * 12 : q < 0.12 ? 1.12 - (q - 0.06) * 2 : 1;
+      if (q < 0.35) {
+        const a = (0.35 - q) / 0.35, g = ctx.createLinearGradient(0, ey - TS * 2.6, 0, ey + TS * 0.3);
+        g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, f.col);
+        ctx.globalAlpha = a * 0.55; ctx.fillStyle = g;
+        ctx.fillRect(ex - TS * 0.35 * a, ey - TS * 2.6, TS * 0.7 * a, TS * 2.9);
+      }
+      ctx.globalAlpha = Math.min(1, (1 - q) * 5);
+      ctx.font = `900 ${px}px "Noto Serif KR","Nanum Myeongjo",Georgia,serif`;
+      const w = ctx.measureText(f.s).width + px * 2.4, h = px * 1.75;
+      ctx.save(); ctx.translate(ex, y); ctx.scale(pop, pop);
+      ctx.fillStyle = 'rgba(14,10,18,0.94)'; ctx.strokeStyle = f.col; ctx.lineWidth = 2; ctx.shadowColor = f.col; ctx.shadowBlur = 10;
+      ctx.beginPath(); ctx.roundRect(-w / 2, -h / 2, w, h, 4); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+      ctx.beginPath(); ctx.moveTo(-5, h / 2); ctx.lineTo(0, h / 2 + 6); ctx.lineTo(5, h / 2); ctx.fill(); ctx.stroke();
+      ctx.font = `${px * 0.95}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff';
+      ctx.fillText(f.ic, -w / 2 + px * 0.95, 1);
+      ctx.textBaseline = 'alphabetic';
+      text(f.s, px * 0.5, px * 0.36, f.col, px, true);
+      ctx.restore();
     } else if (f.k === 'beam') {
       ctx.strokeStyle = f.col; ctx.lineWidth = f.w || 2; ctx.shadowColor = f.col; ctx.shadowBlur = 8;
       ctx.beginPath(); ctx.moveTo(sx(f.x), sy(f.y)); ctx.lineTo(sx(f.x2), sy(f.y2)); ctx.stroke(); ctx.shadowBlur = 0;
@@ -315,6 +392,15 @@ G.MapView = function (canvas, id) {
   }
   // 타일로 없는 것: 배(나무 선체·돛대 등불·낚싯대), 낚싯바늘
   function drawShape(e, cx, cy, size, t) {
+    // 길잡이의 덫: 바닥에 벌린 이빨
+    if (e.shape === 'trap') {
+      const r = size * 0.3;
+      ctx.strokeStyle = '#9aa4ad'; ctx.lineWidth = 2; ctx.fillStyle = '#3a3a44';
+      ctx.beginPath(); ctx.ellipse(cx, cy + r * 0.3, r, r * 0.55, 0, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#d8dde4';
+      for (let i = 0; i < 6; i++) { const q = i * Math.PI / 3, x = cx + Math.cos(q) * r * 0.8, y = cy + r * 0.3 + Math.sin(q) * r * 0.45; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(cx + Math.cos(q) * r * 0.35, cy + r * 0.3 + Math.sin(q) * r * 0.2 - r * 0.25); ctx.lineTo(x + r * 0.15, y); ctx.fill(); }
+      return;
+    }
     if (e.shape === 'boat') {
       cy += Math.sin(t / 600) * TS * 0.05;
       const w = size * 0.6, top = cy - size * 0.02, bot = cy + size * 0.22;
@@ -359,32 +445,61 @@ G.MapView = function (canvas, id) {
     }
   }
   // 미니맵: 오른쪽 위. 본 칸, 계단, 파티(초록·금색), 본 칸 위의 몬스터(빨강)
+  // 미니맵 (DESIGN.md 37, UNDERDEEP식): 탐색한 칸을 칸 격자로 — 바닥 양피지색, 벽 어둡게.
+  // 표식 S 시작 · ▼ 계단 · B 보스 · T 보물 방. M 키·미니맵 클릭 = 큰 지도 (G.UI.bigMap)
+  let miniRect = null;
+  function miniBox(view) {
+    const m = view.map, big = !!G.UI.bigMap;
+    // 큰 지도는 아래 독(약 140px) 위 공간에 맞춘다
+    const AH = H - 150, k = big ? Math.max(3, Math.floor(Math.min(W * 0.86 / m.w, AH * 0.9 / m.h))) : Math.max(3, Math.min(6, Math.floor(260 / m.w)));
+    const w = m.w * k, h = m.h * k;
+    return { k, w, h, x0: big ? Math.round((W - w) / 2) : W - w - 10, y0: big ? Math.round((AH - h) / 2) + 16 : 10, big };
+  }
   function drawMini(view) {
-    const m = view.map, mi = view.mini, k = Math.max(2, Math.min(4, Math.floor(Math.min(W, H) * 0.28 / m.w)));
-    const w = m.w * k, h = m.h * k, x0 = W - w - 8, y0 = 8;
-    if (!m._mini || m._miniVer !== mi.ver || m._miniSeen !== mi.seen) {
+    const m = view.map, mi = view.mini, B = miniRect = miniBox(view), { k, w, h, x0, y0, big } = B;
+    const key = mi.ver + ':' + k;
+    if (!m._mini || m._miniKey !== key || m._miniSeen !== mi.seen) {
       const c = m._mini || document.createElement('canvas');
-      c.width = m.w; c.height = m.h;
-      const b = c.getContext('2d'), img = b.createImageData(m.w, m.h);
-      for (let i = 0; i < m.w * m.h; i++) {
+      c.width = w; c.height = h;
+      const b = c.getContext('2d'), gap = k >= 5 ? 1 : 0;
+      b.clearRect(0, 0, w, h);
+      for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+        const i = y * m.w + x;
         if (!mi.seen[i]) continue;
-        const ch = m.c[i], o = i * 4;
-        const col = ch === '#' ? [70, 62, 54, 255] : [150, 140, 120, 255];
-        img.data.set(col, o);
+        const wall = m.c[i] === '#';
+        b.fillStyle = wall ? '#3b342b' : '#c8bc9f';
+        b.fillRect(x * k, y * k, k - (wall ? 0 : gap), k - (wall ? 0 : gap));
       }
-      b.putImageData(img, 0, 0);
-      m._mini = c; m._miniVer = mi.ver; m._miniSeen = mi.seen;
+      m._mini = c; m._miniKey = key; m._miniSeen = mi.seen;
     }
-    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x0 - 3, y0 - 3, w + 6, h + 6);
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1; ctx.strokeRect(x0 - 3.5, y0 - 3.5, w + 7, h + 7);
-    ctx.drawImage(m._mini, x0, y0, w, h);
-    const dot = (x, y, col, r) => { ctx.fillStyle = col; ctx.fillRect(x0 + (x + 0.5) * k - r, y0 + (y + 0.5) * k - r, r * 2, r * 2); };
-    if (mi.seen[mi.end.cy * m.w + mi.end.cx]) dot(mi.end.cx, mi.end.cy, '#ffd24a', k);
-    for (const e of mi.mons) if (mi.seen[Math.round(e.y) * m.w + Math.round(e.x)]) dot(e.x, e.y, '#ff4a4a', e.boss ? k : k * 0.6);
-    for (const e of mi.party) if (!e.dead) dot(e.x, e.y, e.kind === 'hero' ? '#fff3c4' : '#6fe39a', e.kind === 'hero' ? k * 0.9 : k * 0.6);
+    if (big) { ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, 0, W, H); }
+    ctx.fillStyle = 'rgba(10,10,14,0.85)'; ctx.fillRect(x0 - 4, y0 - 4, w + 8, h + 8);
+    ctx.strokeStyle = '#6b5434'; ctx.lineWidth = 1; ctx.strokeRect(x0 - 4.5, y0 - 4.5, w + 9, h + 9);
+    ctx.drawImage(m._mini, x0, y0);
+    const seen = (x, y) => mi.seen[Math.round(y) * m.w + Math.round(x)];
+    const dot = (x, y, col, r) => { ctx.fillStyle = col; ctx.fillRect(Math.round(x0 + (x + 0.5) * k - r), Math.round(y0 + (y + 0.5) * k - r), Math.ceil(r * 2), Math.ceil(r * 2)); };
+    const mark = (x, y, s, col) => {
+      const fs = Math.max(9, Math.round(k * (big ? 1.6 : 2.2)));
+      ctx.font = `700 ${fs}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.85)'; ctx.strokeText(s, x0 + (x + 0.5) * k, y0 + (y + 0.5) * k);
+      ctx.fillStyle = col; ctx.fillText(s, x0 + (x + 0.5) * k, y0 + (y + 0.5) * k);
+    };
+    for (const r of mi.treasure || []) if (seen(r.cx, r.cy)) mark(r.cx, r.cy, 'T', '#ffd24a');
+    if (mi.start && seen(mi.start.cx, mi.start.cy)) mark(mi.start.cx, mi.start.cy, 'S', '#e8e0cc');
+    if (seen(mi.end.cx, mi.end.cy)) mark(mi.end.cx, mi.end.cy, '▼', '#ffd24a');
+    for (const e of mi.chests || []) if (seen(e.x, e.y)) dot(e.x, e.y, '#ffd24a', k * 0.45);
+    for (const e of mi.mons) if (seen(e.x, e.y)) { if (e.boss) mark(e.x, e.y, 'B', '#ff6a5a'); else dot(e.x, e.y, '#d8483e', k * 0.4); }
+    if (mi.rivals) for (const e of mi.rivals) if (seen(e.x, e.y)) dot(e.x, e.y, e.ring, k * 0.55);
+    for (const e of mi.party) if (!e.dead) dot(e.x, e.y, e.kind === 'hero' ? '#ffffff' : '#6fe39a', e.kind === 'hero' ? k * 0.7 : k * 0.45);
+    if (big) {
+      ctx.font = '700 14px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillStyle = '#c9a26a';
+      ctx.fillText(mi.label || '', x0, y0 - 10);
+      return;
+    }
     // 지금 화면에 보이는 범위
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
     ctx.strokeRect(x0 + Math.max(0, -ox / TS * k), y0 + Math.max(0, -oy / TS * k), Math.min(w, W / TS * k), Math.min(h, H / TS * k));
+    if (mi.label) { ctx.font = '700 11px sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.fillStyle = '#c9a26a'; ctx.fillText(mi.label, x0 + w, y0 + h + 7); }
   }
   // 처음 해 보는 사람에게 "여기를 눌러"를 글 대신 화살표로
   function drawCoach(c, t) {
@@ -453,7 +568,7 @@ G.MapView = function (canvas, id) {
         }
       }
       const fog = view.fog;
-      const hidden = e => fog && e.kind === 'mon' && !fog.seen[Math.round(e.y) * m.w + Math.round(e.x)];
+      const hidden = e => fog && (e.kind === 'mon' || e.kind === 'rival') && !fog.seen[Math.round(e.y) * m.w + Math.round(e.x)];
       const ents = view.ents.filter(e => !hidden(e)).sort((a, b) => (b.under || b.dead ? 1 : 0) - (a.under || a.dead ? 1 : 0) || a._ry - b._ry);
       // 바닥에 깔린 것(진기 등) → 오행 선 → 나머지
       for (const e of ents) if (e.under) drawEnt(e, t, now);
@@ -522,6 +637,10 @@ G.MapView = function (canvas, id) {
     canZoom: () => camMode,
     // 화면 좌표 → 칸 좌표(실수)
     toTile(px, py) { return { x: (px - ox) / TS - 0.5, y: (py - oy) / TS - 0.5 }; },
+    // 미니맵을 눌렀나 (큰 지도가 펼쳐져 있으면 어디든)
+    miniHit(px, py) { const r = miniRect; return !!r && (r.big || (px >= r.x0 - 4 && px <= r.x0 + r.w + 4 && py >= r.y0 - 4 && py <= r.y0 + r.h + 4)); },
+    // 칸 좌표 → 화면 좌표 (맵 위에 HTML을 띄울 때). ts: 지금 칸 한 변의 픽셀
+    toScreen(x, y) { return { x: ox + (x + 0.5) * TS, y: oy + (y + 0.5) * TS, ts: TS }; },
   };
 };
 

@@ -1,8 +1,9 @@
 'use strict';
 // 공용 상태: 정수·인장 경제, 넥서스/별 트리 효과, 유물 소환, 차원 붕괴, 저장, 시간 진행, 오프라인 보상
 // 맵 위의 엔티티(G.RT)는 저장하지 않는다. 불러오면 맵을 새로 만든다.
-G.MODS = { fantasy: G.Fantasy, wuxia: G.Wuxia, xianxia: G.Xianxia, scifi: G.Scifi, cthulhu: G.Cthulhu };
-G.CUR = { fantasy: 'gold', wuxia: 'ins', xianxia: 'stone', scifi: 'credits', cthulhu: 'coins' };
+// 다른 세계(무협·수선·SF·크툴루)는 정리했다 — 캐릭터 컨셉만 던전 동료로 가져온다 (코드는 old/worlds/)
+G.MODS = { fantasy: G.Fantasy };
+G.CUR = { fantasy: 'gold' };
 G.SAVE_KEY = 'rift_inc_save_v2';
 
 G.newState = function (keep) {
@@ -11,9 +12,9 @@ G.newState = function (keep) {
   G.RT = {};
   G.S = {
     v: 2, time: Date.now(), playTime: 0, runTime: 0,
-    ess: 0, runEss: 0, totalEss: 0, essBy: { fantasy: 0, wuxia: 0, xianxia: 0, scifi: 0, cthulhu: 0 },
+    ess: 0, runEss: 0, totalEss: 0, essBy: { fantasy: 0 },
     stars: 0, starsEarned: 0, signs: 0, pulls: 0, pity: 0, relics: {},
-    unlocked: { fantasy: true, wuxia: false, xianxia: false, scifi: false, cthulhu: false },
+    unlocked: { fantasy: true },
     ntree: G.Tree.init('nexus'), stree, prestiges: 0, w: {}, rates: {}, coach: {}, mig: { xx2: 1 },
   };
   for (const id in G.MODS) G.S.w[id] = G.MODS[id].init(head);
@@ -21,11 +22,6 @@ G.newState = function (keep) {
     const S = G.S;
     for (const k of ['stars', 'starsEarned', 'signs', 'pulls', 'pity', 'relics', 'totalEss', 'playTime', 'coach']) S[k] = keep[k];
     S.prestiges = keep.prestiges + 1;
-    if (G.Tree.has('stars', stree, 'keepWorlds')) {
-      S.unlocked = keep.unlocked;
-      for (const id in keep.unlocked) if (keep.unlocked[id] && id !== 'fantasy') S.ntree['open_' + id] = 1;
-    }
-    if (G.Tree.has('stars', stree, 'keepSyn')) for (const n of G.Tree.defs.nexus) if (n.syn && keep.ntree[n.id]) S.ntree[n.id] = 1;
   }
   return G.S;
 };
@@ -39,10 +35,6 @@ G.relicVal = function (eff) {
 G.starBonus = () => G.S.stars * (0.1 + G.Tree.add('stars', G.S.stree, 'starPow'));
 G.globalMult = () => (1 + G.starBonus()) * G.Tree.mul('nexus', G.S.ntree, 'all') * (1 + G.relicVal('all'));
 G.essMult = () => G.Tree.mul('nexus', G.S.ntree, 'ess') * (1 + G.relicVal('ess')) * (1 + G.Tree.add('stars', G.S.stree, 'starEss'));
-G.synergy = id => {
-  if (!G.S.ntree[id]) return false;
-  return G.Tree.idx.nexus[id].req.every(r => G.S.ntree[r]);
-};
 G.addEss = function (n, world) {
   n *= G.essMult() * (1 + G.Tree.add(world, G.S.w[world].tree, 'ess'));
   G.S.ess += n;
@@ -91,25 +83,10 @@ G.Relic = {
   },
 };
 
-// ───── 차원 붕괴 ─────
-// 작은 차원 붕괴(보류 — 사용자: 세계마다 조건을 채우는 건 번잡스럽다): WORLD_CONDS를 켜면 세계마다 작은 조건 하나.
-// 꺼져 있으면 예전처럼 이번 회차 정수 PRESTIGE_MIN.
-// 작은 차원 붕괴: 세계마다 작은 조건 하나. 판타지·무협은 늘, 나머지는 연 세계만 (판타지·무협만 열고 붕괴할 수도, 더 열고 할 수도)
-// 크툴루 각성으로 일어나는 큰 붕괴(세계 융합)는 나중 콘텐츠
+// ───── 차원 붕괴: 이번 회차 정수 PRESTIGE_MIN 이상 ─────
 G.Prestige = {
-  conds() {
-    const S = G.S, w = S.w, out = [
-      { id: 'fantasy', n: '판타지 · 최고 30층', v: w.fantasy.maxFloor, need: 30 },
-      { id: 'wuxia', n: '무협 · 지위 6단계 (장문인급)', v: G.Wuxia.jobDef(w.wuxia.job).tier, need: 6 },
-      { id: 'xianxia', n: `수선 · 경지 ${G.D.X.realms[4]}`, v: w.xianxia.realm, need: 4 },
-      { id: 'scifi', n: 'SF · 15웨이브', v: w.scifi.maxWave, need: 15 },
-      { id: 'cthulhu', n: '크툴루 · 해구 (200m)', v: w.cthulhu.best, need: 200 },
-    ];
-    return out.filter(c => c.id === 'fantasy' || c.id === 'wuxia' || S.unlocked[c.id]).map(c => ({ ...c, ok: c.v >= c.need }));
-  },
-  WORLD_CONDS: false,
   gain: () => Math.max(1, Math.floor(Math.sqrt(G.S.runEss / 200))),
-  can: () => (G.Prestige.WORLD_CONDS ? G.Prestige.conds().every(c => c.ok) : G.S.runEss >= G.D.PRESTIGE_MIN),
+  can: () => G.S.runEss >= G.D.PRESTIGE_MIN,
   go() {
     if (!G.Prestige.can()) return false;
     const old = G.S, gain = G.Prestige.gain();
@@ -184,56 +161,26 @@ G.deserialize = function (json) {
   // 캐릭터 시트(UNITS.md)로 바꾸며 뺀 동료별 강화 노드: 쓴 골드를 돌려준다 [기본 비용, 레벨당 배율, 남길 레벨]
   const GONE = { bless: [800, 1], m_area: [6000, 2.3], r_atk: [60, 1.585], r_range: [500, 2.3], songDur: [1500, 2.04], songPow: [4000, 2.04], c_heal: [400, 1.65], m_atk: [1500, 1.585],
     p_hp: [9000, 1.585], d_atk: [70000, 1.585], d_crit: [150000, 2.04], a_atk: [450000, 1.585], a_chain: [1e6, 3.6], ro_atk: [450000, 1.585], p_guard: [20000, 2.04, 1], ro_steal: [1e6, 2.3, 1] };
+  // 벼락(클릭 공격)을 지휘로 바꾸며 뺀 동쪽 가지 (DESIGN.md 32): 쓴 골드를 돌려준다
+  Object.assign(GONE, { smite1: [20, 1.45], smiteR: [400, 2], s_cd: [600, 2], s_chain: [3000, 1], s_shock: [12000, 1], s_focus: [12000, 1], s_exec: [60000, 1], s_crit: [40000, 1.9],
+    s_storm: [3e5, 1], s_storm2: [1e6, 2], s_stun: [2500, 1], s_charge: [2500, 1], s_power2: [2e5, 1.8], s_over: [1.5e5, 1], s_mark: [1.5e6, 1], s_r2: [1.5e6, 2.2], s_storm3: [5e6, 1],
+    s_lv1: [3000, 1.7], s_bounce: [20000, 4], s_static: [15000, 1], s_purge: [80000, 1], s_boss: [80000, 2], s_storm_r: [3e6, 2.5] });
+  // 직업 기술·★짝을 용병 개인 스킬로 옮기며 뺀 북쪽 가지 (DESIGN.md 39): 쓴 골드를 돌려준다
+  Object.assign(GONE, { archer: [40, 1], r_pierce: [160, 1], r_volley: [600, 1], r_poison: [1600, 1], r_snipe: [1600, 1], scout: [120, 1], bard: [150, 1], b_encore: [600, 1], b_rhap: [2250, 1], songWar: [6000, 1], songRegen: [6000, 1], cleric: [300, 1], c_mass: [1200, 1], heal: [4500, 1], c_revive: [12000, 1], c_sanct: [12000, 1], mage: [1200, 1], m_burn: [4800, 1], meteor: [18000, 1], m_storm: [48000, 1], m_quick: [48000, 1], paladin: [8000, 1], p_guard: [32000, 1], p_wall: [120000, 1], p_taunt: [320000, 1], p_counter: [320000, 1], dragoon: [60000, 1], d_dash: [240000, 1], d_leap: [900000, 1], d_exec: [2400000, 1], d_breath: [2400000, 1], archmage: [400000, 1], a_overload: [1600000, 1], a_storm: [6000000, 1], a_warp: [16000000, 1], a_stop: [16000000, 1], rogue: [400000, 1], ro_twin: [1600000, 1], ro_shadow: [6000000, 1], ro_mark: [16000000, 1], ro_steal: [16000000, 1], autocast: [200000, 1] });
   for (const [k, [b, g, keep = 0]] of Object.entries(GONE)) if (ft[k] > keep) { for (let i = keep; i < ft[k]; i++) G.S.w.fantasy.gold += b * Math.pow(g, i); if (keep) ft[k] = keep; else delete ft[k]; }
-  // SF 포탑 시트(UNITS.md): 포탑별 피해 노드를 빼고 쓴 크레딧을 돌려준다. 레이저 노드는 배운 채로
-  const sft = G.S.w.scifi.tree, SGONE = { laser1: [15, 1.585], rail1: [600, 1.65], cryo1: [800, 1.65], mortar1: [6000, 1.65], tesla1: [1e5, 1.65] };
-  for (const [k, [b, g]] of Object.entries(SGONE)) if (sft[k]) { for (let i = 0; i < sft[k]; i++) G.S.w.scifi.credits += b * Math.pow(g, i); delete sft[k]; }
-  if (!sft.laser) sft.laser = 1;
-  // 짝이 바뀐 노드: 고른 것이 더는 그 짝이 아니면 고르기를 지운다 (모든 트리)
-  for (const [w, id] of [['fantasy', 'fantasy'], ['wuxia', 'wuxia'], ['xianxia', 'xianxia'], ['scifi', 'scifi'], ['cthulhu', 'cthulhu']]) {
-    const st = G.S.w[w] && G.S.w[w].tree, idx = G.Tree.idx[id];
-    if (st && idx) for (const k of Object.keys(st)) if (k[0] === '@' && (!idx[st[k]] || idx[st[k]].pair !== k.slice(1))) delete st[k];
-  }
-  // 무협: 직업 레벨 → 명성 지위로 바뀌기 전 저장. 옛 트리는 쓴 깨달음을 돌려주고 비운다, 쌓은 명성은 지금 지위만큼 채운다
-  const wx = G.S.w.wuxia;
-  const OLD = { jxp1: [1, 1.585], gold1: [3, 1.65], jxp2: [60, 1.65], sxp1: [1, 1.585], sxp2: [60, 1.65], twin: [15, 2.3], peak1: [5, 1.78], peak2: [300, 1.91], life1: [2, 1.715], young: [10, 2.3], life2: [250, 1.91], walk: [4, 2.04], fight1: [3, 1.65], bounty: [20, 1.78], fight2: [400, 1.78], yang: [25, 1], magong: [400, 1], ins1: [20, 1.78], essw: [800, 2.17] };
-  if (wx.tree && (wx.tree.jxp1 != null || wx.tree.sxp1 != null || wx.tree.fight1 != null)) {
-    let back = 0;
-    for (const [k, [b, g]] of Object.entries(OLD)) for (let i = 0; i < (wx.tree[k] || 0); i++) back += b * Math.pow(g, i);
-    wx.tree = G.Tree.init('wuxia');
-    wx.ins += back;
-  }
-  // 두 갈래(화산·마교) 트리 때 저장(hw1 노드가 있다): 그때 쓴 깨달음을 돌려주고 비운다 (세 갈래로 바뀌며 노드 비용이 달라졌다)
-  const V2 = {'path': [2, 1.78], 'hw1': [4, 1.78], 'hw_work': [8, 1.91], 'hw_naegong': [10, 1.91], 'hw_sect': [120, 1], 'hw_geom': [25, 1.91], 'hw_plum': [300, 1], 'hw_combat': [60, 2.04], 'hw_purge': [800, 1], 'hw_raid': [1500, 2.17], 'hw_sword': [2500, 1], 'hw_qi': [2500, 1], 'hw_life': [400, 2.56], 'hw_top': [8000, 2.3], 'ma1': [4, 1.78], 'ma_work': [8, 1.91], 'ma_cheonma': [10, 1.91], 'ma_free': [120, 1], 'ma_geom': [25, 1.91], 'ma_fear': [300, 1], 'ma_combat': [60, 2.04], 'ma_blood': [800, 1], 'ma_raid': [1500, 2.17], 'ma_kill': [2500, 1], 'ma_dom': [2500, 1], 'ma_hp': [400, 2.04], 'ma_top': [8000, 2.3], 'mu': [1, 1.585], 'realm1': [30, 2.17], 'realm2': [600, 1], 'sim1': [3, 1.65], 'sim2': [50, 2.04], 'sim_cycle': [400, 1], 'sim_hp': [120, 2.04], 'oe1': [3, 1.65], 'oe2': [40, 2.04], 'oe_combo': [400, 1], 'oe3': [120, 2.04], 'gg1': [40, 1.91], 'gg2': [100, 2.04], 'gg_fly': [900, 1], 'jh1': [40, 1.91], 'yang': [60, 1], 'jh_med': [900, 1], 'magong': [700, 1], 'mu_in': [3000, 1], 'mu_out': [3000, 1], 'mu_top': [6000, 2.3], 'twin': [20, 2.3], 'elix1': [25, 2.04], 'reg': [1, 1.715], 'life1': [3, 1.91], 'young': [10, 2.69], 'ins1': [20, 2.04], 'reg_rank': [150, 1], 'reg_rank2': [2500, 1], 'head': [30, 2.17], 'peak2': [300, 2.17], 'life2': [250, 2.56], 'reg_soul': [4000, 1], 'reg_fast': [3000, 1], 'reg_long': [3000, 1], 'essw': [200, 2.17], 'essw2': [5000, 2.3], 'reg_top': [12000, 2.3], 'ins2': [600, 2.17], 'young2': [200, 2.82], 'rankEase': [100, 2.17], 'gh': [1, 1.65], 'stip1': [3, 1.78], 'walk': [4, 2.04], 'bounty': [15, 2.04], 'gh_hero': [400, 1], 'gh_merchant': [400, 1], 'shop1': [30, 2.17], 'duel1': [60, 2.04], 'gh_duelist': [700, 1], 'raid1': [600, 2.17], 'combat_gh': [150, 2.04], 'boss1': [1500, 2.56], 'boss2': [4000, 2.3], 'walk2': [200, 2.17], 'fame2': [3000, 2.3], 'stip2': [2000, 2.3], 'gh_legend': [9000, 1], 'work2': [120, 2.04], 'hp_gh': [250, 2.04], 'gh_top': [15000, 2.3], 'hw_stip': [300, 2.17], 'hw_realm': [1200, 2.56], 'ma_stip': [300, 2.17], 'ma_life': [1200, 2.56], 'sim3': [2000, 2.3], 'oe4': [2000, 2.3], 'gg3': [2500, 2.3], 'jh2': [2500, 2.3], 'life3': [3000, 2.69], 'ins3': [4000, 2.3], 'shop2': [500, 2.82]};
-  if (wx.tree && wx.tree.hw1 != null) {
-    let back = 0;
-    for (const [k, [b, g]] of Object.entries(V2)) for (let i = 0; i < (wx.tree[k] || 0); i++) back += b * Math.pow(g, i);
-    wx.tree = G.Tree.init('wuxia');
-    wx.ins += back;
-  }
-  // 진로 셋을 소속(맛)으로 합치기 전 저장: 진로 가지(jeong_·sa_·ma_) 노드에 쓴 깨달음을 돌려주고, 진로 무공 레벨은 합친 소속 무공으로
-  const PC = {"1": [1, 1.117], "work": [1, 1.1365], "xp": [1, 1.1365], "sect": [2, 1], "combat": [1, 1.156], "plum": [3, 1], "blood": [4, 1], "raid": [5, 1.1755], "pa": [6, 1], "pb": [6, 1], "top": [8, 1.195]};
-  for (const k of Object.keys(wx.tree || {})) {
-    const m = /^@?(jeong|sa|ma)_(\w+)$/.exec(k);
-    if (!m) continue;
-    const c = PC[m[2]];
-    if (c && k[0] !== '@') for (let i = 0; i < wx.tree[k]; i++) wx.ins += c[0] * Math.pow(c[1], i);
-    delete wx.tree[k];
-  }
-  const MERGE = { p_sim1: ['naegong', 'heuksal', 'cheonma'], p_sim2: ['yangui', 'heupjeong', 'heupseong'], p_oe1: ['geom', 'nokdo', 'hyeolgeom'], p_oe2: ['taeguk', 'nokjang', 'cheonmasu'], p_gg: ['gyeong', 'biyeong', 'hyeolyeong'] };
-  for (const [to, from] of Object.entries(MERGE)) for (const f of from) for (const box of ['lvl', 'peak', 'xp']) {
-    if (!wx[box] || wx[box][f] == null) continue;
-    wx[box][to] = Math.max(wx[box][to] || 0, wx[box][f]);
-    delete wx[box][f];
-  }
-  if (MERGE[wx.skill] === undefined && Object.values(MERGE).some(l => l.includes(wx.skill))) wx.skill = Object.keys(MERGE).find(k => MERGE[k].includes(wx.skill));
-  if (!data.w || !data.w.wuxia || data.w.wuxia.fameT == null) { const j = G.D.WX.jobs.find(x => x.id === wx.job) || G.D.WX.jobs[0]; wx.job = j.id; wx.fameT = j.fame; }
-  // 수선 개편(무대·천겁·트리) 전 저장: 수선만 한 번 처음부터 (사용자 요청 — 이미 화신이라 새 흐름을 처음부터 보려고)
-  G.S.mig = G.S.mig || {};
-  if (!(data.mig && data.mig.xx2)) { G.S.w.xianxia = G.Xianxia.init(); G.S.mig.xx2 = 1; }
-  // 수선 트리 레벨 상한이 낮아졌다(최대 10): 넘친 레벨은 상한으로
-  const xt = G.S.w.xianxia.tree;
-  for (const n of G.Tree.defs.xianxia) if (xt[n.id] > (n.max || 1)) xt[n.id] = n.max || 1;
+  // 짝이 바뀐 노드: 고른 것이 더는 그 짝이 아니면 고르기를 지운다
+  // 용병 명단이 생기기 전 저장: 면허가 있는 직업마다 한 명씩 (G.Guild.migrate)
+  G.Guild.migrate(G.S.w.fantasy);
+  const idx = G.Tree.idx.fantasy;
+  for (const k of Object.keys(ft)) if (k[0] === '@' && (!idx[ft[k]] || idx[ft[k]].pair !== k.slice(1))) delete ft[k];
+  // 다른 세계를 정리하기 전 저장: 그 세계 상태와 세계 개방·시너지 노드를 지운다
+  for (const id of Object.keys(G.S.w)) if (!G.MODS[id]) delete G.S.w[id];
+  for (const id of Object.keys(G.S.unlocked)) if (!G.MODS[id]) delete G.S.unlocked[id];
+  for (const id of Object.keys(G.S.essBy)) if (!G.MODS[id]) delete G.S.essBy[id];
+  for (const k of Object.keys(G.S.ntree)) if (!G.Tree.idx.nexus[k]) delete G.S.ntree[k];
+  for (const k of Object.keys(G.S.stree)) if (!G.Tree.idx.stars[k]) delete G.S.stree[k];
+  for (const k of Object.keys(G.S.relics)) if (!G.D.RELICS.some(r => r.id === k)) delete G.S.relics[k];
+  for (const k of Object.keys(G.S.rates)) if (k !== 'ess' && k !== 'signs' && !G.CUR[k]) delete G.S.rates[k];
   G.RT = {};
   return G.S;
 };
@@ -254,4 +201,10 @@ G.hardReset = function () {
 };
 
 // 트리 구매가 맵에 바로 보이게
-G.on('tree', e => { if (e.id === 'fantasy' && G.RT.fantasy) { G.Fantasy.recruits(G.S.w.fantasy); G.Fantasy.syncAllies(G.S.w.fantasy); } });
+// 직업 면허를 새로 따면 선술집이 비어 있을 때 바로 후보를 들인다
+G.on('tree', e => {
+  if (e.id !== 'fantasy') return;
+  const f = G.S.w.fantasy;
+  if (!G.Guild.tavern(f).offers.length) G.Guild.refresh(f);
+  if (G.RT.fantasy) G.Fantasy.syncAllies(f);
+});

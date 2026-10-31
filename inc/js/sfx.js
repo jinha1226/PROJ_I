@@ -68,6 +68,8 @@ G.SFX = (() => {
     unlock: [300, () => { arp([392, 523, 659, 784, 1047, 1319], 0.06, { type: 'triangle', vol: 0.14, dur: 0.3 }); tone(2093, 0.9, { type: 'sine', vol: 0.06, at: 0.36 }); }],
     finish: [400, () => { tone(110, 0.9, { type: 'sine', vol: 0.5, f2: 30 }); noise(0.8, { vol: 0.3, ff: 1200, ff2: 60 }); arp([784, 988, 1175, 1568], 0.08, { type: 'triangle', vol: 0.1, dur: 0.5, at: 0 }); }],
     bell: [80, () => { tone(1047, 0.9, { type: 'sine', vol: 0.12, atk: 0.002 }); tone(2093, 0.5, { type: 'sine', vol: 0.04, atk: 0.002 }); }],
+    quirkGood: [300, () => { arp([523, 784, 1047, 1568], 0.06, { type: 'triangle', vol: 0.11, dur: 0.35 }); tone(2093, 0.6, { type: 'sine', vol: 0.05, at: 0.24 }); }],
+    quirkBad: [300, () => { tone(196, 0.5, { type: 'sawtooth', vol: 0.07, f2: 185 }); tone(208, 0.5, { type: 'sawtooth', vol: 0.06, f2: 196 }); tone(98, 0.6, { type: 'sine', vol: 0.2, f2: 60, at: 0.05 }); }],
     chime: [150, () => arp([1047, 1319, 1568], 0.07, { type: 'sine', vol: 0.1, dur: 0.6 })],
     thunder: [260, () => noise(0.5, { vol: 0.18, ff: 900, ff2: 70 })],
     wave: [500, () => { tone(440, 0.14, { vol: 0.06 }); tone(587, 0.2, { vol: 0.06, at: 0.15 }); }],

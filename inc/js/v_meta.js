@@ -45,7 +45,7 @@ G.UI.views.altar = function () {
   }
   function renderColl() {
     coll.innerHTML = '';
-    for (const w of [...G.D.WORLDS, { id: 'all', name: '모든 세계' }]) {
+    for (const w of [...G.D.WORLDS, { id: 'all', name: '차원' }]) {
       const list = D.RELICS.filter(r => r.w === w.id);
       coll.append(h('div.coll-group', null, h('div.cg-h', null, G.T.el(w.id === 'all' ? 'ui_nexus' : 'w_' + w.id, 'sm'), ' ', w.name),
         h('div.coll-row', null, list.map(r => {
@@ -85,17 +85,15 @@ G.UI.views.altar = function () {
 G.UI.views.prestige = function () {
   const U = G.U;
   const runEl = h('b'), gainEl = h('b'), btn = h('button.btn.big.danger');
-  let condEl;
   btn.addEventListener('click', () => {
     if (!G.Prestige.can()) return;
-    G.UI.modal('차원 붕괴', `<p>★ +<b>${G.Prestige.gain()}</b></p><p class="dim">세계·트리·정수 초기화 · 유물·인장·별 트리 유지</p>`,
+    G.UI.modal('차원 붕괴', `<p>★ +<b>${G.Prestige.gain()}</b></p><p class="dim">던전·트리·정수 초기화 · 유물·인장·별 트리 유지</p>`,
       [{ label: '취소' }, { label: '붕괴시킨다', cls: 'danger', fn: () => { G.Prestige.go(); G.SFX.play('finish'); G.UI.show('prestige'); } }]);
   });
   const tree = G.UI.tree('stars', () => G.S.stree);
   const statsEl = h('div.stats');
   const el = h('section.meta.prestige', null,
     h('div.whead', null, h('div.wtitle', null, G.T.el('ui_prestige', 'wh-icon'), h('div', null, h('div.tag', null, '환생'), h('h1', null, '차원 붕괴')))),
-    condEl = h('div.card.pconds'),
     h('div.card.pcard-main', null,
       h('div', null, h('small', null, '이번 회차 정수'), h('div.huge', null, G.T.el('ui_ess', 'md'), ' ', runEl)),
       h('div', null, h('small', null, '얻을 별의 파편'), h('div.huge', null, G.T.el('ui_star', 'md'), ' ', gainEl)),
@@ -109,17 +107,7 @@ G.UI.views.prestige = function () {
       const S = G.S;
       setText(runEl, U.fmt(S.runEss));
       setText(gainEl, G.Prestige.can() ? G.Prestige.gain() : 0);
-      const on = G.Prestige.WORLD_CONDS, cs = on ? G.Prestige.conds() : [];
-      tog(condEl, 'hidden', !on);
-      setText(btn, G.Prestige.can() ? '차원을 붕괴시킨다' : on ? `조건 ${cs.filter(c => c.ok).length} / ${cs.length}` : `정수 ${U.fmt(G.D.PRESTIGE_MIN)} 필요`);
-      // 세계마다 작은 조건 (연 세계만)
-      const ck = cs.map(c => c.id + c.ok + Math.floor(c.v)).join();
-      if (condEl._k !== ck) {
-        condEl._k = ck;
-        condEl.innerHTML = '';
-        condEl.append(h('b', null, '붕괴 조건'), h('small.dim', null, ' 판타지·무협은 늘, 나머지는 연 세계만'),
-          ...cs.map(c => h('div.pcond' + (c.ok ? '.ok' : ''), null, G.T.el('w_' + c.id, 'xs'), h('span', null, c.n), h('b', null, c.ok ? '✓' : `${U.fmt(c.v)} / ${U.fmt(c.need)}`))));
-      }
+      setText(btn, G.Prestige.can() ? '차원을 붕괴시킨다' : `정수 ${U.fmt(G.D.PRESTIGE_MIN)} 필요`);
       btn.disabled = !G.Prestige.can();
       tree.update();
       const st = [['보유 별', U.fmt(S.stars)], ['별 하나당', `+${Math.round((0.1 + G.Tree.add('stars', S.stree, 'starPow')) * 100)}%`], ['붕괴 횟수', S.prestiges], ['이번 회차', U.fmtTime(S.runTime)], ['총 플레이', U.fmtTime(S.playTime)], ['누적 정수', U.fmt(S.totalEss)]];

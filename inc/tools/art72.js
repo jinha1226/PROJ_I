@@ -143,6 +143,26 @@ const SPEC = {
   u_dragoon: { src: 'lizard_m_idle_anim', run: 'lizard_m_run_anim', hit: 'lizard_m_hit_anim_f0' },
   u_archmage: { src: 'sd_wizard_idle_anim' },
   u_rogue: { src: 'sd_thief_idle_anim', run: 'sd_thief_run_anim' },
+  u_scout: { src: 'sd_elf_m_idle_anim', run: 'sd_elf_m_run_anim' },
+  // 판타지: 상위 직업 (DESIGN.md 40)
+  v_sniper: { src: 'sd_archer_idle_anim', run: 'sd_archer_run_anim' },
+  v_hunter: { src: 'sd_high_elf_f_idle_anim', run: 'sd_high_elf_f_run_anim' },
+  v_priest: { src: 'sd_bishop_idle_anim' },
+  v_inquis: { src: 'sd_tall_cleric_idle_anim', ed: [{ op: 'hue', deg: 0, only: [200, 300], sat: 0 }, { op: 'tint', c: [150, 40, 30, 0.22] }] },
+  v_maestro: { src: 'sd_herald_idle_anim', run: 'sd_herald_run_anim' },
+  v_dancer: { src: 'sd_princess_idle_anim', run: 'sd_princess_run_anim' },
+  v_arch: { src: 'sd_mage_idle_anim', run: 'sd_mage_run_anim' },
+  v_warlock: { src: 'wizzard_f_idle_anim', run: 'wizzard_f_run_anim', hit: 'wizzard_f_hit_anim_f0', ed: [{ op: 'tint', c: [60, 20, 100, 0.35] }] },
+  v_guard: { src: 'sd_elite_knight_idle_anim', run: 'sd_elite_knight_run_anim' },
+  v_crusader: { src: 'sd_knight_idle_anim', run: 'sd_knight_run_anim' },
+  v_dknight: { src: 'lizard_f_idle_anim', run: 'lizard_f_run_anim', hit: 'lizard_f_hit_anim_f0' },
+  v_berserk: { src: 'sd_executioner_idle_anim', run: 'sd_executioner_run_anim' },
+  v_chrono: { src: 'sd_high_elf_m_idle_anim' },
+  v_thunder: { src: 'sd_mountain_king_idle_anim' },
+  v_shade: { src: 'sd_thief_idle_anim', run: 'sd_thief_run_anim', ed: [{ op: 'tint', c: [40, 20, 70, 0.45] }] },
+  v_thiefk: { src: 'sd_king_idle_anim', run: 'sd_king_run_anim' },
+  v_explorer: { src: 'dwarf_m_idle_anim', run: 'dwarf_m_run_anim', hit: 'dwarf_m_hit_anim_f0' },
+  v_tracker: { src: 'sd_centaur_m_idle_anim', run: 'sd_centaur_m_run_anim' },
   // 판타지: 몬스터 (구간 순서)
   m_rat: { src: 'tiny_zombie_idle_anim', run: 'tiny_zombie_run_anim' },
   m_slime: { src: 'swampy_anim' },
@@ -315,6 +335,11 @@ for (let b = 0; b < 6; b++) {
   atlasSet('f_', b, BAND[b]);
   wallSet('f_', b, BAND[b], '#1d1518', ['wall_mid', 'wall_mid', 'wall_mid', 'wall_hole_1', 'wall_mid', 'wall_banner_red', 'wall_mid', 'wall_hole_2']);
 }
+
+// 용병 색 변형 (DESIGN.md 41): 파티 · 상위 직업 그림마다 옷 색을 돌린 _c1 · _c2. 살·머리(빨강~주황)는 그대로 둔다
+const LOOKS = [{ op: 'hue', deg: 120, only: [50, 340] }, { op: 'hue', deg: -110, only: [50, 340], sat: 1.15 }];
+for (const k of Object.keys(SPEC).filter(k => /^(u|v)_/.test(k) && SPEC[k].src && /_anim$/.test(SPEC[k].src)))
+  LOOKS.forEach((op, i) => { SPEC[`${k}_c${i + 1}`] = { ...SPEC[k], ed: [...(SPEC[k].ed || []), op] }; });
 
 // ── 만들기 ──
 fs.mkdirSync(OUT, { recursive: true });

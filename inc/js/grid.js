@@ -15,28 +15,57 @@ G.Grid = {
   at: (m, x, y) => (x < 0 || y < 0 || x >= m.w || y >= m.h ? ' ' : m.c[y * m.w + x]),
   pass: (m, x, y) => m.passChars.includes(G.Grid.at(m, x, y)),
 
-  // 방과 복도로 된 던전. '#' 벽, '.' 바닥. 방 목록과 시작·계단 방을 함께 준다.
-  dungeon(w, h) {
-    const U = G.U, c = new Array(w * h).fill('#'), rooms = [];
-    for (let tries = 0; tries < 80 && rooms.length < 9; tries++) {
-      const rw = 5 + U.rand(5), rh = 4 + U.rand(3);
-      const x = 1 + U.rand(w - rw - 2), y = 1 + U.rand(h - rh - 2);
-      if (rooms.some(r => x < r.x + r.w + 1 && x + rw + 1 > r.x && y < r.y + r.h + 1 && y + rh + 1 > r.y)) continue;
-      rooms.push({ x, y, w: rw, h: rh, cx: x + (rw >> 1), cy: y + (rh >> 1) });
+  // 방과 복도로 된 던전 (DESIGN.md 37). '#' 벽, '.' 바닥, '>' 계단.
+  // 영역 분할(BSP): 맵을 maxRooms개 구역으로 나누고 구역마다 큰 방 하나 → 가까운 방끼리 최소 신장 트리로 짧게 잇고, loops개를 더 이어 갈림길.
+  // 시작 방은 가장 왼쪽, 계단 방은 시작에서 길로 가장 먼 방. rooms[0] = 시작, rooms[끝] = 계단.
+  // rng: 0~1 난수 함수 — 시즌 씨앗값으로 주면 같은 시즌의 같은 층은 늘 같은 모양 (G.Season)
+  dungeon(w, h, maxRooms = 9, loops = 0, rng = Math.random) {
+    const rand = n => Math.floor(rng() * n), c = new Array(w * h).fill('#'), MINW = 10, MINH = 8;
+    // 구역 나누기: 가장 넓은 구역을 긴 쪽으로 40~60% 자리에서 자른다
+    const leaves = [{ x: 1, y: 1, w: w - 2, h: h - 2 }];
+    for (let guard = 0; leaves.length < maxRooms && guard < 200; guard++) {
+      leaves.sort((p, q) => q.w * q.h - p.w * p.h);
+      const L = leaves.find(l => l.w >= MINW * 2 || l.h >= MINH * 2);
+      if (!L) break;
+      leaves.splice(leaves.indexOf(L), 1);
+      const vert = L.w / MINW >= L.h / MINH ? L.w >= MINW * 2 : !(L.h >= MINH * 2);
+      if (vert) { const cut = Math.floor(L.w * (0.4 + rng() * 0.2)); leaves.push({ x: L.x, y: L.y, w: cut, h: L.h }, { x: L.x + cut, y: L.y, w: L.w - cut, h: L.h }); }
+      else { const cut = Math.floor(L.h * (0.4 + rng() * 0.2)); leaves.push({ x: L.x, y: L.y, w: L.w, h: cut }, { x: L.x, y: L.y + cut, w: L.w, h: L.h - cut }); }
+    }
+    // 구역마다 방 하나: 구역의 60~85% 크기 (방 사이에 짧은 복도가 남게)
+    const rooms = leaves.map(L => {
+      const rw = Math.max(5, Math.min(L.w - 2, Math.floor(L.w * (0.6 + rng() * 0.25)))), rh = Math.max(4, Math.min(L.h - 2, Math.floor(L.h * (0.6 + rng() * 0.25))));
+      const x = L.x + 1 + rand(Math.max(1, L.w - rw - 1)), y = L.y + 1 + rand(Math.max(1, L.h - rh - 1));
       for (let yy = y; yy < y + rh; yy++) for (let xx = x; xx < x + rw; xx++) c[yy * w + xx] = '.';
-    }
+      return { x, y, w: rw, h: rh, cx: x + (rw >> 1), cy: y + (rh >> 1) };
+    });
     const dig = (x, y) => { c[y * w + x] = '.'; };
-    // 방을 x 순으로 이어서 굽은 복도를 판다
-    rooms.sort((a, b) => a.cx - b.cx);
-    for (let i = 1; i < rooms.length; i++) {
-      const a = rooms[i - 1], b = rooms[i];
-      for (let x = Math.min(a.cx, b.cx); x <= Math.max(a.cx, b.cx); x++) dig(x, a.cy);
-      for (let y = Math.min(a.cy, b.cy); y <= Math.max(a.cy, b.cy); y++) dig(b.cx, y);
+    const link = (a, b) => {
+      if (rng() < 0.5) { for (let x = Math.min(a.cx, b.cx); x <= Math.max(a.cx, b.cx); x++) dig(x, a.cy); for (let y = Math.min(a.cy, b.cy); y <= Math.max(a.cy, b.cy); y++) dig(b.cx, y); }
+      else { for (let y = Math.min(a.cy, b.cy); y <= Math.max(a.cy, b.cy); y++) dig(a.cx, y); for (let x = Math.min(a.cx, b.cx); x <= Math.max(a.cx, b.cx); x++) dig(x, b.cy); }
+    };
+    // 최소 신장 트리 (방 중심 거리) → 복도가 짧다
+    const d2 = (a, b) => (a.cx - b.cx) ** 2 + (a.cy - b.cy) ** 2, inT = new Set([0]), edges = new Set();
+    while (inT.size < rooms.length) {
+      let best = null;
+      for (const i of inT) for (let j = 0; j < rooms.length; j++) if (!inT.has(j) && (!best || d2(rooms[i], rooms[j]) < best[2])) best = [i, j, d2(rooms[i], rooms[j])];
+      inT.add(best[1]); edges.add(best[0] + ',' + best[1]); link(rooms[best[0]], rooms[best[1]]);
     }
+    // 갈림길: 트리에 없는 가까운 짝 몇 개를 더 잇는다
+    const extra = [];
+    for (let i = 0; i < rooms.length; i++) for (let j = i + 1; j < rooms.length; j++) if (!edges.has(i + ',' + j) && !edges.has(j + ',' + i)) extra.push([i, j, d2(rooms[i], rooms[j])]);
+    extra.sort((p, q) => p[2] - q[2]);
+    for (const [i, j] of extra.slice(0, loops * 2).filter(() => rng() < 0.5).slice(0, loops)) link(rooms[i], rooms[j]);
     const m = { w, h, c, poi: {}, passChars: '.>', ver: 1, dist: {}, rooms };
-    m.start = rooms[0];
-    m.end = rooms[rooms.length - 1];
-    c[m.end.cy * w + m.end.cx] = '>';
+    // 시작 = 가장 왼쪽 방, 계단 = 시작에서 길로 가장 먼 방
+    rooms.sort((p, q) => p.cx - q.cx);
+    const start = rooms[0], d = G.Grid.field(m, start.cx, start.cy);
+    const end = rooms.slice(1).reduce((p, q) => (d[q.cy * w + q.cx] > d[p.cy * w + p.cx] ? q : p), rooms[1] || start);
+    m.rooms = [start, ...rooms.filter(r => r !== start && r !== end), end];
+    m.dist = {};
+    m.start = start;
+    m.end = end;
+    c[end.cy * w + end.cx] = '>';
     return m;
   },
 
@@ -63,6 +92,11 @@ G.Grid = {
     if (keys.length > 60) delete m.dist[keys[0]];
     m.dist[key] = { ver: m.ver, d };
     return d;
+  },
+  // 씨앗값 → 0~1 난수 함수 (mulberry32). 같은 씨앗이면 같은 줄
+  seeded(seed) {
+    let t = seed >>> 0;
+    return () => { t = (t + 0x6D2B79F5) >>> 0; let x = t; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
   },
   DIR: [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]],
 

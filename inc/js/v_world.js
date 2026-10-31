@@ -1,6 +1,6 @@
 'use strict';
 // 세계 화면 틀: 맵(캔버스 + HUD, 단축 버튼, 세계별 옆 패널)이 기본. 스킬트리는 맵 오른쪽 아래 단추로 열고 같은 자리 단추로 닫는다 (탭 없이).
-// spec: { side: 요소, hud: 요소, hotbar: 요소, click(tile, ev) → 처리했으면 true, update() }
+// spec: { side: 요소, hud: 요소, hotbar: 요소, click(tile, ev) → 처리했으면 true, update(), frame(mapView, view) }
 G.UI.tabs = G.UI.tabs || {};
 G.UI.worldScreen = function (id, spec) {
   const mod = G.MODS[id];
@@ -42,6 +42,8 @@ G.UI.worldScreen = function (id, spec) {
       if (touches.size >= 2) { pinch = spread(); return; }
     }
     const r = cv.getBoundingClientRect(), p = mv.toTile(e.clientX - r.left, e.clientY - r.top);
+    // 미니맵을 누르면 큰 지도를 펼치고 접는다 (명령으로 치지 않는다)
+    if (mv.miniHit(e.clientX - r.left, e.clientY - r.top)) { G.UI.bigMap = !G.UI.bigMap; return; }
     const ct = G.Coach.target(id);
     if (!(spec.click && spec.click(p, e)) && mod.click) mod.click(G.S.w[id], p.x, p.y);
     G.Coach.clicked(id, p, ct);
@@ -82,6 +84,8 @@ G.UI.worldScreen = function (id, spec) {
         tog(box, 'cam', !!v.cam);
       }
       mv.draw(v, t, id);
+      // 맵 위에 붙는 HTML(조우 선택지 등)을 그림과 같은 프레임에 옮긴다
+      if (spec.frame) spec.frame(mv, v);
     },
     update() {
       const n = tree.update();

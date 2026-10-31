@@ -196,6 +196,9 @@ const G = {
   disciple(c) { G.face(c, 'skin', 'dark'); c.rect(4, 13, 8, 3, 'white'); },
   qi(c) { G.orb(c, 'jade'); c.line(4, 8, 11, 8, 'white'); },
   sun2(c) { G.sun(c); },
+  // 성격 기호 (DESIGN.md 42): 만화 감정 기호 — 💢 핏대, 출구(문 + 뒤로 화살표)
+  anger(c, m = 'red') { for (const [ox, oy] of [[1, 1], [14, 1], [1, 14], [14, 14]]) for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { const d = Math.hypot(x - ox, y - oy); if ((ox < 8 ? x <= 5 : x >= 10) && (oy < 8 ? y <= 5 : y >= 10) && d > 3.6 && d < 5.6) c.px(x, y, m); } },
+  exit(c) { c.rect(7, 1, 7, 14, 'wood'); c.rect(8, 2, 5, 12, 'dark'); c.px(11, 8, 'gold'); c.poly([[1, 8], [5, 4], [5, 6], [9, 6], [9, 10], [5, 10], [5, 12]], 'green'); },
 };
 // ── 아이콘 목록: 키 → [모양, ...인자]
 const R = {
@@ -231,6 +234,8 @@ const R = {
   ui_nexus: ['portal'], w_xianxia: ['cloud', 'jade'], w_scifi: ['reactor'], w_fantasy: ['sword', 'steel', 'gold'], n_resonance: ['wave', 'purple'],
   n_essflow: ['swirl', 'purple'], ui_prestige: ['orb', 'purple'], ss_keep_worlds: ['globe'], ss_keep_auto: ['gear', 'gold'], ss_head_start: ['arrowUp'],
   ss_star_ess: ['star', 'purple'], ss_relic_amp: ['gem', 'gold'],
+  // 성격
+  pe_hot: ['anger'], pe_coward: ['drop', 'cyan'], pe_greedy: ['coin'], pe_careful: ['exit'], pe_brawler: ['swords'], pe_meek: ['flag', 'white'],
 };
 function draw(key) {
   const [shape, ...args] = R[key], c = canvas();

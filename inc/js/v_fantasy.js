@@ -1,158 +1,220 @@
 'use strict';
-// 판타지 화면: 옆 대시보드 없이 전부 맵 위에 (파티 게임 UI — Baldur's Gate 3·Divinity의 왼쪽 초상 줄, 아래 기술 줄)
-//  왼쪽 위: 층 이동·자동 하강 / 위 가운데: 원정대 합산 체력(제한 시간처럼 줄어드는 막대) + 오른쪽에 오염 피해, 바로 아래 파티 공용 능력치 4×2
-//  왼쪽: 편성 단추 + 파티 초상(체력·쓰러짐), 초상마다 오른쪽에 걸린 버프. 초상에 올리면(누르면) 그 캐릭터 능력치 카드 / 아래: 기술
-//  오른쪽 아래 스킬트리 단추는 세계 화면 틀(v_world)이 단다
+// 판타지 화면: 맵이 화면을 채우고, 중요한 정보는 아래 가운데 독 하나에 모은다 (디아블로·마인크래프트 — DESIGN.md 34)
+//  독 윗줄: 층 · 다음 보스 · 이 층 진행 · 금고 · 정수 · 지금 명령
+//  독 본체: 왼쪽 구슬(원정대 체력) · 초상(기사 + 출전, 아래에 스킬 넷의 쿨타임) · 기사 기술 · 명령(Z X C V) · 오른쪽 구슬(짐)
+//  오른쪽 위: 미니맵(캔버스) 아래 라이벌 한 줄 / 오른쪽 가운데: 경고
+//  원정 사이에는 마을 화면(v_town)이 맵 자리를 채운다. 글은 이름표와 숫자만 (설명은 올렸을 때 한 구절)
 G.UI.views.fantasy = function () {
-  const f = () => G.S.w.fantasy, F = G.Fantasy, D = G.D.F, U = G.U;
+  const f = () => G.S.w.fantasy, F = G.Fantasy, U = G.U, EX = G.Exp, GD = G.Guild, QK = G.Quirk;
+  const RS = G.Rivals.STANCES, ORDER = Object.keys(RS);
 
-  // ── 왼쪽 위: 층 + 원정대 상태
-  const floorEl = h('b'), hudMon = G.T.el('m_rat', 'xs'), hudLeft = h('small'), maxEl = h('small.dim');
-  const prev = h('button.fbtn', { on: { click: () => F.goto(f(), f().floor - 1) } }, '◀');
-  const next = h('button.fbtn', { on: { click: () => F.goto(f(), f().floor + 1) } }, '▶');
-  const auto = G.UI.toggle('⤓', () => f().auto, v => { f().auto = v; }, '자동 하강');
-  auto.el.classList.add('fbtn');
-  // 파티 전체 능력치(트리로 올린 파티 공용 배율): 아이콘 + 숫자 한 줄, 올리면 뜻이 뜬다. 기사만의 수치(치명)는 기사 카드로
-  const stats = {};
-  const statEl = h('div.minis', null, [['atk', 'u_sword', '파티 공격력 배율 (기사·동료 모두)'], ['hp', 'u_armor', '파티 체력 배율'], ['aspd', 'st_haste', '공격 속도 배율'], ['regen', 'b_regen', '초당 체력 재생'], ['armor', 'd_shield', '받는 피해 감소'], ['smite', 'a_thunder', '벼락 피해'], ['gold', 'ui_gold', '골드 배율'], ['matk', 'm_rat', '이 층 적의 공격력']]
-    .map(([k, t, l]) => (stats['_' + k] = h('span.mini', { 'data-tip': l }, k === 'matk' ? (stats.matkIc = G.T.el(t, 'xs')) : G.T.el(t, 'xs'), stats[k] = h('b')))));
-  const tipSet = (k, txt) => { const e = stats['_' + k]; if (e.dataset.tip !== txt) e.dataset.tip = txt; };
-  const hud = h('div.fhud', null,
-    h('div.floorrow', null, prev, floorEl, next, auto.el),
-    h('div.hud-sub', null, hudMon, hudLeft, maxEl));
-  // ── 위 가운데: 원정대 체력 (다 닳면 전멸) + 오염 피해
-  const hpBar = bar('hp'), hpTxt = h('b.php-t'), corrEl = h('span.corr', { 'data-tip': '던전 오염: 깊을수록 초당 최대 체력의 일정 비율이 깎인다' });
-  const top = h('div.ftop', null, h('div.ftop-r', null, h('div.php', null, hpBar, hpTxt), corrEl), statEl);
-
-
-  // ── 기술 단축 버튼
-  const skillBtns = Object.entries(F.SKILLS).map(([id, sk]) => {
-    const cd = h('span.cd'), b = h('button.hot', { title: sk.n, on: { click: () => F.cast(f(), id) } }, G.T.el(sk.t, 'md'), cd, h('small', null, sk.n));
+  // ════════ 아래 가운데 독 ════════
+  // 윗줄
+  const floorEl = h('b.d-floor'), bossEl = h('small.d-boss'), covEl = h('small.d-cov'), progBar = bar(), progTxt = h('small'), vaultEl = h('small'), essEl = h('small'), orderEl = h('small.d-order');
+  const dockTop = h('div.d-top', null, floorEl, bossEl, covEl, h('div.d-prog', null, progBar, progTxt), h('span.sp'), orderEl,
+    h('small.d-season'), h('span.d-res', { 'data-tip': '금고' }, G.T.el('ui_gold', 'xs'), vaultEl), h('span.d-res', { 'data-tip': '정수' }, G.T.el('ui_ess', 'xs'), essEl));
+  // 구슬: --v = 0~1 (아래에서 차오른다)
+  const orb = (cls, tip) => { const v = h('b.o-v'), el = h('div.orb.' + cls, { 'data-tip': tip }, h('i.o-fill'), v); return { el, v }; };
+  const orbHP = orb('hp', '원정대 체력'), orbBag = orb('bag', '짐');
+  // 초상 칸: 기사 + 출전 칸 수만큼 (빈 칸은 자리만)
+  const partyEl = h('div.d-party');
+  let partyKey = '';
+  const slots = [];
+  function buildParty(s, rt) {
+    const order = F.recruits(s), list = [rt.hero, ...[...rt.allies].sort((a, b) => order.indexOf(a.uid) - order.indexOf(b.uid))];
+    const key = list.map(p => p.uid || 'hero').join() + '|' + F.slots();
+    if (key === partyKey && slots.length && slots.every((r, i) => r.p === list[i] || (!r.p && !list[i]))) return;
+    partyKey = key;
+    partyEl.innerHTML = '';
+    slots.length = 0;
+    for (let i = 0; i < 1 + F.slots(); i++) {
+      const p = list[i];
+      if (!p) { partyEl.append(h('div.d-col', null, h('div.d-slot.empty', null, '+'))); slots.push({ p: null }); continue; }
+      const hp = bar('hp'), lv = h('b.d-lv'), down = h('b.d-down');
+      // 스킬 넷 (DESIGN.md 43): 자동이라 누르지 않는다 — 아이콘 위로 쿨타임이 걷힌다. 아직 안 열린 칸은 흐리게
+      const sks = (p.merc?.skills || []).map((k, j) => { const S = G.D.MSKILLS[k]; return { k, j, el: h('i.d-sk', { 'data-tip': `${S.n} · ${S.d} · ${S.cool}초` }, G.T.el(S.t, 'd-ski')) }; });
+      const el = h('div.d-slot' + (p.kind === 'hero' ? '.lead' : ''), { on: { click: e => { e.stopPropagation(); pick = pick === p ? null : p; } } }, G.T.el(p.t, 'd-img'), lv, down, hp,
+        p.merc?.pers?.length ? h('div.d-pers', null, ...p.merc.pers.map(k => G.T.el('ni_' + G.D.PERSONA[k].ic, 'd-pi'))) : null);
+      partyEl.append(h('div.d-col', null, el, sks.length ? h('div.d-sks', null, sks.map(x => x.el)) : null));
+      slots.push({ p, el, hp, lv, down, sks });
+    }
+  }
+  // 기사 기술 (트리로 연다)
+  const skillEl = h('div.d-skills');
+  const skills = Object.entries(F.SKILLS).map(([id, sk]) => {
+    const cd = h('span.cd'), b = h('button.d-btn', { 'data-tip': sk.n, on: { click: e => { e.stopPropagation(); F.cast(f(), id); } } }, G.T.el(sk.t, 'md'), cd);
+    skillEl.append(b);
     return { id, sk, b, cd };
   });
-  const hotbar = h('div', null, skillBtns.map(x => x.b));
-
-  // ── 왼쪽: 파티 초상. 체력 막대, 쓰러지면 회색 + 부활까지 남은 초
-  const frames = h('div.pframes');
-  let partyKey = '';
-  const rows = [];
-  function buildParty() {
-    // 층이 바뀌면 파티원 객체를 새로 만드므로, 이름이 같아도 객체가 다르면 다시 묶는다 (예전 객체를 붙잡으면 쓰러진 채 멈춘다)
-    // 기사가 맨 위, 동료는 영입한 순서대로
-    const rt = F.rt(f()), order = F.recruits(f());
-    const list = [rt.hero, ...[...rt.allies].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id))];
-    const key = list.map(p => p.id || 'hero').join();
-    if (key === partyKey && rows.length === list.length && rows.every((r, i) => r.p === list[i])) return;
-    partyKey = key;
-    frames.querySelectorAll('.pf').forEach(e => e.remove());
-    rows.length = 0;
-    for (const p of list) {
-      const b = bar('hp'), dead = h('b.pf-dead'), buffs = h('div.pf-buffs'), card = h('div.pf-card');
-      // 모바일은 올릴 수 없으니 눌러서 카드를 연다
-      // 카드는 초상 그림 위에서만 (옆 버프에 올렸을 때는 버프 말풍선만)
-      const el = h('div.pf' + (p.kind === 'hero' ? '.lead' : ''), null,
-        h('div.pf-ic', { on: { click: () => el.classList.toggle('show') } }, G.T.el(p.t, 'pf-img'), dead), b, buffs, card);
-      frames.append(el);
-      rows.push({ p, b, dead, el, buffs, card, bk: null });
-    }
-  }
-  // 캐릭터 카드: 이름, 체력, 그 캐릭터만의 수치 (기사: 공격·치명 / 동료: 공격·공격 간격 / 수도사: 치유)
+  // 명령 (단축키)
+  const cmd = (key, ic, tip, fn) => { const b = h('button.d-btn.cmd', { 'data-tip': tip, on: { click: e => { e.stopPropagation(); fn(); } } }, h('b', null, ic), h('kbd', null, key)); return { key, b, fn }; };
+  const CMDS = [
+    cmd('Z', '⌂', '귀환', () => { const s = f(); if (!s.town) EX.home(s, F.rt(s), 'manual'); }),
+    cmd('X', '⤓', '서둘러 내려가기', () => { const rt = F.rt(f()); if (!f().town) { rt.rush = !rt.rush; rt.rally = null; } }),
+    cmd('C', '⏬', '자동 하강', () => { f().auto = !f().auto; }),
+    cmd('V', '✕', '명령 취소', () => G.Cmd.clear(F.rt(f()))),
+  ];
+  const cmdEl = h('div.d-cmds', null, CMDS.map(c => c.b));
+  const dock = h('div.fdock', { on: { click: e => e.stopPropagation() } }, dockTop,
+    h('div.d-main', null, orbHP.el, partyEl, h('i.d-sep'), skillEl, h('i.d-sep'), cmdEl, orbBag.el));
+  // 초상을 누르면 독 위에 그 사람 카드
+  let pick = null;
+  const cardEl = h('div.d-card.hidden');
   function cardLines(s, p) {
     const hp = `❤ ${U.fmt(Math.max(0, p.hp))} / ${U.fmt(p.max)}`;
-    if (p.kind === 'hero') return ['기사', hp, `⚔ ${U.fmt(F.heroAtk(s))} · ${F.aspd(s).toFixed(2)}/초`, `치명 ${U.pct(F.crit())} · ×${F.critD().toFixed(1)}`];
-    const d = p.def;
-    if (d.heal) return [d.n, hp, `✚ 치유 ${Math.round(d.heal * 100 * G.Tree.mul('fantasy', s.tree, 'clericHeal'))}% · ${d.cd}초마다`];
-    return [d.n, hp, `⚔ ${U.fmt(F.allyAtk(s, p))} · ${(F.allyCd(p) / F.aspd(s)).toFixed(1)}초마다`, ...(d.song ? [`♪ 노래 ${Math.round(F.songDur())}초`] : [])];
+    if (p.kind === 'hero') return ['기사 · 길드장', hp, `⚔ ${U.fmt(F.heroAtk(s))} · ${F.aspd(s).toFixed(2)}/초`, `치명 ${U.pct(F.crit())} · ×${F.critD().toFixed(1)}`];
+    const d = p.def, m = p.merc, who = m ? `${m.name} · ${d.n} Lv ${m.lv}` : d.n, tr = m && m.traits.length ? [m.traits.map(t => `${QK.def(t).ic} ${QK.def(t).n}`).join(' · ')] : [];
+    if (m && m.pers?.length) tr.unshift(m.pers.map(k => G.D.PERSONA[k].n).join(' · '));
+    if (m) tr.push(G.Guild.active(m).map(k => G.D.MSKILLS[k].n).join(' · '));
+    if (m && G.Trinket.of(m).length) tr.push(G.Trinket.of(m).map(t => `${G.D.TRINKETS[t.k].ic} ${G.D.TRINKETS[t.k].n}${t.g > 1 ? ' ★' + t.g : ''}`).join(' · '));
+    if (d.heal) return [who, hp, `✚ ${Math.round(d.heal * 100 * G.Tree.mul('fantasy', s.tree, 'clericHeal'))}% · ${d.cd}초`, ...tr];
+    return [who, hp, `⚔ ${U.fmt(F.allyAtk(s, p))} · ${(F.allyCd(p) / F.aspd(s)).toFixed(1)}초`, ...tr];
+  }
+  function drawCard(s) {
+    const p = pick && (pick.kind === 'hero' || F.rt(s).allies.includes(pick)) ? pick : null;
+    tog(cardEl, 'hidden', !p);
+    if (!p) { pick = null; return; }
+    const lines = cardLines(s, p);
+    if (cardEl.childNodes.length !== lines.length) { cardEl.innerHTML = ''; for (const _ of lines) cardEl.append(h('div')); cardEl.firstChild.classList.add('c-n'); }
+    lines.forEach((t, i) => setText(cardEl.childNodes[i], t));
+  }
+  // 단축키
+  document.addEventListener('keydown', e => {
+    if (G.UI.cur !== 'fantasy' || e.target.closest?.('input,textarea')) return;
+    if (e.key.toLowerCase() === 'm') { G.UI.bigMap = !G.UI.bigMap; e.preventDefault(); return; }
+    const c = CMDS.find(x => x.key.toLowerCase() === e.key.toLowerCase());
+    if (c) { c.fn(); e.preventDefault(); return; }
+    const n = +e.key;
+    if (n >= 1 && n <= 9) { const vis = skills.filter(x => !x.b.classList.contains('hidden')); if (vis[n - 1]) F.cast(f(), vis[n - 1].id); }
+  });
+
+  // ════════ 오른쪽 위: 라이벌 한 줄 (미니맵 아래) ════════
+  const rivLine = h('div.m-rivals');
+  const menuEl = h('div.fmenu', null, rivLine);
+  let rivKey = '';
+  function drawRivLine(s, rt) {
+    const rows = G.Rivals.standings(s, rt).filter(r => !r.us);
+    const k = rows.map(r => r.id + r.floor + (r.here ? 'h' : '')).join();
+    if (k === rivKey) return;
+    rivKey = k;
+    rivLine.innerHTML = '';
+    for (const r of rows) rivLine.append(h('span' + (r.here ? '.here' : ''), { style: `--rc:${r.col}`, 'data-tip': `${r.n} · ${RS[r.stance].n}` }, h('i'), `${r.floor}층`));
   }
 
-  // ── 오른쪽 아래: 편성 · 능력치 (눌러서 여는 작은 창)
-  const slotEl = h('small'), rosterEl = h('div.roster');
-  const tAutoParty = G.UI.toggle('자동', () => f().autoParty !== false, v => F.setAuto(f(), v));
-  let rosterKey = '';
-  const rosterBtns = {};
-  function buildRoster() {
-    const have = F.recruits(f()), key = have.join();
-    if (key === rosterKey) return;
-    rosterKey = key;
-    rosterEl.innerHTML = '';
-    for (const id of have) {
-      const def = D.allies[id];
-      rosterBtns[id] = h('button.rmember', { title: def.n, on: { click: () => { F.toggleMember(f(), id); G.SFX.play('select'); } } }, G.T.el(def.t, 'md'));
-      rosterEl.append(rosterBtns[id]);
+  // ════════ 오른쪽 가운데: 경고 (처리할 일) ════════
+  const alertEl = h('div.falerts');
+  let alertKey = '';
+  function drawAlerts(s, rt) {
+    const out = [], T = GD.tavern(s), line = F.lineup(s), hurt = s.mercs.filter(m => m.inj > 0).length;
+    if (line.length < F.slots()) out.push(['출전 칸 ' + (F.slots() - line.length) + ' 빔', 'guild']);
+    if (hurt) out.push(['부상 ' + hurt, 'guild']);
+    if (!s.town && EX.full(s)) out.push(['짐 가득', null]);
+    if (T.offers.some(o => o.price <= s.gold) && s.mercs.length < GD.ROSTER_MAX) out.push(['고용 가능', 'guild']);
+    if (rt.rivals.some(p => p.clash > 0)) out.push(['라이벌 교전', 'rival']);
+    const k = out.map(a => a[0]).join();
+    if (k === alertKey) return;
+    alertKey = k;
+    alertEl.innerHTML = '';
+    for (const [t] of out) alertEl.append(h('div.al', null, h('span', null, t), h('b', null, '!')));
+  }
+
+  // 관리(길드·선술집·라이벌·트리·기록)는 마을 화면(v_town)에서
+  const town = G.UI.fantasyTown();
+
+  // ════════ 조우 선택지: 그 파티 머리 위에 방침 넷 ════════
+  const askT = h('div.enc-t'), askBar = bar(), askBtns = {};
+  const askEl = h('div.encounter.hidden', null, askT, h('div.enc-b', null, ORDER.map(k => (askBtns[k] = h('button', { on: { click: e => { e.stopPropagation(); const pr = F.rt(f()).prompt; if (pr) G.Rivals.setStance(f(), pr.p.d, k); G.SFX.play('select'); } } }, h('b', null, RS[k].ic), h('small', null, RS[k].n))))), askBar);
+  let askKey = '';
+  function frameAsk(mv) {
+    const pr = F.rt(f()).prompt, lead = pr && pr.p.mem.find(e => !e.dead);
+    tog(askEl, 'hidden', !lead);
+    if (!lead) { askKey = ''; return; }
+    const d = pr.p.d, cur = G.Rivals.stance(f(), d);
+    if (askKey !== d.id + cur) {
+      askKey = d.id + cur;
+      askT.innerHTML = '';
+      askT.append(h('b', { style: `color:${d.col}` }, d.n));
+      for (const k of ORDER) tog(askBtns[k], 'on', k === cur);
     }
+    setW(askBar.fill, pr.t / pr.max);
+    const p = mv.toScreen(lead._rx ?? lead.x, lead._ry ?? lead.y);
+    askEl.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y - p.ts * 1.1)}px) translate(-50%, -100%)`;
   }
-  const pop = h('div.fpop.hidden', null, h('div.card-h', null, slotEl, h('span.sp'), tAutoParty.el), rosterEl);
-  let open = false;
-  const partyBtn = h('button.fbtn.pbtn', { title: '편성', on: { click: e => { e.stopPropagation(); open = !open; tog(pop, 'hidden', !open); tog(partyBtn, 'on', open); } } }, '⇄');
-  frames.append(h('div.pf-top', null, partyBtn, pop));
 
-  const overlay = h('div.fover', null, hud, top, h('div.fleft', null, frames));
-  let buffKey = '';
+  const overlay = h('div.fover', null, menuEl, alertEl, askEl, cardEl, dock, town.el);
   return G.UI.worldScreen('fantasy', {
-    overlay, hotbar,
+    overlay,
+    frame: mv => frameAsk(mv),
     update() {
-      const s = f(), rt = F.rt(s), band = D.bands[F.band(s.floor)], ph = F.partyHP(rt), corr = F.corruption(s, rt);
-      setText(floorEl, `제 ${s.floor}층${F.isBoss(s.floor) ? ' · 보스' : ''}`);
-      prev.disabled = s.floor <= 1;
-      next.disabled = s.floor >= s.maxFloor;
-      auto.update();
-      G.T.set(hudMon, band.mons[0].t);
-      setText(hudLeft, rt.phase === 'dead' ? ` 전멸 · ${Math.ceil(rt.reviveT)}` : ` ${rt.mons.length}`);
-      setText(maxEl, ` · 최고 ${s.maxFloor}`);
-      setW(hpBar.fill, ph.hp / ph.max);
-      tog(hpBar, 'low', ph.hp / ph.max < 0.3);
-      setText(hpTxt, `${U.fmt(Math.max(0, ph.hp))} / ${U.fmt(ph.max)}`);
-      // 오염 피해: 살아 있는 파티원 최대 체력 합 × 비율 (초당)
-      const alive = rt.party.reduce((a, p) => a + (p.dead ? 0 : p.max || 0), 0);
-      setText(corrEl, corr > 0 ? `☣ -${U.fmt(alive * corr)}/초` : '');
-      for (const x of skillBtns) {
+      const s = f(), rt = F.rt(s), ph = F.partyHP(rt);
+      // 윗줄
+      setText(floorEl, s.town ? '마을' : `${s.floor}층`);
+      const nextBoss = (() => { for (let fl = s.floor; fl < s.floor + 8; fl++) if (F.isBoss(fl)) return fl; return 0; })();
+      setText(bossEl, s.town ? `출발점 ${s.checkpoint || 1}층` : F.isBoss(s.floor) ? '보스' : nextBoss ? `보스 ${nextBoss}층` : '');
+      tog(bossEl, 'boss', !s.town && F.isBoss(s.floor));
+      const cov = G.Season.coverage(s, s.floor), known = !s.town && G.Season.known(s, rt);
+      setText(covEl, s.town ? '' : `탐사 ${Math.round(cov * 100)}%${known ? ' · 직행' : ''}`);
+      tog(covEl, 'on', known);
+      const tot = rt.monTotal || 1, left = s.town ? 0 : rt.mons.length;
+      setW(progBar.fill, s.town ? 0 : 1 - left / tot);
+      setText(progTxt, s.town ? '' : rt.phase === 'dead' ? `전멸 ${Math.ceil(rt.reviveT)}` : `${left}/${tot}`);
+      setText(vaultEl, U.fmt(s.gold));
+      setText(essEl, U.fmt(G.S.ess));
+      setText(dockTop.querySelector('.d-season'), `시즌 ${G.Season.st(s).n} · ${U.fmtTime(G.Season.left(s))}`);
+      setText(orderEl, G.Cmd.label(rt));
+      // 구슬
+      const hpR = ph.max ? ph.hp / ph.max : 0, cap = EX.cap(s), c = EX.carry(s);
+      orbHP.el.style.setProperty('--v', s.town ? 1 : hpR);
+      tog(orbHP.el, 'low', !s.town && hpR < 0.3);
+      setText(orbHP.v, s.town ? '' : `${Math.round(hpR * 100)}%`);
+      orbHP.el.dataset.tip = `원정대 체력 ${U.fmt(Math.max(0, ph.hp))}/${U.fmt(ph.max)} · 공격 ×${U.fmt(F.atkMult() * F.dmgMult(s))} · 체력 ×${U.fmt(F.sum(F.parts('hp')))} · 재생 ${(F.regen(s) * 100).toFixed(1)}%/초 · 오염 ${(F.corruption(s, rt) * 100).toFixed(1)}%/초`;
+      orbBag.el.style.setProperty('--v', s.town ? 0 : c / cap);
+      tog(orbBag.el, 'full', !s.town && EX.full(s));
+      setText(orbBag.v, s.town ? '' : U.fmt(c));
+      orbBag.el.dataset.tip = s.town ? '짐' : `짐 ${U.fmt(c)}/${U.fmt(cap)}${rt.homeAfterBoss ? ' · 보스 후 귀환' : ''}`;
+      // 초상
+      buildParty(s, rt);
+      for (const r of slots) {
+        if (!r.p) continue;
+        const p = r.p, dead = p.dead;
+        setW(r.hp.fill, dead ? 0 : p.hp / p.max);
+        tog(r.hp, 'low', !dead && p.hp / p.max < 0.3);
+        tog(r.el, 'down', dead);
+        tog(r.el, 'on', pick === p);
+        setText(r.lv, p.merc ? p.merc.lv : '');
+        setText(r.down, dead ? Math.ceil(p.reviveT) : '');
+        // 연계기가 나가면 두 사람 초상이 함께 번쩍
+        tog(r.el, 'combo', !!p._combo && G.S.runTime - p._combo < 0.8);
+        // 기벽 · 장신구 · 전우가 생기면 초상이 그 색으로 번쩍 (DESIGN.md 50)
+        const qa = p._qfx ? G.S.runTime - p._qfx.t : -1, qf = qa >= 0 && qa < 1.6 ? p._qfx.kind : '';
+        for (const k of ['good', 'bad', 'bond', 'loot']) tog(r.el, 'q' + k, qf === k);
+        if (r.sks) for (const x of r.sks) {
+          const cd = p.cds?.[x.k] || 0, max = G.D.MSKILLS[x.k].cool;
+          x.el.style.setProperty('--cd', s.town ? 0 : Math.max(0, cd / max));
+          tog(x.el, 'off', p.merc.lv < GD.slotLv(x.j));
+          tog(x.el, 'fire', p.lastSk === x.k && cd > max - 0.5);
+        }
+      }
+      drawCard(s);
+      // 기술 (동료 기술은 그 동료가 출전 중일 때만)
+      for (const x of skills) {
         const un = F.unlocked(x.id), cd = s.cds[x.id] || 0;
-        // 동료 기술은 그 동료가 출전 중일 때만 보인다
-        tog(x.b, 'hidden', !un || (x.sk.who && !F.members(s).includes(x.sk.who)));
-        x.b.disabled = cd > 0 || !F.canCast(s, x.id);
+        tog(x.b, 'hidden', !un);
+        x.b.disabled = s.town || cd > 0 || !F.canCast(s, x.id);
         setText(x.cd, cd > 0 ? Math.ceil(cd) : '');
       }
-      buildParty();
-      for (const r of rows) {
-        const p = r.p, dead = p.dead;
-        setW(r.b.fill, dead ? 0 : p.hp / p.max);
-        tog(r.b, 'low', !dead && p.hp / p.max < 0.3);
-        tog(r.el, 'down', dead);
-        setText(r.dead, dead ? Math.ceil(p.reviveT) : '');
-        // 버프는 파티 전체 효과라 살아 있는 모두의 초상 옆에 뜬다
-        const bk = dead ? '' : Object.keys(s.buffs).filter(k => D.buffs[k] && k !== 'assault').join();
-        if (bk !== r.bk) {
-          r.bk = bk;
-          r.buffs.innerHTML = '';
-          for (const k of bk ? bk.split(',') : []) r.buffs.append(h('span.buff', { 'data-tip': `${D.buffs[k].n} · ${D.buffs[k].d}`, 'data-k': k, style: `--bc:${D.buffs[k].col}` }, G.T.el(D.buffs[k].t, 'xs'), h('small')));
-        }
-        for (const el of r.buffs.children) setText(el.lastChild, Math.ceil(s.buffs[el.dataset.k] || 0));
-        const lines = cardLines(s, p);
-        if (r.card.childNodes.length !== lines.length) { r.card.innerHTML = ''; for (const _ of lines) r.card.append(h('div')); r.card.firstChild.classList.add('pc-n'); }
-        lines.forEach((t, i) => setText(r.card.childNodes[i], t));
-      }
-      // 총 배율 (트리·차원·유물·시너지를 더한 값) + 말풍선 내역
-      const tipOf = k => F.parts(k).filter(p => +p[1].toFixed(2) !== 1).map(([n, v]) => `${n} ×${U.fmt(v)}`).join(' · ') || '기본';
-      setText(stats.atk, `×${U.fmt(F.atkMult() * F.dmgMult(s))}`);
-      tipSet('atk', `파티 공격력 — ${tipOf('atk')}${F.dmgMult(s) !== 1 ? ` · 버프 ×${U.fmt(F.dmgMult(s))}` : ''}`);
-      setText(stats.hp, `×${U.fmt(F.sum(F.parts('hp')))}`);
-      tipSet('hp', `파티 체력 — ${tipOf('hp')}`);
-      tipSet('gold', `골드 — ${tipOf('gold')}${s.buffs.gold ? ' · 행운의 노래 ×2' : ''}`);
-      setText(stats.aspd, `×${F.aspd(s).toFixed(2)}`);
-      setText(stats.regen, `${(F.regen(s) * 100).toFixed(1)}%`);
-      setText(stats.armor, U.pct(F.armor()));
-      setText(stats.smite, U.fmt(F.smiteDmg(s)));
-      setText(stats.gold, `×${U.fmt(F.goldMult(s))}`);
-      G.T.set(stats.matkIc, band.mons[0].t);
-      setText(stats.matk, U.fmt(F.monAtk(s.floor, false)));
-      // 편성 창은 열려 있을 때만 채운다
-      if (open) {
-        buildRoster();
-        const lineup = F.lineup(s);
-        setText(slotEl, `${lineup.length} / ${F.slots()}`);
-        tAutoParty.update();
-        for (const id in rosterBtns) tog(rosterBtns[id], 'on', lineup.includes(id));
-      }
+      tog(skillEl, 'hidden', !skills.some(x => !x.b.classList.contains('hidden')));
+      // 명령
+      for (const c of CMDS) c.b.disabled = s.town;
+      tog(CMDS[1].b, 'on', !!rt.rush);
+      tog(CMDS[2].b, 'on', !!s.auto);
+      // 오른쪽
+      drawRivLine(s, rt);
+      drawAlerts(s, rt);
+      // 마을: 던전 HUD를 숨기고 마을 화면을 맵 자리에 (스킬트리 단추도 마을 탭으로)
+      for (const e of [dock, menuEl, alertEl]) tog(e, 'hidden', !!s.town);
+      tog(overlay.parentNode, 'town', !!s.town);
+      town.update();
     },
   });
 };

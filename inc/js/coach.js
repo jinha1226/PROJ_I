@@ -22,31 +22,11 @@ G.Coach = {
       const rt = G.Fantasy.rt(w), m = rt.phase !== 'dead' && G.Fantasy.nearestMon(rt, rt.hero, 7);
       return m ? { x: m._rx ?? m.x, y: m._ry ?? m.y, s: m.s, label: '눌러!' } : null;
     }
-    if (id === 'wuxia') {
-      const b = G.Wuxia.rt(w).foes[0];
-      return b ? { x: b._rx ?? b.x, y: b._ry ?? b.y, s: 1, label: '눌러!' } : null;
-    }
-    if (id === 'xianxia') {
-      const me = G.Xianxia.rt(w).me;
-      return { x: me._rx ?? me.x, y: me._ry ?? me.y, s: 1.2, label: '눌러!' };
-    }
-    if (id === 'scifi') {
-      if (Object.keys(w.towers).length) { G.Coach.done(id, 1); return null; }
-      const rt = G.Scifi.rt(w), i = w.selPad != null && w.selPad < G.Scifi.padCount() ? w.selPad : 0;
-      return { x: rt.pads[i][0], y: rt.pads[i][1], s: 1, label: w.selPad == null ? '눌러!' : '건설!' };
-    }
-    if (id === 'cthulhu') {
-      // 감아 올릴 때 위쪽의 물고기 하나를 가리킨다: 누르면 바늘이 그쪽으로 간다
-      const rt = G.Cthulhu.rt(w), h = rt.hook;
-      if (rt.phase !== 'up') return null;
-      const f = rt.fish.find(o => o.y < h.y && h.y - o.y < 4);
-      return f ? { x: f._rx ?? f.x, y: f._ry ?? f.y, s: 1, label: '눌러!' } : null;
-    }
     return null;
   },
-  // 맵을 눌렀다: 화살표 근처를 눌렀으면 그 세계의 첫 단계 끝 (SF는 포탑을 지어야 끝)
+  // 맵을 눌렀다: 화살표 근처를 눌렀으면 그 세계의 첫 단계 끝
   clicked(id, p, t) {
-    if (t && id !== 'scifi' && Math.hypot(t.x - p.x, t.y - p.y) < 1.6) G.Coach.done(id, 1);
+    if (t && Math.hypot(t.x - p.x, t.y - p.y) < 1.6) G.Coach.done(id, 1);
   },
   // 첫 노드를 살 수 있는데 아직 트리를 안 열었으면 탭이 반짝인다
   canAfford(id) {
