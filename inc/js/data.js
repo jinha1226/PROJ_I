@@ -308,8 +308,19 @@ Object.assign(G.D.MSKILLS, {
   sr_potent: { n: '강력한 소마법', en: 'Potent Cantrip', t: 'fx_zap', d: '빗나간 소마법 · 버틴 내성도 절반', passive: true, lv: 3 },
   sr_empower: { n: '강화된 방출', en: 'Empowered Evocation', t: 'fx_fire', d: '방출계 주문 ×1.3', passive: true, lv: 10 },
 });
+// 대표 기술 (DESIGN.md 66): 직업마다 하나는 늘 첫 칸 — 그 직업이 무엇을 하는지 한눈에 보이는 것. 나머지 셋은 풀에서
+G.D.MSIG = { barbarian: 'sr_rage', bard: 'sr_tw', cleric: 'sr_gbolt', scout: 'sr_wild', dragoon: 'sr_surge', monk: 'sr_flurry', paladin: 'sr_smite', archer: 'sr_hmark', rogue: 'sr_cunning', mage: 'sr_firebolt', warlock: 'sr_eb', archmage: 'sr_mm' };
+// 임무 적성 (DESIGN.md 66 · 픽 미 업): 그 임무에서 한 몫 하는 직업 — 원정대에 있으면 임무가 쉬워진다
+G.D.APT = {
+  hunt: { cls: ['dragoon', 'mage', 'archmage', 'warlock'], d: n => `보상 +${25 * n}%` },
+  survive: { cls: ['barbarian', 'cleric', 'paladin'], d: n => `버틸 시간 −${5 * n}초` },
+  defend: { cls: ['paladin', 'dragoon', 'barbarian'], d: n => `결계석 체력 +${30 * n}%` },
+  escort: { cls: ['cleric', 'bard', 'paladin'], d: n => `상인 체력 +${30 * n}% · 사례 +${25 * n}%` },
+  search: { cls: ['rogue', 'archer', 'scout'], d: n => `유물 ${n}개 바로 보임` },
+  escape: { cls: ['monk', 'rogue', 'archer'], d: n => `제한 시간 +${10 * n}초` },
+};
 G.D.MPOOL = {
-  barbarian: ['sr_rage', 'sr_reckless', 'sr_brutal', 'sr_relent', 'sr_feral', 'sr_fastmove'],
+  barbarian: ['sr_rage', 'sr_reckless', 'sr_brutal', 'sr_relent', 'sr_fastmove'],
   bard: ['sr_faerie', 'sr_mock', 'sr_hword', 'sr_whisper', 'sr_tw', 'sr_sleep', 'sr_shatter', 'sr_hypno'],
   cleric: ['sr_cure', 'sr_bless', 'sr_gbolt', 'sr_turn', 'sr_sweapon', 'sr_guard', 'sr_revive', 'sr_mhw'],
   scout: ['sr_pflame', 'sr_entangle', 'sr_hword', 'sr_wild', 'sr_moon', 'sr_spike', 'sr_call', 'sr_ice'],
@@ -317,7 +328,7 @@ G.D.MPOOL = {
   monk: ['sr_flurry', 'sr_patient', 'sr_wind', 'sr_deflect', 'sr_stun', 'sr_selfrest'],
   paladin: ['sr_lay', 'sr_sof', 'sr_bless', 'sr_smite', 'sr_searing', 'sr_aura', 'sr_radiant'],
   archer: ['sr_hmark', 'sr_ensnare', 'sr_cure', 'sr_spike', 'sr_tireless', 'sr_precise'],
-  rogue: ['sr_cunning', 'sr_steady', 'sr_cstrike', 'sr_uncanny', 'sr_reliable', 'sr_devious', 'sr_elusive'],
+  rogue: ['sr_cunning', 'sr_steady', 'sr_cstrike', 'sr_uncanny', 'sr_reliable', 'sr_devious'],
   mage: ['sr_firebolt', 'sr_chroma', 'sr_quicken', 'sr_twin', 'sr_sray', 'sr_fireball', 'sr_lbolt', 'sr_chain'],
   warlock: ['sr_eb', 'sr_hex', 'sr_rebuke', 'sr_agon', 'sr_dark', 'sr_fear', 'sr_vtouch'],
   archmage: ['sr_rof', 'sr_mm', 'sr_shield', 'sr_misty', 'sr_hold', 'sr_web', 'sr_fireball', 'sr_haste', 'sr_slow', 'sr_cone', 'sr_meteor'],

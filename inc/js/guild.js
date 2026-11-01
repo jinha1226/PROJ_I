@@ -44,7 +44,8 @@ G.Guild = (() => {
     createLeader(f, o) {
       const L = Gd.leader(f);
       if (!f.leaderNew) return false;
-      Object.assign(L, { cls: o.cls, name: o.name || L.name, ab: { ...o.ab }, abCls: o.cls, feat: o.feat, look: o.look || 0, skills: o.skills.slice().sort((a, b) => Gd.skLv(o.cls, a) - Gd.skLv(o.cls, b)), adv: null });
+      const sig = D.MSIG[o.cls], rest = o.skills.filter(k => k !== sig).sort((a, b) => Gd.skLv(o.cls, a) - Gd.skLv(o.cls, b));
+      Object.assign(L, { cls: o.cls, name: o.name || L.name, ab: { ...o.ab }, abCls: o.cls, feat: o.feat, look: o.look || 0, skills: [sig, ...rest].slice(0, SKILL_N), adv: null });
       f.leaderNew = false;
       G.log(`단장 · ${L.name} (${Gd.def(L).n})`, 'fantasy', 'good');
       const rt = G.RT.fantasy;
@@ -143,7 +144,8 @@ G.Guild = (() => {
     },
     // ── 개인 스킬 (DESIGN.md 43): 직업 일곱 중 넷. 칸은 Lv 1에 둘 · Lv 3에 셋 · Lv 5에 넷 ──
     // 넷을 뽑아 배우는 레벨 순으로 (DESIGN.md 56 ②: SRD 주문 · 기술은 그 레벨이 되어야 쓴다)
-    roll: cls => U.shuffle(D.MPOOL[cls].slice()).slice(0, SKILL_N).sort((a, b) => Gd.skLv(cls, a) - Gd.skLv(cls, b)),
+    // 첫 칸은 대표 기술(D.MSIG), 나머지 셋은 풀에서 — 배우는 레벨 순
+    roll: cls => { const sig = D.MSIG[cls]; return [sig, ...U.shuffle(D.MPOOL[cls].filter(k => k !== sig)).slice(0, SKILL_N - 1).sort((a, b) => Gd.skLv(cls, a) - Gd.skLv(cls, b))]; },
     skLv(cls, k) { const L = D.MSKILLS[k]?.lv; return typeof L === 'object' ? L[cls] || 1 : L || 1; },
     // 그 칸이 열리는 레벨: 칸 레벨(1 · 1 · 3 · 5)과 기술 레벨 중 큰 쪽
     slotLv: (i, m, k) => Math.max(SLOT_LV[i], m && k ? Gd.skLv(m.cls, k) : 1),
@@ -250,7 +252,10 @@ G.Guild = (() => {
       for (const m of ok) if (out.length < n && !seen.has(m.cls)) { out.push(m.uid); seen.add(m.cls); }
       for (const m of ok.sort((a, b) => b.lv - a.lv)) if (out.length < n && !out.includes(m.uid)) out.push(m.uid);
       // 트리에서 연 연계기가 나가도록 · 전우는 같이 · 앙숙은 떼어 한 명씩 바꿔 본다 (수도사는 남긴다 — 치유가 있어야 오염을 버틴다)
-      const score = ids => { const ms = ids.map(u => Gd.get(f, u)); return 10 * G.Combo.possible(ms).filter(c => c.open).length + G.Bond.pairs(f, ms).reduce((a, p) => a + (p.r === 'friend' ? 3 : -8), 0) + ms.reduce((a, m) => a + m.lv * 0.1 + (m.cls === 'cleric' ? 100 : 0), 0); };
+      // 다가오는 임무의 적성 (DESIGN.md 66): 맞는 사람 하나에 +2
+      const ahead = G.Mission ? G.Mission.ahead(f, f.start || 1, 4).map(x => x.k) : [];
+      const fit = ms => ms.reduce((a, m) => a + ahead.filter(k => D.APT[k].cls.includes(m.cls)).length * 2, 0);
+      const score = ids => { const ms = ids.map(u => Gd.get(f, u)); return fit(ms) + 10 * G.Combo.possible(ms).filter(c => c.open).length + G.Bond.pairs(f, ms).reduce((a, p) => a + (p.r === 'friend' ? 3 : -8), 0) + ms.reduce((a, m) => a + m.lv * 0.1 + (m.cls === 'cleric' ? 100 : 0), 0); };
       for (let pass = 0; pass < 2; pass++) for (let i = 0; i < out.length; i++) for (const m of ok) {
         if (out.includes(m.uid)) continue;
         const t = out.slice(); t[i] = m.uid;
@@ -324,9 +329,10 @@ G.Guild = (() => {
     migrate(f) {
       if (!f.mercs) f.mercs = [];
       // 스킬 일곱 중 넷(DESIGN.md 43) 전의 용병: 풀에 남은 것은 두고 나머지를 풀에서 채운다
-      for (const m of f.mercs.concat((f.tavern?.offers || []).map(o => o.m))) {
-        const pool = D.MPOOL[m.cls], keep = (m.skills || []).filter(k => pool.includes(k));
-        if (keep.length !== SKILL_N) m.skills = keep.concat(U.shuffle(pool.filter(k => !keep.includes(k)))).slice(0, SKILL_N);
+      for (const m of f.mercs.concat((f.tavern?.offers || []).map(o => o.m), f.leader ? [f.leader] : [])) {
+        const pool = D.MPOOL[m.cls], sig = D.MSIG[m.cls], keep = (m.skills || []).filter(k => pool.includes(k) && k !== sig);
+        // 대표 기술이 첫 칸 (DESIGN.md 66) · 풀에서 빠진 기술은 새로
+        m.skills = [sig, ...keep.concat(U.shuffle(pool.filter(k => k !== sig && !keep.includes(k))))].slice(0, SKILL_N);
         if (m.look == null) m.look = U.rand(LOOKS);
         // 기벽 · 요양소를 뺐다 (DESIGN.md 61): 옛 기벽은 지우고 출신 재주를 굴린다
         if (!m.feat) m.feat = G.Feat.roll();

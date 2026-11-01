@@ -198,13 +198,21 @@ G.Dnd = (() => {
       // 위저드 방어막 (Shield): 맞을 공격이 5 이내로 넘었으면 AC +5로 막는다 (10초에 한 번)
       if (tot >= ac && tot < ac + 5 && tg.merc && G.Fantasy.sk(tg, 'sr_shield') && !(tg.shieldT > now())) {
         tg.shieldT = now() + 10;
+        N.flip(tg, '방어막', '#c9a6ff');
         N.buff(tg, 'shield', 3, { ac: 5 });
         G.fx(G.RT.fantasy, { k: 'ring', x: tg.x, y: tg.y, r: 0.9, t: 0.4, col: '#c9a6ff' });
         return { hit: false, crit: false, nat, adv };
       }
       let hit = tot >= ac;
       // 전투 기량의 은혜: 빗나간 공격 하나를 명중으로 (6초에 한 번)
-      if (!hit && att.merc && N.boon(att.merc, 'prowess') && !(att.prowT > now())) { att.prowT = now() + 6; hit = true; }
+      if (!hit && att.merc && N.boon(att.merc, 'prowess') && !(att.prowT > now())) { att.prowT = now() + 6; hit = N.flip(att, '전투 기량'); }
+      // 명중이 보정 덕분이었다면 그 이름을
+      else if (hit && att.merc) {
+        const pb = G.Guild.sum(att.merc, 'hitB'), ib = N.bon(att, 'insp') ? 3.5 : 0, bl = N.bless(att);
+        if (pb && tot - pb < ac) N.flip(att, '비길 데 없는 기술');
+        else if (ib && tot - ib < ac) N.flip(att, '바드의 영감');
+        else if (bl && tot - bl < ac) N.flip(att, '신전의 축복');
+      }
       return { hit, crit: hit && N.melee(att) && N.any(tg, 'meleeCrit'), nat, adv };
     },
     cutting(att) {
@@ -217,16 +225,28 @@ G.Dnd = (() => {
       return 1 + U.rand(6);
     },
     // 내성 굴림: 성공하면 true
+    // 내성: 성공하면 true. 우리 쪽은 기술 · 오라 · 영감 덕분에 결과가 뒤집혔을 때 그 이름을 띄운다 (DESIGN.md 66)
     save(tg, k, dc) {
-      const b = N.saveBonus(tg, k) + N.bsum(tg, 'save') + N.aura(tg);
-      if (N.d20(0) + b >= dc) return true;
+      const aura = N.aura(tg), insp = N.bon(tg, 'insp') ? 3.5 : 0, b = N.saveBonus(tg, k) + N.bsum(tg, 'save') + aura, r = N.d20(0);
+      if (r + b >= dc) {
+        if (tg.merc && aura && r + b - aura < dc) N.flip(tg, '보호의 오라');
+        else if (tg.merc && insp && r + b - insp < dc) N.flip(tg, '바드의 영감');
+        return true;
+      }
+      if (!tg.merc) return false;
       // 파이터 불굴 (Indomitable): 실패한 내성을 다시 (20초에 한 번)
-      if (tg.merc && G.Fantasy.sk(tg, 'sr_indom') && !(tg.indomT > now())) { tg.indomT = now() + 20; return N.d20(0) + b + N.prof(tg.merc.lv) >= dc; }
+      if (G.Fantasy.sk(tg, 'sr_indom') && !(tg.indomT > now())) { tg.indomT = now() + 20; if (N.d20(0) + b + N.prof(tg.merc.lv) >= dc) return N.flip(tg, '불굴'); return false; }
       // 운명의 은혜: 실패한 내성에 2d4 (10초에 한 번)
-      if (tg.merc && N.boon(tg.merc, 'fate') && !(tg.fateT > now())) { tg.fateT = now() + 10; if (N.d20(0) + b + 2 + U.rand(4) + U.rand(4) >= dc) return true; }
+      if (N.boon(tg.merc, 'fate') && !(tg.fateT > now())) { tg.fateT = now() + 10; if (r + b + 2 + U.rand(4) + U.rand(4) >= dc) return N.flip(tg, '운명의 은혜'); }
       // 어둠의 행운 (악마 후원자): 실패한 내성에 d10 (20초에 한 번)
-      if (tg.merc && G.Fantasy.sk(tg, 'sr_luck') && !(tg.luckT > now())) { tg.luckT = now() + 20; return N.d20(0) + b + 1 + U.rand(10) >= dc; }
+      if (G.Fantasy.sk(tg, 'sr_luck') && !(tg.luckT > now())) { tg.luckT = now() + 20; if (r + b + 1 + U.rand(10) >= dc) return N.flip(tg, '어둠의 행운'); }
       return false;
+    },
+    // 결과를 뒤집은 규칙의 이름을 머리 위에 (같은 사람은 1.2초에 하나). 늘 true — 성공한 판정에서 그대로 돌려준다
+    flip(e, s, col = '#ffe08a') {
+      const rt = G.RT.fantasy;
+      if (rt && !(e._flipT > now())) { e._flipT = now() + 1.2; G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.4, s: '🎲 ' + s, col, t: 1.1, sz: 0.8, pop: true }); }
+      return true;
     },
     // 팔라딘 보호의 오라 (Aura of Protection): 3칸 안 동료의 내성 + 매력 수정치(최소 1)
     aura(tg) {
@@ -253,8 +273,8 @@ G.Dnd = (() => {
       const fx = mo.fx;
       if (!fx || p.dead || !U.chance(PROC)) return;
       // 자기 회복 (몽크) · 자연의 수호 (대지): 공포 · 중독에 걸리지 않는다
-      if ((fx[0] === 'frightened' || fx[0] === 'poisoned') && (G.Fantasy.sk(p, 'sr_selfrest') || G.Fantasy.sk(p, 'sr_ward'))) return;
-      if (p.merc && G.Trinket.imm(p.merc, fx[0])) return;
+      if ((fx[0] === 'frightened' || fx[0] === 'poisoned') && (G.Fantasy.sk(p, 'sr_selfrest') || G.Fantasy.sk(p, 'sr_ward'))) { N.flip(p, `${G.Fantasy.sk(p, 'sr_ward') ? '자연의 수호' : '자기 회복'} · ${COND[fx[0]].n} 무효`, '#9fe79f'); return; }
+      if (p.merc && G.Trinket.imm(p.merc, fx[0])) { N.flip(p, `${COND[fx[0]].n} 면역`, '#9fe79f'); return; }
       if (N.save(p, fx[1], N.dc(mo))) return;
       N.give(rt, p, fx[0], fx[2]);
       // 동료가 넘어지거나 마비됐다 — 팔라딘 「수호」 계기

@@ -7,7 +7,7 @@ G.UI.fantasyTown = function () {
   const RS = G.Rivals.STANCES, ORDER = Object.keys(RS), RT = EX.RETREAT;
   const WHY = { wipe: '전멸', full: '짐 가득', retreat: '방침 귀환', careful: '신중 귀환', manual: '귀환' };
   // 스킬 넷 (DESIGN.md 43): 안 열린 칸은 흐리게(툴팁에 열리는 레벨) · ★ = 스킬 레벨(용병 레벨로 자동) · 상위 직업 스킬(sig)은 보랏빛 테두리로 뒤에
-  const skillEls = m => h('div.tw-sks', null, (m.skills || []).map((k, i) => { const S = G.D.MSKILLS[k], lv = GD.slotLv(i, m, k), off = m.lv < lv; return h('span.tw-sk' + (off ? '.off' : '') + (S.passive ? '.pas' : ''), { 'data-tip': `${S.n}${S.en ? ` (${S.en})` : ''} · ${S.d}${S.passive ? '' : ` · ${S.cool}초`}${off ? ` · Lv ${lv}` : ''}` }, G.T.el(S.t, 'xs'), h('small', null, S.n)); }),
+  const skillEls = m => h('div.tw-sks', null, (m.skills || []).map((k, i) => { const S = G.D.MSKILLS[k], lv = GD.slotLv(i, m, k), off = m.lv < lv; return h('span.tw-sk' + (off ? '.off' : '') + (S.passive ? '.pas' : ''), { 'data-tip': `${S.n}${S.en ? ` (${S.en})` : ''} · ${S.d}${S.passive ? '' : ` · ${S.cool}초`}${off ? ` · Lv ${lv}` : ''}` }, G.T.el(S.t, 'xs'), h('small', null, (k === G.D.MSIG[m.cls] ? '★ ' : '') + S.n)); }),
     h('b.tw-slv', { 'data-tip': '스킬 레벨' }, '★' + GD.skillLv(m)),
     (m.adv ? G.D.ADV[m.adv].sig : []).map(k => { const S = G.D.MSKILLS[k], lv = GD.skLv(m.cls, k), off = m.lv < lv; return h('span.tw-sk.sig' + (off ? '.off' : ''), { 'data-tip': `${S.n}${S.en ? ` (${S.en})` : ''} · ${S.d}${off ? ` · Lv ${lv}` : ''}` }, G.T.el(S.t, 'xs'), h('small', null, S.n)); }),
     // 서사 은혜 (DESIGN.md 59)
@@ -88,7 +88,7 @@ G.UI.fantasyTown = function () {
 
   // ── 원정대: 출전 카드 줄 + 오른쪽 계획(지난 원정 · 출발층 · 귀환 방침 · 자동)
   const lineEl = h('div.tw-line'), benchEl = h('div.tw-line.bench'), lastEl = h('div.tw-last'), planStart = h('b'), comboEl = h('div.tw-combos'), bondEl = h('div.tw-combos');
-  const rtBtns = {}, raidEl = h('small.tw-raid');
+  const rtBtns = {}, raidEl = h('small.tw-raid'), aheadEl = h('div.tw-ahead');
   const tGo = G.UI.toggle('자동 출발', () => f().autoGo !== false, v => { f().autoGo = v; });
   const tFull = G.UI.toggle('짐 가득 → 보스 후 귀환', () => f().fullHome !== false, v => { f().fullHome = v; });
   const tAuto = G.UI.toggle('자동 편성', () => f().autoParty !== false, v => { F.setAuto(f(), v); keys.party = ''; });
@@ -99,6 +99,7 @@ G.UI.fantasyTown = function () {
       h('div.tw-box', null, h('div.tw-h', null, h('b', null, '지난 원정')), lastEl),
       h('div.tw-box', null, h('div.tw-h', null, h('b', null, '연계기')), comboEl),
       h('div.tw-box', null, h('div.tw-h', null, h('b', null, '관계')), bondEl),
+      h('div.tw-box', null, h('div.tw-h', null, h('b', null, '다음 임무')), aheadEl),
       h('div.tw-box', null, h('div.tw-h', null, h('b', null, '출발층')), h('div.tw-row', null,
         h('button.fbtn', { on: { click: () => EX.pickStart(f(), -1) } }, '◀'), planStart, h('button.fbtn', { on: { click: () => EX.pickStart(f(), 1) } }, '▶'))),
       h('div.tw-box', null, h('div.tw-h', null, h('b', null, '귀환 방침')), h('div.tw-opts', null, Object.keys(RT).map(k => (rtBtns[k] = h('button.tw-opt', { on: { click: () => { f().retreat = k; } } }, RT[k].n))))),
@@ -149,6 +150,17 @@ G.UI.fantasyTown = function () {
     setText(lastEl, !L || L.why === 'start' ? '—' : `${L.floor}층 · ${WHY[L.why] || '귀환'}${L.who ? ` (${L.who})` : ''} · +${U.fmt(L.got)}${L.lost ? ` · -${U.fmt(L.lost)}` : ''}`);
     tog(lastEl, 'bad', !!L && L.why === 'wipe');
     setText(planStart, ` ${s.start || 1}층 `);
+    // 다음 임무 (DESIGN.md 66): 출발층부터 여섯. 지금 편성(단장 포함)의 적성 수를 옆에
+    const crew = [GD.leader(s), ...line.map(u => GD.get(s, u)).filter(Boolean)], ah = G.Mission.ahead(s, s.start || 1);
+    const ak = ah.map(x => x.fl + x.k).join() + crew.map(m => m.cls).join();
+    if (aheadEl._k !== ak) {
+      aheadEl._k = ak;
+      aheadEl.innerHTML = '';
+      for (const { fl, k } of ah) {
+        const D_ = G.Mission.DEF[k], A = G.D.APT[k], n = Math.min(3, crew.filter(m => A.cls.includes(m.cls)).length);
+        aheadEl.append(h('span.tw-ah' + (n ? '.fit' : ''), { 'data-tip': `${fl}층 ${D_.n} · ${D_.d} · 적성 ${A.cls.map(c => G.D.F.allies[c].n).join('·')}${n ? ` · 지금 ${n}명: ${A.d(n)}` : ''}` }, h('small', null, fl + '층'), D_.ic, D_.n, n ? h('b', null, '✦' + n) : null));
+      }
+    }
     for (const k in rtBtns) tog(rtBtns[k], 'on', (s.retreat || 'hp30') === k);
     tGo.update(); tFull.update(); tAuto.update(); tDirect.update();
   }
@@ -412,9 +424,10 @@ G.UI.fantasyTown = function () {
       h('button.tw-act', { on: { click: () => { cr.vals = ord.map(() => DN.roll4()).sort((a, b) => b - a); re(); } } }, '🎲 4d6')),
       h('div.tw-cr-ab', null, DN.AB.map(k => { const i = ord.indexOf(k), v = cr.vals[i]; return h('span' + (DN.key(cr.cls, k) ? '.key' : '') + (cr.swap === i ? '.sel' : '') + (v >= 16 ? '.hi' : v <= 8 ? '.lo' : ''), { on: { click: () => { if (cr.swap == null) cr.swap = i; else { const j = cr.swap; [cr.vals[i], cr.vals[j]] = [cr.vals[j], cr.vals[i]]; cr.swap = null; } re(); } } }, h('small', null, DN.AB_N[k]), h('b', null, v), h('i', null, DN.role(cr.cls, k))); })));
     // 기술: 직업 풀에서 넷
-    const pool = G.D.MPOOL[cr.cls];
+    // 첫 칸은 대표 기술(고정), 셋을 고른다
+    const pool = G.D.MPOOL[cr.cls], sig = G.D.MSIG[cr.cls];
     crBody.append(h('div.tw-h', null, h('b', null, '기술'), h('small', null, ` ${cr.skills.length}/4`)), h('div.tw-cr-row', null, pool.map(k => { const S = G.D.MSKILLS[k], on = cr.skills.includes(k), lv = GD.skLv(cr.cls, k);
-      return h('button.tw-cr-opt' + (on ? '.on' : ''), { 'data-tip': `${S.n}${S.en ? ` (${S.en})` : ''} · ${S.d}${S.passive ? '' : ` · ${S.cool}초`}${lv > 1 ? ` · Lv ${lv}` : ''}`, on: { click: () => { if (on) cr.skills = cr.skills.filter(q => q !== k); else if (cr.skills.length < 4) cr.skills = [...cr.skills, k]; re(); } } }, G.T.el(S.t, 'xs'), S.n, lv > 1 ? h('small', null, ` Lv${lv}`) : null); })));
+      return h('button.tw-cr-opt' + (on ? '.on' : '') + (k === sig ? '.sig' : ''), { disabled: k === sig, 'data-tip': `${k === sig ? '대표 기술 · ' : ''}${S.n}${S.en ? ` (${S.en})` : ''} · ${S.d}${S.passive ? '' : ` · ${S.cool}초`}${lv > 1 ? ` · Lv ${lv}` : ''}`, on: { click: () => { if (k === sig) return; if (on) cr.skills = cr.skills.filter(q => q !== k); else if (cr.skills.length < 4) cr.skills = [...cr.skills, k]; re(); } } }, G.T.el(S.t, 'xs'), (k === sig ? '★ ' : '') + S.n, lv > 1 ? h('small', null, ` Lv${lv}`) : null); })));
     // 출신 재주
     crBody.append(h('div.tw-h', null, h('b', null, '출신 재주')), h('div.tw-cr-row', null, Object.keys(G.D.FEATS).map(k => { const Ft = G.D.FEATS[k];
       return h('button.tw-cr-opt' + (cr.feat === k ? '.on' : ''), { 'data-tip': `${Ft.n} (${Ft.en}) · ${Ft.d}`, on: { click: () => { cr.feat = k; re(); } } }, G.T.el(Ft.t, 'xs'), Ft.n); })));
@@ -439,7 +452,8 @@ G.UI.fantasyTown = function () {
     dtBody.append(h('div.tw-dt-top', null, G.T.el(GD.tile(m), 'tw-img'), h('div', null, h('b', null, m.name), mchip(m), h('small', null, ` ${GD.lvText(m)}`)), abEls(m, s)));
     dtBody.append(h('div.tw-dt-ab', null, DN.AB.map(k => h('div' + (DN.key(m.cls, k) ? '.key' : ''), null,
       h('b', null, DN.AB_N[k]), h('span.v', null, ab[k]), h('small', null, sg(DN.mod(ab[k]))), h('span.r', null, DN.role(m.cls, k))))));
-    dtBody.append(h('div.tw-trs', null, ...traitEls(m)), gearEls(m), skillEls(m));
+    const ap = G.Mission.aptOf(m);
+    dtBody.append(h('div.tw-trs', null, ...traitEls(m)), ap.length ? h('small.tw-dt-apt', null, '✦ 임무 적성 · ' + ap.map(k => G.Mission.DEF[k].n).join(' · ')) : null, gearEls(m), skillEls(m));
   }
   const el = h('div.ftownui.hidden', { on: { click: e => { e.stopPropagation(); EX.hold(f()); } } }, topEl, tabEl, h('div.tw-body', null, TABS.map(([k]) => panes[k]), resEl, repEl, dtEl, crEl), botEl);
   setTab('party');

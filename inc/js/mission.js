@@ -15,21 +15,42 @@ G.Mission = (() => {
     escape: { n: '탈출', d: `${ESCAPE_T}초 안에 계단으로`, ic: '🏃' },
   };
   const KEYS = Object.keys(DEF);
+  // 탐험 판정 난이도 (DESIGN.md 66): 10 + 층/5
+  const DC = fl => 10 + Math.floor(fl / 5);
   const M = {
     DEF,
+    // 임무 적성 (G.D.APT): 원정대(단장 포함)에서 그 임무에 맞는 직업인 사람들 — 셋까지 센다
+    apt: (rt, k) => rt.party.filter(p => p.merc && !p.dead && G.D.APT[k]?.cls.includes(p.merc.cls)).slice(0, 3),
+    // 탐험 판정 (지각 · 조사 · 설득): 원정대에서 가장 잘하는 사람이 굴린다. 성공하면 그 사람 머리 위에 🎲
+    check(f, rt, sk, extra = 0) {
+      const ms = rt.party.filter(p => p.merc && !p.dead), b = G.Dnd.best(ms.map(p => p.merc), sk);
+      if (!b.m) return null;
+      const ok = G.Dnd.d20(0) + b.v >= DC(f.floor) + extra;
+      return ok ? ms.find(p => p.merc === b.m) : null;
+    },
     // 이 층의 임무 (시즌마다 같은 층은 같은 임무)
     kind(f, fl) {
       if (fl < FIRST || F().isBoss(fl)) return null;
       return KEYS[Math.floor(G.Season.rng(f, fl * 31 + 7)() * KEYS.length)];
     },
+    // 출발층부터 다음 임무들 [{ fl, k }] (마을 계획 · 자동 편성)
+    ahead(f, from, n = 6) { const out = []; for (let fl = from; out.length < n && fl < from + 30; fl++) { const k = M.kind(f, fl); if (k) out.push({ fl, k }); } return out; },
+    // 이 사람이 적성인 임무들
+    aptOf: m => Object.keys(G.D.APT).filter(k => G.D.APT[k].cls.includes(m.cls)),
     // 층에 들어섰다: 임무를 놓고 알린다
     start(f, rt) {
       const k = M.kind(f, f.floor);
       rt.mission = null;
       if (!k) return;
       const h = rt.hero, ms = rt.mission = { k, t: k === 'escape' ? ESCAPE_T : HOLD_T, done: false, fail: false, n: 0, need: 0, waveT: 3 };
-      if (k === 'defend') ms.obj = { kind: 'obj', ward: true, t: 'a_seal', x: h.x + 1, y: h.y, s: 1.1, bar: true, hp: F().heroHP(f) * 2, max: F().heroHP(f) * 2, glow: '#9fe0ff' };
-      if (k === 'escort') ms.obj = { kind: 'obj', npc: true, t: 'v_explorer', x: h.x - 1, y: h.y, s: 0.95, bar: true, hp: F().heroHP(f) * 1.2, max: F().heroHP(f) * 1.2 };
+      // 적성: 맞는 직업 수(n)만큼 임무가 쉬워진다 — 그 사람들 머리 위에 「적성」
+      const ap = M.apt(rt, k), n = ms.apt = ap.length;
+      for (const p of ap) G.fx(rt, { k: 'text', x: p.x, y: p.y - 1.3, s: `✦ ${DEF[k].n} 적성`, col: '#9fe0ff', t: 1.6, sz: 0.85, pop: true });
+      if (k === 'survive') ms.t -= 5 * n;
+      if (k === 'escape') ms.t += 10 * n;
+      const hpK = 1 + 0.3 * n;
+      if (k === 'defend') ms.obj = { kind: 'obj', ward: true, t: 'a_seal', x: h.x + 1, y: h.y, s: 1.1, bar: true, hp: F().heroHP(f) * 2 * hpK, max: F().heroHP(f) * 2 * hpK, glow: '#9fe0ff' };
+      if (k === 'escort') ms.obj = { kind: 'obj', npc: true, t: 'v_explorer', x: h.x - 1, y: h.y, s: 0.95, bar: true, hp: F().heroHP(f) * 1.2 * hpK, max: F().heroHP(f) * 1.2 * hpK };
       if (k === 'search') {
         // 유물: 보물상자처럼 줍는 것 (F.plan이 상자처럼 찾아간다)
         const m = rt.map, rooms = U.shuffle(m.rooms.slice(1, -1));
@@ -37,6 +58,10 @@ G.Mission = (() => {
           const x = r.x + U.rand(r.w), y = r.y + U.rand(r.h);
           if (m.c[y * m.w + x] === '.') { rt.chests.push({ kind: 'obj', chest: true, relic: true, t: 'ui_star', x, y, s: 0.8, glow: '#ffd27a' }); ms.need++; }
         }
+        // 적성 n개는 바로 보이고, 나머지는 하나씩 조사 판정 — 성공하면 그 자리가 지도에 드러난다 (믿음직한 재능 +5)
+        let seen = 0, who = null;
+        rt.chests.filter(c => c.relic).forEach((c, i) => { const p = i < n ? ap[i] : M.check(f, rt, 'investigation'); if (p) { G.Skill.reveal(rt, c.x, c.y, 2); seen++; who = who || (i >= n ? p : null); } });
+        if (who) G.Dnd.flip(who, `조사 · 유물 ${seen}/${ms.need} 발견`);
       }
       G.fx(rt, { k: 'text', x: h.x, y: h.y - 1.8, s: `${DEF[k].ic} ${DEF[k].n} · ${DEF[k].d}`, col: '#ffd27a', t: 2.6, sz: 1.3, pop: true });
       G.log(`${f.floor}층 임무 · ${DEF[k].n} — ${DEF[k].d}`, 'fantasy');
@@ -66,10 +91,13 @@ G.Mission = (() => {
     // 몰려오는 적: 대상 둘레 6~9칸의 빈 칸에서 깨어 있는 채로
     wave(f, rt, c) {
       const m = rt.map, band = G.D.F.bands[F().band(f.floor)];
+      // 지각 판정: 성공하면 몰려오는 적을 미리 보고 — 그 무리는 1.5초 늦게 움직인다 (기습 간파)
+      const spot = M.check(f, rt, 'perception');
+      if (spot) G.Dnd.flip(spot, '지각 · 기습 간파');
       for (let i = 0; i < WAVE_N; i++) for (let k = 0; k < 12; k++) {
         const a = Math.random() * Math.PI * 2, r = 6 + Math.random() * 3, x = Math.round(c.x + Math.cos(a) * r), y = Math.round(c.y + Math.sin(a) * r);
         if (x < 1 || y < 1 || x >= m.w - 1 || y >= m.h - 1 || m.c[y * m.w + x] !== '.') continue;
-        F().spawnMon(rt, f.floor, U.pick(band.mons), x, y, false, { aggro: true, wave: true, gold: F().monGold(f.floor) * 0.3 });
+        F().spawnMon(rt, f.floor, U.pick(band.mons), x, y, false, { aggro: true, wave: true, gold: F().monGold(f.floor) * 0.3, stop: spot ? 1.5 : 0 });
         break;
       }
       F().refreshEnts(rt);
@@ -107,7 +135,10 @@ G.Mission = (() => {
     win(f, rt) {
       const ms = rt.mission, h = rt.hero;
       ms.done = true;
-      const g = F().monGold(f.floor) * REWARD_K * F().goldMult(f);
+      let g = F().monGold(f.floor) * REWARD_K * F().goldMult(f);
+      // 적성: 토벌 · 호위는 보상 +25%씩. 호위는 설득 판정에 성공하면 상인 사례 ×1.5
+      if (ms.k === 'hunt' || ms.k === 'escort') g *= 1 + 0.25 * (ms.apt || 0);
+      if (ms.k === 'escort') { const p = M.check(f, rt, 'persuasion'); if (p) { g *= 1.5; G.Dnd.flip(p, '설득 · 사례 ×1.5'); } }
       F().gain(f, g);
       if (U.chance(0.4)) G.Trinket.gain(f, rt, h.x, h.y);
       // 끝난 수비 대상 · 상인은 물러난다
