@@ -28,7 +28,7 @@ G.Bond = (() => {
       (f.bonds = f.bonds || {})[k] = (f.bonds[k] || 0) + d;
       if (was !== 'friend' && B.rel(f, m1, m2) === 'friend') {
         G.log(`${was === 'foe' ? '화해' : '전우'} · ${m1.name} · ${m2.name}`, 'fantasy', 'good');
-        if (rt) for (const a of rt.allies) if (a.merc === m1 || a.merc === m2) G.Quirk.banner(rt, a, '💞', was === 'foe' ? '화해' : '전우', 'bond');
+        if (rt) for (const a of rt.allies) if (a.merc === m1 || a.merc === m2) G.Feat.banner(rt, a, '💞', was === 'foe' ? '화해' : '전우', 'bond');
       }
     },
     // 층을 내려갔다 (F.descend): 살아 있는 사람 짝마다 +1

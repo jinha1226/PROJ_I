@@ -1,7 +1,7 @@
 'use strict';
 // 원정 보고서 (DESIGN.md 50, Darkest Dungeon 원정 결과 화면): 원정이 사람을 어떻게 바꿨나를 한 장으로.
 // 출발할 때 찍어 둔 것(f.run)과 돌아왔을 때를 비교한다 — 사건마다 따로 적지 않아도 빠짐이 없다.
-// f.report = { from, to, why, got, lost, kills, mercs: [{ uid, lv0, lv1, gain, gone, lock, inj }], tkGain, tkLost, friends, rivals }
+// f.report = { from, to, why, got, lost, kills, mercs: [{ uid, lv0, lv1, inj }], tkGain, tkLost, friends, rivals }
 G.Report = (() => {
   const D = G.D;
   const friendKeys = f => {
@@ -15,8 +15,8 @@ G.Report = (() => {
       const st = G.Rivals.st(f);
       f.run = {
         from: f.floor, kills: f.kills || 0,
-        mercs: rt.allies.filter(a => a.merc).map(a => ({ uid: a.merc.uid, lv: a.merc.lv, traits: a.merc.traits.slice(), lock: (a.merc.qlock || []).slice() })),
-        tk: G.Trinket.all(f).map(t => ({ id: t.id, k: t.k, g: t.g })),
+        mercs: rt.allies.filter(a => a.merc).map(a => ({ uid: a.merc.uid, lv: a.merc.lv + (a.merc.bt || 0) })),
+        tk: G.Trinket.all(f).map(t => ({ id: t.id, n: G.Trinket.name(t), ic: G.Trinket.def(t).ic, r: G.Trinket.rarity(t) })),
         friends: [...friendKeys(f)],
         riv: Object.fromEntries(D.RIVALS.map(d => [d.id, { w: st[d.id].wins, l: st[d.id].losses }])),
       };
@@ -29,12 +29,11 @@ G.Report = (() => {
       for (const s of r.mercs) {
         const m = G.Guild.get(f, s.uid);
         if (!m) continue;
-        mercs.push({ uid: m.uid, lv0: s.lv, lv1: m.lv, gain: m.traits.filter(k => !s.traits.includes(k)), gone: s.traits.filter(k => !m.traits.includes(k)),
-          lock: (m.qlock || []).filter(k => !s.lock.includes(k) && m.traits.includes(k)), inj: m.inj > 0 });
+        mercs.push({ uid: m.uid, lv0: s.lv, lv1: m.lv + (m.bt || 0), inj: m.inj > 0 });
       }
       const now = G.Trinket.all(f), was = new Map(r.tk.map(t => [t.id, t]));
-      const tkGain = now.filter(t => !was.has(t.id) || was.get(t.id).g < t.g).map(t => ({ k: t.k, g: t.g, up: was.has(t.id) }));
-      const tkLost = r.tk.filter(t => !now.some(q => q.id === t.id)).map(t => ({ k: t.k, g: t.g }));
+      const tkGain = now.filter(t => !was.has(t.id)).map(t => ({ id: t.id, n: G.Trinket.name(t), ic: G.Trinket.def(t).ic, r: G.Trinket.rarity(t), tip: G.Trinket.tip(t) }));
+      const tkLost = r.tk.filter(t => !now.some(q => q.id === t.id));
       const before = new Set(r.friends), friends = [...friendKeys(f)].filter(k => !before.has(k)).map(k => k.split('-').map(u => G.Guild.get(f, +u)?.name).filter(Boolean));
       const st = G.Rivals.st(f), rivals = [];
       for (const d of D.RIVALS) {

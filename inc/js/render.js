@@ -451,7 +451,8 @@ G.MapView = function (canvas, id) {
   function miniBox(view) {
     const m = view.map, big = !!G.UI.bigMap;
     // 큰 지도는 아래 독(약 140px) 위 공간에 맞춘다
-    const AH = H - 150, k = big ? Math.max(3, Math.floor(Math.min(W * 0.86 / m.w, AH * 0.9 / m.h))) : Math.max(3, Math.min(6, Math.floor(260 / m.w)));
+    // 세로 화면(모바일)에서는 작은 지도를 폭의 40% 안으로 (DESIGN.md 51)
+    const AH = H - 150, k = big ? Math.max(3, Math.floor(Math.min(W * 0.86 / m.w, AH * 0.9 / m.h))) : Math.max(2, Math.min(6, Math.floor(Math.min(260, W * 0.4) / m.w)));
     const w = m.w * k, h = m.h * k;
     return { k, w, h, x0: big ? Math.round((W - w) / 2) : W - w - 10, y0: big ? Math.round((AH - h) / 2) + 16 : 10, big };
   }
@@ -525,7 +526,8 @@ G.MapView = function (canvas, id) {
         ox = (W - m.w * TS) / 2; oy = (H - m.h * TS) / 2;
       } else {
         // 확대·축소: 기본 크기 × 배율. 가장 작게는 맵 전체가 한 화면에 들어올 때까지
-        baseTS = view.fit ? MIN_TS : H / view.viewH;
+        // 세로 화면: 높이로만 맞추면 너무 크게 확대돼 옆이 좁다 — 폭에도 viewH의 85%칸은 들어오게
+        baseTS = view.fit ? MIN_TS : Math.min(H / view.viewH, H > W ? W / (view.viewH * 0.85) : 1e9);
         minZ = Math.min(1, fitTS / baseTS);
         camMode = true;
         const z = G.UI.zoom[id] = G.U.clamp(G.UI.zoom[id] || 1, minZ, 2.5);

@@ -18,9 +18,6 @@ G.Season = (() => {
     },
     left: f => Math.max(0, LEN - S.st(f).t),
 
-    // ── 명성 트리 (영구) ──
-    fameSt(f) { if (!f.fameTree) f.fameTree = G.Tree.init('fame'); return f.fameTree; },
-    fameAdd: k => G.Tree.add('fame', S.fameSt(G.S.w.fantasy), k),
 
     // ── 시즌 시계: 접속 중 틱에서만 흐른다 (오프라인 보상은 시즌을 끝내지 않는다). 끝났으면 true ──
     clock(f, rt, dt) {
@@ -41,7 +38,7 @@ G.Season = (() => {
       const rank = rows.findIndex(r => r.us), st = G.Rivals.st(f);
       const won = Object.values(st).reduce((a, x) => a + x.losses, 0), lost = Object.values(st).reduce((a, x) => a + x.wins, 0);
       const fame = f.maxFloor + (RANK_FAME[rank] || 0) + won;
-      f.fame = (f.fame || 0) + fame;
+      G.Guild.earnFame(f, fame);
       f.seasonEnd = { n: S.st(f).n, rank: rank + 1, of: rows.length, floor: f.maxFloor, won, lost, fame, rows: rows.map(r => ({ n: r.n, col: r.col, floor: r.floor, us: !!r.us })), t: RESULT_T };
       G.log(`시즌 ${S.st(f).n} · ${rank + 1}위 · ${f.maxFloor}층 · 명성 +${fame}`, 'fantasy', 'good');
       G.J.sfx('fantasy', 'finish');
@@ -50,10 +47,12 @@ G.Season = (() => {
     next(f, rt) {
       for (const n of G.Tree.defs.fantasy) if ((n.max || 1) > 1) delete f.tree[n.id];
       f.tree._c = {};
-      f.gold = START_GOLD * Math.pow(2, S.fameAdd('fm_start'));
+      f.gold = START_GOLD * Math.pow(2, G.Guild.fac(f, 'vault'));
+      f.artSeen = [];
       Object.assign(f, { floor: 1, maxFloor: 1, checkpoint: 1, start: 1, startAuto: true, carry: 0, buffs: {}, cds: {}, deaths: 0, last: null, rivals: {}, seasonEnd: null, town: true, townT: 0 });
-      const keep = Math.min(1, 0.5 + 0.25 * S.fameAdd('fm_keep'));
-      for (const m of f.mercs) Object.assign(m, { lv: Math.max(1, Math.round(m.lv * keep)), xp: 0, inj: 0, downs: 0 });
+      const keep = Math.min(1, 0.5 + 0.25 * G.Guild.fac(f, 'archive'));
+      // 레벨 + 서사 단계를 한 줄로 줄인다 (DESIGN.md 59). 받은 은혜는 남는다
+      for (const m of G.Guild.crew(f)) { const e = Math.max(1, Math.round((m.lv + (m.bt || 0)) * keep)); Object.assign(m, { lv: Math.min(G.Guild.LV_MAX, e), bt: Math.max(0, e - G.Guild.LV_MAX), xp: 0, inj: 0, downs: 0 }); }
       const old = S.st(f);
       f.season = { n: old.n + 1, seed: (Math.random() * 2 ** 31) >>> 0, maps: {}, cov: {}, t: 0 };
       G.Rivals.news.length = 0; G.Rivals.said = {}; G.Rivals.peace = {};
@@ -99,7 +98,7 @@ G.Season = (() => {
     // 지금 원정대의 길잡이 힘: 길잡이 출전 · 길눈 특성 수
     guides(rt) {
       let guide = 0, keen = 0;
-      for (const a of rt.allies) if (!a.dead) { if (a.def.guide) guide++; if (a.merc) keen += a.merc.traits.includes('keen') + G.Guild.sum(a.merc, 'sight'); }
+      for (const a of rt.allies) if (!a.dead) { if (a.def.guide) guide++; if (a.merc) keen += G.Guild.sum(a.merc, 'sight'); }
       return { guide, keen };
     },
     // 시야 보너스 (길잡이 +2, 길눈 +1씩)

@@ -45,7 +45,6 @@ G.Exp = (() => {
     home(f, rt, why, who) {
       G.Season.save(f, rt);
       const c = E.carry(f), keep = why === 'wipe' ? c * WIPE_KEEP : c;
-      G.Quirk.after(f, rt, why, f.floor > (f.runStart || 1));
       if (why === 'wipe') G.Trinket.wipe(f, rt);
       G.Report.make(f, why, keep, c - keep);
       f.gold += keep;
@@ -73,6 +72,7 @@ G.Exp = (() => {
       return true;
     },
     depart(f, rt) {
+      G.Guild.autoForge(f);
       f.town = false;
       f.runs = (f.runs || 0) + 1;
       if (f.autoTr !== false) G.Trinket.auto(f);

@@ -1,0 +1,139 @@
+'use strict';
+// 층 임무 (DESIGN.md 64 · 픽 미 업의 층별 임무): 보스 층이 아닌 3층부터, 시즌 씨앗으로 층마다 임무 하나.
+// 토벌 · 생존 · 수비 · 호위 · 탐색 · 탈출. 같은 숫자 싸움이 아니라 층마다 다른 일을 시킨다.
+// 성공하면 보상(골드 + 마법 물건 40%), 실패해도 층은 넘어간다 (실패는 보상을 못 받는 것뿐).
+// rt.mission = { k, t(남은 초), done, fail, n(찾은 수), need, obj(수비 대상 · 호위 상인), waveT }
+G.Mission = (() => {
+  const U = G.U, GR = G.Grid, F = () => G.Fantasy;
+  const HOLD_T = 40, ESCAPE_T = 60, WAVE_T = 7, WAVE_N = 3, RELICS = 3, REWARD_K = 40, FIRST = 3;
+  const DEF = {
+    hunt: { n: '토벌', d: '모두 처치', ic: '⚔' },
+    survive: { n: '생존', d: `${HOLD_T}초 버티기`, ic: '⏳' },
+    defend: { n: '수비', d: `결계석 ${HOLD_T}초 지키기`, ic: '🛡' },
+    escort: { n: '호위', d: '상인을 계단까지', ic: '🧳' },
+    search: { n: '탐색', d: `유물 ${RELICS}개 찾기`, ic: '🔍' },
+    escape: { n: '탈출', d: `${ESCAPE_T}초 안에 계단으로`, ic: '🏃' },
+  };
+  const KEYS = Object.keys(DEF);
+  const M = {
+    DEF,
+    // 이 층의 임무 (시즌마다 같은 층은 같은 임무)
+    kind(f, fl) {
+      if (fl < FIRST || F().isBoss(fl)) return null;
+      return KEYS[Math.floor(G.Season.rng(f, fl * 31 + 7)() * KEYS.length)];
+    },
+    // 층에 들어섰다: 임무를 놓고 알린다
+    start(f, rt) {
+      const k = M.kind(f, f.floor);
+      rt.mission = null;
+      if (!k) return;
+      const h = rt.hero, ms = rt.mission = { k, t: k === 'escape' ? ESCAPE_T : HOLD_T, done: false, fail: false, n: 0, need: 0, waveT: 3 };
+      if (k === 'defend') ms.obj = { kind: 'obj', ward: true, t: 'a_seal', x: h.x + 1, y: h.y, s: 1.1, bar: true, hp: F().heroHP(f) * 2, max: F().heroHP(f) * 2, glow: '#9fe0ff' };
+      if (k === 'escort') ms.obj = { kind: 'obj', npc: true, t: 'v_explorer', x: h.x - 1, y: h.y, s: 0.95, bar: true, hp: F().heroHP(f) * 1.2, max: F().heroHP(f) * 1.2 };
+      if (k === 'search') {
+        // 유물: 보물상자처럼 줍는 것 (F.plan이 상자처럼 찾아간다)
+        const m = rt.map, rooms = U.shuffle(m.rooms.slice(1, -1));
+        for (const r of rooms.slice(0, RELICS)) {
+          const x = r.x + U.rand(r.w), y = r.y + U.rand(r.h);
+          if (m.c[y * m.w + x] === '.') { rt.chests.push({ kind: 'obj', chest: true, relic: true, t: 'ui_star', x, y, s: 0.8, glow: '#ffd27a' }); ms.need++; }
+        }
+      }
+      G.fx(rt, { k: 'text', x: h.x, y: h.y - 1.8, s: `${DEF[k].ic} ${DEF[k].n} · ${DEF[k].d}`, col: '#ffd27a', t: 2.6, sz: 1.3, pop: true });
+      G.log(`${f.floor}층 임무 · ${DEF[k].n} — ${DEF[k].d}`, 'fantasy');
+    },
+    // 수비 대상 · 호위 상인 (그리기 · 몬스터 표적)
+    ents: rt => (rt.mission && rt.mission.obj && !rt.mission.obj.dead ? [rt.mission.obj] : []),
+    // 몬스터가 노릴 수 있는 것 (파티원과 함께)
+    targets: rt => M.ents(rt),
+    // 임무 진행: 시간 · 몰려오는 적 · 상인 걸음
+    tick(f, rt, dt) {
+      const ms = rt.mission;
+      if (!ms || ms.done || ms.fail) return;
+      const hold = ms.k === 'survive' || ms.k === 'defend', h = rt.hero;
+      if (hold || ms.k === 'escape') {
+        ms.t -= dt;
+        if ((ms.waveT -= dt) <= 0) { ms.waveT = WAVE_T; M.wave(f, rt, hold ? (ms.obj || h) : h); }
+        if (hold && ms.t <= 0) M.win(f, rt);
+        if (ms.k === 'escape' && ms.t <= 0) M.lose(f, rt, '시간 초과');
+      }
+      if (ms.obj) {
+        const o = ms.obj;
+        if (o.hp <= 0) { o.dead = true; F().refreshEnts(rt); M.lose(f, rt, o.npc ? '상인이 쓰러졌다' : '결계석이 부서졌다'); return; }
+        // 상인은 단장 곁을 따라간다
+        if (o.npc && !h.dead && GR.dist(o, h) > 1.6) { o.moving = true; GR.moveTo(rt.map, o, h.x, h.y, 3, dt, 1.2); } else o.moving = false;
+      }
+    },
+    // 몰려오는 적: 대상 둘레 6~9칸의 빈 칸에서 깨어 있는 채로
+    wave(f, rt, c) {
+      const m = rt.map, band = G.D.F.bands[F().band(f.floor)];
+      for (let i = 0; i < WAVE_N; i++) for (let k = 0; k < 12; k++) {
+        const a = Math.random() * Math.PI * 2, r = 6 + Math.random() * 3, x = Math.round(c.x + Math.cos(a) * r), y = Math.round(c.y + Math.sin(a) * r);
+        if (x < 1 || y < 1 || x >= m.w - 1 || y >= m.h - 1 || m.c[y * m.w + x] !== '.') continue;
+        F().spawnMon(rt, f.floor, U.pick(band.mons), x, y, false, { aggro: true, wave: true, gold: F().monGold(f.floor) * 0.3 });
+        break;
+      }
+      F().refreshEnts(rt);
+    },
+    // 단장이 갈 곳 (F.plan이 덤벼 오는 적 다음에 묻는다): undefined = 평소대로, null = 계단으로, 그 밖 = 그 자리를 지킨다
+    goal(rt) {
+      const ms = rt.mission;
+      if (!ms || ms.done || ms.fail) return undefined;
+      if (ms.k === 'survive') return ms.hold || (ms.hold = { x: rt.hero.x, y: rt.hero.y, hold: true });
+      if (ms.k === 'defend') return { x: ms.obj.x - 1, y: ms.obj.y, hold: true };
+      if (ms.k === 'escape') return null;
+      // 토벌: 아는 층이라도 남은 적을 찾아간다
+      if (ms.k === 'hunt' && G.Season.known(G.S.w.fantasy, rt)) return rt.mons.filter(o => !o.flee).sort((p, q) => GR.dist(p, rt.hero) - GR.dist(q, rt.hero))[0] || undefined;
+      return undefined;
+    },
+    // 유물을 주웠다 (F.openChest)
+    relic(f, rt, c) {
+      const ms = rt.mission;
+      if (!ms) return;
+      ms.n++;
+      G.fx(rt, { k: 'text', x: c.x, y: c.y - 1, s: `유물 ${ms.n}/${ms.need}`, col: '#ffd27a', t: 1.3, sz: 1.2, pop: true });
+      G.J.sfx('fantasy', 'chime');
+      if (ms.n >= ms.need) M.win(f, rt);
+    },
+    // 계단에 닿았다 (F.descend 전에): 토벌 · 호위 · 탈출은 여기서 판정
+    leave(f, rt) {
+      const ms = rt.mission;
+      if (!ms || ms.done || ms.fail) return;
+      if (ms.k === 'hunt') { if (!rt.mons.some(o => !o.flee)) M.win(f, rt); else M.lose(f, rt, '남은 적'); }
+      else if (ms.k === 'escort' || ms.k === 'escape') M.win(f, rt);
+      else M.lose(f, rt, '미완');
+    },
+    // 계단으로 가도 되나: 생존 · 수비는 끝날 때까지 못 내려간다 (F.plan이 지킬 자리를 주므로 거의 오지 않는다)
+    blocks: rt => !!(rt.mission && !rt.mission.done && !rt.mission.fail && (rt.mission.k === 'survive' || rt.mission.k === 'defend')),
+    win(f, rt) {
+      const ms = rt.mission, h = rt.hero;
+      ms.done = true;
+      const g = F().monGold(f.floor) * REWARD_K * F().goldMult(f);
+      F().gain(f, g);
+      if (U.chance(0.4)) G.Trinket.gain(f, rt, h.x, h.y);
+      // 끝난 수비 대상 · 상인은 물러난다
+      if (ms.obj) { ms.obj.dead = true; F().refreshEnts(rt); }
+      G.fx(rt, { k: 'text', x: h.x, y: h.y - 1.8, s: `${DEF[ms.k].n} 성공 · +${U.fmt(g)}`, col: '#9fe79f', t: 2.2, sz: 1.3, pop: true });
+      G.J.sfx('fantasy', 'finish');
+      G.log(`${f.floor}층 임무 성공 · ${DEF[ms.k].n}`, 'fantasy', 'good');
+      f.missions = (f.missions || 0) + 1;
+    },
+    lose(f, rt, why) {
+      const ms = rt.mission, h = rt.hero;
+      ms.fail = true;
+      G.fx(rt, { k: 'text', x: h.x, y: h.y - 1.8, s: `${DEF[ms.k].n} 실패 · ${why}`, col: '#ff8a8a', t: 2, sz: 1.2, pop: true });
+      G.log(`${f.floor}층 임무 실패 · ${DEF[ms.k].n} (${why})`, 'fantasy', 'bad');
+    },
+    // 미니맵 줄
+    label(rt) {
+      const ms = rt.mission;
+      if (!ms) return '';
+      const D_ = DEF[ms.k];
+      if (ms.done) return ` · ${D_.ic} 성공`;
+      if (ms.fail) return ` · ${D_.ic} 실패`;
+      if (ms.k === 'survive' || ms.k === 'defend' || ms.k === 'escape') return ` · ${D_.ic} ${D_.n} ${Math.ceil(ms.t)}초`;
+      if (ms.k === 'search') return ` · ${D_.ic} 유물 ${ms.n}/${ms.need}`;
+      return ` · ${D_.ic} ${D_.n}`;
+    },
+  };
+  return M;
+})();

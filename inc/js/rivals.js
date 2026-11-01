@@ -345,7 +345,6 @@ G.Rivals = (() => {
       const p = R.partyOf(rt, e);
       if (!p || e.dead) return;
       e.dead = true; e.hp = 0; e.reviveT = REVIVE;
-      if (from?.merc) G.Quirk.event(f, rt, from, 'foe:' + e.rival.id);
       if (p.mem.some(q => !q.dead)) return;
       const d = p.d, s = R.st(f)[d.id];
       s.truce = TRUCE_T;

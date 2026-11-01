@@ -10,22 +10,19 @@
   }
   G.UI.init();
 
-  if (away) {
-    G.UI.modal('돌아왔다', `<p>자리를 비운 <b>${G.U.fmtTime(away.sec)}</b> 동안 던전은 멈추지 않았다.</p>
-      <p>${G.T.html('ui_ess')} 정수 +${G.U.fmt(away.ess)}<br>${G.T.html('ui_sign')} 인장 +${G.U.fmt(away.signs)}</p>
-      <p class="dim">오프라인 진행 한도: ${G.U.fmtTime(G.offlineCap())} (넥서스 「시간의 모래」로 늘린다)</p>`);
-  }
+  if (away) G.UI.modal('돌아왔다', `<p><b>${G.U.fmtTime(away.sec)}</b></p><p>${G.T.html('ui_gold')} +${G.U.fmt(away.fantasy || 0)}</p><p class="dim">최대 ${G.U.fmtTime(G.offlineCap())}</p>`);
   // 첫 방문 안내는 글 대신 맵 위 화살표로 한다 (coach.js)
 
   // 개발용: ?dev&view=fantasy&ff=120&rich=1e6&signs=50&rival=lion&ttab=rival → 재화 지급, ff초 실제 진행, 해당 화면, 라이벌 조우, 마을 탭
   const q = new URLSearchParams(location.search);
   if (q.has('dev')) {
-    if (q.get('signs')) G.S.signs += +q.get('signs');
     if (q.get('rich')) for (const id in G.CUR) G.S.w[id][G.CUR[id]] += +q.get('rich');
     // &nodes=party,archer,cleric: 판타지 트리 노드를 1레벨씩 준다 (길드·선술집 확인용)
     if (q.get('nodes')) { const st = G.S.w.fantasy.tree; for (const n of q.get('nodes').split(',')) st[n] = 1; st._c = {}; G.Guild.refresh(G.S.w.fantasy); }
     // &hire=2: 선술집에서 가장 싼 후보부터 n명 고용
     for (let i = 0; i < +(q.get('hire') || 0); i++) { const T = G.Guild.tavern(G.S.w.fantasy); if (T.offers.length) G.Guild.hire(G.S.w.fantasy, T.offers.reduce((b, o, k) => (o.price < T.offers[b].price ? k : b), 0)); }
+    // 개발용: 단장 만들기 건너뛰기 (?nocreate)
+    if (q.has('nocreate')) { G.Guild.leader(G.S.w.fantasy); G.S.w.fantasy.leaderNew = false; }
     // &lv=10: 명단 전원 레벨 / &adv=1: 전원 첫 상위 직업으로 (상위 직업 확인용)
     if (q.get('lv')) for (const m of G.S.w.fantasy.mercs) m.lv = +q.get('lv');
     if (q.has('adv')) { const f = G.S.w.fantasy; for (const m of f.mercs) { m.lv = Math.max(m.lv, G.Guild.PROMO_LV); f.gold += G.Guild.promoCost(f, m); G.Guild.promote(f, m, G.Guild.advs(m.cls)[+q.get('adv') ? 1 : 0]); } }
@@ -40,7 +37,7 @@
     // &bigmap: 큰 지도를 펼쳐 둔다
     if (q.has('bigmap')) G.UI.bigMap = true;
     // &ttab=tavern: 마을 화면의 그 탭을 연다 (party roster tavern rival tree fame log)
-    const tt = ['party', 'roster', 'tavern', 'rival', 'tree', 'fame', 'log'].indexOf(q.get('ttab'));
+    const tt = ['party', 'roster', 'tavern', 'gear', 'tree', 'guild', 'rival', 'log'].indexOf(q.get('ttab'));
     if (tt >= 0) setTimeout(() => document.querySelectorAll('.tw-tab')[tt]?.click(), 300);
   }
 
@@ -52,7 +49,7 @@
     // 탭이 잠들어 있던 긴 공백은 오프라인 진행으로 처리한다
     if (dt > 10) {
       const r = G.catchUp(dt);
-      G.UI.toast(`${G.U.fmtTime(r.sec)} 진행 · 정수 +${G.U.fmt(r.ess)}`);
+      G.UI.toast(`${G.U.fmtTime(r.sec)} 진행 · 골드 +${G.U.fmt(r.fantasy || 0)}`);
     } else G.tick(dt);
     G.tickAt = performance.now();
     G.UI.update();

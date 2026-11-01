@@ -11,31 +11,38 @@ G.D.WORLD = Object.fromEntries(G.D.WORLDS.map(w => [w.id, w]));
 // ───────── 판타지: 끝없는 던전 ─────────
 G.D.F = {
   // 몬스터 그림은 0x72 DungeonTileset II (tools/art72.js에서 키 → 원본)
+  // 몬스터 (DESIGN.md 56): ty = SRD 생물 종류(언데드 퇴치 · 신성 강타 · 인간형 포박이 본다) · fx = 맞히면 30%로 거는 고유 능력 [상태이상, 내성 능력, 초]
   bands: [
-    { to: 5, mons: [{ n: '꼬마 좀비', t: 'm_rat' }, { n: '늪 점액', t: 'm_slime' }, { n: '작은 버섯', t: 'm_mush' }, { n: '숲 늑대', t: 'm_wolf' }] },
-    { to: 15, mons: [{ n: '고블린', t: 'm_goblin', wpn: 'w_knife' }, { n: '임프', t: 'm_shroom' }, { n: '해골', t: 'm_bat', wpn: 'w_rusty' }, { n: '산적', t: 'm_bandit' }] },
-    { to: 30, mons: [{ n: '오크 전사', t: 'm_skeleton', wpn: 'w_axe' }, { n: '가면 오크', t: 'm_warg', wpn: 'w_waraxe' }, { n: '오크 주술사', t: 'm_mandrake', wpn: 'w_gstaff' }, { n: '놀 정찰병', t: 'm_gnoll' }] },
-    { to: 50, mons: [{ n: '얼음 좀비', t: 'm_troll' }, { n: '진흙 점액', t: 'm_phantom' }, { n: '좀비', t: 'm_ghoul', wpn: 'w_cleaver' }, { n: '놀 전사', t: 'm_gnollb' }, { n: '버섯 거인', t: 'm_lmush' }] },
-    { to: 80, mons: [{ n: '워골', t: 'm_ogre', wpn: 'w_mace' }, { n: '초트', t: 'm_spider' }, { n: '강령술사', t: 'm_lich' }, { n: '놀 주술사', t: 'm_gshaman' }, { n: '트롤', t: 'm_troll2' }, { n: '동굴 곰', t: 'm_bear' }] },
-    { to: 1e9, mons: [{ n: '대악마', t: 'm_demon' }, { n: '오우거', t: 'm_golem' }, { n: '호박 망령', t: 'm_spell' }, { n: '고목 엔트', t: 'm_ent' }, { n: '돌 골렘', t: 'm_golem2' }] },
+    { to: 5, mons: [{ n: '꼬마 좀비', t: 'm_rat', ty: 'undead' }, { n: '늪 점액', t: 'm_slime', ty: 'ooze', fx: ['restrained', 'dex', 2] }, { n: '작은 버섯', t: 'm_mush', ty: 'plant', fx: ['poisoned', 'con', 4] }, { n: '숲 늑대', t: 'm_wolf', ty: 'beast', fx: ['prone', 'str', 1.5] }] },
+    { to: 15, mons: [{ n: '고블린', t: 'm_goblin', wpn: 'w_knife', ty: 'humanoid' }, { n: '임프', t: 'm_shroom', ty: 'fiend', fx: ['poisoned', 'con', 4] }, { n: '해골', t: 'm_bat', wpn: 'w_rusty', ty: 'undead' }, { n: '산적', t: 'm_bandit', ty: 'humanoid' }] },
+    { to: 30, mons: [{ n: '오크 전사', t: 'm_skeleton', wpn: 'w_axe', ty: 'humanoid' }, { n: '가면 오크', t: 'm_warg', wpn: 'w_waraxe', ty: 'humanoid', fx: ['frightened', 'wis', 3] }, { n: '오크 주술사', t: 'm_mandrake', wpn: 'w_gstaff', ty: 'humanoid', fx: ['blinded', 'con', 2] }, { n: '놀 정찰병', t: 'm_gnoll', ty: 'humanoid', fx: ['prone', 'str', 1.5] }] },
+    { to: 50, mons: [{ n: '얼음 좀비', t: 'm_troll', ty: 'undead', fx: ['restrained', 'str', 2] }, { n: '진흙 점액', t: 'm_phantom', ty: 'ooze', fx: ['restrained', 'dex', 3] }, { n: '좀비', t: 'm_ghoul', wpn: 'w_cleaver', ty: 'undead', fx: ['paralyzed', 'con', 2] }, { n: '놀 전사', t: 'm_gnollb', ty: 'humanoid', fx: ['prone', 'str', 1.5] }, { n: '버섯 거인', t: 'm_lmush', ty: 'plant', fx: ['poisoned', 'con', 4] }] },
+    { to: 80, mons: [{ n: '워골', t: 'm_ogre', wpn: 'w_mace', ty: 'monstrosity', fx: ['prone', 'str', 1.5] }, { n: '초트', t: 'm_spider', ty: 'fiend', fx: ['frightened', 'wis', 4] }, { n: '강령술사', t: 'm_lich', ty: 'humanoid', fx: ['paralyzed', 'con', 2] }, { n: '놀 주술사', t: 'm_gshaman', ty: 'humanoid', fx: ['blinded', 'con', 2] }, { n: '트롤', t: 'm_troll2', ty: 'giant', fx: ['prone', 'str', 1.5] }, { n: '동굴 곰', t: 'm_bear', ty: 'beast', fx: ['restrained', 'str', 2] }] },
+    { to: 1e9, mons: [{ n: '대악마', t: 'm_demon', ty: 'fiend', fx: ['frightened', 'wis', 4] }, { n: '오우거', t: 'm_golem', ty: 'giant', fx: ['prone', 'str', 1.5] }, { n: '호박 망령', t: 'm_spell', ty: 'undead', fx: ['frightened', 'wis', 4] }, { n: '고목 엔트', t: 'm_ent', ty: 'plant', fx: ['restrained', 'str', 3] }, { n: '돌 골렘', t: 'm_golem2', ty: 'construct', fx: ['prone', 'str', 1.5] }] },
   ],
   // 보스: 큰 그림(32px)은 s를 작게 — 그림 자체가 이미 두 칸이다
   bosses: [
-    { n: '늪의 군주', e: '👑', t: 'b_slimeking', s: 2 }, { n: '놀 감독관', e: '👺', t: 'b_goblinchief' }, { n: '해골 기사', e: '💀', t: 'b_bat' },
-    { n: '거대 좀비', e: '🧟', t: 'b_skeleton', s: 1.1 }, { n: '숲의 수호자', e: '🛡️', t: 'b_wolf' }, { n: '오우거 대장', e: '🗿', t: 'b_troll', s: 1.1 },
-    { n: '심연의 초트', e: '👿', t: 'b_spider' }, { n: '역병 거인', e: '🧟', t: 'b_ogre', s: 1.1 }, { n: '강령술사 군주', e: '🧙', t: 'b_lich' }, { n: '황금 대악마', e: '😈', t: 'b_dragon', s: 1.1 },
+    { n: '늪의 군주', e: '👑', t: 'b_slimeking', s: 2, ty: 'ooze', fx: ['restrained', 'dex', 3] }, { n: '놀 감독관', e: '👺', t: 'b_goblinchief', ty: 'humanoid', fx: ['frightened', 'wis', 3] }, { n: '해골 기사', e: '💀', t: 'b_bat', ty: 'undead', fx: ['prone', 'str', 1.5] },
+    { n: '거대 좀비', e: '🧟', t: 'b_skeleton', s: 1.1, ty: 'undead', fx: ['restrained', 'str', 2] }, { n: '숲의 수호자', e: '🛡️', t: 'b_wolf', ty: 'beast', fx: ['prone', 'str', 1.5] }, { n: '오우거 대장', e: '🗿', t: 'b_troll', s: 1.1, ty: 'giant', fx: ['prone', 'str', 1.5] },
+    { n: '심연의 초트', e: '👿', t: 'b_spider', ty: 'fiend', fx: ['frightened', 'wis', 4] }, { n: '역병 거인', e: '🧟', t: 'b_ogre', s: 1.1, ty: 'giant', fx: ['poisoned', 'con', 4] }, { n: '강령술사 군주', e: '🧙', t: 'b_lich', ty: 'humanoid', fx: ['paralyzed', 'con', 2] }, { n: '황금 대악마', e: '😈', t: 'b_dragon', s: 1.1, ty: 'fiend', fx: ['frightened', 'wis', 4] },
   ],
   // 동료: col 직업 색(카드·칩), 영웅 기본 공격력 대비 배율, 사거리(칸), 공격 간격(초)
   allies: {
-    archer: { col: '#c8566a', n: '레인저', t: 'u_archer', wpn: 'w_bow', atk: 0.6, hp: 0.5, range: 5, cd: 1.0, proj: 'fx_arrow' },
-    cleric: { col: '#e9dfbf', n: '수도사', t: 'u_cleric', wpn: 'w_holymace', atk: 0.2, hp: 0.6, range: 4, cd: 2.0, heal: 0.08, proj: 'fx_holy' },
-    bard: { col: '#e0a040', n: '음유시인', t: 'u_bard', atk: 0.3, hp: 0.6, range: 4, cd: 1.5, proj: 'fx_ice', song: true },
-    mage: { col: '#e2742e', n: '화염 마법사', t: 'u_mage', wpn: 'w_staff', atk: 1.4, hp: 0.5, range: 5, cd: 1.8, splash: 1.4, proj: 'fx_flame' },
-    paladin: { col: '#8fc4ef', n: '성기사', t: 'u_paladin', wpn: 'w_hammer', atk: 0.8, hp: 1.6, range: 1.3, cd: 1.0 },
-    dragoon: { col: '#6f8fe8', n: '용기병', t: 'u_dragoon', wpn: 'w_spear', atk: 3, hp: 1.2, range: 1.5, cd: 1.4 },
-    archmage: { col: '#a98bf0', n: '대현자', t: 'u_archmage', wpn: 'w_arcstaff', atk: 2.5, hp: 0.7, range: 6, cd: 1.6, chain: 4, proj: 'fx_zap' },
-    scout: { col: '#7fcf8a', n: '길잡이', t: 'u_scout', wpn: 'w_knife', atk: 0.7, hp: 0.8, range: 4, cd: 1.1, proj: 'fx_arrow', guide: true },
-    rogue: { col: '#7d8794', n: '암살자', t: 'u_rogue', wpn: 'w_knife', atk: 2.5, hp: 0.8, range: 1.3, cd: 0.8 },
+    // 12직업 (SRD 5.2.1 — DESIGN.md 56). 내부 키는 옛 저장 때문에 그대로: archer 레인저 · dragoon 파이터 · mage 소서러 · archmage 위저드 · scout 드루이드
+    // hp = 히트 다이스 × 0.12 (G.Dnd.hdK) — d6 0.72 · d8 0.96 · d10 1.2 · d12 1.44
+    archer: { col: '#c8566a', n: '레인저', t: 'u_archer', wpn: 'w_bow', atk: 0.6, hp: 1.2, range: 5, cd: 1.0, proj: 'fx_arrow' },
+    // 클레릭: 기본 행동 = 치유(70% 아래 동료) 또는 신성한 불꽃(민첩 내성) · 바드: 기본 = 잔인한 조롱 같은 소마법 + 바드의 영감(song)
+    cleric: { col: '#e9dfbf', n: '클레릭', t: 'u_cleric', wpn: 'w_holymace', atk: 0.6, hp: 0.96, range: 4, cd: 2.0, heal: 0.12, proj: 'fx_holy', saveAtk: 'dex' },
+    bard: { col: '#e0a040', n: '바드', t: 'u_bard', atk: 0.3, hp: 0.96, range: 4, cd: 1.5, proj: 'fx_ice', song: true },
+    mage: { col: '#e2742e', n: '소서러', t: 'u_mage', wpn: 'w_staff', atk: 1.4, hp: 0.72, range: 5, cd: 1.8, splash: 1.4, proj: 'fx_flame' },
+    paladin: { col: '#8fc4ef', n: '팔라딘', t: 'u_paladin', wpn: 'w_hammer', atk: 0.8, hp: 1.2, range: 1.3, cd: 1.0 },
+    dragoon: { col: '#6f8fe8', n: '파이터', t: 'u_dragoon', wpn: 'w_spear', atk: 3, hp: 1.2, range: 1.5, cd: 1.4 },
+    archmage: { col: '#a98bf0', n: '위저드', t: 'u_archmage', wpn: 'w_arcstaff', atk: 2.5, hp: 0.72, range: 6, cd: 1.6, chain: 4, proj: 'fx_zap' },
+    scout: { col: '#7fcf8a', n: '드루이드', t: 'u_scout', wpn: 'w_staff', atk: 0.7, hp: 0.96, range: 4, cd: 1.1, proj: 'fx_ice', guide: true },
+    rogue: { col: '#7d8794', n: '로그', t: 'u_rogue', wpn: 'w_knife', atk: 2.5, hp: 0.96, range: 1.3, cd: 0.8 },
+    barbarian: { col: '#d0603a', n: '바바리안', t: 'v_berserk', wpn: 'w_waraxe', atk: 2.2, hp: 1.44, range: 1.3, cd: 1.2 },
+    monk: { col: '#e8c860', n: '몽크', t: 'xx_disc', atk: 1.1, hp: 0.96, range: 1.3, cd: 0.6 },
+    warlock: { col: '#9a5ad0', n: '워락', t: 'v_warlock', atk: 1.3, hp: 0.96, range: 5, cd: 1.4, proj: 'fx_zap' },
   },
   // 버프: 음유시인의 노래, 성직자의 축복, 기술 「전투 함성」. dmg는 모든 피해 배율.
   buffs: {
@@ -59,60 +66,103 @@ G.D.F = {
 // 늘 걸리는 수치: atk·hp 배율 · cd 공격 간격 배율 · revive 부활·부상 시간 배율 · xp 경험치 배율 · gold 원정대 골드 + · move 이동 + · price 몸값 배율
 // 조건부(w): boss 보스에게 · rival 라이벌에게 · foe 그 라이벌단에게(키 'foe:<라이벌 id>') · low 내 체력 절반 아래 · front 최고층 이상 · fresh 층 처음 10초 · late 층 60초 뒤
 //   dmg = 그때 주는 피해 배율 · taken = 그때 받는 피해 배율. ev = 사건으로만 생긴다(무작위로 굴리지 않음). 길눈은 G.Season이 읽는다
-G.D.QUIRKS = {
-  brave: { n: '용감', ic: '🔥', d: '공격 +15%', atk: 1.15, price: 1.3 },
-  tough: { n: '튼튼함', ic: '🪨', d: '체력 +25%', hp: 1.25, price: 1.3 },
-  swift: { n: '재빠름', ic: '💨', d: '공격 간격 -15%', cd: 0.85, price: 1.35 },
-  hardy: { n: '회복력', ic: '✚', d: '부활·부상 ×0.5', revive: 0.5, price: 1.25 },
-  keen: { n: '길눈', ic: '🧭', d: '시야 +1 · 직행 기준 -10%p', price: 1.25 },
-  veteran: { n: '노련함', ic: '📜', d: '경험치 +50%', xp: 1.5, price: 1.2 },
-  clutch: { n: '배수진', ic: '🩸', d: '체력 50% 아래 · 공격 +25%', w: 'low', dmg: 1.25, price: 1.2 },
-  pioneer: { n: '개척자', ic: '🚩', d: '최고층 · 공격 +20%', w: 'front', dmg: 1.2, price: 1.25 },
-  rivalry: { n: '승부욕', ic: '⚔', d: '라이벌에게 +20%', w: 'rival', dmg: 1.2, price: 1.15 },
-  steady: { n: '침착', ic: '🛡', d: '받는 피해 -15%', taken: 0.85, price: 1.3 },
-  quick: { n: '날쌘 발', ic: '👟', d: '이동 +10%', move: 0.1, price: 1.15 },
-  lucky: { n: '행운', ic: '🍀', d: '골드 +10%', gold: 0.1, price: 1.3 },
-  opener: { n: '기선', ic: '⚡', d: '층 처음 10초 · 공격 +30%', w: 'fresh', dmg: 1.3, price: 1.15 },
-  bosshunt: { n: '보스 사냥꾼', ic: '👑', d: '보스에게 +25%', w: 'boss', dmg: 1.25, ev: 1, price: 1.3 },
-  foe: { n: '천적', ic: '🎯', d: '그 라이벌단에게 +30%', w: 'foe', dmg: 1.3, ev: 1, price: 1.2 },
-  clumsy: { n: '덜렁이', ic: '🌀', d: '공격 간격 +15%', cd: 1.15, price: 0.65, bad: true },
-  frail: { n: '허약', ic: '🥀', d: '체력 -20%', hp: 0.8, price: 0.7, bad: true },
-  dull: { n: '무딘 손', ic: '🪵', d: '공격 -12%', atk: 0.88, price: 0.7, bad: true },
-  slowheal: { n: '더딘 회복', ic: '🩹', d: '부활·부상 ×1.6', revive: 1.6, price: 0.8, bad: true },
-  slowwit: { n: '둔함', ic: '💤', d: '경험치 -40%', xp: 0.6, price: 0.85, bad: true },
-  glass: { n: '유리턱', ic: '🥚', d: '받는 피해 +15%', taken: 1.15, price: 0.7, bad: true },
-  klepto: { n: '도벽', ic: '🫳', d: '상자 골드 -30%', chest: 0.7, price: 0.85, bad: true },
-  winded: { n: '지구력 부족', ic: '😮‍💨', d: '층 60초 뒤 · 공격 -15%', w: 'late', dmg: 0.85, price: 0.8, bad: true },
-  dread: { n: '어둠 공포', ic: '🌑', d: '최고층 · 공격 -15%', w: 'front', dmg: 0.85, price: 0.8, bad: true },
-  shy: { n: '라이벌 기피', ic: '🙈', d: '라이벌에게 -15%', w: 'rival', dmg: 0.85, price: 0.85, bad: true },
-  sluggish: { n: '느림보', ic: '🐌', d: '이동 -10%', move: -0.1, price: 0.85, bad: true },
-  giantfear: { n: '거인 공포', ic: '🗿', d: '보스에게 -20%', w: 'boss', dmg: 0.8, price: 0.8, bad: true },
-  nightmare: { n: '악몽', ic: '👁', d: '체력 50% 아래 · 공격 -20%', w: 'low', dmg: 0.8, ev: 1, price: 0.8, bad: true },
-  fear: { n: '공포', ic: '😱', d: '그 라이벌단에게 -25% · 받는 피해 +25%', w: 'foe', dmg: 0.75, taken: 1.25, ev: 1, price: 0.8, bad: true },
+// 출신 재주 (DESIGN.md 61 · SRD 5.2.1 Origin Feats — 원문 4종, 마법 입문은 주문 목록 셋으로 나눔)
+G.D.FEATS = {
+  alert: { n: '경계', en: 'Alert', t: 'a_seal', d: '선제권 + 숙련 보너스' },
+  mi_cleric: { n: '마법 입문 · 클레릭', en: 'Magic Initiate (Cleric)', t: 'fx_holy', d: '치유의 말', spell: 'sr_hword' },
+  mi_druid: { n: '마법 입문 · 드루이드', en: 'Magic Initiate (Druid)', t: 'w_board', d: '얽힘', spell: 'sr_entangle' },
+  mi_wizard: { n: '마법 입문 · 위저드', en: 'Magic Initiate (Wizard)', t: 'fx_zap', d: '마법 화살', spell: 'sr_mm' },
+  savage: { n: '야만적 공격자', en: 'Savage Attacker', t: 'b_fury', d: '한 턴에 한 번 피해를 두 번 굴려 큰 쪽' },
+  skilled: { n: '숙련', en: 'Skilled', t: 'v_explorer', d: '지각 · 조사 · 설득 숙련' },
 };
-// 장신구 (DESIGN.md 45, Darkest Dungeon 장신구): 용병마다 2칸. 얻는 것과 잃는 것이 함께 — 1칸이면 최강 하나로 끝, 2칸이라 조합을 고민한다.
-// 필드는 기벽과 같다(atk·hp·cd·revive·xp·heal 배율 · gold·move 더하기 · taken 받는 피해 · w+dmg 조건부). proc = 기본 공격에 확률로 상태이상(연계기의 방아쇠).
-// up = 등급이 오르면 커지는 쪽(나머지는 그대로). r = 희귀도(1 흔함 · 2 드묾 · 3 귀함, 드롭 무게 4 · 2 · 1). heal만 = 치유 직업에게만 의미
-G.D.TRINKETS = {
-  tr_poison: { n: '독 바른 촉', ic: '🧪', d: '공격 15% 독 · 공격 -5%', proc: ['poison', 0.15], atk: 0.95, r: 1 },
-  tr_ember: { n: '불씨 반지', ic: '💍', d: '공격 15% 화상 · 받는 피해 +5%', proc: ['burn', 0.15], taken: 1.05, r: 1 },
-  tr_saw: { n: '톱니 날', ic: '🪚', d: '공격 15% 출혈 · 공격 간격 +5%', proc: ['bleed', 0.15], cd: 1.05, r: 1 },
-  tr_spark: { n: '번개 구슬', ic: '🔮', d: '공격 10% 감전 · 체력 -10%', proc: ['shock', 0.1], hp: 0.9, r: 2 },
-  tr_frost: { n: '서리 조각', ic: '❄', d: '공격 8% 정지 · 공격 -10%', proc: ['stop', 0.08], atk: 0.9, r: 2 },
-  tr_brand: { n: '낙인 인장', ic: '🔖', d: '공격 10% 표식', proc: ['mark', 0.1], r: 2 },
-  tr_weight: { n: '납 추', ic: '⚓', d: '공격 8% 기절 · 공격 간격 +10%', proc: ['stun', 0.08], cd: 1.1, r: 2 },
-  tr_belt: { n: '거인의 허리띠', ic: '🎗', d: '체력 +30% · 이동 -10%', hp: 1.3, move: -0.1, up: 'hp', r: 1 },
-  tr_berserk: { n: '광전사 목걸이', ic: '📿', d: '공격 +25% · 받는 피해 +15%', atk: 1.25, taken: 1.15, up: 'atk', r: 2 },
-  tr_ward: { n: '수호 부적', ic: '🧿', d: '받는 피해 -15% · 공격 -10%', taken: 0.85, atk: 0.9, up: 'taken', r: 1 },
-  tr_feather: { n: '바람 깃털', ic: '🪶', d: '공격 간격 -15% · 체력 -10%', cd: 0.85, hp: 0.9, up: 'cd', r: 2 },
-  tr_dice: { n: '황금 주사위', ic: '🎲', d: '골드 +15% · 받는 피해 +10%', gold: 0.15, taken: 1.1, up: 'gold', r: 2 },
-  tr_lens: { n: '학자의 안경', ic: '👓', d: '경험치 +40%', xp: 1.4, up: 'xp', r: 1 },
-  tr_vial: { n: '성수병', ic: '⚱', d: '치유 +30%', heal: 1.3, up: 'heal', only: 'heal', r: 1 },
-  tr_pact: { n: '피의 계약', ic: '🩸', d: '체력 50% 아래 · 공격 +35% · 체력 -10%', w: 'low', dmg: 1.35, hp: 0.9, up: 'dmg', r: 2 },
-  tr_trophy: { n: '사냥 표', ic: '🦴', d: '보스에게 +25%', w: 'boss', dmg: 1.25, up: 'dmg', r: 2 },
-  tr_badge: { n: '결투 휘장', ic: '🎖', d: '라이벌에게 +30%', w: 'rival', dmg: 1.3, up: 'dmg', r: 3 },
-  tr_crown: { n: '용병왕의 관', ic: '👑', d: '공격 +15% · 체력 +15%', atk: 1.15, hp: 1.15, up: 'atk', r: 3 },
-};
+
+// 마법 물건 (DESIGN.md 58 — DCSS 고정 아티팩트 · 랜다트 느낌, 이름은 SRD 5.2.1 마법 물건): 무기 · 갑옷 · 장신구 한 칸씩(무기 · 갑옷 아티팩트가 기본 장비를 대신한다, 대장간 강화는 그대로).
+// props = [[속성, 값(, 값2)]] — 속성 뜻은 js/trinkets.js PROPS. 피해 · 체력 · 치유 배율(atk · hp · heal)은 주운 층(ilvl)이 깊을수록 커진다(인크레멘탈).
+// r = 희귀도 1 고급 · 2 희귀 · 3 매우 희귀 · 4 전설 (깊이 10 · 25 · 40층부터) · fit = 쓸 수 있는 직업(없으면 누구나) · slot 'w' 무기 · 'a' 갑옷 · 없으면 장신구
+(() => {
+  const MELEE = ['dragoon', 'paladin', 'barbarian', 'rogue', 'bard', 'monk'], BLADE = ['dragoon', 'paladin', 'barbarian', 'rogue', 'bard'];
+  const CASTER = ['mage', 'archmage', 'warlock', 'scout', 'cleric', 'bard'];
+  // 갑옷 묶음 (G.Dnd 직업 갑옷): 무거움 · 중간까지 · 가벼움 · 갑옷 입는 사람 전부
+  const HEAVY = ['paladin', 'dragoon'], MEDIUM = ['paladin', 'dragoon', 'cleric'], LIGHT = ['bard', 'scout', 'archer', 'rogue', 'warlock'], ARMORED = MEDIUM.concat(LIGHT), SHIELD = ['cleric', 'paladin', 'scout'];
+  G.D.ITEM_FIT = { MELEE, BLADE, CASTER, RANGED: ['archer'], HEAVY, MEDIUM, LIGHT, ARMORED, SHIELD };
+  G.D.ARTS = {
+    cloak_prot: { n: '보호의 망토', en: 'Cloak of Protection', ic: '🧥', r: 1, props: [['ac', 1], ['save', 1]] },
+    ring_prot: { n: '보호의 반지', en: 'Ring of Protection', ic: '💍', r: 2, props: [['ac', 1], ['save', 1]] },
+    gauntlets: { n: '오우거 힘의 건틀릿', en: 'Gauntlets of Ogre Power', ic: '🧤', r: 1, props: [['set', 'str', 19]] },
+    belt_giant: { n: '거인 힘의 허리띠', en: 'Belt of Giant Strength', ic: '🎗️', r: 3, props: [['set', 'str', 23]] },
+    amulet_health: { n: '건강의 아뮬렛', en: 'Amulet of Health', ic: '📿', r: 2, props: [['set', 'con', 19]] },
+    headband: { n: '지능의 머리띠', en: 'Headband of Intellect', ic: '👑', r: 1, props: [['set', 'int', 19]] },
+    boots_speed: { n: '신속의 장화', en: 'Boots of Speed', ic: '👢', r: 2, props: [['cd', 0.8], ['move', 0.2]] },
+    bracers_arch: { n: '궁술의 팔찌', en: 'Bracers of Archery', ic: '🏹', r: 1, fit: ['archer'], props: [['hit', 2]] },
+    bracers_def: { n: '방어의 팔찌', en: 'Bracers of Defense', ic: '⛓️', r: 2, slot: 'a', fit: ['monk', 'barbarian', 'mage', 'archmage'], props: [['ac', 2]] },
+    periapt_wound: { n: '상처 봉합의 부적', en: 'Periapt of Wound Closure', ic: '🩹', r: 1, props: [['regen', 0.015]] },
+    ring_regen: { n: '재생의 반지', en: 'Ring of Regeneration', ic: '💍', r: 3, props: [['regen', 0.025]] },
+    cloak_disp: { n: '전위의 망토', en: 'Cloak of Displacement', ic: '🧥', r: 2, props: [['hitDis', 1]] },
+    ring_evasion: { n: '회피의 반지', en: 'Ring of Evasion', ic: '💍', r: 2, props: [['save', 2], ['taken', 0.9]] },
+    luckstone: { n: '행운의 돌', en: 'Stone of Good Luck', ic: '🪨', r: 1, props: [['save', 1], ['hit', 1], ['gold', 0.15]] },
+    free_action: { n: '자유 행동의 반지', en: 'Ring of Free Action', ic: '💍', r: 2, props: [['imm', 'restrained'], ['imm', 'paralyzed'], ['move', 0.1]] },
+    periapt_poison: { n: '독 방지 부적', en: 'Periapt of Proof against Poison', ic: '🧿', r: 2, props: [['imm', 'poisoned'], ['taken', 0.95]] },
+    ring_mind: { n: '정신 보호의 반지', en: 'Ring of Mind Shielding', ic: '💍', r: 1, props: [['imm', 'frightened']] },
+    scarab: { n: '보호의 스카라브', en: 'Scarab of Protection', ic: '🪲', r: 4, props: [['save', 4], ['imm', 'frightened'], ['imm', 'paralyzed']] },
+    brooch: { n: '방패의 브로치', en: 'Brooch of Shielding', ic: '📌', r: 1, props: [['taken', 0.88]] },
+    ring_resist: { n: '저항의 반지', en: 'Ring of Resistance', ic: '💍', r: 2, props: [['taken', 0.85]] },
+    ioun: { n: '아이운 스톤', en: 'Ioun Stone', ic: '🔮', r: 2, props: [['hit', 1], ['save', 1], ['xp', 0.25]] },
+    wand_war: { n: '전투 마법사의 완드', en: 'Wand of the War Mage', ic: '🪄', r: 2, fit: CASTER, props: [['hit', 2], ['init', 1]] },
+    robe_arch: { n: '대마법사의 로브', en: 'Robe of the Archmagi', ic: '🥻', r: 4, slot: 'a', fit: ['mage', 'archmage', 'warlock'], props: [['ac', 3], ['save', 2], ['hit', 2]] },
+    elvenkind: { n: '엘프의 망토', en: 'Cloak of Elvenkind', ic: '🧥', r: 1, props: [['move', 0.1], ['hitDis', 1]] },
+    mountebank: { n: '협잡꾼의 망토', en: 'Cape of the Mountebank', ic: '🧥', r: 2, props: [['cd', 0.9], ['taken', 0.92]] },
+    missile_snare: { n: '화살 잡기 장갑', en: 'Gloves of Missile Snaring', ic: '🧤', r: 1, props: [['taken', 0.9], ['ac', 1]] },
+    fireballs: { n: '화염구 목걸이', en: 'Necklace of Fireballs', ic: '📿', r: 2, props: [['proc', 'burn', 0.35]] },
+    // 갑옷 (slot 'a')
+    armor_resist: { n: '저항의 갑옷', en: 'Armor of Resistance', ic: '🦺', r: 2, slot: 'a', fit: ARMORED, props: [['taken', 0.85]] },
+    dwarven_plate: { n: '드워프 판금', en: 'Dwarven Plate', ic: '🦺', r: 3, slot: 'a', fit: HEAVY, props: [['ac', 2], ['imm', 'prone']] },
+    elven_chain: { n: '엘프 사슬', en: 'Elven Chain', ic: '🦺', r: 2, slot: 'a', fit: ARMORED, props: [['ac', 1], ['move', 0.1]] },
+    mithral: { n: '미스릴 갑옷', en: 'Mithral Armor', ic: '🦺', r: 1, slot: 'a', fit: MEDIUM, props: [['move', 0.15]] },
+    adamantine: { n: '아다만틴 갑옷', en: 'Adamantine Armor', ic: '🦺', r: 1, slot: 'a', fit: MEDIUM, props: [['nocrit', 1]] },
+    demon_armor: { n: '악마 갑옷', en: 'Demon Armor', ic: '🦺', r: 3, slot: 'a', fit: HEAVY, props: [['ac', 1], ['hit', 1], ['proc', 'frightened', 0.15], ['taken', 1.05]] },
+    dragon_scale: { n: '용비늘 갑옷', en: 'Dragon Scale Mail', ic: '🐉', r: 3, slot: 'a', fit: MEDIUM, props: [['ac', 1], ['save', 1], ['taken', 0.85]] },
+    invulnerability: { n: '불가침의 갑옷', en: 'Armor of Invulnerability', ic: '🦺', r: 4, slot: 'a', fit: HEAVY, props: [['taken', 0.6], ['imm', 'prone']] },
+    glamoured: { n: '환영 징 박은 가죽', en: 'Glamoured Studded Leather', ic: '🦺', r: 1, slot: 'a', fit: LIGHT, props: [['ac', 1], ['move', 0.05]] },
+    // 방패 (slot 'w' · shield) — 방패 직업의 손: 기본 무기 + 이 방패. 마법 무기와 둘 중 하나
+    shield_plus: { n: '마법 방패', en: 'Shield, +2', ic: '🛡️', r: 2, slot: 'w', shield: true, fit: SHIELD, props: [['ac', 2]] },
+    animated_shield: { n: '움직이는 방패', en: 'Animated Shield', ic: '🛡️', r: 3, slot: 'w', shield: true, fit: SHIELD, props: [['ac', 1], ['cd', 0.85]] },
+    spellguard: { n: '주문 수호 방패', en: 'Spellguard Shield', ic: '🛡️', r: 3, slot: 'w', shield: true, fit: SHIELD, props: [['save', 3], ['ac', 1]] },
+    sentinel: { n: '파수꾼 방패', en: 'Sentinel Shield', ic: '🛡️', r: 1, slot: 'w', shield: true, fit: SHIELD, props: [['init', 1], ['ac', 1]] },
+    arrow_catching: { n: '화살 잡이 방패', en: 'Arrow-Catching Shield', ic: '🛡️', r: 2, slot: 'w', shield: true, fit: SHIELD, props: [['ac', 1], ['taken', 0.9]] },
+    // 무기 (slot 'w')
+    flame_tongue: { n: '화염의 혀', en: 'Flame Tongue', ic: '🔥', r: 2, slot: 'w', fit: BLADE, props: [['proc', 'burn', 0.5]] },
+    frost_brand: { n: '서리 낙인', en: 'Frost Brand', ic: '❄️', r: 3, slot: 'w', fit: BLADE, props: [['proc', 'shock', 0.5], ['taken', 0.92]] },
+    vorpal: { n: '보팔 검', en: 'Vorpal Sword', ic: '⚔️', r: 4, slot: 'w', fit: BLADE, props: [['hit', 3], ['vorpal', 1]] },
+    holy_avenger: { n: '성스러운 복수자', en: 'Holy Avenger', ic: '✨', r: 4, slot: 'w', fit: ['paladin'], props: [['hit', 3], ['slay', 'undead'], ['slay', 'fiend'], ['save', 2]] },
+    sun_blade: { n: '태양검', en: 'Sun Blade', ic: '☀️', r: 2, slot: 'w', fit: BLADE, props: [['hit', 2], ['slay', 'undead']] },
+    mace_disrupt: { n: '붕괴의 메이스', en: 'Mace of Disruption', ic: '🔨', r: 2, slot: 'w', fit: ['cleric', 'paladin'], props: [['slay', 'undead'], ['slay', 'fiend']] },
+    giant_slayer: { n: '거인 학살자', en: 'Giant Slayer', ic: '🗡️', r: 2, slot: 'w', fit: MELEE, props: [['hit', 1], ['slay', 'giant']] },
+    dragon_slayer: { n: '용 학살자', en: 'Dragon Slayer', ic: '🗡️', r: 2, slot: 'w', fit: MELEE, props: [['hit', 1], ['boss', 0.4]] },
+    dwarven_thrower: { n: '드워프 투척 망치', en: 'Dwarven Thrower', ic: '🔨', r: 3, slot: 'w', fit: ['dragoon', 'paladin', 'barbarian'], props: [['hit', 3], ['slay', 'giant']] },
+    oathbow: { n: '맹세의 활', en: 'Oathbow', ic: '🏹', r: 3, slot: 'w', fit: ['archer'], props: [['hit', 1], ['boss', 0.6]] },
+    defender: { n: '수호자', en: 'Defender', ic: '🛡️', r: 4, slot: 'w', fit: BLADE, props: [['hit', 3], ['ac', 3]] },
+    luck_blade: { n: '행운의 검', en: 'Luck Blade', ic: '🍀', r: 4, slot: 'w', fit: BLADE, props: [['hit', 1], ['save', 1], ['gold', 0.3]] },
+    nine_lives: { n: '아홉 목숨 도둑', en: 'Nine Lives Stealer', ic: '💀', r: 3, slot: 'w', fit: BLADE, props: [['hit', 2], ['vorpal', 1]] },
+    dagger_venom: { n: '독의 단검', en: 'Dagger of Venom', ic: '🗡️', r: 2, slot: 'w', fit: ['rogue', 'bard'], props: [['hit', 1], ['proc', 'poison', 0.4]] },
+    berserker_axe: { n: '광전사의 도끼', en: 'Berserker Axe', ic: '🪓', r: 2, slot: 'w', fit: ['barbarian', 'dragoon'], props: [['hit', 1], ['imm', 'frightened'], ['taken', 1.1]] },
+    sharpness: { n: '예리함의 검', en: 'Sword of Sharpness', ic: '⚔️', r: 3, slot: 'w', fit: BLADE, props: [['crit', 1], ['critX', 1.5]] },
+    life_steal: { n: '생명 강탈의 검', en: 'Sword of Life Stealing', ic: '🩸', r: 2, slot: 'w', fit: BLADE, props: [['crit', 1], ['lifesteal', 0.1]] },
+    hammer_thunder: { n: '천둥 망치', en: 'Hammer of Thunderbolts', ic: '⚡', r: 4, slot: 'w', fit: ['dragoon', 'paladin', 'barbarian', 'cleric'], props: [['set', 'str', 20], ['slay', 'giant'], ['proc', 'prone', 0.25]] },
+    staff_power: { n: '권능의 지팡이', en: 'Staff of Power', ic: '🪄', r: 3, slot: 'w', fit: CASTER, props: [['hit', 2], ['ac', 2], ['save', 2]] },
+    staff_magi: { n: '마기의 지팡이', en: 'Staff of the Magi', ic: '🪄', r: 4, slot: 'w', fit: ['archmage', 'mage', 'warlock'], props: [['hit', 2], ['save', 2], ['cd', 0.85]] },
+    dancing: { n: '춤추는 검', en: 'Dancing Sword', ic: '🗡️', r: 3, slot: 'w', fit: BLADE, props: [['hit', 1], ['cd', 0.8]] },
+    lordly: { n: '군주의 권능 홀', en: 'Rod of Lordly Might', ic: '🔱', r: 4, slot: 'w', fit: MELEE, props: [['hit', 3], ['proc', 'paralyzed', 0.15], ['proc', 'frightened', 0.15]] },
+  };
+  // 랜다트: 바탕(장신구 · 무기 — 무기는 직업 묶음) · 이름 조각
+  G.D.RANDART = {
+    base: [['반지', '💍'], ['아뮬렛', '📿'], ['망토', '🧥'], ['장화', '👢'], ['장갑', '🧤'], ['허리띠', '🎗️'], ['머리띠', '👑'], ['팔찌', '⛓️'], ['브로치', '📌']],
+    abase: [['판금 갑옷', '🦺', HEAVY], ['사슬 갑옷', '🦺', MEDIUM], ['가죽 갑옷', '🦺', LIGHT], ['로브', '🥻', ['mage', 'archmage', 'warlock']], ['팔보호대', '⛓️', ['monk', 'barbarian']]],
+    sbase: ['방패', '🛡️', SHIELD],
+    wbase: [['롱소드', '🗡️', BLADE], ['워해머', '🔨', ['dragoon', 'paladin', 'barbarian', 'cleric']], ['롱보우', '🏹', ['archer']], ['지팡이', '🪄', CASTER], ['단검', '🗡️', ['rogue', 'bard']], ['쿼터스태프', '🥢', ['monk', 'scout']]],
+    adj: ['잿빛', '핏빛', '별빛', '오래된', '속삭이는', '굶주린', '얼어붙은', '타오르는', '고요한', '뒤틀린', '잊힌', '부서진', '검은', '은빛', '황금빛', '저주받은', '축복받은', '노래하는', '울부짖는', '잠든'],
+    noun: ['맹세', '망각', '폭풍', '심연', '여명', '황혼', '송곳니', '왕관', '비명', '서리', '불꽃', '그림자', '메아리', '별', '피', '뼈', '달', '가시', '바람', '침묵'],
+  };
+})();
 // 성격 (DESIGN.md 42): 축 셋(용기 · 욕심 · 싸움)에 둘씩. 한 사람은 0~2개, 같은 축에서는 하나만. ic = 머리 위 기호(ni_<ic>)
 G.D.PERSONA = {
   hot: { n: '다혈질', ax: 'nerve', ic: 'pe_hot', d: '먼저 돌진 · 첫 타 ×1.5' },
@@ -122,104 +172,176 @@ G.D.PERSONA = {
   brawler: { n: '싸움꾼', ax: 'fight', ic: 'pe_brawler', d: '맞서기 라이벌에게 먼저 덤빔' },
   meek: { n: '온순', ax: 'fight', ic: 'pe_meek', d: '라이벌전 빠짐 · 노려지지 않음' },
 };
-// 개인 스킬 (DESIGN.md 43): 직업마다 일곱, 고용할 때 그중 넷이 정해진다(Lv 1에 둘 · Lv 3에 셋 · Lv 5에 넷). 전부 자동 시전.
-// 스킬 쿨다운은 cool(초) — cd는 G.Guild.mult가 읽는 공격 간격 배율이라 이름을 나눴다. 효과 코드는 js/skills.js, 상태이상을 받아치는 연계기는 js/combo.js.
-// 패시브(아래 「패시브」)는 이제 상위 직업의 전직 스킬(sig)로만 얻는다.
-G.D.MSKILLS = {
-  // 레인저 — 멀리서 갉는 사수 (독 · 기절)
-  sk_aimed: { n: '조준 사격', t: 'fx_arrow', d: '최강 적 ×8', cool: 15 }, sk_volley: { n: '화살비', t: 'w_bow', d: '3초 연사', cool: 20 },
-  sk_bind: { n: '속박 사격', t: 'fx_arrow', d: '최강 적 ×3 · 기절 2초', cool: 14 }, sk_toxcloud: { n: '독구름 화살', t: 'r_stew', d: '범위 독', cool: 18 },
-  sk_pierce: { n: '관통 화살', t: 'fx_arrow', d: '일직선 ×3', cool: 12 }, sk_weak: { n: '급소 사격', t: 'fx_arrow', d: '기절 · 정지 적 ×5', cool: 8 },
-  sk_kite: { n: '후퇴 사격', t: 'a_escape', d: '밀치고 물러남 ×2', cool: 10 },
-  // 수도사 — 살리고 심판한다 (표식)
-  sk_heal: { n: '치유의 빛', t: 'fx_holy', d: '파티 체력 +50%', cool: 30 }, sk_bless: { n: '축복', t: 'b_regen', d: '재생 +4% 10초', cool: 25 },
-  sk_aegis: { n: '신성 방벽', t: 'd_shield', d: '가장 약한 동료 4초 무적', cool: 25 }, sk_raise: { n: '소생', t: 'u_god', d: '쓰러진 동료 50%로', cool: 40 },
-  sk_judge: { n: '심판의 빛', t: 'fx_holy', d: '보이는 적 표식 6초', cool: 20 }, sk_hammer: { n: '성광 망치', t: 'w_holymace', d: '×4 · 표식', cool: 10 },
-  sk_halo: { n: '신성 고리', t: 'q_peak', d: '주변 ×2 · 동료 +10%', cool: 14 },
-  // 음유시인 — 노래로 판을 바꾼다 (기절 · 감전 · 표식)
-  sk_rhap: { n: '광시곡', t: 'b_atk', d: '노래 전부 10초', cool: 30 }, sk_hymn: { n: '진군가', t: 'st_haste', d: '공속 ×1.5 6초', cool: 25 },
-  sk_ward: { n: '수호의 노래', t: 'd_shield', d: '받는 피해 -30% 8초', cool: 25 }, sk_luck: { n: '행운의 노래', t: 'b_gold', d: '골드 ×2 10초', cool: 30 },
-  sk_lull: { n: '자장가', t: 'fx_song', d: '주변 기절 3초', cool: 16 }, sk_disc: { n: '불협화음', t: 'fx_zap', d: '보이는 적 감전 4초', cool: 18 },
-  sk_mock: { n: '조롱', t: 'b_fury', d: '최강 적 표식 6초', cool: 12 },
-  // 화염 마법사 — 불바다 (화상)
-  sk_meteor: { n: '유성 낙하', t: 'fx_fire', d: '범위 ×30', cool: 25 }, sk_nova: { n: '화염 고리', t: 'fx_flame', d: '주변 ×6', cool: 14 },
-  sk_fireball: { n: '화염구', t: 'fx_fire', d: '범위 ×4 · 화상', cool: 10 }, sk_pillar: { n: '불기둥', t: 'fx_flame', d: '최강 적 강한 화상 6초', cool: 16 },
-  sk_firewall: { n: '화염 장벽', t: 'fx_flame', d: '불길 5초', cool: 22 }, sk_heatwave: { n: '열파', t: 'fx_fire', d: '밀치고 화상', cool: 12 },
-  sk_ignite: { n: '점화', t: 'r_dragon', d: '남은 화상이 한 번에', cool: 14 },
-  // 성기사 — 대신 맞는다 (기절)
-  sk_wall: { n: '성벽', t: 'u_armor', d: '받는 피해 -50% 8초', cool: 30 }, sk_smash: { n: '방패 강타', t: 'd_shield', d: '×5 · 기절 2초', cool: 12 },
-  sk_oath: { n: '수호 맹세', t: 'u_armor', d: '약한 동료 대신 맞기 6초', cool: 25 }, sk_shout: { n: '도발의 함성', t: 'b_fury', d: '6초 나를 노림 · 피해 -30%', cool: 18 },
-  sk_slam: { n: '내려찍기', t: 'w_hammer', d: '주변 ×2 · 기절 1.5초', cool: 12 }, sk_retri: { n: '응보', t: 'd_shield', d: '5초 받은 피해 반사', cool: 20 },
-  sk_bastion: { n: '최후의 보루', t: 'u_god', d: '체력 30% 아래 4초 무적', cool: 60 },
-  // 용기병 — 뚫고 들어간다 (출혈)
-  sk_leap: { n: '용의 도약', t: 'w_spear', d: '최강 적 ×10', cool: 20 }, sk_spin: { n: '회전 베기', t: 'w_spear', d: '주변 ×4', cool: 12 },
-  sk_lance: { n: '꿰뚫기', t: 'w_spear', d: '일직선 ×4 · 출혈', cool: 12 }, sk_rend: { n: '찢어발기기', t: 'w_cleaver', d: '×3 · 강한 출혈', cool: 10 },
-  sk_charge: { n: '돌격', t: 'a_escape', d: '먼 적까지 돌진 · 길목 ×2', cool: 16 }, sk_fury: { n: '용의 분노', t: 'r_dragon', d: '6초 공격 간격 ×0.5', cool: 25 },
-  sk_doom: { n: '처단', t: 'w_waraxe', d: '출혈 적 ×5', cool: 10 },
-  // 대현자 — 번개와 시간 (감전 · 정지)
-  sk_tstorm: { n: '뇌우', t: 'a_thunder', d: '5초 낙뢰', cool: 40 }, sk_freeze: { n: '시간 정지', t: 'a_seal', d: '보이는 적 정지 3초', cool: 35 },
-  sk_chainl: { n: '연쇄 번개', t: 'fx_zap', d: '연쇄 10 ×3 · 감전', cool: 14 }, sk_jolt: { n: '전격', t: 'a_thunder', d: '최강 적 ×4 · 감전 4초', cool: 10 },
-  sk_slowf: { n: '감속장', t: 'st_haste', d: '범위 감전 5초', cool: 18 }, sk_rewind: { n: '되감기', t: 'a_seal', d: '파티 체력을 5초 전으로', cool: 45 },
-  sk_blink: { n: '점멸', t: 'a_escape', d: '위험하면 뒤로 순간 이동', cool: 12 },
-  // 암살자 — 하나를 확실히 (독 · 출혈 · 표식)
-  sk_shadow: { n: '그림자 처형', t: 'w_knife', d: '30% 이하 처형', cool: 25 }, sk_fan: { n: '단검 투척', t: 'w_knife', d: '5명 ×2', cool: 10 },
-  sk_smoke: { n: '연막탄', t: 'a_seal', d: '주변 기절 2초 · 다음 타 ×3', cool: 16 }, sk_venom: { n: '독 바르기', t: 'r_stew', d: '8초 타격마다 독', cool: 20 },
-  sk_vital: { n: '급소 찌르기', t: 'g_dagger', d: '×6 · 표식', cool: 10 }, sk_bleedcut: { n: '출혈 베기', t: 'w_knife', d: '×2 · 출혈', cool: 8 },
-  sk_step: { n: '그림자 걸음', t: 'a_escape', d: '약한 적 뒤로 ×3', cool: 12 },
-  // 길잡이 — 길과 덫 (출혈 · 기절 · 정지 · 표식)
-  sk_scan: { n: '정찰', t: 'a_seal', d: '반경 14칸 지도', cool: 30 }, sk_path: { n: '지름길', t: 'f_stairs', d: '계단 위치 · 이동 +50% 8초', cool: 40 },
-  sk_sense: { n: '보물 감지', t: 'x_chest', d: '상자 위치 · 골드 ×2 8초', cool: 30 }, sk_trap: { n: '덫 놓기', t: 'w_board', d: '밟으면 기절 3초 · 출혈', cool: 14 },
-  sk_net: { n: '투척 그물', t: 'a_seal', d: '최강 적 정지 3초', cool: 16 }, sk_saw: { n: '톱니 화살', t: 'fx_arrow', d: '×2 · 출혈', cool: 8 },
-  sk_hunt: { n: '사냥 표식', t: 'b_fury', d: '최강 적 표식 8초', cool: 14 },
-  // 패시브 (행동)
-  r_pierce: { n: '관통', t: 'fx_arrow', d: '4발째 관통 2' }, r_poison: { n: '독화살', t: 'r_stew', d: '독 30% 4초' }, r_snipe: { n: '저격', t: 'fx_arrow', d: '12초마다 ×8' },
-  b_encore: { n: '앙코르', t: 'fx_song', d: '노래 +50%' }, songWar: { n: '전쟁의 북', t: 'b_fury', d: '노래 추가 · 피해 ×3' }, songRegen: { n: '회복의 노래', t: 'b_regen', d: '노래 추가 · 재생 +4%' }, b_rally: { n: '응원', t: 'b_atk', d: '파티 피해 +10%' },
-  c_mass: { n: '은총', t: 'fx_holy', d: '5번째 치유 전체' }, c_revive: { n: '부활 기도', t: 'u_god', d: '부활 ×0.5' }, c_sanct: { n: '성역', t: 'q_peak', d: '오염 ×0.5' },
-  m_burn: { n: '화상', t: 'fx_fire', d: '화상 25% 3초' }, m_storm: { n: '화염 폭풍', t: 'fx_flame', d: '유성 자리 불길' }, m_quick: { n: '빠른 영창', t: 'st_haste', d: '공격·유성 ×0.7' },
-  p_guard: { n: '방패 막기', t: 'd_shield', d: '받는 피해 -30%', v: 0.3 }, p_taunt: { n: '도발', t: 'u_armor', d: '먼저 노려진다' }, p_counter: { n: '반격', t: 'd_shield', d: '받은 피해 50% 반사' },
-  d_dash: { n: '돌진', t: 'w_spear', d: '돌진 첫 타 ×3' }, d_exec: { n: '처형', t: 'w_spear', d: '25% 이하 즉사' }, d_breath: { n: '용의 숨결', t: 'fx_fire', d: '곁의 적 60%' },
-  a_overload: { n: '과부하', t: 'fx_zap', d: '연쇄 +2 · 감쇠 없음' }, a_warp: { n: '시간 왜곡', t: 'st_haste', d: '15초마다 공속 ×1.5' }, a_stop: { n: '정지 결계', t: 'a_seal', d: '30초마다 정지 4초' },
-  ro_twin: { n: '쌍검', t: 'w_knife', d: '한 번 더 60%' }, ro_mark: { n: '표식', t: 'ui_gold', d: '받는 피해 +25% 4초' }, ro_steal: { n: '소매치기', t: 'ui_gold', d: '타격마다 골드', v: 0.05 },
-  s_eye: { n: '매의 눈', t: 'a_seal', d: '시야 +1 · 직행 기준 -10%p', sight: 1 }, s_loot: { n: '보물 사냥', t: 'x_chest', d: '보물 골드 +50%' }, s_first: { n: '선제', t: 'w_knife', d: '온전한 적 ×1.5' },
-  // 패시브 (수치)
-  r_quick: { n: '속사', t: 'st_haste', d: '공격 간격 -20%', cd: 0.8 }, c_power: { n: '신성', t: 'fx_holy', d: '치유 +50%', heal: 1.5 }, m_big: { n: '폭발 확장', t: 'fx_fire', d: '범위 +0.6칸', splash: 0.6 },
-  p_tough: { n: '강철', t: 'u_armor', d: '체력 +30%', hp: 1.3 }, d_fury: { n: '투지', t: 'b_fury', d: '공격 +20%', atk: 1.2 }, a_wis: { n: '지혜', t: 'u_god', d: '공격 +20%', atk: 1.2 },
-  ro_quick: { n: '날렵함', t: 'st_haste', d: '공격 간격 -20%', cd: 0.8 }, s_swift: { n: '강행', t: 'st_haste', d: '파티 이동 +10%', move: 0.1 },
-};
+// 개인 기술 (DESIGN.md 43 · 56): 아래 SRD 목록이 전부. cool = 쿨다운(초) — cd는 G.Guild.mult가 읽는 공격 간격 배율이라 이름을 나눴다.
+G.D.MSKILLS = {};
+// SRD 5.2.1 직업 기술 · 주문 (DESIGN.md 56 ②): 전투에 쓰는 유명한 것만, 전부 쿨다운으로. en = SRD 원문 이름(영문판).
+// lv = 쓸 수 있는 용병 레벨(주문은 SRD 주문 레벨을 배우는 레벨, 직업마다 다르면 { 직업: 레벨 }) · passive = 늘 켜져 있음(칸은 차지한다)
+Object.assign(G.D.MSKILLS, {
+  // 공용 주문
+  sr_cure: { n: '상처 치료', en: 'Cure Wounds', t: 'fx_holy', d: '가장 다친 동료 +50%', cool: 15, lv: { archer: 2, cleric: 1 } },
+  sr_hword: { n: '치유의 말', en: 'Healing Word', t: 'b_regen', d: '멀리서 가장 다친 동료 +30%', cool: 8, lv: 1 },
+  sr_bless: { n: '축복', en: 'Bless', t: 'b_atk', d: '셋 명중 · 내성 +d4 10초', cool: 25, lv: 1 },
+  sr_spike: { n: '가시 성장', en: 'Spike Growth', t: 'w_board', d: '가시밭 8초', cool: 25, lv: { archer: 5, scout: 3 } },
+  sr_fireball: { n: '화염구', en: 'Fireball', t: 'fx_fire', d: '범위 ×5 · 민첩 내성 절반', cool: 15, lv: 5 },
+  // 바바리안
+  sr_rage: { n: '격노', en: 'Rage', t: 'b_fury', d: '10초 피해 ×1.5 · 받는 피해 절반', cool: 30, lv: 1 },
+  sr_reckless: { n: '무모한 공격', en: 'Reckless Attack', t: 'w_waraxe', d: '8초 내 공격 이점 · 적도 나에게 이점', cool: 20, lv: 2 },
+  sr_frenzy: { n: '광란', en: 'Frenzy', t: 'r_dragon', d: '격노 중 공격 간격 ×0.6', passive: true, lv: 3 },
+  sr_brutal: { n: '잔혹한 일격', en: 'Brutal Strike', t: 'w_cleaver', d: '×4 · 밀침 · 느려짐', cool: 12, lv: 9 },
+  sr_intim: { n: '위협적인 존재감', en: 'Intimidating Presence', t: 'b_fury', d: '주변 지혜 내성 · 공포 6초', cool: 30, lv: 10 },
+  sr_relent: { n: '끈질긴 격노', en: 'Relentless Rage', t: 'u_god', d: '격노 중 쓰러지면 건강 내성으로 버팀', passive: true, lv: 11 },
+  sr_retal: { n: '보복', en: 'Retaliation', t: 'd_shield', d: '근접으로 맞으면 되받아침', passive: true, lv: 14 },
+  // 파이터
+  sr_second: { n: '재기', en: 'Second Wind', t: 'b_regen', d: '체력 절반 아래 +30%', cool: 30, lv: 1 },
+  sr_surge: { n: '행동 쇄도', en: 'Action Surge', t: 'st_haste', d: '바로 공격 한 번 더 (추가 공격 포함)', cool: 25, lv: 2 },
+  sr_cleave: { n: '가르기', en: 'Cleave', t: 'w_spear', d: '×2 · 곁의 적 ×2', cool: 8, lv: 1 },
+  sr_topple: { n: '넘어뜨리기', en: 'Topple', t: 'w_hammer', d: '×2 · 건강 내성 · 넘어짐', cool: 10, lv: 1 },
+  sr_sap: { n: '약화', en: 'Sap', t: 'w_mace', d: '×2 · 다음 공격 불리', cool: 8, lv: 1 },
+  sr_impcrit: { n: '향상된 치명타', en: 'Improved Critical', t: 'w_sword', d: '19~20 치명 (Lv 15 18~20)', passive: true, lv: 3 },
+  sr_indom: { n: '불굴', en: 'Indomitable', t: 'u_armor', d: '실패한 내성 다시 (20초)', passive: true, lv: 9 },
+  // 로그
+  sr_cunning: { n: '교활한 행동', en: 'Cunning Action', t: 'a_escape', d: '약한 적 뒤로 · 다음 공격 이점', cool: 10, lv: 2 },
+  sr_steady: { n: '정밀 조준', en: 'Steady Aim', t: 'g_dagger', d: '다음 공격 이점 · ×2', cool: 8, lv: 3 },
+  sr_fasthands: { n: '재빠른 손', en: 'Fast Hands', t: 'ui_gold', d: '기습마다 골드', passive: true, lv: 3 },
+  sr_cstrike: { n: '교활한 일격', en: 'Cunning Strike', t: 'w_knife', d: '×3 · 건강 내성 중독 / 민첩 내성 넘어짐', cool: 10, lv: 5 },
+  sr_uncanny: { n: '직감 회피', en: 'Uncanny Dodge', t: 'd_shield', d: '6초마다 한 번 피해 절반', passive: true, lv: 5 },
+  sr_reliable: { n: '믿음직한 재능', en: 'Reliable Talent', t: 'ui_star', d: '지각 · 조사 · 설득 +5', passive: true, lv: 7 },
+  sr_devious: { n: '교묘한 일격', en: 'Devious Strikes', t: 'g_dagger', d: '×4 · 건강 내성 · 기절 3초', cool: 20, lv: 14 },
+  // 몽크
+  sr_flurry: { n: '연타', en: 'Flurry of Blows', t: 'st_haste', d: '세 번 연속 공격', cool: 6, lv: 2 },
+  sr_patient: { n: '인내의 방어', en: 'Patient Defense', t: 'd_shield', d: '5초 나를 노리는 공격 불리', cool: 15, lv: 2 },
+  sr_wind: { n: '바람의 발걸음', en: 'Step of the Wind', t: 'a_escape', d: '먼 적에게 뛰어들어 ×3', cool: 10, lv: 2 },
+  sr_deflect: { n: '공격 튕겨내기', en: 'Deflect Attacks', t: 'd_shield', d: '4초마다 한 번 피해 ×0.4', passive: true, lv: 3 },
+  sr_ohtech: { n: '열린 손 기법', en: 'Open Hand Technique', t: 'w_board', d: '연타마다 민첩 내성 · 넘어짐', passive: true, lv: 3 },
+  sr_stun: { n: '기절 타격', en: 'Stunning Strike', t: 'a_seal', d: '×2 · 건강 내성 · 기절 2초', cool: 8, lv: 5 },
+  sr_whole: { n: '신체의 완전함', en: 'Wholeness of Body', t: 'b_regen', d: '체력 절반 아래 +40%', cool: 30, lv: 6 },
+  sr_quiver: { n: '진동 장', en: 'Quivering Palm', t: 'a_thunder', d: '×20 · 건강 내성 절반', cool: 40, lv: 17 },
+  // 팔라딘
+  sr_lay: { n: '안수', en: 'Lay On Hands', t: 'fx_holy', d: '가장 다친 동료 +50%', cool: 25, lv: 1 },
+  sr_sof: { n: '신앙의 방패', en: 'Shield of Faith', t: 'd_shield', d: '가장 다친 동료 AC +2 10초', cool: 20, lv: 1 },
+  sr_smite: { n: '신성 강타', en: 'Divine Smite', t: 'w_hammer', d: '×3 (언데드 · 악마 ×4)', cool: 8, lv: 2 },
+  sr_searing: { n: '작열 강타', en: 'Searing Smite', t: 'fx_flame', d: '×2 · 화상', cool: 10, lv: 2 },
+  sr_sacred: { n: '신성한 무기', en: 'Sacred Weapon', t: 'w_holymace', d: '10초 명중 + 매력', cool: 30, lv: 3 },
+  sr_aura: { n: '보호의 오라', en: 'Aura of Protection', t: 'q_peak', d: '3칸 안 동료 내성 + 매력', passive: true, lv: 6 },
+  // 레인저
+  sr_hmark: { n: '사냥꾼의 표식', en: "Hunter's Mark", t: 'b_fury', d: '최강 적 표식 · 내 피해 +40%', cool: 15, lv: 1 },
+  sr_ensnare: { n: '속박의 일격', en: 'Ensnaring Strike', t: 'w_bow', d: '×2 · 근력 내성 · 속박 4초', cool: 12, lv: 1 },
+  sr_colossus: { n: '거인 사냥꾼', en: 'Colossus Slayer', t: 'fx_arrow', d: '다친 적에게 피해 +50%', passive: true, lv: 3 },
+  sr_mdef: { n: '다중 공격 방어', en: 'Multiattack Defense', t: 'd_shield', d: '맞은 뒤 3초 받는 피해 ×0.7', passive: true, lv: 7 },
+  sr_sprey: { n: '상위 사냥감', en: "Superior Hunter's Prey", t: 'fx_arrow', d: '표식 적을 맞히면 곁의 적에게 절반', passive: true, lv: 11 },
+  // 클레릭
+  sr_gbolt: { n: '인도의 화살', en: 'Guiding Bolt', t: 'fx_holy', d: '명중 ×5 · 다음 공격 이점', cool: 10, lv: 1 },
+  sr_sflame: { n: '신성한 불꽃', en: 'Sacred Flame', t: 'fx_holy', d: '×3 · 민첩 내성 무효', cool: 5, lv: 1 },
+  sr_turn: { n: '언데드 퇴치', en: 'Turn Undead', t: 'u_god', d: '언데드 지혜 내성 · 공포 · 기절 5초', cool: 25, lv: 2 },
+  sr_sweapon: { n: '영적 무기', en: 'Spiritual Weapon', t: 'w_holymace', d: '10초 떠다니는 무기', cool: 25, lv: 3 },
+  sr_guard: { n: '영혼 수호자', en: 'Spirit Guardians', t: 'q_peak', d: '10초 주변 피해 · 느려짐', cool: 30, lv: 5 },
+  sr_revive: { n: '소생술', en: 'Revivify', t: 'u_god', d: '쓰러진 동료 30%로', cool: 40, lv: 5 },
+  sr_mhw: { n: '집단 치유의 말', en: 'Mass Healing Word', t: 'b_regen', d: '파티 +25%', cool: 30, lv: 5 },
+  // 바드
+  sr_insp: { n: '바드의 영감', en: 'Bardic Inspiration', t: 'fx_song', d: '동료 명중 · 내성 +d6 10초', cool: 12, lv: 1 },
+  sr_faerie: { n: '요정 불꽃', en: 'Faerie Fire', t: 'fx_song', d: '범위 민첩 내성 · 빛남 6초', cool: 15, lv: 1 },
+  sr_mock: { n: '잔인한 조롱', en: 'Vicious Mockery', t: 'b_fury', d: '×2 · 지혜 내성 · 다음 공격 불리', cool: 5, lv: 1 },
+  sr_whisper: { n: '불협화음의 속삭임', en: 'Dissonant Whispers', t: 'fx_zap', d: '×4 · 지혜 내성 절반 · 공포', cool: 10, lv: 1 },
+  sr_tw: { n: '천둥파', en: 'Thunderwave', t: 'a_thunder', d: '주변 ×3 · 건강 내성 절반 · 밀침', cool: 10, lv: 1 },
+  sr_sleep: { n: '수면', en: 'Sleep', t: 'fx_song', d: '범위 지혜 내성 · 기절 4초', cool: 20, lv: 1 },
+  sr_cutting: { n: '베는 말', en: 'Cutting Words', t: 'fx_song', d: '근처 적 명중 −d6 (5초)', passive: true, lv: 3 },
+  sr_shatter: { n: '산산조각', en: 'Shatter', t: 'a_thunder', d: '범위 ×4 · 건강 내성 절반', cool: 12, lv: 3 },
+  sr_hypno: { n: '최면 문양', en: 'Hypnotic Pattern', t: 'fx_song', d: '넓은 범위 지혜 내성 · 기절 5초', cool: 30, lv: 5 },
+  // 드루이드
+  sr_pflame: { n: '불꽃 생성', en: 'Produce Flame', t: 'fx_flame', d: '명중 ×2.5', cool: 4, lv: 1 },
+  sr_entangle: { n: '얽힘', en: 'Entangle', t: 'w_board', d: '범위 근력 내성 · 속박 5초', cool: 15, lv: 1 },
+  sr_wild: { n: '야생 변신', en: 'Wild Shape', t: 'm_bear', d: '12초 곰 · 임시 체력 50% · 근접 ×2', cool: 40, lv: 2 },
+  sr_landaid: { n: '대지의 도움', en: "Land's Aid", t: 'b_regen', d: '범위 ×3 건강 내성 절반 · 동료 +20%', cool: 15, lv: 3 },
+  sr_moon: { n: '월광', en: 'Moonbeam', t: 'fx_holy', d: '8초 따라가는 빛 · 건강 내성 절반', cool: 20, lv: 3 },
+  sr_call: { n: '번개 부르기', en: 'Call Lightning', t: 'a_thunder', d: '6초 낙뢰 · 민첩 내성 절반', cool: 30, lv: 5 },
+  sr_ice: { n: '얼음 폭풍', en: 'Ice Storm', t: 'fx_ice', d: '범위 ×5 · 민첩 내성 절반 · 느려짐', cool: 20, lv: 7 },
+  // 소서러
+  sr_firebolt: { n: '화염살', en: 'Fire Bolt', t: 'fx_flame', d: '명중 ×3', cool: 4, lv: 1 },
+  sr_chroma: { n: '색채의 구', en: 'Chromatic Orb', t: 'fx_zap', d: '명중 ×5', cool: 8, lv: 1 },
+  sr_quicken: { n: '주문 가속', en: 'Quickened Spell', t: 'st_haste', d: '기술 쿨다운 ×0.75', passive: true, lv: 2 },
+  sr_twin: { n: '쌍둥이 주문', en: 'Twinned Spell', t: 'fx_zap', d: '한 명 주문이 둘에게', passive: true, lv: 2 },
+  sr_sray: { n: '작열 광선', en: 'Scorching Ray', t: 'fx_fire', d: '광선 셋 · 각 명중 ×2', cool: 10, lv: 3 },
+  sr_lbolt: { n: '번개 줄기', en: 'Lightning Bolt', t: 'a_thunder', d: '일직선 ×5 · 민첩 내성 절반', cool: 15, lv: 5 },
+  sr_affinity: { n: '원소 친화', en: 'Elemental Affinity', t: 'r_dragon', d: '불 주문 ×1.3', passive: true, lv: 6 },
+  sr_chain: { n: '연쇄 번개', en: 'Chain Lightning', t: 'fx_zap', d: '넷 ×8 · 민첩 내성 절반', cool: 25, lv: 11 },
+  // 워락
+  sr_eb: { n: '섬뜩한 폭발', en: 'Eldritch Blast', t: 'fx_zap', d: '광선 (Lv 5 · 11 · 17에 하나씩) · 각 명중 ×2', cool: 4, lv: 1 },
+  sr_hex: { n: '헥스', en: 'Hex', t: 'b_fury', d: '최강 적 저주 · 내 피해 +40%', cool: 15, lv: 1 },
+  sr_rebuke: { n: '지옥의 질책', en: 'Hellish Rebuke', t: 'fx_fire', d: '맞으면 ×4 되갚음 · 민첩 내성 절반 (6초)', passive: true, lv: 1 },
+  sr_agon: { n: '고통의 폭발', en: 'Agonizing Blast', t: 'fx_zap', d: '섬뜩한 폭발 ×1.5', passive: true, lv: 2 },
+  sr_dob: { n: '어둠의 축복', en: "Dark One's Blessing", t: 'r_dragon', d: '처치하면 임시 체력 15%', passive: true, lv: 3 },
+  sr_dark: { n: '어둠', en: 'Darkness', t: 'a_seal', d: '8초 어둠 · 안의 적 실명', cool: 25, lv: 3 },
+  sr_fear: { n: '공포', en: 'Fear', t: 'b_fury', d: '주변 지혜 내성 · 공포 6초', cool: 25, lv: 5 },
+  sr_vtouch: { n: '흡혈의 손길', en: 'Vampiric Touch', t: 'r_stew', d: '명중 ×4 · 절반 회복', cool: 10, lv: 5 },
+  // 위저드
+  sr_rof: { n: '서리 광선', en: 'Ray of Frost', t: 'fx_ice', d: '명중 ×2.5 · 느려짐', cool: 5, lv: 1 },
+  sr_mm: { n: '마법 화살', en: 'Magic Missile', t: 'fx_zap', d: '반드시 맞는 화살 셋 ×1.5', cool: 8, lv: 1 },
+  sr_shield: { n: '방어막', en: 'Shield', t: 'd_shield', d: '아슬하게 맞을 공격을 AC +5로 막음 (10초)', passive: true, lv: 1 },
+  sr_misty: { n: '안개 걸음', en: 'Misty Step', t: 'a_escape', d: '위험하면 순간 이동', cool: 12, lv: 3 },
+  sr_hold: { n: '인간형 포박', en: 'Hold Person', t: 'a_seal', d: '인간형 지혜 내성 · 마비 4초', cool: 20, lv: 3 },
+  sr_web: { n: '거미줄', en: 'Web', t: 'm_spider', d: '범위 민첩 내성 · 속박 6초', cool: 20, lv: 3 },
+  sr_haste: { n: '가속', en: 'Haste', t: 'st_haste', d: '동료 AC +2 · 공격 간격 ×0.5 10초', cool: 40, lv: 5 },
+  sr_slow: { n: '감속', en: 'Slow', t: 'st_haste', d: '여섯 지혜 내성 · 느려짐 · AC −2', cool: 25, lv: 5 },
+  sr_cone: { n: '냉기 분사', en: 'Cone of Cold', t: 'fx_ice', d: '부채꼴 ×8 · 건강 내성 절반', cool: 25, lv: 9 },
+  sr_meteor: { n: '유성 폭풍', en: 'Meteor Swarm', t: 'fx_fire', d: '넓은 범위 ×30 · 민첩 내성 절반', cool: 60, lv: 17 },
+  // 직업 기능 (추가)
+  sr_feral: { n: '야성의 본능', en: 'Feral Instinct', t: 'b_fury', d: '선제권 이점', passive: true, lv: 7 },
+  sr_fastmove: { n: '빠른 이동', en: 'Fast Movement', t: 'a_escape', d: '파티 이동 +10%', passive: true, lv: 5, move: 0.1 },
+  sr_push: { n: '밀쳐내기', en: 'Push', t: 'w_hammer', d: '×2 · 3칸 밀침', cool: 8, lv: 1 },
+  sr_elusive: { n: '종잡을 수 없음', en: 'Elusive', t: 'a_escape', d: '나를 노리는 공격에 이점 없음', passive: true, lv: 18 },
+  sr_selfrest: { n: '자기 회복', en: 'Self-Restoration', t: 'b_regen', d: '공포 · 중독에 걸리지 않음', passive: true, lv: 10 },
+  sr_radiant: { n: '광휘의 일격', en: 'Radiant Strikes', t: 'fx_holy', d: '근접 피해 ×1.3', passive: true, lv: 11 },
+  sr_tireless: { n: '지치지 않음', en: 'Tireless', t: 'b_regen', d: '싸우는 동안 10초마다 임시 체력 10%', passive: true, lv: 10 },
+  sr_precise: { n: '정밀한 사냥꾼', en: 'Precise Hunter', t: 'fx_arrow', d: '내 표식 적에게 공격 이점', passive: true, lv: 17 },
+  // 서브클래스 기능 (G.D.ADV sig — 전직하면 그 레벨에 저절로)
+  sr_survivor: { n: '생존자', en: 'Survivor', t: 'b_regen', d: '체력 절반 아래 초당 +2%', passive: true, lv: 18 },
+  sr_reflex: { n: '도둑의 반사신경', en: 'Thief’s Reflexes', t: 'st_haste', d: '공격 간격 ×0.7', passive: true, lv: 17 },
+  sr_nimbus: { n: '신성한 후광', en: 'Holy Nimbus', t: 'q_peak', d: '2칸 안 적 초당 피해', passive: true, lv: 20 },
+  sr_disciple: { n: '생명의 제자', en: 'Disciple of Life', t: 'fx_holy', d: '치유 ×1.3', passive: true, lv: 3, heal: 1.3 },
+  sr_preserve: { n: '생명 보존', en: 'Preserve Life', t: 'u_god', d: '절반 아래 동료 모두 절반까지', cool: 40, lv: 6 },
+  sr_peerless: { n: '비길 데 없는 기술', en: 'Peerless Skill', t: 'fx_song', d: '명중 +3', passive: true, lv: 14, hitB: 3 },
+  sr_ward: { n: '자연의 수호', en: 'Nature’s Ward', t: 'b_regen', d: '중독 · 공포에 걸리지 않음', passive: true, lv: 10 },
+  sr_dres: { n: '용의 회복력', en: 'Draconic Resilience', t: 'r_dragon', d: 'AC 10+민첩+매력 · 체력 ×1.1', passive: true, lv: 3, hp: 1.1 },
+  sr_luck: { n: '어둠의 행운', en: 'Dark One’s Own Luck', t: 'ui_star', d: '실패한 내성에 +d10 (20초)', passive: true, lv: 6 },
+  sr_fres: { n: '악마의 회복력', en: 'Fiendish Resilience', t: 'u_armor', d: '받는 피해 ×0.8', passive: true, lv: 10 },
+  sr_hurl: { n: '지옥 던지기', en: 'Hurl Through Hell', t: 'fx_fire', d: '최강 적 매력 내성 · ×12 · 기절 2초', cool: 40, lv: 14 },
+  sr_potent: { n: '강력한 소마법', en: 'Potent Cantrip', t: 'fx_zap', d: '빗나간 소마법 · 버틴 내성도 절반', passive: true, lv: 3 },
+  sr_empower: { n: '강화된 방출', en: 'Empowered Evocation', t: 'fx_fire', d: '방출계 주문 ×1.3', passive: true, lv: 10 },
+});
 G.D.MPOOL = {
-  archer: ['sk_aimed', 'sk_volley', 'sk_bind', 'sk_toxcloud', 'sk_pierce', 'sk_weak', 'sk_kite'],
-  cleric: ['sk_heal', 'sk_bless', 'sk_aegis', 'sk_raise', 'sk_judge', 'sk_hammer', 'sk_halo'],
-  bard: ['sk_rhap', 'sk_hymn', 'sk_ward', 'sk_luck', 'sk_lull', 'sk_disc', 'sk_mock'],
-  mage: ['sk_meteor', 'sk_nova', 'sk_fireball', 'sk_pillar', 'sk_firewall', 'sk_heatwave', 'sk_ignite'],
-  paladin: ['sk_wall', 'sk_smash', 'sk_oath', 'sk_shout', 'sk_slam', 'sk_retri', 'sk_bastion'],
-  dragoon: ['sk_leap', 'sk_spin', 'sk_lance', 'sk_rend', 'sk_charge', 'sk_fury', 'sk_doom'],
-  archmage: ['sk_tstorm', 'sk_freeze', 'sk_chainl', 'sk_jolt', 'sk_slowf', 'sk_rewind', 'sk_blink'],
-  rogue: ['sk_shadow', 'sk_fan', 'sk_smoke', 'sk_venom', 'sk_vital', 'sk_bleedcut', 'sk_step'],
-  scout: ['sk_scan', 'sk_path', 'sk_sense', 'sk_trap', 'sk_net', 'sk_saw', 'sk_hunt'],
+  barbarian: ['sr_rage', 'sr_reckless', 'sr_brutal', 'sr_relent', 'sr_feral', 'sr_fastmove'],
+  bard: ['sr_faerie', 'sr_mock', 'sr_hword', 'sr_whisper', 'sr_tw', 'sr_sleep', 'sr_shatter', 'sr_hypno'],
+  cleric: ['sr_cure', 'sr_bless', 'sr_gbolt', 'sr_turn', 'sr_sweapon', 'sr_guard', 'sr_revive', 'sr_mhw'],
+  scout: ['sr_pflame', 'sr_entangle', 'sr_hword', 'sr_wild', 'sr_moon', 'sr_spike', 'sr_call', 'sr_ice'],
+  dragoon: ['sr_second', 'sr_surge', 'sr_cleave', 'sr_topple', 'sr_sap', 'sr_push', 'sr_indom'],
+  monk: ['sr_flurry', 'sr_patient', 'sr_wind', 'sr_deflect', 'sr_stun', 'sr_selfrest'],
+  paladin: ['sr_lay', 'sr_sof', 'sr_bless', 'sr_smite', 'sr_searing', 'sr_aura', 'sr_radiant'],
+  archer: ['sr_hmark', 'sr_ensnare', 'sr_cure', 'sr_spike', 'sr_tireless', 'sr_precise'],
+  rogue: ['sr_cunning', 'sr_steady', 'sr_cstrike', 'sr_uncanny', 'sr_reliable', 'sr_devious', 'sr_elusive'],
+  mage: ['sr_firebolt', 'sr_chroma', 'sr_quicken', 'sr_twin', 'sr_sray', 'sr_fireball', 'sr_lbolt', 'sr_chain'],
+  warlock: ['sr_eb', 'sr_hex', 'sr_rebuke', 'sr_agon', 'sr_dark', 'sr_fear', 'sr_vtouch'],
+  archmage: ['sr_rof', 'sr_mm', 'sr_shield', 'sr_misty', 'sr_hold', 'sr_web', 'sr_fireball', 'sr_haste', 'sr_slow', 'sr_cone', 'sr_meteor'],
 };
 
 // 상위 직업 (DESIGN.md 40): Lv 10에 직업마다 둘 중 하나로 전직. 그림(t)·색이 바뀌고 수치 배율(atk·hp·cd·heal)과 몸 수치(def: 사거리·범위·연쇄·치유)를 덮어쓴다.
 // sig = 전직하면 얻는 스킬 (다른 직업 풀의 패시브도 가져온다 — 전투 코드는 직업과 상관없이 키로 읽는다).
+// 서브클래스 (SRD 5.2.1 — 직업마다 하나, DESIGN.md 56): Lv 3에 골드를 내고 들어간다. 기능(sig)은 그 레벨이 되면 저절로 켜진다. 수치 배율은 없다
 G.D.ADV = {
-  sniper: { base: 'archer', n: '저격수', t: 'v_sniper', col: '#e6c06a', atk: 1.5, cd: 1.25, def: { range: 8 }, sig: ['r_snipe', 'r_pierce'] },
-  hunter: { base: 'archer', n: '사냥꾼', t: 'v_hunter', col: '#7fbf5a', cd: 0.75, sig: ['r_poison', 's_first'] },
-  priest: { base: 'cleric', n: '사제', t: 'v_priest', col: '#fff3c4', heal: 1.6, hp: 1.2, sig: ['c_mass', 'c_revive'] },
-  inquis: { base: 'cleric', n: '심판관', t: 'v_inquis', col: '#d9a441', atk: 6, def: { heal: 0, range: 4 }, sig: ['d_exec', 'ro_mark'] },
-  maestro: { base: 'bard', n: '음유대가', t: 'v_maestro', col: '#f0c060', sig: ['b_encore', 'songWar', 'songRegen'] },
-  dancer: { base: 'bard', n: '무희', t: 'v_dancer', col: '#ef7fb0', atk: 4, cd: 0.6, hp: 1.3, def: { range: 1.3, proj: null }, sig: ['ro_twin', 'b_rally'] },
-  arch: { base: 'mage', n: '대마법사', t: 'v_arch', col: '#ff9a4a', atk: 1.3, def: { splash: 2.2 }, sig: ['m_big', 'm_storm'] },
-  warlock: { base: 'mage', n: '흑마법사', t: 'v_warlock', col: '#9a5ad0', atk: 2.2, def: { splash: 0, proj: 'fx_zap' }, sig: ['m_burn', 'r_poison'] },
-  guard: { base: 'paladin', n: '수호기사', t: 'v_guard', col: '#a8c8e8', hp: 1.6, sig: ['p_guard', 'p_taunt'] },
-  crusader: { base: 'paladin', n: '성전사', t: 'v_crusader', col: '#e8d070', atk: 1.7, sig: ['p_counter', 'd_breath'] },
-  dknight: { base: 'dragoon', n: '용기사', t: 'v_dknight', col: '#5ac0a0', hp: 1.4, atk: 1.2, sig: ['d_dash', 'd_breath'] },
-  berserk: { base: 'dragoon', n: '광전사', t: 'v_berserk', col: '#d04a3a', atk: 1.5, cd: 0.7, hp: 0.85, sig: ['d_exec', 'ro_twin'] },
-  chrono: { base: 'archmage', n: '시간술사', t: 'v_chrono', col: '#c9a6ff', sig: ['a_warp', 'a_stop'] },
-  thunder: { base: 'archmage', n: '뇌신', t: 'v_thunder', col: '#8fd8ff', atk: 1.3, def: { chain: 7 }, sig: ['a_overload'] },
-  shade: { base: 'rogue', n: '그림자', t: 'v_shade', col: '#6a5a8a', atk: 1.4, sig: ['ro_mark', 's_first'] },
-  thiefk: { base: 'rogue', n: '도적왕', t: 'v_thiefk', col: '#e0b040', cd: 0.8, sig: ['ro_steal', 's_loot'] },
-  explorer: { base: 'scout', n: '탐험가', t: 'v_explorer', col: '#a0d070', hp: 1.3, sig: ['s_eye', 's_swift'] },
-  tracker: { base: 'scout', n: '추적자', t: 'v_tracker', col: '#c08a5a', atk: 1.6, def: { range: 5 }, sig: ['r_snipe', 's_first'] },
+  hunter: { base: 'archer', n: '헌터', en: 'Hunter', t: 'v_hunter', col: '#7fbf5a', sig: ['sr_colossus', 'sr_mdef', 'sr_sprey'] },
+  life: { base: 'cleric', n: '생명 권역', en: 'Life Domain', t: 'v_priest', col: '#fff3c4', sig: ['sr_disciple', 'sr_preserve'] },
+  lore: { base: 'bard', n: '전승 학파', en: 'College of Lore', t: 'v_maestro', col: '#f0c060', sig: ['sr_cutting', 'sr_peerless'] },
+  draconic: { base: 'mage', n: '용의 혈통', en: 'Draconic Sorcery', t: 'v_arch', col: '#ff9a4a', sig: ['sr_dres', 'sr_affinity'] },
+  devotion: { base: 'paladin', n: '헌신의 맹세', en: 'Oath of Devotion', t: 'v_crusader', col: '#e8d070', sig: ['sr_sacred', 'sr_nimbus'] },
+  champion: { base: 'dragoon', n: '챔피언', en: 'Champion', t: 'v_dknight', col: '#5ac0a0', sig: ['sr_impcrit', 'sr_survivor'] },
+  evoker: { base: 'archmage', n: '방출계 학파', en: 'Evoker', t: 'v_thunder', col: '#8fd8ff', sig: ['sr_potent', 'sr_empower'] },
+  thief: { base: 'rogue', n: '도둑', en: 'Thief', t: 'v_thiefk', col: '#e0b040', sig: ['sr_fasthands', 'sr_reflex'] },
+  land: { base: 'scout', n: '대지의 회합', en: 'Circle of the Land', t: 'v_explorer', col: '#a0d070', sig: ['sr_landaid', 'sr_ward'] },
+  berserker: { base: 'barbarian', n: '광전사의 길', en: 'Path of the Berserker', t: 'v_berserk', col: '#d04a3a', sig: ['sr_frenzy', 'sr_intim', 'sr_retal'] },
+  openhand: { base: 'monk', n: '열린 손의 전사', en: 'Warrior of the Open Hand', t: 'xx_disc', col: '#e8c860', sig: ['sr_ohtech', 'sr_whole', 'sr_quiver'] },
+  fiend: { base: 'warlock', n: '악마 후원자', en: 'Fiend Patron', t: 'v_warlock', col: '#9a5ad0', sig: ['sr_dob', 'sr_luck', 'sr_fres', 'sr_hurl'] },
 };
+// 옛 전직 → 그 직업의 서브클래스
+G.D.ADV_OLD = { sniper: 'hunter', priest: 'life', inquis: 'life', maestro: 'lore', dancer: 'lore', arch: 'draconic', warlock: 'draconic', guard: 'devotion', crusader: 'devotion', dknight: 'champion', berserk: 'champion', chrono: 'evoker', thunder: 'evoker', shade: 'thief', thiefk: 'thief', explorer: 'land', tracker: 'land' };
 
 // 이름: 앞·뒤 음절을 하나씩
 G.D.NAMES = [['아', '리', '엘', '카', '렌', '도', '세', '라', '유', '하', '진', '루', '테', '바', '노', '시', '온', '미', '가', '벨'], ['린', '안', '로', '스', '나', '온', '델', '르', '아', '윤', '크', '티', '엔', '라', '드', '몬', '샤', '베', '오', '하']];
@@ -233,23 +355,53 @@ G.D.RIVALS = [
   { id: 'hand', n: '검은 손', col: '#c08cff', lead: 'rogue', crew: ['rogue', 'archmage'], pace: 0.98, hostile: true, thief: true, d: '보스 강탈' },
 ];
 
-// ───────── 유물 (가차) ─────────
-// eff 키: f_atk f_gold f_hp ess all
-G.D.RARITY = {
-  common: { n: '일반', p: 0.6, col: '#9aa4ad' },
-  rare: { n: '희귀', p: 0.28, col: '#4fa3ff' },
-  epic: { n: '영웅', p: 0.1, col: '#c06bff' },
-  legend: { n: '전설', p: 0.02, col: '#ffb547' },
-};
-G.D.RELICS = [
-  { id: 'dagger', n: '녹슨 단검', e: '🗡️', r: 'common', w: 'fantasy', eff: 'f_atk', v: 0.1, d: '던전 피해' },
-  { id: 'herb', n: '마른 약초', e: '🌿', r: 'common', w: 'fantasy', eff: 'f_hp', v: 0.15, d: '던전 최대 체력' },
-  { id: 'string', n: '엘프의 활시위', e: '🎯', r: 'rare', w: 'fantasy', eff: 'f_gold', v: 0.2, d: '던전 골드' },
-  { id: 'heart', n: '용의 심장', e: '❤️‍🔥', r: 'epic', w: 'fantasy', eff: 'f_atk', v: 0.4, d: '던전 피해' },
-  { id: 'key', n: '차원의 열쇠', e: '🗝️', r: 'legend', w: 'all', eff: 'ess', v: 0.25, d: '모든 정수 획득' },
-  { id: 'flute', n: '아자토스의 피리', e: '🪈', r: 'legend', w: 'all', eff: 'all', v: 0.3, d: '모든 생산' },
-];
 
-G.D.SUMMON_COST = 10;
-G.D.PITY = 40;
-G.D.PRESTIGE_MIN = 3000;
+// 직업 기본 장비 (DESIGN.md 57 — SRD 5.2.1 직업 시작 장비): 용병마다 무기 · 갑옷 두 칸. 대장간에서 골드로 강화한다.
+// 주문 직업의 무기 칸은 주문 초점(비전 초점 · 성표 · 드루이드 초점) — 강화하면 주문 명중 · 피해도 오른다. 방패(AC +2, G.Dnd 직업 규칙)는 손에 드는 것이라 무기 칸에 「무기 + 방패」로 — 마법 무기나 마법 방패 중 하나를 낀다(G.Guild.gearName). [이름, 영문, 아이콘]
+G.D.GEAR = {
+  barbarian: { w: ['그레이트액스', 'Greataxe', 'w_waraxe'], a: ['짐승 가죽', 'Hide Armor', 'u_armor'] },
+  bard: { w: ['레이피어', 'Rapier', 'w_duel'], a: ['가죽 갑옷', 'Leather Armor', 'u_armor'] },
+  cleric: { w: ['메이스', 'Mace', 'w_holymace'], a: ['체인 셔츠', 'Chain Shirt', 'u_armor'] },
+  scout: { w: ['낫', 'Sickle', 'w_staff'], a: ['가죽 갑옷', 'Leather Armor', 'u_armor'] },
+  dragoon: { w: ['파이크', 'Pike', 'w_spear'], a: ['체인 메일', 'Chain Mail', 'u_armor'] },
+  monk: { w: ['쿼터스태프', 'Quarterstaff', 'w_staff'], a: ['방어의 팔찌', 'Bracers of Defense', 'd_shield'] },
+  paladin: { w: ['워해머', 'Warhammer', 'w_hammer'], a: ['체인 메일', 'Chain Mail', 'u_armor'] },
+  archer: { w: ['롱보우', 'Longbow', 'w_bow'], a: ['징 박은 가죽 갑옷', 'Studded Leather Armor', 'u_armor'] },
+  rogue: { w: ['단검', 'Dagger', 'w_knife'], a: ['가죽 갑옷', 'Leather Armor', 'u_armor'] },
+  mage: { w: ['비전 수정', 'Arcane Focus', 'w_gstaff'], a: ['로브', 'Robe', 'u_armor'] },
+  warlock: { w: ['비전 구슬', 'Arcane Focus', 'w_arcstaff'], a: ['가죽 갑옷', 'Leather Armor', 'u_armor'] },
+  archmage: { w: ['쿼터스태프', 'Quarterstaff', 'w_arcstaff'], a: ['로브', 'Robe', 'u_armor'] },
+};
+
+// 서사 은혜 (DESIGN.md 59 · SRD 5.2.1 「Epic Boon Feats」): Lv 19에 하나, 그 뒤 서사 단계 5마다 하나 더 (일곱까지).
+// 각 은혜는 능력치 하나를 +1(최대 30) — 여기서는 주능력. pref = 먼저 고르는 직업
+G.D.BOONS = {
+  prowess: { n: '전투 기량의 은혜', en: 'Boon of Combat Prowess', t: 'b_atk', d: '빗나간 공격 하나를 명중으로 (6초)', pref: ['dragoon', 'barbarian', 'paladin', 'monk'] },
+  dimension: { n: '차원 여행의 은혜', en: 'Boon of Dimensional Travel', t: 'a_escape', d: '이동 +1', pref: ['rogue', 'monk', 'scout'] },
+  fate: { n: '운명의 은혜', en: 'Boon of Fate', t: 'ui_star', d: '실패한 내성에 2d4 (10초)', pref: ['bard', 'cleric', 'paladin'] },
+  irresistible: { n: '불가항력 공격의 은혜', en: 'Boon of Irresistible Offense', t: 'b_fury', d: '치명타 피해 ×1.5', pref: ['rogue', 'archer', 'dragoon', 'barbarian'] },
+  recall: { n: '주문 회상의 은혜', en: 'Boon of Spell Recall', t: 'fx_zap', d: '기술 쿨다운 ×0.85', pref: ['archmage', 'mage', 'warlock', 'cleric', 'scout'] },
+  night: { n: '밤의 영혼의 은혜', en: 'Boon of the Night Spirit', t: 'v_warlock', d: '받는 피해 ×0.7', pref: ['warlock', 'rogue', 'monk'] },
+  truesight: { n: '진시안의 은혜', en: 'Boon of Truesight', t: 'u_scout', d: '공격에 불리 없음', pref: ['archer', 'mage', 'archmage', 'bard'] },
+};
+
+// 길드 (DESIGN.md 60): 명성으로 짓는 시설 — 시즌을 넘어 남는 유일한 층. 비용 base × g^레벨
+G.D.FAC = {
+  hall: { n: '길드관', t: 'u_legend', max: 2, base: 15, g: 3, d: l => `명단 +${2 * l}` },
+  elite: { n: '정예 원정', t: 'u_god', max: 1, base: 40, g: 1, d: l => `출전 칸 +${l}` },
+  tavern: { n: '선술집', t: 'u_bard', max: 5, base: 3, g: 2, d: l => `신입 Lv +${l} · 능력치 ${l + 1}번 굴려 좋은 쪽 · 후보 +${Math.floor(l / 2)}` },
+  train: { n: '훈련장', t: 'w_board', max: 5, base: 3, g: 2, d: l => `경험치 +${l * 20}% · 대기 인원도 ${l * 10}%` },
+  temple: { n: '신전', t: 'fx_holy', max: 5, base: 4, g: 2, d: l => `부상 시간 −${l * 12}% · 축복: 층 처음 ${l * 20}초 명중·내성 +2` },
+  vault: { n: '금고', t: 'x_chest', max: 5, base: 4, g: 2.3, d: l => `시즌 시작 금고 ×${Math.pow(2, l)}` },
+  archive: { n: '기록관', t: 'u_armor', max: 2, base: 10, g: 3.6, d: l => `시즌 넘김 레벨 유지 ${50 + 25 * l}%` },
+  trade: { n: '상단', t: 'ui_gold', max: 10, base: 2, g: 1.5, d: l => `골드 +${l * 15}%` },
+};
+
+// 대기실 배치 (DESIGN.md 64): 쉬는 용병을 시설 자리에 앉힌다. 그 능력치 수정치가 효과를 키운다 (배율 p = 1 + 0.15 × 수정치, 최소 0.5)
+// fac = 그 시설을 지어야 자리가 생긴다 (대장간은 처음부터)
+G.D.JOBS = {
+  smith: { n: '대장장이', t: 'w_hammer', ab: 'str', fac: null, d: p => `강화 비용 −${Math.round(8 * p)}%` },
+  coach: { n: '교관', t: 'w_board', ab: 'wis', fac: 'train', d: p => `대기 인원 경험치 +${Math.round(10 * p)}%` },
+  priest: { n: '사제', t: 'fx_holy', ab: 'wis', fac: 'temple', d: p => `부상 시간 −${Math.round(12 * p)}%` },
+  merchant: { n: '상인', t: 'ui_gold', ab: 'cha', fac: 'trade', d: p => `골드 +${Math.round(8 * p)}%` },
+};

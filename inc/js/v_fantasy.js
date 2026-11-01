@@ -5,14 +5,14 @@
 //  오른쪽 위: 미니맵(캔버스) 아래 라이벌 한 줄 / 오른쪽 가운데: 경고
 //  원정 사이에는 마을 화면(v_town)이 맵 자리를 채운다. 글은 이름표와 숫자만 (설명은 올렸을 때 한 구절)
 G.UI.views.fantasy = function () {
-  const f = () => G.S.w.fantasy, F = G.Fantasy, U = G.U, EX = G.Exp, GD = G.Guild, QK = G.Quirk;
+  const f = () => G.S.w.fantasy, F = G.Fantasy, U = G.U, EX = G.Exp, GD = G.Guild;
   const RS = G.Rivals.STANCES, ORDER = Object.keys(RS);
 
   // ════════ 아래 가운데 독 ════════
   // 윗줄
-  const floorEl = h('b.d-floor'), bossEl = h('small.d-boss'), covEl = h('small.d-cov'), progBar = bar(), progTxt = h('small'), vaultEl = h('small'), essEl = h('small'), orderEl = h('small.d-order');
+  const floorEl = h('b.d-floor'), bossEl = h('small.d-boss'), covEl = h('small.d-cov'), progBar = bar(), progTxt = h('small'), vaultEl = h('small'), orderEl = h('small.d-order');
   const dockTop = h('div.d-top', null, floorEl, bossEl, covEl, h('div.d-prog', null, progBar, progTxt), h('span.sp'), orderEl,
-    h('small.d-season'), h('span.d-res', { 'data-tip': '금고' }, G.T.el('ui_gold', 'xs'), vaultEl), h('span.d-res', { 'data-tip': '정수' }, G.T.el('ui_ess', 'xs'), essEl));
+    h('small.d-season'), h('span.d-res', { 'data-tip': '금고' }, G.T.el('ui_gold', 'xs'), vaultEl));
   // 구슬: --v = 0~1 (아래에서 차오른다)
   const orb = (cls, tip) => { const v = h('b.o-v'), el = h('div.orb.' + cls, { 'data-tip': tip }, h('i.o-fill'), v); return { el, v }; };
   const orbHP = orb('hp', '원정대 체력'), orbBag = orb('bag', '짐');
@@ -32,7 +32,7 @@ G.UI.views.fantasy = function () {
       if (!p) { partyEl.append(h('div.d-col', null, h('div.d-slot.empty', null, '+'))); slots.push({ p: null }); continue; }
       const hp = bar('hp'), lv = h('b.d-lv'), down = h('b.d-down');
       // 스킬 넷 (DESIGN.md 43): 자동이라 누르지 않는다 — 아이콘 위로 쿨타임이 걷힌다. 아직 안 열린 칸은 흐리게
-      const sks = (p.merc?.skills || []).map((k, j) => { const S = G.D.MSKILLS[k]; return { k, j, el: h('i.d-sk', { 'data-tip': `${S.n} · ${S.d} · ${S.cool}초` }, G.T.el(S.t, 'd-ski')) }; });
+      const sks = (p.merc?.skills || []).map((k, j) => { const S = G.D.MSKILLS[k]; return { k, j, el: h('i.d-sk', { 'data-tip': `${S.n} · ${S.d}${S.passive ? '' : ` · ${S.cool}초`}` }, G.T.el(S.t, 'd-ski')) }; });
       const el = h('div.d-slot' + (p.kind === 'hero' ? '.lead' : ''), { on: { click: e => { e.stopPropagation(); pick = pick === p ? null : p; } } }, G.T.el(p.t, 'd-img'), lv, down, hp,
         p.merc?.pers?.length ? h('div.d-pers', null, ...p.merc.pers.map(k => G.T.el('ni_' + G.D.PERSONA[k].ic, 'd-pi'))) : null);
       partyEl.append(h('div.d-col', null, el, sks.length ? h('div.d-sks', null, sks.map(x => x.el)) : null));
@@ -63,10 +63,10 @@ G.UI.views.fantasy = function () {
   function cardLines(s, p) {
     const hp = `❤ ${U.fmt(Math.max(0, p.hp))} / ${U.fmt(p.max)}`;
     if (p.kind === 'hero') return ['기사 · 길드장', hp, `⚔ ${U.fmt(F.heroAtk(s))} · ${F.aspd(s).toFixed(2)}/초`, `치명 ${U.pct(F.crit())} · ×${F.critD().toFixed(1)}`];
-    const d = p.def, m = p.merc, who = m ? `${m.name} · ${d.n} Lv ${m.lv}` : d.n, tr = m && m.traits.length ? [m.traits.map(t => `${QK.def(t).ic} ${QK.def(t).n}`).join(' · ')] : [];
+    const d = p.def, m = p.merc, who = m ? `${m.name} · ${d.n} ${G.Guild.lvText(m)}` : d.n, tr = m && G.Feat.def(m) ? [G.Feat.def(m).n] : [];
     if (m && m.pers?.length) tr.unshift(m.pers.map(k => G.D.PERSONA[k].n).join(' · '));
     if (m) tr.push(G.Guild.active(m).map(k => G.D.MSKILLS[k].n).join(' · '));
-    if (m && G.Trinket.of(m).length) tr.push(G.Trinket.of(m).map(t => `${G.D.TRINKETS[t.k].ic} ${G.D.TRINKETS[t.k].n}${t.g > 1 ? ' ★' + t.g : ''}`).join(' · '));
+    if (m && G.Trinket.of(m).length) tr.push(G.Trinket.of(m).map(t => `${G.Trinket.def(t).ic} ${G.Trinket.name(t)}`).join(' · '));
     if (d.heal) return [who, hp, `✚ ${Math.round(d.heal * 100 * G.Tree.mul('fantasy', s.tree, 'clericHeal'))}% · ${d.cd}초`, ...tr];
     return [who, hp, `⚔ ${U.fmt(F.allyAtk(s, p))} · ${(F.allyCd(p) / F.aspd(s)).toFixed(1)}초`, ...tr];
   }
@@ -159,7 +159,6 @@ G.UI.views.fantasy = function () {
       setW(progBar.fill, s.town ? 0 : 1 - left / tot);
       setText(progTxt, s.town ? '' : rt.phase === 'dead' ? `전멸 ${Math.ceil(rt.reviveT)}` : `${left}/${tot}`);
       setText(vaultEl, U.fmt(s.gold));
-      setText(essEl, U.fmt(G.S.ess));
       setText(dockTop.querySelector('.d-season'), `시즌 ${G.Season.st(s).n} · ${U.fmtTime(G.Season.left(s))}`);
       setText(orderEl, G.Cmd.label(rt));
       // 구슬
@@ -189,9 +188,9 @@ G.UI.views.fantasy = function () {
         const qa = p._qfx ? G.S.runTime - p._qfx.t : -1, qf = qa >= 0 && qa < 1.6 ? p._qfx.kind : '';
         for (const k of ['good', 'bad', 'bond', 'loot']) tog(r.el, 'q' + k, qf === k);
         if (r.sks) for (const x of r.sks) {
-          const cd = p.cds?.[x.k] || 0, max = G.D.MSKILLS[x.k].cool;
+          const cd = p.cds?.[x.k] || 0, max = G.D.MSKILLS[x.k].cool || 1;
           x.el.style.setProperty('--cd', s.town ? 0 : Math.max(0, cd / max));
-          tog(x.el, 'off', p.merc.lv < GD.slotLv(x.j));
+          tog(x.el, 'off', p.merc.lv < GD.slotLv(x.j, p.merc, x.k));
           tog(x.el, 'fire', p.lastSk === x.k && cd > max - 0.5);
         }
       }

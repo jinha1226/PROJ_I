@@ -1507,3 +1507,99 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .ftownui .tw-rv { font-size: 12px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--rc); }
 .ftownui .tw-rv .win { color: #9fe79f; } .ftownui .tw-rv .lose { color: #ff9a9a; }
 @keyframes rqpop { 0% { transform: scale(0.4); opacity: 0; } 70% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+
+/* ════ 모바일 세로 (DESIGN.md 51): 가로·PC는 그대로, 세로일 때만 ════
+   맵이 화면을 채우고 · 독은 두 줄(초상 / 기사 기술·명령) · 마을은 윗줄 한 줄 + 탭 한 줄(옆으로 밀기) · 보고서·결과는 화면 가득 */
+@media (orientation: portrait) and (max-width: 820px) {
+  header.top { padding: 4px 10px; gap: 6px; flex-wrap: nowrap; }
+  header.top .brand b { font-size: 15px; } header.top .brand small { display: none; }
+  header.top .icon-btn { width: 30px; height: 30px; }
+  .main { padding: 0 !important; }
+  .wmap.solo .mapbox, .wmap.solo .mapbox.fit, .wmap.solo .mapbox.fit.cam, .wmap.solo .mapbox.fit:not(.cam) {
+    aspect-ratio: auto !important; height: calc(100dvh - 40px) !important; max-height: none !important; min-height: 0 !important; border-radius: 0; border-left: none; border-right: none; }
+
+  /* 독: 화면 폭 전체, 두 줄 */
+  .fdock { left: 4px; right: 4px; bottom: 4px; transform: none; max-width: none; gap: 3px; }
+  .fdock .d-top { flex-wrap: wrap; gap: 2px 8px; padding: 3px 8px; font-size: 11px; }
+  .fdock .d-top .sp, .fdock .d-season, .fdock .d-res:last-child { display: none; }
+  .fdock .d-prog .bar { width: 48px; }
+  .fdock .d-main { flex-wrap: wrap; justify-content: center; gap: 6px; padding: 6px; }
+  .fdock .d-sep { display: none; }
+  .fdock .d-party { order: 0; flex-basis: 100%; justify-content: center; gap: 6px; }
+  .fdock .orb { order: 1; width: 40px; height: 40px; }
+  .fdock .d-skills { order: 2; }
+  .fdock .d-cmds { order: 3; }
+  .fdock .orb.bag { order: 4; }
+  .fdock .d-slot { width: 52px; height: 54px; }
+  .fdock .d-slot .d-img { width: 34px; height: 34px; }
+  .fdock .d-slot .bar { width: 44px; }
+  .fdock .d-sk, .fdock .d-sk .d-ski { width: 12px; height: 12px; }
+  .fdock .d-btn { width: 40px; height: 40px; }
+  .d-card { bottom: 190px; max-width: calc(100% - 16px); }
+  .fmenu { top: auto; bottom: 200px; right: 6px; }
+  .falerts { top: 50%; }
+
+  /* 마을 */
+  .ftownui { font-size: 12px; }
+  .ftownui .tw-top { grid-template-columns: 1fr auto; gap: 4px 8px; padding: 6px 10px; }
+  .ftownui .tw-id .tl { display: none; }
+  .ftownui .tw-id > div { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+  .ftownui .tw-prog { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; gap: 8px; align-items: center; }
+  .ftownui .tw-res { gap: 4px; }
+  .ftownui .tw-res > span:nth-child(n+3) { display: none; }
+  .ftownui .tw-tabs { display: flex !important; overflow-x: auto; scrollbar-width: none; }
+  .ftownui .tw-tabs::-webkit-scrollbar { display: none; }
+  .ftownui .tw-tab { flex: none; padding: 9px 14px; font-size: 13px; }
+  .ftownui .tw-body { padding: 10px; }
+  .ftownui .tw-pane.p-party, .ftownui .tw-pane.p-trink { flex-direction: column; }
+  .ftownui .tw-pane.p-trink .tw-side, .ftownui .tw-side { width: 100%; }
+  .ftownui .tw-line, .ftownui .tw-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .ftownui .tw-card { width: auto !important; min-width: 0; }
+  .ftownui .tw-sr { flex-wrap: wrap; gap: 6px; }
+  .ftownui .tw-sr .tw-sq { flex-basis: 100%; }
+  .ftownui .tw-tk { min-width: 0; }
+  .ftownui .tw-result { position: absolute; inset: 6px; transform: none; width: auto; max-height: none; overflow-y: auto; }
+  .ftownui .tw-res-sum { grid-template-columns: repeat(2, 1fr) !important; }
+  .ftownui .tw-bot { padding: 6px 10px; }
+  .ftownui .tw-table { font-size: 11px; overflow-x: auto; }
+}
+/* 능력치 여섯 칸 + 방어도 (DESIGN.md 56) */
+.ftownui .tw-ab { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; width: 100%; font-size: 11px; font-variant-numeric: tabular-nums; }
+.ftownui .tw-ab span { display: flex; flex-direction: column; align-items: center; line-height: 1.05; padding: 1px 0; border-radius: 3px; background: rgba(255,255,255,0.05); color: #d8d2c4; border: 1px solid transparent; }
+.ftownui .tw-ab small { font-size: 9px; opacity: 0.6; }
+.ftownui .tw-ab .pri { border-color: #c9a26a; }
+.ftownui .tw-ab .hi { color: #ffe08a; font-weight: 700; }
+.ftownui .tw-ab .lo { color: #ff8a8a; }
+.ftownui .tw-ab .ac { background: rgba(120,170,255,0.12); color: #bcd6ff; }
+/* 장비 (DESIGN.md 57) */
+.ftownui .tw-gear { display: flex; justify-content: center; gap: 8px; font-size: 11px; font-variant-numeric: tabular-nums; color: #d8d2c4; }
+.ftownui .tw-gear span { display: inline-flex; align-items: center; gap: 2px; }
+.ftownui .tw-qb.forge { border-color: #c9a26a55; background: #c9a26a14; }
+.ftownui .tw-qb.forge b { color: #ffe08a; }
+.ftownui .tw-qb.forge.mg { border-color: #8fd8ff; background: #8fd8ff1c; }
+/* 마법 물건 (DESIGN.md 58): 희귀도 4 전설 · 랜다트 점선 · 무기 칸 · DCSS 각인 줄 */
+.ftownui .gt.r4 { outline-color: #ffb547; box-shadow: 0 0 6px #ffb54799; }
+.ftownui .gt.rand { outline-style: dashed; }
+.ftownui .gt.empty.w, .ftownui .gt.empty.a { outline-style: dotted; outline-color: #c9a26a80; }
+.ftownui .tw-rq.r4 { border-color: #ffb54788; background: #ffb54718; color: #ffe0a8; }
+.ftownui .tw-tk .tk-lb { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; text-align: left; }
+.ftownui .tw-tk .tk-lb i { font-style: normal; font-size: 10px; opacity: 0.7; white-space: normal; }
+.ftownui .tw-tk.w, .ftownui .tw-tk.a { border-color: #c9a26a55; }
+.ftownui .tw-card .tw-lv.epic { color: #ffb84a; text-shadow: 0 0 6px #ffb84a66; }
+.ftownui .tw-card .tw-sk.boon { border-color: #ffb84a88; background: #ffb84a14; }
+.ftownui .tw-act.fac { display: inline-flex; align-items: center; gap: 3px; border-color: #ffd27a66; }
+.ftownui .tw-act.fac small { opacity: .8; }
+.ftownui .tw-create { width: min(760px, calc(100% - 24px)); z-index: 4; }
+.ftownui .tw-cr-body { display: flex; flex-direction: column; gap: 6px; }
+.ftownui .tw-cr-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.ftownui .tw-cr-opt { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; border: 1px solid #ffffff22; background: #ffffff08; color: inherit; font: inherit; font-size: 12px; cursor: pointer; }
+.ftownui .tw-cr-opt.on { border-color: var(--dk-hi); background: #ffd27a22; color: #ffe8b0; }
+.ftownui .tw-cr-opt.look { padding: 2px; }
+.ftownui .tw-cr-opt.look .tw-img { width: 40px; height: 40px; }
+.ftownui .tw-cr-ab span { cursor: pointer; }
+.ftownui .tw-cr-ab span.sel { outline: 2px solid #9fe0ff; }
+.ftownui .tw-cr-name { background: #0008; border: 1px solid #ffffff30; border-radius: 6px; color: var(--text); padding: 4px 8px; font: inherit; width: 140px; }
+.ftownui .tw-card.lead { border-color: var(--dk-hi); box-shadow: 0 0 0 1px #ffd27a55 inset; }
+.ftownui .tw-job { background: #0008; border: 1px solid #ffffff30; border-radius: 6px; color: var(--text); padding: 3px 6px; font: inherit; font-size: 12px; max-width: 220px; }
+.ftownui .tw-st.job { color: #9fe0ff; }
+.ftownui .tw-raid { color: #7fd0ff; }

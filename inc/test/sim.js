@@ -1,9 +1,9 @@
-// 밸런스 봇: node test/sim.js [분] [--seed=N] [--block=노드,...] [--prestige] [-v]
+// 밸런스 봇: node test/sim.js [분] [--seed=N] [--block=노드,...] [-v]
 // 화면 없이 맵 시뮬레이션을 돌리며, 스킬트리에서 가장 싼 노드를 사는 플레이어처럼 진행한다.
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const arg = k => (process.argv.find(a => a.startsWith(k + '=')) || '').slice(k.length + 1);
 const seed = +arg('--seed') || 12345;
-const MIN = +process.argv[2] || 120, VERBOSE = process.argv.includes('-v'), PRESTIGE = process.argv.includes('--prestige');
+const MIN = +process.argv[2] || 120, VERBOSE = process.argv.includes('-v');
 
 function boot() {
   const M = Object.create(Math);
@@ -11,7 +11,7 @@ function boot() {
   M.random = () => { st = (st + 0x6D2B79F5) >>> 0; let t = st; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const ctx = { console, Math: M, JSON, Date, btoa, atob };
   vm.createContext(ctx);
-  for (const f of ['core', 'data', 'grid', 'juice', 'tree', 'trees', 'season', 'fantasy', 'rivals', 'guild', 'persona', 'quirks', 'trinkets', 'bonds', 'report', 'skills', 'combo', 'command', 'expedition', 'state'])
+  for (const f of ['core', 'data', 'grid', 'juice', 'tree', 'trees', 'season', 'fantasy', 'rivals', 'guild', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'combo', 'command', 'expedition', 'mission', 'state'])
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', f + '.js'), 'utf8'), ctx, { filename: f + '.js' });
   return ctx.G;
 }
@@ -33,8 +33,6 @@ function buyTree(id, st) {
 }
 function bot() {
   const S = G.S;
-  buyTree('nexus', S.ntree);
-  if (S.signs >= 10) G.Relic.summon(1);
   // 길드 (트리보다 먼저): 명단에 없는 직업을 먼저 고용하고, 명단이 출전 칸 +1을 넘으면 가장 낮은 레벨의 중복 직업을 내보낸다
   const ff = S.w.fantasy, GD = G.Guild, T = GD.tavern(ff), have = new Set(ff.mercs.map(m => m.cls));
   const pickI = T.offers.findIndex(o => !have.has(o.m.cls) && o.price <= ff.gold);
@@ -47,12 +45,15 @@ function bot() {
     GD.hire(ff, pickI >= 0 ? pickI : cheap);
   }
   // 전직: Lv 10이 되면 마을에서 둘 중 아무거나 (트리보다 먼저)
-  // 요양소: 금고의 10% 안이면 부정 기벽을 지운다
-  if (ff.town) for (const m of ff.mercs) for (const k of m.traits.slice()) if (G.Quirk.bad(k) && G.Quirk.cost(ff, m, k) <= ff.gold * 0.1) G.Quirk.treat(ff, m, k);
   if (ff.town) for (const m of ff.mercs) if (GD.canPromote(m)) GD.promote(ff, m, G.U.pick(GD.advs(m.cls)));
   for (const id in G.MODS) if (S.unlocked[id]) buyTree(id, S.w[id].tree);
-  // 명성 트리: 쌓이면 가장 싼 노드부터
-  if (S.w.fantasy.fame) buyTree('fame', G.Season.fameSt(S.w.fantasy));
+  // 대기실 배치: 열린 자리마다 출전하지 않는 사람 중 그 능력치가 가장 높은 사람
+  if (ff.town && ff.mercs.length > G.Fantasy.slots() + 1) for (const k in G.D.JOBS) if (GD.jobOpen(ff, k) && !GD.jobOf(ff, k)) {
+    const line = G.Fantasy.lineup(ff), c = ff.mercs.filter(m => !m.job && !line.includes(m.uid)).sort((a, b) => G.Dnd.ab(b)[G.D.JOBS[k].ab] - G.Dnd.ab(a)[G.D.JOBS[k].ab])[0];
+    if (c) GD.assign(ff, k, c.uid);
+  }
+  // 길드 시설: 명성이 쌓이면 가장 싼 것부터
+  for (let i = 0; i < 20; i++) { const ff2 = S.w.fantasy, k = Object.keys(G.D.FAC).sort((a, b) => GD.facCost(ff2, a) - GD.facCost(ff2, b))[0]; if (!GD.build(ff2, k)) break; }
   // 판타지: 초반엔 몬스터를 직접 친다
   const f = S.w.fantasy, rt = G.Fantasy.rt(f);
   if (S.runTime < 900 && rt.mons.length) { const m = rt.mons.find(o => G.Fantasy.inView(rt, o.x, o.y)); if (m) G.Fantasy.click(f, m.x, m.y); }
@@ -60,29 +61,20 @@ function bot() {
 }
 
 const marks = [1, 3, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360].filter(m => m <= MIN);
-let prest = 0;
 const t0 = Date.now();
 for (let t = 0; t < MIN * 60; t++) {
   G.tick(1, 0.1);
   bot();
-  if (PRESTIGE && G.Prestige.can() && G.Prestige.gain() >= Math.max(3, G.S.starsEarned)) {
-    const g = G.Prestige.go();
-    prest++;
-    console.log(`  ★ 붕괴 #${prest} @${fmtT(t)} 별 +${g} (누적 ${G.S.starsEarned})`);
-    buyTree('stars', G.S.stree);
-  }
   const m = (t + 1) / 60;
   if (marks.includes(m)) {
     const S = G.S, f = S.w.fantasy, U = G.U;
     const nodes = id => Object.values(S.w[id].tree).filter(v => typeof v === 'number').reduce((a, b) => a + b, 0);
-    console.log(`${String(m).padStart(3)}분 | 정수 ${U.fmt(S.ess).padStart(6)} (누적 ${U.fmt(S.runEss)}) 인장 ${S.signs} 유물 ${Object.keys(S.relics).length} | ` +
-      `던전 ${f.maxFloor}층 노드${nodes('fantasy')} | ` +
-      `붕괴 ${G.Prestige.can() ? G.Prestige.gain() : '-'}`);
+    console.log(`${String(m).padStart(3)}분 | 골드 ${U.fmt(f.gold).padStart(6)} 명성 ${f.fame || 0} | 던전 ${f.maxFloor}층 노드${nodes('fantasy')}`);
   }
 }
 console.log("용병 " + G.S.w.fantasy.mercs.map(m => `${G.Guild.def(m).n} ${m.lv}`).join(" · "));
-console.log('기벽 ' + G.S.w.fantasy.mercs.map(m => m.traits.map(k => G.Quirk.def(k).n + (G.Quirk.locked(m, k) ? '🔒' : '')).join('/')).join(' · '));
-{ const ff = G.S.w.fantasy, T = G.Trinket; console.log(`장신구 ${T.all(ff).length}개 (창고 ${T.store(ff).length}) · ` + T.all(ff).filter(t => t.on != null).map(t => G.D.TRINKETS[t.k].n + '★' + t.g).join(' · ')); }
+console.log('재주 ' + G.S.w.fantasy.mercs.map(m => G.Feat.def(m)?.n).join(' · ') + ' | 시설 ' + JSON.stringify(G.S.w.fantasy.fac || {}) + ' | 단장 ' + G.Guild.def(G.Guild.leader(G.S.w.fantasy)).n + ' ' + G.Guild.lvText(G.Guild.leader(G.S.w.fantasy)) + ' | 임무 성공 ' + (G.S.w.fantasy.missions || 0) + ' | 배치 ' + G.S.w.fantasy.mercs.filter(m => m.job).map(m => m.job + ':' + m.name).join(','));
+{ const ff = G.S.w.fantasy, T = G.Trinket; console.log(`마법 물건 ${T.all(ff).length}개 (창고 ${T.store(ff).length}) · ` + T.all(ff).filter(t => t.on != null).map(t => T.name(t) + (T.def(t).fixed ? '' : '*')).join(' · ')); }
 { const ff = G.S.w.fantasy; console.log('관계 ' + G.Bond.pairs(ff, ff.mercs).map(p => `${p.a.name}-${p.b.name} ${p.r === 'friend' ? '전우' : '앙숙'}`).join(' · ')); }
 console.log('라이벌 ' + G.D.RIVALS.map(d => { const r = G.S.w.fantasy.rivals[d.id]; return `${d.n} ${r.floor}층(실력 ${r.power.toFixed(1)})`; }).join(' · '));
 console.log(`스킬 ${Object.keys(G.Sim.casts).length}종 ${Object.values(G.Sim.casts).reduce((a, b) => a + b, 0)}회 · 연계기 ` + Object.entries(G.Sim.combos).map(([k, n]) => `${G.Combo.CB[k].n} ${n}`).join(' · '));
