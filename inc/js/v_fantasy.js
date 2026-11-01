@@ -12,7 +12,7 @@ G.UI.views.fantasy = function () {
   // 윗줄
   const floorEl = h('b.d-floor'), bossEl = h('small.d-boss'), covEl = h('small.d-cov'), progBar = bar(), progTxt = h('small'), vaultEl = h('small'), orderEl = h('small.d-order');
   const dockTop = h('div.d-top', null, floorEl, bossEl, covEl, h('div.d-prog', null, progBar, progTxt), h('span.sp'), orderEl,
-    h('small.d-season'), h('span.d-res', { 'data-tip': '금고' }, G.T.el('ui_gold', 'xs'), vaultEl));
+    h('small.d-season'), h('span.d-res', { 'data-tip': '금고' }, G.T.el('ui_gold', 'xs'), vaultEl), h('button.d-cog', { 'aria-label': '설정', on: { click: e => { e.stopPropagation(); G.UI.settings(); } } }, '⚙'));
   // 구슬: --v = 0~1 (아래에서 차오른다)
   const orb = (cls, tip) => { const v = h('b.o-v'), el = h('div.orb.' + cls, { 'data-tip': tip }, h('i.o-fill'), v); return { el, v }; };
   const orbHP = orb('hp', '원정대 체력'), orbBag = orb('bag', '짐');

@@ -437,12 +437,44 @@ G.MapView = function (canvas, id) {
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(m._fog, ox, oy, m.w * TS, m.h * TS);
     ctx.imageSmoothingEnabled = false;
-    if (fg.light) {
+    if (fg.torches) drawTorches(fg);
+    else if (fg.light) {
       const lx = sx(fg.light._rx ?? fg.light.x), ly = sy(fg.light._ry ?? fg.light.y);
       const g = ctx.createRadialGradient(lx, ly, TS * 4, lx, ly, TS * 11);
       g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.5)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     }
+  }
+  // 횃불 (DESIGN.md 68): 화면을 어둡게 덮고 살아 있는 파티원 자리만 도려낸다. 앞사람 불이 가장 크고 조금씩 일렁인다. 어둠은 작은 캔버스로 그려 늘린다
+  const DARK = 'rgba(6,5,12,0.72)', TORCH_K = 4, TORCH_LEAD = 0.95, TORCH_ALLY = 0.5;
+  let darkC = null;
+  function drawTorches(fg) {
+    const w = Math.ceil(W / TORCH_K), h = Math.ceil(H / TORCH_K);
+    if (!darkC) darkC = document.createElement('canvas');
+    if (darkC.width !== w || darkC.height !== h) { darkC.width = w; darkC.height = h; }
+    const d = darkC.getContext('2d'), now = performance.now(), pts = [];
+    d.globalCompositeOperation = 'source-over';
+    d.clearRect(0, 0, w, h);
+    d.fillStyle = DARK; d.fillRect(0, 0, w, h);
+    d.globalCompositeOperation = 'destination-out';
+    fg.torches.forEach((p, i) => {
+      const x = sx(p._rx ?? p.x), y = sy(p._ry ?? p.y), wob = 1 + 0.035 * Math.sin(now / 110 + i * 2) + 0.02 * Math.sin(now / 47 + i * 5), r = fg.torchR * (i ? TORCH_ALLY : TORCH_LEAD) * TS * wob;
+      pts.push([x, y, r]);
+      const g = d.createRadialGradient(x / TORCH_K, y / TORCH_K, r * 0.3 / TORCH_K, x / TORCH_K, y / TORCH_K, r / TORCH_K);
+      g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      d.fillStyle = g; d.fillRect(0, 0, w, h);
+    });
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(darkC, 0, 0, W, H);
+    ctx.imageSmoothingEnabled = false;
+    // 불빛의 따뜻한 기운
+    ctx.globalCompositeOperation = 'lighter';
+    for (const [x, y, r] of pts) {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r * 0.7);
+      g.addColorStop(0, 'rgba(255,160,80,0.07)'); g.addColorStop(1, 'rgba(255,160,80,0)');
+      ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    ctx.globalCompositeOperation = 'source-over';
   }
   // 미니맵: 오른쪽 위. 본 칸, 계단, 파티(초록·금색), 본 칸 위의 몬스터(빨강)
   // 미니맵 (DESIGN.md 37, UNDERDEEP식): 탐색한 칸을 칸 격자로 — 바닥 양피지색, 벽 어둡게.

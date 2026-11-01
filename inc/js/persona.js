@@ -32,15 +32,22 @@ G.Persona = (() => {
       G.fx(rt, { k: 'emote', key: 'ni_' + D.PERSONA[k].ic, ent: a, x: a.x, y: a.y, t: EMOTE_T });
     },
     // 자리: 'front' 앞장 · 'mid' 가운데 · 'back' 뒤. 근접 직업 +1 · 치유 −1 (레벨이 올라 칸이 열리면 다시 잰다)
+    // 진형 칸이 있으면 그 줄이 곧 자리다 (DESIGN.md 67). 칸이 없으면(레이드 둘째 파티) 성향대로
+    ROWS: ['front', 'mid', 'back'],
     stance(a) {
       const m = a.merc;
       if (!m) return a.def.range >= 3 ? 'mid' : 'front';
+      const c = G.S.w.fantasy.form?.[m.uid];
+      if (c != null) return P.ROWS[c / 3 | 0];
       if (a._stLv === m.lv && a._st) return a._st;
-      let s = a.def.heal ? -1 : a.def.range >= 3 ? 0 : 1;
+      a._stLv = m.lv;
+      return (a._st = P.pref(m, a.def));
+    },
+    pref(m, def) {
+      let s = def.heal ? -1 : def.range >= 3 ? 0 : 1;
       for (const k of G.Guild.slots(m)) s += CLOSE.has(k) ? 1 : FAR.has(k) ? -1 : 0;
       for (const k of m.pers || []) s += PERS_W[k] || 0;
-      a._stLv = m.lv;
-      return (a._st = s >= 2 ? 'front' : s <= -1 ? 'back' : 'mid');
+      return s >= 2 ? 'front' : s <= -1 ? 'back' : 'mid';
     },
     // 단짝: 원정대 안에서 정이 가장 깊은 전우 (G.Bond) — 붙어 다니고 서로 막아 준다
     buddy(f, rt, a) {

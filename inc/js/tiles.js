@@ -3,6 +3,8 @@
 // 타일 키는 G.TILESET(tools/build_tiles.js가 생성)에 있다. 없는 키는 글자(이모지)로 대신 그린다.
 // 같은 키의 그림이 assets/art/에 있으면(G.ARTSET, tools/art72.js가 0x72 팩에서 생성) DCSS 타일 대신 그것을 쓴다.
 // 인형(여러 타일을 겹친 캐릭터)도 인형 이름으로 된 그림이 있으면 그 한 장으로 바뀐다. 자세한 것은 ART.md.
+// 화풍 비교용: ?art=dcss 이면 DCSS 타일이 있는 키는 그것으로 그린다 (DESIGN.md 68)
+if (typeof location !== 'undefined' && /[?&]art=dcss\b/.test(location.search)) for (const k of Object.keys(G.ARTSET)) if (G.TILESET[k] || /^(f_hw|f_wface|f_wdark|f_c[NSEW]|f_floor)/.test(k)) delete G.ARTSET[k];
 G.T = {
   base: 'assets/tiles/',
   // 여러 타일을 겹친 인형. 순서대로 위에 그린다.

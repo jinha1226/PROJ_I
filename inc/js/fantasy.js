@@ -25,6 +25,9 @@ G.Fantasy = (() => {
   // 상태이상 (DESIGN.md 43): 지속 피해 셋은 dots, 나머지는 몸의 타이머. 받아치는 것은 G.Combo
   const DOTS = ['poison', 'burn', 'bleed'], SHOCK = 0.6;
   // 자동 편성 우선순위: 치유가 있어야 오염을 버티므로 수도사 먼저, 길잡이(탐험), 그다음 강한 순
+  const FORM_GAP = 1.3; // 진형 한 칸의 간격
+  const FORM_RUSH = 1.4;
+  const ENGAGE = 2.5; // 단장이 공격 거리 + 이만큼 안에 들면 동료도 진형을 풀고 달려든다
   const AUTO = ['cleric', 'scout', 'archmage', 'rogue', 'dragoon', 'paladin', 'barbarian', 'monk', 'warlock', 'mage', 'bard', 'archer'];
 
   const F = {
@@ -44,7 +47,7 @@ G.Fantasy = (() => {
     monGold: (fl, boss) => 2 * Math.pow(1.14, F.depth(fl) - 1) * (boss ? 10 : 1),
 
     // ── 원정대 편성 (용병 한 사람 한 사람 — G.Guild) ──
-    slots: () => 3 + ta('slot') + G.Guild.fac(null, 'elite'),
+    slots: () => 4, // 원정대는 단장 + 4명, 다섯이 기본 (DESIGN.md 67)
     // 고용한 순서 (초상 줄 순서)
     recruits: f => f.mercs.map(m => m.uid),
     // 출전 명단(용병 uid): 자동이면 G.Guild.autoPick, 아니면 직접 고른 것 중 다치지 않은 사람
@@ -53,6 +56,24 @@ G.Fantasy = (() => {
       if (f.autoParty !== false) return G.Guild.autoPick(f, n);
       const ok = new Set(G.Guild.ready(f).map(m => m.uid));
       return (f.lineup || []).filter(u => ok.has(u)).slice(0, n);
+    },
+    // 진형 (DESIGN.md 67): uid → 칸 0~8. 윗줄(0~2)이 전열, 왼쪽→오른쪽은 진행 방향 기준. 단장 + 출전만 칸을 갖는다 (레이드 둘째 파티는 자동)
+    formation(f) {
+      const form = f.form || (f.form = {}), L = G.Guild.leader(f), want = [L.uid, ...F.lineup(f)];
+      for (const u of Object.keys(form)) if (!want.some(w => String(w) === u)) delete form[u];
+      for (const u of want) if (form[u] == null) {
+        const m = G.Guild.get(f, u), def = G.Guild.def(m), used = new Set(Object.values(form));
+        const row = m === L ? (def.range < 3 ? 0 : 1) : G.Persona.ROWS.indexOf(G.Persona.pref(m, def));
+        const cell = [row, row + 1, row - 1, row + 2, row - 2].filter(r => r >= 0 && r < 3).flatMap(r => [1, 0, 2].map(c => r * 3 + c)).find(c => !used.has(c));
+        form[u] = cell;
+      }
+      return form;
+    },
+    // 그 칸으로 옮긴다. 누가 있으면 자리를 바꾼다
+    setCell(f, uid, cell) {
+      const form = F.formation(f), other = Object.keys(form).find(u => form[u] === cell);
+      if (other != null) form[other] = form[uid];
+      form[uid] = cell;
     },
     // 자동 편성을 끄고 그 용병을 넣거나 뺀다
     toggleMember(f, uid) {
@@ -177,6 +198,7 @@ G.Fantasy = (() => {
       rt.floorT = 0;
       rt.fields = []; rt.traps = []; rt.pathShown = rt.chestShown = false; rt.hpHist = [];
       G.Guild.newFloor(f);
+      F.formation(f);
       const st = m.start;
       const hero = rt.hero || { kind: 'hero', s: 1.15, bar: true, cds: {}, gcd: 1 };
       F.dressHero(f, hero);
@@ -225,7 +247,7 @@ G.Fantasy = (() => {
       F.look(rt);
       G.emit('f_floor', fl);
     },
-    refreshEnts(rt) { rt.ents = [...rt.chests, ...(rt.traps || []), ...G.Mission.ents(rt), ...rt.party, ...G.Rivals.ents(rt), ...rt.mons]; },
+    refreshEnts(rt) { rt.ents = [...rt.chests, ...(rt.traps || []), ...G.Mission.ents(rt), ...G.Explore.ents(rt), ...rt.party, ...G.Rivals.ents(rt), ...rt.mons]; },
     spawnMon(rt, fl, d, x, y, boss, extra) {
       const hp = F.monHP(fl, boss);
       const mo = {
@@ -260,6 +282,7 @@ G.Fantasy = (() => {
     },
     // 편성이 바뀌면(트리 구매·직접 편성) 지금 층에도 바로 반영: 빠진 동료는 돌아가고 새 동료가 단장 옆에 합류
     syncAllies(f) {
+      F.formation(f);
       const rt = F.rt(f), want = F.members(f), h = rt.hero;
       const keep = rt.allies.filter(a => want.includes(a.uid));
       for (const uid of want) if (!keep.some(a => a.uid === uid)) {
@@ -353,7 +376,7 @@ G.Fantasy = (() => {
       if (c.relic) { G.Mission.relic(f, rt, c); F.refreshEnts(rt); return; }
       if (c.mimic) {
         // 조사 (DESIGN.md 56): 알아채면 미믹이 먼저 치지 못하고 3초 정지 상태로 깨어난다
-        const spot = G.Dnd.spotMimic(rt);
+        const spot = c.spotted || G.Dnd.spotMimic(rt);
         F.spawnMon(rt, f.floor, { n: '미믹', t: 'm_mimic', ty: 'monstrosity', fx: ['restrained', 'str', 2] }, c.x, c.y, false, { hp: F.monHP(f.floor) * 3, max: F.monHP(f.floor) * 3, atk: F.monAtk(f.floor) * 1.5, mimic: true, aggro: true, s: 1.2, stop: spot ? 3 : 0 });
         if (spot) G.Dnd.die(rt, spot);
         G.fx(rt, { k: 'text', x: c.x, y: c.y - 1, s: '미믹!', col: '#ff6a6a', t: 1.2, sz: 1.3, pop: true });
@@ -595,7 +618,7 @@ G.Fantasy = (() => {
       rt.floorT += dt;
       G.Mission.tick(f, rt, dt);
       const m = rt.map, hero = rt.hero;
-      const aspd = F.aspd(f), speed = 3.2 * tm('speed') * (f.buffs.path ? 1.5 : 1) * (1 + rt.allies.reduce((a, q) => a + (q.dead || !q.merc ? 0 : G.Guild.sum(q.merc, 'move')), 0));
+      const aspd = F.aspd(f), speed = 3.2 * tm('speed') * (f.buffs.path ? 1.5 : 1) * (1 + (rt.party || rt.allies).reduce((a, q) => a + (q.dead || !q.merc ? 0 : G.Guild.sum(q.merc, 'move')), 0));
       const hmax = F.heroHP(f) * (f.buffs.hp ? 1.6 : 1);
       hero.max = hmax;
       // 재생과 오염 (오염은 최대 체력 비율이라 체력이 커져도 늘 의미가 있다)
@@ -661,13 +684,17 @@ G.Fantasy = (() => {
       // 단장: 지정한 적, 아니면 F.plan이 고른 적·상자. 둘 다 없으면 계단.
       hero.moving = false;
       rt.heroTg = null;
-      if (!hero.dead && !G.Dnd.out(hero)) {
+      // 탐험 연출 (js/explore.js): 방 입구에서 대열 맞추기 · 싸운 뒤 방 살피기 동안 단장은 제자리
+      const braced = G.Explore.tick(f, rt, dt);
+      if (rt.phase === 'dead') return;
+      if (!hero.dead && !G.Dnd.out(hero) && !braced) {
         const goal = (rt.focus && rt.focus.hp > 0) ? rt.focus : F.plan(rt);
         const chest = goal && goal.chest ? goal : null, rally = goal && goal.rally ? goal : null, hold = goal && goal.hold ? goal : null, target = chest || rally || hold ? null : goal, march = speed * (1 + ta('t_march'));
         rt.heroTg = target;
         if (target) {
           // 원거리 단장은 사거리에서 친다
           const hr = Math.max(1.2 + target.s * 0.2, hero.def.range >= 3 ? hero.def.range * 0.8 : 0);
+          rt.heroHr = hr;
           if (F.healTurn(f, rt, hero, dt)) { /* 클레릭 단장: 치유가 먼저 */ }
           else if (GR.dist(hero, target) > hr || !F.sees(m, hero, target)) GR.moveTo(m, hero, target.x, target.y, speed, dt, Math.min(hr * 0.8, 0.6 + (hr > 2 ? hr * 0.5 : 0)));
           else {
@@ -696,7 +723,7 @@ G.Fantasy = (() => {
       const seenMons = rt.mons.filter(o => F.inView(rt, o.x, o.y));
       // 단장: 직업 기술 · 바드의 영감 (동료와 같은 규칙)
       if (!hero.dead && !G.Dnd.out(hero)) { G.Skill.tick(f, rt, hero, dt, seenMons); F.song(f, rt, hero, dt); }
-      const front = hero.dead ? rt.allies.find(q => !q.dead && (q.id === 'paladin' || q.id === 'dragoon')) : hero;
+      const front = hero.dead ? rt.allies.find(q => !q.dead && q.merc && G.Persona.stance(q) === 'front') : hero;
       // 대열 (DESIGN.md 49): 앞장선 사람이 가는 쪽(부드럽게)을 기준으로 앞장은 앞에, 뒤는 뒤에 선다. 단짝은 서로 곁으로
       const ld = rt.leadDir || (rt.leadDir = { x: 1, y: 0 }), L0 = front || hero;
       if (rt.lpx != null) {
@@ -707,12 +734,17 @@ G.Fantasy = (() => {
       const FORM = { front: 1.3, mid: -1.3, back: -2.8 };
       const follow = (a, lead, k) => {
         if (lead === a) return;
-        const off = FORM[G.Persona.stance(a)], b = G.Persona.buddy(f, rt, a);
-        let tx = lead.x + ld.x * off, ty = lead.y + ld.y * off;
+        // 내가 정한 칸이 있으면 앞장선 사람과의 칸 차이대로 (좁은 길에선 한 줄로), 없으면(레이드 둘째 파티) 성향대로
+        const ca = f.form?.[a.uid], cl = f.form?.[lead.uid], placed = ca != null && cl != null;
+        const off = placed ? ((cl / 3 | 0) - (ca / 3 | 0)) * FORM_GAP : FORM[G.Persona.stance(a)], side = placed ? (ca % 3 - cl % 3) * FORM_GAP : 0, b = placed ? null : G.Persona.buddy(f, rt, a);
+        let tx = lead.x + ld.x * off - ld.y * side, ty = lead.y + ld.y * off + ld.x * side;
         if (b) { tx = (tx * 2 + b.x) / 3; ty = (ty * 2 + b.y) / 3; }
         let px = U.clamp(Math.round(tx), 1, m.w - 2), py = U.clamp(Math.round(ty), 1, m.h - 2);
+        if (!GR.pass(m, px, py)) { tx = lead.x + ld.x * off; ty = lead.y + ld.y * off; px = U.clamp(Math.round(tx), 1, m.w - 2); py = U.clamp(Math.round(ty), 1, m.h - 2); }
         if (!GR.pass(m, px, py)) { px = Math.round(lead.x); py = Math.round(lead.y); }
-        GR.moveTo(m, a, px + (tx - Math.round(tx)) * 0.5, py + (ty - Math.round(ty)) * 0.5, speed * k, dt, 0.5);
+        const sx = px + (tx - Math.round(tx)) * 0.5, sy = py + (ty - Math.round(ty)) * 0.5;
+        // 자리에서 멀면 서둘러 제자리로 (단장과 같은 속도면 앞줄이 영영 앞서지 못한다)
+        GR.moveTo(m, a, sx, sy, speed * k * (placed && Math.hypot(a.x - sx, a.y - sy) > 1 ? FORM_RUSH : 1), dt, placed ? 0.25 : 0.5);
       };
       for (const a of rt.allies) {
         const lead = front || a;
@@ -722,6 +754,7 @@ G.Fantasy = (() => {
         if (G.Dnd.out(a)) continue;
         const def = a.def, PS = G.Persona;
         if (a.dashT > 0) a.dashT -= dt;
+        if (G.Explore.wander(rt, a, speed, dt)) continue;
         // 개인 스킬 (DESIGN.md 43): 자동, 사람마다 쿨다운. 겁쟁이로 물러서는 동안은 쓰지 않는다
         if (!(a.fleeT > 0) && rt.phase !== 'dead') G.Skill.tick(f, rt, a, dt, seenMons);
         // 성격 (DESIGN.md 42) — 겁쟁이: 체력 30% 아래에서 적이 붙으면 3초간 떨며 앞장선 사람 뒤로 (그동안 싸우지 않는다)
@@ -746,6 +779,8 @@ G.Fantasy = (() => {
         let tg = hero.dead ? prefer || F.nearestMon(rt, a, range + 4) : rt.heroTg;
         // 성격 — 싸움꾼: 덤벼 온 라이벌이 있으면 늘 그쪽부터 (지휘 중이 아닐 때)
         if (PS.has(a.merc, 'brawler') && !PS.commanded(rt)) { const rv = G.Rivals.hostiles(rt).filter(e => GR.dist(e, a) < 8).sort((p, q) => GR.dist(p, a) - GR.dist(q, a))[0]; if (rv) tg = rv; }
+        // 단장이 아직 적에게 걸어가는 중이면 진형대로 따라간다 (사거리 안의 적은 그 자리에서 친다)
+        if (tg && !hero.dead && tg === rt.heroTg && !a.hotT && GR.dist(hero, tg) > rt.heroHr + ENGAGE && GR.dist(a, tg) > def.range) { follow(a, lead, 1.1); continue; }
         if (tg && (!hero.dead || GR.dist(tg, lead) < 9)) {
           // 성격 — 온순: 라이벌과는 싸우지 않고 깃발을 든 채 물러서 있다 (라이벌도 노리지 않는다 — G.Rivals.goal)
           if (tg.kind === 'rival' && PS.has(a.merc, 'meek')) {
@@ -901,7 +936,7 @@ G.Fantasy = (() => {
       if (m._band !== b) { m._band = b; m.ver++; }
       return {
         map: m, ents: f.town ? [] : rt.ents, fx: rt.fx, cam: rt.hero.dead ? rt.party.find(p => !p.dead) || rt.hero : rt.hero, viewH: 13, center: true, dimAll: rt.phase === 'dead' || f.town,
-        fog: { seen: rt.seen, ver: rt.seenVer, light: rt.hero.dead ? rt.party.find(p => !p.dead) || rt.hero : rt.hero },
+        fog: { seen: rt.seen, ver: rt.seenVer, light: rt.hero.dead ? rt.party.find(p => !p.dead) || rt.hero : rt.hero, torches: f.town ? null : rt.party.filter(p => !p.dead), torchR: F.sight() },
         mini: { seen: rt.seen, ver: rt.seenVer, start: m.start, end: m.end, treasure: m.treasure, chests: rt.chests, party: rt.party, mons: rt.mons, rivals: G.Rivals.members(rt), label: f.town ? '' : `${f.floor}층 · 탐사 ${Math.round(G.Season.coverage(f, f.floor) * 100)}%${G.Mission.label(rt)}` },
         terrain(x, y) {
           const c = m.c[y * m.w + x];

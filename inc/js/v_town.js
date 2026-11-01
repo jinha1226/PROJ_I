@@ -1,7 +1,7 @@
 'use strict';
 // 마을 화면 (DESIGN.md 35): 원정 사이에는 던전 대신 이 화면이 맵 자리를 채운다 — 길드 관리의 본거지.
-// 틀(Eslabong·던전 세틀러즈): 윗막대(길드 · 원정 진행 · 출발점 칸 · 재화) / 탭 / 내용(카드·표) / 아랫막대(자동 출발 · 출발 · 소식)
-// 탭: 원정대(출전 카드 + 출발층·귀환 방침) · 명단 · 선술집 · 라이벌 · 트리 · 기록. 글은 이름표와 숫자만.
+// 틀 (DESIGN.md 69 · 다키스트 던전의 영지 · 배틀 브라더스): 윗막대(길드 · 출발점 칸 · 재화) / 가운데 건물 화면 / 오른쪽 늘 보이는 명단 / 아래 건물 단추 · 출발
+// 건물: 원정(진형 + 계획) · 선술집 · 대장간 · 트리 · 길드 · 소식. 사람을 누르면 가운데에 그 사람 시트. 글은 이름표와 숫자만.
 G.UI.fantasyTown = function () {
   const f = () => G.S.w.fantasy, F = G.Fantasy, D = G.D.F, U = G.U, EX = G.Exp, GD = G.Guild, TK = G.Trinket;
   const RS = G.Rivals.STANCES, ORDER = Object.keys(RS), RT = EX.RETREAT;
@@ -19,7 +19,7 @@ G.UI.fantasyTown = function () {
   const promoEls = (s, m) => {
     if (!GD.canPromote(m)) return null;
     const c = GD.promoCost(s, m);
-    return h('div.tw-promo', null, GD.advs(m.cls).map(k => h('button.tw-act.promo', { disabled: s.gold < c, 'data-tip': advTip(G.D.ADV[k], m.cls), on: { click: () => { GD.promote(s, m, k); keys.party = keys.roster = ''; } } },
+    return h('div.tw-promo', null, GD.advs(m.cls).map(k => h('button.tw-act.promo', { disabled: s.gold < c, 'data-tip': advTip(G.D.ADV[k], m.cls), on: { click: () => { GD.promote(s, m, k); keys.roster = ''; } } },
       G.T.el(G.ARTSET[G.D.ADV[k].t + '_c' + m.look] ? G.D.ADV[k].t + '_c' + m.look : G.D.ADV[k].t, 'xs'), h('b', null, G.D.ADV[k].n), h('small', null, U.fmt(c)))));
   };
   // 카드 다시 그리기 열쇠: 레벨 · 부상 · 전직 · 전직 가능(금고)
@@ -52,12 +52,14 @@ G.UI.fantasyTown = function () {
 
   // ── 윗막대
   const runsEl = h('small'), seasonEl = h('b.tw-season'), stripEl = h('div.tw-strip'), goldEl = h('b'), fameEl = h('b');
+  const idImg = h('span.tw-idimg'), idName = h('b');
   const topEl = h('div.tw-top', null,
-    h('div.tw-id', null, G.T.el('u_legend', 'md'), h('div', null, h('b', null, '길드'), runsEl)),
+    h('div.tw-id', null, idImg, h('div', null, idName, runsEl)),
     h('div.tw-prog', null, seasonEl, stripEl),
     h('div.tw-res', null,
       h('span', { 'data-tip': '금고' }, G.T.el('ui_gold', 'xs'), goldEl),
-      h('span', { 'data-tip': '명성' }, G.T.el('u_legend', 'xs'), fameEl)));
+      h('span', { 'data-tip': '명성' }, G.T.el('u_legend', 'xs'), fameEl),
+      h('button.tw-cog', { 'aria-label': '설정', on: { click: () => G.UI.settings() } }, '⚙')));
   // 출발점 칸: 1층 ~ 최고층+2. ◆ 보스, 금빛 = 출발층, 누르면 그 체크포인트에서 출발
   let stripKey = '';
   function drawStrip(s) {
@@ -74,67 +76,86 @@ G.UI.fantasyTown = function () {
   }
 
   // ── 탭
-  const TABS = [['party', '원정대'], ['roster', '명단'], ['tavern', '선술집'], ['gear', '장비'], ['tree', '트리'], ['guild', '길드'], ['rival', '라이벌'], ['log', '기록']];
+  const TABS = [['party', '원정', 'u_legend'], ['tavern', '선술집', 'x_table'], ['gear', '대장간', 'u_sword'], ['tree', '트리', 'ui_tree'], ['guild', '길드', 'x_statue'], ['log', '소식', 'ui_sign']];
   let tab = 'party';
   const tabBtns = {}, panes = {};
-  const tabEl = h('div.tw-tabs', null, TABS.map(([k, n]) => (tabBtns[k] = h('button.tw-tab', { on: { click: () => setTab(k) } }, n))));
+  const tabEl = h('div.tw-tabs', null, TABS.map(([k, n, t]) => (tabBtns[k] = h('button.tw-tab', { on: { click: () => setTab(k) } }, G.T.el(t, 'tw-tabic'), h('span', null, n)))));
   function setTab(k) {
-    tab = k;
+    tab = k; dtM = null;
     for (const [id] of TABS) { tog(tabBtns[id], 'on', id === k); tog(panes[id], 'hidden', id !== k); }
     keys[k] = '';
     if (k === 'tree') tree.center();
   }
   const keys = {};
 
-  // ── 원정대: 출전 카드 줄 + 오른쪽 계획(지난 원정 · 출발층 · 귀환 방침 · 자동)
-  const lineEl = h('div.tw-line'), benchEl = h('div.tw-line.bench'), lastEl = h('div.tw-last'), planStart = h('b'), comboEl = h('div.tw-combos'), bondEl = h('div.tw-combos');
-  const rtBtns = {}, raidEl = h('small.tw-raid'), aheadEl = h('div.tw-ahead');
+  // ── 원정: 가운데 진형, 옆에 이번 원정의 계획 (출발층은 윗막대 칸에서)
+  const lastEl = h('div.tw-last'), comboEl = h('div.tw-combos'), bondEl = h('div.tw-combos');
+  const rtBtns = {}, raidEl = h('small.tw-raid'), aheadEl = h('div.tw-ahead'), formEl = h('div.tw-form');
   const tGo = G.UI.toggle('자동 출발', () => f().autoGo !== false, v => { f().autoGo = v; });
   const tFull = G.UI.toggle('짐 가득 → 보스 후 귀환', () => f().fullHome !== false, v => { f().fullHome = v; });
-  const tAuto = G.UI.toggle('자동 편성', () => f().autoParty !== false, v => { F.setAuto(f(), v); keys.party = ''; });
+  const tAuto = G.UI.toggle('자동 편성', () => f().autoParty !== false, v => { F.setAuto(f(), v); keys.roster = ''; });
   const tDirect = G.UI.toggle('아는 층 직행', () => f().direct !== false, v => { f().direct = v; });
   panes.party = h('div.tw-pane.p-party', null,
-    h('div.tw-col', null, h('div.tw-h', null, h('b', null, '출전'), h('span.sp'), tAuto.el), lineEl, h('div.tw-h', null, h('b', null, '대기'), raidEl), benchEl),
+    h('div.tw-formwrap', null, h('div.tw-h', null, h('b', null, '진형'), h('span.sp'), raidEl), h('div.tw-march', null, '▲ 진행 방향'), formEl),
     h('div.tw-side', null,
-      h('div.tw-box', null, h('div.tw-h', null, h('b', null, '지난 원정')), lastEl),
+      h('div.tw-box', null, h('div.tw-h', null, h('b', null, '다음 임무')), aheadEl),
+      h('div.tw-box', null, h('div.tw-h', null, h('b', null, '귀환 방침')), h('div.tw-opts', null, Object.keys(RT).map(k => (rtBtns[k] = h('button.tw-opt', { on: { click: () => { f().retreat = k; } } }, RT[k].n))))),
       h('div.tw-box', null, h('div.tw-h', null, h('b', null, '연계기')), comboEl),
       h('div.tw-box', null, h('div.tw-h', null, h('b', null, '관계')), bondEl),
-      h('div.tw-box', null, h('div.tw-h', null, h('b', null, '다음 임무')), aheadEl),
-      h('div.tw-box', null, h('div.tw-h', null, h('b', null, '출발층')), h('div.tw-row', null,
-        h('button.fbtn', { on: { click: () => EX.pickStart(f(), -1) } }, '◀'), planStart, h('button.fbtn', { on: { click: () => EX.pickStart(f(), 1) } }, '▶'))),
-      h('div.tw-box', null, h('div.tw-h', null, h('b', null, '귀환 방침')), h('div.tw-opts', null, Object.keys(RT).map(k => (rtBtns[k] = h('button.tw-opt', { on: { click: () => { f().retreat = k; } } }, RT[k].n))))),
+      h('div.tw-box', null, h('div.tw-h', null, h('b', null, '지난 원정')), lastEl),
       h('div.tw-box', null, tGo.el, tFull.el, tDirect.el)));
-  // 단장 (DESIGN.md 63): 내가 만든 캐릭터 — 늘 출전, 금빛 테두리
-  function heroCard(s) {
-    const c = mercCard(s, GD.leader(s));
-    c.classList.add('lead');
-    return c;
-  }
+  // 선술집 후보 카드: 얼굴 · 수치 · 대표 기술 · 재주만. 누르면 시트
   function mercCard(s, m, actions) {
-    const def = GD.def(m), xp = bar(); setW(xp.fill, m.xp / GD.needOf(m));
-    const st = m.inj > 0 ? h('small.tw-st.hurt', null, `부상 ${Math.ceil(m.inj)}초`) : m.job ? h('small.tw-st.job', null, `${G.D.JOBS[m.job].n} 근무`) : null;
-    return h('div.tw-card' + (m.inj > 0 ? '.hurt' : ''), { 'data-uid': m.uid, on: { click: e => { if (!e.target.closest('button, select, input')) openDetail(m); } } }, h('b.tw-lv' + (m.bt ? '.epic' : ''), null, GD.lvText(m)), G.T.el(GD.tile(m), 'tw-img'), h('b', null, m.name), mchip(m), xp, abEls(m), gearEls(m),
-      h('div.tw-trs', null, ...traitEls(m)), GD.crew(s).includes(m) ? tkEls(s, m) : null, skillEls(m), promoEls(s, m), st, m.from ? h('small.tw-from', { style: `color:${G.D.RIVALS.find(d => d.id === m.from)?.col}` }, `전 ${G.D.RIVALS.find(d => d.id === m.from)?.n}`) : null, actions || null);
+    const sig = G.D.MSKILLS[G.D.MSIG[m.cls]];
+    return h('div.tw-card', { 'data-uid': m.uid, on: { click: e => { if (!e.target.closest('button, select, input')) openDetail(m); } } }, h('b.tw-lv' + (m.bt ? '.epic' : ''), null, GD.lvText(m)), G.T.el(GD.tile(m), 'tw-img'), h('b', null, m.name), mchip(m), abEls(m),
+      h('div.tw-trs', null, ...traitEls(m)), sig ? h('small.tw-csig', { 'data-tip': sig.d }, G.T.el(sig.t, 'xs'), '★ ' + sig.n) : null, actions || null);
+  }
+  // 진형 (DESIGN.md 67): 사람을 누르고 칸을 누르거나, 끌어다 놓는다. 사람이 있는 칸이면 자리를 바꾼다
+  const ROW_T = [['전열', '먼저 달려든다 · 원거리도 바짝 붙는다'], ['중열', '단장을 따라 싸운다'], ['후열', '원거리는 사거리 끝에서 · 근접은 치고 빠진다']];
+  let formPick = null, formKey = '';
+  // 그 칸으로: 대기 중인 사람이면 출전시킨다. 칸이 다 찼으면 그 칸의 동료와 교체
+  function place(s, uid, c) {
+    const m = GD.get(s, uid);
+    formPick = null;
+    if (!m || m.inj > 0) return;
+    const form = F.formation(s), occ = +Object.keys(form).find(k => form[k] === c);
+    if (!m.lead && !F.lineup(s).includes(uid)) {
+      if (F.lineup(s).length >= F.slots()) {
+        if (!occ || GD.get(s, occ)?.lead) return;
+        F.toggleMember(s, occ);
+      }
+      F.toggleMember(s, uid);
+    }
+    F.setCell(s, uid, c);
+    keys.roster = '';
+  }
+  function drawForm(s) {
+    const form = F.formation(s), key = JSON.stringify(form) + formPick + GD.crew(s).map(m => GD.tile(m) + m.lv + m.name).join();
+    if (key === formKey) return;
+    formKey = key;
+    formEl.innerHTML = '';
+    for (let c = 0; c < 9; c++) {
+      if (c % 3 === 0) formEl.append(h('small.tw-frow', { 'data-tip': ROW_T[c / 3][1] }, ROW_T[c / 3][0]));
+      const u = Object.keys(form).find(k => form[k] === c), m = u != null && GD.get(s, +u);
+      formEl.append(h('div.tw-fcell' + (m ? '.has' : '') + (m && m.lead ? '.lead' : '') + (m && formPick === m.uid ? '.pick' : ''), {
+        'data-cell': c, draggable: m ? 'true' : null,
+        on: {
+          click: () => { if (formPick != null) place(s, formPick, c); else if (m) formPick = m.uid; },
+          dragstart: e => { if (m) { e.dataTransfer.setData('text/plain', m.uid); formPick = null; } },
+          dragover: e => e.preventDefault(),
+          drop: e => { e.preventDefault(); const uid = +e.dataTransfer.getData('text/plain'); if (uid) place(s, uid, c); },
+        },
+      }, m ? [G.T.el(GD.tile(m), 'tw-fimg'), h('b', null, m.name), h('small', { style: `color:${GD.def(m).col}` }, `${GD.def(m).n} ${m.lv}`)] : null));
+    }
   }
   function drawParty(s) {
-    const line = F.lineup(s), key = [line.join(), F.slots(), GD.crew(s).map(m => mkey(s, m)).join(), s.autoParty, G.Bond.pairs(s, line.map(u => GD.get(s, u)).filter(Boolean)).map(p => p.r).join()].join('|');
+    drawForm(s);
+    const line = F.lineup(s), key = [line.join(), F.slots(), G.Bond.pairs(s, line.map(u => GD.get(s, u)).filter(Boolean)).map(p => p.r).join()].join('|');
     if (key !== keys.party) {
       keys.party = key;
-      lineEl.innerHTML = '';
-      lineEl.append(heroCard(s));
-      for (let i = 0; i < F.slots(); i++) {
-        const m = line[i] != null && GD.get(s, line[i]);
-        if (m) lineEl.append(mercCard(s, m, h('button.tw-act', { on: { click: () => { F.toggleMember(s, m.uid); keys.party = ''; } } }, '대기')));
-        else lineEl.append(h('button.tw-card.empty', { on: { click: () => setTab('roster') } }, h('b', null, '+'), h('small', null, '빈 칸')));
-      }
       // 레이드 (DESIGN.md 64): 보스 층엔 대기 인원(일 없는 · 다치지 않은)이 둘째 파티로
       const sub = GD.ready(s).filter(m => !line.includes(m.uid)).length;
-      setText(raidEl, sub ? ` · 보스 층 레이드: 둘째 파티 ${Math.min(sub, F.slots())}명` : '');
-      // 대기: 출전하지 않은 명단 (부상 포함). 빈 출전 칸이 있으면 눌러서 출전
-      benchEl.innerHTML = '';
-      const bench = s.mercs.filter(m => !line.includes(m.uid));
-      if (!bench.length) benchEl.append(h('div.g-empty', null, '—'));
-      for (const m of bench) benchEl.append(mercCard(s, m, h('button.tw-act', { disabled: m.inj > 0 || line.length >= F.slots(), on: { click: () => { F.toggleMember(s, m.uid); keys.party = ''; } } }, '출전')));
+      setText(raidEl, sub ? `보스 층 둘째 파티 ${Math.min(sub, F.slots())}명` : '');
       // 이 편성으로 나갈 수 있는 연계기 (DESIGN.md 43). 트리에서 아직 안 연 것은 흐리게
       comboEl.innerHTML = '';
       const cbs = G.Combo.possible(line.map(u => GD.get(s, u)).filter(Boolean)).sort((a, b) => b.open - a.open);
@@ -149,7 +170,6 @@ G.UI.fantasyTown = function () {
     const L = s.last;
     setText(lastEl, !L || L.why === 'start' ? '—' : `${L.floor}층 · ${WHY[L.why] || '귀환'}${L.who ? ` (${L.who})` : ''} · +${U.fmt(L.got)}${L.lost ? ` · -${U.fmt(L.lost)}` : ''}`);
     tog(lastEl, 'bad', !!L && L.why === 'wipe');
-    setText(planStart, ` ${s.start || 1}층 `);
     // 다음 임무 (DESIGN.md 66): 출발층부터 여섯. 지금 편성(단장 포함)의 적성 수를 옆에
     const crew = [GD.leader(s), ...line.map(u => GD.get(s, u)).filter(Boolean)], ah = G.Mission.ahead(s, s.start || 1);
     const ak = ah.map(x => x.fl + x.k).join() + crew.map(m => m.cls).join();
@@ -162,32 +182,43 @@ G.UI.fantasyTown = function () {
       }
     }
     for (const k in rtBtns) tog(rtBtns[k], 'on', (s.retreat || 'hp30') === k);
-    tGo.update(); tFull.update(); tAuto.update(); tDirect.update();
+    tGo.update(); tFull.update(); tDirect.update();
   }
 
-  // ── 명단: 카드 격자 (출전/대기 · 해고)
-  const rosterEl = h('div.tw-grid'), rosterHead = h('small'), hallEl = h('div.tw-hall');
-  panes.roster = h('div.tw-pane', null, h('div.tw-h', null, h('b', null, '명단'), rosterHead), rosterEl, hallEl);
+  // ── 명단 (다키스트 던전의 Roster): 어느 건물에서든 오른쪽에 늘 보인다. 누르면 시트, 끌어다 진형에. ● = 출전
+  const rosterEl = h('div.tw-rlist'), rosterHead = h('small'), hallEl = h('div.tw-hall');
+  const rosterCol = h('aside.tw-rostercol', null, h('div.tw-h', null, h('b', null, '명단'), rosterHead, h('span.sp'), tAuto.el), rosterEl);
   let armed = null;
+  function rosterRow(s, m, line) {
+    const on = m.lead || line.includes(m.uid), xp = bar(); setW(xp.fill, m.xp / GD.needOf(m));
+    const flag = m.inj > 0 ? h('small.tw-rflag.hurt', null, `🩹${Math.ceil(m.inj)}`) : m.job ? h('small.tw-rflag', { 'data-tip': `${G.D.JOBS[m.job].n} 근무` }, G.T.el(G.D.JOBS[m.job].t, 'xs')) : GD.canPromote(m) ? h('small.tw-rflag.up', { 'data-tip': '전직 가능' }, '▲') : null;
+    return h('div.tw-rrow' + (m.lead ? '.lead' : '') + (on ? '.on' : '') + (dtM && dtM.uid === m.uid ? '.sel' : '') + (m.inj > 0 ? '.hurt' : ''), {
+      'data-uid': m.uid, draggable: m.inj > 0 ? null : 'true',
+      on: { click: e => { if (!e.target.closest('button')) { if (dtM && dtM.uid === m.uid) dtM = null; else openDetail(m); keys.roster = ''; } }, dragstart: e => e.dataTransfer.setData('text/plain', m.uid) },
+    }, G.T.el(GD.tile(m), 'tw-rimg'), h('div.tw-rtxt', null, h('b', null, m.name), h('small', { style: `color:${GD.def(m).col}` }, `${GD.def(m).n} `, h('i', null, GD.lvText(m))), xp), flag,
+      m.lead ? null : h('button.tw-rtog' + (on ? '.on' : ''), { disabled: m.inj > 0 || (!on && line.length >= F.slots()), 'data-tip': on ? '대기로' : '출전', on: { click: () => { F.toggleMember(s, m.uid); keys.roster = ''; } } }));
+  }
   function drawRoster(s) {
-    const line = F.lineup(s), key = [GD.crew(s).map(m => mkey(s, m)).join(), line.join(), armed, (s.hall || []).length].join('|');
-    setText(rosterHead, ` ${s.mercs.length}/${GD.ROSTER_MAX} · 출전 ${line.length}/${F.slots()}`);
+    const line = F.lineup(s), key = [GD.crew(s).map(m => mkey(s, m) + Math.round(m.xp / GD.needOf(m) * 20)).join(), line.join(), dtM && dtM.uid, s.autoParty].join('|');
+    setText(rosterHead, ` ${s.mercs.length}/${GD.ROSTER_MAX}`);
+    tAuto.update();
     if (key === keys.roster) return;
     keys.roster = key;
     rosterEl.innerHTML = '';
-    if (!s.mercs.length) rosterEl.append(h('div.g-empty', null, '명단 없음'));
-    rosterEl.append(heroCard(s));
-    for (const m of s.mercs) {
-      const on = line.includes(m.uid);
-      const acts = h('div.tw-acts', null,
-        h('button.tw-act' + (on ? '.on' : ''), { disabled: m.inj > 0, on: { click: () => { F.toggleMember(s, m.uid); keys.roster = ''; } } }, on ? '출전' : '대기'),
-        GD.canRetire(m) ? h('button.tw-act.promo' + (armed === 'r' + m.uid ? '.armed' : ''), { 'data-tip': `명성 +${GD.retireFame(m)}`, on: { click: () => { if (armed === 'r' + m.uid) { GD.retire(s, m.uid); armed = null; } else armed = 'r' + m.uid; keys.roster = ''; } } }, armed === 'r' + m.uid ? '은퇴?' : '은퇴') : null,
-        h('button.tw-act.fire' + (armed === m.uid ? '.armed' : ''), { on: { click: () => { if (armed === m.uid) { GD.dismiss(s, m.uid); armed = null; } else armed = m.uid; keys.roster = ''; } } }, armed === m.uid ? '해고?' : '해고'));
-      rosterEl.append(mercCard(s, m, acts));
-    }
-    // 명예의 전당: 은퇴한 사람 (초상 · 이름 · 레벨 · 시즌)
+    rosterEl.append(rosterRow(s, GD.leader(s), line));
+    for (const u of line) { const m = GD.get(s, u); if (m) rosterEl.append(rosterRow(s, m, line)); }
+    const bench = s.mercs.filter(m => !line.includes(m.uid)).sort((a, b) => b.lv - a.lv);
+    if (bench.length) rosterEl.append(h('small.tw-rsec', null, `대기 ${bench.length}`));
+    for (const m of bench) rosterEl.append(rosterRow(s, m, line));
+    if (!s.mercs.length) rosterEl.append(h('button.tw-rhire', { on: { click: () => setTab('tavern') } }, '+ 선술집'));
+  }
+  // 명예의 전당: 은퇴한 사람 (길드 건물 아래)
+  function drawHall(s) {
+    const k = (s.hall || []).length;
+    if (hallEl._k === k) return;
+    hallEl._k = k;
     hallEl.innerHTML = '';
-    if ((s.hall || []).length) hallEl.append(h('div.tw-h', null, h('b', null, '명예의 전당')), h('div.tw-hrow', null, s.hall.slice(0, 24).map(x => h('span.tw-hm', { 'data-tip': `${x.name} · ${(G.D.ADV[x.adv] || D.allies[x.cls]).n} ${x.bt ? `Lv 20 ★${x.bt}` : `Lv ${x.lv}`}${(x.boons || []).length ? ' · ' + x.boons.map(k => G.D.BOONS[k].n).join(' · ') : ''} · 시즌 ${x.season}` }, G.T.el((G.D.ADV[x.adv] || D.allies[x.cls]).t + (x.look ? '_c' + x.look : ''), 'xs'), h('small', null, x.name)))));
+    if (k) hallEl.append(h('div.tw-h', null, h('b', null, '명예의 전당')), h('div.tw-hrow', null, s.hall.slice(0, 24).map(x => h('span.tw-hm', { 'data-tip': `${x.name} · ${(G.D.ADV[x.adv] || D.allies[x.cls]).n} ${x.bt ? `Lv 20 ★${x.bt}` : `Lv ${x.lv}`}${(x.boons || []).length ? ' · ' + x.boons.map(k => G.D.BOONS[k].n).join(' · ') : ''} · 시즌 ${x.season}` }, G.T.el((G.D.ADV[x.adv] || D.allies[x.cls]).t + (x.look ? '_c' + x.look : ''), 'xs'), h('small', null, x.name)))));
   }
 
   // ── 선술집: 후보 카드 (고용)
@@ -211,7 +242,7 @@ G.UI.fantasyTown = function () {
   // ── 대장간 (DESIGN.md 57): 사람마다 무기 · 갑옷 강화. 출전하는 사람이 위로 · 자동이면 출발할 때 금고 절반까지 가장 싼 것부터
   const fgEl = h('div.tw-san'), fgHead = h('small');
   const tAutoFg = G.UI.toggle('자동 강화', () => f().autoForge !== false, v => { f().autoForge = v; keys.forge = ''; });
-  panes.forge = h('div.tw-pane', null, h('div.tw-h', null, h('b', null, '대장간'), fgHead, h('span.sp'), tAutoFg.el), fgEl);
+  panes.forge = h('div.tw-sub', null, h('div.tw-h', null, h('b', null, '강화'), fgHead, h('span.sp'), tAutoFg.el), fgEl);
   function drawForge(s) {
     const line = F.lineup(s), rows = [GD.leader(s), ...s.mercs.slice().sort((a, b) => line.includes(b.uid) - line.includes(a.uid) || b.lv - a.lv)];
     const key = [rows.map(m => m.uid + ':' + GD.gear(m).w + '.' + GD.gear(m).a).join('|'), line.join(), Math.floor(Math.log10(s.gold + 1) * 20), s.autoForge].join('#');
@@ -235,7 +266,7 @@ G.UI.fantasyTown = function () {
   const tkRows = h('div.tw-san'), tkStore = h('div.tw-store'), tkHead = h('small');
   const tAutoTr = G.UI.toggle('자동 장착', () => f().autoTr !== false, v => { f().autoTr = v; if (v) TK.auto(f()); keys.trink = ''; });
   let tkSel = null;
-  panes.trink = h('div.tw-pane.p-trink', null,
+  panes.trink = h('div.tw-sub.p-trink', null,
     h('div.tw-col', null, h('div.tw-h', null, h('b', null, '마법 물건'), h('span.sp'), tAutoTr.el), tkRows),
     h('div.tw-side', null, h('div.tw-box', null, h('div.tw-h', null, h('b', null, '창고'), tkHead), tkStore)));
   function drawTrink(s) {
@@ -270,7 +301,7 @@ G.UI.fantasyTown = function () {
   // ── 라이벌: 순위표 (층 · 전적 · 기세 · 방침)
   const rankEl = h('div.tw-table');
   const tAsk = G.UI.toggle('조우 시 묻기', () => f().askMeet !== false, v => { f().askMeet = v; });
-  panes.rival = h('div.tw-pane', null, h('div.tw-h', null, h('b', null, '층 순위'), h('span.sp'), tAsk.el), rankEl);
+  const rivalSub = h('div.tw-sub', null, h('div.tw-h', null, h('b', null, '층 순위'), h('span.sp'), tAsk.el), rankEl);
   function drawRival(s) {
     const rt = F.rt(s), rows = G.Rivals.standings(s, rt);
     const key = rows.map(r => `${r.id}${r.floor}${r.rest ? 'r' : ''}${r.mood || ''}${r.stance || ''}`).join();
@@ -292,10 +323,10 @@ G.UI.fantasyTown = function () {
   const tree = G.UI.tree('fantasy', () => G.S.w.fantasy.tree);
   panes.tree = h('div.tw-pane.tree', null, tree.el);
   // ── 장비 (DESIGN.md 62): 대장간(강화) 위, 마법 물건 아래
-  panes.gear = h('div.tw-pane', null, panes.forge, panes.trink);
+  panes.gear = h('div.tw-pane.p-gear', null, panes.forge, panes.trink);
   // ── 길드 (DESIGN.md 60): 명성으로 짓는 시설 — 시즌을 넘어 남는다. 머리줄에 이름값(누적 명성)
   const guildEl = h('div.tw-san'), guildHead = h('small');
-  panes.guild = h('div.tw-pane', null, h('div.tw-h', null, h('b', null, '길드'), guildHead), guildEl);
+  panes.guild = h('div.tw-pane', null, h('div.tw-h', null, h('b', null, '길드'), guildHead), guildEl, hallEl);
   function drawGuild(s) {
     setText(guildHead, ` · 명성 ${U.fmt(s.fame || 0)} · 이름값 피해·체력 ×${GD.renown(s).toFixed(2)}`);
     const key = Object.keys(G.D.FAC).map(k => GD.fac(s, k) + (s.fame >= GD.facCost(s, k) ? 'y' : 'n')).join() + '|' + s.mercs.map(m => m.uid + (m.job || '')).join();
@@ -312,7 +343,7 @@ G.UI.fantasyTown = function () {
     guildEl.append(h('div.tw-h', null, h('b', null, '대기실 배치')));
     for (const k in G.D.JOBS) {
       const J = G.D.JOBS[k], open = GD.jobOpen(s, k), cur = GD.jobOf(s, k), AB = G.Dnd.AB_N[J.ab];
-      const sel = h('select.tw-job', { disabled: !open, on: { change: e => { GD.assign(s, k, e.target.value === '' ? null : +e.target.value); keys.guild = keys.party = keys.roster = ''; } } },
+      const sel = h('select.tw-job', { disabled: !open, on: { change: e => { GD.assign(s, k, e.target.value === '' ? null : +e.target.value); keys.guild = keys.roster = ''; } } },
         h('option', { value: '' }, '—'),
         ...s.mercs.slice().sort((a, b) => G.Dnd.ab(b)[J.ab] - G.Dnd.ab(a)[J.ab]).map(m => { const o = h('option', { value: m.uid }, `${m.name} · ${AB} ${G.Dnd.ab(m)[J.ab]}${m.job && m.job !== k ? ` (${G.D.JOBS[m.job].n})` : ''}`); if (cur === m) o.selected = true; return o; }));
       guildEl.append(h('div.tw-sr' + (cur ? '.new' : ''), null, G.T.el(J.t, 'tw-img'), h('b', null, J.n), h('div.tw-sq', null, sel,
@@ -377,7 +408,7 @@ G.UI.fantasyTown = function () {
   // ── 기록: 라이벌 소식 + 원정 로그
   const logEl = h('div.tw-log'), logs = [];
   G.on('log', e => { if (e.world === 'fantasy') { logs.unshift({ s: e.msg, cls: e.cls, at: G.S.runTime }); if (logs.length > 60) logs.length = 60; keys.log = ''; } });
-  panes.log = h('div.tw-pane', null, h('div.tw-h', null, h('b', null, '기록')), logEl);
+  panes.log = h('div.tw-pane', null, rivalSub, h('div.tw-sub', null, h('div.tw-h', null, h('b', null, '기록')), logEl));
   function drawLog() {
     const all = logs.map(l => ({ ...l, col: null })).concat(G.Rivals.news.map(n => ({ s: n.s, col: n.col, at: n.at }))).sort((a, b) => b.at - a.at).slice(0, 60);
     const key = all.map(x => x.at + x.s).join();
@@ -387,10 +418,10 @@ G.UI.fantasyTown = function () {
     for (const x of all) logEl.append(h('div' + (x.cls ? '.' + x.cls : ''), { style: x.col ? `color:${x.col}` : '' }, h('small', null, U.fmtTime(x.at)), ' ', x.s));
   }
 
-  // ── 아랫막대
-  const goIn = h('small'), newsBtn = h('button.tw-news', { on: { click: () => setTab('log') } }, '기록 ', h('b'));
+  // ── 아랫막대: 건물 단추 · 자동 출발 · 출발
+  const goIn = h('small');
   const goBtn = h('button.tw-go', { on: { click: () => { const s = f(); if (s.town) EX.depart(s, F.rt(s)); } } }, '출발', h('small'));
-  const botEl = h('div.tw-bot', null, h('div.tw-bl', null, goIn), goBtn, newsBtn);
+  const botEl = h('div.tw-bot', null, tabEl, h('span.sp'), goIn, goBtn);
 
   // ── 단장 만들기 (DESIGN.md 63 · D&D 캐릭터 생성): 직업 → 능력치(표준 배열 · 4d6, 두 칸을 눌러 바꾼다) → 기술 넷 → 출신 재주 → 모습 · 이름
   const STD = [15, 14, 13, 12, 10, 8];
@@ -400,7 +431,7 @@ G.UI.fantasyTown = function () {
     h('div.tw-row.rs-act', null, crName, h('span.sp'), h('button.tw-go', { on: { click: () => {
       const DN = G.Dnd, ord = DN.CLS[cr.cls].order, ab = {};
       ord.forEach((k, i) => (ab[k] = cr.vals[i]));
-      if (GD.createLeader(f(), { cls: cr.cls, name: crName.value.trim(), ab, feat: cr.feat, look: cr.look, skills: cr.skills })) { keys.party = keys.roster = ''; crKey = ''; }
+      if (GD.createLeader(f(), { cls: cr.cls, name: crName.value.trim(), ab, feat: cr.feat, look: cr.look, skills: cr.skills })) { keys.roster = ''; crKey = ''; }
     } } }, '시작')));
   let crKey = '';
   function drawCreate(s) {
@@ -435,36 +466,60 @@ G.UI.fantasyTown = function () {
     crBody.append(h('div.tw-h', null, h('b', null, '모습')), h('div.tw-cr-row', null, [0, 1, 2].map(l => { const t = A[cr.cls].t + (l ? '_c' + l : '');
       return h('button.tw-cr-opt.look' + (cr.look === l ? '.on' : ''), { on: { click: () => { cr.look = l; re(); } } }, G.T.el(G.ARTSET && !G.ARTSET[t] ? A[cr.cls].t : t, 'tw-img')); })));
   }
-  // ── 상세 창 (DESIGN.md 65): 카드를 누르면. 능력치 여섯 — 이 직업에게 무엇에 쓰이는지 옆에, 공격 · 체력 · 방어에 쓰이는 것만 밝게
+  // ── 시트 (DESIGN.md 69 · 다키스트 던전의 인물 창): 한 사람의 모든 것. 왼쪽 얼굴 · 수치 · 능력치, 오른쪽 기술 · 장비 · 할 일
+  // 능력치 (DESIGN.md 65): 이 직업에게 무엇에 쓰이는지 옆에, 공격 · 체력 · 방어에 쓰이는 것만 밝게
   const dtBody = h('div.tw-dt-body');
-  const dtEl = h('div.tw-result.tw-report.tw-detail.hidden', null, h('div.tw-h', null, h('b.rs-t', null, '상세'), h('span.sp'), h('button.tw-act', { on: { click: () => { dtM = null; } } }, '닫기')), dtBody);
+  const dtEl = h('div.tw-sheet.hidden', null, dtBody);
   let dtM = null, dtKey = '';
   const openDetail = m => { dtM = m; dtKey = ''; };
+  const skRow = (S, cls, tag, off) => h('div.tw-dsk' + cls + (off ? '.off' : ''), null, G.T.el(S.t, 'tw-dskic'), h('div', null, h('b', null, tag + S.n), h('small', null, `${S.d}${S.passive || !S.cool ? '' : ` · ${S.cool}초`}${off ? ` · Lv ${off}` : ''}`)));
   function drawDetail(s) {
     const m = dtM && GD.get(s, dtM.uid) ? dtM : (dtM && (s.tavern?.offers || []).some(o => o.m === dtM) ? dtM : null);
     tog(dtEl, 'hidden', !m);
-    if (!m) return;
-    const key = mkey(s, m);
+    if (!m) { dtM = null; return; }
+    const crew = GD.crew(s).includes(m), line = F.lineup(s), on = m.lead || line.includes(m.uid);
+    const key = mkey(s, m) + armed + on + m.xp;
     if (key === dtKey) return;
     dtKey = key;
-    const DN = G.Dnd, ab = DN.ab(m), def = GD.def(m), sg = v => (v >= 0 ? '+' : '') + v;
+    const DN = G.Dnd, ab = DN.ab(m), sg = v => (v >= 0 ? '+' : '') + v, xp = bar(), ap = G.Mission.aptOf(m), re = () => { dtKey = ''; keys.roster = ''; };
+    setW(xp.fill, m.xp / GD.needOf(m));
+    const acts = !crew || m.lead ? null : h('div.tw-acts', null,
+      h('button.tw-act' + (on ? '.on' : ''), { disabled: m.inj > 0 || (!on && line.length >= F.slots()), on: { click: () => { F.toggleMember(s, m.uid); re(); } } }, on ? '대기로' : '출전'),
+      GD.canRetire(m) ? h('button.tw-act.promo' + (armed === 'r' + m.uid ? '.armed' : ''), { 'data-tip': `명성 +${GD.retireFame(m)}`, on: { click: () => { if (armed === 'r' + m.uid) { GD.retire(s, m.uid); armed = null; dtM = null; } else armed = 'r' + m.uid; re(); } } }, armed === 'r' + m.uid ? '은퇴?' : '은퇴') : null,
+      h('button.tw-act.fire' + (armed === m.uid ? '.armed' : ''), { on: { click: () => { if (armed === m.uid) { GD.dismiss(s, m.uid); armed = null; dtM = null; } else armed = m.uid; re(); } } }, armed === m.uid ? '해고?' : '해고'));
     dtBody.innerHTML = '';
-    dtBody.append(h('div.tw-dt-top', null, G.T.el(GD.tile(m), 'tw-img'), h('div', null, h('b', null, m.name), mchip(m), h('small', null, ` ${GD.lvText(m)}`)), abEls(m, s)));
-    dtBody.append(h('div.tw-dt-ab', null, DN.AB.map(k => h('div' + (DN.key(m.cls, k) ? '.key' : ''), null,
-      h('b', null, DN.AB_N[k]), h('span.v', null, ab[k]), h('small', null, sg(DN.mod(ab[k]))), h('span.r', null, DN.role(m.cls, k))))));
-    const ap = G.Mission.aptOf(m);
-    dtBody.append(h('div.tw-trs', null, ...traitEls(m)), ap.length ? h('small.tw-dt-apt', null, '✦ 임무 적성 · ' + ap.map(k => G.Mission.DEF[k].n).join(' · ')) : null, gearEls(m), skillEls(m));
+    dtBody.append(
+      h('div.tw-dt-l', null,
+        h('div.tw-dt-por', null, G.T.el(GD.tile(m), 'tw-dt-img')),
+        h('b.tw-dt-name', null, (m.lead ? '👑 ' : '') + m.name), mchip(m),
+        h('small.tw-dt-lv', null, GD.lvText(m), m.inj > 0 ? ` · 🩹 ${Math.ceil(m.inj)}초` : '', m.job ? ` · ${G.D.JOBS[m.job].n} 근무` : ''), xp,
+        abEls(m, s),
+        h('div.tw-dt-ab', null, DN.AB.map(k => h('div' + (DN.key(m.cls, k) ? '.key' : ''), null, h('b', null, DN.AB_N[k]), h('span.v', null, ab[k]), h('small', null, sg(DN.mod(ab[k]))), h('span.r', null, DN.role(m.cls, k))))),
+        acts),
+      h('div.tw-dt-r', null,
+        h('button.tw-close', { 'aria-label': '닫기', on: { click: () => { dtM = null; keys.roster = ''; } } }, '✕'),
+        h('div.tw-h', null, h('b', null, '기술'), h('b.tw-slv', { 'data-tip': '스킬 레벨' }, '★' + GD.skillLv(m))),
+        h('div.tw-dsks', null,
+          (m.skills || []).map((k, i) => { const lv = GD.slotLv(i, m, k); return skRow(G.D.MSKILLS[k], '', k === G.D.MSIG[m.cls] ? '★ ' : '', m.lv < lv ? lv : 0); }),
+          (m.adv ? G.D.ADV[m.adv].sig : []).map(k => { const lv = GD.skLv(m.cls, k); return skRow(G.D.MSKILLS[k], '.sig', '', m.lv < lv ? lv : 0); }),
+          (m.boons || []).map(k => skRow(G.D.BOONS[k], '.boon', '', 0))),
+        promoEls(s, m),
+        h('div.tw-h', null, h('b', null, '특성')), h('div.tw-trs', null, ...traitEls(m)), ap.length ? h('small.tw-dt-apt', null, '✦ 임무 적성 · ' + ap.map(k => G.Mission.DEF[k].n).join(' · ')) : null,
+        h('div.tw-h', null, h('b', null, '장비')), h('div.tw-dt-gear', null, gearEls(m), crew ? tkEls(s, m) : null)));
   }
-  const el = h('div.ftownui.hidden', { on: { click: e => { e.stopPropagation(); EX.hold(f()); } } }, topEl, tabEl, h('div.tw-body', null, TABS.map(([k]) => panes[k]), resEl, repEl, dtEl, crEl), botEl);
+  const el = h('div.ftownui.hidden', { on: { click: e => { e.stopPropagation(); EX.hold(f()); } } }, topEl, h('div.tw-main', null, h('div.tw-body', null, TABS.map(([k]) => panes[k]), dtEl, resEl, repEl, crEl), rosterCol), botEl);
   setTab('party');
-  let lastNews = 0;
+  let lastNews = 0, idKey = '';
   return {
     el,
     update() {
       const s = f();
       tog(el, 'hidden', !s.town);
       if (!s.town) return;
-      setText(runsEl, ` 원정 ${s.runs || 0}회 · 최고 ${s.maxFloor}층`);
+      const Ld = GD.leader(s);
+      setText(idName, `${Ld.name}의 용병단`);
+      if (idKey !== GD.tile(Ld)) { idKey = GD.tile(Ld); idImg.innerHTML = ''; idImg.append(G.T.el(idKey, 'md')); }
+      setText(runsEl, `원정 ${s.runs || 0}회 · 최고 ${s.maxFloor}층`);
       setText(goldEl, U.fmt(s.gold)); setText(fameEl, U.fmt(s.fame || 0));
       setText(seasonEl, `시즌 ${G.Season.st(s).n} · ${U.fmtTime(G.Season.left(s))}`);
       drawResult(s);
@@ -472,23 +527,22 @@ G.UI.fantasyTown = function () {
       drawCreate(s);
       drawDetail(s);
       drawStrip(s);
-      // 탭 배지: 선술집(고용 가능) · 명단(부상)
+      // 건물 배지: 선술집(고용 가능) · 원정(빈 칸)
       tog(tabBtns.tavern, 'dot', GD.tavern(s).offers.some(o => o.price <= s.gold) && s.mercs.length < GD.ROSTER_MAX);
       tog(tabBtns.party, 'dot', F.lineup(s).length < F.slots() && GD.ready(s).length > F.lineup(s).length);
+      drawRoster(s);
       if (tab === 'party') drawParty(s);
-      if (tab === 'roster') drawRoster(s);
       if (tab === 'tavern') drawTavern(s);
       if (tab === 'gear') { drawForge(s); drawTrink(s); }
-      if (tab === 'rival') drawRival(s);
       if (tab === 'tree') tree.update();
-      if (tab === 'guild') drawGuild(s);
-      if (tab === 'log') drawLog();
+      if (tab === 'guild') { drawGuild(s); drawHall(s); }
+      if (tab === 'log') { drawRival(s); drawLog(); }
       const t = EX.departIn(s);
       setText(goIn, s.seasonEnd ? '' : isFinite(t) ? `자동 출발 ${Math.ceil(t)}초` : '자동 출발 꺼짐');
       goBtn.disabled = !!s.seasonEnd;
       setText(goBtn.lastChild, ` ${s.start || 1}층`);
       const n = G.Rivals.news.length + logs.length;
-      setText(newsBtn.lastChild, n > lastNews && tab !== 'log' ? String(n - lastNews) : '');
+      tog(tabBtns.log, 'dot', n > lastNews && tab !== 'log');
       if (tab === 'log') lastNews = n;
     },
   };

@@ -348,9 +348,12 @@ G.Guild = (() => {
       }
       for (const m of f.mercs.concat((f.tavern?.offers || []).map(o => o.m))) { delete m.traits; delete m.qlock; }
       delete f.qlog;
+      // 출전 칸 업그레이드가 사라졌다 (DESIGN.md 67): 쓴 값을 돌려준다
+      if (f.fac?.elite) { f.fame = (f.fame || 0) + 40; delete f.fac.elite; }
+      if (f.tree?.slot) { f.gold = (f.gold || 0) + 1.5e7; delete f.tree.slot; }
       // 명성 트리 → 길드 시설 (DESIGN.md 60): 같은 노드는 그 레벨 그대로, 이름값(fm_power)에 쓴 명성은 돌려준다
       if (f.fameTree) {
-        const T = f.fameTree, map = { fm_roster: 'hall', fm_slot: 'elite', fm_tavern: 'tavern', fm_xp: 'train', fm_start: 'vault', fm_keep: 'archive', fm_gold: 'trade' };
+        const T = f.fameTree, map = { fm_roster: 'hall', fm_tavern: 'tavern', fm_xp: 'train', fm_start: 'vault', fm_keep: 'archive', fm_gold: 'trade' };
         f.fac = f.fac || {};
         for (const k in map) if (T[k] > 0) f.fac[map[k]] = Math.max(f.fac[map[k]] || 0, Math.min(D.FAC[map[k]].max, T[k]));
         let back = 0;

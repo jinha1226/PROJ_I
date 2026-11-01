@@ -1634,3 +1634,208 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .ftownui .tw-ah.fit { background: #9fe0ff14; color: #e0f4ff; outline: 1px solid #9fe0ff44; }
 .ftownui .tw-ah b { color: #9fe0ff; font-size: 11px; }
 .ftownui .tw-dt-apt { color: #9fe0ff; }
+
+/* 진형 3×3 (DESIGN.md 67) */
+.ftownui .tw-form { display: grid; grid-template-columns: auto repeat(3, 44px); gap: 3px; align-items: center; justify-content: start; }
+.ftownui .tw-frow { color: var(--dim, #9aa); padding-right: 4px; }
+.ftownui .tw-fcell { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.14); border-radius: 4px; cursor: pointer; box-sizing: border-box; }
+.ftownui .tw-fcell:hover { border-color: rgba(255,255,255,0.4); }
+.ftownui .tw-fcell.has { background: rgba(255,255,255,0.1); }
+.ftownui .tw-fcell.lead { border-color: #ffd66e; }
+.ftownui .tw-fcell.pick { border-color: #7fd0ff; box-shadow: 0 0 0 2px rgba(127,208,255,0.5); }
+.ftownui .tw-fimg { width: 36px; height: 36px; pointer-events: none; }
+
+/* ═══════ 용병단 UI (DESIGN.md 69): 어두운 쇠와 낡은 금 — 다키스트 던전 · 스톤샤드처럼 틀을 겹으로, 모서리는 각지게 ═══════ */
+:root {
+  --ui-bg: #0d0b09; --ui-p1: #1c1712; --ui-p2: #13100c; --ui-edge: #4d3c27; --ui-edge2: #2a2117; --ui-gold: #d9b26c; --ui-gold2: #8d6f3f;
+  --ui-text: #e8dcc6; --ui-dim: #94866f; --ui-blood: #9c3a2e; --ui-teal: #6fb8a8;
+  --ui-frame: inset 0 0 0 1px #000, inset 0 0 0 2px var(--ui-edge2), 0 3px 12px #000a;
+}
+/* 게임 화면이 창을 다 쓴다: 바깥 머리줄 · 여백을 없앤다 */
+body[data-theme="fantasy"] .top, body[data-theme="fantasy"] .rail { display: none; }
+body[data-theme="fantasy"] .main { padding: 0; overflow: hidden; }
+body[data-theme="fantasy"] .main > * { height: 100%; margin: 0; max-width: none; border: 0; border-radius: 0; }
+body[data-theme="fantasy"] .mapwrap, body[data-theme="fantasy"] .mappane, body[data-theme="fantasy"] .mapcv { border-radius: 0; border: 0; }
+
+.ftownui { background: var(--ui-bg); color: var(--ui-text); font-size: 13px; }
+.ftownui b.rs-t, .ftownui .tw-h b, .ftownui .tw-dt-name, .ftownui .tw-id b { font-family: var(--title); color: var(--ui-gold); letter-spacing: 0.5px; }
+/* 윗막대 */
+.ftownui .tw-top { background: linear-gradient(#1f1912, #120f0b); border-bottom: 1px solid var(--ui-edge); box-shadow: 0 1px 0 #000, 0 3px 10px #0009; padding: 6px 14px; }
+.ftownui .tw-id { display: flex; align-items: center; gap: 8px; }
+.ftownui .tw-id > div { display: flex; flex-direction: column; line-height: 1.25; }
+.ftownui .tw-id small { color: var(--ui-dim); font-size: 11px; }
+.ftownui .tw-idimg { display: inline-flex; padding: 2px; border: 1px solid var(--ui-gold2); background: #000; }
+.ftownui .tw-res { align-items: center; }
+.ftownui .tw-res > span { border-radius: 2px; background: #0007; border: 1px solid var(--ui-edge2); padding: 2px 8px; }
+.ftownui .tw-cog { width: 28px; height: 28px; background: none; border: 1px solid var(--ui-edge); color: var(--ui-dim); border-radius: 2px; }
+.ftownui .tw-cog:hover { color: var(--ui-gold); border-color: var(--ui-gold2); }
+/* 가운데 + 오른쪽 명단 */
+.ftownui .tw-main { flex: 1; min-height: 0; display: flex; }
+.ftownui .tw-body { flex: 1; min-width: 0; position: relative; overflow: auto; padding: 14px 16px; background: radial-gradient(ellipse at 50% 20%, #1a1510 0%, var(--ui-bg) 75%); }
+.ftownui .tw-pane { min-height: 100%; }
+.ftownui .tw-h { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; padding-bottom: 3px; border-bottom: 1px solid var(--ui-edge2); }
+.ftownui .tw-h small { color: var(--ui-dim); }
+.ftownui .tw-box, .ftownui .tw-sub { background: linear-gradient(var(--ui-p1), var(--ui-p2)); border: 1px solid var(--ui-edge); box-shadow: var(--ui-frame); border-radius: 2px; padding: 9px 11px; }
+/* 명단 */
+.ftownui .tw-rostercol { width: 248px; flex: none; display: flex; flex-direction: column; padding: 10px 8px 8px; background: linear-gradient(#17130e, #0e0b08); border-left: 1px solid var(--ui-edge); box-shadow: inset 2px 0 0 #000; }
+.ftownui .tw-rostercol .g-toggle, .ftownui .tw-rostercol .tgl { font-size: 11px; }
+.ftownui .tw-rlist { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+.ftownui .tw-rsec { margin: 6px 2px 1px; color: var(--ui-dim); font-size: 11px; letter-spacing: 1px; }
+.ftownui .tw-rrow { position: relative; display: flex; align-items: center; gap: 7px; padding: 3px 6px 3px 3px; background: #ffffff06; border: 1px solid var(--ui-edge2); border-left: 3px solid var(--ui-edge2); cursor: pointer; user-select: none; }
+.ftownui .tw-rrow:hover { background: #ffffff10; border-color: var(--ui-edge); }
+.ftownui .tw-rrow.on { border-left-color: var(--ui-teal); }
+.ftownui .tw-rrow.lead { border-left-color: var(--ui-gold); background: #d9b26c10; }
+.ftownui .tw-rrow.sel { border-color: var(--ui-gold); box-shadow: 0 0 0 1px var(--ui-gold2); }
+.ftownui .tw-rrow.hurt { opacity: 0.55; }
+.ftownui .tw-rimg { width: 40px; height: 40px; flex: none; background: #000; pointer-events: none; }
+.ftownui .tw-rtxt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.ftownui .tw-rtxt > b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ftownui .tw-rtxt > small { font-size: 11px; white-space: nowrap; }
+.ftownui .tw-rtxt > small i { font-style: normal; color: var(--ui-dim); }
+.ftownui .tw-rtxt .bar { height: 2px; margin-top: 2px; background: #000; }
+.ftownui .tw-rflag { font-size: 11px; color: var(--ui-dim); }
+.ftownui .tw-rflag.hurt { color: #ff9a8a; }
+.ftownui .tw-rflag.up { color: var(--ui-gold); font-weight: 700; }
+.ftownui .tw-rtog { width: 18px; height: 18px; flex: none; padding: 0; border-radius: 50%; border: 1px solid var(--ui-edge); background: #000; }
+.ftownui .tw-rtog.on { background: var(--ui-teal); border-color: #a9e0d3; box-shadow: 0 0 6px #6fb8a866; }
+.ftownui .tw-rtog:disabled { opacity: 0.3; }
+.ftownui .tw-rhire { margin-top: 6px; padding: 8px; background: none; border: 1px dashed var(--ui-edge); color: var(--ui-dim); }
+/* 아랫막대: 건물 단추 + 출발 */
+.ftownui .tw-bot { display: flex; align-items: stretch; gap: 10px; padding: 0 10px 0 0; background: linear-gradient(#1f1912, #0f0c09); border-top: 1px solid var(--ui-edge); box-shadow: 0 -3px 10px #0009; }
+.ftownui .tw-bot > small { align-self: center; color: var(--ui-dim); white-space: nowrap; }
+.ftownui .tw-tabs { display: flex; background: none; border: 0; }
+.ftownui .tw-tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: 74px; padding: 5px 2px 4px; background: none; border: 0; border-right: 1px solid var(--ui-edge2); border-radius: 0; color: var(--ui-dim); font-size: 12px; font-family: var(--title); }
+.ftownui .tw-tab:hover { color: var(--ui-text); background: #ffffff08; }
+.ftownui .tw-tab.on { color: var(--ui-gold); background: linear-gradient(transparent, #d9b26c1c); box-shadow: inset 0 -2px 0 var(--ui-gold); }
+.ftownui .tw-tabic { width: 30px; height: 30px; opacity: 0.75; pointer-events: none; }
+.ftownui .tw-tab.on .tw-tabic { opacity: 1; }
+.ftownui .tw-tab.dot::after { content: ''; position: absolute; top: 5px; right: 16px; width: 7px; height: 7px; border-radius: 50%; background: var(--ui-gold); box-shadow: 0 0 5px var(--ui-gold); }
+.ftownui .tw-go { align-self: center; margin: 6px 0; min-width: 190px; padding: 9px 22px; font: 700 17px var(--title); letter-spacing: 3px; color: #ffe9c0; background: linear-gradient(#a33f30, #5e1f17); border: 1px solid #d0705c; border-radius: 2px; box-shadow: inset 0 0 0 1px #000, inset 0 1px 0 2px #ffffff14, 0 2px 8px #000a; }
+.ftownui .tw-go:hover:not(:disabled) { background: linear-gradient(#bb4b39, #6e261c); }
+.ftownui .tw-go small { font: 12px var(--sans); letter-spacing: 0; opacity: 0.85; }
+/* 공용 단추 */
+.ftownui .tw-act, .ftownui .tw-opt, .ftownui .fbtn { background: linear-gradient(#2c2419, #191410); border: 1px solid var(--ui-edge); border-radius: 2px; color: var(--ui-text); box-shadow: inset 0 1px 0 #ffffff0d; }
+.ftownui .tw-act:hover:not(:disabled), .ftownui .tw-opt:hover { border-color: var(--ui-gold2); color: #fff; }
+.ftownui .tw-opt.on, .ftownui .tw-act.on { border-color: var(--ui-gold); color: var(--ui-gold); background: linear-gradient(#3a2d19, #221a0f); }
+.ftownui .tw-act.fire:hover:not(:disabled), .ftownui .tw-act.armed { border-color: #d0705c; color: #ffb4a4; }
+/* 원정: 큰 진형 + 계획 */
+.ftownui .tw-pane.p-party { display: flex; flex-direction: row; gap: 16px; align-items: flex-start; }
+.ftownui .tw-formwrap { flex: 1; min-width: 0; max-width: 560px; background: linear-gradient(var(--ui-p1), var(--ui-p2)); border: 1px solid var(--ui-edge); box-shadow: var(--ui-frame); padding: 10px 14px 14px; border-radius: 2px; }
+.ftownui .tw-march { text-align: center; font-size: 11px; color: var(--ui-dim); letter-spacing: 2px; margin-bottom: 4px; }
+.ftownui .tw-form { display: grid; grid-template-columns: 34px repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ftownui .tw-frow { padding: 0; font: 12px var(--title); color: var(--ui-dim); writing-mode: vertical-rl; text-align: center; letter-spacing: 4px; align-self: center; justify-self: center; }
+.ftownui .tw-fcell { width: auto; height: auto; aspect-ratio: 1 / 0.92; flex-direction: column; gap: 0; background: #0006; border: 1px dashed var(--ui-edge2); border-radius: 2px; line-height: 1.2; overflow: hidden; }
+.ftownui .tw-fcell:hover { border-color: var(--ui-gold2); }
+.ftownui .tw-fcell.has { background: linear-gradient(#2a2218, #17120d); border: 1px solid var(--ui-edge); box-shadow: inset 0 0 0 1px #000; cursor: grab; }
+.ftownui .tw-fcell.lead { border-color: var(--ui-gold); }
+.ftownui .tw-fcell.pick { border-color: var(--ui-teal); box-shadow: 0 0 0 2px #6fb8a866; }
+.ftownui .tw-fimg { width: 64px; height: 64px; }
+.ftownui .tw-fcell b { font-size: 12px; pointer-events: none; }
+.ftownui .tw-fcell small { font-size: 11px; pointer-events: none; }
+.ftownui .tw-side { width: 300px; }
+.ftownui .tw-raid { color: var(--ui-dim); font-size: 11px; }
+/* 대장간: 강화 | 마법 물건 */
+.ftownui .tw-pane.p-gear { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.ftownui .tw-sub.p-trink { display: flex; flex-direction: column; gap: 10px; }
+.ftownui .tw-sub.p-trink .tw-side { width: auto; }
+.ftownui .tw-sub + .tw-sub { margin-top: 0; }
+.ftownui .tw-pane > .tw-sub:not(.p-trink) + .tw-sub { margin-top: 12px; }
+.ftownui .tw-pane.p-gear > .tw-sub + .tw-sub { margin-top: 0; }
+.ftownui .tw-sr { border-radius: 2px; background: #ffffff05; border-color: var(--ui-edge2); }
+.ftownui .tw-sr.new { border-color: var(--ui-edge); }
+/* 선술집 */
+.ftownui .tw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 10px; }
+.ftownui .tw-card { width: auto; background: linear-gradient(var(--ui-p1), var(--ui-p2)); border: 1px solid var(--ui-edge); box-shadow: var(--ui-frame); border-radius: 2px; padding: 12px 8px; }
+.ftownui .tw-card:hover { border-color: var(--ui-gold2); }
+.ftownui .tw-card .tw-img { width: 64px; height: 64px; }
+.ftownui .tw-csig { display: inline-flex; align-items: center; gap: 3px; color: var(--ui-gold); font-size: 11px; }
+.ftownui .tw-act.hire { min-width: 100px; }
+.ftownui .chip { border-radius: 2px; }
+/* 인물 시트 */
+.ftownui .tw-sheet { position: absolute; inset: 0; z-index: 3; overflow: auto; padding: 14px 16px; background: #0d0b09f2; }
+.ftownui .tw-dt-body { display: flex; gap: 14px; max-width: 900px; min-height: 100%; align-items: flex-start; background: none; padding: 0; }
+.ftownui .tw-dt-l { width: 270px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 12px; background: linear-gradient(var(--ui-p1), var(--ui-p2)); border: 1px solid var(--ui-edge); box-shadow: var(--ui-frame); border-radius: 2px; }
+.ftownui .tw-dt-r { position: relative; flex: 1; min-width: 0; padding: 12px 14px; background: linear-gradient(var(--ui-p1), var(--ui-p2)); border: 1px solid var(--ui-edge); box-shadow: var(--ui-frame); border-radius: 2px; }
+.ftownui .tw-dt-por { padding: 8px 20px; background: radial-gradient(circle, #33291c, #000); border: 1px solid var(--ui-edge); box-shadow: inset 0 0 0 1px #000; }
+.ftownui .tw-dt-img { width: 96px; height: 96px; }
+.ftownui .tw-dt-name { font-size: 18px; }
+.ftownui .tw-dt-lv { color: var(--ui-dim); }
+.ftownui .tw-dt-l > .bar { width: 100%; height: 3px; background: #000; }
+.ftownui .tw-dt-l .tw-st3 { display: flex; justify-content: space-around; width: 100%; padding: 5px 0; font-size: 15px; border-top: 1px solid var(--ui-edge2); border-bottom: 1px solid var(--ui-edge2); }
+.ftownui .tw-dt-ab { display: flex; flex-direction: column; gap: 1px; width: 100%; }
+.ftownui .tw-dt-ab > div { display: grid; grid-template-columns: 34px 24px 26px 1fr; align-items: baseline; gap: 4px; padding: 2px 4px; color: var(--ui-dim); }
+.ftownui .tw-dt-ab > div.key { color: var(--ui-text); background: #d9b26c12; }
+.ftownui .tw-dt-ab .v { font-weight: 700; text-align: right; }
+.ftownui .tw-dt-ab .r { font-size: 11px; text-align: right; }
+.ftownui .tw-dt-ab b { font-weight: 400; font-size: 12px; font-family: var(--sans); }
+.ftownui .tw-dt-l .tw-acts { display: flex; gap: 5px; width: 100%; margin-top: 6px; }
+.ftownui .tw-dt-l .tw-acts .tw-act { flex: 1; padding: 6px 2px; }
+.ftownui .tw-close { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; background: none; border: 1px solid var(--ui-edge); color: var(--ui-dim); border-radius: 2px; }
+.ftownui .tw-close:hover { color: var(--ui-gold); border-color: var(--ui-gold2); }
+.ftownui .tw-dt-r .tw-h { margin-top: 10px; padding-right: 32px; }
+.ftownui .tw-dt-r .tw-h:first-of-type { margin-top: 0; }
+.ftownui .tw-dsks { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px; }
+.ftownui .tw-dsk { display: flex; align-items: center; gap: 8px; padding: 4px 6px; background: #ffffff06; border: 1px solid var(--ui-edge2); }
+.ftownui .tw-dsk > div { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+.ftownui .tw-dsk small { color: var(--ui-dim); font-size: 11px; }
+.ftownui .tw-dsk.off { opacity: 0.45; }
+.ftownui .tw-dsk.sig { border-color: #a98bf066; }
+.ftownui .tw-dsk.boon { border-color: #ffb84a66; }
+.ftownui .tw-dskic { width: 32px; height: 32px; flex: none; }
+.ftownui .tw-dt-gear { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.ftownui .tw-dt-r .tw-promo { display: flex; gap: 6px; margin-top: 8px; }
+.ftownui .tw-dt-r .tw-act.promo { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px; border-color: var(--ui-gold2); color: var(--ui-gold); }
+.ftownui .tw-dt-r .gtr { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; background: #ffffff0a; border: 1px solid var(--ui-edge2); font-size: 12px; }
+.ftownui .tw-dt-r .tw-trs { display: flex; flex-wrap: wrap; gap: 4px; }
+.ftownui .tw-dt-apt { display: block; margin-top: 4px; color: var(--ui-teal); }
+.ftownui .tw-dt-gear .tw-gear, .ftownui .tw-dt-gear .tw-tks { display: flex; gap: 6px; }
+.ftownui .tw-dt-gear .tw-gear span { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border: 1px solid var(--ui-edge2); background: #ffffff06; }
+/* 오버레이 (시즌 결과 · 보고서 · 만들기) */
+.ftownui .tw-result { background: linear-gradient(var(--ui-p1), var(--ui-p2)); border: 1px solid var(--ui-gold2); box-shadow: var(--ui-frame), 0 10px 40px #000c; border-radius: 2px; z-index: 5; }
+/* 던전 독: 같은 쇠 틀 */
+.fdock .d-top, .fdock .d-main { background: linear-gradient(#1d1812f2, #0f0c09f2); border: 1px solid var(--ui-edge); border-radius: 2px; box-shadow: var(--ui-frame); }
+.fdock .d-floor { font-family: var(--title); color: var(--ui-gold); }
+.fdock .d-slot { border-radius: 2px; border-color: var(--ui-edge); background: linear-gradient(#2a2218, #120e0a); }
+.fdock .d-slot.lead { border-color: var(--ui-gold); }
+.fdock .d-btn { border-radius: 2px; }
+.d-cog { width: 20px; height: 20px; padding: 0; font-size: 12px; background: none; border: 1px solid var(--ui-edge); color: var(--ui-dim); border-radius: 2px; }
+.d-cog:hover { color: var(--ui-gold); }
+.m-rivals, .falerts .al { border-radius: 2px; }
+/* 세로 · 좁은 화면: 명단을 위쪽 가로 줄로 */
+@media (max-width: 860px) {
+  .ftownui .tw-main { flex-direction: column-reverse; }
+  .ftownui .tw-rostercol { width: auto; flex: none; padding: 4px 6px; border-left: 0; border-bottom: 1px solid var(--ui-edge); box-shadow: none; }
+  .ftownui .tw-rostercol .tw-h { margin-bottom: 3px; }
+  .ftownui .tw-rlist { flex-direction: row; overflow-x: auto; overflow-y: hidden; }
+  .ftownui .tw-rsec { display: none; }
+  .ftownui .tw-rrow { flex: none; width: 136px; }
+  .ftownui .tw-rimg { width: 30px; height: 30px; }
+  .ftownui .tw-body { padding: 10px; }
+  .ftownui .tw-pane.p-party, .ftownui .tw-dt-body { flex-direction: column; align-items: stretch; }
+  .ftownui .tw-pane.p-gear { grid-template-columns: minmax(0, 1fr); }
+  .ftownui .tw-formwrap { max-width: none; }
+  .ftownui .tw-fimg { width: 48px; height: 48px; }
+  .ftownui .tw-side, .ftownui .tw-dt-l { width: auto; }
+  .ftownui .tw-bot { flex-wrap: wrap; padding: 0; }
+  .ftownui .tw-tabs { flex: 1 0 100%; display: grid !important; grid-template-columns: repeat(6, 1fr); overflow: visible; }
+  .ftownui .tw-tab { width: auto; }
+  .ftownui .tw-tabic { width: 22px; height: 22px; }
+  .ftownui .tw-bot > .sp { display: none; }
+  .ftownui .tw-bot > small { padding-left: 10px; }
+  .ftownui .tw-go { flex: 1; margin: 4px 8px 6px; padding: 7px; font-size: 15px; min-width: 0; }
+}
+/* 고침 */
+body[data-theme="fantasy"] .wmap, body[data-theme="fantasy"] .mapbox { height: 100%; max-height: none; min-height: 0; border: 0; border-radius: 0; }
+.ftownui .tw-sheet { background: var(--ui-bg); }
+.ftownui .tw-sheet .tw-dt-body { flex-direction: row; max-width: 980px; }
+.ftownui .tw-rrow.sel { flex-direction: row; }
+.ftownui .tw-rflag.up { background: none; border: 0; padding: 0; }
+.ftownui .tw-side { flex: 1; width: auto; min-width: 240px; max-width: 460px; }
+.ftownui .tw-fcell { aspect-ratio: 1 / 0.8; }
+.ftownui .tw-formwrap { flex: 1.4; }
+@media (max-width: 860px) { .ftownui .tw-sheet .tw-dt-body { flex-direction: column; align-items: stretch; } .ftownui .tw-side { max-width: none; } }
+body[data-theme="fantasy"] .wmap.solo .mapbox, body[data-theme="fantasy"] .wmap .mapbox { height: 100vh; height: 100dvh; min-height: 0; }
+body[data-theme="fantasy"] .wtree { height: 100vh; height: 100dvh; }
+.ftownui .p-trink .tw-sq { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; flex: 1; min-width: 0; }
+.ftownui .p-trink .tw-sq .tw-tk { min-width: 0; overflow: hidden; }
+.ftownui .p-trink .tw-sr .chip { display: none; }

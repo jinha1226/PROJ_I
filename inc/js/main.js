@@ -36,8 +36,8 @@
     if (q.get('season')) G.Season.st(G.S.w.fantasy).t = +q.get('season');
     // &bigmap: 큰 지도를 펼쳐 둔다
     if (q.has('bigmap')) G.UI.bigMap = true;
-    // &ttab=tavern: 마을 화면의 그 탭을 연다 (party roster tavern rival tree fame log)
-    const tt = ['party', 'roster', 'tavern', 'gear', 'tree', 'guild', 'rival', 'log'].indexOf(q.get('ttab'));
+    // &ttab=tavern: 마을 화면의 그 탭을 연다 (party tavern gear tree guild log)
+    const tt = ['party', 'tavern', 'gear', 'tree', 'guild', 'log'].indexOf(q.get('ttab'));
     if (tt >= 0) setTimeout(() => document.querySelectorAll('.tw-tab')[tt]?.click(), 300);
   }
 

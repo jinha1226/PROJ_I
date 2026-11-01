@@ -288,7 +288,7 @@ G.Dnd = (() => {
       const dexMs = ms.map(m => N.mod(N.ab(m).dex) + (G.Feat.has(m, 'alert') ? N.prof(m.lv) : 0)), ours = ms.length ? Math.max(...dexMs) : N.mod(HERO_AB.dex);
       const per = N.best(ms, 'perception'), surprised = 10 + per.v < 10 + Math.floor(fl() / 5);
       const feral = rt.allies.some(a => !a.dead && (G.Fantasy.sk(a, 'sr_feral') || (a.merc && G.Trinket.has(a.merc, 'init'))));
-      const win = N.d20((surprised ? -1 : 0) + (feral ? 1 : 0)) + ours >= N.d20(0) + Math.floor(fl() / 6) + (mo.boss ? 2 : 0);
+      const win = mo.noted || N.d20((surprised ? -1 : 0) + (feral ? 1 : 0)) + ours >= N.d20(0) + Math.floor(fl() / 6) + (mo.boss ? 2 : 0);
       mo.atkT = win ? 1.5 : 0;
       if (win && rt.allies.length) { const a = rt.allies.find(q => q.merc && N.mod(N.ab(q.merc).dex) + (G.Feat.has(q.merc, 'alert') ? N.prof(q.merc.lv) : 0) === ours && !q.dead); N.die(rt, a || rt.hero); }
     },

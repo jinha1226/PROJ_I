@@ -399,7 +399,6 @@ G.D.BOONS = {
 // 길드 (DESIGN.md 60): 명성으로 짓는 시설 — 시즌을 넘어 남는 유일한 층. 비용 base × g^레벨
 G.D.FAC = {
   hall: { n: '길드관', t: 'u_legend', max: 2, base: 15, g: 3, d: l => `명단 +${2 * l}` },
-  elite: { n: '정예 원정', t: 'u_god', max: 1, base: 40, g: 1, d: l => `출전 칸 +${l}` },
   tavern: { n: '선술집', t: 'u_bard', max: 5, base: 3, g: 2, d: l => `신입 Lv +${l} · 능력치 ${l + 1}번 굴려 좋은 쪽 · 후보 +${Math.floor(l / 2)}` },
   train: { n: '훈련장', t: 'w_board', max: 5, base: 3, g: 2, d: l => `경험치 +${l * 20}% · 대기 인원도 ${l * 10}%` },
   temple: { n: '신전', t: 'fx_holy', max: 5, base: 4, g: 2, d: l => `부상 시간 −${l * 12}% · 축복: 층 처음 ${l * 20}초 명중·내성 +2` },
