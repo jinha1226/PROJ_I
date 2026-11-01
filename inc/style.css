@@ -1603,3 +1603,27 @@ details.card summary { cursor: pointer; font-weight: 700; }
 .ftownui .tw-job { background: #0008; border: 1px solid #ffffff30; border-radius: 6px; color: var(--text); padding: 3px 6px; font: inherit; font-size: 12px; max-width: 220px; }
 .ftownui .tw-st.job { color: #9fe0ff; }
 .ftownui .tw-raid { color: #7fd0ff; }
+.ftownui .tw-st3 { display: flex; justify-content: center; gap: 8px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.ftownui .tw-st3 span { display: inline-flex; align-items: center; gap: 2px; color: #e8e2d2; }
+.ftownui .tw-st3 small { font-size: 10px; opacity: 0.8; }
+.ftownui .tw-card { cursor: pointer; }
+.ftownui .tw-detail { width: min(460px, calc(100% - 24px)); z-index: 4; }
+.ftownui .tw-dt-body { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.ftownui .tw-dt-top { display: flex; align-items: center; gap: 10px; }
+.ftownui .tw-dt-top .tw-img { width: 48px; height: 48px; }
+.ftownui .tw-dt-top > div:first-of-type { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex: 1; }
+.ftownui .tw-dt-top .tw-st3 { font-size: 14px; gap: 12px; }
+.ftownui .tw-dt-ab { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.ftownui .tw-dt-ab > div { display: flex; align-items: baseline; gap: 6px; padding: 4px 8px; border-radius: 6px; background: #ffffff06; color: #9a9488; }
+.ftownui .tw-dt-ab > div.key { background: #ffd27a14; color: #f4ead2; outline: 1px solid #ffd27a44; }
+.ftownui .tw-dt-ab b { font-size: 12px; min-width: 28px; }
+.ftownui .tw-dt-ab .v { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ftownui .tw-dt-ab small { font-size: 11px; opacity: .7; }
+.ftownui .tw-dt-ab .r { margin-left: auto; font-size: 11px; }
+.ftownui .tw-cr-ab { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.ftownui .tw-cr-ab span { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px; border-radius: 6px; background: #ffffff06; color: #9a9488; border: 1px solid transparent; cursor: pointer; }
+.ftownui .tw-cr-ab span.key { background: #ffd27a14; color: #f4ead2; border-color: #ffd27a44; }
+.ftownui .tw-cr-ab span.sel { outline: 2px solid #9fe0ff; }
+.ftownui .tw-cr-ab span b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.ftownui .tw-cr-ab span small { font-size: 11px; }
+.ftownui .tw-cr-ab span i { font-style: normal; font-size: 10px; opacity: .85; }

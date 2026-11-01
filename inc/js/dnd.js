@@ -82,6 +82,18 @@ G.Dnd = (() => {
       // 마법 물건: 능력치 더하기 · 고정 (DESIGN.md 58)
       return G.Trinket.ability(m, ab);
     },
+    // 이 직업에게 그 능력치가 무엇에 쓰이나 (화면 설명 — DESIGN.md 65). 주능력 = 공격
+    role(cls, k) {
+      const c = CLS[cls] || CLS.archer, out = [];
+      if (k === c.pri) out.push('공격');
+      if (k === 'con') out.push('체력');
+      if (k === 'dex' && c.armor !== 'heavy') out.push('방어');
+      if ((k === 'con' && c.armor === 'barb') || (k === 'wis' && c.armor === 'monk')) out.push('방어');
+      if (out.length) return out.join(' · ');
+      return { str: '넘어짐 버티기', dex: '선제', int: '미믹 알아채기', wis: '기습 알아채기', cha: '흥정' }[k];
+    },
+    // 공격 · 체력 · 방어에 쓰이나 (만들기 · 상세에서 강조)
+    key: (cls, k) => /공격|체력|방어/.test(N.role(cls, k)),
     // 능력치 합 (선술집 몸값 · 표시)
     total: m => { N.ab(m); return N.sumAb(m.ab); },
     sumAb: ab => AB.reduce((s, k) => s + ab[k], 0),

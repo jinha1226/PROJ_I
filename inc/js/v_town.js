@@ -36,9 +36,13 @@ G.UI.fantasyTown = function () {
   const tkEls = (s, m) => { const w = TK.worn(s, m.uid); return h('div.tw-tks', null, TK.SLOT_KEYS.map(sl => { const t = w.find(q => TK.slot(q) === sl); return t ? tkEl(t) : h('span.gt.empty.' + sl); })); };
   // 능력치 (DESIGN.md 56): 여섯 칸 — 주능력은 금빛 테두리, 16 이상 밝게 · 8 이하 붉게. 끝 칸은 방어도
   const AB_S = { str: '근', dex: '민', con: '건', int: '지', wis: '혜', cha: '매' };
-  const abEls = m => { const DN = G.Dnd, ab = DN.ab(m), pri = DN.cls(m).pri, sg = v => (v >= 0 ? '+' : '') + v;
-    return h('div.tw-ab', null, DN.AB.map(k => h('span' + (k === pri ? '.pri' : '') + (ab[k] >= 16 ? '.hi' : ab[k] <= 8 ? '.lo' : ''), { 'data-tip': `${DN.AB_N[k]} ${ab[k]} (${sg(DN.mod(ab[k]))})` }, h('small', null, AB_S[k]), ab[k])),
-      h('span.ac', { 'data-tip': `방어도 ${DN.ac({ merc: m })} · 명중 ${sg(DN.hit({ merc: m }))}` }, h('small', null, '🛡'), DN.ac({ merc: m }))); };
+  // 카드 수치 (DESIGN.md 65): 피해 · 체력 · 방어(AC) 셋. 능력치 여섯은 상세 창에만
+  const body = (s, m) => (m.lead ? F.leadBody(s) : { kind: 'ally', merc: m, def: GD.def(m) });
+  const abEls = (m, s = f()) => { const DN = G.Dnd, b = body(s, m), atk = m.lead ? F.heroAtk(s) : F.allyAtk(s, b), hp = m.lead ? F.heroHP(s) : F.allyHP(s, b);
+    return h('div.tw-st3', null,
+      h('span', { 'data-tip': '피해 (한 번)' }, h('small', null, '⚔'), U.fmt(atk)),
+      h('span', { 'data-tip': '체력' }, h('small', null, '❤'), U.fmt(hp)),
+      h('span', { 'data-tip': '방어 (AC)' }, h('small', null, '🛡'), DN.ac({ merc: m }))); };
   // 장비 (DESIGN.md 57): 무기 · 갑옷 아이콘 + 강화 단계
   const gearEls = m => { const g = GD.gear(m), D_G = G.D.GEAR[m.cls] || G.D.GEAR.archer;
     return h('div.tw-gear', null, ['w', 'a'].map(s => h('span', { 'data-tip': `${GD.gearName(m, s)} (${D_G[s][1]}) · 강화 ${g[s]}` }, G.T.el(D_G[s][2], 'xs'), g[s] ? '+' + g[s] : '0'))); };
@@ -108,7 +112,7 @@ G.UI.fantasyTown = function () {
   function mercCard(s, m, actions) {
     const def = GD.def(m), xp = bar(); setW(xp.fill, m.xp / GD.needOf(m));
     const st = m.inj > 0 ? h('small.tw-st.hurt', null, `부상 ${Math.ceil(m.inj)}초`) : m.job ? h('small.tw-st.job', null, `${G.D.JOBS[m.job].n} 근무`) : null;
-    return h('div.tw-card' + (m.inj > 0 ? '.hurt' : ''), { 'data-uid': m.uid }, h('b.tw-lv' + (m.bt ? '.epic' : ''), null, GD.lvText(m)), G.T.el(GD.tile(m), 'tw-img'), h('b', null, m.name), mchip(m), xp, abEls(m), gearEls(m),
+    return h('div.tw-card' + (m.inj > 0 ? '.hurt' : ''), { 'data-uid': m.uid, on: { click: e => { if (!e.target.closest('button, select, input')) openDetail(m); } } }, h('b.tw-lv' + (m.bt ? '.epic' : ''), null, GD.lvText(m)), G.T.el(GD.tile(m), 'tw-img'), h('b', null, m.name), mchip(m), xp, abEls(m), gearEls(m),
       h('div.tw-trs', null, ...traitEls(m)), GD.crew(s).includes(m) ? tkEls(s, m) : null, skillEls(m), promoEls(s, m), st, m.from ? h('small.tw-from', { style: `color:${G.D.RIVALS.find(d => d.id === m.from)?.col}` }, `전 ${G.D.RIVALS.find(d => d.id === m.from)?.n}`) : null, actions || null);
   }
   function drawParty(s) {
@@ -406,7 +410,7 @@ G.UI.fantasyTown = function () {
     crBody.append(h('div.tw-h', null, h('b', null, '능력치'), h('span.sp'),
       h('button.tw-act', { on: { click: () => { cr.vals = STD.slice(); re(); } } }, '표준 배열'),
       h('button.tw-act', { on: { click: () => { cr.vals = ord.map(() => DN.roll4()).sort((a, b) => b - a); re(); } } }, '🎲 4d6')),
-      h('div.tw-ab.tw-cr-ab', null, DN.AB.map(k => { const i = ord.indexOf(k), v = cr.vals[i]; return h('span' + (k === C.pri ? '.pri' : '') + (cr.swap === i ? '.sel' : '') + (v >= 16 ? '.hi' : v <= 8 ? '.lo' : ''), { 'data-tip': `${DN.AB_N[k]} ${v} (${DN.mod(v) >= 0 ? '+' : ''}${DN.mod(v)})`, on: { click: () => { if (cr.swap == null) cr.swap = i; else { const j = cr.swap; [cr.vals[i], cr.vals[j]] = [cr.vals[j], cr.vals[i]]; cr.swap = null; } re(); } } }, h('small', null, AB_S[k]), v); })));
+      h('div.tw-cr-ab', null, DN.AB.map(k => { const i = ord.indexOf(k), v = cr.vals[i]; return h('span' + (DN.key(cr.cls, k) ? '.key' : '') + (cr.swap === i ? '.sel' : '') + (v >= 16 ? '.hi' : v <= 8 ? '.lo' : ''), { on: { click: () => { if (cr.swap == null) cr.swap = i; else { const j = cr.swap; [cr.vals[i], cr.vals[j]] = [cr.vals[j], cr.vals[i]]; cr.swap = null; } re(); } } }, h('small', null, DN.AB_N[k]), h('b', null, v), h('i', null, DN.role(cr.cls, k))); })));
     // 기술: 직업 풀에서 넷
     const pool = G.D.MPOOL[cr.cls];
     crBody.append(h('div.tw-h', null, h('b', null, '기술'), h('small', null, ` ${cr.skills.length}/4`)), h('div.tw-cr-row', null, pool.map(k => { const S = G.D.MSKILLS[k], on = cr.skills.includes(k), lv = GD.skLv(cr.cls, k);
@@ -418,7 +422,26 @@ G.UI.fantasyTown = function () {
     crBody.append(h('div.tw-h', null, h('b', null, '모습')), h('div.tw-cr-row', null, [0, 1, 2].map(l => { const t = A[cr.cls].t + (l ? '_c' + l : '');
       return h('button.tw-cr-opt.look' + (cr.look === l ? '.on' : ''), { on: { click: () => { cr.look = l; re(); } } }, G.T.el(G.ARTSET && !G.ARTSET[t] ? A[cr.cls].t : t, 'tw-img')); })));
   }
-  const el = h('div.ftownui.hidden', { on: { click: e => { e.stopPropagation(); EX.hold(f()); } } }, topEl, tabEl, h('div.tw-body', null, TABS.map(([k]) => panes[k]), resEl, repEl, crEl), botEl);
+  // ── 상세 창 (DESIGN.md 65): 카드를 누르면. 능력치 여섯 — 이 직업에게 무엇에 쓰이는지 옆에, 공격 · 체력 · 방어에 쓰이는 것만 밝게
+  const dtBody = h('div.tw-dt-body');
+  const dtEl = h('div.tw-result.tw-report.tw-detail.hidden', null, h('div.tw-h', null, h('b.rs-t', null, '상세'), h('span.sp'), h('button.tw-act', { on: { click: () => { dtM = null; } } }, '닫기')), dtBody);
+  let dtM = null, dtKey = '';
+  const openDetail = m => { dtM = m; dtKey = ''; };
+  function drawDetail(s) {
+    const m = dtM && GD.get(s, dtM.uid) ? dtM : (dtM && (s.tavern?.offers || []).some(o => o.m === dtM) ? dtM : null);
+    tog(dtEl, 'hidden', !m);
+    if (!m) return;
+    const key = mkey(s, m);
+    if (key === dtKey) return;
+    dtKey = key;
+    const DN = G.Dnd, ab = DN.ab(m), def = GD.def(m), sg = v => (v >= 0 ? '+' : '') + v;
+    dtBody.innerHTML = '';
+    dtBody.append(h('div.tw-dt-top', null, G.T.el(GD.tile(m), 'tw-img'), h('div', null, h('b', null, m.name), mchip(m), h('small', null, ` ${GD.lvText(m)}`)), abEls(m, s)));
+    dtBody.append(h('div.tw-dt-ab', null, DN.AB.map(k => h('div' + (DN.key(m.cls, k) ? '.key' : ''), null,
+      h('b', null, DN.AB_N[k]), h('span.v', null, ab[k]), h('small', null, sg(DN.mod(ab[k]))), h('span.r', null, DN.role(m.cls, k))))));
+    dtBody.append(h('div.tw-trs', null, ...traitEls(m)), gearEls(m), skillEls(m));
+  }
+  const el = h('div.ftownui.hidden', { on: { click: e => { e.stopPropagation(); EX.hold(f()); } } }, topEl, tabEl, h('div.tw-body', null, TABS.map(([k]) => panes[k]), resEl, repEl, dtEl, crEl), botEl);
   setTab('party');
   let lastNews = 0;
   return {
@@ -433,6 +456,7 @@ G.UI.fantasyTown = function () {
       drawResult(s);
       drawReport(s);
       drawCreate(s);
+      drawDetail(s);
       drawStrip(s);
       // 탭 배지: 선술집(고용 가능) · 명단(부상)
       tog(tabBtns.tavern, 'dot', GD.tavern(s).offers.some(o => o.price <= s.gold) && s.mercs.length < GD.ROSTER_MAX);
