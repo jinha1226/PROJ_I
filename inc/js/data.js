@@ -4,7 +4,7 @@ G.D = {};
 
 G.D.WORLDS = [
   { id: 'fantasy', name: '끝없는 던전', genre: '판타지', style: '던전 전투형', icon: '🗡️', ref: 'Chef Knight · 무한던전피버 · Clicker Heroes',
-    blurb: '기사와 동료들이 끝없는 던전을 내려간다.' },
+    blurb: '단장과 용병들이 끝없는 던전을 내려간다.' },
 ];
 G.D.WORLD = Object.fromEntries(G.D.WORLDS.map(w => [w.id, w]));
 

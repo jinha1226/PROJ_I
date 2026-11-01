@@ -1,7 +1,7 @@
 'use strict';
 // 판타지 화면: 맵이 화면을 채우고, 중요한 정보는 아래 가운데 독 하나에 모은다 (디아블로·마인크래프트 — DESIGN.md 34)
 //  독 윗줄: 층 · 다음 보스 · 이 층 진행 · 금고 · 정수 · 지금 명령
-//  독 본체: 왼쪽 구슬(원정대 체력) · 초상(기사 + 출전, 아래에 스킬 넷의 쿨타임) · 기사 기술 · 명령(Z X C V) · 오른쪽 구슬(짐)
+//  독 본체: 왼쪽 구슬(원정대 체력) · 초상(단장 + 출전, 아래에 스킬 넷의 쿨타임) · 단장 기술 · 명령(Z X C V) · 오른쪽 구슬(짐)
 //  오른쪽 위: 미니맵(캔버스) 아래 라이벌 한 줄 / 오른쪽 가운데: 경고
 //  원정 사이에는 마을 화면(v_town)이 맵 자리를 채운다. 글은 이름표와 숫자만 (설명은 올렸을 때 한 구절)
 G.UI.views.fantasy = function () {
@@ -16,7 +16,7 @@ G.UI.views.fantasy = function () {
   // 구슬: --v = 0~1 (아래에서 차오른다)
   const orb = (cls, tip) => { const v = h('b.o-v'), el = h('div.orb.' + cls, { 'data-tip': tip }, h('i.o-fill'), v); return { el, v }; };
   const orbHP = orb('hp', '원정대 체력'), orbBag = orb('bag', '짐');
-  // 초상 칸: 기사 + 출전 칸 수만큼 (빈 칸은 자리만)
+  // 초상 칸: 단장 + 출전 칸 수만큼 (빈 칸은 자리만)
   const partyEl = h('div.d-party');
   let partyKey = '';
   const slots = [];
@@ -39,7 +39,7 @@ G.UI.views.fantasy = function () {
       slots.push({ p, el, hp, lv, down, sks });
     }
   }
-  // 기사 기술 (트리로 연다)
+  // 단장 기술 (트리로 연다)
   const skillEl = h('div.d-skills');
   const skills = Object.entries(F.SKILLS).map(([id, sk]) => {
     const cd = h('span.cd'), b = h('button.d-btn', { 'data-tip': sk.n, on: { click: e => { e.stopPropagation(); F.cast(f(), id); } } }, G.T.el(sk.t, 'md'), cd);
@@ -62,13 +62,12 @@ G.UI.views.fantasy = function () {
   const cardEl = h('div.d-card.hidden');
   function cardLines(s, p) {
     const hp = `❤ ${U.fmt(Math.max(0, p.hp))} / ${U.fmt(p.max)}`;
-    if (p.kind === 'hero') return ['기사 · 길드장', hp, `⚔ ${U.fmt(F.heroAtk(s))} · ${F.aspd(s).toFixed(2)}/초`, `치명 ${U.pct(F.crit())} · ×${F.critD().toFixed(1)}`];
-    const d = p.def, m = p.merc, who = m ? `${m.name} · ${d.n} ${G.Guild.lvText(m)}` : d.n, tr = m && G.Feat.def(m) ? [G.Feat.def(m).n] : [];
+    const d = p.def, m = p.merc, who = (p.kind === 'hero' ? '👑 ' : '') + (m ? `${m.name} · ${d.n} ${G.Guild.lvText(m)}` : d.n), tr = m && G.Feat.def(m) ? [G.Feat.def(m).n] : [];
     if (m && m.pers?.length) tr.unshift(m.pers.map(k => G.D.PERSONA[k].n).join(' · '));
     if (m) tr.push(G.Guild.active(m).map(k => G.D.MSKILLS[k].n).join(' · '));
     if (m && G.Trinket.of(m).length) tr.push(G.Trinket.of(m).map(t => `${G.Trinket.def(t).ic} ${G.Trinket.name(t)}`).join(' · '));
     if (d.heal) return [who, hp, `✚ ${Math.round(d.heal * 100 * G.Tree.mul('fantasy', s.tree, 'clericHeal'))}% · ${d.cd}초`, ...tr];
-    return [who, hp, `⚔ ${U.fmt(F.allyAtk(s, p))} · ${(F.allyCd(p) / F.aspd(s)).toFixed(1)}초`, ...tr];
+    return [who, hp, `⚔ ${U.fmt(p.kind === 'hero' ? F.heroAtk(s) : F.allyAtk(s, p))} · ${(F.allyCd(p) / F.aspd(s)).toFixed(1)}초`, ...tr];
   }
   function drawCard(s) {
     const p = pick && (pick.kind === 'hero' || F.rt(s).allies.includes(pick)) ? pick : null;

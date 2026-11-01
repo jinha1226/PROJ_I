@@ -30,7 +30,7 @@ G.Dnd = (() => {
     archmage: { hd: 6, pri: 'int', order: ['int', 'con', 'dex', 'wis', 'cha', 'str'], armor: 'mage', saves: ['int', 'wis'], sk: ['investigation'] },
   };
   const SKILL_AB = { perception: 'wis', investigation: 'int', persuasion: 'cha' };
-  // 단장(기사): 파이터처럼 — 근력 16 · 무거운 갑옷 + 방패 · 근력 · 건강 내성
+  // 용병 정보가 없는 단장 몸(옛 저장)의 기본값. 보통 단장은 만든 캐릭터의 능력치를 쓴다
   const HERO_AB = { str: 16, dex: 12, con: 14, int: 10, wis: 12, cha: 13 }, HERO_SAVES = ['str', 'con'];
   // 몬스터: 층이 곧 도전 등급. AC 12 + 층/5 (최대 20) · 명중 +3 + 층/4 (최대 +13) · 내성 +1 + 층/5 · 능력 DC 10 + 층/4 (최대 19). 보스 AC +1 · 명중 · 내성 · DC +2
   const MON_AC = (fl, boss) => Math.min(20, 12 + Math.floor(fl / 5)) + (boss ? 1 : 0);
@@ -283,9 +283,9 @@ G.Dnd = (() => {
     // 선제권 (SRD 「Initiative」): 몬스터가 우리를 알아챌 때 민첩 판정 대결. 우리 지각(수동 10+)이 몬스터 은신(10 + 층/5)보다 낮으면 기습당해 불리.
     // 이기면 그 몬스터가 1.5초 늦게 치고, 지면 바로 친다
     initiative(rt, mo) {
-      const ms = rt.allies.filter(a => !a.dead && a.merc).map(a => a.merc);
+      const ms = (rt.party || rt.allies).filter(a => !a.dead && a.merc).map(a => a.merc);
       // 경계 (출신 재주): 선제권에 숙련 보너스
-      const dexMs = ms.map(m => N.mod(N.ab(m).dex) + (G.Feat.has(m, 'alert') ? N.prof(m.lv) : 0)), ours = Math.max(N.mod(HERO_AB.dex), ...dexMs);
+      const dexMs = ms.map(m => N.mod(N.ab(m).dex) + (G.Feat.has(m, 'alert') ? N.prof(m.lv) : 0)), ours = ms.length ? Math.max(...dexMs) : N.mod(HERO_AB.dex);
       const per = N.best(ms, 'perception'), surprised = 10 + per.v < 10 + Math.floor(fl() / 5);
       const feral = rt.allies.some(a => !a.dead && (G.Fantasy.sk(a, 'sr_feral') || (a.merc && G.Trinket.has(a.merc, 'init'))));
       const win = N.d20((surprised ? -1 : 0) + (feral ? 1 : 0)) + ours >= N.d20(0) + Math.floor(fl() / 6) + (mo.boss ? 2 : 0);

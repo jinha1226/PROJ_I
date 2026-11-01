@@ -25,11 +25,11 @@
   const PAIR = (id, x, y, req, t, n, d, base, eff, pair, more) => N(id, x, y, req, t, n, d, 1, base, 1, eff, { pair, notable: true, ...more });
   const NOTE = (id, x, y, req, t, n, d, base, eff, more) => N(id, x, y, req, t, n, d, 1, base, 1, eff, { notable: true, ...more });
   G.Tree.define('fantasy', [
-    N('root', 0, 0, '', 'knight', '모험의 시작', '', 1, 0, 1, {}, { root: true }),
+    N('root', 0, 0, '', 'ui_star', '모험의 시작', '', 1, 0, 1, {}, { root: true }),
 
     // ── 북: 원정대 (직업 기술·★짝은 용병 개인 스킬로 옮겼다 — DESIGN.md 39) ──
     N('party', 0, -1.9, 'root', 'u_legend', '원정대', '동료 3명까지 출전', 1, 20, 1, {}),
-    // ── 남: 기사(리더)와 파티 전체 (동료 공격력·체력은 기사를 따라간다) ──
+    // ── 남: 단장과 파티 전체 ──
     NOTE('rage', 0, 3.4, 'k_cleave k_undying', 'r_dragon', '전투 함성', '기술: 10초간 모든 피해 ×2 (40초)', 6000, { sk_rage: 1 }),
     // 연계기 (DESIGN.md 43): 거는 상태 → 받는 직업. 한 번 열면 끝, 수치는 올리지 않는다 (효과는 js/combo.js)
     NOTE('cb_aim', -1.2, -3, 'party', 'v_berserk', '넘어진 적 강타', '넘어짐 → 근접 이점 ×5', 600, { cb_aim: 1 }),
@@ -45,8 +45,8 @@
     NOTE('cb_burn', -1.2, -15.7, 'cb_blood', 'u_archer', '집중 포화', '사냥꾼의 표식 · 헥스 → 전원 ×1', 3e6, { cb_burn: 1 }),
     NOTE('cb_finale', 1.2, -15.7, 'cb_shield', 'u_bard', '영감 일제 공격', '바드의 영감 → 전원 동시 공격', 3e6, { cb_finale: 1 }),
     N('slot', 0, -20.85, 'k_assault', 'u_legend', '대원정', '출전 동료 +1 (최대 4명)', 1, 1.5e7, 1, { slot: 1 }),
-    NOTE('k_cleave', 0.6, 2.4, 'root', 'w_waraxe', '휩쓸기', '기사 공격이 옆의 적에게도 50%', 3000, { k_cleave: 1 }),
-    NOTE('k_undying', -0.6, 2.4, 'root', 'u_armor', '불굴', '층마다 한 번, 기사가 쓰러질 때 체력 30%로 버틴다', 3e5, { k_undying: 1 }),
+    NOTE('k_cleave', 0.6, 2.4, 'root', 'w_waraxe', '휩쓸기', '단장 공격이 표적 옆의 적에게도 50%', 3000, { k_cleave: 1 }),
+    NOTE('k_undying', -0.6, 2.4, 'root', 'u_armor', '불굴', '층마다 한 번, 단장이 쓰러질 때 체력 30%로 버틴다', 3e5, { k_undying: 1 }),
     NOTE('k_assault', 0, -18.55, 'cb_burn cb_finale', 'u_god', '총공세', '기술: 열어 둔 동료 전원이 15초간 함께 싸운다 (90초)', 5e6, { sk_assault: 1 }),
 
     // ── 동: 전술 (지휘 — DESIGN.md 32). 위 줄 라이벌, 가운데 줄 지휘, 아래 줄 이동·협상 ──

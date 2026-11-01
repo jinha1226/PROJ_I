@@ -40,7 +40,7 @@ G.Rivals = (() => {
       // 협력·피하기로 바꾸면 지금 싸움을 멈춘다
       if (p && (k === 'ally' || k === 'avoid') && p.clash > 0) { p.clash = 0; R.st(f)[d.id].truce = 20; }
     },
-    // 피하기 방침인 라이벌의 몸 (기사가 그 곁을 피한다)
+    // 피하기 방침인 라이벌의 몸 (단장가 그 곁을 피한다)
     avoided: rt => {
       const f = G.S.w.fantasy;
       return (rt.rivals || []).filter(p => R.stance(f, p.d) === 'avoid').flatMap(p => p.mem.filter(e => !e.dead));
@@ -100,7 +100,7 @@ G.Rivals = (() => {
     spawn(f, rt, d, where) {
       const m = rt.map, mid = m.rooms.slice(1, -1);
       const room = where === 'start' || !mid.length ? m.start : where === 'boss' ? mid[mid.length - 1] : U.pick(mid);
-      // 인원은 우리 원정대만큼 (기사 혼자인 초반에 셋이 덤비면 억울하다)
+      // 인원은 우리 원정대만큼 (단장 혼자인 초반에 셋이 덤비면 억울하다)
       const n = Math.max(1, Math.min(1 + d.crew.length, rt.party.length));
       const mem = [d.lead, ...d.crew].slice(0, n).map((id, i) => R.newMember(f, d, id, room.cx + (i % 2), room.cy + (i > 1 ? 1 : 0)));
       mem[0].label = d.n;
@@ -123,7 +123,7 @@ G.Rivals = (() => {
     },
     ents: rt => (rt.rivals || []).flatMap(p => p.mem),
     members: rt => (rt.rivals || []).flatMap(p => p.mem.filter(e => !e.dead)),
-    // 지금 우리와 싸우는 중인 라이벌 몸 (기사가 노릴 수 있는 것)
+    // 지금 우리와 싸우는 중인 라이벌 몸 (단장가 노릴 수 있는 것)
     hostiles: rt => (rt.rivals || []).filter(p => p.clash > 0).flatMap(p => p.mem.filter(e => !e.dead)),
     partyOf: (rt, e) => rt.rivals.find(p => p.mem.includes(e)),
     bossOf: rt => rt.mons.find(o => o.boss),
@@ -287,7 +287,7 @@ G.Rivals = (() => {
       R.say(`${p.d.n} · 통행료 -${U.fmt(g)}`, p.d.col, p.d.id + 'toll');
     },
     // 지도자의 목표 (위에서부터): 도둑은 체력 절반 아래 보스(아직이면 숨어 기다린다) → 우리와 싸우는 중이면 가장 가까운 우리 파티원
-    // → 다투는 라이벌 → 돕는 중이면 우리 기사가 노리는 적 → 붙잡은 몬스터 → 길로 가장 가까운 몬스터. 'lurk'는 제자리
+    // → 다투는 라이벌 → 돕는 중이면 우리 단장가 노리는 적 → 붙잡은 몬스터 → 길로 가장 가까운 몬스터. 'lurk'는 제자리
     goal(rt, p, lead, ours, boss) {
       const near = list => list.reduce((a, b) => (GR.dist(a, lead) < GR.dist(b, lead) ? a : b));
       if (p.d.thief && boss) return boss.hp < boss.max * THIEF_AT ? (p.tg = boss) : 'lurk';

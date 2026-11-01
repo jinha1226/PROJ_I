@@ -1,10 +1,10 @@
 'use strict';
 // 판타지 · 끝없는 던전 (2D 던전 맵, 자동 전투)
-// 층마다 방과 복도로 된 던전이 새로 생긴다. 원정대(기사 + 출전 동료)가 몬스터를 찾아가 싸우고, 모두 잡으면 계단으로 내려간다.
+// 층마다 방과 복도로 된 던전이 새로 생긴다. 원정대(단장 + 출전 동료)가 몬스터를 찾아가 싸우고, 모두 잡으면 계단으로 내려간다.
 // 4층부터 2층마다 계단 앞에 보스 (층이 넓어 한 층이 예전 2.5층 — F.depth). 파티원은 각자 체력이 있고 쓰러지면 잠시 뒤 일어난다. 전원이 쓰러지면 패배(같은 층 다시, 세 번이면 한 층 후퇴).
 // 6층부터 던전 오염이 파티 전원의 체력을 최대치의 %씩 계속 깎는다(깊을수록 짙다). 재생·치유·정화로 버틴다.
-// 동료는 트리에서 열고, 출전 칸(기사 + 3명, 트리로 +)에 들어간 동료만 싸운다. 기본은 자동 편성.
-// 맵 클릭 = 벼락 일격. 동료별 기술과 ★택1 짝 노드는 트리에서. 기사 주변 칸은 「본 칸」으로 남는다(안개·미니맵).
+// 동료는 트리에서 열고, 출전 칸(단장 + 3명, 트리로 +)에 들어간 동료만 싸운다. 기본은 자동 편성.
+// 맵 클릭 = 벼락 일격. 동료별 기술과 ★택1 짝 노드는 트리에서. 단장 주변 칸은 「본 칸」으로 남는다(안개·미니맵).
 G.RT = G.RT || {};
 G.Fantasy = (() => {
   const D = G.D.F, U = G.U, GR = G.Grid;
@@ -17,7 +17,7 @@ G.Fantasy = (() => {
   const LEAD_HP = 1.5, COWARD_AT = 0.3, COWARD_P = 0.6, COWARD_T = 3, HOT_P = 0.2, HOT_T = 2, HOT_HIT = 1.5;
   // 구간별 오염: 초당 최대 체력의 몇 %
   const CORRUPT = [0, 0.01, 0.018, 0.026, 0.034, 0.042];
-  // 기사 기술(need = 트리 노드) — 독의 단추. 용병 스킬은 사람마다 자동(js/skills.js, DESIGN.md 43)
+  // 단장 기술(need = 트리 노드) — 독의 단추. 용병 스킬은 사람마다 자동(js/skills.js, DESIGN.md 43)
   const SKILLS = {
     rage: { n: '전투 함성', t: 'r_dragon', cd: 40, need: 'sk_rage' },
     assault: { n: '총공세', t: 'u_god', cd: 90, need: 'sk_assault' },
@@ -94,7 +94,7 @@ G.Fantasy = (() => {
       }
       return m;
     },
-    // 동료의 바탕은 기사가 아니라 길드(이름값) — 기사 장비는 기사만
+    // 동료의 바탕은 단장가 아니라 길드(이름값) — 단장 장비는 단장만
     baseAtk: f => 5 * F.atkMult() * F.dmgMult(f),
     baseHP: () => 60 * G.Guild.renown(),
     // 단장 (DESIGN.md 63): 던전의 rt.hero는 단장의 몸 — 수치는 동료와 같은 식, 이끄는 몫으로 체력 ×LEAD_HP
@@ -242,7 +242,7 @@ G.Fantasy = (() => {
       const S = F.sight();
       return rt.party.some(p => !p.dead && (p.x - x) ** 2 + (p.y - y) ** 2 <= S * S && GR.los(rt.map, p.x, p.y, x, y));
     },
-    // 살아 있는 파티원 모두의 시야 안 칸을 본 칸으로 (기사가 쓰러져도 동료가 보는 곳은 밝다)
+    // 살아 있는 파티원 모두의 시야 안 칸을 본 칸으로 (단장가 쓰러져도 동료가 보는 곳은 밝다)
     look(rt) {
       const m = rt.map, S = F.sight();
       let added = false;
@@ -258,7 +258,7 @@ G.Fantasy = (() => {
       }
       if (added) rt.seenVer++;
     },
-    // 편성이 바뀌면(트리 구매·직접 편성) 지금 층에도 바로 반영: 빠진 동료는 돌아가고 새 동료가 기사 옆에 합류
+    // 편성이 바뀌면(트리 구매·직접 편성) 지금 층에도 바로 반영: 빠진 동료는 돌아가고 새 동료가 단장 옆에 합류
     syncAllies(f) {
       const rt = F.rt(f), want = F.members(f), h = rt.hero;
       const keep = rt.allies.filter(a => want.includes(a.uid));
@@ -377,7 +377,7 @@ G.Fantasy = (() => {
     },
     // 방 안(문턱 한 칸 포함)에 있나
     inRoom: (r, o) => o.x >= r.x - 1 && o.x < r.x + r.w + 1 && o.y >= r.y - 1 && o.y < r.y + r.h + 1,
-    // 기사가 다음에 갈 곳: 덤벼 오는 적 → 눈에 띈 상자(곁의 적부터 치우고) → 길로 가장 가까운 방의 적·상자 → 방 밖에 남은 적.
+    // 단장가 다음에 갈 곳: 덤벼 오는 적 → 눈에 띈 상자(곁의 적부터 치우고) → 길로 가장 가까운 방의 적·상자 → 방 밖에 남은 적.
     // 한 번 고른 적·방은 끝낼 때까지 바꾸지 않는다 (벽 너머 두 곳 사이에서 오가지 않게). 없으면 null (계단으로).
     plan(rt) {
       const h = rt.hero, m = rt.map, d = GR.field(m, Math.round(h.x), Math.round(h.y));
@@ -435,10 +435,10 @@ G.Fantasy = (() => {
 
     // ── 기술 ──
     // 용병 스킬 (DESIGN.md 39 · 43): 출전 중인 누군가가 가졌나 / 그 사람 / 이 사람이 가졌나 (전직 스킬 포함)
-    has: (rt, key) => rt.allies.some(a => !a.dead && G.Guild.skill(a.merc, key)),
-    who: (rt, key) => rt.allies.find(a => !a.dead && G.Guild.skill(a.merc, key)),
+    has: (rt, key) => (rt.party || rt.allies).some(a => !a.dead && G.Guild.skill(a.merc, key)),
+    who: (rt, key) => (rt.party || rt.allies).find(a => !a.dead && G.Guild.skill(a.merc, key)),
     sk: (a, key) => !!a && G.Guild.skill(a.merc, key),
-    // 기사 기술: 트리로 연다
+    // 단장 기술: 트리로 연다
     unlocked: id => ta(SKILLS[id].need) > 0,
     canCast: (f, id) => F.unlocked(id) && !(f.cds[id] > 0),
     cast(f, id) {
@@ -459,7 +459,7 @@ G.Fantasy = (() => {
       }
       return true;
     },
-    // 기술 표적: 지정한 적(보이면), 아니면 기사에게 가장 가까운 보이는 적
+    // 기술 표적: 지정한 적(보이면), 아니면 단장에게 가장 가까운 보이는 적
     skillTarget(rt) {
       const seen = rt.mons.filter(o => F.inView(rt, o.x, o.y));
       return (rt.focus && seen.includes(rt.focus) ? rt.focus : seen.sort((p, q) => GR.dist(p, rt.hero) - GR.dist(q, rt.hero))[0]) || rt.hero;
@@ -579,7 +579,7 @@ G.Fantasy = (() => {
       if (f.town) { G.Exp.townTick(f, rt, dt); return; }
       G.Cmd.tick(f, rt, dt);
       if (rt.resyncHero && rt.hero) { rt.resyncHero = false; F.dressHero(f, rt.hero); rt.hero.max = F.heroHP(f); rt.hero.hp = Math.min(rt.hero.hp, rt.hero.max); }
-      // 기사 기술은 알아서 쓴다 (방치). 독의 단추·숫자키로 먼저 쓸 수 있다. 용병 스킬은 아래 동료 고리에서 사람마다
+      // 단장 기술은 알아서 쓴다 (방치). 독의 단추·숫자키로 먼저 쓸 수 있다. 용병 스킬은 아래 동료 고리에서 사람마다
       if (rt.phase !== 'dead') {
         if (rt.mons.length && F.canCast(f, 'rage')) F.cast(f, 'rage');
         if (rt.mons.length >= 4 && F.canCast(f, 'assault')) F.cast(f, 'assault');
@@ -658,7 +658,7 @@ G.Fantasy = (() => {
           if (rt.phase === 'dead') return;
         }
       }
-      // 기사: 지정한 적, 아니면 F.plan이 고른 적·상자. 둘 다 없으면 계단.
+      // 단장: 지정한 적, 아니면 F.plan이 고른 적·상자. 둘 다 없으면 계단.
       hero.moving = false;
       rt.heroTg = null;
       if (!hero.dead && !G.Dnd.out(hero)) {
@@ -675,7 +675,7 @@ G.Fantasy = (() => {
             if ((hero.atkT -= dt * aspd) <= 0) {
               hero.atkT = F.allyCd(hero);
               F.allyAttack(f, rt, hero, target);
-              if (ta('k_cleave') && G.Dnd.melee(hero)) { const o = rt.mons.find(q => q !== target && GR.dist(q, hero) < 1.8); if (o) F.hurt(f, rt, o, F.heroAtk(f) * 0.5, 'hit', hero); }
+              if (ta('k_cleave')) { const o = rt.mons.find(q => q !== target && GR.dist(q, target) < 1.5); if (o) F.hurt(f, rt, o, F.heroAtk(f) * 0.5, 'hit', hero); }
             }
           }
         } else if (hold) {
@@ -690,9 +690,9 @@ G.Fantasy = (() => {
         }
       }
       F.look(rt);
-      // 동료: 기사가 노리는 적을 함께 친다 (파티가 갈라져 따로 싸우지 않게). 기사가 싸우지 않을 땐 따라다닌다.
-      // 기사가 쓰러지면 각자 가까운 적과 싸우며 살아 있는 전열(성기사·용기병)을 따르고,
-      // 전열도 없으면 제자리를 지킨다 — 쓰러진 기사(대개 적 한가운데)를 따라가 후열이 적진에 뛰어들지 않게
+      // 동료: 단장가 노리는 적을 함께 친다 (파티가 갈라져 따로 싸우지 않게). 단장가 싸우지 않을 땐 따라다닌다.
+      // 단장이 쓰러지면 각자 가까운 적과 싸우며 살아 있는 전열(성기사·용기병)을 따르고,
+      // 전열도 없으면 제자리를 지킨다 — 쓰러진 단장(대개 적 한가운데)를 따라가 후열이 적진에 뛰어들지 않게
       const seenMons = rt.mons.filter(o => F.inView(rt, o.x, o.y));
       // 단장: 직업 기술 · 바드의 영감 (동료와 같은 규칙)
       if (!hero.dead && !G.Dnd.out(hero)) { G.Skill.tick(f, rt, hero, dt, seenMons); F.song(f, rt, hero, dt); }

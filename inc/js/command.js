@@ -1,6 +1,6 @@
 'use strict';
 // 지휘 (DESIGN.md 32): 맵을 누르는 것은 공격이 아니라 명령이다. 길드장이 원정대에 내리는 지시.
-//  몬스터 = 집중 표적(파티 전원이 그 적을 노린다) · 라이벌 = 방침 선택지 · 계단 = 서둘러 내려가기(남은 적을 두고) · 바닥 = 집결 · 기사 = 명령 취소
+//  몬스터 = 집중 표적(파티 전원이 그 적을 노린다) · 라이벌 = 방침 선택지 · 계단 = 서둘러 내려가기(남은 적을 두고) · 바닥 = 집결 · 단장 = 명령 취소
 // 명령이 없어도 원정대는 알아서 움직인다(방치). 「전술 본능」을 배우면 집중 표적도 알아서 고른다.
 G.Cmd = (() => {
   const GR = G.Grid;
@@ -19,7 +19,7 @@ G.Cmd = (() => {
     click(f, rt, x, y) {
       if (rt.phase === 'dead') return false;
       const m = rt.map, seen = o => rt.seen[Math.round(o.y) * m.w + Math.round(o.x)];
-      // 누른 자리에서 가장 가까운 것: 기사(취소) · 라이벌(방침) · 몬스터(집중 표적). 계단 칸을 정확히 눌렀으면 그 위에 겹친 것이 아닌 한 계단이 먼저
+      // 누른 자리에서 가장 가까운 것: 단장(취소) · 라이벌(방침) · 몬스터(집중 표적). 계단 칸을 정확히 눌렀으면 그 위에 겹친 것이 아닌 한 계단이 먼저
       const tx = Math.round(x), ty = Math.round(y), stairs = tx === m.end.cx && ty === m.end.cy, d = o => Math.hypot(o.x - x, o.y - y);
       const cand = [];
       if (!rt.hero.dead) cand.push({ o: rt.hero, k: 'hero', r: PICK_R });
