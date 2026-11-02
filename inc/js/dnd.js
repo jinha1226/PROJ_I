@@ -256,7 +256,7 @@ G.Dnd = (() => {
     // 결과를 뒤집은 규칙의 이름을 머리 위에 (같은 사람은 1.2초에 하나). 늘 true — 성공한 판정에서 그대로 돌려준다
     flip(e, s, col = '#ffe08a') {
       const rt = G.RT.fantasy;
-      if (rt && !(e._flipT > now())) { e._flipT = now() + 1.2; G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.4, s: '🎲 ' + s, col, t: 1.1, sz: 0.8, pop: true }); }
+      if (rt && !(e._flipT > now())) { e._flipT = now() + 1.2; G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.4, s, col, t: 1.1, sz: 0.8, pop: true }); }
       return true;
     },
     // 팔라딘 보호의 오라 (Aura of Protection): 3칸 안 동료의 내성 + 매력 수정치(최소 1)
@@ -299,7 +299,7 @@ G.Dnd = (() => {
       const feral = rt.allies.some(a => !a.dead && (G.Fantasy.sk(a, 'sr_feral') || (a.merc && G.Trinket.has(a.merc, 'init'))));
       const win = mo.noted || N.d20((surprised ? -1 : 0) + (feral ? 1 : 0)) + ours >= N.d20(0) + Math.floor(fl() / 6) + (mo.boss ? 2 : 0);
       mo.atkT = win ? 1.5 : 0;
-      if (win && rt.allies.length) { const a = rt.allies.find(q => q.merc && N.mod(N.ab(q.merc).dex) + (G.Feat.has(q.merc, 'alert') ? N.prof(q.merc.lv) : 0) === ours && !q.dead); N.flip(a || rt.hero, '선제권 · 먼저 움직인다'); }
+      if (win && rt.allies.length) { const a = rt.allies.find(q => q.merc && N.mod(N.ab(q.merc).dex) + (G.Feat.has(q.merc, 'alert') ? N.prof(q.merc.lv) : 0) === ours && !q.dead);  }
     },
     // 미믹 알아채기 (SRD Mimic: 지능(조사) DC 15). 깊을수록 +층/10
     spotMimic(rt) {

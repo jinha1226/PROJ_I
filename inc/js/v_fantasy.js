@@ -64,12 +64,30 @@ G.UI.views.fantasy = function () {
   const turnBar = h('div.t-bar'), turnWho = h('b.t-who'), turnOrder = h('div.t-order'), turnX = h('button.t-x', { 'data-tip': '전투 배속 (T)', on: { click: e => { e.stopPropagation(); G.Turn.nextSpeed(f()); } } });
   turnBar.append(turnWho, turnOrder, turnX);
   const dmEl = h('div.t-dm');
+  // 굴림 판독: 한 곳에서 주사위가 구르고 멈춘다
+  const rollDie = h('b.t-die'), rollWho = h('span.t-rw'), rollCalc = h('span.t-rc'), rollWord = h('b.t-rword'), rollRes = h('span.t-rr'), rollEl = h('div.t-roll', null, rollDie, h('div.t-rt', null, rollWho, h('div.t-rl', null, rollCalc, rollWord, rollRes)));
+  let rollId = 0, rollAt = 0;
+  function drawRoll(st, rt) {
+    const r = st && rt.roll;
+    tog(rollEl, 'hidden', !r);
+    if (!r) return;
+    if (r.id !== rollId) {
+      rollId = r.id; rollAt = performance.now();
+      setText(rollWho, `${r.who} → ${r.tg ? r.tg + ' · ' : ''}${r.what}`);
+      setText(rollCalc, r.calc || ''); setText(rollWord, r.word || ''); setText(rollRes, r.res || '');
+      tog(rollEl, 'foe', !!r.foe);
+      for (const [c, on] of [['ok', r.word && r.ok], ['no', r.word && !r.ok], ['big', r.nat === 20], ['low', r.nat === 1]]) tog(rollEl, c, !!on);
+      tog(rollDie, 'hidden', r.nat == null);
+    }
+    if (r.nat != null) setText(rollDie, performance.now() - rollAt < 280 ? 1 + Math.floor(Math.random() * 20) : r.nat);
+  }
   let turnKey = '';
   function drawTurn(s, rt) {
     const st = !s.town && rt.turn, dm = !s.town && rt.dm && rt.dm.until > G.S.runTime ? rt.dm.s : '';
     tog(turnBar, 'hidden', !st);
     tog(dmEl, 'hidden', !dm);
     setText(dmEl, dm);
+    drawRoll(st, rt);
     if (!st) { turnKey = ''; return; }
     setText(turnWho, `${st.round}라운드`);
     setText(turnX, `×${G.Turn.speed(s)}`);
@@ -154,7 +172,7 @@ G.UI.views.fantasy = function () {
     askEl.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y - p.ts * 1.1)}px) translate(-50%, -100%)`;
   }
 
-  const overlay = h('div.fover', null, chatEl, turnBar, dmEl, menuEl, alertEl, askEl, dock, town.el, sheet.el);
+  const overlay = h('div.fover', null, chatEl, turnBar, dmEl, rollEl, menuEl, alertEl, askEl, dock, town.el, sheet.el);
   return G.UI.worldScreen('fantasy', {
     overlay,
     frame: mv => frameAsk(mv),

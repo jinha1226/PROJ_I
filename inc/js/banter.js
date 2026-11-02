@@ -144,9 +144,9 @@ G.Banter = (() => {
   const B = {
     LINES, TALKS, call: callOf,
     // 말풍선 첫 줄: 무슨 판정 · 눈 + 수정치 · 목표 · 결과
-    tag: (what, r) => ({ s: `🎲 ${what} ${r.nat}${r.mod < 0 ? '' : '+'}${r.mod} ${r.ok ? '≥' : '<'} ${r.dc} ${r.ok ? '성공' : '실패'}`, ok: r.ok }),
+    tag: (what, r) => ({ s: `${what} ${r.nat}${r.mod < 0 ? '' : '+'}${r.mod} ${r.ok ? '≥' : '<'} ${r.dc} ${r.ok ? '성공' : '실패'}`, ok: r.ok }),
     // 명중 굴림의 20 · 1
-    hitTag: (tg, nat) => ({ s: `🎲 ${tg.n ? tg.n + '에게 ' : ''}공격 ${nat} ${nat === 20 ? '대성공' : '대실패'}`, ok: nat === 20 }),
+    hitTag: (tg, nat) => ({ s: `${tg.n ? tg.n + '에게 ' : ''}공격 ${nat} ${nat === 20 ? '대성공' : '대실패'}`, ok: nat === 20 }),
     // 지금 떠 있는 말풍선 (그리기)
     live(rt) { const t = now(); return rt.bubbles && rt.bubbles.length ? (rt.bubbles = rt.bubbles.filter(b => b.until > t && !b.e.dead)) : null; },
     // 말풍선 + 대화 기록. pri: 꼭 보여 줄 말이면 true(자리가 없으면 가장 오래된 것을 밀어낸다)

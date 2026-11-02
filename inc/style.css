@@ -1803,6 +1803,22 @@ body[data-theme="fantasy"] .wtree { height: 100vh; height: 100dvh; }
 .f-chat i { margin-right: 6px; font-style: normal; font-weight: 700; }
 .f-chat i.ok { color: #8fe08f; }
 .f-chat i.no { color: #ff9a8a; }
+.f-chat i::before { content: ''; display: inline-block; width: 9px; height: 10px; margin-right: 4px; vertical-align: -1px; background: currentColor; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.t-roll { position: absolute; left: 50%; bottom: 136px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; min-width: 300px; padding: 6px 14px 6px 8px; background: #17110cf2; border: 1px solid #6b5535; border-radius: 4px; pointer-events: none; z-index: 3; }
+.t-roll.foe { border-color: #8a3f33; }
+.t-die { display: flex; align-items: center; justify-content: center; flex: none; width: 40px; height: 44px; font-size: 17px; color: #21170d; background: #d8c8a4; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.t-roll.ok .t-die { background: #e6c66e; }
+.t-roll.no .t-die { background: #8d8679; }
+.t-roll.big .t-die { background: #ffe08a; box-shadow: none; filter: drop-shadow(0 0 6px #ffd24a); }
+.t-roll.low .t-die { color: #fff; background: #a32a1c; }
+.t-rt { display: flex; flex-direction: column; gap: 1px; }
+.t-rw { font-size: 12px; color: #b9ad97; white-space: nowrap; }
+.t-rl { display: flex; align-items: baseline; gap: 8px; font-size: 14px; color: #e8dcc6; white-space: nowrap; }
+.t-rc { color: #9f947f; font-size: 12.5px; }
+.t-rword { color: #e8dcc6; }
+.t-roll.ok .t-rword { color: #8fe08f; }
+.t-roll.no .t-rword { color: #ff9a8a; }
+.t-rr { font-weight: 600; }
 .t-bar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: #17110cee; border: 1px solid #6b5535; border-radius: 4px; pointer-events: auto; z-index: 3; }
 .t-who { color: #ffd27a; font-size: 13px; white-space: nowrap; }
 .t-order { display: flex; gap: 3px; }
@@ -1944,6 +1960,9 @@ body[data-theme="fantasy"] .wtree { height: 100vh; height: 100dvh; }
   .cs-stabs { display: none; }
   .f-chat { width: 62%; top: 4px; left: 4px; font-size: 11.5px; }
   .f-chat > div:nth-last-child(n+4) { display: none; }
-  .t-bar { top: auto; bottom: calc(100% - 118px); max-width: 94%; flex-wrap: wrap; justify-content: center; }
+  .t-bar { top: 116px; max-width: 94%; gap: 5px; padding: 3px 5px; }
+  .t-order { flex-wrap: nowrap; overflow: hidden; }
   .t-dm { top: 150px; max-width: 90%; font-size: 12.5px; }
+  .t-roll { min-width: 0; width: max-content; max-width: 94%; bottom: 214px; }
+  .t-rl { flex-wrap: wrap; white-space: normal; }
 }

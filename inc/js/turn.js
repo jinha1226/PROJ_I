@@ -11,7 +11,6 @@ G.Turn = (() => {
   const nameOf = e => e.merc?.name || e.n || e.def?.n || '';
   const gone = (rt, e) => (e.kind === 'mon' ? e.hp <= 0 || !rt.mons.includes(e) : e.dead);
   const dex = (f, e) => (e.merc ? DN().mod(DN().ab(e.merc).dex) + (G.Feat.has(e.merc, 'alert') ? DN().prof(e.merc.lv) : 0) : Math.floor(f.floor / 6) + (e.boss ? 2 : 0));
-  const josaOf = n => { const c = n.charCodeAt(n.length - 1) - 0xac00; return c >= 0 && c % 28 ? '이' : '가'; };
 
   // DM의 말: 화면 위 자막 + 대화 기록
   function dm(rt, s) {
@@ -67,8 +66,8 @@ G.Turn = (() => {
     for (const o of rt.mons) if (!o.aggro && !o.flee && list.some(q => GR.dist(q, o) < 5)) o.aggro = true;
     const st = rt.turn = { map: rt.map, round: 0, order: [], i: -1, cur: null, ph: 'wait', t: 0.9 };
     roster(f, rt, st);
-    dm(rt, `${count(foes(rt))}! 선제권을 굴린다.`);
-    if (!G.quiet) { const c = rt.chat; c.push({ n: 'DM', col: '#ffd27a', s: `선제권 ${st.order.map(x => `${nameOf(x.e)} ${x.init}`).join(' · ')}`, t: G.S.runTime, id: rt.chatId = (rt.chatId || 0) + 1 }); }
+    rt.roll = null;
+    dm(rt, `${count(foes(rt))} — 전투 시작`);
   }
   // 라운드 시작: 새로 합류한 사람 · 몬스터를 선제권대로 끼운다
   function roster(f, rt, st) {
@@ -161,32 +160,32 @@ G.Turn = (() => {
     rt.turn = null;
   }
 
-  // 그 차례에 일어난 일을 말풍선 하나로: 첫 줄 = 굴림, 둘째 줄 = 결과
+  // 그 차례의 굴림은 화면 한 곳(rt.roll → 판독 패널)에 모은다. 머리 위에는 피해 숫자, 말풍선은 20 · 1일 때의 대사만.
   const snapshot = rt => (G.quiet ? null : rt.mons.concat(rt.party).map(e => [e, e.hp]));
+  const log = (rt, who, s) => { const c = rt.chat || (rt.chat = []); c.push({ n: nameOf(who), col: who.merc ? G.Guild.def(who.merc).col : '#c9c2b2', s, t: G.S.runTime, id: rt.chatId = (rt.chatId || 0) + 1 }); if (c.length > 40) c.shift(); };
   function report(f, rt, e, tg, rec, before, label) {
     if (G.quiet) return;
     const foeSide = o => (e.kind === 'mon' ? o.kind !== 'mon' : o.kind === 'mon');
     let dmg = 0, heal = 0;
     for (const [o, h] of before) { const d = h - Math.max(0, o.hp); if (foeSide(o) && d > 0) dmg += d; if (!foeSide(o) && d < 0) heal -= d; }
-    const atks = rec.filter(r => r.att && r.att === e), main = atks[0] || rec.find(r => r.sv), hits = atks.filter(r => r.hit).length;
-    const tagOf = r => {
-      if (!r) return null;
-      if (r.sv) return { s: `🎲 ${nameOf(r.tg)} ${DN().AB_N[r.k]} 내성 DC ${r.dc} ${r.ok ? '성공' : '실패'}`, ok: !r.ok };
-      const word = r.nat === 1 ? '대실패' : r.nat === 20 ? '대성공' : r.crit ? '치명타' : r.hit ? '명중' : '빗나감';
-      return { s: `🎲 ${nameOf(r.tg)}에게 ${label || '공격'} ${r.nat}${r.mod < 0 ? '' : '+'}${Math.round(r.mod)} ${r.hit ? '≥' : '<'} AC ${r.ac} ${word}`, ok: r.hit };
-    };
-    const out = [];
-    if (label && !main) out.push(label);
-    if (atks.length > 1) out.push(`${atks.length}회 중 ${hits} 명중`);
-    if (dmg > 0) out.push(`${U.fmt(dmg)} 피해`);
-    if (heal > 0 && label) out.push(`+${U.fmt(heal)} 회복`);
-    if (tg && tg.kind === 'mon' && gone(rt, tg)) out.push(`${nameOf(tg)}${josaOf(nameOf(tg))} 쓰러졌다`);
-    if (tg && tg.kind !== 'mon' && tg.dead) out.push(`${nameOf(tg)}${josaOf(nameOf(tg))} 쓰러졌다`);
-    if (!out.length) out.push(main && main.att && !main.hit ? '빗나갔다' : '효과 없음');
-    let s = out.join(' · ');
-    if (e.merc && main && main.nat === 20) s += ` ${B().pick('crit', e)}`;
-    if (e.merc && main && main.nat === 1) s += ` ${B().pick('fumble', e)}`;
-    B().say(rt, e, s, { tag: tagOf(main), col: e.kind === 'mon' ? '#c85a4a' : null, pri: true });
+    const atks = rec.filter(r => r.att === e), main = atks[0] || rec.find(r => r.sv), hits = atks.filter(r => r.hit).length;
+    const down = tg && (tg.kind === 'mon' ? gone(rt, tg) : tg.dead);
+    const res = [];
+    if (atks.length > 1) res.push(`${atks.length}회 중 ${hits} 명중`);
+    if (dmg > 0) res.push(`${U.fmt(dmg)} 피해`);
+    if (heal > 0) res.push(`+${U.fmt(heal)} 회복`);
+    if (down) res.push('쓰러짐');
+    const R = rt.roll = { id: (rt.roll ? rt.roll.id : 0) + 1, who: nameOf(e), foe: e.kind === 'mon', what: label || '공격', res: res.join(' · ') };
+    if (main && main.sv) { R.tg = nameOf(main.tg); R.calc = `${DN().AB_N[main.k]} 내성 DC ${main.dc}`; R.word = main.ok ? '저항' : '실패'; R.ok = !main.ok; }
+    else if (main) {
+      R.tg = nameOf(main.tg); R.nat = main.nat; R.ok = main.hit;
+      R.calc = `${main.mod < 0 ? '−' : '+'}${Math.abs(Math.round(main.mod))} · AC ${main.ac}`;
+      R.word = main.nat === 1 ? '대실패' : main.nat === 20 ? '대성공' : main.crit ? '치명타' : main.hit ? '명중' : '빗나감';
+    } else { R.ok = true; if (tg) R.tg = nameOf(tg); }
+    // 기록과 말풍선은 기억할 순간만
+    if (e.merc && main && main.nat === 20) B().say(rt, e, B().pick('crit', e), { pri: true });
+    else if (e.merc && main && main.nat === 1) B().say(rt, e, B().pick('fumble', e), { pri: true });
+    if (down) log(rt, e, `${nameOf(tg)} 쓰러뜨림`);
   }
   return T;
 })();
