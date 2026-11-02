@@ -62,6 +62,9 @@ G.UI.charSheet = function () {
     const traits = [...(m.pers || []).map(k => { const P = D.PERSONA[k]; return h('span.cs-tr', { 'data-tip': P.d }, G.T.el('ni_' + P.ic, 'xs'), P.n); })];
     const Ft = G.Feat.def(m);
     if (Ft) traits.push(h('span.cs-tr', { 'data-tip': `${Ft.en} · ${Ft.d}` }, G.T.el(Ft.t, 'xs'), Ft.n));
+    for (const id of m.scars || []) { const Sc = G.Story.SCARS[id], at = m.scarAt && m.scarAt[id]; traits.push(h('span.cs-tr.scar', { 'data-tip': Sc.d + (at ? ` · ${at.fl}층${at.by ? ` ${at.by}` : ''}` : '') }, Sc.n)); }
+    traits.push(...G.Story.marks(m).map(x => h('span.cs-tr.scar', { 'data-tip': x.d }, x.n)));
+    const saga = (s.saga || []).filter(x => x.who.includes(m.uid)).slice(0, 4);
     const apt = G.Mission.aptOf(m);
     const re = () => { key = ''; };
     const acts = !isCrew || m.lead || !s.town ? null : h('div.cs-acts', null,
@@ -76,6 +79,7 @@ G.UI.charSheet = function () {
       h('div.cs-bar.xp', null, h('b', null, '경험'), xp, h('small.cs-bt', null, `${U.fmt(m.xp)} / ${U.fmt(GD.needOf(m))}`)),
       cond,
       traits.length ? h('div.cs-trs', null, traits) : null,
+      saga.length ? h('div.cs-saga', null, saga.map(x => h('div', null, x.s))) : null,
       apt.length ? h('small.cs-apt', null, '✦ 적성 · ' + apt.map(k => G.Mission.DEF[k].n).join(' · ')) : null,
       promo, acts);
   }

@@ -7,7 +7,7 @@ G.Exp = (() => {
   const U = G.U;
   // 짐 한도 = 지금 층 몬스터 골드 × CAP_K (대략 1~2층 분량). 가득 차면 넘치는 골드는 버리고,
   // 기본 방침이면 이 구간 보스를 잡고 귀환한다 (바로 돌아오면 체크포인트가 안 늘어 같은 구간에 갇힌다)
-  const WIPE_KEEP = 0.5, TOWN_MIN = 8, TOWN_MAX = 45, TOWN_HEAL = 3, HOME_GRACE = 4, HOLD_T = 20, CAP_K = 200;
+  const WIPE_KEEP = 0.5, TOWN_MIN = 8, TOWN_MAX = 45, TOWN_HEAL = 3, HOME_GRACE = 4, HOLD_T = 20, CAP_K = 200, PRESS_CAP = 0.3;
   const RETREAT = {
     wipe: { n: '전멸까지', d: '귀환 없음', at: 0 },
     hp50: { n: '체력 50%', d: '체력 50%', at: 0.5 },
@@ -18,7 +18,7 @@ G.Exp = (() => {
   const E = {
     RETREAT,
     carry: f => f.carry || 0,
-    cap: f => F().monGold(f.floor) * CAP_K,
+    cap: f => F().monGold(f.floor) * CAP_K * (1 + (f.press || 0) * PRESS_CAP),
     // 짐에 넣는다 (F.gain): 한도까지만
     stow(f, n) { f.carry = Math.min(E.cap(f), (f.carry || 0) + n); },
     full: f => (f.carry || 0) >= E.cap(f) * 0.999,
@@ -46,7 +46,9 @@ G.Exp = (() => {
       G.Season.save(f, rt);
       const c = E.carry(f), keep = why === 'wipe' ? c * WIPE_KEEP : c;
       if (why === 'wipe') G.Trinket.wipe(f, rt);
+      G.Story.home(f);
       G.Report.make(f, why, keep, c - keep);
+      f.press = 0;
       f.gold += keep;
       f.last = { floor: f.floor, got: keep, lost: c - keep, why, who, at: G.S.runTime };
       f.carry = 0;
@@ -55,7 +57,7 @@ G.Exp = (() => {
       f.deaths = 0;
       if (f.startAuto !== false) f.start = f.checkpoint || 1;
       G.Cmd.clear(rt);
-      rt.rivals = []; rt.prompt = null; rt.ambush = null; rt.mons = []; rt.chests = [];
+      rt.rivals = []; rt.prompt = null; rt.ask = null; rt.scene = null; rt.ambush = null; rt.mons = []; rt.chests = [];
       rt.phase = 'town';
       rt.homeAfterBoss = false;
       rt.leaving = null;

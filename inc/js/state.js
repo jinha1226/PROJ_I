@@ -4,7 +4,8 @@
 // 다른 세계(무협·수선·SF·크툴루)는 정리했다 — 캐릭터 컨셉만 던전 동료로 가져온다 (코드는 old/worlds/)
 G.MODS = { fantasy: G.Fantasy };
 G.CUR = { fantasy: 'gold' };
-G.SAVE_KEY = 'rift_inc_save_v2';
+// 턴제 시제품(?turn)은 영구 사망이 있어 저장을 따로 쓴다
+G.SAVE_KEY = 'rift_inc_save_v2' + (typeof location !== 'undefined' && /[?&]turn\b/.test(location.search) ? '_turn' : '');
 
 G.newState = function (keep) {
   G.RT = {};

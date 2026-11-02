@@ -10,6 +10,7 @@ G.Persona = (() => {
   const CLOSE = new Set(['sk_halo', 'sk_lull', 'sk_nova', 'sk_heatwave', 'sk_firewall', 'sk_smash', 'sk_shout', 'sk_slam', 'sk_spin', 'sk_rend', 'sk_smoke', 'sk_bleedcut', 'sk_wall']);
   const FAR = new Set(['sk_kite', 'sk_blink', 'sk_step', 'sk_aimed', 'sk_tstorm', 'sk_meteor', 'sk_pierce']);
   const PERS_W = { hot: 2, coward: -2, brawler: 1, meek: -1 };
+  const HOT_K = 1.5, COWARD_AT = 0.35, CAREFUL_AT = 0.5, GREEDY_P = 0.35, GREEDY_GOLD = 3;
   const P = {
     has: (m, k) => !!m && (m.pers || []).includes(k),
     // 원정대에서 그 성격을 가진 살아 있는 사람 (몸)
@@ -26,11 +27,27 @@ G.Persona = (() => {
       return P.has(a.merc, k) && !a.dead && !(a.persUsed || {})[k] && !(rt.persT > G.S.runTime) && (cmdOk || !P.commanded(rt));
     },
     // 나섰다: 기호를 띄우고 이 층에서는 다시 나서지 않는다
-    fire(rt, a, k) {
+    fire(rt, a, k, s) {
       (a.persUsed = a.persUsed || {})[k] = true;
       rt.persT = G.S.runTime + BUSY_T;
       G.fx(rt, { k: 'emote', key: 'ni_' + D.PERSONA[k].ic, ent: a, x: a.x, y: a.y, t: EMOTE_T });
-      G.Banter.line(rt, 'p_' + k, a, null, { pri: true });
+      G.Banter.line(rt, s || 'p_' + k, a, null, { pri: true });
+    },
+    // 턴제 전투 (G.Turn): 성격이 몸으로 드러난다 — 다혈질은 먼저 달려들고, 겁쟁이는 물러나고, 욕심쟁이는 줍는다. true면 그 차례를 썼다
+    turn(f, rt, st, e) {
+      const low = e.hp / e.max;
+      if (st.round === 1 && P.free(rt, e, 'hot')) { P.fire(rt, e, 'hot'); e.surge = HOT_K; return false; }
+      if (st.round <= 2 && P.free(rt, e, 'brawler')) { P.fire(rt, e, 'brawler', 't_big'); e.bigT = true; return false; }
+      if (low < COWARD_AT && P.free(rt, e, 'coward')) { P.fire(rt, e, 'coward'); G.Story.backOff(rt, e); return true; }
+      if (low < CAREFUL_AT && P.free(rt, e, 'careful')) { P.fire(rt, e, 'careful', 't_guard'); e.guard = true; return true; }
+      if (st.round >= 2 && P.free(rt, e, 'greedy') && Math.random() < GREEDY_P) {
+        const g = G.Fantasy.monGold(f.floor) * GREEDY_GOLD * G.Fantasy.goldMult(f);
+        P.fire(rt, e, 'greedy', 't_grab');
+        G.Fantasy.gain(f, g);
+        G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.1, s: '+' + U.fmt(g), col: '#ffd24a', t: 1, sz: 0.85 });
+        return true;
+      }
+      return false;
     },
     // 자리: 'front' 앞장 · 'mid' 가운데 · 'back' 뒤. 근접 직업 +1 · 치유 −1 (레벨이 올라 칸이 열리면 다시 잰다)
     // 진형 칸이 있으면 그 줄이 곧 자리다 (DESIGN.md 67). 칸이 없으면(레이드 둘째 파티) 성향대로

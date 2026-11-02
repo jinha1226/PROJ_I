@@ -8,7 +8,10 @@ G.Explore = (() => {
   const inside = (r, o) => o.x >= r.x && o.x < r.x + r.w && o.y >= r.y && o.y < r.y + r.h;
   const B = () => G.Banter;
   // 판정 결과 대사: 무슨 판정인지 + 그 사람 말투
-  const roll = (rt, r, what, key, col) => B().line(rt, key, r.who, null, { tag: B().tag(what, r), col, pri: true });
+  // 턴제 층에서는 판정을 판독 패널 한 곳에 모은다 (DESIGN.md 71) — 말풍선에는 말만
+  const panel = (rt, what, r) => { if (!G.TURN || !G.Turn.on(G.S.w.fantasy, rt)) return false; if (rt.turn) return true; rt.roll = { id: (rt.roll ? rt.roll.id : 0) + 1, who: r.who.merc?.name || '', what, nat: r.nat, ok: r.ok, calc: `${r.mod < 0 ? '−' : '+'}${Math.abs(r.mod)} · DC ${r.dc}`, word: r.nat === 20 ? '대성공' : r.nat === 1 ? '대실패' : r.ok ? '성공' : '실패', res: '' }; rt.rollT = G.S.runTime + 2.5; return true; };
+  const tagOf = (rt, what, r) => (panel(rt, what, r) ? undefined : B().tag(what, r));
+  const roll = (rt, r, what, key, col) => B().line(rt, key, r.who, null, { tag: tagOf(rt, what, r), col, pri: true });
   const state = (f, rt) => {
     if (rt.ex && rt.ex.map === rt.map) return rt.ex;
     const m = rt.map, known = G.Season.known(f, rt);
@@ -26,7 +29,6 @@ G.Explore = (() => {
     ex.reveal = { r, x: rt.hero.x, y: rt.hero.y, d: 0 };
     const mons = rt.mons.filter(o => F().inRoom(r, o)), chest = rt.chests.find(c => !c.relic && F().inRoom(r, c)), M = G.Mission;
     r.fought = mons.length > 0;
-    G.Turn.scene(f, rt, mons, chest);
     // 살피는 사람이 먼저 말하고, 알아챈 것이 있으면 판정과 함께 차례로 말한다
     let spotted = false, last = null;
     const look = M.roll(f, rt, 'perception');
@@ -49,7 +51,9 @@ G.Explore = (() => {
     // 못 알아챘으면 태연하다 — 뒤에 함정을 밟으면 그 사람이 욕을 먹는다. 무엇을 놓쳤는지는 밝히지 않는다
     const shown = last || look;
     if (!spotted && shown) ex.quietBy = shown.who;
-    if (!spotted && shown && Math.random() < QUIET_P) { ex.q.push(() => B().line(rt, 'quiet', shown.who, null, { tag: B().tag('주변 살피기', shown) })); }
+    if (!spotted && shown && Math.random() < QUIET_P) { ex.q.push(() => B().line(rt, 'quiet', shown.who, null, { tag: tagOf(rt, '주변 살피기', shown) })); }
+    G.Story.room(f, rt, ex, r, mons, chest);
+    if (!rt.scene) G.Turn.scene(f, rt, mons, chest);
   }
   function startSearch(f, rt, ex, r) {
     r.searched = true;
@@ -68,7 +72,8 @@ G.Explore = (() => {
     if (!r.ok) { roll(rt, r, '방 뒤지기', 'nofind'); return; }
     const g = F().monGold(f.floor) * FIND_GOLD * F().goldMult(f);
     F().gain(f, g);
-    B().say(rt, r.who, `${B().pick('found', r.who)} +${U.fmt(g)}`, { tag: B().tag('방 뒤지기', r), col: '#ffd24a', pri: true });
+    B().say(rt, r.who, `${B().pick('found', r.who)} +${U.fmt(g)}`, { tag: tagOf(rt, '방 뒤지기', r), col: '#ffd24a', pri: true });
+    if (rt.roll && rt.rollT > G.S.runTime) rt.roll.res = `+${U.fmt(g)}`;
   }
   function springTraps(f, rt, ex) {
     const list = ex.traps.filter(t => t.hidden);
@@ -112,6 +117,8 @@ G.Explore = (() => {
       springTraps(f, rt, ex);
       if (rt.phase === 'dead') return false;
       if (h.dead) { if (ex.search) endSearch(f, rt, ex, false); ex.brace = 0; return false; }
+      // 조우 장면이 진행 중이면 파티는 멈춰 있다 (G.Story)
+      if (G.Story.tick(f, rt, dt)) return true;
       // 턴제 전투 중에는 방을 살피지 않는다 (끝나고 나서 그 방에 들어선 것으로 친다)
       if (rt.turn || danger(rt, h) || hurried(rt)) { if (ex.search) endSearch(f, rt, ex, false); ex.brace = 0; }
       else if (ex.search) { if ((ex.search.t -= dt) <= 0) endSearch(f, rt, ex, true); else return true; }

@@ -116,7 +116,13 @@ G.Mission = (() => {
       if (ms.k === 'defend') return { x: ms.obj.x - 1, y: ms.obj.y, hold: true };
       if (ms.k === 'escape') return null;
       // 토벌: 아는 층이라도 남은 적을 찾아간다
-      if (ms.k === 'hunt' && G.Season.known(G.S.w.fantasy, rt)) return rt.mons.filter(o => !o.flee).sort((p, q) => GR.dist(p, rt.hero) - GR.dist(q, rt.hero))[0] || undefined;
+      // 한번 고른 적은 잡을 때까지 쫓는다 (매번 직선거리로 다시 고르면 벽 사이에서 두 적을 오가며 멈춘다)
+      if (ms.k === 'hunt' && G.Season.known(G.S.w.fantasy, rt)) {
+        const t = rt.target;
+        if (t && t.hp > 0 && !t.flee && rt.mons.includes(t)) return t;
+        const m = rt.map, d = GR.field(m, Math.round(rt.hero.x), Math.round(rt.hero.y)), far = o => { const v = d[Math.round(o.x) + Math.round(o.y) * m.w]; return v >= 0 ? v : 1e6 + GR.dist(o, rt.hero); };
+        return (rt.target = rt.mons.filter(o => !o.flee).sort((p, q) => far(p) - far(q))[0]) || undefined;
+      }
       return undefined;
     },
     // 유물을 주웠다 (F.openChest)

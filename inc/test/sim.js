@@ -11,7 +11,7 @@ function boot() {
   M.random = () => { st = (st + 0x6D2B79F5) >>> 0; let t = st; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const ctx = { console, Math: M, JSON, Date, btoa, atob };
   vm.createContext(ctx);
-  for (const f of ['core', 'data', 'grid', 'juice', 'tree', 'trees', 'season', 'fantasy', 'rivals', 'guild', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'combo', 'command', 'expedition', 'mission', 'explore', 'banter', 'turn', 'state'])
+  for (const f of ['core', 'data', 'grid', 'juice', 'tree', 'trees', 'season', 'fantasy', 'rivals', 'guild', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'combo', 'command', 'expedition', 'mission', 'explore', 'banter', 'turn', 'story', 'state'])
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', f + '.js'), 'utf8'), ctx, { filename: f + '.js' });
   return ctx.G;
 }
@@ -81,5 +81,6 @@ console.log('재주 ' + G.S.w.fantasy.mercs.map(m => G.Feat.def(m)?.n).join(' ·
 console.log('라이벌 ' + G.D.RIVALS.map(d => { const r = G.S.w.fantasy.rivals[d.id]; return `${d.n} ${r.floor}층(실력 ${r.power.toFixed(1)})`; }).join(' · '));
 console.log(`스킬 ${Object.keys(G.Sim.casts).length}종 ${Object.values(G.Sim.casts).reduce((a, b) => a + b, 0)}회 · 연계기 ` + Object.entries(G.Sim.combos).map(([k, n]) => `${G.Combo.CB[k].n} ${n}`).join(' · '));
 if (VERBOSE) console.log(JSON.stringify(G.Sim.casts));
+{ const ff = G.S.w.fantasy; console.log(`이야기 일지 ${(ff.saga || []).length}줄 · 사망 ${(ff.fallen || []).length}명 · 흉터 ${G.Guild.crew(ff).reduce((a, m) => a + (m.scars || []).length, 0)} · 원한 ${(ff.grudges || []).length}`); if (VERBOSE) console.log((ff.saga || []).slice(0, 30).join ? (ff.saga || []).slice(0, 30).map(x => x.s).join('\n') : ''); }
 console.log(`실행 ${((Date.now() - t0) / 1000).toFixed(1)}초`);
 if (VERBOSE) console.log(logs.slice(-40).join('\n'));

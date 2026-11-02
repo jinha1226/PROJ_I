@@ -106,6 +106,7 @@ G.Guild = (() => {
       v *= G.Trinket.prod(m, k);
       const A = m.adv && D.ADV[m.adv];
       if (A && A[k] != null) v *= A[k];
+      v *= G.Story.scarMul(m, k);
       for (const s of Gd.active(m)) { const S = D.MSKILLS[s]; if (S && typeof S[k] === 'number' && k !== 'move' && k !== 'splash' && k !== 'sight') v *= S[k]; }
       return v;
     },
@@ -178,7 +179,7 @@ G.Guild = (() => {
     },
     skill: (m, key) => !!m && Gd.active(m).includes(key),
     // 수치 패시브 합 (splash·sight·move처럼 더하는 것)
-    sum(m, k) { let v = k === 'move' ? G.Trinket.sum(m, k) + (G.Dnd.boon(m, 'dimension') ? 1 : 0) : 0; for (const s of Gd.active(m)) { const S = D.MSKILLS[s]; if (S && typeof S[k] === 'number') v += S[k]; } return v; },
+    sum(m, k) { let v = k === 'move' ? G.Trinket.sum(m, k) + (G.Dnd.boon(m, 'dimension') ? 1 : 0) : 0; for (const s of Gd.active(m)) { const S = D.MSKILLS[s]; if (S && typeof S[k] === 'number') v += S[k]; } return v + G.Story.scarSum(m, k); },
     goldBonus(rt) { let g = 0; for (const a of rt.allies) if (a.merc && !a.dead) g += G.Trinket.sum(a.merc, 'gold'); return g; },
     name(f) {
       const used = new Set(f.mercs.map(m => m.name).concat((f.tavern?.offers || []).map(o => o.m.name)));

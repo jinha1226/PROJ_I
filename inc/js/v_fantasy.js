@@ -31,13 +31,13 @@ G.UI.views.fantasy = function () {
     for (let i = 0; i < 1 + F.slots(); i++) {
       const p = list[i];
       if (!p) { partyEl.append(h('div.d-col', null, h('div.d-slot.empty', null, '+'))); slots.push({ p: null }); continue; }
-      const hp = bar('hp'), lv = h('b.d-lv'), down = h('b.d-down');
+      const hp = bar('hp'), st = bar('st'), lv = h('b.d-lv'), down = h('b.d-down');
       // 스킬 넷 (DESIGN.md 43): 자동이라 누르지 않는다 — 아이콘 위로 쿨타임이 걷힌다. 아직 안 열린 칸은 흐리게
       const sks = (p.merc?.skills || []).map((k, j) => { const S = G.D.MSKILLS[k]; return { k, j, el: h('i.d-sk', { 'data-tip': `${S.n} · ${S.d}${S.passive ? '' : ` · ${S.cool}초`}` }, G.T.el(S.t, 'd-ski')) }; });
-      const el = h('div.d-slot' + (p.kind === 'hero' ? '.lead' : ''), { on: { click: e => { e.stopPropagation(); if (p.merc) sheet.open(p.merc); } } }, G.T.el(p.t, 'd-img'), lv, down, hp,
+      const el = h('div.d-slot' + (p.kind === 'hero' ? '.lead' : ''), { on: { click: e => { e.stopPropagation(); if (p.merc) sheet.open(p.merc); } } }, G.T.el(p.t, 'd-img'), lv, down, hp, G.TURN ? st : null,
         p.merc?.pers?.length ? h('div.d-pers', null, ...p.merc.pers.map(k => G.T.el('ni_' + G.D.PERSONA[k].ic, 'd-pi'))) : null);
       partyEl.append(h('div.d-col', null, el, sks.length ? h('div.d-sks', null, sks.map(x => x.el)) : null));
-      slots.push({ p, el, hp, lv, down, sks });
+      slots.push({ p, el, hp, st, lv, down, sks });
     }
   }
   // 단장 기술 (트리로 연다)
@@ -64,6 +64,20 @@ G.UI.views.fantasy = function () {
   const turnBar = h('div.t-bar'), turnWho = h('b.t-who'), turnOrder = h('div.t-order'), turnX = h('button.t-x', { 'data-tip': '전투 배속 (T)', on: { click: e => { e.stopPropagation(); G.Turn.nextSpeed(f()); } } });
   turnBar.append(turnWho, turnOrder, turnX);
   const dmEl = h('div.t-dm');
+  // 묻기 (G.Story): 잠깐 멈추고 고르게 한다. 시간이 다 되면 파티가 정한 대로
+  const qTitle = h('b.t-at'), qOpts = h('div.t-ao'), qBar = h('i.t-ab'), qBox = h('div.t-ask.hidden', { on: { click: e => e.stopPropagation() } }, qTitle, qOpts, h('div.t-abw', null, qBar));
+  let qId = 0;
+  function drawQ(s, rt) {
+    const a = !s.town && rt.ask;
+    tog(qBox, 'hidden', !a);
+    if (!a) return;
+    qBar.style.width = `${Math.max(0, a.t / a.max) * 100}%`;
+    if (a.id === qId) return;
+    qId = a.id;
+    setText(qTitle, a.title);
+    qOpts.innerHTML = '';
+    a.opts.forEach((o, i) => qOpts.append(h('button.t-opt' + (i === a.def ? '.def' : ''), { on: { click: e => { e.stopPropagation(); G.Story.answer(rt, i); } } }, h('b', null, o.label), o.sub ? h('small', null, o.sub) : null)));
+  }
   // 굴림 판독: 한 곳에서 주사위가 구르고 멈춘다
   const rollDie = h('b.t-die'), rollWho = h('span.t-rw'), rollCalc = h('span.t-rc'), rollWord = h('b.t-rword'), rollRes = h('span.t-rr'), rollEl = h('div.t-roll', null, rollDie, h('div.t-rt', null, rollWho, h('div.t-rl', null, rollCalc, rollWord, rollRes)));
   let rollId = 0, rollAt = 0;
@@ -79,6 +93,7 @@ G.UI.views.fantasy = function () {
       for (const [c, on] of [['ok', r.word && r.ok], ['no', r.word && !r.ok], ['big', r.nat === 20], ['low', r.nat === 1]]) tog(rollEl, c, !!on);
       tog(rollDie, 'hidden', r.nat == null);
     }
+    setText(rollRes, r.res || '');
     if (r.nat != null) setText(rollDie, performance.now() - rollAt < 280 ? 1 + Math.floor(Math.random() * 20) : r.nat);
   }
   let turnKey = '';
@@ -87,7 +102,7 @@ G.UI.views.fantasy = function () {
     tog(turnBar, 'hidden', !st);
     tog(dmEl, 'hidden', !dm);
     setText(dmEl, dm);
-    drawRoll(st, rt);
+    drawRoll(st || (!s.town && (rt.scene || rt.rollT > G.S.runTime)), rt);
     if (!st) { turnKey = ''; return; }
     setText(turnWho, `${st.round}라운드`);
     setText(turnX, `×${G.Turn.speed(s)}`);
@@ -122,13 +137,14 @@ G.UI.views.fantasy = function () {
   // ════════ 오른쪽 위: 라이벌 한 줄 (미니맵 아래) ════════
   const rivLine = h('div.m-rivals');
   const menuEl = h('div.fmenu', null, rivLine);
-  let rivKey = '';
+  let rivKey = null;
   function drawRivLine(s, rt) {
     const rows = G.Rivals.standings(s, rt).filter(r => !r.us);
     const k = rows.map(r => r.id + r.floor + (r.here ? 'h' : '')).join();
     if (k === rivKey) return;
     rivKey = k;
     rivLine.innerHTML = '';
+    tog(rivLine, 'hidden', !rows.length);
     for (const r of rows) rivLine.append(h('span' + (r.here ? '.here' : ''), { style: `--rc:${r.col}`, 'data-tip': `${r.n} · ${RS[r.stance].n}` }, h('i'), `${r.floor}층`));
   }
 
@@ -172,7 +188,7 @@ G.UI.views.fantasy = function () {
     askEl.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y - p.ts * 1.1)}px) translate(-50%, -100%)`;
   }
 
-  const overlay = h('div.fover', null, chatEl, turnBar, dmEl, rollEl, menuEl, alertEl, askEl, dock, town.el, sheet.el);
+  const overlay = h('div.fover', null, chatEl, turnBar, dmEl, rollEl, qBox, menuEl, alertEl, askEl, dock, town.el, sheet.el);
   return G.UI.worldScreen('fantasy', {
     overlay,
     frame: mv => frameAsk(mv),
@@ -209,6 +225,7 @@ G.UI.views.fantasy = function () {
         const p = r.p, dead = p.dead;
         setW(r.hp.fill, dead ? 0 : p.hp / p.max);
         tog(r.hp, 'low', !dead && p.hp / p.max < 0.3);
+        if (G.TURN) { const sv = (p.merc && p.merc.stress) || 0; setW(r.st.fill, sv / 100); r.st.dataset.tip = `스트레스 ${Math.round(sv)}`; tog(r.st, 'low', sv >= 70); tog(r.el, 'broke', !!p.broke); }
         tog(r.el, 'down', dead);
         tog(r.el, 'on', !!p.merc && sheet.current() === p.merc);
         setText(r.lv, p.merc ? p.merc.lv : '');
@@ -247,6 +264,7 @@ G.UI.views.fantasy = function () {
       town.update();
       drawChat(rt, !!s.town);
       drawTurn(s, rt);
+      drawQ(s, rt);
       sheet.update();
     },
   });

@@ -26,6 +26,8 @@ G.Rivals = (() => {
   };
 
   const R = {
+    // 잠시 뺀다 (2026-11-02, 사용자: 용병단 안의 시스템부터 완성): false로 되돌리면 그대로 돌아온다
+    OFF: true,
     STANCES,
     news: [],
     stance(f, d) {
@@ -78,6 +80,7 @@ G.Rivals = (() => {
     // key를 주면 같은 라이벌의 같은 종류 소식은 cd초에 한 번만 (도착·체류·기세가 소식을 덮지 않게)
     said: {},
     say(s, col, key, cd = 60) {
+      if (R.OFF) return;
       if (key) { if (G.S.runTime - (R.said[key] ?? -1e9) < cd) return; R.said[key] = G.S.runTime; }
       R.news.unshift({ s, col, at: G.S.runTime });
       if (R.news.length > NEWS_MAX) R.news.length = NEWS_MAX;
@@ -109,6 +112,7 @@ G.Rivals = (() => {
     },
     // 새 층: 이미 이 층에 있는 라이벌을 놓는다. 보스 층이면 근처 층의 도둑이 잠시 뒤 숨어든다
     enter(f, rt) {
+      if (R.OFF) { rt.rivals = []; return; }
       rt.rivals = [];
       rt.ambush = null;
       rt.prompt = null;
@@ -129,6 +133,7 @@ G.Rivals = (() => {
     bossOf: rt => rt.mons.find(o => o.boss),
 
     tick(f, rt, dt) {
+      if (R.OFF) return;
       const st = R.st(f);
       for (const d of G.D.RIVALS) {
         const s = st[d.id];
@@ -413,7 +418,7 @@ G.Rivals = (() => {
     // 층 순위: 우리(지금 층)와 라이벌. 같은 층이면 맵 위에 있는지, 아니면 기세(▲ 탔다 ▼ 주춤)
     standings(f, rt) {
       const st = R.st(f), here = new Set((rt.rivals || []).map(p => p.d.id));
-      const rows = G.D.RIVALS.map(d => {
+      const rows = (R.OFF ? [] : G.D.RIVALS).map(d => {
         const s = st[d.id];
         return { id: d.id, d, n: d.n, col: d.col, floor: s.floor, here: here.has(d.id), rest: s.rest > 0, mood: s.form > 1.07 ? '▲' : s.form < 0.93 ? '▼' : '', stance: R.stance(f, d) };
       });

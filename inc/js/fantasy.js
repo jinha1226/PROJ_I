@@ -240,6 +240,7 @@ G.Fantasy = (() => {
       rt.focus = null; rt.rally = null; rt.rush = false;
       rt.target = null;
       rt.room = null;
+      G.Turn.stage(f, rt);
       rt.monTotal = rt.mons.length;
       G.Mission.start(f, rt);
       G.Rivals.enter(f, rt);
@@ -338,6 +339,7 @@ G.Fantasy = (() => {
       if (!noCombo && m.kind === 'mon') G.Combo.on(f, rt, k, from, m);
     },
     kill(f, rt, m, src, from) {
+      if (m.chief) G.Story.chiefDown(f, rt, m, from);
       // 라이벌 몸이 쓰러졌다 / 라이벌이 먼저 잡았다 (골드는 그들 몫)
       if (m.kind === 'rival') return G.Rivals.down(f, rt, m, from);
       if (from && from.kind === 'rival') return G.Rivals.stole(f, rt, m, from);
@@ -572,7 +574,9 @@ G.Fantasy = (() => {
       p.dead = true;
       p.reviveT = ALLY_REVIVE * (F.has(rt, 'c_revive') ? 0.5 : 1) * (p.merc ? G.Guild.mult(p.merc, 'revive') : 1);
       if (p.merc) G.Guild.onDown(f, rt, p);
+      G.Story.onDown(f, rt, p, mo);
       if (rt.party.every(q => q.dead)) {
+        G.Story.wipe(f, rt);
         rt.phase = 'dead';
         rt.reviveT = REVIVE;
         f.deaths++;
@@ -691,9 +695,9 @@ G.Fantasy = (() => {
       G.Banter.tick(f, rt, dt);
       rt.stairWait = false;
       const braced = G.Explore.tick(f, rt, dt);
-      if (rt.phase === 'dead') return;
+      if (rt.phase === 'dead' || f.town) return;
       // 턴제 전투 (G.Turn): 이번 틱의 움직임은 차례인 사람만
-      if (G.Turn.run(f, rt, dt)) { F.look(rt); F.spread(m, rt.party, 0.75); F.spread(m, rt.mons, 0.8); return; }
+      if (G.Turn.run(f, rt, dt)) { if (f.town) return; F.look(rt); F.spread(m, rt.party, 0.75); F.spread(m, rt.mons, 0.8); return; }
       if (!hero.dead && !G.Dnd.out(hero) && !braced) {
         const goal = (rt.focus && rt.focus.hp > 0) ? rt.focus : F.plan(rt);
         const chest = goal && goal.chest ? goal : null, rally = goal && goal.rally ? goal : null, hold = goal && goal.hold ? goal : null, target = chest || rally || hold ? null : goal, march = speed * (1 + ta('t_march'));
@@ -724,7 +728,8 @@ G.Fantasy = (() => {
           const there = GR.moveTo(m, hero, m.end.cx, m.end.cy, rushing ? march : speed, dt, go ? 0.2 : STAIR_WAIT);
           rt.stairWait = !go && there;
           if (rt.stairWait) G.Banter.line(rt, 'stairs', hero);
-          if (go && there) {
+          // 계단 앞: 힘들거나 짐이 차면 더 갈지 묻는다 (G.Story)
+          if (go && there && !G.Story.stairs(f, rt)) {
             F.descend(f, rt);
             return;
           }
