@@ -2,11 +2,12 @@
 // 판타지 화면: 맵이 화면을 채우고, 중요한 정보는 아래 가운데 독 하나에 모은다 (디아블로·마인크래프트 — DESIGN.md 34)
 //  독 윗줄: 층 · 다음 보스 · 이 층 진행 · 금고 · 정수 · 지금 명령
 //  독 본체: 왼쪽 구슬(원정대 체력) · 초상(단장 + 출전, 아래에 스킬 넷의 쿨타임) · 단장 기술 · 명령(Z X C V) · 오른쪽 구슬(짐)
-//  오른쪽 위: 미니맵(캔버스) 아래 라이벌 한 줄 / 오른쪽 가운데: 경고
+//  왼쪽 위: 대화 기록 / 오른쪽 위: 미니맵(캔버스) 아래 라이벌 한 줄 / 오른쪽 가운데: 경고 / 사람을 누르면 상태창(v_sheet)
 //  원정 사이에는 마을 화면(v_town)이 맵 자리를 채운다. 글은 이름표와 숫자만 (설명은 올렸을 때 한 구절)
 G.UI.views.fantasy = function () {
   const f = () => G.S.w.fantasy, F = G.Fantasy, U = G.U, EX = G.Exp, GD = G.Guild;
-  const RS = G.Rivals.STANCES, ORDER = Object.keys(RS);
+  const RS = G.Rivals.STANCES, ORDER = Object.keys(RS), CHAT_N = 6;
+  const sheet = G.UI.sheet = G.UI.charSheet();
 
   // ════════ 아래 가운데 독 ════════
   // 윗줄
@@ -33,7 +34,7 @@ G.UI.views.fantasy = function () {
       const hp = bar('hp'), lv = h('b.d-lv'), down = h('b.d-down');
       // 스킬 넷 (DESIGN.md 43): 자동이라 누르지 않는다 — 아이콘 위로 쿨타임이 걷힌다. 아직 안 열린 칸은 흐리게
       const sks = (p.merc?.skills || []).map((k, j) => { const S = G.D.MSKILLS[k]; return { k, j, el: h('i.d-sk', { 'data-tip': `${S.n} · ${S.d}${S.passive ? '' : ` · ${S.cool}초`}` }, G.T.el(S.t, 'd-ski')) }; });
-      const el = h('div.d-slot' + (p.kind === 'hero' ? '.lead' : ''), { on: { click: e => { e.stopPropagation(); pick = pick === p ? null : p; } } }, G.T.el(p.t, 'd-img'), lv, down, hp,
+      const el = h('div.d-slot' + (p.kind === 'hero' ? '.lead' : ''), { on: { click: e => { e.stopPropagation(); if (p.merc) sheet.open(p.merc); } } }, G.T.el(p.t, 'd-img'), lv, down, hp,
         p.merc?.pers?.length ? h('div.d-pers', null, ...p.merc.pers.map(k => G.T.el('ni_' + G.D.PERSONA[k].ic, 'd-pi'))) : null);
       partyEl.append(h('div.d-col', null, el, sks.length ? h('div.d-sks', null, sks.map(x => x.el)) : null));
       slots.push({ p, el, hp, lv, down, sks });
@@ -51,34 +52,27 @@ G.UI.views.fantasy = function () {
   const CMDS = [
     cmd('Z', '⌂', '귀환', () => { const s = f(); if (!s.town) EX.home(s, F.rt(s), 'manual'); }),
     cmd('X', '⤓', '서둘러 내려가기', () => { const rt = F.rt(f()); if (!f().town) { rt.rush = !rt.rush; rt.rally = null; } }),
-    cmd('C', '⏬', '자동 하강', () => { f().auto = !f().auto; }),
+    cmd('C', '⏬', '자동 하강 (끄면 계단에서 기다린다)', () => { f().auto = !f().auto; }),
     cmd('V', '✕', '명령 취소', () => G.Cmd.clear(F.rt(f()))),
   ];
   const cmdEl = h('div.d-cmds', null, CMDS.map(c => c.b));
   const dock = h('div.fdock', { on: { click: e => e.stopPropagation() } }, dockTop,
     h('div.d-main', null, orbHP.el, partyEl, h('i.d-sep'), skillEl, h('i.d-sep'), cmdEl, orbBag.el));
-  // 초상을 누르면 독 위에 그 사람 카드
-  let pick = null;
-  const cardEl = h('div.d-card.hidden');
-  function cardLines(s, p) {
-    const hp = `❤ ${U.fmt(Math.max(0, p.hp))} / ${U.fmt(p.max)}`;
-    const d = p.def, m = p.merc, who = (p.kind === 'hero' ? '👑 ' : '') + (m ? `${m.name} · ${d.n} ${G.Guild.lvText(m)}` : d.n), tr = m && G.Feat.def(m) ? [G.Feat.def(m).n] : [];
-    if (m && m.pers?.length) tr.unshift(m.pers.map(k => G.D.PERSONA[k].n).join(' · '));
-    if (m) tr.push(G.Guild.active(m).map(k => G.D.MSKILLS[k].n).join(' · '));
-    if (m && G.Trinket.of(m).length) tr.push(G.Trinket.of(m).map(t => `${G.Trinket.def(t).ic} ${G.Trinket.name(t)}`).join(' · '));
-    if (d.heal) return [who, hp, `✚ ${Math.round(d.heal * 100 * G.Tree.mul('fantasy', s.tree, 'clericHeal'))}% · ${d.cd}초`, ...tr];
-    return [who, hp, `⚔ ${U.fmt(p.kind === 'hero' ? F.heroAtk(s) : F.allyAtk(s, p))} · ${(F.allyCd(p) / F.aspd(s)).toFixed(1)}초`, ...tr];
-  }
-  function drawCard(s) {
-    const p = pick && (pick.kind === 'hero' || F.rt(s).allies.includes(pick)) ? pick : null;
-    tog(cardEl, 'hidden', !p);
-    if (!p) { pick = null; return; }
-    const lines = cardLines(s, p);
-    if (cardEl.childNodes.length !== lines.length) { cardEl.innerHTML = ''; for (const _ of lines) cardEl.append(h('div')); cardEl.firstChild.classList.add('c-n'); }
-    lines.forEach((t, i) => setText(cardEl.childNodes[i], t));
+  // 대화 기록 (G.Banter): 왼쪽 위. 말풍선을 놓쳐도 여기서 읽는다 — 오래된 줄일수록 흐리게
+  const chatEl = h('div.f-chat');
+  let chatId = -1;
+  function drawChat(rt, town) {
+    tog(chatEl, 'hidden', town);
+    const list = rt.chat || [], last = list.length ? list[list.length - 1].id : 0;
+    if (last === chatId) return;
+    chatId = last;
+    chatEl.innerHTML = '';
+    for (const c of list.slice(-CHAT_N)) chatEl.append(h('div', null, h('b', { style: `color:${c.col}` }, c.n), c.s));
   }
   // 단축키
-  document.addEventListener('keydown', e => {
+  // 화면을 다시 만들어도 처리기는 하나만 (둘이면 누를 때마다 두 번 토글되어 제자리다)
+  if (G.UI.fantasyKeys) document.removeEventListener('keydown', G.UI.fantasyKeys);
+  document.addEventListener('keydown', G.UI.fantasyKeys = e => {
     if (G.UI.cur !== 'fantasy' || e.target.closest?.('input,textarea')) return;
     if (e.key.toLowerCase() === 'm') { G.UI.bigMap = !G.UI.bigMap; e.preventDefault(); return; }
     const c = CMDS.find(x => x.key.toLowerCase() === e.key.toLowerCase());
@@ -140,7 +134,7 @@ G.UI.views.fantasy = function () {
     askEl.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y - p.ts * 1.1)}px) translate(-50%, -100%)`;
   }
 
-  const overlay = h('div.fover', null, menuEl, alertEl, askEl, cardEl, dock, town.el);
+  const overlay = h('div.fover', null, chatEl, menuEl, alertEl, askEl, dock, town.el, sheet.el);
   return G.UI.worldScreen('fantasy', {
     overlay,
     frame: mv => frameAsk(mv),
@@ -178,7 +172,7 @@ G.UI.views.fantasy = function () {
         setW(r.hp.fill, dead ? 0 : p.hp / p.max);
         tog(r.hp, 'low', !dead && p.hp / p.max < 0.3);
         tog(r.el, 'down', dead);
-        tog(r.el, 'on', pick === p);
+        tog(r.el, 'on', !!p.merc && sheet.current() === p.merc);
         setText(r.lv, p.merc ? p.merc.lv : '');
         setText(r.down, dead ? Math.ceil(p.reviveT) : '');
         // 연계기가 나가면 두 사람 초상이 함께 번쩍
@@ -193,7 +187,6 @@ G.UI.views.fantasy = function () {
           tog(x.el, 'fire', p.lastSk === x.k && cd > max - 0.5);
         }
       }
-      drawCard(s);
       // 기술 (동료 기술은 그 동료가 출전 중일 때만)
       for (const x of skills) {
         const un = F.unlocked(x.id), cd = s.cds[x.id] || 0;
@@ -205,6 +198,7 @@ G.UI.views.fantasy = function () {
       // 명령
       for (const c of CMDS) c.b.disabled = s.town;
       tog(CMDS[1].b, 'on', !!rt.rush);
+      tog(CMDS[1].b, 'wait', !!rt.stairWait);
       tog(CMDS[2].b, 'on', !!s.auto);
       // 오른쪽
       drawRivLine(s, rt);
@@ -213,6 +207,8 @@ G.UI.views.fantasy = function () {
       for (const e of [dock, menuEl, alertEl]) tog(e, 'hidden', !!s.town);
       tog(overlay.parentNode, 'town', !!s.town);
       town.update();
+      drawChat(rt, !!s.town);
+      sheet.update();
     },
   });
 };

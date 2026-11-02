@@ -1,7 +1,7 @@
 'use strict';
 // 마을 화면 (DESIGN.md 35): 원정 사이에는 던전 대신 이 화면이 맵 자리를 채운다 — 길드 관리의 본거지.
 // 틀 (DESIGN.md 69 · 다키스트 던전의 영지 · 배틀 브라더스): 윗막대(길드 · 출발점 칸 · 재화) / 가운데 건물 화면 / 오른쪽 늘 보이는 명단 / 아래 건물 단추 · 출발
-// 건물: 원정(진형 + 계획) · 선술집 · 대장간 · 트리 · 길드 · 소식. 사람을 누르면 가운데에 그 사람 시트. 글은 이름표와 숫자만.
+// 건물: 원정(진형 + 계획) · 선술집 · 대장간 · 트리 · 길드 · 소식. 사람을 누르면 상태창(v_sheet). 글은 이름표와 숫자만.
 G.UI.fantasyTown = function () {
   const f = () => G.S.w.fantasy, F = G.Fantasy, D = G.D.F, U = G.U, EX = G.Exp, GD = G.Guild, TK = G.Trinket;
   const RS = G.Rivals.STANCES, ORDER = Object.keys(RS), RT = EX.RETREAT;
@@ -30,7 +30,7 @@ G.UI.fantasyTown = function () {
   const persEls = m => (m.pers || []).map(k => { const P = G.D.PERSONA[k]; return h('span.gtr.pers', { 'data-tip': `${P.n} · ${P.d}` }, G.T.el('ni_' + P.ic, 'xs'), h('small', null, P.n)); });
   // 마법 물건 (DESIGN.md 58): 아이콘 + 희귀도 테두리 · 랜다트는 점선 · 고정 물건은 실선. 이름 아래 DCSS 각인처럼 속성 줄
   const tkTip = t => TK.tip(t);
-  const tkEl = (t, tag = 'span') => { const d = TK.def(t); return h(tag + '.gt.r' + d.r + (d.fixed ? '.fix' : '.rand'), { 'data-tip': tkTip(t) }, d.ic); };
+  const tkEl = (t, tag = 'span') => { const d = TK.def(t); return h(tag + '.gt.r' + d.r + (d.fixed ? '.fix' : '.rand'), { 'data-tip': tkTip(t) }, G.UI.itemIcon(t, 'gt-ic')); };
   const tkLabel = t => h('span.tk-lb', null, h('small', null, TK.name(t)), h('i', null, `{${TK.tags(t).join(' ')}}`));
   // 카드: 무기 · 갑옷 · 장신구 한 칸씩
   const tkEls = (s, m) => { const w = TK.worn(s, m.uid); return h('div.tw-tks', null, TK.SLOT_KEYS.map(sl => { const t = w.find(q => TK.slot(q) === sl); return t ? tkEl(t) : h('span.gt.empty.' + sl); })); };
@@ -81,7 +81,7 @@ G.UI.fantasyTown = function () {
   const tabBtns = {}, panes = {};
   const tabEl = h('div.tw-tabs', null, TABS.map(([k, n, t]) => (tabBtns[k] = h('button.tw-tab', { on: { click: () => setTab(k) } }, G.T.el(t, 'tw-tabic'), h('span', null, n)))));
   function setTab(k) {
-    tab = k; dtM = null;
+    tab = k; G.UI.sheet.close();
     for (const [id] of TABS) { tog(tabBtns[id], 'on', id === k); tog(panes[id], 'hidden', id !== k); }
     keys[k] = '';
     if (k === 'tree') tree.center();
@@ -192,14 +192,14 @@ G.UI.fantasyTown = function () {
   function rosterRow(s, m, line) {
     const on = m.lead || line.includes(m.uid), xp = bar(); setW(xp.fill, m.xp / GD.needOf(m));
     const flag = m.inj > 0 ? h('small.tw-rflag.hurt', null, `🩹${Math.ceil(m.inj)}`) : m.job ? h('small.tw-rflag', { 'data-tip': `${G.D.JOBS[m.job].n} 근무` }, G.T.el(G.D.JOBS[m.job].t, 'xs')) : GD.canPromote(m) ? h('small.tw-rflag.up', { 'data-tip': '전직 가능' }, '▲') : null;
-    return h('div.tw-rrow' + (m.lead ? '.lead' : '') + (on ? '.on' : '') + (dtM && dtM.uid === m.uid ? '.sel' : '') + (m.inj > 0 ? '.hurt' : ''), {
+    return h('div.tw-rrow' + (m.lead ? '.lead' : '') + (on ? '.on' : '') + (isOpen(m) ? '.sel' : '') + (m.inj > 0 ? '.hurt' : ''), {
       'data-uid': m.uid, draggable: m.inj > 0 ? null : 'true',
-      on: { click: e => { if (!e.target.closest('button')) { if (dtM && dtM.uid === m.uid) dtM = null; else openDetail(m); keys.roster = ''; } }, dragstart: e => e.dataTransfer.setData('text/plain', m.uid) },
+      on: { click: e => { if (!e.target.closest('button')) { if (isOpen(m)) G.UI.sheet.close(); else openDetail(m); keys.roster = ''; } }, dragstart: e => e.dataTransfer.setData('text/plain', m.uid) },
     }, G.T.el(GD.tile(m), 'tw-rimg'), h('div.tw-rtxt', null, h('b', null, m.name), h('small', { style: `color:${GD.def(m).col}` }, `${GD.def(m).n} `, h('i', null, GD.lvText(m))), xp), flag,
       m.lead ? null : h('button.tw-rtog' + (on ? '.on' : ''), { disabled: m.inj > 0 || (!on && line.length >= F.slots()), 'data-tip': on ? '대기로' : '출전', on: { click: () => { F.toggleMember(s, m.uid); keys.roster = ''; } } }));
   }
   function drawRoster(s) {
-    const line = F.lineup(s), key = [GD.crew(s).map(m => mkey(s, m) + Math.round(m.xp / GD.needOf(m) * 20)).join(), line.join(), dtM && dtM.uid, s.autoParty].join('|');
+    const line = F.lineup(s), key = [GD.crew(s).map(m => mkey(s, m) + Math.round(m.xp / GD.needOf(m) * 20)).join(), line.join(), G.UI.sheet.current()?.uid, s.autoParty].join('|');
     setText(rosterHead, ` ${s.mercs.length}/${GD.ROSTER_MAX}`);
     tAuto.update();
     if (key === keys.roster) return;
@@ -466,48 +466,8 @@ G.UI.fantasyTown = function () {
     crBody.append(h('div.tw-h', null, h('b', null, '모습')), h('div.tw-cr-row', null, [0, 1, 2].map(l => { const t = A[cr.cls].t + (l ? '_c' + l : '');
       return h('button.tw-cr-opt.look' + (cr.look === l ? '.on' : ''), { on: { click: () => { cr.look = l; re(); } } }, G.T.el(G.ARTSET && !G.ARTSET[t] ? A[cr.cls].t : t, 'tw-img')); })));
   }
-  // ── 시트 (DESIGN.md 69 · 다키스트 던전의 인물 창): 한 사람의 모든 것. 왼쪽 얼굴 · 수치 · 능력치, 오른쪽 기술 · 장비 · 할 일
-  // 능력치 (DESIGN.md 65): 이 직업에게 무엇에 쓰이는지 옆에, 공격 · 체력 · 방어에 쓰이는 것만 밝게
-  const dtBody = h('div.tw-dt-body');
-  const dtEl = h('div.tw-sheet.hidden', null, dtBody);
-  let dtM = null, dtKey = '';
-  const openDetail = m => { dtM = m; dtKey = ''; };
-  const skRow = (S, cls, tag, off) => h('div.tw-dsk' + cls + (off ? '.off' : ''), null, G.T.el(S.t, 'tw-dskic'), h('div', null, h('b', null, tag + S.n), h('small', null, `${S.d}${S.passive || !S.cool ? '' : ` · ${S.cool}초`}${off ? ` · Lv ${off}` : ''}`)));
-  function drawDetail(s) {
-    const m = dtM && GD.get(s, dtM.uid) ? dtM : (dtM && (s.tavern?.offers || []).some(o => o.m === dtM) ? dtM : null);
-    tog(dtEl, 'hidden', !m);
-    if (!m) { dtM = null; return; }
-    const crew = GD.crew(s).includes(m), line = F.lineup(s), on = m.lead || line.includes(m.uid);
-    const key = mkey(s, m) + armed + on + m.xp;
-    if (key === dtKey) return;
-    dtKey = key;
-    const DN = G.Dnd, ab = DN.ab(m), sg = v => (v >= 0 ? '+' : '') + v, xp = bar(), ap = G.Mission.aptOf(m), re = () => { dtKey = ''; keys.roster = ''; };
-    setW(xp.fill, m.xp / GD.needOf(m));
-    const acts = !crew || m.lead ? null : h('div.tw-acts', null,
-      h('button.tw-act' + (on ? '.on' : ''), { disabled: m.inj > 0 || (!on && line.length >= F.slots()), on: { click: () => { F.toggleMember(s, m.uid); re(); } } }, on ? '대기로' : '출전'),
-      GD.canRetire(m) ? h('button.tw-act.promo' + (armed === 'r' + m.uid ? '.armed' : ''), { 'data-tip': `명성 +${GD.retireFame(m)}`, on: { click: () => { if (armed === 'r' + m.uid) { GD.retire(s, m.uid); armed = null; dtM = null; } else armed = 'r' + m.uid; re(); } } }, armed === 'r' + m.uid ? '은퇴?' : '은퇴') : null,
-      h('button.tw-act.fire' + (armed === m.uid ? '.armed' : ''), { on: { click: () => { if (armed === m.uid) { GD.dismiss(s, m.uid); armed = null; dtM = null; } else armed = m.uid; re(); } } }, armed === m.uid ? '해고?' : '해고'));
-    dtBody.innerHTML = '';
-    dtBody.append(
-      h('div.tw-dt-l', null,
-        h('div.tw-dt-por', null, G.T.el(GD.tile(m), 'tw-dt-img')),
-        h('b.tw-dt-name', null, (m.lead ? '👑 ' : '') + m.name), mchip(m),
-        h('small.tw-dt-lv', null, GD.lvText(m), m.inj > 0 ? ` · 🩹 ${Math.ceil(m.inj)}초` : '', m.job ? ` · ${G.D.JOBS[m.job].n} 근무` : ''), xp,
-        abEls(m, s),
-        h('div.tw-dt-ab', null, DN.AB.map(k => h('div' + (DN.key(m.cls, k) ? '.key' : ''), null, h('b', null, DN.AB_N[k]), h('span.v', null, ab[k]), h('small', null, sg(DN.mod(ab[k]))), h('span.r', null, DN.role(m.cls, k))))),
-        acts),
-      h('div.tw-dt-r', null,
-        h('button.tw-close', { 'aria-label': '닫기', on: { click: () => { dtM = null; keys.roster = ''; } } }, '✕'),
-        h('div.tw-h', null, h('b', null, '기술'), h('b.tw-slv', { 'data-tip': '스킬 레벨' }, '★' + GD.skillLv(m))),
-        h('div.tw-dsks', null,
-          (m.skills || []).map((k, i) => { const lv = GD.slotLv(i, m, k); return skRow(G.D.MSKILLS[k], '', k === G.D.MSIG[m.cls] ? '★ ' : '', m.lv < lv ? lv : 0); }),
-          (m.adv ? G.D.ADV[m.adv].sig : []).map(k => { const lv = GD.skLv(m.cls, k); return skRow(G.D.MSKILLS[k], '.sig', '', m.lv < lv ? lv : 0); }),
-          (m.boons || []).map(k => skRow(G.D.BOONS[k], '.boon', '', 0))),
-        promoEls(s, m),
-        h('div.tw-h', null, h('b', null, '특성')), h('div.tw-trs', null, ...traitEls(m)), ap.length ? h('small.tw-dt-apt', null, '✦ 임무 적성 · ' + ap.map(k => G.Mission.DEF[k].n).join(' · ')) : null,
-        h('div.tw-h', null, h('b', null, '장비')), h('div.tw-dt-gear', null, gearEls(m), crew ? tkEls(s, m) : null)));
-  }
-  const el = h('div.ftownui.hidden', { on: { click: e => { e.stopPropagation(); EX.hold(f()); } } }, topEl, h('div.tw-main', null, h('div.tw-body', null, TABS.map(([k]) => panes[k]), dtEl, resEl, repEl, crEl), rosterCol), botEl);
+  const openDetail = m => G.UI.sheet.open(m), isOpen = m => G.UI.sheet.current()?.uid === m.uid;
+  const el = h('div.ftownui.hidden', { on: { click: e => { e.stopPropagation(); EX.hold(f()); } } }, topEl, h('div.tw-main', null, h('div.tw-body', null, TABS.map(([k]) => panes[k]), resEl, repEl, crEl), rosterCol), botEl);
   setTab('party');
   let lastNews = 0, idKey = '';
   return {
@@ -525,7 +485,6 @@ G.UI.fantasyTown = function () {
       drawResult(s);
       drawReport(s);
       drawCreate(s);
-      drawDetail(s);
       drawStrip(s);
       // 건물 배지: 선술집(고용 가능) · 원정(빈 칸)
       tog(tabBtns.tavern, 'dot', GD.tavern(s).offers.some(o => o.price <= s.gold) && s.mercs.length < GD.ROSTER_MAX);

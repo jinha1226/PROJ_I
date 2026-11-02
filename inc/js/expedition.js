@@ -78,6 +78,7 @@ G.Exp = (() => {
       if (f.autoTr !== false) G.Trinket.auto(f);
       f.floor = f.runStart = U.clamp(f.start || f.checkpoint || 1, 1, Math.max(1, f.checkpoint || 1));
       f.deaths = 0;
+      rt.btDepart = true;
       F().newFloor(f, rt);
       G.Bond.depart(f, rt);
       G.Report.snap(f, rt);

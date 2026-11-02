@@ -23,10 +23,16 @@ G.Mission = (() => {
     apt: (rt, k) => rt.party.filter(p => p.merc && !p.dead && G.D.APT[k]?.cls.includes(p.merc.cls)).slice(0, 3),
     // 탐험 판정 (지각 · 조사 · 설득): 원정대에서 가장 잘하는 사람이 굴린다. 성공하면 그 사람 머리 위에 🎲
     check(f, rt, sk, extra = 0) {
+      const r = M.roll(f, rt, sk, extra);
+      return r && r.ok ? r.who : null;
+    },
+    // 굴린 결과까지: { who(굴린 사람), nat, ok } — 말풍선에 주사위 눈을 보여 줄 때 (실패해도 who가 있다)
+    roll(f, rt, sk, extra = 0) {
       const ms = rt.party.filter(p => p.merc && !p.dead), b = G.Dnd.best(ms.map(p => p.merc), sk);
       if (!b.m) return null;
-      const ok = G.Dnd.d20(0) + b.v >= DC(f.floor) + extra;
-      return ok ? ms.find(p => p.merc === b.m) : null;
+      // 가장 잘하는 사람과 2 이내면 누구든 나선다 (늘 같은 사람만 말하지 않게)
+      const val = p => G.Dnd.best([p.merc], sk).v, who = U.pick(ms.filter(p => val(p) >= b.v - 2)), nat = G.Dnd.d20(0);
+      return { who, nat, ok: nat + val(who) >= DC(f.floor) + extra };
     },
     // 이 층의 임무 (시즌마다 같은 층은 같은 임무)
     kind(f, fl) {

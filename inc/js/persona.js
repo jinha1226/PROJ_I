@@ -30,6 +30,7 @@ G.Persona = (() => {
       (a.persUsed = a.persUsed || {})[k] = true;
       rt.persT = G.S.runTime + BUSY_T;
       G.fx(rt, { k: 'emote', key: 'ni_' + D.PERSONA[k].ic, ent: a, x: a.x, y: a.y, t: EMOTE_T });
+      G.Banter.line(rt, 'p_' + k, a, null, { pri: true });
     },
     // 자리: 'front' 앞장 · 'mid' 가운데 · 'back' 뒤. 근접 직업 +1 · 치유 −1 (레벨이 올라 칸이 열리면 다시 잰다)
     // 진형 칸이 있으면 그 줄이 곧 자리다 (DESIGN.md 67). 칸이 없으면(레이드 둘째 파티) 성향대로

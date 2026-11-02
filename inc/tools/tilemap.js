@@ -179,4 +179,10 @@ module.exports = {
   c_hdoor: ['dngn/doors/closed_door'], c_horror: ['mon/tentacles/eldritch_ends/eldritch_tentacle[1-4]', 'mon/abyss/thrashing_horror'],
   c_ward: ['dngn/traps/binding_sigil'], c_investigator: ['player/body/coat_black'], c_hat: ['player/head/hat_explorer'],
   w_dummy: ['mon/statues/training_dummy'], w_cave: ['dngn/gateways/enter_lair'], w_board: ['dngn/vaults/lectern'],
+  // 소지품 아이콘 (DESIGN.md 70): 라이선스 불명 목록(TILES_UNDER_UNKNOWN_LICENSE.md)에 없는 것만
+  ii_ring: ['item/ring/ruby', 'item/ring/tourmaline'], ii_amulet: ['item/amulet/ruby', 'item/amulet/jade', 'item/amulet/pearl'], ii_brooch: ['item/amulet/cameo'],
+  ii_cloak: ['item/armour/cloak2', 'item/armour/cloak3'], ii_boots: ['item/armour/boots1', 'item/armour/boots2'], ii_glove: ['item/armour/glove1'], ii_bracer: ['item/armour/glove3'],
+  ii_belt: ['item/armour/scarf1'], ii_hat: ['item/armour/headgear/hat1'], ii_armor: ['item/armour/plate1', 'item/armour/scale_mail1', 'item/armour/leather_armour1'], ii_robe: ['item/armour/robe1'],
+  ii_shield: ['item/armour/shields/buckler1', 'item/armour/shields/kite_shield1'], ii_sword: ['item/weapon/long_sword1'], ii_dagger: ['item/weapon/dagger'], ii_hammer: ['item/weapon/hammer1'],
+  ii_axe: ['item/weapon/hand_axe1'], ii_qstaff: ['item/weapon/quarterstaff'], ii_orb: ['item/misc/misc_crystal'],
 };

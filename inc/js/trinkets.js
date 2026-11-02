@@ -160,7 +160,7 @@ G.Trinket = (() => {
       T.all(f).push(t);
       const d = T.def(t), col = ['#f4efe2', '#6fb4ff', '#c06bff', '#ffb547'][d.r - 1];
       const who = rt && x != null && rt.allies.filter(a => !a.dead).sort((p, q) => Math.hypot(p.x - x, p.y - y) - Math.hypot(q.x - x, q.y - y))[0];
-      if (who) G.Feat.banner(rt, who, d.ic, d.n, 'loot', col);
+      if (who) { G.Feat.banner(rt, who, d.ic, d.n, 'loot', col); G.Banter.line(rt, 'loot', who, { m: d.n }); }
       G.log(`마법 물건 · ${d.ic} ${d.n}`, 'fantasy', 'good');
       T.overflow(f);
       if (f.autoTr !== false) T.auto(f);

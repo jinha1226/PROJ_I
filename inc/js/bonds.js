@@ -41,6 +41,7 @@ G.Bond = (() => {
     linked(f, rt, a, b) {
       if (!a.merc || !b.merc) return 1;
       B.add(f, rt, a.merc, b.merc, 1);
+      G.Banter.line(rt, 'combo', a, { m: G.Banter.call(b) });
       if (B.rel(f, a.merc, b.merc) !== 'friend') return 1;
       G.fx(rt, { k: 'emote', key: 'rl_heart', ent: b, x: b.x, y: b.y, t: 1.2 });
       return FRIEND_DMG;

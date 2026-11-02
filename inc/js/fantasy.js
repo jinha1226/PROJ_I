@@ -12,7 +12,7 @@ G.Fantasy = (() => {
   const ta = k => G.Tree.add('fantasy', G.S.w.fantasy.tree, k);
   // 층은 넓고 길게 (DESIGN.md 30): 라이벌이 멀리서 다가오는 게 보이고, 마주침이 사건이 되게. 몬스터 수·층 정수는 그만큼 키운다
   // 넓어진 층 하나 = 예전 DEPTH_K층: 몬스터 세기·골드·정수·구간은 깊이(F.depth)를 따르고, 보스는 BOSS_EVERY층마다
-  const MW = 64, MH = 40, ROOMS = 14, LOOPS = 3, MON_K = 2.5, DEPTH_K = 2.5, BOSS_EVERY = 2, FIRST_BOSS = 4, REVIVE = 4, ALLY_REVIVE = 8, SIGHT = 7, SONG_CD = 12, WARP_CD = 15, SNIPE_CD = 12, STOP_CD = 30, DASH_CD = 5, SKIP_T = 50;
+  const STAIR_WAIT = 1.4, MW = 64, MH = 40, ROOMS = 14, LOOPS = 3, MON_K = 2.5, DEPTH_K = 2.5, BOSS_EVERY = 2, FIRST_BOSS = 4, REVIVE = 4, ALLY_REVIVE = 8, SIGHT = 7, SONG_CD = 12, WARP_CD = 15, SNIPE_CD = 12, STOP_CD = 30, DASH_CD = 5, SKIP_T = 50;
   // 성격 (DESIGN.md 42): 겁쟁이 — 체력 기준 · 확률 · 물러서는 초 / 다혈질 — 확률 · 뛰어드는 초 · 첫 타 배율
   const LEAD_HP = 1.5, COWARD_AT = 0.3, COWARD_P = 0.6, COWARD_T = 3, HOT_P = 0.2, HOT_T = 2, HOT_HIT = 1.5;
   // 구간별 오염: 초당 최대 체력의 몇 %
@@ -379,12 +379,14 @@ G.Fantasy = (() => {
         const spot = c.spotted || G.Dnd.spotMimic(rt);
         F.spawnMon(rt, f.floor, { n: '미믹', t: 'm_mimic', ty: 'monstrosity', fx: ['restrained', 'str', 2] }, c.x, c.y, false, { hp: F.monHP(f.floor) * 3, max: F.monHP(f.floor) * 3, atk: F.monAtk(f.floor) * 1.5, mimic: true, aggro: true, s: 1.2, stop: spot ? 3 : 0 });
         if (spot) G.Dnd.die(rt, spot);
+        G.Banter.line(rt, spot ? 'mimicKnown' : 'mimic', spot || null, null, { pri: true });
         G.fx(rt, { k: 'text', x: c.x, y: c.y - 1, s: '미믹!', col: '#ff6a6a', t: 1.2, sz: 1.3, pop: true });
         G.J.shake('fantasy', 6);
         G.J.sfx('fantasy', 'hurt');
       } else {
         // 상자에서 가끔 마법 물건 (DESIGN.md 58)
         G.Trinket.drop(f, rt, 'chest', c.x, c.y);
+        G.Banter.line(rt, 'chest');
         const g = F.monGold(f.floor) * 8 * (1 + ta('g_lucky')) * F.goldMult(f);
         F.gain(f, g);
         G.fx(rt, { k: 'tile', key: 'x_chest_open', x: c.x, y: c.y, t: 1.2, s: 0.9 });
@@ -437,13 +439,11 @@ G.Fantasy = (() => {
       G.Bond.floor(f, rt);
       if (F.isBoss(f.floor)) { G.Exp.cleared(f, f.floor); if (G.Exp.afterBoss(f, rt)) return; }
       G.J.sfx('fantasy', 'wave');
-      if (f.auto) {
-        // 층 도약: 빨리 정리하면 한 층 더
-        const skip = ta('g_skip') && rt.floorT < SKIP_T && !F.isBoss(f.floor + 1) ? 2 : 1;
-        if (skip > 1) G.fx(rt, { k: 'text', x: rt.hero.x, y: rt.hero.y - 1.2, s: '도약!', col: '#9fe0ff', t: 1.2, sz: 1.3, pop: true });
-        f.floor += skip;
-        if (f.floor > f.maxFloor) f.maxFloor = f.floor;
-      }
+      // 층 도약: 빨리 정리하면 한 층 더
+      const skip = ta('g_skip') && rt.floorT < SKIP_T && !F.isBoss(f.floor + 1) ? 2 : 1;
+      if (skip > 1) G.fx(rt, { k: 'text', x: rt.hero.x, y: rt.hero.y - 1.2, s: '도약!', col: '#9fe0ff', t: 1.2, sz: 1.3, pop: true });
+      f.floor += skip;
+      if (f.floor > f.maxFloor) f.maxFloor = f.floor;
       f.deaths = 0;
       F.newFloor(f, rt);
     },
@@ -685,6 +685,8 @@ G.Fantasy = (() => {
       hero.moving = false;
       rt.heroTg = null;
       // 탐험 연출 (js/explore.js): 방 입구에서 대열 맞추기 · 싸운 뒤 방 살피기 동안 단장은 제자리
+      G.Banter.tick(f, rt, dt);
+      rt.stairWait = false;
       const braced = G.Explore.tick(f, rt, dt);
       if (rt.phase === 'dead') return;
       if (!hero.dead && !G.Dnd.out(hero) && !braced) {
@@ -711,9 +713,16 @@ G.Fantasy = (() => {
           if (GR.moveTo(m, hero, rally.x, rally.y, march, dt, 0.6)) G.Cmd.arrive(f, rt);
         } else if (chest) {
           if (GR.moveTo(m, hero, chest.x, chest.y, speed, dt, 0.9)) F.openChest(f, rt, chest);
-        } else if (!G.Mission.blocks(rt) && GR.moveTo(m, hero, m.end.cx, m.end.cy, rt.rush || (rt.mission && rt.mission.k === 'escape') ? march : speed, dt, 0.2)) {
-          F.descend(f, rt);
-          return;
+        } else if (!G.Mission.blocks(rt)) {
+          // 자동 하강이 꺼져 있으면 계단 곁에서 명령을 기다린다 (서둘러 내려가기 · 계단 누르기 · 탈출 임무는 내려간다)
+          const rushing = rt.rush || (rt.mission && rt.mission.k === 'escape' && !rt.mission.done && !rt.mission.fail), go = f.auto || rushing;
+          const there = GR.moveTo(m, hero, m.end.cx, m.end.cy, rushing ? march : speed, dt, go ? 0.2 : STAIR_WAIT);
+          rt.stairWait = !go && there;
+          if (rt.stairWait) G.Banter.line(rt, 'stairs', hero);
+          if (go && there) {
+            F.descend(f, rt);
+            return;
+          }
         }
       }
       F.look(rt);
@@ -910,8 +919,9 @@ G.Fantasy = (() => {
         if (i > 0) { if (def.proj) G.fx(rt, { k: 'proj', key: def.proj, x: a.x, y: a.y, x2: tg.x, y2: tg.y, t: 0.25 + i * 0.06 }); else G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.25, rot: Math.random() - 0.5, flip: i % 2 === 0 }); }
         // 신성한 불꽃 (클레릭 기본): 명중 굴림 대신 민첩 내성 — 버티면 피해 없음
         const r = def.saveAtk ? { hit: !DN.save(tg, def.saveAtk, DN.dc(a)), crit: false, adv: 0 } : DN.attack(a, tg, critAt);
-        if (!r.hit) { DN.miss(rt, tg); continue; }
+        if (!r.hit) { DN.miss(rt, tg); if (r.nat === 1 && a.merc) G.Banter.line(rt, 'fumble', a); continue; }
         any = true;
+        if (r.nat === 20 && a.merc) G.Banter.line(rt, 'crit', a);
         let d = dmg * (r.crit ? F.critD() * G.Trinket.onCrit(f, rt, a, tg, dmg * F.critD()) * (DN.boon(a.merc, 'irresistible') ? 1.5 : 1) : 1), src = r.crit ? 'crit' : 'hit';
         // 기습 (로그) · 거인 사냥꾼 (레인저, 다친 적에게 한 번)
         const sn = DN.sneak(rt, a, tg, r.adv);
@@ -935,7 +945,7 @@ G.Fantasy = (() => {
       const rt = F.rt(f), b = F.band(f.floor), m = rt.map;
       if (m._band !== b) { m._band = b; m.ver++; }
       return {
-        map: m, ents: f.town ? [] : rt.ents, fx: rt.fx, cam: rt.hero.dead ? rt.party.find(p => !p.dead) || rt.hero : rt.hero, viewH: 13, center: true, dimAll: rt.phase === 'dead' || f.town,
+        map: m, ents: f.town ? [] : rt.ents, fx: rt.fx, bubbles: f.town ? null : G.Banter.live(rt), cam: rt.hero.dead ? rt.party.find(p => !p.dead) || rt.hero : rt.hero, viewH: 13, center: true, dimAll: rt.phase === 'dead' || f.town,
         fog: { seen: rt.seen, ver: rt.seenVer, light: rt.hero.dead ? rt.party.find(p => !p.dead) || rt.hero : rt.hero, torches: f.town ? null : rt.party.filter(p => !p.dead), torchR: F.sight() },
         mini: { seen: rt.seen, ver: rt.seenVer, start: m.start, end: m.end, treasure: m.treasure, chests: rt.chests, party: rt.party, mons: rt.mons, rivals: G.Rivals.members(rt), label: f.town ? '' : `${f.floor}층 · 탐사 ${Math.round(G.Season.coverage(f, f.floor) * 100)}%${G.Mission.label(rt)}` },
         terrain(x, y) {

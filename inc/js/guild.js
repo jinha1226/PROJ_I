@@ -283,6 +283,7 @@ G.Guild = (() => {
           Gd.giveBoons(m);
           a.max = a.kind === 'hero' ? F().heroHP(f) : F().allyHP(f, a);
           G.fx(rt, { k: 'text', x: a.x, y: a.y - 1.2, s: Gd.lvText(m), col: m.bt ? '#ffd27a' : '#9fe79f', t: 1.2, sz: 1.1, pop: true });
+          G.Banter.line(rt, 'levelup', a);
         }
       }
     },

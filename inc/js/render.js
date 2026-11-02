@@ -263,6 +263,42 @@ G.MapView = function (canvas, id) {
     ctx.strokeText(s, x, y);
     ctx.fillStyle = col; ctx.fillText(s, x, y);
   }
+  // 말풍선 (G.Banter): 말하는 사람 머리 위를 따라다닌다. 글자 크기는 확대와 상관없이 읽을 수 있게, 겹치면 위로 쌓는다
+  function drawBubbles(list) {
+    const px = Math.max(12, Math.min(15, TS * 0.3)), lh = px * 1.3, pad = px * 0.55, maxW = px * 13, placed = [], tnow = G.S.runTime;
+    ctx.save();
+    ctx.font = `600 ${px}px "Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif`;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    for (const b of list) {
+      if (b._px !== px) {
+        b._px = px; b._lines = [];
+        let cur = '';
+        for (const w of b.s.split(' ')) {
+          const next = cur ? cur + ' ' + w : w;
+          if (cur && ctx.measureText(next).width > maxW) { b._lines.push(cur); cur = w; } else cur = next;
+        }
+        b._lines.push(cur);
+        b._w = Math.max(...b._lines.map(l => ctx.measureText(l).width));
+      }
+      const e = b.e, w = b._w + pad * 2, hh = b._lines.length * lh + pad * 1.1, cx = sx(e._rx ?? e.x);
+      let x = Math.max(4, Math.min(W - w - 4, cx - w / 2)), y = sy(e._ry ?? e.y) - TS * 0.85 - hh;
+      for (let i = 0; i < placed.length; i++) { const p = placed[i]; if (x < p.x + p.w + 3 && x + w + 3 > p.x && y < p.y + p.h + 3 && y + hh + 3 > p.y) { y = p.y - hh - 3; i = -1; } }
+      y = Math.max(4, y);
+      placed.push({ x, y, w, h: hh });
+      const age = tnow - b.at, left = b.until - tnow;
+      ctx.globalAlpha = Math.min(1, Math.min(age / 0.12, left / 0.3));
+      const tx = Math.max(x + 8, Math.min(x + w - 8, cx)), r = 5;
+      ctx.beginPath();
+      ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + hh, r); ctx.arcTo(x + w, y + hh, x, y + hh, r);
+      ctx.lineTo(tx + 5, y + hh); ctx.lineTo(tx, y + hh + 6); ctx.lineTo(tx - 5, y + hh);
+      ctx.arcTo(x, y + hh, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+      ctx.fillStyle = '#efe4cb'; ctx.fill();
+      ctx.lineWidth = b.col ? 2 : 1.5; ctx.strokeStyle = b.col || '#2a1e12'; ctx.stroke();
+      ctx.fillStyle = '#21170d';
+      b._lines.forEach((l, i) => ctx.fillText(l, x + pad, y + pad * 0.55 + lh * (i + 0.78)));
+    }
+    ctx.restore();
+  }
   function drawFx(f, t) {
     const p = 1 - f.t / f.max, a = Math.min(1, f.t / f.max * 2);
     ctx.globalAlpha = a;
@@ -641,6 +677,7 @@ G.MapView = function (canvas, id) {
       if (fog) drawFog(view);
       if (view.labels) for (const l of view.labels) text(l.s, sx(l.x), sy(l.y) - TS * 0.7, l.on ? '#ffe08a' : 'rgba(255,255,255,0.75)', Math.max(10, TS * 0.32));
       for (const f of view.fx) drawFx(f, t);
+      if (view.bubbles) drawBubbles(view.bubbles);
       if (view.lamp && view.lamp.a > 0) {
         const L = view.lamp, lx = sx(L.x), ly = sy(L.y);
         const g = ctx.createRadialGradient(lx, ly, TS * L.r * 0.35, lx, ly, TS * L.r * 1.6);

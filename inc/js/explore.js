@@ -3,10 +3,12 @@
 // 처음 보는 방에만. 지휘 중 · 탈출류 임무 · 아는 층(직행) · 적이 덤벼 오면 멈추지 않는다.
 G.Explore = (() => {
   const F = () => G.Fantasy, GR = G.Grid, U = G.U;
-  const BRACE_T = 0.9, REVEAL_V = 12, SEARCH_T = 2, SEARCH_V = 0.7, FIND_GOLD = 2, TRAP_P = 0.25, TRAP_FIRST = 2, TRAP_DMG = 0.15, DANGER_R = 7, Q_GAP = 0.25;
+  const BRACE_T = 0.9, REVEAL_V = 12, SEARCH_T = 2, SEARCH_V = 0.7, FIND_GOLD = 2, TRAP_P = 0.25, TRAP_FIRST = 2, TRAP_DMG = 0.15, DANGER_R = 7, Q_GAP = 0.25, LOOK_P = 0.5, QUIET_P = 0.6;
   const RUSHED = new Set(['survive', 'defend', 'escape']);
   const inside = (r, o) => o.x >= r.x && o.x < r.x + r.w && o.y >= r.y && o.y < r.y + r.h;
-  const say = (rt, who, s, col) => G.fx(rt, { k: 'text', x: who.x, y: who.y - 1.5, s, col, t: 1.5, sz: 1.1, pop: true });
+  const B = () => G.Banter;
+  // 판정 결과 대사: 🎲 눈 + 그 사람 말투
+  const roll = (rt, r, key, col, v) => B().line(rt, key, r.who, v, { dice: r.nat, col, pri: true });
   const state = (f, rt) => {
     if (rt.ex && rt.ex.map === rt.map) return rt.ex;
     const m = rt.map, known = G.Season.known(f, rt);
@@ -24,37 +26,48 @@ G.Explore = (() => {
     ex.reveal = { r, x: rt.hero.x, y: rt.hero.y, d: 0 };
     const mons = rt.mons.filter(o => F().inRoom(r, o)), chest = rt.chests.find(c => !c.relic && F().inRoom(r, c)), M = G.Mission;
     r.fought = mons.length > 0;
+    // 살피는 사람이 먼저 말하고, 알아챈 것이 있으면 🎲 눈과 함께 차례로 말한다
+    let spotted = false, last = null;
+    const look = M.roll(f, rt, 'perception');
+    if (look && Math.random() < LOOK_P) ex.q.push(() => B().line(rt, 'look', look.who));
     if (f.floor >= TRAP_FIRST && U.chance(TRAP_P)) {
-      const t = { kind: 'obj', hazard: true, t: 'w_board', x: r.cx + (Math.random() < 0.5 ? -1 : 1), y: r.cy, s: 0.8, hidden: true };
+      const t = { kind: 'obj', hazard: true, t: 'w_board', x: r.cx + (Math.random() < 0.5 ? -1 : 1), y: r.cy, s: 0.8, hidden: true }, c = M.roll(f, rt, 'perception');
       ex.traps.push(t);
-      const who = M.check(f, rt, 'perception');
-      if (who) { t.hidden = false; ex.q.push(() => { say(rt, who, '❗ 함정', '#ffb060'); F().refreshEnts(rt); }); }
+      if (c) last = c;
+      if (c && c.ok) { spotted = true; t.hidden = false; ex.q.push(() => { roll(rt, c, 'spotTrap', '#ffb060'); F().refreshEnts(rt); }); }
     }
     if (mons.length) {
-      const who = M.check(f, rt, 'perception');
-      if (who) { for (const o of mons) o.noted = true; ex.q.push(() => say(rt, who, '👁 매복', '#9fe0ff')); }
+      const c = M.roll(f, rt, 'perception');
+      if (c) last = c;
+      if (c && c.ok) { spotted = true; for (const o of mons) o.noted = true; ex.q.push(() => roll(rt, c, 'spotAmbush', '#9fe0ff')); }
     }
     if (chest) {
-      const who = M.check(f, rt, 'investigation');
-      if (who) { chest.spotted = chest.mimic ? who : null; ex.q.push(() => say(rt, who, chest.mimic ? '🎭 미믹' : '🔍 보물', chest.mimic ? '#ff8a8a' : '#ffd24a')); }
+      const c = M.roll(f, rt, 'investigation');
+      if (c && c.ok) { spotted = true; chest.spotted = chest.mimic ? c.who : null; ex.q.push(() => roll(rt, c, chest.mimic ? 'spotMimic' : 'spotChest', chest.mimic ? '#ff8a8a' : '#ffd24a')); }
     }
+    // 못 알아챘으면 태연하다 — 뒤에 함정을 밟으면 그 사람이 욕을 먹는다
+    const shown = last || look;
+    if (!spotted && shown) ex.quietBy = shown.who;
+    if (!spotted && shown && Math.random() < QUIET_P) { ex.q.push(() => B().line(rt, 'quiet', shown.who, null, { dice: shown.nat })); }
   }
   function startSearch(f, rt, ex, r) {
     r.searched = true;
     ex.search = { t: SEARCH_T };
+    ex.search.roll = G.Mission.roll(f, rt, 'investigation');
+    if (ex.search.roll) B().line(rt, 'search', ex.search.roll.who);
     const m = rt.map, free = [];
     for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (m.c[y * m.w + x] === '.') free.push([x, y]);
     for (const a of rt.allies) if (!a.dead && free.length) { const [x, y] = U.pick(free); a.exT = { x, y }; }
   }
   function endSearch(f, rt, ex, finished) {
+    const r = ex.search.roll;
     ex.search = null;
     for (const a of rt.allies) a.exT = null;
-    if (!finished) return;
-    const who = G.Mission.check(f, rt, 'investigation');
-    if (!who) return;
+    if (!finished || !r || r.who.dead) return;
+    if (!r.ok) { roll(rt, r, 'nofind'); return; }
     const g = F().monGold(f.floor) * FIND_GOLD * F().goldMult(f);
     F().gain(f, g);
-    say(rt, who, `🔍 +${U.fmt(g)}`, '#ffd24a');
+    B().say(rt, r.who, `🎲 ${r.nat} · ${B().pick('found', r.who)} +${U.fmt(g)}`, { col: '#ffd24a', pri: true });
   }
   function springTraps(f, rt, ex) {
     const list = ex.traps.filter(t => t.hidden);
@@ -63,6 +76,11 @@ G.Explore = (() => {
       ex.traps = ex.traps.filter(o => o !== t);
       G.fx(rt, { k: 'text', x: t.x, y: t.y - 1, s: '함정!', col: '#ff6a6a', t: 1.2, sz: 1.3, pop: true });
       G.J.shake('fantasy', 4);
+      const hit = rt.party.filter(p => !p.dead && GR.dist(p, t) < 2), said = B().line(rt, 'trap', hit[0] || null, null, { pri: true });
+      // 별거 없다고 했던 사람에게 한마디
+      const by = ex.quietBy, other = hit.find(p => p !== by);
+      if (said && by && !by.dead && other && other !== said) B().queue(rt, [{ who: other, s: B().pick('trapBlame', other, { m: G.Banter.call(by) }) }]);
+      else if (said && by && !by.dead && by !== said) B().queue(rt, [{ who: said, s: B().pick('trapBlame', said, { m: G.Banter.call(by) }) }]);
       for (const p of rt.party) if (!p.dead && GR.dist(p, t) < 2) F().hurtMember(f, rt, p, p.max * TRAP_DMG * (G.Dnd.save(p, 'dex', G.Dnd.dc(t)) ? 0.5 : 1), null);
       if (rt.phase === 'dead') return;
     }
