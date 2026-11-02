@@ -188,6 +188,12 @@ G.Dnd = (() => {
     melee: e => e.kind === 'mon' || (e.def ? e.def.range < 2 : e.kind === 'hero'),
     // 명중 굴림: 1은 늘 빗나감 · 치명 범위(critAt 이상, 기본 20)는 늘 맞고 치명타 · 마비된 상대를 근접으로 맞히면 치명타
     attack(att, tg, critAt = 20) {
+      const r = N.attackRoll(att, tg, critAt);
+      // 턴제 전투가 말풍선에 적을 굴림 (G.Turn)
+      if (G.Turn.rec) G.Turn.note({ att, tg, nat: r.nat, mod: N.hit(att) + N.bsum(att, 'hit'), ac: N.ac(tg), hit: r.hit, crit: r.crit });
+      return r;
+    },
+    attackRoll(att, tg, critAt) {
       const adv = N.adv(att, tg), nat = N.d20(adv);
       if (nat === 1) return { hit: false, crit: false, nat, adv };
       if (nat >= critAt) return { hit: true, crit: true, nat, adv };
@@ -227,6 +233,11 @@ G.Dnd = (() => {
     // 내성 굴림: 성공하면 true
     // 내성: 성공하면 true. 우리 쪽은 기술 · 오라 · 영감 덕분에 결과가 뒤집혔을 때 그 이름을 띄운다 (DESIGN.md 66)
     save(tg, k, dc) {
+      const ok = N.saveRoll(tg, k, dc);
+      if (G.Turn.rec) G.Turn.note({ sv: true, tg, k, dc, ok });
+      return ok;
+    },
+    saveRoll(tg, k, dc) {
       const aura = N.aura(tg), insp = N.bon(tg, 'insp') ? 3.5 : 0, b = N.saveBonus(tg, k) + N.bsum(tg, 'save') + aura, r = N.d20(0);
       if (r + b >= dc) {
         if (tg.merc && aura && r + b - aura < dc) N.flip(tg, '보호의 오라');
@@ -258,8 +269,6 @@ G.Dnd = (() => {
     },
     // 빗나감 표시: 피해 숫자 자리에 작은 회색
     miss(rt, tg) { G.fx(rt, { k: 'text', x: tg.x, y: tg.y - 0.6, s: '빗나감', col: '#9aa0a8', t: 0.6, sz: 0.65 }); },
-    // 판정에 성공한 사람 머리 위 주사위
-    die(rt, e) { if (e) G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.3, s: '🎲', col: '#fff', t: 1, sz: 0.9, pop: true }); },
 
     // ── 전투에 끼어드는 규칙 ──
     // 우리가 거는 기절 · 정지 · 감전: 몬스터가 내성에 성공하면 걸리지 않는다
@@ -290,7 +299,7 @@ G.Dnd = (() => {
       const feral = rt.allies.some(a => !a.dead && (G.Fantasy.sk(a, 'sr_feral') || (a.merc && G.Trinket.has(a.merc, 'init'))));
       const win = mo.noted || N.d20((surprised ? -1 : 0) + (feral ? 1 : 0)) + ours >= N.d20(0) + Math.floor(fl() / 6) + (mo.boss ? 2 : 0);
       mo.atkT = win ? 1.5 : 0;
-      if (win && rt.allies.length) { const a = rt.allies.find(q => q.merc && N.mod(N.ab(q.merc).dex) + (G.Feat.has(q.merc, 'alert') ? N.prof(q.merc.lv) : 0) === ours && !q.dead); N.die(rt, a || rt.hero); }
+      if (win && rt.allies.length) { const a = rt.allies.find(q => q.merc && N.mod(N.ab(q.merc).dex) + (G.Feat.has(q.merc, 'alert') ? N.prof(q.merc.lv) : 0) === ours && !q.dead); N.flip(a || rt.hero, '선제권 · 먼저 움직인다'); }
     },
     // 미믹 알아채기 (SRD Mimic: 지능(조사) DC 15). 깊을수록 +층/10
     spotMimic(rt) {

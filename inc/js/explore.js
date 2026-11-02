@@ -7,8 +7,8 @@ G.Explore = (() => {
   const RUSHED = new Set(['survive', 'defend', 'escape']);
   const inside = (r, o) => o.x >= r.x && o.x < r.x + r.w && o.y >= r.y && o.y < r.y + r.h;
   const B = () => G.Banter;
-  // 판정 결과 대사: 🎲 눈 + 그 사람 말투
-  const roll = (rt, r, key, col, v) => B().line(rt, key, r.who, v, { dice: r.nat, col, pri: true });
+  // 판정 결과 대사: 무슨 판정인지 + 그 사람 말투
+  const roll = (rt, r, what, key, col) => B().line(rt, key, r.who, null, { tag: B().tag(what, r), col, pri: true });
   const state = (f, rt) => {
     if (rt.ex && rt.ex.map === rt.map) return rt.ex;
     const m = rt.map, known = G.Season.known(f, rt);
@@ -26,7 +26,8 @@ G.Explore = (() => {
     ex.reveal = { r, x: rt.hero.x, y: rt.hero.y, d: 0 };
     const mons = rt.mons.filter(o => F().inRoom(r, o)), chest = rt.chests.find(c => !c.relic && F().inRoom(r, c)), M = G.Mission;
     r.fought = mons.length > 0;
-    // 살피는 사람이 먼저 말하고, 알아챈 것이 있으면 🎲 눈과 함께 차례로 말한다
+    G.Turn.scene(f, rt, mons, chest);
+    // 살피는 사람이 먼저 말하고, 알아챈 것이 있으면 판정과 함께 차례로 말한다
     let spotted = false, last = null;
     const look = M.roll(f, rt, 'perception');
     if (look && Math.random() < LOOK_P) ex.q.push(() => B().line(rt, 'look', look.who));
@@ -34,21 +35,21 @@ G.Explore = (() => {
       const t = { kind: 'obj', hazard: true, t: 'w_board', x: r.cx + (Math.random() < 0.5 ? -1 : 1), y: r.cy, s: 0.8, hidden: true }, c = M.roll(f, rt, 'perception');
       ex.traps.push(t);
       if (c) last = c;
-      if (c && c.ok) { spotted = true; t.hidden = false; ex.q.push(() => { roll(rt, c, 'spotTrap', '#ffb060'); F().refreshEnts(rt); }); }
+      if (c && c.ok) { spotted = true; t.hidden = false; ex.q.push(() => { roll(rt, c, '함정 찾기', 'spotTrap', '#ffb060'); F().refreshEnts(rt); }); }
     }
     if (mons.length) {
       const c = M.roll(f, rt, 'perception');
       if (c) last = c;
-      if (c && c.ok) { spotted = true; for (const o of mons) o.noted = true; ex.q.push(() => roll(rt, c, 'spotAmbush', '#9fe0ff')); }
+      if (c && c.ok) { spotted = true; for (const o of mons) o.noted = true; ex.q.push(() => roll(rt, c, '매복 살피기', 'spotAmbush', '#9fe0ff')); }
     }
     if (chest) {
       const c = M.roll(f, rt, 'investigation');
-      if (c && c.ok) { spotted = true; chest.spotted = chest.mimic ? c.who : null; ex.q.push(() => roll(rt, c, chest.mimic ? 'spotMimic' : 'spotChest', chest.mimic ? '#ff8a8a' : '#ffd24a')); }
+      if (c && c.ok) { spotted = true; chest.spotted = chest.mimic ? c.who : null; ex.q.push(() => roll(rt, c, '상자 살피기', chest.mimic ? 'spotMimic' : 'spotChest', chest.mimic ? '#ff8a8a' : '#ffd24a')); }
     }
-    // 못 알아챘으면 태연하다 — 뒤에 함정을 밟으면 그 사람이 욕을 먹는다
+    // 못 알아챘으면 태연하다 — 뒤에 함정을 밟으면 그 사람이 욕을 먹는다. 무엇을 놓쳤는지는 밝히지 않는다
     const shown = last || look;
     if (!spotted && shown) ex.quietBy = shown.who;
-    if (!spotted && shown && Math.random() < QUIET_P) { ex.q.push(() => B().line(rt, 'quiet', shown.who, null, { dice: shown.nat })); }
+    if (!spotted && shown && Math.random() < QUIET_P) { ex.q.push(() => B().line(rt, 'quiet', shown.who, null, { tag: B().tag('주변 살피기', shown) })); }
   }
   function startSearch(f, rt, ex, r) {
     r.searched = true;
@@ -64,10 +65,10 @@ G.Explore = (() => {
     ex.search = null;
     for (const a of rt.allies) a.exT = null;
     if (!finished || !r || r.who.dead) return;
-    if (!r.ok) { roll(rt, r, 'nofind'); return; }
+    if (!r.ok) { roll(rt, r, '방 뒤지기', 'nofind'); return; }
     const g = F().monGold(f.floor) * FIND_GOLD * F().goldMult(f);
     F().gain(f, g);
-    B().say(rt, r.who, `🎲 ${r.nat} · ${B().pick('found', r.who)} +${U.fmt(g)}`, { col: '#ffd24a', pri: true });
+    B().say(rt, r.who, `${B().pick('found', r.who)} +${U.fmt(g)}`, { tag: B().tag('방 뒤지기', r), col: '#ffd24a', pri: true });
   }
   function springTraps(f, rt, ex) {
     const list = ex.traps.filter(t => t.hidden);
@@ -81,7 +82,11 @@ G.Explore = (() => {
       const by = ex.quietBy, other = hit.find(p => p !== by);
       if (said && by && !by.dead && other && other !== said) B().queue(rt, [{ who: other, s: B().pick('trapBlame', other, { m: G.Banter.call(by) }) }]);
       else if (said && by && !by.dead && by !== said) B().queue(rt, [{ who: said, s: B().pick('trapBlame', said, { m: G.Banter.call(by) }) }]);
-      for (const p of rt.party) if (!p.dead && GR.dist(p, t) < 2) F().hurtMember(f, rt, p, p.max * TRAP_DMG * (G.Dnd.save(p, 'dex', G.Dnd.dc(t)) ? 0.5 : 1), null);
+      for (const p of rt.party) if (!p.dead && GR.dist(p, t) < 2) {
+        const ok = G.Dnd.save(p, 'dex', G.Dnd.dc(t));
+        G.Dnd.flip(p, ok ? '민첩 내성 · 피해 절반' : '민첩 내성 실패', ok ? undefined : '#ff8a8a');
+        F().hurtMember(f, rt, p, p.max * TRAP_DMG * (ok ? 0.5 : 1), null);
+      }
       if (rt.phase === 'dead') return;
     }
   }
@@ -107,7 +112,8 @@ G.Explore = (() => {
       springTraps(f, rt, ex);
       if (rt.phase === 'dead') return false;
       if (h.dead) { if (ex.search) endSearch(f, rt, ex, false); ex.brace = 0; return false; }
-      if (danger(rt, h) || hurried(rt)) { if (ex.search) endSearch(f, rt, ex, false); ex.brace = 0; }
+      // 턴제 전투 중에는 방을 살피지 않는다 (끝나고 나서 그 방에 들어선 것으로 친다)
+      if (rt.turn || danger(rt, h) || hurried(rt)) { if (ex.search) endSearch(f, rt, ex, false); ex.brace = 0; }
       else if (ex.search) { if ((ex.search.t -= dt) <= 0) endSearch(f, rt, ex, true); else return true; }
       else if (ex.brace > 0) { ex.brace -= dt; return true; }
       else {
@@ -117,7 +123,7 @@ G.Explore = (() => {
         if (done) { startSearch(f, rt, ex, done); return true; }
       }
       // 서두르느라 입구에서 멈추지 않아도 이미 들어간 방은 처음 본 방으로 치지 않는다
-      for (const q of m.rooms) if (!q.ent && F().inRoom(q, h)) enter(f, rt, ex, q), ex.brace = 0;
+      if (!rt.turn) for (const q of m.rooms) if (!q.ent && F().inRoom(q, h)) enter(f, rt, ex, q), ex.brace = 0;
       return false;
     },
     // 방을 살피는 동료: 흩어져 걷고, 도착하면 두리번거린다. true면 이번 틱은 이것으로 끝

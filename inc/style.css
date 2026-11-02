@@ -1800,6 +1800,17 @@ body[data-theme="fantasy"] .wtree { height: 100vh; height: 100dvh; }
 .f-chat > div:nth-last-child(n+3) { opacity: .78; }
 .f-chat > div:nth-last-child(n+5) { opacity: .5; }
 .f-chat b { margin-right: 6px; font-weight: 700; }
+.f-chat i { margin-right: 6px; font-style: normal; font-weight: 700; }
+.f-chat i.ok { color: #8fe08f; }
+.f-chat i.no { color: #ff9a8a; }
+.t-bar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: #17110cee; border: 1px solid #6b5535; border-radius: 4px; pointer-events: auto; z-index: 3; }
+.t-who { color: #ffd27a; font-size: 13px; white-space: nowrap; }
+.t-order { display: flex; gap: 3px; }
+.t-ico { display: flex; padding: 1px; border: 1px solid #3a2e20; border-radius: 3px; background: #2a2118; opacity: .75; }
+.t-ico.foe { background: #3c1b18; }
+.t-ico.cur { opacity: 1; border-color: #ffe08a; box-shadow: 0 0 6px #ffe08a; transform: translateY(2px); }
+.t-x { padding: 2px 7px; font-size: 12px; color: #e8dcc6; background: #2a2118; border: 1px solid #6b5535; border-radius: 3px; cursor: pointer; }
+.t-dm { position: absolute; top: 52px; left: 50%; transform: translateX(-50%); max-width: min(560px, 64%); padding: 5px 14px; font-size: 14px; font-style: italic; text-align: center; color: #ffe9bd; background: #0b0806cc; border-top: 1px solid #6b553577; border-bottom: 1px solid #6b553577; pointer-events: none; z-index: 3; }
 .d-btn.cmd.wait { outline: 2px solid var(--ui-gold, #d9b26c); animation: cs-wait 1s ease-in-out infinite alternate; }
 @keyframes cs-wait { from { box-shadow: 0 0 2px #d9b26c55; } to { box-shadow: 0 0 12px #d9b26ccc; } }
 .gt .gt-ic, .gt-ic { width: 100%; height: 100%; display: block; }
@@ -1933,4 +1944,6 @@ body[data-theme="fantasy"] .wtree { height: 100vh; height: 100dvh; }
   .cs-stabs { display: none; }
   .f-chat { width: 62%; top: 4px; left: 4px; font-size: 11.5px; }
   .f-chat > div:nth-last-child(n+4) { display: none; }
+  .t-bar { top: auto; bottom: calc(100% - 118px); max-width: 94%; flex-wrap: wrap; justify-content: center; }
+  .t-dm { top: 150px; max-width: 90%; font-size: 12.5px; }
 }

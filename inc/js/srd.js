@@ -6,7 +6,7 @@
   const U = G.U, GR = G.Grid, DN = G.Dnd;
   const F = () => G.Fantasy, P = () => G.Skill.pow;
   const now = () => G.S.runTime;
-  const atk = (x, c, k) => F().allyAtk(x.f, c) * k * P()(c);
+  const atk = (x, c, k) => F().allyAtk(x.f, c) * k * P()(c) * G.Turn.skK(x.rt);
   const near = (x, p, r) => x.rt.mons.filter(o => GR.dist(o, p) <= r);
   const pick = x => { const t = F().skillTarget(x.rt); return t.dots ? t : x.seen[0]; };
   const strong = x => x.seen.slice().sort((p, q) => q.hp - p.hp)[0];

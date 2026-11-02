@@ -378,7 +378,7 @@ G.Fantasy = (() => {
         // 조사 (DESIGN.md 56): 알아채면 미믹이 먼저 치지 못하고 3초 정지 상태로 깨어난다
         const spot = c.spotted || G.Dnd.spotMimic(rt);
         F.spawnMon(rt, f.floor, { n: '미믹', t: 'm_mimic', ty: 'monstrosity', fx: ['restrained', 'str', 2] }, c.x, c.y, false, { hp: F.monHP(f.floor) * 3, max: F.monHP(f.floor) * 3, atk: F.monAtk(f.floor) * 1.5, mimic: true, aggro: true, s: 1.2, stop: spot ? 3 : 0 });
-        if (spot) G.Dnd.die(rt, spot);
+        if (spot) G.Dnd.flip(spot, '조사 · 미믹 간파');
         G.Banter.line(rt, spot ? 'mimicKnown' : 'mimic', spot || null, null, { pri: true });
         G.fx(rt, { k: 'text', x: c.x, y: c.y - 1, s: '미믹!', col: '#ff6a6a', t: 1.2, sz: 1.3, pop: true });
         G.J.shake('fantasy', 6);
@@ -585,6 +585,8 @@ G.Fantasy = (() => {
 
     tick(f, dt) {
       const rt = F.rt(f);
+      // 턴제 전투 배속 (G.Turn): 이번 틱을 더 돌린다
+      if (!rt.turnFF) { const n = G.Turn.extra(f, rt); if (n) { rt.turnFF = true; for (let i = 0; i < n; i++) F.tick(f, dt); rt.turnFF = false; } }
       G.fxTick(rt, dt);
       // 시즌 시계 (G.Season): 끝났으면 결과를 보여 주는 동안 멈춘다
       if (G.Season.clock(f, rt, dt)) return;
@@ -657,6 +659,7 @@ G.Fantasy = (() => {
       const pal = rt.allies.find(q => !q.dead && q.id === 'paladin'), palR = 6;
       for (const mo of [...rt.mons]) {
         mo.moving = false;
+        if (rt.turn && !mo.flee) continue;
         if (mo.stun > 0 || mo.stop > 0 || G.Dnd.out(mo)) { mo.stun -= dt; mo.stop -= dt; continue; }
         const slow = mo.shock > 0 ? SHOCK : 1;
         if (mo.flee) {
@@ -666,7 +669,7 @@ G.Fantasy = (() => {
           if (l < 7) GR.moveTo(m, mo, U.clamp(Math.round(mo.x + dx / l * 3), 1, m.w - 2), U.clamp(Math.round(mo.y + dy / l * 3), 1, m.h - 2), 2.6, dt, 0.3);
           continue;
         }
-        if (!mo.aggro && GR.dist(mo, hero) < (mo.boss ? 4 : 6) && F.sees(m, mo, hero)) { mo.aggro = true; G.Dnd.initiative(rt, mo); }
+        if (!mo.aggro && GR.dist(mo, hero) < (mo.boss ? 4 : 6) && F.sees(m, mo, hero)) { mo.aggro = true; if (!G.Turn.on(f, rt)) G.Dnd.initiative(rt, mo); }
         if (!mo.aggro) continue;
         let tg = pal && GR.dist(mo, pal) < palR ? pal : null, bd = tg ? GR.dist(mo, tg) : 1e9;
         if (!tg) for (const p of rt.party.concat(G.Rivals.members(rt), G.Mission.targets(rt))) if (!p.dead) { const d = GR.dist(mo, p); if (d < bd) { bd = d; tg = p; } }
@@ -689,6 +692,8 @@ G.Fantasy = (() => {
       rt.stairWait = false;
       const braced = G.Explore.tick(f, rt, dt);
       if (rt.phase === 'dead') return;
+      // 턴제 전투 (G.Turn): 이번 틱의 움직임은 차례인 사람만
+      if (G.Turn.run(f, rt, dt)) { F.look(rt); F.spread(m, rt.party, 0.75); F.spread(m, rt.mons, 0.8); return; }
       if (!hero.dead && !G.Dnd.out(hero) && !braced) {
         const goal = (rt.focus && rt.focus.hp > 0) ? rt.focus : F.plan(rt);
         const chest = goal && goal.chest ? goal : null, rally = goal && goal.rally ? goal : null, hold = goal && goal.hold ? goal : null, target = chest || rally || hold ? null : goal, march = speed * (1 + ta('t_march'));
@@ -891,7 +896,7 @@ G.Fantasy = (() => {
     },
     allyAttack(f, rt, a, tg) {
       const def = a.def, DN = G.Dnd;
-      let dmg = F.allyAtk(f, a) * DN.HIT_K;
+      let dmg = F.allyAtk(f, a) * DN.HIT_K * G.Turn.k(f, rt, a);
       if (DN.caster(a) && a.merc.cls !== 'warlock') dmg *= DN.tier(a);
       if (def.proj) G.fx(rt, { k: 'proj', key: def.proj, x: a.x, y: a.y, x2: tg.x, y2: tg.y, t: def.proj === 'fx_arrow' ? 0.3 : 0.25 });
       else G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.25, rot: Math.random() - 0.5, flip: a.x > tg.x });
@@ -919,9 +924,9 @@ G.Fantasy = (() => {
         if (i > 0) { if (def.proj) G.fx(rt, { k: 'proj', key: def.proj, x: a.x, y: a.y, x2: tg.x, y2: tg.y, t: 0.25 + i * 0.06 }); else G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.25, rot: Math.random() - 0.5, flip: i % 2 === 0 }); }
         // 신성한 불꽃 (클레릭 기본): 명중 굴림 대신 민첩 내성 — 버티면 피해 없음
         const r = def.saveAtk ? { hit: !DN.save(tg, def.saveAtk, DN.dc(a)), crit: false, adv: 0 } : DN.attack(a, tg, critAt);
-        if (!r.hit) { DN.miss(rt, tg); if (r.nat === 1 && a.merc) G.Banter.line(rt, 'fumble', a); continue; }
+        if (!r.hit) { DN.miss(rt, tg); if (r.nat === 1 && a.merc && !rt.turn) G.Banter.line(rt, 'fumble', a, null, { tag: G.Banter.hitTag(tg, 1) }); continue; }
         any = true;
-        if (r.nat === 20 && a.merc) G.Banter.line(rt, 'crit', a);
+        if (r.nat === 20 && a.merc && !rt.turn) G.Banter.line(rt, 'crit', a, null, { tag: G.Banter.hitTag(tg, 20) });
         let d = dmg * (r.crit ? F.critD() * G.Trinket.onCrit(f, rt, a, tg, dmg * F.critD()) * (DN.boon(a.merc, 'irresistible') ? 1.5 : 1) : 1), src = r.crit ? 'crit' : 'hit';
         // 기습 (로그) · 거인 사냥꾼 (레인저, 다친 적에게 한 번)
         const sn = DN.sneak(rt, a, tg, r.adv);

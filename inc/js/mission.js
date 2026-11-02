@@ -26,13 +26,13 @@ G.Mission = (() => {
       const r = M.roll(f, rt, sk, extra);
       return r && r.ok ? r.who : null;
     },
-    // 굴린 결과까지: { who(굴린 사람), nat, ok } — 말풍선에 주사위 눈을 보여 줄 때 (실패해도 who가 있다)
+    // 굴린 결과까지: { who(굴린 사람), nat, mod, dc, ok } — 말풍선에 판정을 보여 줄 때 (실패해도 who가 있다)
     roll(f, rt, sk, extra = 0) {
       const ms = rt.party.filter(p => p.merc && !p.dead), b = G.Dnd.best(ms.map(p => p.merc), sk);
       if (!b.m) return null;
       // 가장 잘하는 사람과 2 이내면 누구든 나선다 (늘 같은 사람만 말하지 않게)
-      const val = p => G.Dnd.best([p.merc], sk).v, who = U.pick(ms.filter(p => val(p) >= b.v - 2)), nat = G.Dnd.d20(0);
-      return { who, nat, ok: nat + val(who) >= DC(f.floor) + extra };
+      const val = p => G.Dnd.best([p.merc], sk).v, who = U.pick(ms.filter(p => val(p) >= b.v - 2)), nat = G.Dnd.d20(0), mod = val(who), dc = DC(f.floor) + extra;
+      return { who, nat, mod, dc, ok: nat + mod >= dc };
     },
     // 이 층의 임무 (시즌마다 같은 층은 같은 임무)
     kind(f, fl) {

@@ -1,7 +1,7 @@
 'use strict';
 // 대사 (DESIGN.md 70 · 조르버스의 동료 대사 · 림월드의 말풍선 + 기록): 머리 위 말풍선과 왼쪽 대화 기록.
 // 상황 대사(LINES)는 그 일이 일어나는 곳에서 부르거나 tick이 살펴서 부른다. 말하는 사람의 성격 · 직업에 맞는 줄을 먼저 고른다.
-// 조용히 걸을 때는 둘이 주고받는다(TALKS) — 층 깊이 · 체력 · 짐 · 관계에 맞는 것만. 주사위 결과는 🎲 숫자를 대사 앞에 붙인다.
+// 조용히 걸을 때는 둘이 주고받는다(TALKS) — 층 깊이 · 체력 · 짐 · 관계에 맞는 것만. 판정이 걸린 대사는 말풍선 첫 줄에 무슨 판정인지 적는다 (B.tag).
 G.Banter = (() => {
   const U = G.U, GR = G.Grid;
   const F = () => G.Fantasy;
@@ -36,8 +36,8 @@ G.Banter = (() => {
     down: { any: ['{m이} 쓰러졌어!', '{m야}! 정신 차려!', '{m을} 뒤로 빼!'], hot: ['{m을} 건드렸겠다? 이 자식들!'], coward: ['{m이} 쓰러졌어… 우리 끝났어!'] },
     downLead: { any: ['단장님이 쓰러졌다!', '단장님을 지켜!', '단장님! 일어나요!'] },
     up: { any: ['으… 아직 안 죽었어.', '머리야… 어떻게 됐어?', '다시 싸울 수 있어.'], hot: ['누가 날 눕혔어! 나와!'] },
-    crit: { any: ['🎲 20! 제대로 들어갔다!', '🎲 20! 봤어?', '🎲 20! 이게 실력이지.'], bard: ['🎲 20! 이건 노래로 남겨야 해!'], rogue: ['🎲 20! 급소다.'] },
-    fumble: { any: ['🎲 1… 손이 미끄러졌어.', '🎲 1! 못 본 걸로 해 줘.', '🎲 1. 오늘 왜 이러지.'] },
+    crit: { any: ['제대로 들어갔다!', '봤어?', '이게 실력이지.'], bard: ['이건 노래로 남겨야 해!'], rogue: ['급소다.'] },
+    fumble: { any: ['손이 미끄러졌어.', '못 본 걸로 해 줘.', '오늘 왜 이러지.'] },
     combo: { any: ['{m야}, 지금이야!', '좋아, 맞췄어!', '{m과} 같이 간다!'] },
     chest: { any: ['열렸다!', '뭐가 들었나 보자.', '금화다!'], greedy: ['으하하, 내 사랑!'], careful: ['열기 전에 좀 보고 열어.'] },
     mimic: { any: ['상자가 물었어!', '미믹이다! 뒤로!', '으악, 상자가 움직여!'], greedy: ['내, 내 보물이 왜 이빨이…'] },
@@ -143,6 +143,10 @@ G.Banter = (() => {
 
   const B = {
     LINES, TALKS, call: callOf,
+    // 말풍선 첫 줄: 무슨 판정 · 눈 + 수정치 · 목표 · 결과
+    tag: (what, r) => ({ s: `🎲 ${what} ${r.nat}${r.mod < 0 ? '' : '+'}${r.mod} ${r.ok ? '≥' : '<'} ${r.dc} ${r.ok ? '성공' : '실패'}`, ok: r.ok }),
+    // 명중 굴림의 20 · 1
+    hitTag: (tg, nat) => ({ s: `🎲 ${tg.n ? tg.n + '에게 ' : ''}공격 ${nat} ${nat === 20 ? '대성공' : '대실패'}`, ok: nat === 20 }),
     // 지금 떠 있는 말풍선 (그리기)
     live(rt) { const t = now(); return rt.bubbles && rt.bubbles.length ? (rt.bubbles = rt.bubbles.filter(b => b.until > t && !b.e.dead)) : null; },
     // 말풍선 + 대화 기록. pri: 꼭 보여 줄 말이면 true(자리가 없으면 가장 오래된 것을 밀어낸다)
@@ -152,9 +156,10 @@ G.Banter = (() => {
       if (mine && !opt.pri) return false;
       if (!mine && list.length >= MAX_BUB) { if (!opt.pri) return false; list.shift(); }
       if (mine) list.splice(list.indexOf(mine), 1);
-      list.push({ e: who, s, col: opt.col, at: t, until: t + U.clamp(SHOW_MIN + s.length * PER_CHAR, SHOW_MIN, SHOW_MAX) });
+      const len = s.length + (opt.tag ? opt.tag.s.length : 0);
+      list.push({ e: who, s, tag: opt.tag, col: opt.col, at: t, until: t + U.clamp(SHOW_MIN + len * PER_CHAR, SHOW_MIN, SHOW_MAX) });
       const chat = chatOf(rt);
-      chat.push({ n: nameOf(who), col: who.merc ? G.Guild.def(who.merc).col : '#c9c2b2', s, t: G.S.runTime, id: rt.chatId = (rt.chatId || 0) + 1 });
+      chat.push({ n: nameOf(who), col: who.merc ? G.Guild.def(who.merc).col : '#c9c2b2', s, tag: opt.tag, t: G.S.runTime, id: rt.chatId = (rt.chatId || 0) + 1 });
       if (chat.length > CHAT_MAX) chat.shift();
       rt.quietT = t + QUIET_AFTER;
       return true;
@@ -177,7 +182,7 @@ G.Banter = (() => {
       }
       if (!who || who.dead) return null;
       const s = B.pick(key, who, v);
-      if (!s || !B.say(rt, who, (opt.dice != null ? `🎲 ${opt.dice} · ` : '') + s, opt)) return null;
+      if (!s || !B.say(rt, who, s, opt)) return null;
       cds[key] = t + (CD[key] ?? DEF_CD);
       return who;
     },

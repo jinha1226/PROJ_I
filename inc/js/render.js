@@ -266,8 +266,9 @@ G.MapView = function (canvas, id) {
   // 말풍선 (G.Banter): 말하는 사람 머리 위를 따라다닌다. 글자 크기는 확대와 상관없이 읽을 수 있게, 겹치면 위로 쌓는다
   function drawBubbles(list) {
     const px = Math.max(12, Math.min(15, TS * 0.3)), lh = px * 1.3, pad = px * 0.55, maxW = px * 13, placed = [], tnow = G.S.runTime;
+    const FONT = `"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif`, MAIN = `600 ${px}px ${FONT}`, TAG = `700 ${Math.max(11, px * 0.82)}px ${FONT}`;
     ctx.save();
-    ctx.font = `600 ${px}px "Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif`;
+    ctx.font = MAIN;
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     for (const b of list) {
       if (b._px !== px) {
@@ -279,8 +280,9 @@ G.MapView = function (canvas, id) {
         }
         b._lines.push(cur);
         b._w = Math.max(...b._lines.map(l => ctx.measureText(l).width));
+        if (b.tag) { ctx.font = TAG; b._w = Math.max(b._w, ctx.measureText(b.tag.s).width); ctx.font = MAIN; }
       }
-      const e = b.e, w = b._w + pad * 2, hh = b._lines.length * lh + pad * 1.1, cx = sx(e._rx ?? e.x);
+      const e = b.e, rows = b._lines.length + (b.tag ? 1 : 0), w = b._w + pad * 2, hh = rows * lh + pad * 1.1, cx = sx(e._rx ?? e.x);
       let x = Math.max(4, Math.min(W - w - 4, cx - w / 2)), y = sy(e._ry ?? e.y) - TS * 0.85 - hh;
       for (let i = 0; i < placed.length; i++) { const p = placed[i]; if (x < p.x + p.w + 3 && x + w + 3 > p.x && y < p.y + p.h + 3 && y + hh + 3 > p.y) { y = p.y - hh - 3; i = -1; } }
       y = Math.max(4, y);
@@ -294,8 +296,9 @@ G.MapView = function (canvas, id) {
       ctx.arcTo(x, y + hh, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
       ctx.fillStyle = '#efe4cb'; ctx.fill();
       ctx.lineWidth = b.col ? 2 : 1.5; ctx.strokeStyle = b.col || '#2a1e12'; ctx.stroke();
+      if (b.tag) { ctx.font = TAG; ctx.fillStyle = b.tag.ok ? '#1f6b2c' : '#a32a1c'; ctx.fillText(b.tag.s, x + pad, y + pad * 0.55 + lh * 0.78); ctx.font = MAIN; }
       ctx.fillStyle = '#21170d';
-      b._lines.forEach((l, i) => ctx.fillText(l, x + pad, y + pad * 0.55 + lh * (i + 0.78)));
+      b._lines.forEach((l, i) => ctx.fillText(l, x + pad, y + pad * 0.55 + lh * (i + (b.tag ? 1 : 0) + 0.78)));
     }
     ctx.restore();
   }

@@ -60,6 +60,25 @@ G.UI.views.fantasy = function () {
     h('div.d-main', null, orbHP.el, partyEl, h('i.d-sep'), skillEl, h('i.d-sep'), cmdEl, orbBag.el));
   // 대화 기록 (G.Banter): 왼쪽 위. 말풍선을 놓쳐도 여기서 읽는다 — 오래된 줄일수록 흐리게
   const chatEl = h('div.f-chat');
+  // 턴제 전투 (G.Turn): 위쪽 가운데에 라운드 · 차례 순서 · 배속, 그 아래 DM 자막
+  const turnBar = h('div.t-bar'), turnWho = h('b.t-who'), turnOrder = h('div.t-order'), turnX = h('button.t-x', { 'data-tip': '전투 배속 (T)', on: { click: e => { e.stopPropagation(); G.Turn.nextSpeed(f()); } } });
+  turnBar.append(turnWho, turnOrder, turnX);
+  const dmEl = h('div.t-dm');
+  let turnKey = '';
+  function drawTurn(s, rt) {
+    const st = !s.town && rt.turn, dm = !s.town && rt.dm && rt.dm.until > G.S.runTime ? rt.dm.s : '';
+    tog(turnBar, 'hidden', !st);
+    tog(dmEl, 'hidden', !dm);
+    setText(dmEl, dm);
+    if (!st) { turnKey = ''; return; }
+    setText(turnWho, `${st.round}라운드`);
+    setText(turnX, `×${G.Turn.speed(s)}`);
+    const list = st.order.filter(x => (x.e.kind === 'mon' ? rt.mons.includes(x.e) : !x.e.dead)), key = st.round + '|' + (st.cur ? list.indexOf(list.find(x => x.e === st.cur)) : -1) + '|' + list.length;
+    if (key === turnKey) return;
+    turnKey = key;
+    turnOrder.innerHTML = '';
+    for (const x of list) turnOrder.append(h('i.t-ico' + (x.e === st.cur ? '.cur' : '') + (x.e.kind === 'mon' ? '.foe' : ''), { 'data-tip': `${x.e.merc?.name || x.e.n} · 선제권 ${x.init}` }, G.T.el(x.e.t, 'xs')));
+  }
   let chatId = -1;
   function drawChat(rt, town) {
     tog(chatEl, 'hidden', town);
@@ -67,7 +86,7 @@ G.UI.views.fantasy = function () {
     if (last === chatId) return;
     chatId = last;
     chatEl.innerHTML = '';
-    for (const c of list.slice(-CHAT_N)) chatEl.append(h('div', null, h('b', { style: `color:${c.col}` }, c.n), c.s));
+    for (const c of list.slice(-CHAT_N)) chatEl.append(h('div', null, h('b', { style: `color:${c.col}` }, c.n), c.tag ? h('i' + (c.tag.ok ? '.ok' : '.no'), null, c.tag.s) : null, c.s));
   }
   // 단축키
   // 화면을 다시 만들어도 처리기는 하나만 (둘이면 누를 때마다 두 번 토글되어 제자리다)
@@ -75,6 +94,7 @@ G.UI.views.fantasy = function () {
   document.addEventListener('keydown', G.UI.fantasyKeys = e => {
     if (G.UI.cur !== 'fantasy' || e.target.closest?.('input,textarea')) return;
     if (e.key.toLowerCase() === 'm') { G.UI.bigMap = !G.UI.bigMap; e.preventDefault(); return; }
+    if (e.key.toLowerCase() === 't' && F.rt(f()).turn) { G.Turn.nextSpeed(f()); e.preventDefault(); return; }
     const c = CMDS.find(x => x.key.toLowerCase() === e.key.toLowerCase());
     if (c) { c.fn(); e.preventDefault(); return; }
     const n = +e.key;
@@ -134,7 +154,7 @@ G.UI.views.fantasy = function () {
     askEl.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y - p.ts * 1.1)}px) translate(-50%, -100%)`;
   }
 
-  const overlay = h('div.fover', null, chatEl, menuEl, alertEl, askEl, dock, town.el, sheet.el);
+  const overlay = h('div.fover', null, chatEl, turnBar, dmEl, menuEl, alertEl, askEl, dock, town.el, sheet.el);
   return G.UI.worldScreen('fantasy', {
     overlay,
     frame: mv => frameAsk(mv),
@@ -208,6 +228,7 @@ G.UI.views.fantasy = function () {
       tog(overlay.parentNode, 'town', !!s.town);
       town.update();
       drawChat(rt, !!s.town);
+      drawTurn(s, rt);
       sheet.update();
     },
   });
