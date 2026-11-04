@@ -18,7 +18,7 @@ G.D.F = {
     '해골': { t: 'm_bat', wpn: 'w_rusty', ty: 'undead', r: 'soldier' }, '해골 궁수': { t: 'm_bat', ty: 'undead', r: 'artillery' }, '강령술사': { t: 'm_lich', ty: 'humanoid', r: 'controller' }, '호박 망령': { t: 'm_spell', ty: 'undead', r: 'controller' },
     '고블린': { t: 'm_goblin', wpn: 'w_knife', ty: 'humanoid', r: 'skirmisher', tr: ['nimble'] }, '고블린 궁수': { t: 'm_goblin', ty: 'humanoid', r: 'artillery', tr: ['nimble'] }, '고블린 주술사': { t: 'm_goblin', ty: 'humanoid', r: 'support', hand: 'p_hand1_quarterstaff' },
     '오크 전사': { t: 'm_skeleton', wpn: 'w_axe', ty: 'humanoid', r: 'soldier', tr: ['aggr'] }, '가면 오크': { t: 'm_warg', wpn: 'w_waraxe', ty: 'humanoid', r: 'brute', tr: ['aggr'] }, '오크 궁수': { t: 'm_skeleton', ty: 'humanoid', r: 'artillery' }, '오크 주술사': { t: 'm_mandrake', wpn: 'w_gstaff', ty: 'humanoid', r: 'support' },
-    '히드라': { t: 'm_mandrake', ty: 'monstrosity', r: 'brute' }, '독사': { t: 'm_rat', ty: 'beast', r: 'skirmisher' }, '큰 개구리': { t: 'm_rat', ty: 'beast', r: 'skirmisher' }, '악어': { t: 'm_rat', ty: 'beast', r: 'brute' }, '왕뱀': { t: 'm_rat', ty: 'beast', r: 'soldier' }, '대왕 악어': { t: 'm_rat', ty: 'beast', r: 'brute' }, '황토 젤리': { t: 'm_slime', ty: 'ooze', r: 'brute' }, '오우거': { t: 'm_golem', ty: 'giant', r: 'brute' }, '트롤': { t: 'm_troll2', ty: 'giant', r: 'brute', tr: ['regen'] },
+    '히드라': { t: 'm_mandrake', ty: 'monstrosity', r: 'brute', s: 2.2 }, '독사': { t: 'm_rat', ty: 'beast', r: 'skirmisher' }, '큰 개구리': { t: 'm_rat', ty: 'beast', r: 'skirmisher' }, '악어': { t: 'm_rat', ty: 'beast', r: 'brute' }, '왕뱀': { t: 'm_rat', ty: 'beast', r: 'soldier' }, '대왕 악어': { t: 'm_rat', ty: 'beast', r: 'brute' }, '황토 젤리': { t: 'm_slime', ty: 'ooze', r: 'brute' }, '오우거': { t: 'm_golem', ty: 'giant', r: 'brute' }, '트롤': { t: 'm_troll2', ty: 'giant', r: 'brute', tr: ['regen'] },
     '숲 늑대': { t: 'm_wolf', ty: 'beast', r: 'skirmisher', tr: ['pack'] }, '워골': { t: 'm_ogre', wpn: 'w_mace', ty: 'monstrosity', r: 'skirmisher', tr: ['pack'] }, '동굴 곰': { t: 'm_bear', ty: 'beast', r: 'brute' },
     '산적': { t: 'm_bandit', ty: 'humanoid', r: 'soldier' }, '산적 궁수': { t: 'm_bandit', ty: 'humanoid', r: 'artillery' }, '놀 전사': { t: 'm_gnollb', ty: 'humanoid', r: 'brute' }, '놀 정찰병': { t: 'm_gnoll', ty: 'humanoid', r: 'artillery' }, '놀 주술사': { t: 'm_gshaman', ty: 'humanoid', r: 'support' },
     '늪 점액': { t: 'm_slime', ty: 'ooze', r: 'brute', mv: 4 }, '진흙 점액': { t: 'm_phantom', ty: 'ooze', r: 'brute', mv: 4 }, '작은 버섯': { t: 'm_mush', ty: 'plant', r: 'controller', mv: 4 }, '버섯 거인': { t: 'm_lmush', ty: 'plant', r: 'controller', mv: 4 }, '고목 엔트': { t: 'm_ent', ty: 'plant', r: 'brute', tr: ['regen'], mv: 4 },
@@ -27,11 +27,11 @@ G.D.F = {
   // 세력: 원정 전에 알려 준다. 구간(bands)마다 함께 나오는 무리 (앞줄 · 뒷줄은 역할로 나뉜다)
   factions: {
     green: { n: '오크', by: [['고블린', '고블린 궁수'], ['고블린', '고블린 궁수', '고블린 주술사'], ['오크 전사', '가면 오크', '오크 궁수', '오크 주술사'], ['오크 전사', '가면 오크', '오크 궁수', '오크 주술사'], ['가면 오크', '트롤', '오크 궁수', '오크 주술사'], ['오우거', '트롤', '오크 궁수', '오크 주술사']] },
-    beast: { n: '야수', by: [['숲 늑대'], ['숲 늑대'], ['숲 늑대', '동굴 곰'], ['숲 늑대', '동굴 곰'], ['워골', '동굴 곰'], ['워골', '동굴 곰', '오우거']] },
+    beast: { n: '야수', by: [['숲 늑대'], ['숲 늑대'], ['숲 늑대', '동굴 곰'], ['숲 늑대', '동굴 곰', '히드라'], ['워골', '동굴 곰', '히드라'], ['워골', '오우거', '히드라']] },
     undead: { n: '언데드', by: [['꼬마 좀비', '해골 궁수'], ['해골', '꼬마 좀비', '해골 궁수'], ['해골', '좀비', '해골 궁수'], ['좀비', '얼음 좀비', '강령술사'], ['좀비', '얼음 좀비', '강령술사'], ['얼음 좀비', '돌 골렘', '강령술사', '호박 망령']] },
     raider: { n: '약탈자', by: [['산적', '산적 궁수'], ['산적', '산적 궁수'], ['놀 전사', '산적', '놀 정찰병', '놀 주술사'], ['놀 전사', '놀 정찰병', '놀 주술사'], ['놀 전사', '놀 정찰병', '놀 주술사'], ['놀 전사', '오우거', '놀 정찰병', '놀 주술사']] },
-    swamp: { n: '늪', by: [['늪 점액', '작은 버섯'], ['늪 점액', '작은 버섯'], ['진흙 점액', '작은 버섯'], ['진흙 점액', '버섯 거인'], ['히드라', '진흙 점액', '버섯 거인'], ['히드라', '고목 엔트', '버섯 거인']] },
-    fiend: { n: '악마', by: [['임프'], ['임프'], ['임프', '초트'], ['임프', '초트'], ['대악마', '임프', '초트'], ['대악마', '임프', '초트']] },
+    swamp: { n: '늪', by: [['늪 점액', '작은 버섯'], ['늪 점액', '작은 버섯'], ['진흙 점액', '작은 버섯'], ['진흙 점액', '버섯 거인', '히드라'], ['히드라', '진흙 점액', '버섯 거인'], ['히드라', '고목 엔트', '버섯 거인']] },
+    fiend: { n: '악마', by: [['임프'], ['임프'], ['임프'], ['임프', '초트'], ['임프', '초트'], ['대악마', '임프', '초트']] },
   },
   bands: [{ to: 5 }, { to: 15 }, { to: 30 }, { to: 50 }, { to: 80 }, { to: 1e9 }],
   // 보스: 큰 그림(32px)은 s를 작게 — 그림 자체가 이미 두 칸이다
@@ -48,10 +48,10 @@ G.D.F = {
     // 클레릭: 기본 행동 = 치유(70% 아래 동료) 또는 신성한 불꽃(민첩 내성) · 바드: 기본 = 잔인한 조롱 같은 소마법 + 바드의 영감(song)
     cleric: { col: '#e9dfbf', n: '클레릭', t: 'u_cleric', wpn: 'w_holymace', atk: 0.6, hp: 0.96, range: 4, cd: 2.0, heal: 0.12, proj: 'fx_holy', saveAtk: 'dex' },
     bard: { col: '#e0a040', n: '바드', t: 'u_bard', atk: 0.3, hp: 0.96, range: 4, cd: 1.5, proj: 'fx_ice', song: true },
-    mage: { col: '#e2742e', n: '소서러', t: 'u_mage', wpn: 'w_staff', atk: 1.4, hp: 0.72, range: 5, cd: 1.8, splash: 1.4, proj: 'fx_flame' },
+    mage: { col: '#e2742e', n: '소서러', t: 'u_mage', wpn: 'w_staff', atk: 1.4, hp: 0.72, range: 5, cd: 1.8, proj: 'fx_flame' },
     paladin: { col: '#8fc4ef', n: '팔라딘', t: 'u_paladin', wpn: 'w_hammer', atk: 0.8, hp: 1.2, range: 1.3, cd: 1.0 },
     dragoon: { col: '#6f8fe8', n: '파이터', t: 'u_dragoon', wpn: 'w_spear', atk: 3, hp: 1.2, range: 1.5, cd: 1.4 },
-    archmage: { col: '#a98bf0', n: '위저드', t: 'u_archmage', wpn: 'w_arcstaff', atk: 2.5, hp: 0.72, range: 6, cd: 1.6, chain: 4, proj: 'fx_zap' },
+    archmage: { col: '#a98bf0', n: '위저드', t: 'u_archmage', wpn: 'w_arcstaff', atk: 2.5, hp: 0.72, range: 6, cd: 1.6, proj: 'fx_ice' },
     scout: { col: '#7fcf8a', n: '드루이드', t: 'u_scout', wpn: 'w_staff', atk: 0.7, hp: 0.96, range: 4, cd: 1.1, proj: 'fx_ice', guide: true },
     rogue: { col: '#7d8794', n: '로그', t: 'u_rogue', wpn: 'w_knife', atk: 2.5, hp: 0.96, range: 1.3, cd: 0.8 },
     barbarian: { col: '#d0603a', n: '바바리안', t: 'v_berserk', wpn: 'w_waraxe', atk: 2.2, hp: 1.44, range: 1.3, cd: 1.2 },
@@ -87,7 +87,7 @@ G.D.FEATS = {
   mi_druid: { n: '마법 입문 · 드루이드', en: 'Magic Initiate (Druid)', t: 'w_board', d: '얽힘', spell: 'sr_entangle' },
   mi_wizard: { n: '마법 입문 · 위저드', en: 'Magic Initiate (Wizard)', t: 'fx_zap', d: '마법 화살', spell: 'sr_mm' },
   savage: { n: '야만적 공격자', en: 'Savage Attacker', t: 'b_fury', d: '한 턴에 한 번 피해를 두 번 굴려 큰 쪽' },
-  skilled: { n: '숙련', en: 'Skilled', t: 'v_explorer', d: '지각 · 조사 · 설득 숙련' },
+  skilled: { n: '숙련', en: 'Skilled', t: 'v_explorer', d: '기술 숙련 3' },
 };
 
 // 마법 물건 (DESIGN.md 58 — DCSS 고정 아티팩트 · 랜다트 느낌, 이름은 SRD 5.2.1 마법 물건): 무기 · 갑옷 · 장신구 한 칸씩(무기 · 갑옷 아티팩트가 기본 장비를 대신한다, 대장간 강화는 그대로).
@@ -204,7 +204,7 @@ Object.assign(G.D.MSKILLS, {
   sr_brutal: { n: '잔혹한 일격', en: 'Brutal Strike', t: 'w_cleaver', d: '무모한 공격 뒤 한 번 +1d10 · 밀침 또는 느려짐', lv: 9 },
   sr_intim: { n: '위협적인 존재감', en: 'Intimidating Presence', t: 'b_fury', d: '6칸 지혜 내성 · 공포 10라운드', lv: 10 },
   sr_relent: { n: '끈질긴 격노', en: 'Relentless Rage', t: 'u_god', d: '격노 중 쓰러지면 건강 내성으로 버팀', passive: true, lv: 11 },
-  sr_retal: { n: '보복', en: 'Retaliation', t: 'd_shield', d: '곁의 적에게 맞으면 되받아침', passive: true, lv: 14 },
+  sr_retal: { n: '보복', en: 'Retaliation', t: 'd_shield', d: '곁의 적에게 맞으면 되받아침', passive: true, lv: 10 },
   // 파이터
   sr_second: { n: '재기', en: 'Second Wind', t: 'b_regen', d: '체력 절반 아래 1d10 + 레벨', lv: 1 },
   sr_surge: { n: '행동 쇄도', en: 'Action Surge', t: 'st_haste', d: '이번 차례에 공격 행동 한 번 더', lv: 2 },
@@ -216,10 +216,10 @@ Object.assign(G.D.MSKILLS, {
   // 로그
   sr_cunning: { n: '교활한 행동', en: 'Cunning Action', t: 'a_escape', d: '약한 적 곁으로 · 이번 라운드 이점', lv: 2 },
   sr_steady: { n: '정밀 조준', en: 'Steady Aim', t: 'g_dagger', d: '이번 라운드 공격 이점', lv: 3 },
-  sr_fasthands: { n: '재빠른 손', en: 'Fast Hands', t: 'ui_gold', d: '기습마다 골드', passive: true, lv: 3 },
+  sr_fasthands: { n: '재빠른 손', en: 'Fast Hands', t: 'ui_gold', d: '추가 행동: 손재주 · 물건 사용', passive: true, lv: 3 },
   sr_cstrike: { n: '교활한 일격', en: 'Cunning Strike', t: 'w_knife', d: '기습 −1d6 · 중독 · 넘어뜨리기 · 물러나기 중 하나', lv: 5 },
   sr_uncanny: { n: '직감 회피', en: 'Uncanny Dodge', t: 'd_shield', d: '라운드에 한 번 피해 절반', passive: true, lv: 5 },
-  sr_reliable: { n: '믿음직한 재능', en: 'Reliable Talent', t: 'ui_star', d: '지각 · 조사 · 설득 +5', passive: true, lv: 7 },
+  sr_reliable: { n: '믿음직한 재능', en: 'Reliable Talent', t: 'ui_star', d: '숙련 판정 d20 최소 10', passive: true, lv: 7 },
   sr_devious: { n: '교묘한 일격', en: 'Devious Strikes', t: 'g_dagger', d: '기습 −2d6 멍함 · −3d6 실명 · −6d6 기절 중 하나', lv: 14 },
   // 몽크
   sr_flurry: { n: '연타', en: 'Flurry of Blows', t: 'st_haste', d: '무기 주사위 2번 (Lv 10 3번)', lv: 2 },
@@ -303,9 +303,9 @@ Object.assign(G.D.MSKILLS, {
   sr_fastmove: { n: '빠른 이동', en: 'Fast Movement', t: 'a_escape', d: '이동 +2칸', passive: true, lv: 5, move: 0.33 },
   sr_push: { n: '밀쳐내기', en: 'Push', t: 'w_hammer', d: '무기 공격 · 2칸 밀침', lv: 1 },
   sr_elusive: { n: '종잡을 수 없음', en: 'Elusive', t: 'a_escape', d: '나를 노리는 공격에 이점 없음', passive: true, lv: 18 },
-  sr_selfrest: { n: '자기 회복', en: 'Self-Restoration', t: 'b_regen', d: '공포 · 중독에 걸리지 않음', passive: true, lv: 10 },
+  sr_selfrest: { n: '자기 회복', en: 'Self-Restoration', t: 'b_regen', d: '매혹 · 공포 · 중독 무효', passive: true, lv: 10 },
   sr_radiant: { n: '광휘의 일격', en: 'Radiant Strikes', t: 'fx_holy', d: '근접 명중 +1d8 광휘', passive: true, lv: 11 },
-  sr_tireless: { n: '지치지 않음', en: 'Tireless', t: 'b_regen', d: '차례마다 임시 체력 1d8 + 지혜', passive: true, lv: 10 },
+  sr_tireless: { n: '지치지 않음', en: 'Tireless', t: 'b_regen', d: '임시 체력 1d8 + 지혜 · 지혜 수정치만큼', passive: true, lv: 10 },
   sr_precise: { n: '정밀한 사냥꾼', en: 'Precise Hunter', t: 'fx_arrow', d: '내 표식 적에게 공격 이점', passive: true, lv: 17 },
   // 서브클래스 기능 (G.D.ADV sig — 전직하면 그 레벨에 저절로)
   sr_survivor: { n: '생존자', en: 'Survivor', t: 'b_regen', d: '체력 절반 아래 차례마다 5 + 건강', passive: true, lv: 18 },
@@ -313,11 +313,11 @@ Object.assign(G.D.MSKILLS, {
   sr_nimbus: { n: '신성한 후광', en: 'Holy Nimbus', t: 'q_peak', d: '6칸 안 적 차례마다 광휘 10', passive: true, lv: 20 },
   sr_disciple: { n: '생명의 제자', en: 'Disciple of Life', t: 'fx_holy', d: '치유 + 2 + 주문 레벨', passive: true, lv: 3, heal: 1.3 },
   sr_preserve: { n: '생명 보존', en: 'Preserve Life', t: 'u_god', d: '절반 아래 동료들 절반까지 · 합쳐서 레벨 × 5', lv: 6 },
-  sr_peerless: { n: '비길 데 없는 기술', en: 'Peerless Skill', t: 'fx_song', d: '명중 +3', passive: true, lv: 14, hitB: 3 },
-  sr_ward: { n: '자연의 수호', en: 'Nature’s Ward', t: 'b_regen', d: '중독 · 공포에 걸리지 않음', passive: true, lv: 10 },
+  sr_peerless: { n: '비길 데 없는 기술', en: 'Peerless Skill', t: 'fx_song', d: '빗나간 공격 · 실패한 판정에 영감 주사위', passive: true, lv: 14 },
+  sr_ward: { n: '자연의 수호', en: 'Nature’s Ward', t: 'b_regen', d: '중독 면역 · 땅에 맞는 피해 저항', passive: true, lv: 10 },
   sr_dres: { n: '용의 회복력', en: 'Draconic Resilience', t: 'r_dragon', d: 'AC 10 + 민첩 + 매력 · 체력 + 레벨 + 2', passive: true, lv: 3, hp: 1.1 },
   sr_luck: { n: '어둠의 행운', en: 'Dark One’s Own Luck', t: 'ui_star', d: '실패한 내성에 +d10', passive: true, lv: 6 },
-  sr_fres: { n: '악마의 회복력', en: 'Fiendish Resilience', t: 'u_armor', d: '물리 피해 절반', passive: true, lv: 10 },
+  sr_fres: { n: '악마의 회복력', en: 'Fiendish Resilience', t: 'u_armor', d: '고른 피해 유형 저항 (역장 제외)', passive: true, lv: 10 },
   sr_hurl: { n: '지옥 던지기', en: 'Hurl Through Hell', t: 'fx_fire', d: '맞히면 매력 내성 · 8d10 · 기절', lv: 14 },
   sr_potent: { n: '강력한 소마법', en: 'Potent Cantrip', t: 'fx_zap', d: '빗나간 소마법 · 버틴 내성도 절반', passive: true, lv: 3 },
   sr_empower: { n: '강화된 방출', en: 'Empowered Evocation', t: 'fx_fire', d: '방출계 주문 + 지능', passive: true, lv: 10 },
@@ -382,19 +382,19 @@ G.D.RIVALS = [
 
 
 // 직업 기본 장비 (DESIGN.md 57 — SRD 5.2.1 직업 시작 장비): 용병마다 무기 · 갑옷 두 칸. 대장간에서 골드로 강화한다.
-// 주문 직업의 무기 칸은 주문 초점(비전 초점 · 성표 · 드루이드 초점) — 강화하면 주문 명중 · 피해도 오른다. 방패(AC +2, G.Dnd 직업 규칙)는 손에 드는 것이라 무기 칸에 「무기 + 방패」로 — 마법 무기나 마법 방패 중 하나를 낀다(G.Guild.gearName). [이름, 영문, 아이콘]
+// 주문 직업도 SRD 시작 무기를 든다 — 기본 공격은 소마법(G.Dnd.cantrip), 강화하면 주문 명중 · 피해도 오른다. 방패(AC +2, G.Dnd 직업 규칙)는 손에 드는 것이라 무기 칸에 「무기 + 방패」로 — 마법 무기나 마법 방패 중 하나를 낀다(G.Guild.gearName). [이름, 영문, 아이콘]
 G.D.GEAR = {
-  barbarian: { w: ['그레이트액스', 'Greataxe', 'w_waraxe'], a: ['짐승 가죽', 'Hide Armor', 'u_armor'] },
-  bard: { w: ['레이피어', 'Rapier', 'w_duel'], a: ['가죽 갑옷', 'Leather Armor', 'u_armor'] },
+  barbarian: { w: ['그레이트액스', 'Greataxe', 'w_waraxe'], a: ['비무장 방어', 'Unarmored Defense', 'u_armor'] },
+  bard: { w: ['단검', 'Dagger', 'w_knife'], a: ['가죽 갑옷', 'Leather Armor', 'u_armor'] },
   cleric: { w: ['메이스', 'Mace', 'w_holymace'], a: ['체인 셔츠', 'Chain Shirt', 'u_armor'] },
   scout: { w: ['낫', 'Sickle', 'w_staff'], a: ['가죽 갑옷', 'Leather Armor', 'u_armor'] },
-  dragoon: { w: ['파이크', 'Pike', 'w_spear'], a: ['체인 메일', 'Chain Mail', 'u_armor'] },
-  monk: { w: ['쿼터스태프', 'Quarterstaff', 'w_staff'], a: ['방어의 팔찌', 'Bracers of Defense', 'd_shield'] },
-  paladin: { w: ['워해머', 'Warhammer', 'w_hammer'], a: ['체인 메일', 'Chain Mail', 'u_armor'] },
+  dragoon: { w: ['그레이트소드', 'Greatsword', 'w_sword'], a: ['체인 메일', 'Chain Mail', 'u_armor'] },
+  monk: { w: ['비무장 타격', 'Unarmed Strike', 'w_staff'], a: ['비무장 방어', 'Unarmored Defense', 'd_shield'] },
+  paladin: { w: ['롱소드', 'Longsword', 'w_sword'], a: ['체인 메일', 'Chain Mail', 'u_armor'] },
   archer: { w: ['롱보우', 'Longbow', 'w_bow'], a: ['징 박은 가죽 갑옷', 'Studded Leather Armor', 'u_armor'] },
-  rogue: { w: ['단검', 'Dagger', 'w_knife'], a: ['가죽 갑옷', 'Leather Armor', 'u_armor'] },
-  mage: { w: ['비전 수정', 'Arcane Focus', 'w_gstaff'], a: ['로브', 'Robe', 'u_armor'] },
-  warlock: { w: ['비전 구슬', 'Arcane Focus', 'w_arcstaff'], a: ['가죽 갑옷', 'Leather Armor', 'u_armor'] },
+  rogue: { w: ['쇼트소드', 'Shortsword', 'w_knife'], a: ['가죽 갑옷', 'Leather Armor', 'u_armor'] },
+  mage: { w: ['창', 'Spear', 'w_gstaff'], a: ['비무장', 'Unarmored', 'u_armor'] },
+  warlock: { w: ['낫', 'Sickle', 'w_arcstaff'], a: ['가죽 갑옷', 'Leather Armor', 'u_armor'] },
   archmage: { w: ['쿼터스태프', 'Quarterstaff', 'w_arcstaff'], a: ['로브', 'Robe', 'u_armor'] },
 };
 

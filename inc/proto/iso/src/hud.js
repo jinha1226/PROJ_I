@@ -47,7 +47,7 @@ const KIND_C = { 행동: 'act', '추가 행동': 'bonus', 반응: 'react', '늘 
 function skShow(el, m, k) {
   const D = G.D.MSKILLS[k], S0 = G.Skill.SK[k], rs = G.Skill.resOf(k), left = rs ? G.Res.usesOf(m, rs, k) - (G.Res.of(m).fu[k] || 0) : null, kind = G.Skill.kindOf(k), tags = [S0?.conc ? '집중' : '', G.D.SK_RANGE[k] ? `사거리 ${G.D.SK_RANGE[k]}` : ''].filter(Boolean).join(' · ');
   skTip.textContent = '';
-  const h1 = document.createElement('b'); h1.textContent = D.n; const en = document.createElement('small'); en.textContent = D.en || ''; const kd = document.createElement('span'); kd.className = 'kind k-' + KIND_C[kind]; kd.textContent = kind; const ty = document.createElement('i'); ty.textContent = tags; const d = document.createElement('p'); d.textContent = D.d; skTip.append(h1, en, kd); if (tags) skTip.append(ty); skTip.append(d);
+  const h1 = document.createElement('b'); h1.textContent = D.n; const en = document.createElement('small'); en.textContent = D.en || ''; const kd = document.createElement('span'); kd.className = 'kind k-' + KIND_C[kind]; kd.textContent = kind === '늘 적용' || kind === '탐험' ? '' : kind; const ty = document.createElement('i'); ty.textContent = tags; const d = document.createElement('p'); d.textContent = D.d; skTip.append(h1, en, kd); if (tags) skTip.append(ty); skTip.append(d);
   const lock = !G.Guild.active(m).includes(k); if (lock) { const u = document.createElement('em'); u.textContent = `Lv ${G.Guild.skLv(m.cls, k)}부터`; skTip.append(u); } else if (rs || !D.passive) { const u = document.createElement('em'); u.textContent = !rs ? '제한 없음' : f.town ? `전투당 ${G.Res.usesOf(m, rs)}번` : `이번 전투 ${left} / ${G.Res.usesOf(m, rs)}번`; skTip.append(u); }
   skTip.classList.remove('hidden');
   const a = el.getBoundingClientRect(), box = (el.closest('.pc, .cell') || el).getBoundingClientRect(), b = skTip.getBoundingClientRect(); // 카드 위로 띄워 이름 · 직업을 가리지 않는다
@@ -82,7 +82,7 @@ function drawBrief() {
   briefFor = G.Foe.offer(3).map(k => G.Foe.brief(k, f.start || f.floor));
   let chosen = briefFor[0].key; el.textContent = '';
   const h = document.createElement('h3'); h.textContent = `원정 선택 · ${f.start || f.floor}층`; el.append(h);
-  const row = document.createElement('div'); row.className = 'row'; el.append(row);
+  const row = document.createElement('div'); row.className = 'row'; if (!G.Tut.brief(f, 'front')) row.style.display = 'none'; else if (G.Tut.newInBrief(f, 'front')) row.classList.add('t-new'); el.append(row);
   const cards = briefFor.map(b => { const c = document.createElement('button'); c.className = 'card'; const t = document.createElement('b'); t.textContent = b.n; const r = document.createElement('small'); r.textContent = b.roles.join(' · '); c.append(t, r); if (b.terrain) { const tt = document.createElement('i'); tt.className = 'tag res'; tt.textContent = b.terrain; c.append(tt); } for (const q of b.mons) { const m = document.createElement('div'); m.className = 'mon'; const nm = document.createElement('span'); nm.textContent = q.n; m.append(nm); const res = q.notes.filter(x => x.c === 'res').map(x => x.s); if (res.length) m.title = res.join(' · '); for (const x of q.notes) { if (x.c === 'res') continue; const g = document.createElement('i'); g.className = 'tag ' + x.c; g.textContent = x.s; m.append(g); } c.append(m); } c.onclick = () => { chosen = b.key; mark(); }; row.append(c); return [c, b.key]; });
   const mark = () => { for (const [c, k] of cards) c.classList.toggle('on', k === chosen); }; mark();
   drawCrew(el);
@@ -92,8 +92,8 @@ function drawBrief() {
 // 진형 판 + 용병별 지시: 판에서 사람을 고르면 오른쪽에 그 사람의 지시가 나온다
 function drawCrew(el) {
   skTip.classList.add('hidden');
-  const T = G.Tactics, wrap = document.createElement('div'); wrap.className = 'plan'; el.append(wrap);
-  const board = document.createElement('div'), side = document.createElement('div'); board.className = 'board'; side.className = 'orders'; wrap.append(board, side);
+  const T = G.Tactics, TU = G.Tut, wrap = document.createElement('div'); wrap.className = 'plan'; el.append(wrap);
+  const board = document.createElement('div'), side = document.createElement('div'); board.className = 'board' + (TU.newInBrief(f, 'board') ? ' t-new' : ''); side.className = 'orders'; wrap.append(board, side);
   let pick = G.Guild.leader(f);
   const mk = (tag, cls, s) => { const e = document.createElement(tag); if (cls) e.className = cls; if (s != null) e.textContent = s; return e; };
   const chip = (s, on, fn) => { const b = mk('button', 'chip' + (on ? ' on' : ''), s); b.onclick = fn; return b; };
@@ -113,20 +113,27 @@ function drawCrew(el) {
       }, { once: true }); };
       grid.append(b);
     }
-    const def = G.Guild.def(pick), head = mk('h4', '', pick.name || '단장'); head.append(mk('small', '', G.Res.SPECIES[G.Res.species(pick)].n + ' ' + def.n)); side.append(head);
+    const def = G.Guild.def(pick), head = mk('h4', '', pick.name || '단장'); head.append(mk('small', '', G.Res.SPECIES[G.Res.species(pick)].n + ' ' + def.n)); { const sb = mk('button', 'sheetbtn', '상세'); sb.onclick = () => openSheet(pick); head.append(sb); } side.append(head);
     side.append(mk('div', 'trait', G.Res.SPECIES[G.Res.species(pick)].d));
-    side.append(mk('small', 'sk-h' + ((pick.stress || 0) >= 70 ? ' hot' : ''), `스트레스 ${Math.round(pick.stress || 0)} / 100`), mk('small', 'sk-h', '왼쪽부터 먼저 · 누르면 맨 앞으로'), skillRow(pick, 'pri'));
-    { const xk = G.Pool.of(pick), all = G.Pool.can(pick); if (all.length) { const w = mk('div', 'traits'); w.append(mk('small', '', '탐험 · 하나를 고른다')); const r = document.createElement('div'); r.className = 'sks'; for (const k of all) { const D = G.D.MSKILLS[k], b = document.createElement('i'); b.className = 'sk k-explore' + (k === xk ? ' sel' : ' off'); b.dataset.k = k; b.setAttribute('aria-label', D.n); b.tabIndex = 0; const im = document.createElement('img'); im.alt = ''; im.src = `dcss/${skIcon(k)}.png`; b.append(im); b.onpointerenter = () => skShow(b, pick, k); b.onpointerleave = () => skTip.classList.add('hidden'); b.onfocus = () => skShow(b, pick, k); b.onblur = () => skTip.classList.add('hidden'); b.onclick = () => { G.Pool.set(pick, k); skTip.classList.add('hidden'); briefFor = null; drawBrief(); }; r.append(b); } w.append(r); side.append(w); } }
-    { const xs = r0party(f).map(m => G.Pool.of(m)).filter(Boolean); if (xs.length) side.append(mk('small', 'sk-h', '원정대 탐험: ' + [...new Set(xs)].map(k => G.D.MSKILLS[k].n).join(' · '))); }
-    { const tr = G.Guild.traits(pick); if (tr.length) { const t2 = mk('div', 'traits'); t2.append(mk('small', '', '직업 특성')); const r2 = document.createElement('div'); r2.className = 'sks'; for (const k of tr) { const b = document.createElement('i'); b.className = 'sk k-' + KIND_C[G.Skill.kindOf(k)]; b.dataset.k = k; const im = document.createElement('img'); im.alt = ''; im.src = `dcss/${skIcon(k)}.png`; b.append(im); b.onpointerenter = () => skShow(b, pick, k); b.onpointerleave = () => skTip.classList.add('hidden'); r2.append(b); } t2.append(r2); side.append(t2); } }
-    side.append(mk('div', 'stance', T.stance(pick)));
-    const now = T.of({ merc: pick }).target, row = mk('div', 'presets');
+    side.append(mk('small', 'sk-h' + ((pick.stress || 0) >= 70 ? ' hot' : ''), `스트레스 ${Math.round(pick.stress || 0)} / 100`)); if (TU.brief(f, 'order')) { const o0 = skillRow(pick, 'pri'); if (TU.newInBrief(f, 'order')) o0.classList.add('t-new'); side.append(o0); }
+    { const xk = G.Pool.of(pick), all = G.Pool.can(pick); if (all.length && TU.brief(f, 'explore')) { const w = mk('div', 'traits' + (TU.newInBrief(f, 'explore') ? ' t-new' : '')); w.append(mk('small', '', '탐험')); const r = document.createElement('div'); r.className = 'sks'; for (const k of all) { const D = G.D.MSKILLS[k], b = document.createElement('i'); b.className = 'sk k-explore' + (k === xk ? ' sel' : ' off'); b.dataset.k = k; b.setAttribute('aria-label', D.n); b.tabIndex = 0; const im = document.createElement('img'); im.alt = ''; im.src = `dcss/${skIcon(k)}.png`; b.append(im); b.onpointerenter = () => skShow(b, pick, k); b.onpointerleave = () => skTip.classList.add('hidden'); b.onfocus = () => skShow(b, pick, k); b.onblur = () => skTip.classList.add('hidden'); b.onclick = () => { G.Pool.set(pick, k); skTip.classList.add('hidden'); briefFor = null; drawBrief(); }; r.append(b); } w.append(r); side.append(w); } }
+    { const xs = r0party(f).map(m => G.Pool.of(m)).filter(Boolean); if (xs.length) side.append(mk('small', 'sk-h', [...new Set(xs)].map(k => G.D.MSKILLS[k].n).join(' · '))); }
+    { const tr = G.Guild.traits(pick); if (tr.length && TU.brief(f, 'order')) { const t2 = mk('div', 'traits'); t2.append(mk('small', '', '특성')); const r2 = document.createElement('div'); r2.className = 'sks'; for (const k of tr) { const b = document.createElement('i'); b.className = 'sk k-' + KIND_C[G.Skill.kindOf(k)]; b.dataset.k = k; const im = document.createElement('img'); im.alt = ''; im.src = `dcss/${skIcon(k)}.png`; b.append(im); b.onpointerenter = () => skShow(b, pick, k); b.onpointerleave = () => skTip.classList.add('hidden'); r2.append(b); } t2.append(r2); side.append(t2); } }
+    if (TU.brief(f, 'target')) { side.append(mk('div', 'stance', T.stance(pick)));
+    const now = T.of({ merc: pick }).target, row = mk('div', 'presets' + (TU.newInBrief(f, 'target') ? ' t-new' : ''));
     for (const t of Object.keys(T.TARGET)) row.append(chip(T.TARGET[t], now === t, () => { T.setTarget(pick, t); draw(); }));
-    side.append(row);
+    side.append(row); }
   };
   draw();
 }
+// 튜토리얼: 아직 안 나온 것은 숨기고, 막 나온 것은 잠깐 빛난다. 건너뛰기는 언제나
+const tutSkip = document.createElement('button'); tutSkip.id = 'tutskip'; tutSkip.textContent = '건너뛰기'; tutSkip.className = 'hidden'; tutSkip.onclick = () => { G.Tut.skip(f); briefFor = null; }; document.body.append(tutSkip);
+function tutUi() {
+  const b = document.body, on = G.Tut.on(f); tutSkip.classList.toggle('hidden', !on);
+  for (const k of ['speed', 'map', 'skills', 'stress', 'timer']) { b.classList.toggle('t-no-' + k, !G.Tut.has(f, k)); b.classList.toggle('t-glow-' + k, on && G.Tut.pulsing(f, k)); }
+}
 function ui(r) {
+  tutUi();
   const st = r.turn, $r = $('round');
   const rn = f.town ? '' : G.Event.nameAt(r, r.hero);
   $r.textContent = f.town ? '마을' : `${f.floor}층${rn ? ` · ${rn}` : ''}${st ? ` · ${st.round}라운드` : ''}`;
@@ -156,7 +163,7 @@ function ui(r) {
   const pKey = r.party.map(p => (p.uid || 'h') + (p.dead ? 'x' : '') + (p.dying ? 'd' : '')).join();
   if (pKey !== PANEL.key) {
     PANEL.key = pKey; const box = $('party'); box.innerHTML = ''; PANEL.party = new Map();
-    for (const p of r.party) { const d = p.merc || f.leader, def = G.Guild.def(d), e = document.createElement('div'); e.className = 'pc' + (p.dead || p.dying ? ' down' : ''); e.style.setProperty('--c', def.col); e.innerHTML = `<b></b><span></span><div class="hp"><i></i></div><div class="hp st"><i></i></div><small class="stv"></small>`; e.children[0].textContent = d.name || '단장'; e.children[1].textContent = def.n + ' · ' + G.Tactics.label(d); e.append(skillRow(d)); box.append(e); PANEL.party.set(p, e); }
+    for (const p of r.party) { const d = p.merc || f.leader, def = G.Guild.def(d), e = document.createElement('div'); e.className = 'pc' + (p.dead || p.dying ? ' down' : ''); e.onclick = () => openSheet(p.merc || G.Guild.leader(f)); e.style.setProperty('--c', def.col); e.innerHTML = `<b></b><span></span><div class="hp"><i></i></div><div class="hp st"><i></i></div><small class="stv"></small>`; e.children[0].textContent = d.name || '단장'; e.children[1].textContent = def.n + ' · ' + G.Tactics.label(d); e.append(skillRow(d)); box.append(e); PANEL.party.set(p, e); }
   }
   for (const [p, e] of PANEL.party) { if (p.merc) skillCounts(p, e); e.children[2].firstChild.style.width = clamp(p.hp / (p.max || 1), 0, 1) * 100 + '%'; { const sv = Math.round((p.merc && p.merc.stress) || 0), t = p.broke ? `무너짐 · 스트레스 ${sv}` : p.resolve ? `이를 악묾 · 스트레스 ${sv}` : `스트레스 ${sv}`; e.children[3].firstChild.style.width = clamp(sv, 0, 100) + '%'; if (e.children[4].textContent !== t) e.children[4].textContent = t; e.classList.toggle('hot', sv >= 70 || !!p.broke); } e.classList.toggle('cur', !!(st && st.cur === p)); }
 }

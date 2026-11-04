@@ -2,7 +2,7 @@
 // 몬스터 역할 · 특성 단위 검사: node test/foe_rules.js
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
-for (const n of ['core', 'data', 'srd_mons', 'grid', 'juice', 'tree', 'trees', 'season', 'fantasy', 'rivals', 'guild', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'srd_spells', 'spells', 'traits', 'options', 'pools', 'combo', 'events', 'command', 'expedition', 'mission', 'explore', 'banter', 'sight', 'tactics', 'foe', 'region', 'res', 'turn', 'flow', 'story', 'state'])
+for (const n of ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'tree', 'trees', 'season', 'fantasy', 'rivals', 'guild', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'srd_spells', 'spells', 'traits', 'options', 'pools', 'srd_species', 'combo', 'events', 'tutorial', 'skill_nums', 'command', 'expedition', 'mission', 'explore', 'banter', 'sight', 'tactics', 'foe', 'region', 'res', 'turn', 'flow', 'story', 'state'])
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, FO = () => G.Foe; G.newState(); G.quiet = true;
 const f = G.S.w.fantasy, GD = G.Guild; GD.leader(f); f.leaderNew = false; f.lineup = ['archer', 'cleric', 'paladin'].map(c => { const m = GD.make(f, c, { lv: 7 }); f.mercs.push(m); return m.uid; }); G.Fantasy.syncAllies(f); f.floor = f.maxFloor = 8; f.checkpoint = f.start = 8; f.town = true; f.townT = 99;
@@ -13,7 +13,7 @@ const r0 = rt.map.rooms[1], cx = r0.cx ?? r0.x + 2, cy = r0.cy ?? r0.y + 2;
 const st = { round: 1 };
 // SRD 능력치표
 const gob = mon({ n: '고블린', r: 'skirmisher', tr: ['nimble'] }, cx, cy), skl = mon({ n: '해골 궁수', r: 'artillery' }, cx, cy), so = mon({ n: '오크 전사', r: 'soldier' }, cx, cy), ar = mon({ n: '해골 궁수', r: 'artillery' }, cx, cy), scale = G.Fantasy.monScale(8);
-ok('고블린 전사 (5.2.1) AC 15 · 체력 10 × 층 배율 · 명중 +4', G.Dnd.ac(gob) === 15 && Math.abs(gob.max - 10 * scale) < 1e-6 && G.Dnd.hit(gob) === 4);
+ok('고블린 전사 (5.2.1) AC 15 · 체력 10 × 층 배율 × 전투 길이 · 명중 +4', G.Dnd.ac(gob) === 15 && gob.max >= 10 * scale && Math.abs(gob.max / (10 * scale) - G.Fantasy.hpK(8)) < 1e-6 && G.Dnd.hit(gob) === 4);
 ok('오크는 5.2.1 표가 없어 Tough', G.SRD_MON.tough.hp === 32 && !G.SRD_MON.orc);
 ok('능력별 내성: 고블린 민첩 +2 · 지혜 -1', G.Dnd.saveBonus(gob, 'dex') === 2 && G.Dnd.saveBonus(gob, 'wis') === -1);
 ok('궁수 사거리 6 · 근접 1.5', FO().reach(ar) === 6 && FO().reach(so) === 1.5);
@@ -154,7 +154,7 @@ f.front = 'undead'; let main = 0; for (let i = 0; i < 300; i++) { const b = G.D.
   ok('주문은 그 레벨의 가장 높은 레벨로 (클레릭 5레벨 = 3 · 팔라딘 5레벨 = 2)', R.castLevel(cleric, res1) === 3 && R.castLevel(pa2, res1) === 2);
   for (const q of rt.party) { q.dead = false; q.dying = null; q.hp = q.max; } 
   { const G1 = G.Skill.SK, c = rt.party.find(a => a.merc && a.merc.cls === 'cleric'), keep = cleric.skills; cleric.skills = ['sr_bless', 'sr_mhw', 'sr_gbolt', 'sr_sflame']; R.long(cleric); const mg = mon({ n: '산적', r: 'soldier' }, c.x + 1, c.y); mg.hp = mg.max = 9999; G.S.runTime += 1; const seen = [mg]; c.slotUsed = false; c.concK = null; c.hp = 1; c.lastBonus = null; c.lastSk = null;
-    const rt0 = rt.turn; rt.turn = { round: 1 }; G.Skill.tick(f, rt, c, 0, seen, 1); ok('슬롯 주문은 추가 행동 첫 단계에 안 쓴다', !c.lastBonus); G.Skill.tick(f, rt, c, 0, seen); const a1 = c.lastSk, s1 = c.slotUsed; G.Skill.tick(f, rt, c, 0, seen, 2); ok('차례에 슬롯 주문 하나', a1 && s1 && !c.lastBonus);
+    c.merc.sp = 'dwarf'; /* 종족 스킬이 먼저 나오지 않게 */ const rt0 = rt.turn; rt.turn = { round: 1 }; G.Skill.tick(f, rt, c, 0, seen, 1); ok('슬롯 주문은 추가 행동 첫 단계에 안 쓴다', !c.lastBonus); G.Skill.tick(f, rt, c, 0, seen); const a1 = c.lastSk, s1 = c.slotUsed; G.Skill.tick(f, rt, c, 0, seen, 2); ok('차례에 슬롯 주문 하나', a1 && s1 && !c.lastBonus);
     c.slotUsed = false; c.lastSk = null; if (c.concK) { c.slotUsed = false; G.Skill.tick(f, rt, c, 0, seen); ok('집중 중이면 새 집중 주문을 안 건다', c.lastSk !== 'sr_bless'); } R.endConc(c); rt.turn = rt0; c.hp = c.max; cleric.skills = keep; rt.mons = rt.mons.filter(o => o !== mg); R.long(cleric); }
   ok('기술 종류: 행동 · 추가 행동 · 반응 · 늘 적용', G.Skill.kindOf('sr_fireball') === '행동' && G.Skill.kindOf('sr_hword') === '추가 행동' && G.Skill.kindOf('sr_shield') === '반응' && G.Skill.kindOf('sr_aura') === '늘 적용');
   ok('SRD 대조: 행동 쇄도 · 무모한 공격 · 신성한 무기는 소모 없음', ['sr_surge', 'sr_reckless', 'sr_sacred'].every(k => G.Skill.kindOf(k) === '소모 없음'));
@@ -176,4 +176,6 @@ T.setTarget(pa.merc, 'weak'); ok('표적은 사람마다 하나', T.of(pa).targe
 { const s0 = T.slot(rt, cl, pa, 1, 0); ok('이동 자리: 뒷줄은 앞장선 사람 뒤', s0 && s0.x < pa.x); }
 let back = 0; for (let i = 0; i < 200; i++) { const t = FO().troop(8, 4); if (t.filter(d => d.r === 'support').length > 1) bad++; if (t.some(d => FO().ROLES[d.r].range)) back++; }
 console.log(`  (8층 4마리 무리 중 후열 포함 ${back}/200)`);
+// 층별 몬스터: 구간마다 CR 상한, 큰 놈은 무리에 하나, 히드라는 깊은 층부터
+{ const D = G.D.F, CAP = [1, 1, 4, 9, 10, 99], crOf = n => G.SRD_MON[D.STAT[n]?.[0]]?.cr || 0; for (const k in D.factions) D.factions[k].by.forEach((l, b) => { for (const n of l) ok(`${k} ${b}구간 ${n}: CR ${crOf(n)} ≤ ${CAP[b]}`, crOf(n) <= CAP[b]); }); const hy = [1, 5, 10].map(fl => Object.keys(D.factions).some(k => D.factions[k].by[G.Fantasy.band(fl)].includes('히드라'))); ok('10층까지 히드라 없음', hy.every(x => !x)); const first = [...Array(40).keys()].map(i => i + 1).find(fl => Object.keys(D.factions).some(k => D.factions[k].by[G.Fantasy.band(fl)].includes('히드라'))); ok('깊은 층엔 히드라', first >= 11 && first <= 20, first); console.log('  히드라 첫 등장', first, '층'); const f0 = G.S.w.fantasy, keep = f0.front; f0.front = 'beast'; let over = 0; for (let i = 0; i < 300; i++) { const t = G.Foe.troop(first + 5, 6, 'beast'); if (t.filter(m => crOf(m.n) >= 5).length > 1) over++; } f0.front = keep; ok('큰 놈은 무리에 하나', over === 0, over); ok('히드라 크기', G.Fantasy.spawnMon(rt, 20, { n: '히드라', t: 'm_mandrake', ty: 'monstrosity', r: 'brute', s: 2.2 }, cx, cy, false, {}).s >= 2); }
 console.log(bad ? `실패 ${bad}` : '전부 통과'); process.exitCode = bad ? 1 : 0;

@@ -9,8 +9,8 @@ G.Feat = (() => {
   const Ft = {
     MI_K,
     def: m => (m && m.feat ? D.FEATS[m.feat] : null),
-    has: (m, k) => !!m && (m.feat === k || (m.cls === 'warlock' && (k === 'alert' || k === 'savage') && G.Opt.of(m).includes('iv_' + k))),
-    roll: () => U.pick(Object.keys(D.FEATS)),
+    has: (m, k) => !!m && (m.feat === k || (m.sp === 'human' && G.SRD.feat2(m, 'human') === k) || (m.cls === 'warlock' && (k === 'alert' || k === 'savage') && G.Opt.of(m).includes('iv_' + k))),
+    roll: () => G.SRD.BG[U.pick(Object.keys(G.SRD.BG))].feat, // 기원 재주는 배경에서
     // 마법 입문이 주는 주문 (직업 기술에 이미 있으면 그쪽 쿨다운)
     spell: m => Ft.def(m)?.spell || null,
     // 야만적 공격자: 한 턴(2초)에 한 번, 명중 피해를 두 번 굴려 큰 쪽 — 피해 주사위 폭을 ±50%로 보고 둘 중 큰 쪽

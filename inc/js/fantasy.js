@@ -43,9 +43,16 @@ G.Fantasy = (() => {
     isBoss: fl => fl >= FIRST_BOSS && fl % BOSS_EVERY === 0,
     band: fl => D.bands.findIndex(b => F.depth(fl) <= b.to),
     // 그 구간 몬스터의 평균 체력 (우두머리 · 미믹 · 황금 고블린이 기준으로 쓴다)
+    // 난이도 곡선 (DESIGN.md 102): 초반은 적고 약하게, 깊을수록 많고 세게. 구간 사이는 잇는다. MON_HP_K는 시험용 곱
+    CURVE: [[1, 0.8, 0.7, 2], [3, 1, 0.8, 3], [6, 1.5, 1, 5], [10, 2, 1.3, 5], [15, 2.4, 2.1, 6], [20, 2.8, 2.8, 7]],
+    curve(fl, i) { const C = F.CURVE; if (fl >= C[C.length - 1][0]) { const L = C[C.length - 1]; return i === 3 ? L[3] : L[i] + (fl - L[0]) * 0.05; } let k = 0; while (fl >= C[k + 1][0]) k++; const a = C[k], b = C[k + 1], t = (fl - a[0]) / (b[0] - a[0]); return a[i] + (b[i] - a[i]) * t; },
+    MON_HP_K: 1,
+    hpK: fl => F.curve(fl, 1) * F.MON_HP_K * (G.Tut.safe(G.S.w.fantasy) ? 0.7 : 1),
+    atkK: fl => F.curve(fl, 2) * (G.Tut.safe(G.S.w.fantasy) ? 0.5 : 1),
+    packN: fl => (G.Tut.safe(G.S.w.fantasy) ? Math.min(fl + 1, 2) : Math.round(F.curve(fl, 3))),
     monScale: fl => Math.pow(MON_GROW, F.depth(fl) - 1),
-    monHP: (fl, boss) => { const b = D.bands[F.band(fl)].mons; return b.reduce((s, m) => s + G.SRD_MON[D.STAT[m.n][0]].hp, 0) / b.length * F.monScale(fl) * (boss ? BOSS_HP : 1); },
-    monAtk: (fl, boss) => F.monScale(fl) * (boss ? BOSS_ATK : 1), // 몬스터의 atk는 SRD 주사위에 곱하는 배율
+    monHP: (fl, boss) => { const b = D.bands[F.band(fl)].mons; return b.reduce((s, m) => s + G.SRD_MON[D.STAT[m.n][0]].hp, 0) / b.length * F.monScale(fl) * (boss ? BOSS_HP : 1) * F.hpK(fl); },
+    monAtk: (fl, boss) => F.monScale(fl) * (boss ? BOSS_ATK : 1) * F.atkK(fl), // 몬스터의 atk는 SRD 주사위에 곱하는 배율
     monGold: (fl, boss) => 2 * Math.pow(1.14, F.depth(fl) - 1) * (boss ? 10 : 1),
 
     // ── 원정대 편성 (용병 한 사람 한 사람 — G.Guild) ──
@@ -257,9 +264,9 @@ G.Fantasy = (() => {
     },
     refreshEnts(rt) { rt.ents = [...rt.chests, ...(rt.traps || []), ...G.Mission.ents(rt), ...G.Explore.ents(rt), ...rt.party, ...G.Rivals.ents(rt), ...rt.mons]; },
     spawnMon(rt, fl, d, x, y, boss, extra) {
-      const st = G.Foe.stat(d), sc = G.Region.of(G.S.w.fantasy) ? 1 : F.monScale(fl), hp = st.block.hp * st.hpK * sc * (boss ? BOSS_HP : 1);
+      const st = G.Foe.stat(d), sc = G.Region.of(G.S.w.fantasy) ? 1 : F.monScale(fl), hp = st.block.hp * st.hpK * sc * (boss ? BOSS_HP : 1) * F.hpK(fl);
       const mo = {
-        kind: 'mon', n: d.n, t: d.t, wpn: d.wpn, ty: d.ty, role: st.role, tr: st.tr, hand: st.hand, stat: st.block, scale: sc, x, y, s: boss ? d.s || 1.6 : 1, hp, max: hp, atk: sc * (boss ? BOSS_ATK : 1), gold: F.monGold(fl, boss),
+        kind: 'mon', n: d.n, t: d.t, wpn: d.wpn, ty: d.ty, role: st.role, tr: st.tr, hand: st.hand, stat: st.block, scale: sc, x, y, s: boss ? d.s || 1.6 : d.s || 1, hp, max: hp, atk: sc * (boss ? BOSS_ATK : 1) * F.atkK(fl), gold: F.monGold(fl, boss),
         boss, aggro: false, atkT: Math.random(), bar: true, label: boss ? d.n : null, dots: [],
       };
       rt.mons.push(Object.assign(mo, extra));
@@ -533,6 +540,7 @@ G.Fantasy = (() => {
         F.react(f, rt, p, mo);
         dmg *= G.Dnd.bprod(p, 'taken') * G.Res.takenK(p, mo.useAtk?.t);
         dmg = G.Res.stone(rt, p, dmg);
+        if (p.merc && G.Res.species(p.merc) === 'goliath' && (G.SRD.line(p.merc, 'goliath'), p.merc.line) === 'storm' && Math.hypot(mo.x - p.x, mo.y - p.y) <= 12 && G.Res.once(p.merc, 'giant', G.Dnd.prof(p.merc.lv))) { G.Foe.dtype = 'thunder'; F.hurt(f, rt, mo, G.Dnd.dice(1, 8) * F.allyAtk(f, p) / Math.max(1, G.Dnd.avg(G.Dnd.weapon(p))), 'hit', p); G.Foe.dtype = null; } // 폭풍 거인: 반응 1d8 천둥
         // 직감 회피 (6초) · 공격 튕겨내기 (4초) · 다중 공격 방어 (맞은 뒤 3초)
         const now = G.S.runTime;
         if (F.sk(p, 'sr_uncanny') && !(p.uncT > now)) { p.uncT = now + 6; dmg *= 0.5; }
@@ -725,10 +733,16 @@ G.Fantasy = (() => {
       }
       return hit;
     },
+    // 주문 직업: 곁의 적에게 무기가 소마법보다 세면 무기로 친다 (SRD 무기 표 · 무기 능력 · 한 번)
     allyAttack(f, rt, a, tg) {
-      const def = a.def, DN = G.Dnd;
+      const DN = G.Dnd, cp = a.merc && DN.cantrip(a.merc);
+      if (cp && GR.dist(a, tg) <= 1.8 && DN.avg(DN.gearWeapon(a.merc)) >= DN.avg(DN.weapon(a)) * DN.tier(a)) a.swing = true;
+      a.masUsed = false; try { return F.allyAttack0(f, rt, a, tg); } finally { a.swing = false; }
+    },
+    allyAttack0(f, rt, a, tg) {
+      const def = a.swing ? { ...a.def, proj: null, splash: 0, chain: 0, saveAtk: null } : a.def, DN = G.Dnd;
       let dmg = F.allyAtk(f, a) * DN.HIT_K * G.Turn.k(f, rt, a);
-      if (DN.caster(a) && a.merc.cls !== 'warlock') dmg *= DN.tier(a);
+      if (!a.swing && DN.caster(a) && a.merc.cls !== 'warlock') dmg *= DN.tier(a);
       if (def.proj) G.fx(rt, { k: 'proj', key: def.proj, x: a.x, y: a.y, x2: tg.x, y2: tg.y, t: def.proj === 'fx_arrow' ? 0.3 : 0.25 });
       else G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.25, rot: Math.random() - 0.5, flip: a.x > tg.x });
       G.J.lunge('fantasy', a, tg);
@@ -750,19 +764,19 @@ G.Fantasy = (() => {
         return;
       }
       // 한 명: 추가 공격 · 섬뜩한 폭발 광선 수만큼 따로 굴린다
-      const n = a.merc && a.merc.cls === 'warlock' && !DN.melee(a) ? DN.tier(a) : DN.attacks(a), critAt = F.critAt(a), now = G.S.runTime;
+      const n = a.swing ? 1 : a.merc && a.merc.cls === 'warlock' && !DN.melee(a) ? DN.tier(a) : DN.attacks(a), critAt = F.critAt(a), now = G.S.runTime;
       let any = false;
       for (let i = 0; i < n && tg.hp > 0; i++) {
         if (i > 0) { if (def.proj) G.fx(rt, { k: 'proj', key: def.proj, x: a.x, y: a.y, x2: tg.x, y2: tg.y, t: 0.25 + i * 0.06 }); else G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.25, rot: Math.random() - 0.5, flip: i % 2 === 0 }); }
         // 신성한 불꽃 (클레릭 기본): 명중 굴림 대신 민첩 내성 — 버티면 피해 없음
         const r = def.saveAtk ? { hit: !DN.save(tg, def.saveAtk, DN.dc(a)), crit: false, adv: 0 } : DN.attack(a, tg, critAt);
-        if (!r.hit) { DN.miss(rt, tg); if (r.nat === 1 && a.merc && !rt.turn) G.Banter.line(rt, 'fumble', a, null, { tag: G.Banter.hitTag(tg, 1) }); continue; }
+        if (!r.hit) { DN.miss(rt, tg); if (r.nat === 1 && a.merc && !rt.turn) G.Banter.line(rt, 'fumble', a, null, { tag: G.Banter.hitTag(tg, 1) }); if (a.merc && (a.swing || !DN.cantrip(a.merc))) G.SrdX?.onMiss(f, rt, a, tg); continue; }
         any = true;
         if (r.nat === 20 && a.merc && !rt.turn) G.Banter.line(rt, 'crit', a, null, { tag: G.Banter.hitTag(tg, 20) });
         let d = dmg * DN.rollK(a, r.crit), src = r.crit ? 'crit' : 'hit';
         // 기습 (로그) · 거인 사냥꾼 (레인저, 다친 적에게 한 번)
         const sn = DN.sneak(rt, a, tg, r.adv);
-        if (sn) { d += G.Dnd.dice(sn * (r.crit ? 2 : 1), 6) * dmg / Math.max(1, DN.avg(DN.weapon(a))); src = r.crit ? 'crit' : 'smite'; if (F.sk(a, 'sr_fasthands')) F.gain(f, F.monGold(f.floor) * 0.5 * F.goldMult(f)); }
+        if (sn) { d += G.Dnd.dice(sn * (r.crit ? 2 : 1), 6) * dmg / Math.max(1, DN.avg(DN.weapon(a))); src = r.crit ? 'crit' : 'smite'; }
         if (F.sk(a, 'sr_colossus') && tg.hp < tg.max && !(a.colT > now)) { a.colT = now + 0.9; d += DN.dice(1, 8) * dmg / Math.max(1, DN.avg(DN.weapon(a))); }
         // 광휘의 일격 (팔라딘 Lv 11): 근접 ×1.3
         if (F.sk(a, 'sr_radiant') && DN.melee(a)) d += DN.dice(1, 8) * dmg / Math.max(1, DN.avg(DN.weapon(a)));
@@ -770,7 +784,7 @@ G.Fantasy = (() => {
         d += DN.frenzy(a) * dmg / Math.max(1, DN.avg(DN.weapon(a)));
         d *= G.Feat.savage(a);
         F.hurt(f, rt, tg, d, src, a);
-        if (tg.hp > 0) G.Trinket.onHit(f, rt, a, tg, dmg / Math.max(1, DN.avg(DN.weapon(a))), r.nat);
+        if (tg.hp > 0) G.Trinket.onHit(f, rt, a, tg, dmg / Math.max(1, DN.avg(DN.weapon(a))), r.nat); if (a.merc && (a.swing || !DN.cantrip(a.merc))) G.SrdX?.onHit(f, rt, a, tg); else if (a.merc?.cls === 'archmage') tg.shock = Math.max(tg.shock || 0, 6); // 서리 광선: 이동 −2칸
         if (tg.hp > 0) G.Skill.onHit(f, rt, a, tg);
         // 상위 사냥감: 내 표식이 붙은 적을 맞히면 곁(2칸)의 다른 적에게 절반
         if (F.sk(a, 'sr_sprey') && tg.hm && tg.hm.by === a) { const o = rt.mons.find(q => q !== tg && q.hp > 0 && GR.dist(q, tg) <= 6); if (o) F.hurt(f, rt, o, DN.dice(1, 6) * dmg / Math.max(1, DN.avg(DN.weapon(a))), 'hit', a); } // 상위 사냥감 (SRD): 표식 피해를 30피트 안 다른 적에게

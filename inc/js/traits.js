@@ -11,7 +11,7 @@
   T('ft_might', '불굴의 힘', 'Indomitable Might', 'barbarian', 18, '근력 내성 최소값 = 근력');
   T('ft_champion', '원초의 투사', 'Primal Champion', 'barbarian', 20, '근력 · 건강 +4');
   // 바드
-  T('ft_jack', '만능 재주꾼', 'Jack of All Trades', 'bard', 2, '선제권 + 숙련 절반');
+  T('ft_jack', '만능 재주꾼', 'Jack of All Trades', 'bard', 2, '숙련 없는 판정 · 선제권 + 숙련 절반');
   T('ft_counter', '대항 매력', 'Countercharm', 'bard', 7, '지혜 · 매력 내성 이점');
   T('ft_superinsp', '탁월한 영감', 'Superior Inspiration', 'bard', 18, '바드의 영감 전투당 +1번');
   // 클레릭
@@ -35,7 +35,7 @@
   T('ft_evasion', '회피', 'Evasion', 'monk', 7, '민첩 내성 성공 0 · 실패 절반');
   T('ft_denergy', '에너지 튕겨내기', 'Deflect Energy', 'monk', 13, '공격 튕겨내기가 모든 피해에');
   T('ft_survivor', '단련된 생존자', 'Disciplined Survivor', 'monk', 14, '모든 내성 숙련');
-  T('ft_sdefense', '탁월한 방어', 'Superior Defense', 'monk', 18, '역장 외 피해 저항');
+  T('ft_sdefense', '탁월한 방어', 'Superior Defense', 'monk', 18, '집중 3 · 역장 외 피해 저항 10라운드');
   // 팔라딘
   T('ft_adev', '헌신의 오라', 'Aura of Devotion', 'paladin', 7, '오라 안 매혹 면역');
   T('ft_acourage', '용기의 오라', 'Aura of Courage', 'paladin', 10, '오라 안 공포 면역');

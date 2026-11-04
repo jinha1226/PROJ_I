@@ -1,0 +1,30 @@
+'use strict';
+// 게임 데이터 ↔ SRD 5.2.1 데이터(data/srd521, 5e-bits/5e-srd-api) 대조: node test/srd_check.js
+const fs = require('fs'), vm = require('vm'), path = require('path'), CLEAN = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'srd521', 'clean.json'), 'utf8')), R = n => CLEAN[n];
+const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
+const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
+for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+const G = ctx.G, SR = G.SRD; let bad = 0; const diff = (a, ...x) => { bad++; console.log('  다름', a, ...x); };
+const CM = { barbarian: 'barbarian', bard: 'bard', cleric: 'cleric', druid: 'scout', fighter: 'dragoon', monk: 'monk', paladin: 'paladin', ranger: 'archer', rogue: 'rogue', sorcerer: 'mage', warlock: 'warlock', wizard: 'archmage' };
+const EQ = R('Equipment'), en = s => (s || '').toLowerCase().replace(/[^a-z]/g, '');
+const eq = n => EQ.find(q => en(q.name) === en(n));
+for (const k of Object.keys(SR.WEAPON)) { const w = SR.WEAPON[k]; if (w.hidden) continue; const q = eq(w.en); if (!q) { diff('무기 없음', w.en); continue; } const dice = q.damage?.damage_dice || '', mine = w.dn ? `${w.dn}d${w.dd}` : '1'; if (dice !== mine && !(dice === '' && w.flat)) diff(w.en, 'dice', dice, mine); if ((q.damage?.damage_type?.index || w.t) !== w.t) diff(w.en, 'type', q.damage?.damage_type?.index, w.t); const ma = (q.mastery?.index || '').replace('-', ''); if (ma && ma !== w.m) diff(w.en, 'mastery', ma, w.m); if (q.weight != null && Math.abs(q.weight - w.lb) > 0.01) diff(w.en, 'lb', q.weight, w.lb); const gp = q.cost ? q.cost.quantity * ({ gp: 1, sp: 0.1, cp: 0.01 }[q.cost.unit]) : null; if (gp != null && Math.abs(gp - w.gp) > 0.001) diff(w.en, 'gp', gp, w.gp); const pr = (q.properties || []).map(p => p.index), map = { finesse: 'finesse', light: 'light', thrown: 'thrown', 'two-handed': 'two', versatile: 'versatile', ammunition: 'ammo', loading: 'loading', heavy: 'heavy', reach: 'reach' }; for (const p of pr) if (map[p] && !w.props.includes(map[p])) diff(w.en, 'prop 빠짐', p); for (const p of w.props) if (!pr.some(z => map[z] === p)) diff(w.en, 'prop 더함', p); if (w.rng === 'ranged' && q.range && w.ft && q.range.normal !== w.ft) diff(w.en, 'range', q.range.normal, w.ft); if (q.throw_range && w.ft && q.throw_range.normal !== w.ft) diff(w.en, 'throw', q.throw_range.normal, w.ft); }
+for (const k of Object.keys(SR.ARMOR)) { const a = SR.ARMOR[k]; if (a.cat === 'none') continue; const q = eq(a.en) || eq(a.en.replace('Half Plate', 'Half-Plate')); if (!q) { diff('갑옷 없음', a.en); continue; } if (q.armor_class.base !== a.base) diff(a.en, 'AC', q.armor_class.base, a.base); const mx = q.armor_class.dex_bonus ? (q.armor_class.max_bonus ?? 99) : 0; if (mx !== a.dexMax) diff(a.en, 'dexMax', mx, a.dexMax); if ((q.str_minimum || 0) !== a.str) diff(a.en, 'str', q.str_minimum, a.str); if (!!q.stealth_disadvantage !== a.stealth) diff(a.en, 'stealth', q.stealth_disadvantage, a.stealth); if (q.weight !== a.lb) diff(a.en, 'lb', q.weight, a.lb); if (q.cost.quantity !== a.gp) diff(a.en, 'gp', q.cost.quantity, a.gp); }
+// 직업
+const SK = { 'animal-handling': 'animal', 'sleight-of-hand': 'sleight' }, sk = s => { const b = s.replace(/^skill-/, ''); return SK[b] || b; };
+for (const c of R('Classes')) { const k = CM[c.index], me = SR.CLS[k], cl = G.Dnd.CLS[k]; if (cl.hd !== c.hit_die) diff(c.index, 'hd', c.hit_die, cl.hd); const sv = c.saving_throws.map(q => q.index).sort().join(), m0 = cl.saves.slice().sort().join(); if (sv !== m0) diff(c.index, 'saves', sv, m0); const ch = c.proficiency_choices.find(q => JSON.stringify(q).includes('skill-')); if (ch) { if (ch.choose !== me.sk) diff(c.index, '기술 수', ch.choose, me.sk); const L = (ch.from.options || []).map(o => sk(o.item?.index || '')).filter(Boolean).sort().join(), M = me.from.slice().sort().join(); if (L && L !== M) diff(c.index, '기술 목록', L, M); } }
+// 종족 · 배경 · 재주 · 기능 · 주문 · 물건 · 몬스터
+for (const s of R('Species')) { const q = SR.SPECIES[s.index]; if (!q) { diff('종족 없음', s.index); continue; } if (q.move * 5 !== s.speed) diff(s.index, 'speed', s.speed, q.move * 5); }
+for (const b of R('Backgrounds')) { const q = SR.BG[b.index]; if (!q) { diff('배경 없음', b.index); continue; } const pr = b.proficiencies.filter(p => p.index.startsWith('skill-')).map(p => sk(p.index)).sort().join(); if (pr !== q.sk.slice().sort().join()) diff(b.index, 'skills', pr, q.sk); if (b.ability_scores.map(a => a.index).sort().join() !== q.ab.slice().sort().join()) diff(b.index, 'ab'); }
+const FE = new Set(Object.values(G.D.FEATS).concat(Object.values(G.D.BOONS || {})).map(q => en(q.en))), feats = R('Feats'), noFeat = feats.filter(q => !FE.has(en(q.name)) && !/^(magic initiate)$/i.test(q.name)).map(q => q.name);
+const SPE = new Set(Object.values(G.SRD_SP).map(q => en(q.en))), noSp = R('Spells').filter(q => !SPE.has(en(q.name))).map(q => q.name);
+const spellsNoCombat = Object.values(G.SRD_SP).filter(q => !q.k || q.k === 'util').length;
+const ARTS = Object.values(G.D.ARTS || {}), AE = new Set(ARTS.map(q => en(q.en))), MI = R('Magic-Items').filter(q => !q.variant), noMI = MI.filter(q => !AE.has(en(q.name))).map(q => q.name);
+const MONS = R('Monsters'), MM = (() => { const t = fs.readFileSync(path.join(__dirname, '..', 'js', 'srd_mons.js'), 'utf8'); return t; })(), noMon = MONS.filter(q => !MM.toLowerCase().includes(q.name.toLowerCase())).map(q => q.name);
+const GEAR = EQ.filter(q => !q.damage && !q.armor_class);
+console.log(`재주 없음 ${noFeat.length}:`, noFeat.join(', '));
+console.log(`주문 ${R('Spells').length} · 표에 없음 ${noSp.length} · 전투 동작 없음 ${spellsNoCombat}`);
+console.log(`마법 물건 원문 ${MI.length} · 없음 ${noMI.length}`);
+console.log(`몬스터 원문 ${MONS.length} · 없음 ${noMon.length}`);
+console.log(`모험 장비 · 도구 원문 ${GEAR.length} · 게임 0`);
+console.log(`srd_check: 표 차이 ${bad}`);

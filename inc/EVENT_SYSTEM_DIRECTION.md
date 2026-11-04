@@ -2,6 +2,25 @@
 
 > 이 문서는 inc/DESIGN.md의 현재 게임 방향을 보완하는 구현 가이드다. 기존 핵심 원칙과 충돌하면 DESIGN.md를 우선하고, 방향이 바뀌면 두 문서를 함께 갱신한다.
 
+## 구현 현황 (2026-11-04)
+
+표시: **완료** = 구현하고 시험 통과 · **측정 중** = 구현했지만 수치 판단 전 · **제안** = 아직 없음. 후속 계획은 [EVENT_SYSTEM_FOLLOWUPS.md](EVENT_SYSTEM_FOLLOWUPS.md).
+
+| 항목 | 상태 | 어디 |
+|---|---|---|
+| 방 태그 · 층별 사건 자리 · 가중치 추첨 · 재방문 시 유지 | 완료 | `inc/js/events.js` |
+| 지형과 분리된 사건 난수 | 완료 | `G.Event.rng` |
+| 기존 장면 통합 (8종) | 완료 | `LIST`의 `scene` |
+| 데이터 사건 25종 (연속 단계 포함) | 완료 | `LIST`의 `choices` · `auto` |
+| 선택 → 판정 → 결과 실행기 | 완료 | `inc/js/story.js`의 `SCENES.event` |
+| 방침별 방치 기본값 · 직접/자동 기록 | 완료 | `G.Event.def` · `G.Event.record` |
+| 연속 사건 2종 | 완료 | `G.Event.advance`, `DESIGN.md` 99 · 100 · 101 |
+| 태그별 문장 · 판정 · 결과 변형 3종 | 완료 | `vary` · `G.Event.view` |
+| 빈도 · 선택지별 결과 측정 | 측정 중 | `test/event_freq.js` · `test/event_table.js` |
+| 모바일 화면 기준 | 제안 | PC를 먼저 마무리한 뒤 |
+
+유형 이름: 발견 `discovery` · 조우 `encounter` · 위험 `hazard` · 탐험 `explore` · 파티 `party` · 대형 사건 `big`. 결과 연산자는 `G.Event.ops`, 시험은 `node test/event_rules.js`.
+
 ## 1. 목표
 
 절차적으로 생성되는 던전에 사건을 연결해, 매 원정이 단순히 다른 지도를 보여주는 데서 끝나지 않고 **다른 판단과 결과를 만드는 경험**이 되게 한다.
@@ -56,7 +75,7 @@
 
 ## 4. 이벤트 데이터 모델
 
-이벤트는 코드에 하드코딩하기보다 데이터로 정의한다. 아래는 개념 예시이며 실제 프로젝트의 데이터 규약에 맞춰 조정한다.
+이벤트는 코드에 하드코딩하기보다 데이터로 정의한다. 아래는 개념 예시이며 실제 프로젝트의 데이터 규약에 맞춰 조정한다. **실제 형식은 JSON이 아니라 `inc/js/events.js`의 `LIST`이고, 필드 이름도 다르다** (`conditions` → `tags` · `minFl` · `when`, `resolution` → `check`, `outcomes` → `win` · `lose`의 `ops`).
 
 ```json
 {

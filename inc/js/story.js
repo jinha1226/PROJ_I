@@ -109,7 +109,7 @@ G.Story = (() => {
   const pct = (p, o, dc) => U.clamp(Math.round((21 - (dc - modOf(p, o))) * 5), 5, 95);
   // 묻기 (라이벌 조우처럼): 파티가 멈추고 잠깐 기다린다. 안 고르면 파티가 정한 대로(def). 조우 시 묻기를 끄면 묻지 않는다
   function ask(f, rt, title, opts, def, done) {
-    if (G.quiet || f.askMeet === false) { done(def); return; }
+    if (G.quiet || f.askMeet === false) { done(def, 'quiet'); return; }
     rt.ask = { id: (rt.askId = (rt.askId || 0) + 1), title, opts, def, t: ASK_T, max: ASK_T, done };
   }
   // 조우의 접근법: 고르게 하고 { who, o, other, by(플레이어가 골랐나) }로
@@ -320,7 +320,7 @@ G.Story = (() => {
       if (greedy) { say(rt, greedy, full ? '짐이야 더 묶으면 되지. 내려가자!' : '아직 더 벌 수 있어. 내려가자!'); yield SAY; }
       if (careful) { say(rt, careful, rate < STAIR_HP ? '이 상태로 더 내려가는 건 무리야.' : '이쯤에서 돌아가도 충분해.'); yield SAY; }
       let got = null;
-      ask(f, rt, G.Region.of(f) ? `${f.floor}층 야영` : `${f.floor}층 계단 · 체력 ${Math.round(rate * 100)}%`, [{ label: '내려간다', sub: `${full ? '짐 한도 +30% · ' : ''}위험 +1 · 보상 ×${(S.pay({ heat: Math.max(0, f.heat || 0) + 1 })).toFixed(1)}` }, { label: '돌아간다', sub: `짐 +${U.fmt(carry)}` }], stairDef(f, rate, careful && !greedy), i => { got = i; });
+      ask(f, rt, G.Region.of(f) ? `${f.floor}층 야영` : `${f.floor}층 계단 · 체력 ${Math.round(rate * 100)}%`, [{ label: '내려간다', sub: `${full ? '짐 한도 +30% · ' : ''}위험 +1 · 보상 ×${(S.pay({ heat: Math.max(0, f.heat || 0) + 1 })).toFixed(1)}` }, { label: '돌아간다', sub: `짐 +${U.fmt(carry)}` }], G.Tut.askStairs(f) ? 1 : stairDef(f, rate, careful && !greedy), i => { got = i; });
       while (got === null) yield 0.1;
       rt.stairAsk = f.floor;
       if (got === 1) { dm(rt, '오늘은 여기까지다. 왔던 길을 되짚는다.'); G.Exp.home(f, rt, 'retreat'); return; }
@@ -435,8 +435,8 @@ G.Story = (() => {
       add(f, `${f.floor}층 · ${ig(nameOf(c.who))} 해골의 금화에 손을 댔다가 저주를 받았다.`, [c.who.merc]);
     },
     // 데이터로 정의한 사건 (G.Event): 선택지 → 판정 → 결과. 안 고르면 방침 · 파티 성격대로
-    *event(f, rt, r, e) {
-      const Ev = G.Event, P = e.prop ? stage(rt, r || rt.map.rooms[0], e.prop, e.propOpt || {}) : null, fake = Ev.fakeOf(f, e, r);
+    *event(f, rt, r, e0) {
+      const Ev = G.Event, e = Ev.view(e0, r), P = e.prop ? stage(rt, r || rt.map.rooms[0], e.prop, e.propOpt || {}) : null, fake = Ev.fakeOf(f, e, r);
       Ev.cur = Ev.subject(f, rt, e);
       dm(rt, Ev.text(f, e, Ev.openOf(f, e) || e.n));
       yield DM;
@@ -452,8 +452,9 @@ G.Story = (() => {
         const who = Ev.pickWho(rt, o.check.sk, o.other ? Ev.cur?.a : null), ch = { ...o.check, dc: Ev.dcOf(f, e, o.check) };
         return { label: o.label, who: nameOf(who), by: who, ch, sub: `${nameOf(who)} · ${Ev.pct(rt, ch, who)}%`, o };
       });
-      let got = null;
-      ask(f, rt, e.n, opts, Ev.def(f, rt, opts.map(x => x.o)), i => { got = i; });
+      let got = null, how = 'pick';
+      const def = Ev.def(f, rt, opts.map(x => x.o), opts.map(x => x.ch));
+      ask(f, rt, e.n, opts, def, (i, h) => { got = i; how = h; });
       while (got === null) yield 0.1;
       const o = opts[got].o, by = opts[got].by, ch = opts[got].ch;
       let who = null, ok = true;
@@ -470,10 +471,13 @@ G.Story = (() => {
       const res = Ev.outcome(o, ok, fake);
       if (!res) return;
       if ((res.who || res.other) && !who) { const crew = living(rt), ks = Object.keys(o.pers || {}), pool = o.other ? crew.filter(p => p !== Ev.cur?.a) : crew; who = pool.find(p => ks.some(k => hasPers(p, k))) || U.pick(pool.length ? pool : crew); } // 판정 없이 손대는 사람: 그런 성격이 먼저
-      if (P && res.state) act(rt, P, res.state);
+      if (P && res.state) act(rt, P, P.sc === 'cage' && res.state === 'gone' ? 'empty' : res.state);
       Ev.advance(f, e, o, res, who);
       Ev.run(f, rt, res, who, e);
-      if (res.log) add(f, `${f.floor}층 · ${Ev.text(f, e, res.log, who)}`, who ? [who.merc] : []); // 함정에 전멸해도 일지에는 남는다
+      // 일지: 함정에 전멸해도 남고, 방침대로 넘어간 것은 표시한다. 적을 말이 없는 선택도 자동이면 무엇을 했는지 남긴다
+      const mark = how === 'pick' ? '' : ' (방침)', line = res.log ? Ev.text(f, e, res.log, who) : how === 'pick' ? '' : `${e.n}: ${o.label}`;
+      if (line) add(f, `${f.floor}층 · ${line}${mark}`, who ? [who.merc] : []);
+      Ev.record(f, rt, e, { how, opt: o.label, ok, def: opts[def]?.o.label });
       if (rt.phase === 'dead') return;
       if (res.dm) dm(rt, Ev.text(f, e, res.dm, who));
       (rt.events = rt.events || []).push({ k: 'ev', id: e.id, ok, opt: o.label });
@@ -741,11 +745,12 @@ G.Story = (() => {
     askTick(rt, dt) {
       const a = rt.ask;
       if (!a) return false;
+      if (G.Tut.holdAsk(G.S.w.fantasy)) return true;
       if ((a.t -= dt) > 0) return true;
-      S.answer(rt, a.def);
+      S.answer(rt, a.def, 'auto');
       return false;
     },
-    answer(rt, i) { const a = rt.ask; if (!a) return; rt.ask = null; a.done(i); },
+    answer(rt, i, how = 'pick') { const a = rt.ask; if (!a) return; rt.ask = null; if (how === 'pick') G.Tut.picked(G.S.w.fantasy); a.done(i, how); },
     deathSave(f, rt, p) {
       const d = p.dying, rolled = DN().d20(0), nat = rolled <= 9 && G.Trinket.has(p.merc, 'deathTen') ? 10 : rolled, bonus = (p.merc.titles || []).reduce((a, id) => a + (TITLES[id].save || 0), 0);
       if (nat === 20) { S.wake(f, rt, p, 0.1); d.ok = 3; }
@@ -786,6 +791,7 @@ G.Story = (() => {
       return true;
     },
     die(f, rt, p) {
+      if (G.Tut.safe(f)) { p.dying = null; p.hp = Math.max(1, p.max * 0.1); return; } // 첫 원정은 죽지 않는다
       const m = p.merc, by = p.dying && p.dying.by;
       S.note(rt, 'dead', p, null, m.name);
       p.dying = null;
@@ -1065,7 +1071,7 @@ G.Story = (() => {
       const reg = G.Region.of(f);
       if (reg) { if (G.Region.done(f, reg)) return false; rt.stairAsk = f.floor; rt.roll = null; rt.scene = { gen: SCENES.camp(f, rt), t: 0.2 }; return true; }
       const hp = F().partyHP(rt), crew = living(rt), avg = crew.reduce((a, p) => a + (p.merc.stress || 0), 0) / (crew.length || 1);
-      if (!G.Exp.full(f) && (hp.max ? hp.hp / hp.max : 1) >= STAIR_HP && avg < STAIR_STRESS && f.floor - (rt.stairAsk || f.runStart || 1) < STAIR_EVERY) return false;
+      if (!G.Tut.askStairs(f) && !G.Exp.full(f) && (hp.max ? hp.hp / hp.max : 1) >= STAIR_HP && avg < STAIR_STRESS && f.floor - (rt.stairAsk || f.runStart || 1) < STAIR_EVERY) return false;
       rt.stairAsk = f.floor;
       rt.roll = null;
       rt.scene = { gen: SCENES.stairs(f, rt), t: 0.2 };

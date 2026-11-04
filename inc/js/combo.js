@@ -20,7 +20,7 @@ G.Combo = (() => {
   // D&D 상태이상 규칙으로 잇는다 (DESIGN.md 56 ③): 한 사람이 걸고 다른 사람이 그 규칙으로 터뜨린다.
   // on = 계기들(상태이상 · hm 표식 · web_fire 불붙은 거미줄 · ally_down 동료가 넘어짐/마비 · song_end), who = 받는 몸 조건, cls = 받는 직업(먼저)
   const DN = () => G.Dnd;
-  const melee = a => a.def.range < 2 && !a.def.heal, ranged = a => a.def.range >= 3 && !a.def.heal;
+  const melee = a => G.Dnd.rng(a) < 2 && !a.def.heal, ranged = a => G.Dnd.rng(a) >= 3 && !a.def.heal;
   // 명중 굴림으로 친다 (상태이상이 이점 · 치명을 준다)
   const roll = (f, rt, c, o, k) => { const r = DN().attack(c, o); if (!r.hit) return DN().miss(rt, o); hit(f, rt, c, o, k * (r.crit ? F().critD() : 1), r.crit ? 'crit' : 'smite'); };
   const CB = {

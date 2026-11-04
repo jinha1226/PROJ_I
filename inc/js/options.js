@@ -74,7 +74,7 @@ G.Opt = (() => {
   const T = (k, n, en, cls, lv, d) => { reg(k, n, en, cls, lv, d, null); D.MPOOL[cls].push(k); };
   const SUB = (k, n, en, adv, lv, d, S) => { reg(k, n, en, D.ADV[adv].base, lv, d, S, S ? { auto: true } : {}); D.ADV[adv].sig.push(k); };
   T('ft_tshift', '전술 이동', 'Tactical Shift', 'dragoon', 5, '재기를 쓰면 이동 절반 · 기회 공격 없음');
-  T('ft_tmaster', '전술의 대가', 'Tactical Master', 'dragoon', 9, '무기로 맞히면 약화, 이미 약화면 느려짐');
+  T('ft_tmaster', '전술의 대가', 'Tactical Master', 'dragoon', 9, '무기 숙련을 밀치기 · 약화 · 둔화로 바꿈');
   T('ft_icunning', '향상된 교활한 일격', 'Improved Cunning Strike', 'rogue', 11, '교활한 일격 효과 둘');
   T('ft_ibrutal', '향상된 잔혹한 일격', 'Improved Brutal Strike', 'barbarian', 13, '잔혹한 일격: 비틀거림 · 가르기 추가');
   T('ft_ibrutal2', '향상된 잔혹한 일격 2', 'Improved Brutal Strike', 'barbarian', 17, '잔혹한 일격 2d10 · 효과 둘');
@@ -212,7 +212,7 @@ G.Opt = (() => {
     // 무기가 맞았을 때 (G.Skill.onHit)
     onHit(f, rt, a, o) {
       if (!a.merc || o.hp <= 0) return; const m = a.merc, x = { f, rt, c: a }, round = rt.turn?.round;
-      if (G.Guild.skill(m, 'ft_tmaster')) { if (!DN.has(o, 'sapped')) DN.give(rt, o, 'sapped', G.Res_ROUND, a); else o.shock = Math.max(o.shock || 0, 6); }
+      
       if (m.cls !== W) return;
       if (Opt.has(a, 'iv_repel') && !DN.melee(a)) H.push(x, a, o, 2);
       if (Opt.has(a, 'iv_life') && a.ldR !== round) { a.ldR = round; const u = F().allyAtk(f, a) / Math.max(1, DN.avg(DN.weapon(a))), s = { short: 1 }; G.Foe.dtype = 'necrotic'; F().hurt(f, rt, o, DN.dice(1, 6) * u, 'extra', a); G.Foe.dtype = null; if (a.hp < a.max && G.Res.can(m, 'iv_life', s)) { G.Res.pay(m, 'iv_life', s); a.hp = Math.min(a.max, a.hp + Math.max(1, DN.dice(1, 8) + DN.mod(DN.ab(m).con)) * a.max / Math.max(1, DN.srdHP(m))); } }

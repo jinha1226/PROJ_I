@@ -2,6 +2,7 @@
 // 몬스터 역할 · 특성 (DESIGN.md 78). 누구를 노리고, 어디에 서고, 차례에 무엇을 하는지는 여기서만 정한다.
 // 역할은 D&D 4판의 몬스터 역할에서 가져왔고, 특성은 SRD 몬스터 능력을 따른다. 숫자는 나중에 한 번에 맞춘다.
 G.Foe = (() => {
+  const HEAVY_CR = 5;
   const U = G.U, F = () => G.Fantasy, DN = () => G.Dnd;
   const ROLES = {
     soldier: { hp: 1, atk: 1, mv: 6 },
@@ -108,7 +109,7 @@ G.Foe = (() => {
     },
     // 공격하는 쪽이 받는 부식 (검은 푸딩)
     thorn(f, rt, m, from) {
-      if (m.stat?.id === 'black-pudding' && from?.merc && !G.Foe.dtype && !((from.def.range || 0) >= 2)) Foe.blast(f, rt, m, from, DN().dice(...THORN), null, 0, 'acid');
+      if (m.stat?.id === 'black-pudding' && from?.merc && !G.Foe.dtype && !((G.Dnd.rng(from) || 0) >= 2)) Foe.blast(f, rt, m, from, DN().dice(...THORN), null, 0, 'acid');
     },
     // 죽을 때 폭발 (발로르)
     onDeath(f, rt, m) {
@@ -147,6 +148,9 @@ G.Foe = (() => {
       let heal = false;
       for (let i = 0; i < nBack; i++) { const pool = rear.filter(m => m.r !== 'support' || !heal), m = U.pick(pool.length ? pool : rear); heal = heal || m.r === 'support'; out.push(m); }
       while (out.length < n) out.push(U.pick(front.length ? front : rear));
+      // 큰 놈(CR 5 이상)은 무리에 하나 (맨 깊은 구간은 둘). 나머지는 같은 세력의 작은 놈으로
+      const crOf = m => G.SRD_MON[G.D.F.STAT[m.n]?.[0]]?.cr || 0, cap = F().band(fl) >= 5 ? 2 : 1, light = t.filter(m => crOf(m) < HEAVY_CR); let big = 0;
+      if (light.length) for (let i = 0; i < out.length; i++) if (crOf(out[i]) >= HEAVY_CR && ++big > cap) out[i] = U.pick(light);
       return out;
     },
     // 층에 흩어 둔다: 방마다 한 무리
@@ -164,7 +168,7 @@ G.Foe = (() => {
       const list = rt.party.concat(G.Mission.targets(rt)).filter(p => !p.dead);
       if (!list.length) return null;
       if (e.role === 'skirmisher') { // 전열을 돌아 후열로
-        const soft = list.filter(p => p.def && (p.def.range >= 2 || p.def.heal) && dist(e, p) <= Foe.move(e) + MELEE_R);
+        const soft = list.filter(p => p.def && (G.Dnd.rng(p) >= 2 || p.def.heal) && dist(e, p) <= Foe.move(e) + MELEE_R);
         return near(e, soft.length ? soft : list);
       }
       if (Foe.ranged(e)) { // 보이는 사람 중 가장 약한 쪽
@@ -336,7 +340,7 @@ G.Foe = (() => {
     pack(rt, att, tg) { return has(att, 'pack') && rt.mons.some(o => o !== att && o.hp > 0 && !o.down && dist(o, tg) <= MELEE_R); },
     // SRD 절반 엄폐: 쏘는 쪽과 표적 사이에 다른 인물이 서 있으면 AC +2 (전열이 후열을 가려 준다)
     cover(rt, att, tg) {
-      const far = att.kind === 'mon' ? Foe.ranged(att) : att.def && att.def.range >= 2;
+      const far = att.kind === 'mon' ? Foe.ranged(att) : att.def && G.Dnd.rng(att) >= 2;
       if (!far) return 0;
       const shield = tg.merc ? G.Trinket.sum(tg.merc, 'acFar') : 0; // 화살 잡이 방패
       if (dist(att, tg) <= MELEE_R) return shield;
@@ -347,7 +351,7 @@ G.Foe = (() => {
     },
     // SRD: 적이 붙어 있으면 원거리 공격에 불리
     pointBlank(rt, att) {
-      const far = att.kind === 'mon' ? Foe.ranged(att) : att.def && att.def.range >= 2;
+      const far = att.kind === 'mon' ? Foe.ranged(att) : att.def && G.Dnd.rng(att) >= 2;
       if (!far) return false;
       const foes = att.kind === 'mon' ? rt.party.filter(p => !p.dead) : rt.mons.filter(o => o.hp > 0 && o.aggro);
       return foes.some(o => dist(o, att) <= MELEE_R);

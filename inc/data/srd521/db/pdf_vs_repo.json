@@ -1,0 +1,576 @@
+[
+{
+"tbl": "spell",
+"name": "Contagion",
+"field": "range",
+"pdf": "Touch",
+"repo": "Touch Component: V, S"
+},
+{
+"tbl": "spell",
+"name": "Divine Smite",
+"field": "range",
+"pdf": "Self",
+"repo": "Self Component: V"
+},
+{
+"tbl": "spell",
+"name": "Find Steed",
+"field": "range",
+"pdf": "30 feet",
+"repo": "30 feet Component: V, S"
+},
+{
+"tbl": "spell",
+"name": "Guidance",
+"field": "range",
+"pdf": "Touch",
+"repo": "Touch Component: V, S"
+},
+{
+"tbl": "spell",
+"name": "Power Word Heal",
+"field": "range",
+"pdf": "60 feet",
+"repo": "60 feet Component: V"
+},
+{
+"tbl": "spell",
+"name": "Power Word Kill",
+"field": "range",
+"pdf": "60 feet",
+"repo": "60 feet Component: V"
+},
+{
+"tbl": "spell",
+"name": "Resistance",
+"field": "range",
+"pdf": "Touch",
+"repo": "Touch Component: V, S"
+},
+{
+"tbl": "spell",
+"name": "Searing Smite",
+"field": "range",
+"pdf": "Self",
+"repo": "Self Component: V"
+},
+{
+"tbl": "spell",
+"name": "Sorcerous Burst",
+"field": "range",
+"pdf": "120 feet",
+"repo": "120 feet Component: V, S"
+},
+{
+"tbl": "monster",
+"name": "Vampire",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "monster",
+"name": "Werebear",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "monster",
+"name": "Wereboar",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "monster",
+"name": "Wererat",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "monster",
+"name": "Weretiger",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "monster",
+"name": "Werewolf",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "monster",
+"name": "Octopus",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Ammunition, +1, +2, or +3",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Armor, +1, +2, or +3",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Bead of Nourishment",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Cloak of Invisibility",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Elixir of Health",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Energy Bow",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Gloves of Thievery",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Hat of Many Spells",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Potion of Invulnerability",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Potion of Longevity",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Potion of Vitality",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Quarterstaff of the Acrobat",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Rod of Resurrection",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Sending Stones",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Sentinel Shield",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Shield, +1, +2, or +3",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Shield of the Cavalier",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Thunderous Greatclub",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Wand of the War Mage, +1, +2, or +3",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "magic_item",
+"name": "Weapon, +1, +2, or +3",
+"field": "없음",
+"pdf": "PDF",
+"repo": ""
+},
+{
+"tbl": "monster",
+"name": "Vampire, Vampire Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Vampire, Vampire Form"
+},
+{
+"tbl": "monster",
+"name": "Vampire, Bat Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Vampire, Bat Form"
+},
+{
+"tbl": "monster",
+"name": "Vampire, Mist Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Vampire, Mist Form"
+},
+{
+"tbl": "monster",
+"name": "Werebear, Human Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Werebear, Human Form"
+},
+{
+"tbl": "monster",
+"name": "Werebear, Hybrid Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Werebear, Hybrid Form"
+},
+{
+"tbl": "monster",
+"name": "Werebear, Bear Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Werebear, Bear Form"
+},
+{
+"tbl": "monster",
+"name": "Wereboar, Human Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Wereboar, Human Form"
+},
+{
+"tbl": "monster",
+"name": "Wereboar, Hybrid Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Wereboar, Hybrid Form"
+},
+{
+"tbl": "monster",
+"name": "Wereboar, Boar Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Wereboar, Boar Form"
+},
+{
+"tbl": "monster",
+"name": "Wererat, Human Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Wererat, Human Form"
+},
+{
+"tbl": "monster",
+"name": "Wererat, Hybrid Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Wererat, Hybrid Form"
+},
+{
+"tbl": "monster",
+"name": "Wererat, Rat Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Wererat, Rat Form"
+},
+{
+"tbl": "monster",
+"name": "Weretiger, Human Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Weretiger, Human Form"
+},
+{
+"tbl": "monster",
+"name": "Weretiger, Hybrid Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Weretiger, Hybrid Form"
+},
+{
+"tbl": "monster",
+"name": "Weretiger, Tiger Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Weretiger, Tiger Form"
+},
+{
+"tbl": "monster",
+"name": "Werewolf, Human Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Werewolf, Human Form"
+},
+{
+"tbl": "monster",
+"name": "Werewolf, Hybrid Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Werewolf, Hybrid Form"
+},
+{
+"tbl": "monster",
+"name": "Werewolf, Wolf Form",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Werewolf, Wolf Form"
+},
+{
+"tbl": "magic_item",
+"name": "Ammunition",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Ammunition"
+},
+{
+"tbl": "magic_item",
+"name": "Ammunition, +1",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Ammunition, +1"
+},
+{
+"tbl": "magic_item",
+"name": "Ammunition, +2",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Ammunition, +2"
+},
+{
+"tbl": "magic_item",
+"name": "Ammunition, +3",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Ammunition, +3"
+},
+{
+"tbl": "magic_item",
+"name": "Armor",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Armor"
+},
+{
+"tbl": "magic_item",
+"name": "Armor +1",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Armor +1"
+},
+{
+"tbl": "magic_item",
+"name": "Armor +2",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Armor +2"
+},
+{
+"tbl": "magic_item",
+"name": "Armor +3",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Armor +3"
+},
+{
+"tbl": "magic_item",
+"name": "Silver Horn of Valhalla",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Silver Horn of Valhalla"
+},
+{
+"tbl": "magic_item",
+"name": "Brass Horn of Valhalla",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Brass Horn of Valhalla"
+},
+{
+"tbl": "magic_item",
+"name": "Bronze Horn of Valhalla",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Bronze Horn of Valhalla"
+},
+{
+"tbl": "magic_item",
+"name": "Iron Horn of Valhalla",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Iron Horn of Valhalla"
+},
+{
+"tbl": "magic_item",
+"name": "Shield",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Shield"
+},
+{
+"tbl": "magic_item",
+"name": "Shield +1",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Shield +1"
+},
+{
+"tbl": "magic_item",
+"name": "Shield +2",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Shield +2"
+},
+{
+"tbl": "magic_item",
+"name": "Shield +3",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Shield +3"
+},
+{
+"tbl": "magic_item",
+"name": "Wand of the War Mage",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Wand of the War Mage"
+},
+{
+"tbl": "magic_item",
+"name": "Wand of the War Mage +1",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Wand of the War Mage +1"
+},
+{
+"tbl": "magic_item",
+"name": "Wand of the War Mage +2",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Wand of the War Mage +2"
+},
+{
+"tbl": "magic_item",
+"name": "Wand of the War Mage +3",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Wand of the War Mage +3"
+},
+{
+"tbl": "magic_item",
+"name": "Weapon",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Weapon"
+},
+{
+"tbl": "magic_item",
+"name": "Weapon +1",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Weapon +1"
+},
+{
+"tbl": "magic_item",
+"name": "Weapon +2",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Weapon +2"
+},
+{
+"tbl": "magic_item",
+"name": "Weapon +3",
+"field": "5e-bits에만",
+"pdf": "",
+"repo": "Weapon +3"
+},
+{
+"tbl": "class_spell",
+"name": "Mind Spike",
+"field": "주문 설명 직업인데 목록에 없음",
+"pdf": "Sorcerer",
+"repo": ""
+},
+{
+"tbl": "class_spell",
+"name": "Phantasmal Force",
+"field": "주문 설명 직업인데 목록에 없음",
+"pdf": "Sorcerer",
+"repo": ""
+},
+{
+"tbl": "class_spell",
+"name": "Phantasmal Force",
+"field": "주문 설명 직업인데 목록에 없음",
+"pdf": "Bard",
+"repo": ""
+},
+{
+"tbl": "class_spell",
+"name": "Phantasmal Force",
+"field": "주문 설명 직업인데 목록에 없음",
+"pdf": "Wizard",
+"repo": ""
+}
+]

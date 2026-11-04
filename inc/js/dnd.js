@@ -9,28 +9,29 @@ G.Dnd = (() => {
   // Lv 19는 SRD 5.2.1에서 능력치 상승 대신 서사 은혜 (DESIGN.md 59) — 은혜와 서사 단계가 주능력을 30까지
   const ASI_LV = [4, 8, 12, 16], AB_MAX = 20, EPIC_MAX = 30;
   // 갑옷: 가벼움 12+민첩 · 중간 14+민첩(최대 2) · 무거움 16 · 마법 갑옷 13+민첩 · 비무장 방어 10+민첩+(건강 · 지혜) · 방패 +2 · 갑옷 강화 10단계마다 +1 (최대 +3)
-  const ARMOR = {
-    light: ab => 12 + N.mod(ab.dex), medium: ab => 14 + Math.min(2, N.mod(ab.dex)), heavy: () => 16, mage: ab => 13 + N.mod(ab.dex),
-    barb: ab => 10 + N.mod(ab.dex) + N.mod(ab.con), monk: ab => 10 + N.mod(ab.dex) + N.mod(ab.wis),
-  };
+  // 갑옷은 G.SRD.ARMOR 표. 바바리안 · 몽크의 비무장 방어만 직업 규칙
+  const armorAC = (m, ab) => { const SR = G.SRD, q = SR.armorOf(m), e = SR.eq(m); if (q.cat === 'none') { if (m.cls === 'barbarian') return 10 + N.mod(ab.dex) + N.mod(ab.con); if (m.cls === 'monk' && !e.shield) return 10 + N.mod(ab.dex) + N.mod(ab.wis); } return q.base + Math.min(q.dexMax, N.mod(ab.dex)); };
   // 12직업 (SRD 5.2.1 직업 표): 히트 다이스 · 주능력 · 능력치 놓는 순서 · 갑옷 · 방패 · 내성 숙련 · 기술 숙련(탐험 판정에 쓰는 셋만)
   // 내부 키는 옛 저장을 살리려고 그대로 둔다: archer = 레인저 · dragoon = 파이터 · mage = 소서러 · archmage = 위저드 · scout = 드루이드
   const CLS = {
     barbarian: { hd: 12, pri: 'str', order: ['str', 'con', 'dex', 'wis', 'cha', 'int'], armor: 'barb', saves: ['str', 'con'], sk: ['perception'] },
-    bard: { hd: 8, pri: 'cha', order: ['cha', 'dex', 'con', 'wis', 'int', 'str'], armor: 'light', saves: ['dex', 'cha'], sk: ['perception', 'investigation', 'persuasion'] },
-    cleric: { hd: 8, pri: 'wis', order: ['wis', 'con', 'str', 'cha', 'dex', 'int'], armor: 'medium', shield: true, saves: ['wis', 'cha'], sk: ['persuasion'] },
-    scout: { hd: 8, pri: 'wis', order: ['wis', 'con', 'dex', 'int', 'cha', 'str'], armor: 'light', shield: true, saves: ['int', 'wis'], sk: ['perception'] },
+    bard: { hd: 8, pri: 'cha', order: ['cha', 'dex', 'con', 'wis', 'int', 'str'], armor: 'leather', saves: ['dex', 'cha'], sk: ['perception', 'investigation', 'persuasion'] },
+    cleric: { hd: 8, pri: 'wis', order: ['wis', 'con', 'str', 'cha', 'dex', 'int'], armor: 'chainshirt', shield: true, saves: ['wis', 'cha'], sk: ['persuasion'] },
+    scout: { hd: 8, pri: 'wis', order: ['wis', 'con', 'dex', 'int', 'cha', 'str'], armor: 'leather', shield: true, saves: ['int', 'wis'], sk: ['perception'] },
     dragoon: { hd: 10, pri: 'str', order: ['str', 'con', 'dex', 'wis', 'cha', 'int'], armor: 'heavy', saves: ['str', 'con'], sk: ['perception'] },
     monk: { hd: 8, pri: 'dex', order: ['dex', 'wis', 'con', 'str', 'int', 'cha'], armor: 'monk', saves: ['str', 'dex'], sk: [] },
     paladin: { hd: 10, pri: 'str', order: ['str', 'cha', 'con', 'wis', 'dex', 'int'], armor: 'heavy', shield: true, saves: ['wis', 'cha'], sk: ['persuasion'] },
-    archer: { hd: 10, pri: 'dex', order: ['dex', 'wis', 'con', 'str', 'int', 'cha'], armor: 'light', saves: ['str', 'dex'], sk: ['perception', 'investigation'] },
-    rogue: { hd: 8, pri: 'dex', order: ['dex', 'con', 'cha', 'int', 'wis', 'str'], armor: 'light', saves: ['dex', 'int'], sk: ['perception', 'investigation', 'persuasion'] },
-    mage: { hd: 6, pri: 'cha', order: ['cha', 'con', 'dex', 'wis', 'int', 'str'], armor: 'mage', saves: ['con', 'cha'], sk: ['persuasion'] },
-    warlock: { hd: 8, pri: 'cha', order: ['cha', 'con', 'dex', 'wis', 'int', 'str'], armor: 'light', saves: ['wis', 'cha'], sk: ['investigation'] },
-    archmage: { hd: 6, pri: 'int', order: ['int', 'con', 'dex', 'wis', 'cha', 'str'], armor: 'mage', saves: ['int', 'wis'], sk: ['investigation'] },
+    archer: { hd: 10, pri: 'dex', order: ['dex', 'wis', 'con', 'str', 'int', 'cha'], armor: 'studded', saves: ['str', 'dex'], sk: ['perception', 'investigation'] },
+    rogue: { hd: 8, pri: 'dex', order: ['dex', 'con', 'cha', 'int', 'wis', 'str'], armor: 'leather', saves: ['dex', 'int'], sk: ['perception', 'investigation', 'persuasion'] },
+    mage: { hd: 6, pri: 'cha', order: ['cha', 'con', 'dex', 'wis', 'int', 'str'], armor: 'none', saves: ['con', 'cha'], sk: ['persuasion'] },
+    warlock: { hd: 8, pri: 'cha', order: ['cha', 'con', 'dex', 'wis', 'int', 'str'], armor: 'leather', saves: ['wis', 'cha'], sk: ['investigation'] },
+    archmage: { hd: 6, pri: 'int', order: ['int', 'con', 'dex', 'wis', 'cha', 'str'], armor: 'none', saves: ['int', 'wis'], sk: ['investigation'] },
   };
-  const SKILL_AB = { perception: 'wis', investigation: 'int', persuasion: 'cha', arcana: 'int', survival: 'wis', medicine: 'wis', insight: 'wis', athletics: 'str' };
-  const SKILL_N = { perception: '지각', investigation: '조사', persuasion: '설득', arcana: '비전학', survival: '생존', medicine: '의학', insight: '통찰', athletics: '운동' };
+  // SRD 기술 18개 (능력치 순)
+  const SKILL_AB = { athletics: 'str', acrobatics: 'dex', sleight: 'dex', stealth: 'dex', arcana: 'int', history: 'int', investigation: 'int', nature: 'int', religion: 'int', animal: 'wis', insight: 'wis', medicine: 'wis', perception: 'wis', survival: 'wis', deception: 'cha', intimidation: 'cha', performance: 'cha', persuasion: 'cha' };
+  const SKILL_N = { athletics: '운동', acrobatics: '곡예', sleight: '손재주', stealth: '은신', arcana: '비전학', history: '역사', investigation: '조사', nature: '자연', religion: '종교', animal: '동물 조련', insight: '통찰', medicine: '의학', perception: '지각', survival: '생존', deception: '기만', intimidation: '위협', performance: '공연', persuasion: '설득' };
+  // SRD 직업 표의 장비 숙련: 무기 · 갑옷 · 도구
+  const TRAIN = { barbarian: ['단순 · 군용', '경갑 · 평갑 · 방패', ''], bard: ['단순', '경갑', '악기 3'], cleric: ['단순', '경갑 · 평갑 · 방패', ''], scout: ['단순', '경갑 · 방패', '약초 도구'], dragoon: ['단순 · 군용', '경갑 · 평갑 · 중갑 · 방패', ''], monk: ['단순 · 경량 군용', '없음', '장인 도구 또는 악기 1'], paladin: ['단순 · 군용', '경갑 · 평갑 · 중갑 · 방패', ''], archer: ['단순 · 군용', '경갑 · 평갑 · 방패', ''], rogue: ['단순 · 기교 또는 경량 군용', '경갑', '도둑 도구'], mage: ['단순', '없음', ''], warlock: ['단순', '경갑', ''], archmage: ['단순', '없음', ''] };
   // 용병 정보가 없는 단장 몸(옛 저장)의 기본값. 보통 단장은 만든 캐릭터의 능력치를 쓴다
   const HERO_AB = { str: 16, dex: 12, con: 14, int: 10, wis: 12, cha: 13 }, HERO_SAVES = ['str', 'con'];
   // 몬스터: 층이 곧 도전 등급. AC 12 + 층/5 (최대 20) · 명중 +3 + 층/4 (최대 +13) · 내성 +1 + 층/5 · 능력 DC 10 + 층/4 (최대 19). 보스 AC +1 · 명중 · 내성 · DC +2
@@ -59,10 +60,8 @@ G.Dnd = (() => {
   const fl = () => G.S.w.fantasy.floor || 1;
   const now = () => G.S.runTime;
   // 기본 공격 (SRD 무기 · 소마법): [주사위 개수, 주사위, 더하는 능력, 피해 종류]. 소마법은 능력치를 더하지 않는다
-  const WEAPON = {
-    dragoon: [2, 6, 'str', 'slashing'], paladin: [1, 8, 'str', 'slashing'], barbarian: [1, 12, 'str', 'slashing'], rogue: [1, 8, 'dex', 'piercing'], monk: [1, 6, 'dex', 'bludgeoning'], archer: [1, 8, 'dex', 'piercing'],
-    cleric: [1, 8, null, 'radiant'], bard: [1, 4, null, 'psychic'], mage: [1, 10, null, 'fire'], archmage: [1, 10, null, 'lightning'], scout: [1, 8, null, 'fire'], warlock: [1, 10, null, 'force'],
-  };
+  // 주문 직업의 기본 공격은 소마법(능력 수정치 없음): 신성한 불꽃 · 잔인한 조롱 · 화염살 · 서리 광선 · 불꽃 생성 · 섬뜩한 폭발. 곁의 적에게 무기가 더 세면 무기를 휘두른다 (a.swing)
+  const CANTRIP = { cleric: [1, 8, 'radiant', '신성한 불꽃'], bard: [1, 6, 'psychic', '잔인한 조롱'], mage: [1, 10, 'fire', '화염살'], archmage: [1, 8, 'cold', '서리 광선'], scout: [1, 8, 'fire', '불꽃 생성'], warlock: [1, 10, 'force', '섬뜩한 폭발'] };
   const dice = (n, d) => { // N.dieMin: 대형 무기 전투 (1 · 2 → 3) · N.reroll: 강화 주문 (낮은 주사위 다시)
     const min = N.dieMin || 0; let rr = N.reroll || 0, s = 0;
     if (!rr) { for (let i = 0; i < n; i++) s += Math.max(min, 1 + U.rand(d)); return s; }
@@ -72,9 +71,15 @@ G.Dnd = (() => {
     return a.reduce((p, q) => p + q, 0);
   };
   const N = {
-    AB, AB_N, CLS, COND, SKILL_AB, SKILL_N,
+    AB, AB_N, CLS, COND, SKILL_AB, SKILL_N, TRAIN,
     // ── 피해 (SRD): 주사위 + 능력 수정치. 치명타는 주사위만 두 배. 장비 · 트리 · 스킬 배율은 그 위에 곱한다 ──
-    weapon(e) { const m = e.merc; if (m?.cls === 'warlock') { const o = G.Opt.of(m); if (o.includes('iv_pblade')) return { n: 1, d: 8, b: N.mod(N.ab(m).cha), t: G.Trinket.props(m, 'wtype')[0]?.[1] || 'radiant' }; if (o.includes('sr_agon')) return { n: 1, d: 10, b: N.mod(N.ab(m).cha), t: G.Trinket.props(m, 'wtype')[0]?.[1] || 'force' }; } const w = WEAPON[m?.cls] || WEAPON.dragoon; return { n: w[0], d: m?.cls === 'monk' ? (m.lv >= 17 ? 12 : m.lv >= 11 ? 10 : m.lv >= 5 ? 8 : 6) : w[1], b: w[2] && m ? N.mod(N.ab(m)[w[2]]) : 0, t: (m && G.Trinket.props(m, 'wtype')[0]?.[1]) || (m?.cls === 'monk' && m.lv >= 6 ? 'force' : w[3]) }; },
+    weapon(e) { const m = e.merc; if (m?.cls === 'warlock') { const o = G.Opt.of(m); if (o.includes('iv_pblade')) return { n: 1, d: 8, b: N.mod(N.ab(m).cha), t: G.Trinket.props(m, 'wtype')[0]?.[1] || 'radiant' }; if (o.includes('sr_agon')) return { n: 1, d: 10, b: N.mod(N.ab(m).cha), t: G.Trinket.props(m, 'wtype')[0]?.[1] || 'force' }; } if (m && CANTRIP[m.cls] && !e.swing) { const q = CANTRIP[m.cls]; return { n: q[0], d: q[1], b: 0, t: G.Trinket.props(m, 'wtype')[0]?.[1] || q[2] }; } if (!m) return { n: 2, d: 6, b: 0, t: 'slashing' }; const SR = G.SRD, q = SR.weaponOf(m), ma = m.cls === 'monk' && (q.hidden || q.cat === 'simple' || q.props.includes('light')), mad = m.lv >= 17 ? 12 : m.lv >= 11 ? 10 : m.lv >= 5 ? 8 : 6, two = q.vd && !SR.eq(m).shield, face = two ? q.vd : q.dd; return { n: ma ? 1 : q.dn, d: ma ? Math.max(mad, face) : face, flat: !ma && q.flat ? q.flat : 0, b: N.mod(N.ab(m)[N.atkAb(m)]) + (!ma && q.flat ? q.flat : 0), t: G.Trinket.props(m, 'wtype')[0]?.[1] || (m.cls === 'monk' && m.lv >= 6 ? 'force' : q.t) }; },
+    // 무기 능력: 기교는 높은 쪽 · 원거리는 민첩 · 몽크 무기도 높은 쪽 · 그 밖 근력
+    atkAb(m) { const q = G.SRD.weaponOf(m), ab = N.ab(m); if (q.props.includes('finesse') || (m.cls === 'monk' && (q.hidden || q.cat === 'simple' || q.props.includes('light')))) return ab.dex >= ab.str ? 'dex' : 'str'; return q.rng === 'ranged' ? 'dex' : 'str'; },
+    // 공격 사거리 (칸): 주문 직업은 소마법, 나머지는 무기 표. 5피트 = 1칸
+    rng(e) { const m = e.merc; if (!e.def) return 0; if (!m || CANTRIP[m.cls]) return e.def.range; const q = G.SRD.weaponOf(m); if (q.rng === 'ranged') return Math.min(G.SRD.RANGE_CAP, q.ft / 5); return q.props.includes('reach') ? 2.5 : e.def.range < 2 ? e.def.range : 1.3; },
+    gearWeapon: m => N.weapon({ merc: m, swing: true }),
+    cantrip: m => { const q = CANTRIP[m.cls]; return q && { n: q[0], d: q[1], t: q[2], name: q[3] }; },
     avg: w => w.n * (w.d + 1) / 2 + w.b,
     dice,
     // 이번 한 번의 피해 / 평균 피해: 평균으로 만든 배율에 곱한다
@@ -99,12 +104,13 @@ G.Dnd = (() => {
     // 레벨이 올린 능력치 포함 (주능력부터 20까지, 다 차면 다음 순서)
     ab(m) {
       if (!m.ab || m.abCls !== m.cls) { m.ab = N.rollAb(m.cls); m.abCls = m.cls; }
-      const c = N.cls(m), ab = { ...m.ab };
-      let pts = 2 * ASI_LV.filter(l => m.lv >= l).length;
+      const c = N.cls(m), ab = { ...m.ab }; { const bg = G.SRD.bgAb(m, c.order); for (const k in bg) ab[k] = Math.min(AB_MAX, ab[k] + bg[k]); }
+      let pts = 2 * (m.cls === 'dragoon' ? [4, 6, 8, 12, 14, 16] : m.cls === 'rogue' ? [4, 8, 10, 12, 16] : ASI_LV).filter(l => m.lv >= l).length; // SRD 직업 표 if (G.SrdX?.grappler(m)) { pts -= 2; ab.dex = Math.min(AB_MAX, ab.dex + 1); } // 첫 능력치 향상 자리에 붙잡기 재주
       for (const k of c.order) { const up = Math.min(pts, AB_MAX - ab[k]); if (up > 0) { ab[k] += up; pts -= up; } if (!pts) break; }
       const ep = (m.boons || []).length + (m.bt || 0);
       if (ep) ab[c.pri] = Math.max(ab[c.pri], Math.min(EPIC_MAX, ab[c.pri] + ep));
       // 마법 물건: 능력치 더하기 · 고정 (DESIGN.md 58)
+      if (m.cls === 'monk' && m.lv >= 20) { ab.dex = Math.min(25, ab.dex + 4); ab.wis = Math.min(25, ab.wis + 4); } // 몸과 마음
       if (G.Guild.skill(m, 'ft_champion')) { ab.str = Math.min(25, ab.str + 4); ab.con = Math.min(25, ab.con + 4); }
       return G.Trinket.ability(m, ab);
     },
@@ -133,14 +139,14 @@ G.Dnd = (() => {
     abOf(e) { return e.merc ? N.ab(e.merc) : e.kind === 'hero' ? HERO_AB : null; },
     // 명중 보정: 숙련 + 주능력 수정치
     hit(e) {
-      if (e.merc) return N.prof(e.merc.lv) + N.mod(N.ab(e.merc)[N.cls(e.merc).pri]) + G.Guild.sum(e.merc, 'hitB') + G.Guild.magic(G.Guild.gear(e.merc).w) + G.Trinket.sum(e.merc, 'hit') + N.bless(e) + (G.Guild.skill(e.merc, 'fs_archery') ? 2 : 0);
+      if (e.merc) return (CANTRIP[e.merc.cls] && !e.swing || G.SRD.canW(e.merc, G.SRD.eq(e.merc).w) || G.SRD.weaponOf(e.merc).hidden ? N.prof(e.merc.lv) : 0) + (CANTRIP[e.merc.cls] && !e.swing ? N.mod(N.ab(e.merc)[N.cls(e.merc).pri]) : N.mod(N.ab(e.merc)[N.atkAb(e.merc)])) + G.Guild.sum(e.merc, 'hitB') + G.Guild.magic(G.Guild.gear(e.merc).w) + G.Trinket.sum(e.merc, 'hit') + N.bless(e) + (G.Guild.skill(e.merc, 'fs_archery') ? 2 : 0);
       if (e.kind === 'hero') return 3 + N.mod(HERO_AB.str) + Math.floor(fl() / 5);
       if (e.kind === 'rival') return MON_HIT(fl(), false) + 1;
       return e.stat ? G.Foe.attackOf(e).hit : MON_HIT(fl(), e.boss);
     },
     ac(e) { const v = N.acBase(e); return e.acMinus ? Math.max(Math.min(v, 10), v - e.acMinus) : v; }, // 부식 (SRD): AC 10 아래로는 안 내려간다
     acBase(e) {
-      if (e.merc) { const c = N.cls(e.merc), ab = N.ab(e.merc); return Math.max(ARMOR[c.armor](ab), G.Guild.skill(e.merc, 'sr_dres') ? 10 + N.mod(ab.dex) + N.mod(ab.cha) : 0, G.Guild.skill(e.merc, 'iv_armor') ? 13 + N.mod(ab.dex) : 0, G.Trinket.sum(e.merc, 'acSet') ? G.Trinket.sum(e.merc, 'acSet') + N.mod(ab.dex) : 0) + (c.shield ? 2 : 0) + G.Guild.magic(G.Guild.gear(e.merc).a) + G.Trinket.sum(e.merc, 'ac') + N.bsum(e, 'ac') + (G.Guild.skill(e.merc, 'fs_defense') ? 1 : 0); }
+      if (e.merc) { const c = N.cls(e.merc), ab = N.ab(e.merc); return Math.max(armorAC(e.merc, ab), G.Guild.skill(e.merc, 'sr_dres') ? 10 + N.mod(ab.dex) + N.mod(ab.cha) : 0, G.Guild.skill(e.merc, 'iv_armor') ? 13 + N.mod(ab.dex) : 0, G.Trinket.sum(e.merc, 'acSet') ? G.Trinket.sum(e.merc, 'acSet') + N.mod(ab.dex) : 0) + (G.SRD.eq(e.merc).shield && G.SRD.canShield(e.merc.cls) ? G.SRD.SHIELD.ac : 0) + G.Guild.magic(G.Guild.gear(e.merc).a) + G.Trinket.sum(e.merc, 'ac') + N.bsum(e, 'ac') + (G.Guild.skill(e.merc, 'fs_defense') ? 1 : 0); }
       if (e.kind === 'hero') return 18 + Math.min(3, Math.floor(fl() / 10));
       if (e.kind === 'rival') return MON_AC(fl(), false) + N.bsum(e, 'ac');
       return (e.stat ? e.stat.ac : MON_AC(fl(), e.boss)) + N.bsum(e, 'ac');
@@ -155,7 +161,9 @@ G.Dnd = (() => {
     },
     // 기술 판정 보정 (지각 · 조사 · 설득): 능력 수정치 + 숙련(직업에 있으면)
     // 숙련 (출신 재주): 셋 다 숙련
-    skill(m, sk) { const xk = G.Pool.skillK(m, sk), pr = N.prof(m.lv); return N.mod(N.ab(m)[SKILL_AB[sk]]) + Math.max(xk * pr, sk !== 'persuasion' ? (G.Feat.has(m, 'skilled') ? pr : 0) : (N.cls(m).sk.includes(sk) || G.Feat.has(m, 'skilled') ? pr : 0)); },
+    // 기술: 능력 수정치 + 숙련(직업 · 배경 · 종족 · 재주) · 전문가는 두 배
+    profs: m => m.profO || G.SRD.profs(m, G.Res.species(m)), // profO: 시험용 고정
+    skill(m, sk) { const xk = G.Pool.skillK(m, sk), pr = N.prof(m.lv), own = N.profs(m).includes(sk), ex = !m.profO && G.SRD.expert(m, G.Res.species(m)).includes(sk); return N.mod(N.ab(m)[SKILL_AB[sk]]) + Math.max(xk * pr, own ? (ex ? 2 : 1) * pr : 0, m.cls === 'bard' && m.lv >= 2 ? Math.floor(pr / 2) : 0) + G.SRD.orderBonus(m, sk, N.mod(N.ab(m).wis)); }, // 바드 만능 재주꾼: 숙련 없는 기술에 절반
     // 방치형이라 파티에서 가장 잘하는 사람이 굴린다 (그 사람을 함께 돌려준다)
     best(list, sk) { let b = null, v = -99; for (const m of list) { const s = N.skill(m, sk) + (N.reliable(m) ? 5 : 0); if (s > v) { v = s; b = m; } } return { m: b, v }; },
     // 로그 믿음직한 재능 (Reliable Talent): 숙련 판정은 10 아래로 굴리지 않는다 — 방치형 판정에서는 +5로
@@ -181,7 +189,7 @@ G.Dnd = (() => {
     // 로그 기습 (Sneak Attack): 이점이 있거나 표적 곁(1.5칸)에 다른 동료가 있으면, 한 번에 (Lv/2 올림)d6 — 주사위 하나에 피해 +50%
     // 기습 (SRD 로그): 이점이거나 곁에 동료가 있으면 차례에 한 번 ⌈레벨/2⌉d6. 주사위 개수를 돌려준다
     sneak(rt, a, tg, adv) {
-      if (!a.merc || a.merc.cls !== 'rogue' || a.sneakT > now()) return 0;
+      if (!a.merc || a.merc.cls !== 'rogue' || a.sneakT > now()) return 0; { const q = G.SRD.weaponOf(a.merc); if (!(q.props.includes('finesse') || q.rng === 'ranged')) return 0; } // SRD: 기교 또는 원거리 무기
       if (!(adv > 0) && !rt.party.some(p => p !== a && !p.dead && Math.hypot(p.x - tg.x, p.y - tg.y) <= 1.5)) return 0;
       a.sneakT = now() + 0.9;
       return Math.ceil(a.merc.lv / 2);
@@ -193,7 +201,7 @@ G.Dnd = (() => {
     held: e => N.has(e, 'restrained') || N.has(e, 'grappled'),
     // from = 건 동료: 새로 걸렸으면 연계기 계기 (G.Combo)
     give(rt, e, k, t, from) {
-      if (N.bsum(e, 'imm_' + k) > 0) return;
+      if (N.bsum(e, 'imm_' + k) > 0 || G.SrdX?.condBlock(e, k, from)) return;
       if (e.merc && (k === 'frightened' || k === 'charmed')) {
         if (G.Guild.skill(e.merc, 'ft_mindless') && N.bon(e, 'rage')) return;
         const ft = k === 'frightened' ? 'ft_acourage' : 'ft_adev';
@@ -221,7 +229,7 @@ G.Dnd = (() => {
     },
     boon: (m, k) => !!(m && m.boons && m.boons.includes(k)),
     d20(adv) { const a = 1 + U.rand(20); if (!adv) return a; const b = 1 + U.rand(20); return adv > 0 ? Math.max(a, b) : Math.min(a, b); },
-    melee: e => (e.kind === 'mon' ? !G.Foe.ranged(e) : e.def ? e.def.range < 2 : e.kind === 'hero'),
+    melee: e => (e.kind === 'mon' ? !G.Foe.ranged(e) : e.def ? N.rng(e) < 2 : e.kind === 'hero'),
     // 명중 굴림: 1은 늘 빗나감 · 치명 범위(critAt 이상, 기본 20)는 늘 맞고 치명타 · 마비된 상대를 근접으로 맞히면 치명타
     attack(att, tg, critAt = 20) {
       const r = N.attackRoll(att, tg, critAt);
@@ -241,6 +249,7 @@ G.Dnd = (() => {
       if (att.kind === 'mon' && tg.kind !== 'mon') tot -= N.cutting(att);
       if (N.bon(tg, 'sunder') && att !== tg.sunderBy && att.merc) { tot += 5; delete tg.bf.sunder; } // 가르기: 다음 공격 +5
       const ac = N.ac(tg) + G.Foe.cover(G.Fantasy.rt(G.S.w.fantasy), att, tg);
+      if (att.merc && tot < ac && G.Guild.skill(att.merc, 'sr_peerless') && G.Res.once(att.merc, 'peerless', Math.max(1, N.mod(N.ab(att.merc).cha)))) tot += 1 + U.rand(att.merc.lv >= 15 ? 12 : att.merc.lv >= 10 ? 10 : 8); // 비길 데 없는 기술: 영감 주사위
       // 위저드 방어막 (Shield): 맞을 공격이 5 이내로 넘었으면 AC +5로 막는다 (10초에 한 번)
       if (tot >= ac && tot < ac + 5 && tg.merc && G.Fantasy.sk(tg, 'sr_shield') && !(tg.shieldT > now()) && G.Res.can(tg.merc, 'sr_shield', { slot: 1 })) {
         G.Res.pay(tg.merc, 'sr_shield', { slot: 1 }); tg.shieldT = now() + 10;

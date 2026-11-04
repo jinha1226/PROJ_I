@@ -1,0 +1,1682 @@
+[
+{
+"class": "Barbarian",
+"level": 1,
+"prof_bonus": "+2",
+"features": "Rage, Unarmored Defense, Weapon Mastery",
+"columns": "{\"Rages\": \"2\", \"Rage Damage\": \"+2\", \"Weapon Mastery\": \"2\"}"
+},
+{
+"class": "Barbarian",
+"level": 2,
+"prof_bonus": "+2",
+"features": "Danger Sense, Reckless Attack",
+"columns": "{\"Rages\": \"2\", \"Rage Damage\": \"+2\", \"Weapon Mastery\": \"2\"}"
+},
+{
+"class": "Barbarian",
+"level": 3,
+"prof_bonus": "+2",
+"features": "Barbarian Subclass, Primal Knowledge",
+"columns": "{\"Rages\": \"3\", \"Rage Damage\": \"+2\", \"Weapon Mastery\": \"2\"}"
+},
+{
+"class": "Barbarian",
+"level": 4,
+"prof_bonus": "+2",
+"features": "Ability Score Improvement",
+"columns": "{\"Rages\": \"3\", \"Rage Damage\": \"+2\", \"Weapon Mastery\": \"3\"}"
+},
+{
+"class": "Barbarian",
+"level": 5,
+"prof_bonus": "+3",
+"features": "Extra Attack, Fast Movement",
+"columns": "{\"Rages\": \"3\", \"Rage Damage\": \"+2\", \"Weapon Mastery\": \"3\"}"
+},
+{
+"class": "Barbarian",
+"level": 6,
+"prof_bonus": "+3",
+"features": "Subclass feature",
+"columns": "{\"Rages\": \"4\", \"Rage Damage\": \"+2\", \"Weapon Mastery\": \"3\"}"
+},
+{
+"class": "Barbarian",
+"level": 7,
+"prof_bonus": "+3",
+"features": "Feral Instinct, Instinctive Pounce",
+"columns": "{\"Rages\": \"4\", \"Rage Damage\": \"+2\", \"Weapon Mastery\": \"3\"}"
+},
+{
+"class": "Barbarian",
+"level": 8,
+"prof_bonus": "+3",
+"features": "Ability Score Improvement",
+"columns": "{\"Rages\": \"4\", \"Rage Damage\": \"+2\", \"Weapon Mastery\": \"3\"}"
+},
+{
+"class": "Barbarian",
+"level": 9,
+"prof_bonus": "+4",
+"features": "Brutal Strike",
+"columns": "{\"Rages\": \"4\", \"Rage Damage\": \"+3\", \"Weapon Mastery\": \"3\"}"
+},
+{
+"class": "Barbarian",
+"level": 10,
+"prof_bonus": "+4",
+"features": "Subclass feature",
+"columns": "{\"Rages\": \"4\", \"Rage Damage\": \"+3\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Barbarian",
+"level": 11,
+"prof_bonus": "+4",
+"features": "Relentless Rage",
+"columns": "{\"Rages\": \"4\", \"Rage Damage\": \"+3\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Barbarian",
+"level": 12,
+"prof_bonus": "+4",
+"features": "Ability Score Improvement",
+"columns": "{\"Rages\": \"5\", \"Rage Damage\": \"+3\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Barbarian",
+"level": 13,
+"prof_bonus": "+5",
+"features": "Improved Brutal Strike",
+"columns": "{\"Rages\": \"5\", \"Rage Damage\": \"+3\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Barbarian",
+"level": 14,
+"prof_bonus": "+5",
+"features": "Subclass feature",
+"columns": "{\"Rages\": \"5\", \"Rage Damage\": \"+3\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Barbarian",
+"level": 15,
+"prof_bonus": "+5",
+"features": "Persistent Rage",
+"columns": "{\"Rages\": \"5\", \"Rage Damage\": \"+3\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Barbarian",
+"level": 16,
+"prof_bonus": "+5",
+"features": "Ability Score Improvement",
+"columns": "{\"Rages\": \"5\", \"Rage Damage\": \"+4\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Barbarian",
+"level": 17,
+"prof_bonus": "+6",
+"features": "Improved Brutal Strike",
+"columns": "{\"Rages\": \"6\", \"Rage Damage\": \"+4\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Barbarian",
+"level": 18,
+"prof_bonus": "+6",
+"features": "Indomitable Might",
+"columns": "{\"Rages\": \"6\", \"Rage Damage\": \"+4\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Barbarian",
+"level": 19,
+"prof_bonus": "+6",
+"features": "Epic Boon",
+"columns": "{\"Rages\": \"6\", \"Rage Damage\": \"+4\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Barbarian",
+"level": 20,
+"prof_bonus": "+6",
+"features": "Primal Champion",
+"columns": "{\"Rages\": \"6\", \"Rage Damage\": \"+4\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Bard",
+"level": 1,
+"prof_bonus": "+2",
+"features": "Bardic Inspiration, Spellcasting",
+"columns": "{\"Bardic Die\": \"D6\", \"Cantrips\": \"2\", \"Prepared Spells\": \"4\", \"1\": \"2\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 2,
+"prof_bonus": "+2",
+"features": "Expertise, Jack of All Trades",
+"columns": "{\"Bardic Die\": \"D6\", \"Cantrips\": \"2\", \"Prepared Spells\": \"5\", \"1\": \"3\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 3,
+"prof_bonus": "+2",
+"features": "Bard Subclass",
+"columns": "{\"Bardic Die\": \"D6\", \"Cantrips\": \"2\", \"Prepared Spells\": \"6\", \"1\": \"4\", \"2\": \"2\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 4,
+"prof_bonus": "+2",
+"features": "Ability Score Improvement",
+"columns": "{\"Bardic Die\": \"D6\", \"Cantrips\": \"3\", \"Prepared Spells\": \"7\", \"1\": \"4\", \"2\": \"3\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 5,
+"prof_bonus": "+3",
+"features": "Font of Inspiration",
+"columns": "{\"Bardic Die\": \"D8\", \"Cantrips\": \"3\", \"Prepared Spells\": \"9\", \"1\": \"4\", \"2\": \"3\", \"3\": \"2\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 6,
+"prof_bonus": "+3",
+"features": "Subclass feature",
+"columns": "{\"Bardic Die\": \"D8\", \"Cantrips\": \"3\", \"Prepared Spells\": \"10\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 7,
+"prof_bonus": "+3",
+"features": "Countercharm",
+"columns": "{\"Bardic Die\": \"D8\", \"Cantrips\": \"3\", \"Prepared Spells\": \"11\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"1\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 8,
+"prof_bonus": "+3",
+"features": "Ability Score Improvement",
+"columns": "{\"Bardic Die\": \"D8\", \"Cantrips\": \"3\", \"Prepared Spells\": \"12\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"2\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 9,
+"prof_bonus": "+4",
+"features": "Expertise",
+"columns": "{\"Bardic Die\": \"D8\", \"Cantrips\": \"3\", \"Prepared Spells\": \"14\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"1\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 10,
+"prof_bonus": "+4",
+"features": "Magical Secrets",
+"columns": "{\"Bardic Die\": \"D10\", \"Cantrips\": \"4\", \"Prepared Spells\": \"15\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 11,
+"prof_bonus": "+4",
+"features": "—",
+"columns": "{\"Bardic Die\": \"D10\", \"Cantrips\": \"4\", \"Prepared Spells\": \"16\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 12,
+"prof_bonus": "+4",
+"features": "Ability Score Improvement",
+"columns": "{\"Bardic Die\": \"D10\", \"Cantrips\": \"4\", \"Prepared Spells\": \"16\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 13,
+"prof_bonus": "+5",
+"features": "—",
+"columns": "{\"Bardic Die\": \"D10\", \"Cantrips\": \"4\", \"Prepared Spells\": \"17\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 14,
+"prof_bonus": "+5",
+"features": "Subclass feature",
+"columns": "{\"Bardic Die\": \"D10\", \"Cantrips\": \"4\", \"Prepared Spells\": \"17\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 15,
+"prof_bonus": "+5",
+"features": "—",
+"columns": "{\"Bardic Die\": \"D12\", \"Cantrips\": \"4\", \"Prepared Spells\": \"18\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 16,
+"prof_bonus": "+5",
+"features": "Ability Score Improvement",
+"columns": "{\"Bardic Die\": \"D12\", \"Cantrips\": \"4\", \"Prepared Spells\": \"18\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"—\"}"
+},
+{
+"class": "Bard",
+"level": 17,
+"prof_bonus": "+6",
+"features": "—",
+"columns": "{\"Bardic Die\": \"D12\", \"Cantrips\": \"4\", \"Prepared Spells\": \"19\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Bard",
+"level": 18,
+"prof_bonus": "+6",
+"features": "Superior Inspiration",
+"columns": "{\"Bardic Die\": \"D12\", \"Cantrips\": \"4\", \"Prepared Spells\": \"20\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Bard",
+"level": 19,
+"prof_bonus": "+6",
+"features": "Epic Boon",
+"columns": "{\"Bardic Die\": \"D12\", \"Cantrips\": \"4\", \"Prepared Spells\": \"21\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"2\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Bard",
+"level": 20,
+"prof_bonus": "+6",
+"features": "Words of Creation",
+"columns": "{\"Bardic Die\": \"D12\", \"Cantrips\": \"4\", \"Prepared Spells\": \"22\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"2\", \"7\": \"2\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Cleric",
+"level": 1,
+"prof_bonus": "+2",
+"features": "Spellcasting, Divine Order",
+"columns": "{\"Channel Divinity\": \"—\", \"Cantrips\": \"3\", \"Prepared Spells\": \"4\", \"1\": \"2\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 2,
+"prof_bonus": "+2",
+"features": "Channel Divinity",
+"columns": "{\"Channel Divinity\": \"2\", \"Cantrips\": \"3\", \"Prepared Spells\": \"5\", \"1\": \"3\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 3,
+"prof_bonus": "+2",
+"features": "Cleric Subclass",
+"columns": "{\"Channel Divinity\": \"2\", \"Cantrips\": \"3\", \"Prepared Spells\": \"6\", \"1\": \"4\", \"2\": \"2\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 4,
+"prof_bonus": "+2",
+"features": "Ability Score Improvement",
+"columns": "{\"Channel Divinity\": \"2\", \"Cantrips\": \"4\", \"Prepared Spells\": \"7\", \"1\": \"4\", \"2\": \"3\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 5,
+"prof_bonus": "+3",
+"features": "Sear Undead",
+"columns": "{\"Channel Divinity\": \"2\", \"Cantrips\": \"4\", \"Prepared Spells\": \"9\", \"1\": \"4\", \"2\": \"3\", \"3\": \"2\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 6,
+"prof_bonus": "+3",
+"features": "Subclass feature",
+"columns": "{\"Channel Divinity\": \"3\", \"Cantrips\": \"4\", \"Prepared Spells\": \"10\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 7,
+"prof_bonus": "+3",
+"features": "Blessed Strikes",
+"columns": "{\"Channel Divinity\": \"3\", \"Cantrips\": \"4\", \"Prepared Spells\": \"11\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"1\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 8,
+"prof_bonus": "+3",
+"features": "Ability Score Improvement",
+"columns": "{\"Channel Divinity\": \"3\", \"Cantrips\": \"4\", \"Prepared Spells\": \"12\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"2\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 9,
+"prof_bonus": "+4",
+"features": "—",
+"columns": "{\"Channel Divinity\": \"3\", \"Cantrips\": \"4\", \"Prepared Spells\": \"14\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"1\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 10,
+"prof_bonus": "+4",
+"features": "Divine Intervention",
+"columns": "{\"Channel Divinity\": \"3\", \"Cantrips\": \"5\", \"Prepared Spells\": \"15\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 11,
+"prof_bonus": "+4",
+"features": "—",
+"columns": "{\"Channel Divinity\": \"3\", \"Cantrips\": \"5\", \"Prepared Spells\": \"16\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 12,
+"prof_bonus": "+4",
+"features": "Ability Score Improvement",
+"columns": "{\"Channel Divinity\": \"3\", \"Cantrips\": \"5\", \"Prepared Spells\": \"16\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 13,
+"prof_bonus": "+5",
+"features": "—",
+"columns": "{\"Channel Divinity\": \"3\", \"Cantrips\": \"5\", \"Prepared Spells\": \"17\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 14,
+"prof_bonus": "+5",
+"features": "Improved Blessed Strikes",
+"columns": "{\"Channel Divinity\": \"3\", \"Cantrips\": \"5\", \"Prepared Spells\": \"17\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 15,
+"prof_bonus": "+5",
+"features": "—",
+"columns": "{\"Channel Divinity\": \"3\", \"Cantrips\": \"5\", \"Prepared Spells\": \"18\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 16,
+"prof_bonus": "+5",
+"features": "Ability Score Improvement",
+"columns": "{\"Channel Divinity\": \"3\", \"Cantrips\": \"5\", \"Prepared Spells\": \"18\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"—\"}"
+},
+{
+"class": "Cleric",
+"level": 17,
+"prof_bonus": "+6",
+"features": "Subclass feature",
+"columns": "{\"Channel Divinity\": \"3\", \"Cantrips\": \"5\", \"Prepared Spells\": \"19\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Cleric",
+"level": 18,
+"prof_bonus": "+6",
+"features": "—",
+"columns": "{\"Channel Divinity\": \"4\", \"Cantrips\": \"5\", \"Prepared Spells\": \"20\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Cleric",
+"level": 19,
+"prof_bonus": "+6",
+"features": "Epic Boon",
+"columns": "{\"Channel Divinity\": \"4\", \"Cantrips\": \"5\", \"Prepared Spells\": \"21\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"2\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Cleric",
+"level": 20,
+"prof_bonus": "+6",
+"features": "Greater Divine Intervention",
+"columns": "{\"Channel Divinity\": \"4\", \"Cantrips\": \"5\", \"Prepared Spells\": \"22\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"2\", \"7\": \"2\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Druid",
+"level": 1,
+"prof_bonus": "+2",
+"features": "Spellcasting, Druidic, Primal Order",
+"columns": "{\"Wild Shape\": \"—\", \"Cantrips\": \"2\", \"Prepared Spells\": \"4\", \"1\": \"2\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 2,
+"prof_bonus": "+2",
+"features": "Wild Shape, Wild Companion",
+"columns": "{\"Wild Shape\": \"2\", \"Cantrips\": \"2\", \"Prepared Spells\": \"5\", \"1\": \"3\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 3,
+"prof_bonus": "+2",
+"features": "Druid Subclass",
+"columns": "{\"Wild Shape\": \"2\", \"Cantrips\": \"2\", \"Prepared Spells\": \"6\", \"1\": \"4\", \"2\": \"2\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 4,
+"prof_bonus": "+2",
+"features": "Ability Score Improvement",
+"columns": "{\"Wild Shape\": \"2\", \"Cantrips\": \"3\", \"Prepared Spells\": \"7\", \"1\": \"4\", \"2\": \"3\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 5,
+"prof_bonus": "+3",
+"features": "Wild Resurgence",
+"columns": "{\"Wild Shape\": \"2\", \"Cantrips\": \"3\", \"Prepared Spells\": \"9\", \"1\": \"4\", \"2\": \"3\", \"3\": \"2\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 6,
+"prof_bonus": "+3",
+"features": "Subclass feature",
+"columns": "{\"Wild Shape\": \"3\", \"Cantrips\": \"3\", \"Prepared Spells\": \"10\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 7,
+"prof_bonus": "+3",
+"features": "Elemental Fury",
+"columns": "{\"Wild Shape\": \"3\", \"Cantrips\": \"3\", \"Prepared Spells\": \"11\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"1\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 8,
+"prof_bonus": "+3",
+"features": "Ability Score Improvement",
+"columns": "{\"Wild Shape\": \"3\", \"Cantrips\": \"3\", \"Prepared Spells\": \"12\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"2\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 9,
+"prof_bonus": "+4",
+"features": "—",
+"columns": "{\"Wild Shape\": \"3\", \"Cantrips\": \"3\", \"Prepared Spells\": \"14\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"1\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 10,
+"prof_bonus": "+4",
+"features": "Subclass feature",
+"columns": "{\"Wild Shape\": \"3\", \"Cantrips\": \"4\", \"Prepared Spells\": \"15\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 11,
+"prof_bonus": "+4",
+"features": "—",
+"columns": "{\"Wild Shape\": \"3\", \"Cantrips\": \"4\", \"Prepared Spells\": \"16\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 12,
+"prof_bonus": "+4",
+"features": "Ability Score Improvement",
+"columns": "{\"Wild Shape\": \"3\", \"Cantrips\": \"4\", \"Prepared Spells\": \"16\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 13,
+"prof_bonus": "+5",
+"features": "—",
+"columns": "{\"Wild Shape\": \"3\", \"Cantrips\": \"4\", \"Prepared Spells\": \"17\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 14,
+"prof_bonus": "+5",
+"features": "Subclass feature",
+"columns": "{\"Wild Shape\": \"3\", \"Cantrips\": \"4\", \"Prepared Spells\": \"17\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 15,
+"prof_bonus": "+5",
+"features": "Improved Elemental Fury",
+"columns": "{\"Wild Shape\": \"3\", \"Cantrips\": \"4\", \"Prepared Spells\": \"18\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 16,
+"prof_bonus": "+5",
+"features": "Ability Score Improvement",
+"columns": "{\"Wild Shape\": \"3\", \"Cantrips\": \"4\", \"Prepared Spells\": \"18\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"—\"}"
+},
+{
+"class": "Druid",
+"level": 17,
+"prof_bonus": "+6",
+"features": "—",
+"columns": "{\"Wild Shape\": \"4\", \"Cantrips\": \"4\", \"Prepared Spells\": \"19\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Druid",
+"level": 18,
+"prof_bonus": "+6",
+"features": "Beast Spells",
+"columns": "{\"Wild Shape\": \"4\", \"Cantrips\": \"4\", \"Prepared Spells\": \"20\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Druid",
+"level": 19,
+"prof_bonus": "+6",
+"features": "Epic Boon",
+"columns": "{\"Wild Shape\": \"4\", \"Cantrips\": \"4\", \"Prepared Spells\": \"21\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"2\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Druid",
+"level": 20,
+"prof_bonus": "+6",
+"features": "Archdruid",
+"columns": "{\"Wild Shape\": \"4\", \"Cantrips\": \"4\", \"Prepared Spells\": \"22\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"2\", \"7\": \"2\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Fighter",
+"level": 1,
+"prof_bonus": "+2",
+"features": "Fighting Style, Second Wind, Weapon Mastery",
+"columns": "{\"Second Wind\": \"2\", \"Weapon Mastery\": \"3\"}"
+},
+{
+"class": "Fighter",
+"level": 2,
+"prof_bonus": "+2",
+"features": "Action Surge (one use), Tactical Mind",
+"columns": "{\"Second Wind\": \"2\", \"Weapon Mastery\": \"3\"}"
+},
+{
+"class": "Fighter",
+"level": 3,
+"prof_bonus": "+2",
+"features": "Fighter Subclass",
+"columns": "{\"Second Wind\": \"2\", \"Weapon Mastery\": \"3\"}"
+},
+{
+"class": "Fighter",
+"level": 4,
+"prof_bonus": "+2",
+"features": "Ability Score Improvement",
+"columns": "{\"Second Wind\": \"3\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Fighter",
+"level": 5,
+"prof_bonus": "+3",
+"features": "Extra Attack, Tactical Shift",
+"columns": "{\"Second Wind\": \"3\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Fighter",
+"level": 6,
+"prof_bonus": "+3",
+"features": "Ability Score Improvement",
+"columns": "{\"Second Wind\": \"3\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Fighter",
+"level": 7,
+"prof_bonus": "+3",
+"features": "Subclass feature",
+"columns": "{\"Second Wind\": \"3\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Fighter",
+"level": 8,
+"prof_bonus": "+3",
+"features": "Ability Score Improvement",
+"columns": "{\"Second Wind\": \"3\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Fighter",
+"level": 9,
+"prof_bonus": "+4",
+"features": "Indomitable (one use), Tactical Master",
+"columns": "{\"Second Wind\": \"3\", \"Weapon Mastery\": \"4\"}"
+},
+{
+"class": "Fighter",
+"level": 10,
+"prof_bonus": "+4",
+"features": "Subclass feature",
+"columns": "{\"Second Wind\": \"4\", \"Weapon Mastery\": \"5\"}"
+},
+{
+"class": "Fighter",
+"level": 11,
+"prof_bonus": "+4",
+"features": "Two Extra Attacks",
+"columns": "{\"Second Wind\": \"4\", \"Weapon Mastery\": \"5\"}"
+},
+{
+"class": "Fighter",
+"level": 12,
+"prof_bonus": "+4",
+"features": "Ability Score Improvement",
+"columns": "{\"Second Wind\": \"4\", \"Weapon Mastery\": \"5\"}"
+},
+{
+"class": "Fighter",
+"level": 13,
+"prof_bonus": "+5",
+"features": "Indomitable (two uses), Studied Attacks",
+"columns": "{\"Second Wind\": \"4\", \"Weapon Mastery\": \"5\"}"
+},
+{
+"class": "Fighter",
+"level": 14,
+"prof_bonus": "+5",
+"features": "Ability Score Improvement",
+"columns": "{\"Second Wind\": \"4\", \"Weapon Mastery\": \"5\"}"
+},
+{
+"class": "Fighter",
+"level": 15,
+"prof_bonus": "+5",
+"features": "Subclass feature",
+"columns": "{\"Second Wind\": \"4\", \"Weapon Mastery\": \"5\"}"
+},
+{
+"class": "Fighter",
+"level": 16,
+"prof_bonus": "+5",
+"features": "Ability Score Improvement",
+"columns": "{\"Second Wind\": \"4\", \"Weapon Mastery\": \"6\"}"
+},
+{
+"class": "Fighter",
+"level": 17,
+"prof_bonus": "+6",
+"features": "Action Surge (two uses), Indomitable (three uses)",
+"columns": "{\"Second Wind\": \"4\", \"Weapon Mastery\": \"6\"}"
+},
+{
+"class": "Fighter",
+"level": 18,
+"prof_bonus": "+6",
+"features": "Subclass feature",
+"columns": "{\"Second Wind\": \"4\", \"Weapon Mastery\": \"6\"}"
+},
+{
+"class": "Fighter",
+"level": 19,
+"prof_bonus": "+6",
+"features": "Epic Boon",
+"columns": "{\"Second Wind\": \"4\", \"Weapon Mastery\": \"6\"}"
+},
+{
+"class": "Fighter",
+"level": 20,
+"prof_bonus": "+6",
+"features": "Three Extra Attacks",
+"columns": "{\"Second Wind\": \"4\", \"Weapon Mastery\": \"6\"}"
+},
+{
+"class": "Monk",
+"level": 1,
+"prof_bonus": "+2",
+"features": "Martial Arts, Unarmored Defense",
+"columns": "{\"Martial Arts\": \"1d6\", \"Focus Points\": \"—\", \"Unarmored Movement\": \"—\"}"
+},
+{
+"class": "Monk",
+"level": 2,
+"prof_bonus": "+2",
+"features": "Monk’s Focus, Unarmored Movement, Uncanny Metabolism",
+"columns": "{\"Martial Arts\": \"1d6\", \"Focus Points\": \"2\", \"Unarmored Movement\": \"+10 ft.\"}"
+},
+{
+"class": "Monk",
+"level": 3,
+"prof_bonus": "+2",
+"features": "Deflect Attacks, Monk Subclass",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 4,
+"prof_bonus": "+2",
+"features": "Ability Score Improvement, Slow Fall",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 5,
+"prof_bonus": "+3",
+"features": "Extra Attack, Stunning Strike",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 6,
+"prof_bonus": "+3",
+"features": "Empowered Strikes, Subclass feature",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 7,
+"prof_bonus": "+3",
+"features": "Evasion",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 8,
+"prof_bonus": "+3",
+"features": "Ability Score Improvement",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 9,
+"prof_bonus": "+4",
+"features": "Acrobatic Movement",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 10,
+"prof_bonus": "+4",
+"features": "Heightened Focus, Self-Restoration",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 11,
+"prof_bonus": "+4",
+"features": "Subclass feature",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 12,
+"prof_bonus": "+4",
+"features": "Ability Score Improvement",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 13,
+"prof_bonus": "+5",
+"features": "Deflect Energy",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 14,
+"prof_bonus": "+5",
+"features": "Disciplined Survivor",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 15,
+"prof_bonus": "+5",
+"features": "Perfect Focus",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 16,
+"prof_bonus": "+5",
+"features": "Ability Score Improvement",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 17,
+"prof_bonus": "+6",
+"features": "Subclass feature",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 18,
+"prof_bonus": "+6",
+"features": "Superior Defense",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 19,
+"prof_bonus": "+6",
+"features": "Epic Boon",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Monk",
+"level": 20,
+"prof_bonus": "+6",
+"features": "Body and Mind",
+"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+},
+{
+"class": "Paladin",
+"level": 1,
+"prof_bonus": "+2",
+"features": "Lay On Hands, Spellcasting, Weapon Mastery",
+"columns": "{\"Channel Divinity\": \"—\", \"Prepared Spells\": \"2\", \"1\": \"2\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 2,
+"prof_bonus": "+2",
+"features": "Fighting Style, Paladin’s Smite",
+"columns": "{\"Channel Divinity\": \"—\", \"Prepared Spells\": \"3\", \"1\": \"2\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 3,
+"prof_bonus": "+2",
+"features": "Channel Divinity, Paladin Subclass",
+"columns": "{\"Channel Divinity\": \"2\", \"Prepared Spells\": \"4\", \"1\": \"3\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 4,
+"prof_bonus": "+2",
+"features": "Ability Score Improvement",
+"columns": "{\"Channel Divinity\": \"2\", \"Prepared Spells\": \"5\", \"1\": \"3\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 5,
+"prof_bonus": "+3",
+"features": "Extra Attack, Faithful Steed",
+"columns": "{\"Channel Divinity\": \"2\", \"Prepared Spells\": \"6\", \"1\": \"4\", \"2\": \"2\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 6,
+"prof_bonus": "+3",
+"features": "Aura of Protection",
+"columns": "{\"Channel Divinity\": \"2\", \"Prepared Spells\": \"6\", \"1\": \"4\", \"2\": \"2\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 7,
+"prof_bonus": "+3",
+"features": "Subclass feature",
+"columns": "{\"Channel Divinity\": \"2\", \"Prepared Spells\": \"7\", \"1\": \"4\", \"2\": \"3\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 8,
+"prof_bonus": "+3",
+"features": "Ability Score Improvement",
+"columns": "{\"Channel Divinity\": \"2\", \"Prepared Spells\": \"7\", \"1\": \"4\", \"2\": \"3\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 9,
+"prof_bonus": "+4",
+"features": "Abjure Foes",
+"columns": "{\"Channel Divinity\": \"2\", \"Prepared Spells\": \"9\", \"1\": \"4\", \"2\": \"3\", \"3\": \"2\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 10,
+"prof_bonus": "+4",
+"features": "Aura of Courage",
+"columns": "{\"Channel Divinity\": \"2\", \"Prepared Spells\": \"9\", \"1\": \"4\", \"2\": \"3\", \"3\": \"2\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 11,
+"prof_bonus": "+4",
+"features": "Radiant Strikes",
+"columns": "{\"Channel Divinity\": \"3\", \"Prepared Spells\": \"10\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 12,
+"prof_bonus": "+4",
+"features": "Ability Score Improvement",
+"columns": "{\"Channel Divinity\": \"3\", \"Prepared Spells\": \"10\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 13,
+"prof_bonus": "+5",
+"features": "—",
+"columns": "{\"Channel Divinity\": \"3\", \"Prepared Spells\": \"11\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"1\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 14,
+"prof_bonus": "+5",
+"features": "Restoring Touch",
+"columns": "{\"Channel Divinity\": \"3\", \"Prepared Spells\": \"11\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"1\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 15,
+"prof_bonus": "+5",
+"features": "Subclass feature",
+"columns": "{\"Channel Divinity\": \"3\", \"Prepared Spells\": \"12\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"2\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 16,
+"prof_bonus": "+5",
+"features": "Ability Score Improvement",
+"columns": "{\"Channel Divinity\": \"3\", \"Prepared Spells\": \"12\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"2\", \"5\": \"—\"}"
+},
+{
+"class": "Paladin",
+"level": 17,
+"prof_bonus": "+6",
+"features": "—",
+"columns": "{\"Channel Divinity\": \"3\", \"Prepared Spells\": \"14\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"1\"}"
+},
+{
+"class": "Paladin",
+"level": 18,
+"prof_bonus": "+6",
+"features": "Aura Expansion",
+"columns": "{\"Channel Divinity\": \"3\", \"Prepared Spells\": \"14\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"1\"}"
+},
+{
+"class": "Paladin",
+"level": 19,
+"prof_bonus": "+6",
+"features": "Epic Boon",
+"columns": "{\"Channel Divinity\": \"3\", \"Prepared Spells\": \"15\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\"}"
+},
+{
+"class": "Paladin",
+"level": 20,
+"prof_bonus": "+6",
+"features": "Subclass feature",
+"columns": "{\"Channel Divinity\": \"3\", \"Prepared Spells\": \"15\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\"}"
+},
+{
+"class": "Ranger",
+"level": 1,
+"prof_bonus": "+2",
+"features": "Spellcasting, Favored Enemy, Weapon Mastery",
+"columns": "{\"Favored Enemy\": \"2\", \"Prepared Spells\": \"2\", \"1\": \"2\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 2,
+"prof_bonus": "+2",
+"features": "Deft Explorer, Fighting Style",
+"columns": "{\"Favored Enemy\": \"2\", \"Prepared Spells\": \"3\", \"1\": \"2\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 3,
+"prof_bonus": "+2",
+"features": "Ranger Subclass",
+"columns": "{\"Favored Enemy\": \"2\", \"Prepared Spells\": \"4\", \"1\": \"3\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 4,
+"prof_bonus": "+2",
+"features": "Ability Score Improvement",
+"columns": "{\"Favored Enemy\": \"2\", \"Prepared Spells\": \"5\", \"1\": \"3\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 5,
+"prof_bonus": "+3",
+"features": "Extra Attack",
+"columns": "{\"Favored Enemy\": \"3\", \"Prepared Spells\": \"6\", \"1\": \"4\", \"2\": \"2\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 6,
+"prof_bonus": "+3",
+"features": "Roving",
+"columns": "{\"Favored Enemy\": \"3\", \"Prepared Spells\": \"6\", \"1\": \"4\", \"2\": \"2\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 7,
+"prof_bonus": "+3",
+"features": "Subclass feature",
+"columns": "{\"Favored Enemy\": \"3\", \"Prepared Spells\": \"7\", \"1\": \"4\", \"2\": \"3\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 8,
+"prof_bonus": "+3",
+"features": "Ability Score Improvement",
+"columns": "{\"Favored Enemy\": \"3\", \"Prepared Spells\": \"7\", \"1\": \"4\", \"2\": \"3\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 9,
+"prof_bonus": "+4",
+"features": "Expertise",
+"columns": "{\"Favored Enemy\": \"4\", \"Prepared Spells\": \"9\", \"1\": \"4\", \"2\": \"3\", \"3\": \"2\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 10,
+"prof_bonus": "+4",
+"features": "Tireless",
+"columns": "{\"Favored Enemy\": \"4\", \"Prepared Spells\": \"9\", \"1\": \"4\", \"2\": \"3\", \"3\": \"2\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 11,
+"prof_bonus": "+4",
+"features": "Subclass feature",
+"columns": "{\"Favored Enemy\": \"4\", \"Prepared Spells\": \"10\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 12,
+"prof_bonus": "+4",
+"features": "Ability Score Improvement",
+"columns": "{\"Favored Enemy\": \"4\", \"Prepared Spells\": \"10\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"—\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 13,
+"prof_bonus": "+5",
+"features": "Relentless Hunter",
+"columns": "{\"Favored Enemy\": \"5\", \"Prepared Spells\": \"11\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"1\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 14,
+"prof_bonus": "+5",
+"features": "Nature’s Veil",
+"columns": "{\"Favored Enemy\": \"5\", \"Prepared Spells\": \"11\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"1\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 15,
+"prof_bonus": "+5",
+"features": "Subclass feature",
+"columns": "{\"Favored Enemy\": \"5\", \"Prepared Spells\": \"12\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"2\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 16,
+"prof_bonus": "+5",
+"features": "Ability Score Improvement",
+"columns": "{\"Favored Enemy\": \"5\", \"Prepared Spells\": \"12\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"2\", \"5\": \"—\"}"
+},
+{
+"class": "Ranger",
+"level": 17,
+"prof_bonus": "+6",
+"features": "Precise Hunter",
+"columns": "{\"Favored Enemy\": \"6\", \"Prepared Spells\": \"14\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"1\"}"
+},
+{
+"class": "Ranger",
+"level": 18,
+"prof_bonus": "+6",
+"features": "Feral Senses",
+"columns": "{\"Favored Enemy\": \"6\", \"Prepared Spells\": \"14\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"1\"}"
+},
+{
+"class": "Ranger",
+"level": 19,
+"prof_bonus": "+6",
+"features": "Epic Boon",
+"columns": "{\"Favored Enemy\": \"6\", \"Prepared Spells\": \"15\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\"}"
+},
+{
+"class": "Ranger",
+"level": 20,
+"prof_bonus": "+6",
+"features": "Foe Slayer",
+"columns": "{\"Favored Enemy\": \"6\", \"Prepared Spells\": \"15\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\"}"
+},
+{
+"class": "Rogue",
+"level": 1,
+"prof_bonus": "+2",
+"features": "Expertise, Sneak Attack, Thieves’ Cant, Weapon Mastery",
+"columns": "{\"Sneak Attack\": \"1d6\"}"
+},
+{
+"class": "Rogue",
+"level": 2,
+"prof_bonus": "+2",
+"features": "Cunning Action",
+"columns": "{\"Sneak Attack\": \"1d6\"}"
+},
+{
+"class": "Rogue",
+"level": 3,
+"prof_bonus": "+2",
+"features": "Rogue Subclass, Steady Aim",
+"columns": "{\"Sneak Attack\": \"2d6\"}"
+},
+{
+"class": "Rogue",
+"level": 4,
+"prof_bonus": "+2",
+"features": "Ability Score Improvement",
+"columns": "{\"Sneak Attack\": \"2d6\"}"
+},
+{
+"class": "Rogue",
+"level": 5,
+"prof_bonus": "+3",
+"features": "Cunning Strike, Uncanny Dodge",
+"columns": "{\"Sneak Attack\": \"3d6\"}"
+},
+{
+"class": "Rogue",
+"level": 6,
+"prof_bonus": "+3",
+"features": "Expertise",
+"columns": "{\"Sneak Attack\": \"3d6\"}"
+},
+{
+"class": "Rogue",
+"level": 7,
+"prof_bonus": "+3",
+"features": "Evasion, Reliable Talent",
+"columns": "{\"Sneak Attack\": \"4d6\"}"
+},
+{
+"class": "Rogue",
+"level": 8,
+"prof_bonus": "+3",
+"features": "Ability Score Improvement",
+"columns": "{\"Sneak Attack\": \"4d6\"}"
+},
+{
+"class": "Rogue",
+"level": 9,
+"prof_bonus": "+4",
+"features": "Subclass feature",
+"columns": "{\"Sneak Attack\": \"5d6\"}"
+},
+{
+"class": "Rogue",
+"level": 10,
+"prof_bonus": "+4",
+"features": "Ability Score Improvement",
+"columns": "{\"Sneak Attack\": \"5d6\"}"
+},
+{
+"class": "Rogue",
+"level": 11,
+"prof_bonus": "+4",
+"features": "Improved Cunning Strike",
+"columns": "{\"Sneak Attack\": \"6d6\"}"
+},
+{
+"class": "Rogue",
+"level": 12,
+"prof_bonus": "+4",
+"features": "Ability Score Improvement",
+"columns": "{\"Sneak Attack\": \"6d6\"}"
+},
+{
+"class": "Rogue",
+"level": 13,
+"prof_bonus": "+5",
+"features": "Subclass feature",
+"columns": "{\"Sneak Attack\": \"7d6\"}"
+},
+{
+"class": "Rogue",
+"level": 14,
+"prof_bonus": "+5",
+"features": "Devious Strikes",
+"columns": "{\"Sneak Attack\": \"7d6\"}"
+},
+{
+"class": "Rogue",
+"level": 15,
+"prof_bonus": "+5",
+"features": "Slippery Mind",
+"columns": "{\"Sneak Attack\": \"8d6\"}"
+},
+{
+"class": "Rogue",
+"level": 16,
+"prof_bonus": "+5",
+"features": "Ability Score Improvement",
+"columns": "{\"Sneak Attack\": \"8d6\"}"
+},
+{
+"class": "Rogue",
+"level": 17,
+"prof_bonus": "+6",
+"features": "Subclass feature",
+"columns": "{\"Sneak Attack\": \"9d6\"}"
+},
+{
+"class": "Rogue",
+"level": 18,
+"prof_bonus": "+6",
+"features": "Elusive",
+"columns": "{\"Sneak Attack\": \"9d6\"}"
+},
+{
+"class": "Rogue",
+"level": 19,
+"prof_bonus": "+6",
+"features": "Epic Boon",
+"columns": "{\"Sneak Attack\": \"10d6\"}"
+},
+{
+"class": "Rogue",
+"level": 20,
+"prof_bonus": "+6",
+"features": "Stroke of Luck",
+"columns": "{\"Sneak Attack\": \"10d6\"}"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"prof_bonus": "+2",
+"features": "Spellcasting, Innate Sorcery",
+"columns": "{\"Sorcery Points\": \"—\", \"Cantrips\": \"4\", \"Prepared Spells\": \"2\", \"1\": \"2\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"prof_bonus": "+2",
+"features": "Font of Magic, Metamagic",
+"columns": "{\"Sorcery Points\": \"2\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"prof_bonus": "+2",
+"features": "Sorcerer Subclass",
+"columns": "{\"Sorcery Points\": \"3\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"prof_bonus": "+2",
+"features": "Ability Score Improvement",
+"columns": "{\"Sorcery Points\": \"4\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 5,
+"prof_bonus": "+3",
+"features": "Sorcerous Restoration",
+"columns": "{\"Sorcery Points\": \"5\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 6,
+"prof_bonus": "+3",
+"features": "Subclass feature",
+"columns": "{\"Sorcery Points\": \"6\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 7,
+"prof_bonus": "+3",
+"features": "Sorcery Incarnate",
+"columns": "{\"Sorcery Points\": \"7\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 8,
+"prof_bonus": "+3",
+"features": "Ability Score Improvement",
+"columns": "{\"Sorcery Points\": \"8\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 9,
+"prof_bonus": "+4",
+"features": "—",
+"columns": "{\"Sorcery Points\": \"9\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 10,
+"prof_bonus": "+4",
+"features": "Metamagic",
+"columns": "{\"Sorcery Points\": \"10\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 11,
+"prof_bonus": "+4",
+"features": "—",
+"columns": "{\"Sorcery Points\": \"11\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 12,
+"prof_bonus": "+4",
+"features": "Ability Score Improvement",
+"columns": "{\"Sorcery Points\": \"12\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 13,
+"prof_bonus": "+5",
+"features": "—",
+"columns": "{\"Sorcery Points\": \"13\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 14,
+"prof_bonus": "+5",
+"features": "Subclass feature",
+"columns": "{\"Sorcery Points\": \"14\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 15,
+"prof_bonus": "+5",
+"features": "—",
+"columns": "{\"Sorcery Points\": \"15\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 16,
+"prof_bonus": "+5",
+"features": "Ability Score Improvement",
+"columns": "{\"Sorcery Points\": \"16\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 17,
+"prof_bonus": "+6",
+"features": "Metamagic",
+"columns": "{\"Sorcery Points\": \"17\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 18,
+"prof_bonus": "+6",
+"features": "Subclass feature",
+"columns": "{\"Sorcery Points\": \"18\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 19,
+"prof_bonus": "+6",
+"features": "Epic Boon",
+"columns": "{\"Sorcery Points\": \"19\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Sorcerer",
+"level": 20,
+"prof_bonus": "+6",
+"features": "Arcane Apotheosis",
+"columns": "{\"Sorcery Points\": \"20\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+},
+{
+"class": "Warlock",
+"level": 1,
+"prof_bonus": "+2",
+"features": "Eldritch Invocations, Pact Magic",
+"columns": "{\"Eldritch Invocations\": \"1\", \"Cantrips\": \"2\", \"Prepared Spells\": \"2\", \"Spell Slots\": \"1\", \"Slot Level\": \"1\"}"
+},
+{
+"class": "Warlock",
+"level": 2,
+"prof_bonus": "+2",
+"features": "Magical Cunning",
+"columns": "{\"Eldritch Invocations\": \"3\", \"Cantrips\": \"2\", \"Prepared Spells\": \"3\", \"Spell Slots\": \"2\", \"Slot Level\": \"1\"}"
+},
+{
+"class": "Warlock",
+"level": 3,
+"prof_bonus": "+2",
+"features": "Warlock Subclass",
+"columns": "{\"Eldritch Invocations\": \"3\", \"Cantrips\": \"2\", \"Prepared Spells\": \"4\", \"Spell Slots\": \"2\", \"Slot Level\": \"2\"}"
+},
+{
+"class": "Warlock",
+"level": 4,
+"prof_bonus": "+2",
+"features": "Ability Score Improvement",
+"columns": "{\"Eldritch Invocations\": \"3\", \"Cantrips\": \"3\", \"Prepared Spells\": \"5\", \"Spell Slots\": \"2\", \"Slot Level\": \"2\"}"
+},
+{
+"class": "Warlock",
+"level": 5,
+"prof_bonus": "+3",
+"features": "—",
+"columns": "{\"Eldritch Invocations\": \"5\", \"Cantrips\": \"3\", \"Prepared Spells\": \"6\", \"Spell Slots\": \"2\", \"Slot Level\": \"3\"}"
+},
+{
+"class": "Warlock",
+"level": 6,
+"prof_bonus": "+3",
+"features": "Subclass feature",
+"columns": "{\"Eldritch Invocations\": \"5\", \"Cantrips\": \"3\", \"Prepared Spells\": \"7\", \"Spell Slots\": \"2\", \"Slot Level\": \"3\"}"
+},
+{
+"class": "Warlock",
+"level": 7,
+"prof_bonus": "+3",
+"features": "—",
+"columns": "{\"Eldritch Invocations\": \"6\", \"Cantrips\": \"3\", \"Prepared Spells\": \"8\", \"Spell Slots\": \"2\", \"Slot Level\": \"4\"}"
+},
+{
+"class": "Warlock",
+"level": 8,
+"prof_bonus": "+3",
+"features": "Ability Score Improvement",
+"columns": "{\"Eldritch Invocations\": \"6\", \"Cantrips\": \"3\", \"Prepared Spells\": \"9\", \"Spell Slots\": \"2\", \"Slot Level\": \"4\"}"
+},
+{
+"class": "Warlock",
+"level": 9,
+"prof_bonus": "+4",
+"features": "Contact Patron",
+"columns": "{\"Eldritch Invocations\": \"7\", \"Cantrips\": \"3\", \"Prepared Spells\": \"10\", \"Spell Slots\": \"2\", \"Slot Level\": \"5\"}"
+},
+{
+"class": "Warlock",
+"level": 10,
+"prof_bonus": "+4",
+"features": "Subclass feature",
+"columns": "{\"Eldritch Invocations\": \"7\", \"Cantrips\": \"4\", \"Prepared Spells\": \"10\", \"Spell Slots\": \"2\", \"Slot Level\": \"5\"}"
+},
+{
+"class": "Warlock",
+"level": 11,
+"prof_bonus": "+4",
+"features": "Mystic Arcanum (level 6 spell)",
+"columns": "{\"Eldritch Invocations\": \"7\", \"Cantrips\": \"4\", \"Prepared Spells\": \"11\", \"Spell Slots\": \"3\", \"Slot Level\": \"5\"}"
+},
+{
+"class": "Warlock",
+"level": 12,
+"prof_bonus": "+4",
+"features": "Ability Score Improvement",
+"columns": "{\"Eldritch Invocations\": \"8\", \"Cantrips\": \"4\", \"Prepared Spells\": \"11\", \"Spell Slots\": \"3\", \"Slot Level\": \"5\"}"
+},
+{
+"class": "Warlock",
+"level": 13,
+"prof_bonus": "+5",
+"features": "Mystic Arcanum (level 7 spell)",
+"columns": "{\"Eldritch Invocations\": \"8\", \"Cantrips\": \"4\", \"Prepared Spells\": \"12\", \"Spell Slots\": \"3\", \"Slot Level\": \"5\"}"
+},
+{
+"class": "Warlock",
+"level": 14,
+"prof_bonus": "+5",
+"features": "Subclass feature",
+"columns": "{\"Eldritch Invocations\": \"8\", \"Cantrips\": \"4\", \"Prepared Spells\": \"12\", \"Spell Slots\": \"3\", \"Slot Level\": \"5\"}"
+},
+{
+"class": "Warlock",
+"level": 15,
+"prof_bonus": "+5",
+"features": "Mystic Arcanum (level 8 spell)",
+"columns": "{\"Eldritch Invocations\": \"9\", \"Cantrips\": \"4\", \"Prepared Spells\": \"13\", \"Spell Slots\": \"3\", \"Slot Level\": \"5\"}"
+},
+{
+"class": "Warlock",
+"level": 16,
+"prof_bonus": "+5",
+"features": "Ability Score Improvement",
+"columns": "{\"Eldritch Invocations\": \"9\", \"Cantrips\": \"4\", \"Prepared Spells\": \"13\", \"Spell Slots\": \"3\", \"Slot Level\": \"5\"}"
+},
+{
+"class": "Warlock",
+"level": 17,
+"prof_bonus": "+6",
+"features": "Mystic Arcanum (level 9 spell)",
+"columns": "{\"Eldritch Invocations\": \"9\", \"Cantrips\": \"4\", \"Prepared Spells\": \"14\", \"Spell Slots\": \"4\", \"Slot Level\": \"5\"}"
+},
+{
+"class": "Warlock",
+"level": 18,
+"prof_bonus": "+6",
+"features": "—",
+"columns": "{\"Eldritch Invocations\": \"10\", \"Cantrips\": \"4\", \"Prepared Spells\": \"14\", \"Spell Slots\": \"4\", \"Slot Level\": \"5\"}"
+},
+{
+"class": "Warlock",
+"level": 19,
+"prof_bonus": "+6",
+"features": "Epic Boon",
+"columns": "{\"Eldritch Invocations\": \"10\", \"Cantrips\": \"4\", \"Prepared Spells\": \"15\", \"Spell Slots\": \"4\", \"Slot Level\": \"5\"}"
+},
+{
+"class": "Warlock",
+"level": 20,
+"prof_bonus": "+6",
+"features": "Eldritch Master",
+"columns": "{\"Eldritch Invocations\": \"10\", \"Cantrips\": \"4\", \"Prepared Spells\": \"15\", \"Spell Slots\": \"4\", \"Slot Level\": \"5\"}"
+},
+{
+"class": "Wizard",
+"level": 1,
+"prof_bonus": "+2",
+"features": "Spellcasting, Ritual Adept, Arcane Recovery",
+"columns": "{\"Cantrips\": \"3\", \"Prepared Spells\": \"4\", \"1\": \"2\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 2,
+"prof_bonus": "+2",
+"features": "Scholar",
+"columns": "{\"Cantrips\": \"3\", \"Prepared Spells\": \"5\", \"1\": \"3\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 3,
+"prof_bonus": "+2",
+"features": "Wizard Subclass",
+"columns": "{\"Cantrips\": \"3\", \"Prepared Spells\": \"6\", \"1\": \"4\", \"2\": \"2\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 4,
+"prof_bonus": "+2",
+"features": "Ability Score Improvement",
+"columns": "{\"Cantrips\": \"4\", \"Prepared Spells\": \"7\", \"1\": \"4\", \"2\": \"3\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 5,
+"prof_bonus": "+3",
+"features": "Memorize Spell",
+"columns": "{\"Cantrips\": \"4\", \"Prepared Spells\": \"9\", \"1\": \"4\", \"2\": \"3\", \"3\": \"2\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 6,
+"prof_bonus": "+3",
+"features": "Subclass feature",
+"columns": "{\"Cantrips\": \"4\", \"Prepared Spells\": \"10\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 7,
+"prof_bonus": "+3",
+"features": "—",
+"columns": "{\"Cantrips\": \"4\", \"Prepared Spells\": \"11\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"1\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 8,
+"prof_bonus": "+3",
+"features": "Ability Score Improvement",
+"columns": "{\"Cantrips\": \"4\", \"Prepared Spells\": \"12\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"2\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 9,
+"prof_bonus": "+4",
+"features": "—",
+"columns": "{\"Cantrips\": \"4\", \"Prepared Spells\": \"14\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"1\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 10,
+"prof_bonus": "+4",
+"features": "Subclass feature",
+"columns": "{\"Cantrips\": \"5\", \"Prepared Spells\": \"15\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 11,
+"prof_bonus": "+4",
+"features": "—",
+"columns": "{\"Cantrips\": \"5\", \"Prepared Spells\": \"16\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 12,
+"prof_bonus": "+4",
+"features": "Ability Score Improvement",
+"columns": "{\"Cantrips\": \"5\", \"Prepared Spells\": \"16\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 13,
+"prof_bonus": "+5",
+"features": "—",
+"columns": "{\"Cantrips\": \"5\", \"Prepared Spells\": \"17\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 14,
+"prof_bonus": "+5",
+"features": "Subclass feature",
+"columns": "{\"Cantrips\": \"5\", \"Prepared Spells\": \"18\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"—\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 15,
+"prof_bonus": "+5",
+"features": "—",
+"columns": "{\"Cantrips\": \"5\", \"Prepared Spells\": \"19\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 16,
+"prof_bonus": "+5",
+"features": "Ability Score Improvement",
+"columns": "{\"Cantrips\": \"5\", \"Prepared Spells\": \"21\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"—\"}"
+},
+{
+"class": "Wizard",
+"level": 17,
+"prof_bonus": "+6",
+"features": "—",
+"columns": "{\"Cantrips\": \"5\", \"Prepared Spells\": \"22\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Wizard",
+"level": 18,
+"prof_bonus": "+6",
+"features": "Spell Mastery",
+"columns": "{\"Cantrips\": \"5\", \"Prepared Spells\": \"23\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Wizard",
+"level": 19,
+"prof_bonus": "+6",
+"features": "Epic Boon",
+"columns": "{\"Cantrips\": \"5\", \"Prepared Spells\": \"24\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"2\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
+},
+{
+"class": "Wizard",
+"level": 20,
+"prof_bonus": "+6",
+"features": "Signature Spells",
+"columns": "{\"Cantrips\": \"5\", \"Prepared Spells\": \"25\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"2\", \"7\": \"2\", \"8\": \"1\", \"9\": \"1\"}"
+}
+]

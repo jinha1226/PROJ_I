@@ -6,7 +6,7 @@ G.Tactics = (() => {
   const DEPLOY_MOVE = 6, BOARD_GAP = 2, WALK_GAP = 1.5; // 진형 판 한 칸 = 바닥 2칸
   const cellOf = e => [Math.round(e.x), Math.round(e.y)];
   // 어려운 지형 (SRD): 얕은 물은 칸당 이동력 2. 헤엄치는 몬스터는 그대로
-  const stepCost = (m, e, x, y) => (m.c[y * m.w + x] === ',' && !e.stat?.swim && !(e.merc && (G.Opt.has(e, 'iv_ascend') || G.Opt.has(e, 'iv_depths') || G.Pool.of(e.merc) === 'x_acro')) ? 2 : 1);
+  const stepCost = (m, e, x, y) => (m.c[y * m.w + x] === ',' && !e.stat?.swim && !(e.merc && (G.Opt.has(e, 'iv_ascend') || G.Opt.has(e, 'iv_depths') || G.Pool.of(e.merc) === 'x_acro' || G.Dnd.bsum(e, 'fly') > 0)) ? 2 : 1);
   const insertBy = (q, c) => { let i = q.length; while (i > 0 && q[i - 1][2] > c[2]) i--; q.splice(i, 0, c); }; // 앞쪽(처리한 곳)보다 뒤로만 끼운다: 비용이 커지기만 하므로 안전
   const fighters = rt => rt.party.filter(p => !p.dead || p.dying).concat(rt.mons.filter(o => o.hp > 0));
   const key = (m, x, y) => y * m.w + x;
@@ -43,7 +43,7 @@ G.Tactics = (() => {
   const stanceOf = m => STANCE[roleOf(m)][rowOf(m)];
   const of = e => { const m = e.merc, s = stanceOf(m); return { pos: s.pos, low: s.low, heal: s.heal || 'early', target: TARGET[m?.tac?.t] ? m.tac.t : 'near' }; };
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-  const soft = p => p.def && (p.def.range >= 2 || p.def.heal);
+  const soft = p => p.def && (G.Dnd.rng(p) >= 2 || p.def.heal);
   // 지켜 줄 사람: 가장 가까운 후열 동료
   const ward = (rt, e) => { const l = rt.party.filter(p => p !== e && !p.dead && soft(p)); return l.length ? l.reduce((a, b) => (dist(b, e) < dist(a, e) ? b : a)) : null; };
   return {
@@ -58,14 +58,14 @@ G.Tactics = (() => {
       const t = of(e).target, near = l => l.reduce((a, b) => (dist(b, e) < dist(a, e) ? b : a));
       if (e.merc) list = G.Foe.good(e, list, G.Dnd.weapon(e).t); // 역효과인 적은 다른 표적이 있으면 피한다
       // 원거리는 지금 자리에서 쏠 수 있는 적부터: 표적 때문에 전열 앞으로 튀어나가지 않는다
-      const rg = e.def && e.def.range >= 2 ? e.def.range : 0, here = rg ? list.filter(o => dist(o, e) <= rg) : [];
+      const rg = e.def && G.Dnd.rng(e) >= 2 ? G.Dnd.rng(e) : 0, here = rg ? list.filter(o => dist(o, e) <= rg) : [];
       if (rg && of(e).pos === 'kite' && here.length) list = here;
       if (t === 'weak') return list.reduce((a, b) => (b.hp < a.hp ? b : a));
       if (t === 'back') { const r = list.filter(G.Foe.back); return near(r.length ? r : list); }
       return near(list);
     },
     // 후열을 노리는 근접: 후열이 보이는데 아직 닿지 않으면, 앞에 있는 적에게 기술을 쓰지 않고 먼저 뚫고 간다
-    rushes(e, seen) { if (of(e).target !== 'back' || (e.def.range || 0) >= 2) return false; const r = seen.filter(G.Foe.back); return r.length > 0 && !r.some(o => dist(o, e) <= GUARD_R); },
+    rushes(e, seen) { if (of(e).target !== 'back' || (G.Dnd.rng(e) || 0) >= 2) return false; const r = seen.filter(G.Foe.back); return r.length > 0 && !r.some(o => dist(o, e) <= GUARD_R); },
     // 동료 보호: 지킬 사람에게 가장 가까운 적을 친다
     guardTarget(rt, e, list) { if (of(e).pos !== 'guard' || !list.length) return null; const w = ward(rt, e); return w ? list.reduce((a, b) => (dist(b, w) < dist(a, w) ? b : a)) : null; },
     // 버티기 · 동료 보호: 달려오는 적이 있을 때만 자리를 지키고 준비 행동을 한다. 접전이 시작되거나 적이 쏘기만 하면 나선다
@@ -81,7 +81,7 @@ G.Tactics = (() => {
     keeps: e => { const t = of(e); return t.pos === 'kite' || (t.low === 'fall' && e.hp < e.max * LOW_HP); },
     // 근접의 위기: 체력이 낮으면 후열 동료 곁으로 물러난다 (경로를 돌려준다)
     fall(rt, e, budget) {
-      const t = of(e); if (t.low !== 'fall' || e.hp >= e.max * LOW_HP || (e.def.range || 0) >= 2) return null;
+      const t = of(e); if (t.low !== 'fall' || e.hp >= e.max * LOW_HP || (G.Dnd.rng(e) || 0) >= 2) return null;
       const w = ward(rt, e); if (!w || dist(e, w) <= GUARD_R) return null;
       return this.plan(rt, e, w, budget, (x, y) => Math.hypot(x - w.x, y - w.y) <= GUARD_R, true);
     },

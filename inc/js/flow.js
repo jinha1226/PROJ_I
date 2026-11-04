@@ -199,6 +199,7 @@ G.Flow = (() => {
   return {
     // 매 틱. 전투 · 장면 · 판정 · 이동 중 하나만 돈다
     tick(f, rt, speed, dt) {
+      G.Tut.tick(f, rt, dt);
       if (!rt.flow || rt.flow.map !== rt.map) init(f, rt);
       const fl = rt.flow, ex = X().state(f, rt);
       for (const p of rt.party) p.moving = false;

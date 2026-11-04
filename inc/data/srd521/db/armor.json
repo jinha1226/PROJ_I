@@ -1,0 +1,119 @@
+[
+{
+"name": "Padded Armor",
+"category": "Light Armor (1 Minute to Don or Doff)",
+"ac": "11 + Dex modifier",
+"strength": "—",
+"stealth": "Disadvantage",
+"weight": "8 lb.",
+"cost": "5 GP"
+},
+{
+"name": "Leather Armor",
+"category": "Light Armor (1 Minute to Don or Doff)",
+"ac": "11 + Dex modifier",
+"strength": "—",
+"stealth": "—",
+"weight": "10 lb.",
+"cost": "10 GP"
+},
+{
+"name": "Studded Leather Armor",
+"category": "Light Armor (1 Minute to Don or Doff)",
+"ac": "12 + Dex modifier",
+"strength": "—",
+"stealth": "—",
+"weight": "13 lb.",
+"cost": "45 GP"
+},
+{
+"name": "Hide Armor",
+"category": "Medium Armor (5 Minutes to Don and 1 Minute to Doff)",
+"ac": "12 + Dex modifier (max 2)",
+"strength": "—",
+"stealth": "—",
+"weight": "12 lb.",
+"cost": "10 GP"
+},
+{
+"name": "Chain Shirt",
+"category": "Medium Armor (5 Minutes to Don and 1 Minute to Doff)",
+"ac": "13 + Dex modifier (max 2)",
+"strength": "—",
+"stealth": "—",
+"weight": "20 lb.",
+"cost": "50 GP"
+},
+{
+"name": "Scale Mail",
+"category": "Medium Armor (5 Minutes to Don and 1 Minute to Doff)",
+"ac": "14 + Dex modifier (max 2)",
+"strength": "—",
+"stealth": "Disadvantage",
+"weight": "45 lb.",
+"cost": "50 GP"
+},
+{
+"name": "Breastplate",
+"category": "Medium Armor (5 Minutes to Don and 1 Minute to Doff)",
+"ac": "14 + Dex modifier (max 2)",
+"strength": "—",
+"stealth": "—",
+"weight": "20 lb.",
+"cost": "400 GP"
+},
+{
+"name": "Half Plate Armor",
+"category": "Medium Armor (5 Minutes to Don and 1 Minute to Doff)",
+"ac": "15 + Dex modifier (max 2)",
+"strength": "—",
+"stealth": "Disadvantage",
+"weight": "40 lb.",
+"cost": "750 GP"
+},
+{
+"name": "Ring Mail",
+"category": "Heavy Armor (10 Minutes to Don and 5 Minutes to Doff)",
+"ac": "14",
+"strength": "—",
+"stealth": "Disadvantage",
+"weight": "40 lb.",
+"cost": "30 GP"
+},
+{
+"name": "Chain Mail",
+"category": "Heavy Armor (10 Minutes to Don and 5 Minutes to Doff)",
+"ac": "16",
+"strength": "Str 13",
+"stealth": "Disadvantage",
+"weight": "55 lb.",
+"cost": "75 GP"
+},
+{
+"name": "Splint Armor",
+"category": "Heavy Armor (10 Minutes to Don and 5 Minutes to Doff)",
+"ac": "17",
+"strength": "Str 15",
+"stealth": "Disadvantage",
+"weight": "60 lb.",
+"cost": "200 GP"
+},
+{
+"name": "Plate Armor",
+"category": "Heavy Armor (10 Minutes to Don and 5 Minutes to Doff)",
+"ac": "18",
+"strength": "Str 15",
+"stealth": "Disadvantage",
+"weight": "65 lb.",
+"cost": "1,500 GP"
+},
+{
+"name": "Shield",
+"category": "Shield (Utilize Action to Don or Doff)",
+"ac": "+2",
+"strength": "—",
+"stealth": "—",
+"weight": "6 lb.",
+"cost": "10 GP"
+}
+]

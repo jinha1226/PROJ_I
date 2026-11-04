@@ -2,7 +2,7 @@
 // 화면 맞춤 · 게임 효과(G.fx) 그리기
 // ───── 화면 ─────
 const $ = id => document.getElementById(id), floats = $('floats');
-const allBtn = document.createElement('button'); allBtn.textContent = '전체 지도'; allBtn.style.cssText = 'font:inherit;color:inherit;background:none;border:1px solid var(--line);padding:2px 8px;cursor:pointer;margin-left:8px';
+const allBtn = document.createElement('button'); allBtn.id = 'allbtn'; allBtn.textContent = '전체 지도'; allBtn.style.cssText = 'font:inherit;color:inherit;background:none;border:1px solid var(--line);padding:2px 8px;cursor:pointer;margin-left:8px';
 const spdBtn = document.createElement('button'); spdBtn.id = 'spd'; spdBtn.style.cssText = allBtn.style.cssText; spdBtn.title = '배속 (T)';
 const spdShow = () => { spdBtn.textContent = `×${G.Turn.speed(f)}`; }; spdShow();
 const spdNext = () => { G.Turn.nextSpeed(f); spdShow(); };

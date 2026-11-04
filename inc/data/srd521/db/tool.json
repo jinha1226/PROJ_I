@@ -1,0 +1,140 @@
+[
+{
+"name": "Alchemist’s Supplies (50 GP)",
+"cost": "50 GP",
+"text": "Ability: Intelligence Weight: 8 lb. Utilize: Identify a substance (DC 15), or start a fire (DC 15) Craft: Acid, Alchemist’s Fire, Component Pouch, Oil, Paper, Perfume",
+"page": 93
+},
+{
+"name": "Brewer’s Supplies (20 GP)",
+"cost": "20 GP",
+"text": "Ability: Intelligence Weight: 9 lb. Utilize: Detect poisoned drink (DC 15), or identify alcohol (DC 10) Craft: Antitoxin",
+"page": 93
+},
+{
+"name": "Calligrapher’s Supplies (10 GP)",
+"cost": "10 GP",
+"text": "Ability: Dexterity Weight: 5 lb. Utilize: Write text with impressive flourishes that guard against forgery (DC 15) Craft: Ink, Spell Scroll",
+"page": 93
+},
+{
+"name": "Carpenter’s Tools (8 GP)",
+"cost": "8 GP",
+"text": "Ability: Strength Weight: 6 lb. Utilize: Seal or pry open a door or container (DC 20) Craft: Club, Greatclub, Quarterstaff, Barrel, Chest, Ladder, Pole, Portable Ram, Torch",
+"page": 93
+},
+{
+"name": "Cartographer’s Tools (15 GP)",
+"cost": "15 GP",
+"text": "Ability: Wisdom Weight: 6 lb. Utilize: Draft a map of a small area (DC 15) Craft: Map",
+"page": 93
+},
+{
+"name": "Cobbler’s Tools (5 GP)",
+"cost": "5 GP",
+"text": "Ability: Dexterity Weight: 5 lb. Utilize: Modify footwear to give Advantage on the wearer’s next Dexterity (Acrobatics) check (DC 10) Craft: Climber’s Kit",
+"page": 93
+},
+{
+"name": "Cook’s Utensils (1 GP)",
+"cost": "1 GP",
+"text": "Ability: Wisdom Weight: 8 lb. Utilize: Improve food’s flavor (DC 10), or detect spoiled or poisoned food (DC 15) Craft: Rations",
+"page": 93
+},
+{
+"name": "Glassblower’s Tools (30 GP)",
+"cost": "30 GP",
+"text": "Ability: Intelligence Weight: 5 lb. Utilize: Discern what a glass object held in the past 24 hours (DC 15) Craft: Glass Bottle, Magnifying Glass, Spyglass, Vial",
+"page": 93
+},
+{
+"name": "Jeweler’s Tools (25 GP)",
+"cost": "25 GP",
+"text": "Ability: Intelligence Weight: 2 lb. Utilize: Discern a gem’s value (DC 15) Craft: Arcane Focus, Holy Symbol",
+"page": 93
+},
+{
+"name": "Leatherworker’s Tools (5 GP)",
+"cost": "5 GP",
+"text": "Ability: Dexterity Weight: 5 lb. Utilize: Add a design to a leather item (DC 10) Craft: Sling, Whip, Hide Armor, Leather Armor, Studded Leather Armor, Backpack, Crossbow Bolt Case, Map or Scroll Case, Parchment, Pouch, Quiver, Waterskin",
+"page": 93
+},
+{
+"name": "Mason’s Tools (10 GP)",
+"cost": "10 GP",
+"text": "Ability: Strength Weight: 8 lb. Utilize: Chisel a symbol or hole in stone (DC 10) Craft: Block and Tackle",
+"page": 93
+},
+{
+"name": "Painter’s Supplies (10 GP)",
+"cost": "10 GP",
+"text": "Ability: Wisdom Weight: 5 lb. Utilize: Paint a recognizable image of something you’ve seen (DC 10) Craft: Druidic Focus, Holy Symbol",
+"page": 93
+},
+{
+"name": "Potter’s Tools (10 GP)",
+"cost": "10 GP",
+"text": "Ability: Intelligence Weight: 3 lb. Utilize: Discern what a ceramic object held in the past 24 hours (DC 15) Craft: Jug, Lamp",
+"page": 93
+},
+{
+"name": "Smith’s Tools (20 GP)",
+"cost": "20 GP",
+"text": "Ability: Strength Weight: 8 lb. Utilize: Pry open a door or container (DC 20)\nCraft: Any Melee weapon (except Club, Greatclub, Quarterstaff, and Whip), Medium armor (except Hide), Heavy armor, Ball Bearings, Bucket, Caltrops, Chain, Crowbar, Firearm Bullets, Grappling Hook, Iron Pot, Iron Spikes, Sling Bullets",
+"page": 93
+},
+{
+"name": "Tinker’s Tools (50 GP)",
+"cost": "50 GP",
+"text": "Ability: Dexterity Weight: 10 lb. Utilize: Assemble a Tiny item composed of scrap, which falls apart in 1 minute (DC 20) Craft: Musket, Pistol, Bell, Bullseye Lantern, Flask, Hooded Lantern, Hunting Trap, Lock, Manacles, Mirror, Shovel, Signal Whistle, Tinderbox",
+"page": 94
+},
+{
+"name": "Weaver’s Tools (1 GP)",
+"cost": "1 GP",
+"text": "Ability: Dexterity Weight: 5 lb. Utilize: Mend a tear in clothing (DC 10), or sew a Tiny design (DC 10) Craft: Padded Armor, Basket, Bedroll, Blanket, Fine Clothes, Net, Robe, Rope, Sack, String, Tent, Traveler’s Clothes",
+"page": 94
+},
+{
+"name": "Woodcarver’s Tools (1 GP)",
+"cost": "1 GP",
+"text": "Ability: Dexterity Weight: 5 lb. Utilize: Carve a pattern in wood (DC 10) Craft: Club, Greatclub, Quarterstaff, Ranged weapons (except Pistol, Musket, and Sling), Arcane Focus, Arrows, Bolts, Druidic Focus, Ink Pen, Needles",
+"page": 94
+},
+{
+"name": "Disguise Kit (25 GP)",
+"cost": "25 GP",
+"text": "Ability: Charisma Weight: 3 lb. Utilize: Apply makeup (DC 10) Craft: Costume",
+"page": 94
+},
+{
+"name": "Forgery Kit (15 GP)",
+"cost": "15 GP",
+"text": "Ability: Dexterity Weight: 5 lb. Utilize: Mimic 10 or fewer words of someone else’s handwriting (DC 15), or duplicate a wax seal (DC 20)",
+"page": 94
+},
+{
+"name": "Herbalism Kit (5 GP)",
+"cost": "5 GP",
+"text": "Ability: Intelligence Weight: 3 lb. Utilize: Identify a plant (DC 10) Craft: Antitoxin, Candle, Healer’s Kit, Potion of Healing",
+"page": 94
+},
+{
+"name": "Navigator’s Tools (25 GP)",
+"cost": "25 GP",
+"text": "Ability: Wisdom Weight: 2 lb. Utilize: Plot a course (DC 10), or determine position by stargazing (DC 15)",
+"page": 94
+},
+{
+"name": "Poisoner’s Kit (50 GP)",
+"cost": "50 GP",
+"text": "Ability: Intelligence Weight: 2 lb. Utilize: Detect a poisoned object (DC 10) Craft: Basic Poison",
+"page": 94
+},
+{
+"name": "Thieves’ Tools (25 GP)",
+"cost": "25 GP",
+"text": "Ability: Dexterity Weight: 1 lb. Utilize: Pick a lock (DC 15), or disarm a trap (DC 15)",
+"page": 94
+}
+]

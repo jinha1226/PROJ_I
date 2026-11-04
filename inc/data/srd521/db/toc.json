@@ -1,0 +1,2602 @@
+[
+{
+"level": 1,
+"title": "System Reference Document 5.2.1",
+"page": 1
+},
+{
+"level": 2,
+"title": "Playing the Game",
+"page": 5
+},
+{
+"level": 3,
+"title": "Rhythm of Play",
+"page": 5
+},
+{
+"level": 3,
+"title": "The Six Abilities",
+"page": 5
+},
+{
+"level": 3,
+"title": "D20 Tests",
+"page": 6
+},
+{
+"level": 4,
+"title": "Ability Checks",
+"page": 6
+},
+{
+"level": 4,
+"title": "Saving Throws",
+"page": 7
+},
+{
+"level": 4,
+"title": "Attack Rolls",
+"page": 7
+},
+{
+"level": 4,
+"title": "Advantage/Disadvantage",
+"page": 7
+},
+{
+"level": 3,
+"title": "Proficiency",
+"page": 8
+},
+{
+"level": 3,
+"title": "Actions",
+"page": 9
+},
+{
+"level": 4,
+"title": "Bonus Actions",
+"page": 10
+},
+{
+"level": 4,
+"title": "Reactions",
+"page": 10
+},
+{
+"level": 3,
+"title": "Social Interaction",
+"page": 10
+},
+{
+"level": 3,
+"title": "Exploration",
+"page": 11
+},
+{
+"level": 4,
+"title": "Vision and Light",
+"page": 11
+},
+{
+"level": 4,
+"title": "Hiding",
+"page": 11
+},
+{
+"level": 4,
+"title": "Interacting with Objects",
+"page": 11
+},
+{
+"level": 4,
+"title": "Hazards",
+"page": 11
+},
+{
+"level": 4,
+"title": "Travel",
+"page": 11
+},
+{
+"level": 3,
+"title": "Combat",
+"page": 12
+},
+{
+"level": 4,
+"title": "The Order of Combat",
+"page": 13
+},
+{
+"level": 4,
+"title": "Movement and Position",
+"page": 14
+},
+{
+"level": 4,
+"title": "Making an Attack",
+"page": 14
+},
+{
+"level": 4,
+"title": "Cover",
+"page": 15
+},
+{
+"level": 4,
+"title": "Ranged Attacks",
+"page": 15
+},
+{
+"level": 4,
+"title": "Melee Attacks",
+"page": 15
+},
+{
+"level": 4,
+"title": "Mounted Combat",
+"page": 15
+},
+{
+"level": 4,
+"title": "Underwater Combat",
+"page": 16
+},
+{
+"level": 3,
+"title": "Damage and Healing",
+"page": 16
+},
+{
+"level": 4,
+"title": "Hit Points",
+"page": 16
+},
+{
+"level": 4,
+"title": "Damage Rolls",
+"page": 16
+},
+{
+"level": 4,
+"title": "Critical Hits",
+"page": 16
+},
+{
+"level": 4,
+"title": "Saving Throws and Damage",
+"page": 16
+},
+{
+"level": 4,
+"title": "Damage Types",
+"page": 16
+},
+{
+"level": 4,
+"title": "Resistance and Vulnerability",
+"page": 17
+},
+{
+"level": 4,
+"title": "Immunity",
+"page": 17
+},
+{
+"level": 4,
+"title": "Healing",
+"page": 17
+},
+{
+"level": 4,
+"title": "Dropping to 0 Hit Points",
+"page": 17
+},
+{
+"level": 4,
+"title": "Temporary Hit Points",
+"page": 18
+},
+{
+"level": 2,
+"title": "Character Creation",
+"page": 19
+},
+{
+"level": 3,
+"title": "Choose a Character Sheet",
+"page": 19
+},
+{
+"level": 3,
+"title": "Create Your Character",
+"page": 19
+},
+{
+"level": 4,
+"title": "Step 1: Choose Class",
+"page": 19
+},
+{
+"level": 4,
+"title": "Step 2: Character Origin",
+"page": 19
+},
+{
+"level": 4,
+"title": "Step 3: Ability Scores",
+"page": 20
+},
+{
+"level": 4,
+"title": "Step 4: Alignment",
+"page": 21
+},
+{
+"level": 4,
+"title": "Step 5: Character Creation Details",
+"page": 22
+},
+{
+"level": 3,
+"title": "Level Advancement",
+"page": 23
+},
+{
+"level": 3,
+"title": "Starting at Higher Levels",
+"page": 24
+},
+{
+"level": 3,
+"title": "Multiclassing",
+"page": 24
+},
+{
+"level": 3,
+"title": "Trinkets",
+"page": 27
+},
+{
+"level": 2,
+"title": "Classes",
+"page": 28
+},
+{
+"level": 3,
+"title": "Barbarian",
+"page": 28
+},
+{
+"level": 4,
+"title": "Barbarian Subclass: Path of the Berserker",
+"page": 30
+},
+{
+"level": 3,
+"title": "Bard",
+"page": 31
+},
+{
+"level": 4,
+"title": "Bard Spell List",
+"page": 33
+},
+{
+"level": 4,
+"title": "Bard Subclass: College of Lore",
+"page": 35
+},
+{
+"level": 3,
+"title": "Cleric",
+"page": 36
+},
+{
+"level": 4,
+"title": "Cleric Spell List",
+"page": 38
+},
+{
+"level": 4,
+"title": "Cleric Subclass: Life Domain",
+"page": 40
+},
+{
+"level": 3,
+"title": "Druid",
+"page": 40
+},
+{
+"level": 4,
+"title": "Druid Spell List",
+"page": 44
+},
+{
+"level": 4,
+"title": "Druid Subclass: Circle of the Land",
+"page": 46
+},
+{
+"level": 3,
+"title": "Fighter",
+"page": 47
+},
+{
+"level": 4,
+"title": "Fighter Subclass: Champion",
+"page": 49
+},
+{
+"level": 3,
+"title": "Monk",
+"page": 49
+},
+{
+"level": 4,
+"title": "Monk Subclass: Warrior of the Open Hand",
+"page": 52
+},
+{
+"level": 3,
+"title": "Paladin",
+"page": 53
+},
+{
+"level": 4,
+"title": "Paladin Spell List",
+"page": 55
+},
+{
+"level": 4,
+"title": "Paladin Subclass: Oath of Devotion",
+"page": 56
+},
+{
+"level": 3,
+"title": "Ranger",
+"page": 56
+},
+{
+"level": 4,
+"title": "Ranger Spell List",
+"page": 60
+},
+{
+"level": 4,
+"title": "Ranger Subclass: Hunter",
+"page": 61
+},
+{
+"level": 3,
+"title": "Rogue",
+"page": 61
+},
+{
+"level": 4,
+"title": "Rogue Subclass: Thief",
+"page": 64
+},
+{
+"level": 3,
+"title": "Sorcerer",
+"page": 64
+},
+{
+"level": 4,
+"title": "Metamagic Options",
+"page": 66
+},
+{
+"level": 4,
+"title": "Sorcerer Spell List",
+"page": 67
+},
+{
+"level": 4,
+"title": "Sorcerer Subclass: Draconic Sorcery",
+"page": 69
+},
+{
+"level": 3,
+"title": "Warlock",
+"page": 69
+},
+{
+"level": 4,
+"title": "Eldritch Invocation Options",
+"page": 72
+},
+{
+"level": 4,
+"title": "Warlock Spell List",
+"page": 74
+},
+{
+"level": 4,
+"title": "Warlock Subclass: Fiend Patron",
+"page": 76
+},
+{
+"level": 3,
+"title": "Wizard",
+"page": 77
+},
+{
+"level": 4,
+"title": "Wizard Spell List",
+"page": 79
+},
+{
+"level": 4,
+"title": "Wizard Subclass: Evoker",
+"page": 82
+},
+{
+"level": 2,
+"title": "Character Origins",
+"page": 82
+},
+{
+"level": 3,
+"title": "Character Backgrounds",
+"page": 82
+},
+{
+"level": 4,
+"title": "Acolyte",
+"page": 83
+},
+{
+"level": 4,
+"title": "Criminal",
+"page": 83
+},
+{
+"level": 4,
+"title": "Sage",
+"page": 83
+},
+{
+"level": 4,
+"title": "Soldier",
+"page": 83
+},
+{
+"level": 3,
+"title": "Character Species",
+"page": 83
+},
+{
+"level": 4,
+"title": "Dragonborn",
+"page": 84
+},
+{
+"level": 4,
+"title": "Dwarf",
+"page": 84
+},
+{
+"level": 4,
+"title": "Elf",
+"page": 84
+},
+{
+"level": 4,
+"title": "Gnome",
+"page": 85
+},
+{
+"level": 4,
+"title": "Goliath",
+"page": 85
+},
+{
+"level": 4,
+"title": "Halfling",
+"page": 86
+},
+{
+"level": 4,
+"title": "Human",
+"page": 86
+},
+{
+"level": 4,
+"title": "Orc",
+"page": 86
+},
+{
+"level": 4,
+"title": "Tiefling",
+"page": 86
+},
+{
+"level": 2,
+"title": "Feats",
+"page": 86
+},
+{
+"level": 3,
+"title": "Feat Descriptions",
+"page": 86
+},
+{
+"level": 4,
+"title": "Origin Feats",
+"page": 87
+},
+{
+"level": 4,
+"title": "General Feats",
+"page": 87
+},
+{
+"level": 4,
+"title": "Fighting Style Feats",
+"page": 87
+},
+{
+"level": 4,
+"title": "Epic Boon Feats",
+"page": 88
+},
+{
+"level": 2,
+"title": "Equipment",
+"page": 88
+},
+{
+"level": 3,
+"title": "Coins",
+"page": 89
+},
+{
+"level": 3,
+"title": "Weapons",
+"page": 89
+},
+{
+"level": 4,
+"title": "Properties",
+"page": 89
+},
+{
+"level": 4,
+"title": "Mastery Properties",
+"page": 90
+},
+{
+"level": 3,
+"title": "Armor",
+"page": 92
+},
+{
+"level": 3,
+"title": "Tools",
+"page": 93
+},
+{
+"level": 3,
+"title": "Adventuring Gear",
+"page": 94
+},
+{
+"level": 3,
+"title": "Mounts and Vehicles",
+"page": 100
+},
+{
+"level": 3,
+"title": "Lifestyle Expenses",
+"page": 101
+},
+{
+"level": 3,
+"title": "Food, Drink, and Lodging",
+"page": 101
+},
+{
+"level": 3,
+"title": "Hirelings",
+"page": 102
+},
+{
+"level": 3,
+"title": "Spellcasting",
+"page": 102
+},
+{
+"level": 3,
+"title": "Magic Items",
+"page": 102
+},
+{
+"level": 3,
+"title": "Crafting Nonmagical Items",
+"page": 103
+},
+{
+"level": 3,
+"title": "Brewing Potions of Healing",
+"page": 103
+},
+{
+"level": 3,
+"title": "Scribing Spell Scrolls",
+"page": 103
+},
+{
+"level": 2,
+"title": "Spells",
+"page": 103
+},
+{
+"level": 3,
+"title": "Gaining Spells",
+"page": 103
+},
+{
+"level": 3,
+"title": "Casting Spells",
+"page": 104
+},
+{
+"level": 3,
+"title": "Spell Descriptions",
+"page": 106
+},
+{
+"level": 2,
+"title": "Rules Glossary",
+"page": 176
+},
+{
+"level": 2,
+"title": "Gameplay Toolbox",
+"page": 192
+},
+{
+"level": 3,
+"title": "Travel Pace",
+"page": 192
+},
+{
+"level": 3,
+"title": "Creating a Background",
+"page": 192
+},
+{
+"level": 3,
+"title": "Curses and Magical Contagions",
+"page": 193
+},
+{
+"level": 4,
+"title": "Curses",
+"page": 193
+},
+{
+"level": 4,
+"title": "Magical Contagions",
+"page": 193
+},
+{
+"level": 3,
+"title": "Environmental Effects",
+"page": 195
+},
+{
+"level": 3,
+"title": "Fear and Mental Stress",
+"page": 196
+},
+{
+"level": 4,
+"title": "Fear Effects",
+"page": 196
+},
+{
+"level": 4,
+"title": "Mental Stress Effects",
+"page": 196
+},
+{
+"level": 3,
+"title": "Poison",
+"page": 197
+},
+{
+"level": 3,
+"title": "Traps",
+"page": 198
+},
+{
+"level": 3,
+"title": "Combat Encounters",
+"page": 201
+},
+{
+"level": 2,
+"title": "Magic Items",
+"page": 204
+},
+{
+"level": 3,
+"title": "Magic Item Categories",
+"page": 204
+},
+{
+"level": 3,
+"title": "Magic Item Rarity",
+"page": 205
+},
+{
+"level": 3,
+"title": "Activating a Magic Item",
+"page": 206
+},
+{
+"level": 3,
+"title": "“The Next Dawn”",
+"page": 206
+},
+{
+"level": 3,
+"title": "Cursed Items",
+"page": 206
+},
+{
+"level": 3,
+"title": "Magic Item Resilience",
+"page": 206
+},
+{
+"level": 3,
+"title": "Crafting Magic Items",
+"page": 206
+},
+{
+"level": 3,
+"title": "Sentient Magic Items",
+"page": 207
+},
+{
+"level": 3,
+"title": "Magic Items A–Z",
+"page": 209
+},
+{
+"level": 2,
+"title": "Monsters",
+"page": 254
+},
+{
+"level": 3,
+"title": "Stat Block Overview",
+"page": 254
+},
+{
+"level": 3,
+"title": "Parts of a Stat Block",
+"page": 254
+},
+{
+"level": 3,
+"title": "Running a Monster",
+"page": 255
+},
+{
+"level": 2,
+"title": "Monsters A–Z",
+"page": 258
+},
+{
+"level": 3,
+"title": "Aboleth",
+"page": 258
+},
+{
+"level": 3,
+"title": "Air Elemental",
+"page": 258
+},
+{
+"level": 3,
+"title": "Animated Objects",
+"page": 259
+},
+{
+"level": 4,
+"title": "Animated Armor",
+"page": 259
+},
+{
+"level": 4,
+"title": "Animated Flying Sword",
+"page": 259
+},
+{
+"level": 4,
+"title": "Animated Rug of Smothering",
+"page": 259
+},
+{
+"level": 3,
+"title": "Ankheg",
+"page": 259
+},
+{
+"level": 3,
+"title": "Assassin",
+"page": 259
+},
+{
+"level": 3,
+"title": "Awakened Plants",
+"page": 260
+},
+{
+"level": 4,
+"title": "Awakened Shrub",
+"page": 260
+},
+{
+"level": 4,
+"title": "Awakened Tree",
+"page": 260
+},
+{
+"level": 3,
+"title": "Axe Beak",
+"page": 260
+},
+{
+"level": 3,
+"title": "Azer Sentinel",
+"page": 261
+},
+{
+"level": 3,
+"title": "Balor",
+"page": 261
+},
+{
+"level": 3,
+"title": "Bandits",
+"page": 261
+},
+{
+"level": 4,
+"title": "Bandit",
+"page": 261
+},
+{
+"level": 4,
+"title": "Bandit Captain",
+"page": 261
+},
+{
+"level": 3,
+"title": "Barbed Devil",
+"page": 262
+},
+{
+"level": 3,
+"title": "Basilisk",
+"page": 262
+},
+{
+"level": 3,
+"title": "Bearded Devil",
+"page": 262
+},
+{
+"level": 3,
+"title": "Behir",
+"page": 263
+},
+{
+"level": 3,
+"title": "Berserker",
+"page": 263
+},
+{
+"level": 3,
+"title": "Black Dragons",
+"page": 263
+},
+{
+"level": 4,
+"title": "Black Dragon Wyrmling",
+"page": 263
+},
+{
+"level": 4,
+"title": "Young Black Dragon",
+"page": 264
+},
+{
+"level": 4,
+"title": "Adult Black Dragon",
+"page": 264
+},
+{
+"level": 4,
+"title": "Ancient Black Dragon",
+"page": 264
+},
+{
+"level": 3,
+"title": "Black Pudding",
+"page": 265
+},
+{
+"level": 3,
+"title": "Blink Dog",
+"page": 265
+},
+{
+"level": 3,
+"title": "Blue Dragons",
+"page": 266
+},
+{
+"level": 4,
+"title": "Blue Dragon Wyrmling",
+"page": 266
+},
+{
+"level": 4,
+"title": "Young Blue Dragon",
+"page": 266
+},
+{
+"level": 4,
+"title": "Adult Blue Dragon",
+"page": 266
+},
+{
+"level": 4,
+"title": "Ancient Blue Dragon",
+"page": 267
+},
+{
+"level": 3,
+"title": "Bone Devil",
+"page": 267
+},
+{
+"level": 3,
+"title": "Brass Dragons",
+"page": 267
+},
+{
+"level": 4,
+"title": "Brass Dragon Wyrmling",
+"page": 267
+},
+{
+"level": 4,
+"title": "Young Brass Dragon",
+"page": 268
+},
+{
+"level": 4,
+"title": "Adult Brass Dragon",
+"page": 268
+},
+{
+"level": 4,
+"title": "Ancient Brass Dragon",
+"page": 269
+},
+{
+"level": 3,
+"title": "Bronze Dragons",
+"page": 269
+},
+{
+"level": 4,
+"title": "Bronze Dragon Wyrmling",
+"page": 269
+},
+{
+"level": 4,
+"title": "Young Bronze Dragon",
+"page": 270
+},
+{
+"level": 4,
+"title": "Adult Bronze Dragon",
+"page": 270
+},
+{
+"level": 4,
+"title": "Ancient Bronze Dragon",
+"page": 270
+},
+{
+"level": 3,
+"title": "Bugbears",
+"page": 271
+},
+{
+"level": 4,
+"title": "Bugbear Stalker",
+"page": 271
+},
+{
+"level": 4,
+"title": "Bugbear Warrior",
+"page": 271
+},
+{
+"level": 3,
+"title": "Bulette",
+"page": 272
+},
+{
+"level": 3,
+"title": "Centaur Trooper",
+"page": 272
+},
+{
+"level": 3,
+"title": "Chain Devil",
+"page": 272
+},
+{
+"level": 3,
+"title": "Chimera",
+"page": 273
+},
+{
+"level": 3,
+"title": "Chuul",
+"page": 273
+},
+{
+"level": 3,
+"title": "Clay Golem",
+"page": 274
+},
+{
+"level": 3,
+"title": "Cloaker",
+"page": 274
+},
+{
+"level": 3,
+"title": "Cloud Giant",
+"page": 274
+},
+{
+"level": 3,
+"title": "Cockatrice",
+"page": 275
+},
+{
+"level": 3,
+"title": "Commoner",
+"page": 275
+},
+{
+"level": 3,
+"title": "Copper Dragons",
+"page": 275
+},
+{
+"level": 4,
+"title": "Copper Dragon Wyrmling",
+"page": 275
+},
+{
+"level": 4,
+"title": "Young Copper Dragon",
+"page": 276
+},
+{
+"level": 4,
+"title": "Adult Copper Dragon",
+"page": 276
+},
+{
+"level": 4,
+"title": "Ancient Copper Dragon",
+"page": 277
+},
+{
+"level": 3,
+"title": "Couatl",
+"page": 277
+},
+{
+"level": 3,
+"title": "Crawling Claws, Swarm of",
+"page": 278
+},
+{
+"level": 3,
+"title": "Cultists",
+"page": 278
+},
+{
+"level": 4,
+"title": "Cultist",
+"page": 278
+},
+{
+"level": 4,
+"title": "Cultist Fanatic",
+"page": 278
+},
+{
+"level": 3,
+"title": "Darkmantle",
+"page": 278
+},
+{
+"level": 3,
+"title": "Death Dog",
+"page": 279
+},
+{
+"level": 3,
+"title": "Deva",
+"page": 279
+},
+{
+"level": 3,
+"title": "Djinni",
+"page": 280
+},
+{
+"level": 3,
+"title": "Doppelganger",
+"page": 280
+},
+{
+"level": 3,
+"title": "Dragon Turtle",
+"page": 281
+},
+{
+"level": 3,
+"title": "Dretch",
+"page": 281
+},
+{
+"level": 3,
+"title": "Drider",
+"page": 281
+},
+{
+"level": 3,
+"title": "Druid",
+"page": 282
+},
+{
+"level": 3,
+"title": "Dryad",
+"page": 282
+},
+{
+"level": 3,
+"title": "Earth Elemental",
+"page": 282
+},
+{
+"level": 3,
+"title": "Efreeti",
+"page": 282
+},
+{
+"level": 3,
+"title": "Erinyes",
+"page": 283
+},
+{
+"level": 3,
+"title": "Ettercap",
+"page": 284
+},
+{
+"level": 3,
+"title": "Ettin",
+"page": 284
+},
+{
+"level": 3,
+"title": "Fire Elemental",
+"page": 284
+},
+{
+"level": 3,
+"title": "Fire Giant",
+"page": 285
+},
+{
+"level": 3,
+"title": "Flesh Golem",
+"page": 285
+},
+{
+"level": 3,
+"title": "Frost Giant",
+"page": 285
+},
+{
+"level": 3,
+"title": "Fungi",
+"page": 286
+},
+{
+"level": 4,
+"title": "Shrieker Fungus",
+"page": 286
+},
+{
+"level": 4,
+"title": "Violet Fungus",
+"page": 286
+},
+{
+"level": 3,
+"title": "Gargoyle",
+"page": 286
+},
+{
+"level": 3,
+"title": "Gelatinous Cube",
+"page": 286
+},
+{
+"level": 3,
+"title": "Ghast",
+"page": 287
+},
+{
+"level": 3,
+"title": "Ghost",
+"page": 287
+},
+{
+"level": 3,
+"title": "Ghoul",
+"page": 288
+},
+{
+"level": 3,
+"title": "Gibbering Mouther",
+"page": 288
+},
+{
+"level": 3,
+"title": "Glabrezu",
+"page": 288
+},
+{
+"level": 3,
+"title": "Gladiator",
+"page": 289
+},
+{
+"level": 3,
+"title": "Gnoll Warrior",
+"page": 289
+},
+{
+"level": 3,
+"title": "Goblins",
+"page": 290
+},
+{
+"level": 4,
+"title": "Goblin Minion",
+"page": 290
+},
+{
+"level": 4,
+"title": "Goblin Warrior",
+"page": 290
+},
+{
+"level": 4,
+"title": "Goblin Boss",
+"page": 290
+},
+{
+"level": 3,
+"title": "Gold Dragons",
+"page": 290
+},
+{
+"level": 4,
+"title": "Gold Dragon Wyrmling",
+"page": 290
+},
+{
+"level": 4,
+"title": "Young Gold Dragon",
+"page": 291
+},
+{
+"level": 4,
+"title": "Adult Gold Dragon",
+"page": 291
+},
+{
+"level": 4,
+"title": "Ancient Gold Dragon",
+"page": 292
+},
+{
+"level": 3,
+"title": "Gorgon",
+"page": 292
+},
+{
+"level": 3,
+"title": "Gray Ooze",
+"page": 293
+},
+{
+"level": 3,
+"title": "Green Dragons",
+"page": 293
+},
+{
+"level": 4,
+"title": "Green Dragon Wyrmling",
+"page": 293
+},
+{
+"level": 4,
+"title": "Young Green Dragon",
+"page": 293
+},
+{
+"level": 4,
+"title": "Adult Green Dragon",
+"page": 294
+},
+{
+"level": 4,
+"title": "Ancient Green Dragon",
+"page": 294
+},
+{
+"level": 3,
+"title": "Green Hag",
+"page": 295
+},
+{
+"level": 3,
+"title": "Grick",
+"page": 295
+},
+{
+"level": 3,
+"title": "Griffon",
+"page": 295
+},
+{
+"level": 3,
+"title": "Grimlock",
+"page": 296
+},
+{
+"level": 3,
+"title": "Guardian Naga",
+"page": 296
+},
+{
+"level": 3,
+"title": "Guards",
+"page": 296
+},
+{
+"level": 4,
+"title": "Guard",
+"page": 296
+},
+{
+"level": 4,
+"title": "Guard Captain",
+"page": 296
+},
+{
+"level": 3,
+"title": "Half-Dragon",
+"page": 297
+},
+{
+"level": 3,
+"title": "Harpy",
+"page": 297
+},
+{
+"level": 3,
+"title": "Hell Hound",
+"page": 297
+},
+{
+"level": 3,
+"title": "Hezrou",
+"page": 298
+},
+{
+"level": 3,
+"title": "Hill Giant",
+"page": 298
+},
+{
+"level": 3,
+"title": "Hippogriff",
+"page": 298
+},
+{
+"level": 3,
+"title": "Hobgoblins",
+"page": 298
+},
+{
+"level": 4,
+"title": "Hobgoblin Warrior",
+"page": 298
+},
+{
+"level": 4,
+"title": "Hobgoblin Captain",
+"page": 299
+},
+{
+"level": 3,
+"title": "Homunculus",
+"page": 299
+},
+{
+"level": 3,
+"title": "Horned Devil",
+"page": 299
+},
+{
+"level": 3,
+"title": "Hydra",
+"page": 300
+},
+{
+"level": 3,
+"title": "Ice Devil",
+"page": 300
+},
+{
+"level": 3,
+"title": "Imp",
+"page": 300
+},
+{
+"level": 3,
+"title": "Incubus",
+"page": 301
+},
+{
+"level": 3,
+"title": "Invisible Stalker",
+"page": 301
+},
+{
+"level": 3,
+"title": "Iron Golem",
+"page": 302
+},
+{
+"level": 3,
+"title": "Knight",
+"page": 302
+},
+{
+"level": 3,
+"title": "Kobold Warrior",
+"page": 302
+},
+{
+"level": 3,
+"title": "Kraken",
+"page": 303
+},
+{
+"level": 3,
+"title": "Lamia",
+"page": 303
+},
+{
+"level": 3,
+"title": "Lemure",
+"page": 304
+},
+{
+"level": 3,
+"title": "Lich",
+"page": 304
+},
+{
+"level": 3,
+"title": "Mages",
+"page": 305
+},
+{
+"level": 4,
+"title": "Mage",
+"page": 305
+},
+{
+"level": 4,
+"title": "Archmage",
+"page": 305
+},
+{
+"level": 3,
+"title": "Magmin",
+"page": 305
+},
+{
+"level": 3,
+"title": "Manticore",
+"page": 306
+},
+{
+"level": 3,
+"title": "Marilith",
+"page": 306
+},
+{
+"level": 3,
+"title": "Medusa",
+"page": 306
+},
+{
+"level": 3,
+"title": "Mephits",
+"page": 307
+},
+{
+"level": 4,
+"title": "Dust Mephit",
+"page": 307
+},
+{
+"level": 4,
+"title": "Ice Mephit",
+"page": 307
+},
+{
+"level": 4,
+"title": "Magma Mephit",
+"page": 307
+},
+{
+"level": 4,
+"title": "Steam Mephit",
+"page": 308
+},
+{
+"level": 3,
+"title": "Merfolk Skirmisher",
+"page": 308
+},
+{
+"level": 3,
+"title": "Merrow",
+"page": 308
+},
+{
+"level": 3,
+"title": "Mimic",
+"page": 308
+},
+{
+"level": 3,
+"title": "Minotaur of Baphomet",
+"page": 309
+},
+{
+"level": 3,
+"title": "Mummies",
+"page": 309
+},
+{
+"level": 4,
+"title": "Mummy",
+"page": 309
+},
+{
+"level": 4,
+"title": "Mummy Lord",
+"page": 309
+},
+{
+"level": 3,
+"title": "Nalfeshnee",
+"page": 310
+},
+{
+"level": 3,
+"title": "Night Hag",
+"page": 311
+},
+{
+"level": 3,
+"title": "Nightmare",
+"page": 311
+},
+{
+"level": 3,
+"title": "Noble",
+"page": 312
+},
+{
+"level": 3,
+"title": "Ochre Jelly",
+"page": 312
+},
+{
+"level": 3,
+"title": "Ogre",
+"page": 312
+},
+{
+"level": 3,
+"title": "Oni",
+"page": 312
+},
+{
+"level": 3,
+"title": "Otyugh",
+"page": 313
+},
+{
+"level": 3,
+"title": "Owlbear",
+"page": 313
+},
+{
+"level": 3,
+"title": "Pegasus",
+"page": 313
+},
+{
+"level": 3,
+"title": "Phase Spider",
+"page": 313
+},
+{
+"level": 3,
+"title": "Pirates",
+"page": 314
+},
+{
+"level": 4,
+"title": "Pirate",
+"page": 314
+},
+{
+"level": 4,
+"title": "Pirate Captain",
+"page": 314
+},
+{
+"level": 3,
+"title": "Pit Fiend",
+"page": 314
+},
+{
+"level": 3,
+"title": "Planetar",
+"page": 315
+},
+{
+"level": 3,
+"title": "Priests",
+"page": 316
+},
+{
+"level": 4,
+"title": "Priest Acolyte",
+"page": 316
+},
+{
+"level": 4,
+"title": "Priest",
+"page": 316
+},
+{
+"level": 3,
+"title": "Pseudodragon",
+"page": 316
+},
+{
+"level": 3,
+"title": "Purple Worm",
+"page": 316
+},
+{
+"level": 3,
+"title": "Quasit",
+"page": 317
+},
+{
+"level": 3,
+"title": "Rakshasa",
+"page": 317
+},
+{
+"level": 3,
+"title": "Red Dragons",
+"page": 318
+},
+{
+"level": 4,
+"title": "Red Dragon Wyrmling",
+"page": 318
+},
+{
+"level": 4,
+"title": "Young Red Dragon",
+"page": 318
+},
+{
+"level": 4,
+"title": "Adult Red Dragon",
+"page": 318
+},
+{
+"level": 4,
+"title": "Ancient Red Dragon",
+"page": 319
+},
+{
+"level": 3,
+"title": "Remorhaz",
+"page": 319
+},
+{
+"level": 3,
+"title": "Roc",
+"page": 320
+},
+{
+"level": 3,
+"title": "Roper",
+"page": 320
+},
+{
+"level": 3,
+"title": "Rust Monster",
+"page": 320
+},
+{
+"level": 3,
+"title": "Sahuagin Warrior",
+"page": 321
+},
+{
+"level": 3,
+"title": "Salamander",
+"page": 321
+},
+{
+"level": 3,
+"title": "Satyr",
+"page": 321
+},
+{
+"level": 3,
+"title": "Scout",
+"page": 322
+},
+{
+"level": 3,
+"title": "Sea Hag",
+"page": 322
+},
+{
+"level": 3,
+"title": "Shadow",
+"page": 322
+},
+{
+"level": 3,
+"title": "Shambling Mound",
+"page": 323
+},
+{
+"level": 3,
+"title": "Shield Guardian",
+"page": 323
+},
+{
+"level": 3,
+"title": "Silver Dragons",
+"page": 324
+},
+{
+"level": 4,
+"title": "Silver Dragon Wyrmling",
+"page": 324
+},
+{
+"level": 4,
+"title": "Young Silver Dragon",
+"page": 324
+},
+{
+"level": 4,
+"title": "Adult Silver Dragon",
+"page": 324
+},
+{
+"level": 4,
+"title": "Ancient Silver Dragon",
+"page": 325
+},
+{
+"level": 3,
+"title": "Skeletons",
+"page": 325
+},
+{
+"level": 4,
+"title": "Skeleton",
+"page": 325
+},
+{
+"level": 4,
+"title": "Warhorse Skeleton",
+"page": 325
+},
+{
+"level": 4,
+"title": "Minotaur Skeleton",
+"page": 325
+},
+{
+"level": 3,
+"title": "Solar",
+"page": 326
+},
+{
+"level": 3,
+"title": "Specter",
+"page": 327
+},
+{
+"level": 3,
+"title": "Sphinxes",
+"page": 327
+},
+{
+"level": 4,
+"title": "Sphinx of Wonder",
+"page": 327
+},
+{
+"level": 4,
+"title": "Sphinx of Lore",
+"page": 327
+},
+{
+"level": 4,
+"title": "Sphinx of Valor",
+"page": 328
+},
+{
+"level": 3,
+"title": "Spirit Naga",
+"page": 329
+},
+{
+"level": 3,
+"title": "Sprite",
+"page": 329
+},
+{
+"level": 3,
+"title": "Spy",
+"page": 329
+},
+{
+"level": 3,
+"title": "Stirge",
+"page": 329
+},
+{
+"level": 3,
+"title": "Stone Giant",
+"page": 330
+},
+{
+"level": 3,
+"title": "Stone Golem",
+"page": 330
+},
+{
+"level": 3,
+"title": "Storm Giant",
+"page": 330
+},
+{
+"level": 3,
+"title": "Succubus",
+"page": 331
+},
+{
+"level": 3,
+"title": "Tarrasque",
+"page": 331
+},
+{
+"level": 3,
+"title": "Toughs",
+"page": 332
+},
+{
+"level": 4,
+"title": "Tough",
+"page": 332
+},
+{
+"level": 4,
+"title": "Tough Boss",
+"page": 332
+},
+{
+"level": 3,
+"title": "Treant",
+"page": 333
+},
+{
+"level": 3,
+"title": "Troll",
+"page": 333
+},
+{
+"level": 3,
+"title": "Troll Limb",
+"page": 333
+},
+{
+"level": 3,
+"title": "Unicorn",
+"page": 334
+},
+{
+"level": 3,
+"title": "Vampires",
+"page": 334
+},
+{
+"level": 4,
+"title": "Vampire Familiar",
+"page": 334
+},
+{
+"level": 4,
+"title": "Vampire Spawn",
+"page": 334
+},
+{
+"level": 4,
+"title": "Vampire",
+"page": 335
+},
+{
+"level": 3,
+"title": "Vrock",
+"page": 336
+},
+{
+"level": 3,
+"title": "Warriors",
+"page": 336
+},
+{
+"level": 3,
+"title": "Warrior Infantry",
+"page": 336
+},
+{
+"level": 3,
+"title": "Warrior Veteran",
+"page": 337
+},
+{
+"level": 3,
+"title": "Water Elemental",
+"page": 337
+},
+{
+"level": 3,
+"title": "Werebear",
+"page": 337
+},
+{
+"level": 3,
+"title": "Wereboar",
+"page": 338
+},
+{
+"level": 3,
+"title": "Wererat",
+"page": 338
+},
+{
+"level": 3,
+"title": "Weretiger",
+"page": 339
+},
+{
+"level": 3,
+"title": "Werewolf",
+"page": 339
+},
+{
+"level": 3,
+"title": "White Dragons",
+"page": 339
+},
+{
+"level": 4,
+"title": "White Dragon Wyrmling",
+"page": 339
+},
+{
+"level": 4,
+"title": "Young White Dragon",
+"page": 340
+},
+{
+"level": 4,
+"title": "Adult White Dragon",
+"page": 340
+},
+{
+"level": 4,
+"title": "Ancient White Dragon",
+"page": 341
+},
+{
+"level": 3,
+"title": "Wight",
+"page": 341
+},
+{
+"level": 3,
+"title": "Will-o’-Wisp",
+"page": 341
+},
+{
+"level": 3,
+"title": "Winter Wolf",
+"page": 342
+},
+{
+"level": 3,
+"title": "Worg",
+"page": 342
+},
+{
+"level": 3,
+"title": "Wraith",
+"page": 342
+},
+{
+"level": 3,
+"title": "Wyvern",
+"page": 343
+},
+{
+"level": 3,
+"title": "Xorn",
+"page": 343
+},
+{
+"level": 3,
+"title": "Zombies",
+"page": 343
+},
+{
+"level": 4,
+"title": "Zombie",
+"page": 343
+},
+{
+"level": 4,
+"title": "Ogre Zombie",
+"page": 344
+},
+{
+"level": 2,
+"title": "Animals",
+"page": 344
+},
+{
+"level": 3,
+"title": "Allosaurus",
+"page": 344
+},
+{
+"level": 3,
+"title": "Ankylosaurus",
+"page": 344
+},
+{
+"level": 3,
+"title": "Ape",
+"page": 344
+},
+{
+"level": 3,
+"title": "Archelon",
+"page": 344
+},
+{
+"level": 3,
+"title": "Baboon",
+"page": 345
+},
+{
+"level": 3,
+"title": "Badger",
+"page": 345
+},
+{
+"level": 3,
+"title": "Bat",
+"page": 345
+},
+{
+"level": 3,
+"title": "Black Bear",
+"page": 345
+},
+{
+"level": 3,
+"title": "Blood Hawk",
+"page": 345
+},
+{
+"level": 3,
+"title": "Boar",
+"page": 346
+},
+{
+"level": 3,
+"title": "Brown Bear",
+"page": 346
+},
+{
+"level": 3,
+"title": "Camel",
+"page": 346
+},
+{
+"level": 3,
+"title": "Cat",
+"page": 346
+},
+{
+"level": 3,
+"title": "Constrictor Snake",
+"page": 346
+},
+{
+"level": 3,
+"title": "Crab",
+"page": 347
+},
+{
+"level": 3,
+"title": "Crocodile",
+"page": 347
+},
+{
+"level": 3,
+"title": "Deer",
+"page": 347
+},
+{
+"level": 3,
+"title": "Dire Wolf",
+"page": 347
+},
+{
+"level": 3,
+"title": "Draft Horse",
+"page": 347
+},
+{
+"level": 3,
+"title": "Eagle",
+"page": 348
+},
+{
+"level": 3,
+"title": "Elephant",
+"page": 348
+},
+{
+"level": 3,
+"title": "Elk",
+"page": 348
+},
+{
+"level": 3,
+"title": "Flying Snake",
+"page": 348
+},
+{
+"level": 3,
+"title": "Frog",
+"page": 348
+},
+{
+"level": 3,
+"title": "Giant Ape",
+"page": 349
+},
+{
+"level": 3,
+"title": "Giant Badger",
+"page": 349
+},
+{
+"level": 3,
+"title": "Giant Bat",
+"page": 349
+},
+{
+"level": 3,
+"title": "Giant Boar",
+"page": 349
+},
+{
+"level": 3,
+"title": "Giant Centipede",
+"page": 349
+},
+{
+"level": 3,
+"title": "Giant Constrictor Snake",
+"page": 350
+},
+{
+"level": 3,
+"title": "Giant Crab",
+"page": 350
+},
+{
+"level": 3,
+"title": "Giant Crocodile",
+"page": 350
+},
+{
+"level": 3,
+"title": "Giant Eagle",
+"page": 350
+},
+{
+"level": 3,
+"title": "Giant Elk",
+"page": 351
+},
+{
+"level": 3,
+"title": "Giant Fire Beetle",
+"page": 351
+},
+{
+"level": 3,
+"title": "Giant Frog",
+"page": 351
+},
+{
+"level": 3,
+"title": "Giant Goat",
+"page": 351
+},
+{
+"level": 3,
+"title": "Giant Hyena",
+"page": 352
+},
+{
+"level": 3,
+"title": "Giant Lizard",
+"page": 352
+},
+{
+"level": 3,
+"title": "Giant Octopus",
+"page": 352
+},
+{
+"level": 3,
+"title": "Giant Owl",
+"page": 352
+},
+{
+"level": 3,
+"title": "Giant Rat",
+"page": 353
+},
+{
+"level": 3,
+"title": "Giant Scorpion",
+"page": 353
+},
+{
+"level": 3,
+"title": "Giant Seahorse",
+"page": 353
+},
+{
+"level": 3,
+"title": "Giant Shark",
+"page": 353
+},
+{
+"level": 3,
+"title": "Giant Spider",
+"page": 353
+},
+{
+"level": 3,
+"title": "Giant Toad",
+"page": 354
+},
+{
+"level": 3,
+"title": "Giant Venomous Snake",
+"page": 354
+},
+{
+"level": 3,
+"title": "Giant Vulture",
+"page": 354
+},
+{
+"level": 3,
+"title": "Giant Wasp",
+"page": 354
+},
+{
+"level": 3,
+"title": "Giant Weasel",
+"page": 355
+},
+{
+"level": 3,
+"title": "Giant Wolf Spider",
+"page": 355
+},
+{
+"level": 3,
+"title": "Goat",
+"page": 355
+},
+{
+"level": 3,
+"title": "Hawk",
+"page": 355
+},
+{
+"level": 3,
+"title": "Hippopotamus",
+"page": 355
+},
+{
+"level": 3,
+"title": "Hunter Shark",
+"page": 356
+},
+{
+"level": 3,
+"title": "Hyena",
+"page": 356
+},
+{
+"level": 3,
+"title": "Jackal",
+"page": 356
+},
+{
+"level": 3,
+"title": "Killer Whale",
+"page": 356
+},
+{
+"level": 3,
+"title": "Lion",
+"page": 356
+},
+{
+"level": 3,
+"title": "Lizard",
+"page": 356
+},
+{
+"level": 3,
+"title": "Mammoth",
+"page": 357
+},
+{
+"level": 3,
+"title": "Mastiff",
+"page": 357
+},
+{
+"level": 3,
+"title": "Mule",
+"page": 357
+},
+{
+"level": 3,
+"title": "Octopus",
+"page": 357
+},
+{
+"level": 3,
+"title": "Owl",
+"page": 358
+},
+{
+"level": 3,
+"title": "Panther",
+"page": 358
+},
+{
+"level": 3,
+"title": "Piranha",
+"page": 358
+},
+{
+"level": 3,
+"title": "Plesiosaurus",
+"page": 358
+},
+{
+"level": 3,
+"title": "Polar Bear",
+"page": 358
+},
+{
+"level": 3,
+"title": "Pony",
+"page": 359
+},
+{
+"level": 3,
+"title": "Pteranodon",
+"page": 359
+},
+{
+"level": 3,
+"title": "Rat",
+"page": 359
+},
+{
+"level": 3,
+"title": "Raven",
+"page": 359
+},
+{
+"level": 3,
+"title": "Reef Shark",
+"page": 360
+},
+{
+"level": 3,
+"title": "Rhinoceros",
+"page": 360
+},
+{
+"level": 3,
+"title": "Riding Horse",
+"page": 360
+},
+{
+"level": 3,
+"title": "Saber-Toothed Tiger",
+"page": 360
+},
+{
+"level": 3,
+"title": "Scorpion",
+"page": 360
+},
+{
+"level": 3,
+"title": "Seahorse",
+"page": 361
+},
+{
+"level": 3,
+"title": "Spider",
+"page": 361
+},
+{
+"level": 3,
+"title": "Swarm of Bats",
+"page": 361
+},
+{
+"level": 3,
+"title": "Swarm of Insects",
+"page": 361
+},
+{
+"level": 3,
+"title": "Swarm of Piranhas",
+"page": 361
+},
+{
+"level": 3,
+"title": "Swarm of Rats",
+"page": 362
+},
+{
+"level": 3,
+"title": "Swarm of Ravens",
+"page": 362
+},
+{
+"level": 3,
+"title": "Swarm of Venomous Snakes",
+"page": 362
+},
+{
+"level": 3,
+"title": "Tiger",
+"page": 363
+},
+{
+"level": 3,
+"title": "Triceratops",
+"page": 363
+},
+{
+"level": 3,
+"title": "Tyrannosaurus Rex",
+"page": 363
+},
+{
+"level": 3,
+"title": "Venomous Snake",
+"page": 363
+},
+{
+"level": 3,
+"title": "Vulture",
+"page": 363
+},
+{
+"level": 3,
+"title": "Warhorse",
+"page": 364
+},
+{
+"level": 3,
+"title": "Weasel",
+"page": 364
+},
+{
+"level": 3,
+"title": "Wolf",
+"page": 364
+}
+]

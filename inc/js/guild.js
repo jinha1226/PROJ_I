@@ -113,12 +113,13 @@ G.Guild = (() => {
     },
     // ── 장비 (DESIGN.md 57): 무기 · 갑옷 강화 단계 m.gear = { w, a }. 끝없이 오르고, 10단계마다 마법 +1(명중 · AC, 최대 +3) ──
     gear: m => m.gear || (m.gear = { w: 0, a: 0 }),
+    gearK: GEAR_K,
     magic: n => Math.min(3, Math.floor(n / 10)),
     gearCost: (m, slot) => Math.ceil(GEAR_BASE * (CLS_W[m.cls] || 1) * Math.pow(GEAR_G, Gd.gear(m)[slot]) * (1 - 0.08 * Gd.jobPow(null, 'smith'))),
     // 장비 이름 (DESIGN.md 58): 아티팩트를 끼면 그 이름. 방패 직업의 무기 칸은 「무기 + 방패」 — 마법 무기 + 방패 / 무기 + 마법 방패
     gearName(m, slot) {
-      const g = D.GEAR[m.cls] || D.GEAR.archer, mg = Gd.magic(Gd.gear(m)[slot]), art = slot === 'w' ? G.Trinket.weapon(m) : G.Trinket.armor(m), pre = mg ? '+' + mg + ' ' : '';
-      if (slot !== 'w' || !G.Dnd.cls(m).shield) return pre + (art ? G.Trinket.name(art) : g[slot][0]);
+      const SR = G.SRD, g = { w: [SR.weaponOf(m).n], a: [SR.armorOf(m).cat === 'none' && (m.cls === 'barbarian' || m.cls === 'monk') ? '비무장 방어' : SR.armorOf(m).n] }, mg = Gd.magic(Gd.gear(m)[slot]), art = slot === 'w' ? G.Trinket.weapon(m) : G.Trinket.armor(m), pre = mg ? '+' + mg + ' ' : '';
+      if (slot !== 'w' || !SR.eq(m).shield) return pre + (art ? G.Trinket.name(art) : g[slot][0]);
       if (art && G.Trinket.def(art).shield) return `${pre}${g.w[0]} + ${G.Trinket.name(art)}`;
       return `${pre}${art ? G.Trinket.name(art) : g.w[0]} + 방패`;
     },
@@ -174,8 +175,8 @@ G.Guild = (() => {
     skillLv: m => Math.min(5, 1 + Math.floor(((m?.lv || 1) - 1) / 3)),
     // 쓸 수 있는 기술: 열린 칸 + 서브클래스 기능 중 그 레벨이 된 것
     // + 마법 입문 (출신 재주) 주문
-    picks: m => { const sig = m.adv ? D.ADV[m.adv].sig.filter(k => m.lv >= Gd.skLv(m.cls, k) && Gd.isPick(k)) : []; return [...new Set(sig.concat(Gd.slots(m), G.Feat.spell(m) || [], G.Res.species(m) === 'dragonborn' ? ['sr_breath'] : []))].slice(0, SKILL_N); },
-    active: m => { const x = G.Pool.of(m); return [...new Set(Gd.picks(m).concat(Gd.traits(m), x ? [x] : []))]; },
+    picks: m => { const sig = m.adv ? D.ADV[m.adv].sig.filter(k => m.lv >= Gd.skLv(m.cls, k) && Gd.isPick(k)) : []; return [...new Set(sig.concat(Gd.slots(m), G.Feat.spell(m) || []))].slice(0, SKILL_N); },
+    active: m => { const x = G.Pool.of(m); return [...new Set(Gd.picks(m).concat(Gd.traits(m), x ? [x] : [], G.SrdX ? G.SrdX.skills(m) : []))]; },
     // 기술 쓰는 순서: 사람이 정했으면 그 순서(왼쪽부터), 아니면 큰 것부터
     order(m, list) { const pri = m.skPri, rank = k => { const i = pri ? pri.indexOf(k) : -1; return i >= 0 ? i : pri ? 99 : -G.Res.cost(m, G.Skill.SK[k]?.res); }; return list.map((k, i) => [k, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]); },
     // 이 기술을 맨 앞으로

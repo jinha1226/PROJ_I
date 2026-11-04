@@ -9,12 +9,15 @@ G.Event = (() => {
     swamp: ['altar', 'ruin', 'ruin', 'thicket', 'thicket'], // 야외: 천장 · 복도 · 철창 사건은 나오지 않는다
   };
   const NAMES = { crypt: '납골당', prison: '감옥', library: '서고', altar: '제단', treasury: '보물고', cave: '동굴', collapsed: '무너진 방', ruin: '폐허', thicket: '수풀' };
+  // 방침: pass = 판정을 고를 성공률(%), risk = 판정 없이 위험을 감수하는 선택에 대한 태도, leave = 지나가기, fit = 방침에 맞는 선택지 가산, pers = 성격의 무게
+  const POLICY = { party: { pass: 55, risk: -0.5, leave: 0.5, fit: 0.5, pers: 0.5 }, careful: { pass: 70, risk: -3, leave: 1, fit: 0.5, pers: 0.1 }, bold: { pass: 30, risk: 1, leave: -1, fit: 3, pers: 0.25 }, coin: { pass: 45, risk: 0.5, leave: 0, fit: 3, pers: 0.25 } };
+  const LOG_MAX = 300;
   const CHAIN_K = 10, START_K = 1;
   const SALT = { tag: 0x51a7, slot: 0x2b1d, pick: 0x77e3, id: 0x1c0f }, TYPE_K = 0.5, TYPE_RECENT = 2;
   const rng = (f, fl, what, n = 0) => G.Grid.seeded(Math.imul(G.Season.st(f).seed ^ SALT[what], 31) + fl * 7919 + n * 104729);
   // SRD 함정표: 레벨 구간 [1~4, 5~10, 11~16, 17~20]
   const tier = lv => (lv >= 17 ? 3 : lv >= 11 ? 2 : lv >= 5 ? 1 : 0);
-  const BOSS_K = { broken: 4, def: 8, ignored: 12 }, BOSS_ATK = { broken: 1.5, def: 3, ignored: 4 }, BOSS_BAND = { broken: 0, def: 2, ignored: 4 };
+  const BOSS_K = { broken: 2, def: 4, ignored: 6 }, BOSS_ATK = { broken: 1.5, def: 3, ignored: 4 }, BOSS_BAND = { broken: 0, def: 2, ignored: 4 };
   const ROOF = { d: [2, 4, 10, 18], dc: [13, 15, 17, 19] }, DART = [1, 2, 4, 7], FALL = [1, 3, 6, 12], STATUE = [2, 4, 10, 18], NEEDLE = { d: [1, 2, 4, 10], dc: [11, 13, 15, 17] }, NET_DC = [10, 12, 14, 16];
 
   // ── 사건 데이터 ──
@@ -26,7 +29,8 @@ G.Event = (() => {
     SCENE('hoard', 'discovery', ['treasury', 'crypt', 'ruin'], 3), SCENE('captive', 'encounter', ['prison'], 4),
     SCENE('mercy', 'encounter', [], 1.5), { ...SCENE('quarrel', 'party', [], 4), when: (f, c) => c.quarrel },
     // 무너지는 천장 (SRD Collapsing Roof): 줄을 찾으면 그냥 끊는다 (DC 11 지각) · 실패하면 민첩 내성, 성공해도 절반
-    { id: 'roof', type: 'hazard', tags: ['collapsed', 'cave', 'treasury'], w: 3, cool: 5, prop: 'hoard', propOpt: { plain: true }, n: '금 간 천장', open: '기둥 사이에 금화 자루가 있다. 바닥 가까이에 가는 줄이 보이는 듯하다.',
+    { id: 'roof', type: 'hazard', tags: ['collapsed', 'cave', 'treasury'], w: 3, cool: 5, prop: 'hoard', propOpt: { plain: true },
+      vary: { treasury: { n: '걸린 자루', open: '금화 자루 밑에 줄이 매여 있다. 줄은 천장의 종까지 이어진다.', choices: { 0: { lose: { ops: [['ambush', 2]], state: 'taken', dm: '종이 울린다. 발소리가 몰려온다!', log: '{who} 줄을 건드려 경보가 울렸다.' } }, 1: { sub: '금화 ×8 · 적이 몰려온다', win: { ops: [['gold', 8], ['ambush', 2]], state: 'taken', dm: '자루를 낚아채자 종이 울린다!', log: '경보를 울리며 금화 자루를 들고 뛰었다.' } } } }, cave: { n: '흔들리는 바위', open: '금화 자루 위로 바위들이 위태롭게 얹혀 있다. 받침돌에 줄이 감겨 있다.' } }, n: '금 간 천장', open: '기둥 사이에 금화 자루가 있다. 바닥 가까이에 가는 줄이 보이는 듯하다.',
       choices: [
         { label: '줄부터 찾는다', check: { sk: 'perception', dc: 11, what: '줄 찾기' }, pol: ['careful', 'party'], pers: { careful: 2 },
           win: { ops: [['gold', 5]], state: 'taken', dm: '줄을 끊었다. 기둥은 그대로 서 있다.', log: '{who} 천장을 무너뜨릴 줄을 찾아 끊었다.' }, lose: { ops: [['roof']], state: 'taken', dm: '발끝에 줄이 걸렸다. 천장이 내려앉는다!', log: '{who} 줄을 건드려 천장이 무너졌다.' } },
@@ -38,11 +42,12 @@ G.Event = (() => {
       choices: [
         { label: '구멍을 찾아 막는다', check: { sk: 'perception', dc: 15, what: '구멍 찾기' }, pol: ['careful', 'party'], pers: { careful: 2 },
           win: { ops: [['relic']], dm: '구멍을 전부 막았다. 궤짝까지 조용하다.', log: '{who} 독침 구멍을 모두 막고 궤짝을 열었다.' }, lose: { ops: [['darts']], dm: '딸깍. 벽에서 독침이 쏟아진다!', log: '{who} 발판을 밟아 독침이 쏟아졌다.' } },
-        { label: '달려가 궤짝을 연다', sub: '궤짝 · 전원 민첩 내성', pol: ['bold'], pers: { hothead: 2 }, win: { ops: [['darts'], ['relic']], dm: '독침을 맞으며 궤짝까지 달렸다.', log: '독침을 뚫고 궤짝을 열었다.' } },
+        { label: '달려가 쓸어 담는다', sub: '금화 ×8 · 전원 민첩 내성', pol: ['bold'], pers: { hothead: 2 }, win: { ops: [['darts'], ['gold', 8]], dm: '독침을 맞으며 궤짝을 부쉈다. 금화만 건졌다.', log: '독침을 뚫고 궤짝의 금화를 쓸어 담았다.' } },
         { label: '둔다', leave: true, win: { dm: '구멍 앞을 지나치지 않기로 했다.' } },
       ] },
     // 봉인 문자: 비전학의 자리. 마법 탐지가 있으면 이점 (읽을 곳이 보인다)
-    { id: 'seal', type: 'discovery', tags: ['library', 'altar', 'crypt', 'ruin'], w: 3, cool: 5, prop: 'shrine', n: '봉인 문자', open: '돌판에 문자가 새겨져 있고, 그 밑에서 희미하게 빛이 샌다.',
+    { id: 'seal', type: 'discovery', tags: ['library', 'altar', 'crypt', 'ruin'], w: 3, cool: 5, prop: 'shrine',
+      vary: { library: { n: '옛글 돌판', open: '서가 사이 돌판에 옛글이 빽빽하다. 그 밑에서 빛이 샌다.', choices: { 0: { label: '옛글을 해독한다', check: { sk: 'investigation', dc: 15, what: '해독', advX: 'x_detect' }, cls: ['mage', 'archmage', 'bard', 'rogue'] } } }, altar: { n: '제단의 기도문', open: '제단 돌판에 기도문이 새겨져 있다. 끝 구절만 지워져 있다.', choices: { 0: { label: '기도문을 잇는다', check: { sk: 'religion', dc: 15, what: '기도문', advX: 'x_detect' }, cls: ['cleric', 'paladin'] } } } }, n: '봉인 문자', open: '돌판에 문자가 새겨져 있고, 그 밑에서 희미하게 빛이 샌다.',
       choices: [
         { label: '문자를 읽는다', check: { sk: 'arcana', dc: 15, what: '문자 읽기', advX: 'x_detect' }, pol: ['careful', 'party'], cls: ['mage', 'archmage', 'warlock', 'bard'],
           win: { ops: [['relic']], state: 'holy', dm: '봉인이 풀렸다. 안에 든 것이 그대로다.', log: '{who} 봉인 문자를 읽어 냈다.' }, lose: { ops: [['stress', 10]], state: 'boil', dm: '문자가 머릿속을 긁고 지나간다.', log: '{who} 봉인 문자를 잘못 읽었다.' } },
@@ -60,7 +65,8 @@ G.Event = (() => {
         { label: '지나간다', leave: true, win: { dm: '아무도 재를 건드리지 않는다.' } },
       ] },
     // 길 잃은 사람: 넷 중 하나는 변신 괴물 (시드로 정해진다). 통찰로 알아보거나, 믿고 치료해 주거나
-    { id: 'stranger', type: 'encounter', tags: ['prison', 'cave', 'collapsed', 'thicket'], w: 3, cool: 6, prop: 'stranger', n: '길 잃은 사람', open: '누군가 주저앉은 채 손을 든다. 다리가 피투성이다.', fake: 0.25,
+    { id: 'stranger', type: 'encounter', tags: ['prison', 'cave', 'collapsed', 'thicket'], w: 3, cool: 6, prop: 'stranger',
+      vary: { prison: { n: '갇힌 사람', prop: 'cage', propOpt: { cls: 'rogue' }, open: '철창 안에서 누군가 손을 내민다. 다리가 피투성이다.', choices: { 1: { label: '철창을 뜯고 치료한다', check: { sk: 'athletics', dc: 15, what: '철창 뜯기' }, cls: ['barbarian', 'dragoon', 'paladin'] } } }, thicket: { open: '수풀 속에 누군가 주저앉아 손을 든다. 다리가 피투성이다.' } }, n: '길 잃은 사람', open: '누군가 주저앉은 채 손을 든다. 다리가 피투성이다.', fake: 0.25,
       choices: [
         { label: '먼저 캐묻는다', check: { sk: 'insight', dc: 15, what: '속내 읽기' }, pol: ['careful', 'party'], pers: { careful: 2 },
           win: { fake: { ops: [['fight', 2]], state: 'gone', dm: '말이 앞뒤가 안 맞는다. 얼굴이 흘러내린다!', log: '{who} 변신 괴물의 거짓말을 꿰뚫어 봤다.' }, real: { ops: [['gold', 3], ['scout']], dm: '진짜다. 사례와 함께 이 층 길을 알려 준다.', log: '{who} 길 잃은 사람에게서 길을 들었다.' } }, lose: { ops: [['stress', 4]], dm: '믿을 수 없어 그냥 두고 간다. 뒤에서 부르는 소리가 난다.' } },
@@ -78,22 +84,22 @@ G.Event = (() => {
       ] },
 
     // ── SRD 함정 나머지: 원문의 DC · 피해표 ──
-    { id: 'net', type: 'hazard', tags: ['cave', 'thicket', 'collapsed'], w: 3, cool: 5, prop: 'hoard', propOpt: { plain: true }, n: '늘어진 줄', open: '두 기둥 사이에 금화 주머니가 걸려 있다. 위쪽이 어쩐지 무겁다.',
+    { id: 'net', type: 'hazard', tags: ['cave', 'thicket', 'collapsed'], w: 3, cool: 5, prop: 'hoard', propOpt: { plain: true }, n: '늘어진 줄', open: '금화 주머니가 줄에 매달려 있다. 머리 위가 어쩐지 무겁다.',
       choices: [
-        { label: '줄부터 찾는다', check: { sk: 'perception', dc: 11, what: '줄 찾기' }, pol: ['careful', 'party'], win: { ops: [['gold', 3]], state: 'taken', dm: '줄을 끊자 위에서 그물이 힘없이 떨어진다.', log: '{who} 그물 덫을 찾아 끊었다.' }, lose: { ops: [['net']], dm: '머리 위로 그물이 쏟아진다!', log: '{who} 그물 덫을 건드렸다.' } },
-        { label: '주머니를 낚아챈다', sub: '금화 ×5 · 한 사람 민첩 내성', pol: ['bold', 'coin'], pers: { greedy: 2, hothead: 1 }, win: { who: true, ops: [['gold', 5], ['net']], state: 'taken', dm: '주머니는 손에 들어왔다. 그물도 함께 떨어진다!', log: '{who} 그물을 뒤집어쓰며 금화 주머니를 챙겼다.' } },
+        { label: '줄부터 찾는다', check: { sk: 'perception', dc: 11, what: '줄 찾기' }, pol: ['careful', 'party'], win: { ops: [['gold', 4]], state: 'taken', dm: '줄을 끊자 위에서 그물이 힘없이 떨어진다.', log: '{who} 그물 덫을 찾아 끊었다.' }, lose: { ops: [['net']], dm: '머리 위로 그물이 쏟아진다!', log: '{who} 그물 덫을 건드렸다.' } },
+        { label: '주머니를 낚아챈다', sub: '금화 ×4 · 한 사람 민첩 내성', pol: ['bold', 'coin'], pers: { greedy: 2, hothead: 1 }, win: { who: true, ops: [['gold', 4], ['net']], state: 'taken', dm: '주머니는 손에 들어왔다. 그물도 함께 떨어진다!', log: '{who} 그물을 뒤집어쓰며 금화 주머니를 챙겼다.' } },
         { label: '지나간다', leave: true, win: { dm: '머리 위를 살피며 지나간다.' } },
       ] },
     { id: 'needle', type: 'hazard', tags: ['treasury', 'crypt', 'ruin'], w: 3, cool: 5, prop: 'hoard', propOpt: { plain: true }, n: '잠긴 상자', open: '자물쇠가 달린 작은 상자가 있다. 열쇠 구멍에 검은 얼룩이 있다.',
       choices: [
         { label: '자물쇠를 살핀다', check: { sk: 'perception', dc: 15, what: '자물쇠 살피기' }, pol: ['careful', 'party'], win: { ops: [['relic']], state: 'taken', dm: '안쪽에 독침이 있다. 빼내고 나니 쉽게 열린다.', log: '{who} 독침을 빼내고 상자를 열었다.' }, lose: { ops: [['needle']], dm: '찌릿하다. 손끝이 금세 부어오른다.', log: '{who} 자물쇠의 독침에 찔렸다.' } },
-        { label: '그냥 비틀어 연다', sub: '금화 ×6 · 한 사람 건강 내성', pol: ['bold', 'coin'], pers: { greedy: 2 }, win: { who: true, ops: [['gold', 6], ['needle']], state: 'taken', dm: '상자는 열렸다. 독침도 튀어나왔다.', log: '{who} 독침을 맞으며 상자를 비틀어 열었다.' } },
+        { label: '그냥 비틀어 연다', sub: '금화 ×4 · 한 사람 건강 내성', pol: ['bold', 'coin'], pers: { greedy: 2 }, win: { who: true, ops: [['gold', 4], ['needle']], state: 'taken', dm: '상자는 열렸다. 독침도 튀어나왔다.', log: '{who} 독침을 맞으며 상자를 비틀어 열었다.' } },
         { label: '둔다', leave: true, win: { dm: '상자를 그 자리에 둔다.' } },
       ] },
     { id: 'statue', type: 'hazard', tags: ['altar', 'crypt', 'library', 'ruin'], w: 3, cool: 5, prop: 'shrine', n: '입 벌린 석상', open: '입을 벌린 석상이 궤짝을 바라본다. 입안이 그을려 있다.',
       choices: [
         { label: '문양을 찾아 지운다', check: { sk: 'arcana', dc: 15, what: '문양 읽기', advX: 'x_detect' }, pol: ['careful', 'party'], cls: ['mage', 'archmage', 'warlock', 'bard'], win: { ops: [['relic']], state: 'holy', dm: '"불"이라 새긴 문양을 긁어냈다. 석상은 조용하다.', log: '{who} 불꽃 석상의 문양을 지웠다.' }, lose: { ops: [['statue']], state: 'boil', dm: '석상이 불을 뿜는다!', log: '{who} 문양을 잘못 건드려 석상이 불을 뿜었다.' } },
-        { label: '달려가 궤짝을 연다', sub: '궤짝 · 전원 민첩 내성', pol: ['bold'], pers: { hothead: 2 }, win: { ops: [['statue'], ['relic']], state: 'boil', dm: '불길을 뚫고 궤짝을 열었다.', log: '불꽃 석상의 불길을 뚫고 궤짝을 열었다.' } },
+        { label: '달려가 쓸어 담는다', sub: '금화 ×10 · 전원 민첩 내성', pol: ['bold'], pers: { hothead: 2 }, win: { ops: [['statue'], ['gold', 10]], state: 'boil', dm: '불길을 뚫고 궤짝을 부쉈다. 금화만 건졌다.', log: '불꽃 석상의 불길을 뚫고 금화를 쓸어 담았다.' } },
         { label: '둔다', leave: true, win: { dm: '석상의 시선을 피해 돌아간다.' } },
       ] },
     // 구르는 돌: SRD는 11레벨부터의 함정 (10d10)
@@ -104,7 +110,7 @@ G.Event = (() => {
         { label: '돌아서 간다', leave: true, win: { dm: '기울어진 바닥을 피해 돌아간다.' } },
       ] },
     // ── 탐험 ──
-    { id: 'shortcut', type: 'explore', tags: ['collapsed', 'cave', 'thicket'], w: (f, c) => (c.hurt > 0.3 ? 5 : 2), cool: 4, n: '아래로 난 길', open: '무너진 틈으로 아래층이 바로 보인다.',
+    { id: 'shortcut', type: 'explore', tags: ['collapsed', 'cave', 'thicket'], w: (f, c) => (c.hurt > 0.3 ? 5 : 2), cool: 4, n: '아래로 난 길', open: '땅이 꺼진 틈으로 아래층이 바로 보인다.',
       choices: [
         { label: '바로 내려간다', sub: '남은 방과 상자를 포기', pol: ['careful'], win: { ops: [['rush']], dm: '틈으로 내려갈 길을 잡았다.', log: '남은 방을 버리고 지름길로 내려갔다.' } },
         { label: '이 층을 마저 돈다', leave: true, pol: ['bold', 'coin', 'party'], win: { dm: '틈을 표시해 두고 돌아선다.' } },
@@ -148,6 +154,19 @@ G.Event = (() => {
         { label: '믿고 맡긴다', sub: '스트레스 −10', leave: true, pol: ['bold', 'coin'], win: { ops: [['stressA', -10]], dm: '{a}가 씩 웃고 앞장선다.' } },
       ] },
 
+    // ── 튜토리얼 첫 원정 (G.Tut): 후보로 뽑히지 않는다 ──
+    { id: 'tut_bag', tut: true, type: 'discovery', tags: [], w: 0, n: '찢어진 자루', open: '찢어진 자루가 굴러다닌다. 안에서 쇳소리가 난다.',
+      choices: [
+        { label: '뒤져 본다', check: { sk: 'perception', dc: 5, what: '자루 뒤지기' }, pol: ['party', 'careful', 'bold', 'coin'], win: { ops: [['gold', 3]], dm: '금화 몇 닢이 나왔다.' }, lose: { ops: [['stress', 1]], dm: '쥐가 튀어나온다. 자루는 비었다.' } },
+        { label: '둔다', leave: true, win: { dm: '자루를 밟지 않고 지나간다.' } },
+      ] },
+    { id: 'tut_floor', tut: true, type: 'hazard', tags: [], w: 0, n: '꺼진 바닥', open: '앞쪽 바닥이 살짝 꺼져 있다. 건너편에 주머니가 보인다.',
+      choices: [
+        { label: '살피고 간다', check: { sk: 'investigation', dc: 15, what: '바닥 살피기' }, win: { ops: [['gold', 4]], dm: '밟으면 안 되는 판을 피해 주머니를 챙겼다.' }, lose: { ops: [['one', 'FALL', 6], ['pitted']], dm: '판이 뒤집혔다. 구덩이다!', log: '{who} 첫 구덩이에 빠졌다.' } },
+        { label: '그냥 건너간다', sub: '금화 ×4 · 한 사람 낙하', pol: ['bold', 'coin', 'party', 'careful'], win: { who: true, ops: [['gold', 4], ['one', 'FALL', 6], ['pitted']], dm: '주머니는 챙겼다. 발밑이 꺼진다!', log: '{who} 첫 구덩이에 빠졌다.' } },
+        { label: '둔다', leave: true, win: { dm: '꺼진 바닥을 돌아서 간다.' } },
+      ] },
+
     // ── 연속 사건 (DESIGN.md 99): 같은 chain의 stage를 차례로. 고른 것은 flag로 남아 뒤 단계의 문장 · DC · 적을 바꾼다 ──
     // 붉은 의식: 발자국 → 다친 탐험가 → 제단 → 의식의 주인. 안 보고 지나가도 의식은 계속된다
     { id: 'rit_tracks', chain: 'ritual', stage: 0, type: 'discovery', tags: [], w: 3, minFl: 2, n: '붉은 발자국', open: '맨발 자국이 줄지어 아래로 향한다. 흙에 붉은 가루가 섞여 있다.',
@@ -171,7 +190,7 @@ G.Event = (() => {
       ] },
     { id: 'rit_end', chain: 'ritual', stage: 3, gap: 1, type: 'big', tags: [], w: 3, n: '의식의 주인', open: '붉은 가루를 뒤집어쓴 자가 길을 막고 서 있다.', openIf: { broken: '의식을 망친 자가 길을 막는다. 몸이 절반쯤 무너져 있다.', ignored: '의식이 끝났다. 무언가가 그 몸을 빌려 걸어온다.', prepared: '준비는 끝났다. 의식의 주인이 아직 우리를 보지 못했다.' },
       choices: [
-        { label: '맞선다', sub: '우두머리', pol: ['party', 'careful', 'bold', 'coin'], win: { hold: true, ops: [['ritualBoss']], dm: '가루가 피어오른다.' } },
+        { label: '맞선다', sub: '우두머리', base: 1.5, pol: ['party', 'careful', 'bold', 'coin'], win: { hold: true, ops: [['ritualBoss']], dm: '가루가 피어오른다.' } },
         { label: '물러난다', leave: true, win: { end: 'fled', ops: [['heat', 2], ['stress', 6]], dm: '등 뒤에서 웃음소리가 따라온다.', log: '의식의 주인에게 등을 보였다.' } },
       ],
       won: { ops: [['relic'], ['legend', 3]], dm: '붉은 가루가 바람에 흩어진다.', log: '붉은 의식을 끝냈다.', ifSaved: { ops: [['gold', 12]], dm: '{saver} 덕에 살아난 탐험가가 찾아와 동료들 몫까지 값을 치른다.' } } },
@@ -230,7 +249,7 @@ G.Event = (() => {
   function candidates(f, r, c0) {
     const c = { hurt: 0, party: [], lv: 1, ...c0 };
     const E = store(f), recent = f.recent || [], types = recent.slice(-TYPE_RECENT).map(k => BY[k]?.type);
-    return LIST.filter(e => chainOk(f, e) && (e.chain && e.stage ? true : !e.tags.length || e.tags.some(t => r.tags.includes(t))) && f.floor >= (e.minFl || 2) && f.floor <= (e.maxFl || 1e9) && (!e.when || e.when(f, c)) && !recent.includes(e.id) && !(e.cool && E.last[e.id] != null && f.floor - E.last[e.id] < e.cool))
+    return LIST.filter(e => !e.tut && chainOk(f, e) && (e.chain && e.stage ? true : !e.tags.length || e.tags.some(t => r.tags.includes(t))) && f.floor >= (e.minFl || 2) && f.floor <= (e.maxFl || 1e9) && (!e.when || e.when(f, c)) && !recent.includes(e.id) && !(e.cool && E.last[e.id] != null && f.floor - E.last[e.id] < e.cool))
       .map(e => ({ e, w: weightOf(e, f, c) * (e.chain ? (e.stage ? CHAIN_K : START_K) : types.includes(e.type) ? TYPE_K : 1) }));
   }
   const Ev = {
@@ -240,6 +259,8 @@ G.Event = (() => {
     // 층을 세울 때 (G.Flow): 빈 방 중에서 사건 자리를 정한다. 파티는 그 방에 들른다 (빈 방은 원래 지나치지 않으면 안 들어간다)
     plan(f, rt, rooms, room) {
       tagRooms(f, rt);
+      const tut = G.Tut.eventFor(f), E0 = store(f);
+      if (tut && !E0.fl[f.floor]) { const near = rooms.slice().sort((a, b) => Math.hypot(a.cx - rt.hero.x, a.cy - rt.hero.y) - Math.hypot(b.cx - rt.hero.x, b.cy - rt.hero.y))[0]; E0.fl[f.floor] = { room: tut !== 'none' && near ? near.ri : -1, id: null, force: tut }; }
       const s = slot(f, rooms, room), r = rt.map.rooms[s.room];
       if (r && !s.done) r.evSlot = true;
     },
@@ -247,10 +268,12 @@ G.Event = (() => {
     at(f, rt, r, c) {
       const s = store(f).fl[f.floor]; if (!s || s.done || s.room !== r.ri) return null;
       s.done = true;
+      if (s.force && BY[s.force]) { s.id = s.force; return BY[s.force]; }
       const list = candidates(f, r, c); let n = rng(f, f.floor, 'pick', r.ri)() * list.reduce((a, q) => a + q.w, 0), got = null;
       for (const q of list) { got = q.e; if ((n -= q.w) <= 0) break; }
       if (!got) return null;
       s.id = got.id; store(f).last[got.id] = f.floor;
+      if (got.scene) Ev.record(f, rt, got, { how: 'scene' }); // 기존 장면은 고른 시점만 남긴다
       return got;
     },
     // ── 판정 ──
@@ -268,10 +291,18 @@ G.Event = (() => {
       return { who, ok: c.ok };
     },
     pct(rt, ch, by) { const who = by || Ev.who(rt, ch.sk); if (!who) return 0; const mod = DN().best([who.merc], ch.sk).v; let p = U.clamp((21 - (ch.dc - mod)) / 20, 0.05, 1); if (ch.advX && Ev.hasX(rt, ch.advX)) p = 1 - (1 - p) ** 2; return Math.round(p * 100); },
-    // 안 고르면: 방침이 맞는 것 → (맡김) 파티 성격 · 직업 → 지나가기. 다른 방침은 사용자가 정한 대로 위험할 수 있다
-    def(f, rt, opts) {
-      const pol = G.S.w.fantasy.policy || 'party', crew = rt.party.filter(p => p.merc && !p.dead); let best = opts.length - 1, bv = -1e9;
-      opts.forEach((o, i) => { let v = o.leave ? 1 : 0; if (o.pol && o.pol.includes(pol)) v += pol === 'party' ? 4 : 20; /* 정한 방침은 성격보다 앞선다 */ if (o.check) v += Ev.pct(rt, o.check) / 25 - 2; for (const p of crew) { for (const k in o.pers || {}) if ((p.merc.pers || []).includes(k)) v += o.pers[k]; if (o.cls && o.cls.includes(p.merc.cls)) v += 0.5; } if (v > bv) { bv = v; best = i; } });
+    // 안 고르면: 방침마다 감수하는 위험이 다르다. 판정은 성공률이 그 방침의 문턱을 넘어야 고르고, 맡김만 파티 성격이 크게 흔든다
+    score(f, rt, o, pol, ch) {
+      const P = POLICY[pol] || POLICY.party, crew = rt.party.filter(p => p.merc && !p.dead); let v = (o.leave ? P.leave : 0) + (o.base || 0);
+      if (o.pol && o.pol.includes(pol)) v += P.fit;
+      if (o.check) v += (Ev.pct(rt, ch || o.check) - P.pass) / 20;
+      else if (!o.leave) v += P.risk;
+      for (const p of crew) { for (const k in o.pers || {}) if ((p.merc.pers || []).includes(k)) v += o.pers[k] * P.pers; if (o.cls && o.cls.includes(p.merc.cls)) v += 0.25; }
+      return v;
+    },
+    def(f, rt, opts, chs) {
+      const pol = G.S.w.fantasy.policy || 'party'; let best = opts.length - 1, bv = -1e9;
+      opts.forEach((o, i) => { const v = Ev.score(f, rt, o, pol, chs && chs[i]); if (v > bv) { bv = v; best = i; } });
       return best;
     },
     // 파티 사건의 주인공
@@ -282,6 +313,13 @@ G.Event = (() => {
       a = a || P(c); const b = S === 'pair' ? P(c.filter(p => p !== a)) : null;
       return { a, b, n: a?.merc.grief?.n || '' };
     },
+    // 방 태그에 따른 변형: 사건을 복제하지 않고 문장 · 판정 · 결과만 덧씌운다 (base0 = 원래 선택지)
+    view(e, r) {
+      const v = e.vary && r?.tags?.map(t => e.vary[t]).find(Boolean); if (!v) return e;
+      return { ...e, ...v, choices: e.choices.map((o, i) => (v.choices?.[i] ? { ...o, ...v.choices[i], base0: o } : o)) };
+    },
+    // 사건 기록: 층 · 시각 · 직접/자동 · 고른 것 · 결과. 빈도 측정과 "왜 이걸 골랐나"의 추적에 쓴다
+    record(f, rt, e, q) { const E = store(f); (E.log = E.log || []).push({ id: e.id, type: e.type, fl: f.floor, run: f.runs || 0, t: Math.round(G.Season.st(f).t || 0), ...q }); if (E.log.length > LOG_MAX) E.log.shift(); },
     // ── 연속 사건의 상태 ──
     has: (f, e, k) => !!chainOf(f, e.chain)?.flags[k],
     dcOf: (f, e, ch) => (e.chain && ch.dcIf && Ev.has(f, e, ch.dcIf[0]) ? ch.dcIf[1] : ch.dc),
@@ -307,9 +345,10 @@ G.Event = (() => {
     },
     // ── 결과 ──
     ops: {
+      pitted(f, rt, q) { const p = q && !q.dead ? q : U.pick(ST().living(rt)); if (p) G.Banter.say(rt, p, '누가 바닥 좀 먼저 봐 주지.', { pri: true }); },
       stressA(f, rt, q, n) { if (Ev.cur?.a) ST().stress(f, rt, Ev.cur.a, n); },
-      bondAB(f, rt, q, n) { const X = Ev.cur; if (X?.a && X.b) G.Bond.add(f, rt, X.a.merc, X.b.merc, n); },
-      bondWho(f, rt, q, n) { const a = Ev.cur?.a; if (a && q?.merc && q !== a) G.Bond.add(f, rt, q.merc, a.merc, n); },
+      bondAB(f, rt, q, n) { const X = Ev.cur; if (X?.a && X.b) { G.Bond.add(f, rt, X.a.merc, X.b.merc, n); Ev.bondFx(rt, X.a, n); Ev.bondFx(rt, X.b, n); } },
+      bondWho(f, rt, q, n) { const a = Ev.cur?.a; if (a && q?.merc && q !== a) { G.Bond.add(f, rt, q.merc, a.merc, n); Ev.bondFx(rt, q, n); Ev.bondFx(rt, a, n); } },
       healA(f, rt, q, k) { const a = Ev.cur?.a; if (a) a.hp = Math.min(a.max, a.hp + a.max * k); },
       griefEnd() { const a = Ev.cur?.a; if (a?.merc.grief) a.merc.grief = null; },
       rush(f, rt) { rt.rush = true; },
@@ -336,6 +375,7 @@ G.Event = (() => {
       fight(f, rt, q, n) { ST().pack(f, rt, null, n); rt.nextFirst = 'party'; },
       ambush(f, rt, q, n) { ST().pack(f, rt, null, n); rt.nextFirst = 'foes'; },
     },
+    bondFx(rt, p, n) { G.fx(rt, { k: 'text', x: p.x, y: p.y - 1.2, s: `정 ${n > 0 ? '+' : '−'}${Math.abs(n)}`, col: n > 0 ? '#f2a0b8' : '#9aa0a8', t: 1.2, sz: 0.8 }); },
     hit(f, rt, p, srd) { F().hurtMember(f, rt, p, srd * p.max / Math.max(1, DN().srdHP(p.merc)), null); },
     run(f, rt, res, who, e) { for (const [k, ...a] of res?.ops || []) { Ev.ops[k](f, rt, who, ...a); if (rt.phase === 'dead') return; } },
     // 결과 고르기: 변신 괴물처럼 진짜 · 가짜로 갈리는 사건

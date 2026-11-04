@@ -2,7 +2,7 @@
 // 메인 루프 · 도감 · 시작
 function frame(tt) {
   const n = now(); let dt = Math.min(.25, (n - last) / 1000); last = n; acc += dt;
-  while (acc >= .1) { G.tick(.1); acc -= .1; }
+  while (acc >= .1) { if (!SH.open) G.tick(.1); acc -= .1; } // 상태창을 보는 동안은 멈춘다
   const t = n / 1000, r = rt();
   drawBrief();
   if (f.town) { for (const el of bubMap.values()) el.remove(); bubMap.clear(); for (const q of skFloats) q.el.remove(); skFloats.length = 0; }
@@ -68,3 +68,5 @@ const boot = () => {
   fit(); requestAnimationFrame(() => { fit(); last = now(); frame(); });
 };
 if (DNG) loadTex().then(boot); else boot();
+// 시험용: ?sheet=1 — 시작하면 첫 동료의 상태창을 연다
+if (q.get('sheet')) setTimeout(() => openSheet(f.mercs[0] || G.Guild.leader(f)), 800);

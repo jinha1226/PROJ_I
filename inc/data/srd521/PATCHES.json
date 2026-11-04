@@ -1,0 +1,121 @@
+[
+{
+"file": "Equipment",
+"index": "chain-shirt",
+"set": {
+"weight": 20
+}
+},
+{
+"file": "Equipment",
+"index": "dart",
+"set": {
+"cost": {
+"quantity": 5,
+"unit": "cp"
+}
+}
+},
+{
+"file": "Equipment",
+"index": "hand-crossbow",
+"set": {
+"weight": 3,
+"cost": {
+"quantity": 75,
+"unit": "gp"
+}
+}
+},
+{
+"file": "Equipment",
+"index": "javelin",
+"set": {
+"cost": {
+"quantity": 5,
+"unit": "sp"
+}
+}
+},
+{
+"file": "Equipment",
+"index": "longbow",
+"set": {
+"cost": {
+"quantity": 50,
+"unit": "gp"
+}
+}
+},
+{
+"file": "Equipment",
+"index": "mace",
+"set": {
+"weight": 4
+}
+},
+{
+"file": "Equipment",
+"index": "pike",
+"set": {
+"weight": 18
+}
+},
+{
+"file": "Equipment",
+"index": "spear",
+"set": {
+"weight": 3,
+"cost": {
+"quantity": 1,
+"unit": "gp"
+}
+}
+},
+{
+"file": "Equipment",
+"index": "trident",
+"path": [
+"damage",
+"damage_dice"
+],
+"value": "1d8"
+},
+{
+"file": "Equipment",
+"index": "sling",
+"path": [
+"damage",
+"damage_type"
+],
+"value": {
+"index": "bludgeoning",
+"name": "Bludgeoning",
+"url": "/api/2024/damage-types/bludgeoning"
+}
+},
+{
+"file": "Classes",
+"index": "fighter",
+"skillAdd": "persuasion"
+},
+{
+"file": "Classes",
+"index": "rogue",
+"skillDel": "performance"
+},
+{
+"file": "Classes",
+"index": "wizard",
+"skillAdd": "nature"
+},
+{
+"file": "Equipment",
+"index": "trident",
+"path": [
+"two_handed_damage",
+"damage_dice"
+],
+"value": "1d10"
+}
+]

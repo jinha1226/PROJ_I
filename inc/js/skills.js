@@ -23,7 +23,7 @@ G.Skill = (() => {
     // 무엇을 소모하나: 행동 · 추가 행동 · 반응 · 늘 적용 (게임에서 실제로 쓰는 칸)
     kindOf: k => (D.MSKILLS[k]?.explore ? '탐험' : REACT[k] || SK[k]?.react ? '반응' : D.MSKILLS[k]?.passive ? '늘 적용' : SK[k]?.free ? '소모 없음' : SK[k]?.bonus ? '추가 행동' : '행동'),
     resOf: k => SK[k]?.res || AUTO_RES[k] || null,
-    desc(m, k) { const S = D.MSKILLS[k], R0 = Sk.resOf(k); return `[${Sk.kindOf(k)}] ${S.d}${R0 ? ` · 전투당 ${G.Res.usesOf(m, R0, k)}번` : ''}`; },
+    desc(m, k) { const S = D.MSKILLS[k], R0 = Sk.resOf(k); const kd = Sk.kindOf(k); return `${kd === '늘 적용' || kd === '탐험' ? '' : `[${kd}] `}${S.d}${R0 ? ` · 전투당 ${G.Res.usesOf(m, R0, k)}번` : ''}`; },
     // 동료 한 명: 열린 칸의 스킬 중 쿨다운이 끝났고 쓸 만한 것 하나 (한 번 쓰면 GAP초 쉰다)
     tick(f, rt, a, dt, seen, bonus) {
       if (G.Skill.persist && !bonus && dt) G.Skill.persist(f, rt, a, dt);

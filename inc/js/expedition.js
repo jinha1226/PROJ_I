@@ -55,6 +55,7 @@ G.Exp = (() => {
       f.carry = 0;
       f.town = true;
       f.townT = 0;
+      G.Tut.home(f);
       f.deaths = 0;
       if (f.startAuto !== false) f.start = f.checkpoint || 1;
       G.Cmd.clear(rt);

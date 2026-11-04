@@ -19,7 +19,7 @@ G.newState();
 const f = G.S.w.fantasy;
 f.autoTr = false;
 const LV = +(q.get('lv') || 7), LEAD = G.Guild.leader(f); f.leaderNew = false;
-f.gold = 1e7; LEAD.lv = LV;
+f.gold = +(q.get('gold') || 0); LEAD.lv = LV; // 금화를 많이 주면 자동 강화로 피해가 몇 배가 된다. 측정이 어긋나므로 기본은 0 (?gold=로 준다)
 // 시험용 파티: 단장 + 직업 넷 (주소의 crew로 바꾼다)
 for (const cls of (q.get('crew') || 'cleric,archer,archmage').split(',')) f.mercs.push(G.Guild.make(f, cls, { lv: LV }));
 G.Fantasy.syncAllies(f);
@@ -27,7 +27,9 @@ const startFl = +(q.get('fl') || 6);
 f.floor = f.maxFloor = startFl; f.checkpoint = f.start = startFl; f.town = true; f.townT = 99;
 f.dmStyle = q.get('dm') || 'steady';
 f.autoGo = false; // 출발은 원정 선택에서 (?go=1이면 바로)
-if (q.get('go')) G.Exp.depart(f, G.Fantasy.rt(f));
+// 주소에 시험용 값이 없으면 새 게임: 튜토리얼로 시작한다
+const TUT_ON = q.get('tut') || !['lv', 'fl', 'crew', 'go', 'scene'].some(k => q.get(k));
+if (TUT_ON) { f.mercs = []; G.Tut.start(f, G.Fantasy.rt(f)); } else if (q.get('go')) G.Exp.depart(f, G.Fantasy.rt(f));
 const rt = () => G.Fantasy.rt(f);
 G.isoFx = (id, ex, ey, o) => pfx(id, wx(ex), wy(ey), (o && o.z) || 0, o || {});
 // 시험용: ?scene=door&nat=20 — 잠시 뒤 그 장면을 바로 연다 (nat: 주사위 고정. 20 성공 · 2 실패)

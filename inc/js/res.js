@@ -17,7 +17,7 @@ G.Res = (() => {
     maxSlot: m => table(m).length || Math.max(1, Math.ceil(m.lv / 5)),
     cost: (m, res) => (!res ? 0 : res.slot || (res.rage ? 1 : res.focus || (res.long ? 3 : 2))),
     // 전투당 횟수: 가벼운 기술 3 · 보통 2 · 큰 기술 1. 11레벨부터 +1. 주문 회상의 은혜 +1
-    usesOf(m, res, k) { if (!res) return 99; const c = R.cost(m, res), G0 = G.Guild.skill; return (c <= 1 ? 3 : c === 2 ? 2 : 1) + (m.lv >= 11 ? 1 : 0) + (DN().boon(m, 'recall') ? 1 : 0) + (k === 'sr_rage' && G0(m, 'ft_persist') ? 1 : 0) + (k === 'sr_insp' && G0(m, 'ft_superinsp') ? 1 : 0) + (k === 'sr_wild' ? (G0(m, 'ft_resurge') ? 1 : 0) + (G0(m, 'ft_archdruid') ? 1 : 0) : 0); },
+    usesOf(m, res, k) { if (!res) return 99; { const q = k && G.SrdX?.uses(m, k); if (q != null) return q; } const c = R.cost(m, res), G0 = G.Guild.skill; return (c <= 1 ? 3 : c === 2 ? 2 : 1) + (m.lv >= 11 ? 1 : 0) + (DN().boon(m, 'recall') ? 1 : 0) + (k === 'sr_smite' && m.cls === 'paladin' ? 1 : 0) + (k === 'sr_rage' && G0(m, 'ft_persist') ? 1 : 0) + (k === 'sr_insp' && G0(m, 'ft_superinsp') ? 1 : 0) + (k === 'sr_wild' ? (G0(m, 'ft_resurge') ? 1 : 0) + (G0(m, 'ft_archdruid') ? 1 : 0) : 0); },
     fightStart(list) { for (const p of list) if (p.merc) { R.of(p.merc).fu = {}; if (G.Guild.skill(p.merc, 'ft_metabolism') && p.hp < p.max) p.hp = Math.min(p.max, p.hp + (p.merc.lv + DN().dice(1, DN().weapon(p).d)) * p.max / Math.max(1, DN().srdHP(p.merc))); } },
     castLevel: (m, res) => Math.max(res.slot, R.maxSlot(m)), // 주문은 자동으로 가장 높은 레벨로
     can(m, k, res) { return !res || ((R.of(m).fu[k] || 0) < R.usesOf(m, res, k)); },
@@ -39,19 +39,24 @@ G.Res = (() => {
     concHit(rt, p, dmg) { if (!p.concK || p.dead || (p.concK.k === 'sr_hmark' && G.Fantasy.sk(p, 'ft_rhunter'))) return; const raw = dmg * Math.max(1, DN().srdHP(p.merc)) / (p.max || 1); const dc = Math.max(10, Math.round(raw / 2)), adv = p.extConc || G.Opt.has(p, 'iv_mind'); if (!DN().save(p, 'con', dc) && !(adv && DN().save(p, 'con', dc))) { R.endConc(p); G.fx(rt, { k: 'text', x: p.x, y: p.y - 1.1, s: '집중 끊김', col: '#c9a6ff', t: 0.8, sz: 0.75 }); } },
     // 종족 (SRD 5.2.1)
     SPECIES: {
-      human: { n: '인간', d: '영웅의 영감: 실패한 내성 다시 (전투당 한 번)' }, elf: { n: '엘프', d: '수면 면역 · 지각 숙련' }, dwarf: { n: '드워프', d: '독 저항 · 레벨마다 체력 +1' }, halfling: { n: '하플링', d: '1은 다시 굴림' }, gnome: { n: '노움', d: '지능 · 지혜 · 매력 내성 이점' },
-      dragonborn: { n: '드래곤본', d: '숨결 · 화염 저항' }, tiefling: { n: '티플링', d: '화염 저항' }, orc: { n: '오크', d: '쓰러질 때 1로 버팀 (전투당 한 번)' }, goliath: { n: '골리앗', d: '받는 피해를 d12 + 건강만큼 줄임 (전투당 2번 · 11레벨 3번)' },
+      ...Object.fromEntries(Object.keys(G.SRD.SPECIES).map(k => [k, { n: G.SRD.SPECIES[k].n, d: G.SRD.SPECIES[k].traits.map(q => q[0]).join(' · ') }])),
     },
     species(m) { if (!m) return null; if (!m.sp) { const K = Object.keys(R.SPECIES); m.sp = K[((m.uid || 0) * 7 + (m.name ? m.name.charCodeAt(0) : 0)) % K.length]; } return m.sp; },
     // 몸에 맞는 피해 (피해 종류 저항 · 격노 · 골리앗)
-    takenK(p, t) { const m = p.merc; if (!m || !t) return 1; if (G.Trinket.props(m, 'immT').some(q => q[1] === t)) return 0; const sp = R.species(m), phys = t === 'slashing' || t === 'piercing' || t === 'bludgeoning'; let k = 1; if (DN().bsum(p, 'res_' + t) > 0) k *= 0.5; if (t !== 'force' && G.Fantasy.sk(p, 'ft_sdefense')) k *= 0.5; if (DN().boon(m, 'night') && t !== 'psychic' && t !== 'radiant') k *= 0.5; if (G.Trinket.props(m, 'res').some(q => q[1] === t)) k *= 0.5; if (G.Fantasy.sk(p, 'sr_fres') && phys) k *= 0.5; if (G.Fantasy.sk(p, 'sr_affinity') && t === 'fire') k *= 0.5; if (sp === 'dwarf' && t === 'poison') k *= 0.5; if ((sp === 'tiefling' || sp === 'dragonborn') && t === 'fire') k *= 0.5; if (DN().bon(p, 'rage') && (t === 'slashing' || t === 'piercing' || t === 'bludgeoning')) k *= 0.5; return k; },
+    takenK(p, t) { const m = p.merc; if (!m || !t) return 1; if (G.Trinket.props(m, 'immT').some(q => q[1] === t)) return 0; const sp = R.species(m), phys = t === 'slashing' || t === 'piercing' || t === 'bludgeoning'; let k = 1; if (DN().bsum(p, 'res_' + t) > 0) k *= 0.5; if (t !== 'force' && DN().bon(p, 'sdef')) k *= 0.5; if (DN().boon(m, 'night') && t !== 'psychic' && t !== 'radiant') k *= 0.5; if (G.Trinket.props(m, 'res').some(q => q[1] === t)) k *= 0.5;  if (G.Fantasy.sk(p, 'sr_affinity') && t === 'fire') k *= 0.5; if (G.SrdX?.resists(m).includes(t)) k *= 0.5; if (DN().bon(p, 'rage') && (t === 'slashing' || t === 'piercing' || t === 'bludgeoning')) k *= 0.5; return k; },
     // 쓰러지기 직전 (오크 불굴)
     onDown(rt, p) { const m = p.merc; if (DN().bsum(p, 'deathWard') > 0) { if (p.bf) delete p.bf['sp_Death Ward']; p.hp = 1; return true; } const pr = rt.party?.find(q => !q.dead && q.merc && G.Opt.has(q, 'iv_protect') && !R.of(q.merc).fu.iv_protect); if (pr) { R.once(pr.merc, 'iv_protect'); p.hp = 1; G.fx(rt, { k: 'text', x: p.x, y: p.y - 1.2, s: '수호자의 선물', col: '#b98aff', t: 1, sz: 0.85 }); return true; } if (R.species(m) !== 'orc') return false; if (!R.once(m, 'orc')) return false; p.hp = 1; G.fx(rt, { k: 'text', x: p.x, y: p.y - 1.2, s: '오크의 불굴', col: '#ffb060', t: 1, sz: 0.85 }); return true; },
     // 골리앗 돌의 인내
-    stone(rt, p, dmg) { const m = p.merc; if (R.species(m) !== 'goliath') return dmg; if (!R.once(m, 'stone', R.usesOf(m, { short: 1 }))) return dmg; const k = p.max / Math.max(1, DN().srdHP(m)); G.fx(rt, { k: 'text', x: p.x, y: p.y - 1.2, s: '돌의 인내', col: '#c9c2b2', t: 0.8, sz: 0.75 }); return Math.max(0, dmg - (1 + U.rand(12) + DN().mod(DN().ab(m).con)) * k); },
+    stone(rt, p, dmg) { const m = p.merc; if (R.species(m) !== 'goliath' || (G.SRD.line(m, 'goliath'), m.line) !== 'stone') return dmg; if (!R.once(m, 'stone', R.usesOf(m, { short: 1 }))) return dmg; const k = p.max / Math.max(1, DN().srdHP(m)); G.fx(rt, { k: 'text', x: p.x, y: p.y - 1.2, s: '돌의 인내', col: '#c9c2b2', t: 0.8, sz: 0.75 }); return Math.max(0, dmg - (1 + U.rand(12) + DN().mod(DN().ab(m).con)) * k); },
     // 내성 재굴림
     saveAdv(tg, k) { const sp = R.species(tg.merc); return sp === 'gnome' && (k === 'int' || k === 'wis' || k === 'cha'); },
     saveRetry(tg) { const m = tg.merc; if (R.species(m) !== 'human') return false; return R.once(m, 'human'); },
   };
   return R;
+})();
+// 사람별 기록 (상태창): 이번 전투에 준 피해와 처치. 전투가 끝나면 최근 다섯 전투의 피해 비중으로 남는다
+(() => {
+  const F = G.Fantasy, h0 = F.hurt, a0 = G.Res.afterFight, FORM_N = 5;
+  F.hurt = function (f, rt, m, dmg, src, from) { const was = m.hp, r = h0.apply(this, arguments); if (from?.merc && m.kind === 'mon' && was > m.hp) { from.merc._fd = (from.merc._fd || 0) + (was - Math.max(0, m.hp)); if (m.hp <= 0) from.merc.kills = (from.merc.kills || 0) + 1; } return r; };
+  G.Res.afterFight = function (rt) { const ms = rt.party.filter(p => p.merc).map(p => p.merc), tot = ms.reduce((a, m) => a + (m._fd || 0), 0); if (tot > 0) for (const m of ms) { m.form = (m.form || []).concat((m._fd || 0) / tot).slice(-FORM_N); m.fights = (m.fights || 0) + 1; m._fd = 0; } return a0.apply(this, arguments); };
 })();

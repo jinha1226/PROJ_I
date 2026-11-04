@@ -1,0 +1,6127 @@
+[
+{
+"class": "Bard",
+"level": 0,
+"spell": "Prestidigitation",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 0,
+"spell": "Starry Wisp",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 0,
+"spell": "True Strike",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 0,
+"spell": "Vicious Mockery",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 0,
+"spell": "Dancing Lights",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 0,
+"spell": "Light",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 0,
+"spell": "Mage Hand",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 0,
+"spell": "Mending",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 0,
+"spell": "Message",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 0,
+"spell": "Minor Illusion",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Animal Friendship",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Bane",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Charm Person",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Color Spray",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Command",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Comprehend Languages",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Cure Wounds",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Detect Magic",
+"school": "Divination",
+"special": "C, R"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Disguise Self",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Dissonant Whispers",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Faerie Fire",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Feather Fall",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Healing Word",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Heroism",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Hideous Laughter",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Identify",
+"school": "Divination",
+"special": "R, M"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Illusory Script",
+"school": "Illusion",
+"special": "R, M"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Longstrider",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Silent Image",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Sleep",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Speak with Animals",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Thunderwave",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 1,
+"spell": "Unseen Servant",
+"school": "Conjuration",
+"special": "R"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Invisibility",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Knock",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Lesser Restoration",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Locate Animals or Plants",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Locate Object",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Magic Mouth",
+"school": "Illusion",
+"special": "R, M"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Mirror Image",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "See Invisibility",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Shatter",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Silence",
+"school": "Illusion",
+"special": "C, R"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Suggestion",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Zone of Truth",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Aid",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Animal Messenger",
+"school": "Enchantment",
+"special": "R"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Blindness/Deafness",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Calm Emotions",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Detect Thoughts",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Enhance Ability",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Enlarge/Reduce",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Enthrall",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Heat Metal",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 2,
+"spell": "Hold Person",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Bestow Curse",
+"school": "Necromancy",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Clairvoyance",
+"school": "Divination",
+"special": "C, M"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Dispel Magic",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Fear",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Glyph of Warding",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Hypnotic Pattern",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Major Image",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Mass Healing Word",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Nondetection",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Plant Growth",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Sending",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Slow",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Speak with Dead",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Speak with Plants",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Stinking Cloud",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Tiny Hut",
+"school": "Evocation",
+"special": "R"
+},
+{
+"class": "Bard",
+"level": 3,
+"spell": "Tongues",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 4,
+"spell": "Charm Monster",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 4,
+"spell": "Compulsion",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 4,
+"spell": "Confusion",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 4,
+"spell": "Dimension Door",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 4,
+"spell": "Freedom of Movement",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 4,
+"spell": "Greater Invisibility",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 4,
+"spell": "Hallucinatory Terrain",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 4,
+"spell": "Locate Creature",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 4,
+"spell": "Phantasmal Killer",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 4,
+"spell": "Polymorph",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Animate Objects",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Awaken",
+"school": "Transmutation",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Dominate Person",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Dream",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Geas",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Greater Restoration",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Hold Monster",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Legend Lore",
+"school": "Divination",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Mass Cure Wounds",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Mislead",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Modify Memory",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Planar Binding",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Raise Dead",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Scrying",
+"school": "Divination",
+"special": "C, M"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Seeming",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Telepathic Bond",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Bard",
+"level": 5,
+"spell": "Teleportation Circle",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 6,
+"spell": "Eyebite",
+"school": "Necromancy",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 6,
+"spell": "Find the Path",
+"school": "Divination",
+"special": "C, M"
+},
+{
+"class": "Bard",
+"level": 6,
+"spell": "Guards and Wards",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 6,
+"spell": "Heroes’ Feast",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 6,
+"spell": "Irresistible Dance",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 6,
+"spell": "Mass Suggestion",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 6,
+"spell": "Programmed Illusion",
+"school": "Illusion",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 6,
+"spell": "True Seeing",
+"school": "Divination",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 7,
+"spell": "Arcane Sword",
+"school": "Evocation",
+"special": "C, M"
+},
+{
+"class": "Bard",
+"level": 7,
+"spell": "Etherealness",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 7,
+"spell": "Forcecage",
+"school": "Evocation",
+"special": "C, M"
+},
+{
+"class": "Bard",
+"level": 7,
+"spell": "Magnificent Mansion",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 7,
+"spell": "Mirage Arcane",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 7,
+"spell": "Prismatic Spray",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 7,
+"spell": "Project Image",
+"school": "Illusion",
+"special": "C, M"
+},
+{
+"class": "Bard",
+"level": 7,
+"spell": "Regenerate",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 7,
+"spell": "Resurrection",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 7,
+"spell": "Symbol",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Bard",
+"level": 7,
+"spell": "Teleport",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 8,
+"spell": "Antipathy/Sympathy",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 8,
+"spell": "Befuddlement",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 8,
+"spell": "Dominate Monster",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Bard",
+"level": 8,
+"spell": "Glibness",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 8,
+"spell": "Mind Blank",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 8,
+"spell": "Power Word Stun",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 9,
+"spell": "Foresight",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 9,
+"spell": "Power Word Heal",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 9,
+"spell": "Power Word Kill",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 9,
+"spell": "Prismatic Wall",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Bard",
+"level": 9,
+"spell": "True Polymorph",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 0,
+"spell": "Guidance",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 0,
+"spell": "Light",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 0,
+"spell": "Mending",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 0,
+"spell": "Resistance",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 0,
+"spell": "Sacred Flame",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 0,
+"spell": "Spare the Dying",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 0,
+"spell": "Thaumaturgy",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Bane",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Bless",
+"school": "Enchantment",
+"special": "C, M"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Command",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Create or Destroy Water",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Cure Wounds",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Detect Evil and Good",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Detect Magic",
+"school": "Divination",
+"special": "C, R"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Detect Poison and Disease",
+"school": "Divination",
+"special": "C, R"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Guiding Bolt",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Healing Word",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Inflict Wounds",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Protection from Evil and Good",
+"school": "Abjuration",
+"special": "C, M"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Purify Food and Drink",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Sanctuary",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 1,
+"spell": "Shield of Faith",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Protection from Poison",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Silence",
+"school": "Illusion",
+"special": "C, R"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Spiritual Weapon",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Warding Bond",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Zone of Truth",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Aid",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Augury",
+"school": "Divination",
+"special": "R, M"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Blindness/Deafness",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Calm Emotions",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Continual Flame",
+"school": "Evocation",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Enhance Ability",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Find Traps",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Gentle Repose",
+"school": "Necromancy",
+"special": "R, M"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Hold Person",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Lesser Restoration",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Locate Object",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 2,
+"spell": "Prayer of Healing",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Animate Dead",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Beacon of Hope",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Bestow Curse",
+"school": "Necromancy",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Clairvoyance",
+"school": "Divination",
+"special": "C, M"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Create Food and Water",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Daylight",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Dispel Magic",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Glyph of Warding",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Magic Circle",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Mass Healing Word",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Meld into Stone",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Protection from Energy",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Remove Curse",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Revivify",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Sending",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Speak with Dead",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Spirit Guardians",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Tongues",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 3,
+"spell": "Water Walk",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Cleric",
+"level": 4,
+"spell": "Aura of Life",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 4,
+"spell": "Banishment",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 4,
+"spell": "Control Water",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 4,
+"spell": "Death Ward",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 4,
+"spell": "Divination",
+"school": "Divination",
+"special": "R, M"
+},
+{
+"class": "Cleric",
+"level": 4,
+"spell": "Freedom of Movement",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 4,
+"spell": "Guardian of Faith",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 4,
+"spell": "Locate Creature",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 4,
+"spell": "Stone Shape",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 5,
+"spell": "Commune",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Cleric",
+"level": 5,
+"spell": "Contagion",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 5,
+"spell": "Dispel Evil and Good",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 5,
+"spell": "Flame Strike",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 5,
+"spell": "Geas",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 5,
+"spell": "Greater Restoration",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 5,
+"spell": "Hallow",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 5,
+"spell": "Insect Plague",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 5,
+"spell": "Legend Lore",
+"school": "Divination",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 5,
+"spell": "Mass Cure Wounds",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 5,
+"spell": "Planar Binding",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 5,
+"spell": "Raise Dead",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 5,
+"spell": "Scrying",
+"school": "Divination",
+"special": "C, M"
+},
+{
+"class": "Cleric",
+"level": 6,
+"spell": "Blade Barrier",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 6,
+"spell": "Create Undead",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 6,
+"spell": "Find the Path",
+"school": "Divination",
+"special": "C, M"
+},
+{
+"class": "Cleric",
+"level": 6,
+"spell": "Forbiddance",
+"school": "Abjuration",
+"special": "R, M"
+},
+{
+"class": "Cleric",
+"level": 6,
+"spell": "Harm",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 6,
+"spell": "Heal",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 6,
+"spell": "Heroes’ Feast",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 6,
+"spell": "Planar Ally",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 6,
+"spell": "Sunbeam",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 6,
+"spell": "True Seeing",
+"school": "Divination",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 6,
+"spell": "Word of Recall",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 7,
+"spell": "Conjure Celestial",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 7,
+"spell": "Divine Word",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 7,
+"spell": "Etherealness",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 7,
+"spell": "Fire Storm",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 7,
+"spell": "Plane Shift",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 7,
+"spell": "Regenerate",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 7,
+"spell": "Resurrection",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 7,
+"spell": "Symbol",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 8,
+"spell": "Antimagic Field",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 8,
+"spell": "Control Weather",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 8,
+"spell": "Earthquake",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Cleric",
+"level": 8,
+"spell": "Holy Aura",
+"school": "Abjuration",
+"special": "C, M"
+},
+{
+"class": "Cleric",
+"level": 8,
+"spell": "Sunburst",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 9,
+"spell": "Astral Projection",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Cleric",
+"level": 9,
+"spell": "Gate",
+"school": "Conjuration",
+"special": "C, M"
+},
+{
+"class": "Cleric",
+"level": 9,
+"spell": "Mass Heal",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 9,
+"spell": "Power Word Heal",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Cleric",
+"level": 9,
+"spell": "True Resurrection",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Druid",
+"level": 0,
+"spell": "Druidcraft",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 0,
+"spell": "Elementalism",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 0,
+"spell": "Guidance",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 0,
+"spell": "Mending",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 0,
+"spell": "Message",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 0,
+"spell": "Poison Spray",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 0,
+"spell": "Produce Flame",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 0,
+"spell": "Resistance",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 0,
+"spell": "Shillelagh",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 0,
+"spell": "Spare the Dying",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 0,
+"spell": "Starry Wisp",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Animal Friendship",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Charm Person",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Create or Destroy Water",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Cure Wounds",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Detect Magic",
+"school": "Divination",
+"special": "C, R"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Detect Poison and Disease",
+"school": "Divination",
+"special": "C, R"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Entangle",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Faerie Fire",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Fog Cloud",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Goodberry",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Healing Word",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Ice Knife",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Jump",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Longstrider",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Protection from Evil and Good",
+"school": "Abjuration",
+"special": "C, M"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Purify Food and Drink",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Speak with Animals",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Druid",
+"level": 1,
+"spell": "Thunderwave",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Aid",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Animal Messenger",
+"school": "Enchantment",
+"special": "R"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Augury",
+"school": "Divination",
+"special": "R, M"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Barkskin",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Continual Flame",
+"school": "Evocation",
+"special": "M"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Darkvision",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Enhance Ability",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Enlarge/Reduce",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Find Traps",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Flame Blade",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Flaming Sphere",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Gust of Wind",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Heat Metal",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Hold Person",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Lesser Restoration",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Locate Animals or Plants",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Locate Object",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Moonbeam",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Pass without Trace",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Protection from Poison",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 2,
+"spell": "Spike Growth",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 3,
+"spell": "Call Lightning",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 3,
+"spell": "Conjure Animals",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 3,
+"spell": "Daylight",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 3,
+"spell": "Dispel Magic",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 3,
+"spell": "Meld into Stone",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Druid",
+"level": 3,
+"spell": "Plant Growth",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 3,
+"spell": "Protection from Energy",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 3,
+"spell": "Revivify",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Druid",
+"level": 3,
+"spell": "Sleet Storm",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 3,
+"spell": "Speak with Plants",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 3,
+"spell": "Water Breathing",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Druid",
+"level": 3,
+"spell": "Water Walk",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Druid",
+"level": 3,
+"spell": "Wind Wall",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Blight",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Charm Monster",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Confusion",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Conjure Minor Elementals",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Conjure Woodland Beings",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Control Water",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Divination",
+"school": "Divination",
+"special": "R, M"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Dominate Beast",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Fire Shield",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Freedom of Movement",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Giant Insect",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Hallucinatory Terrain",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Ice Storm",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Locate Creature",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Polymorph",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Stone Shape",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Stoneskin",
+"school": "Transmutation",
+"special": "C, M"
+},
+{
+"class": "Druid",
+"level": 4,
+"spell": "Wall of Fire",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Antilife Shell",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Awaken",
+"school": "Transmutation",
+"special": "M"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Commune with Nature",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Cone of Cold",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Conjure Elemental",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Contagion",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Geas",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Greater Restoration",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Insect Plague",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Mass Cure Wounds",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Planar Binding",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Reincarnate",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Scrying",
+"school": "Divination",
+"special": "C, M"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Tree Stride",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 5,
+"spell": "Wall of Stone",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 6,
+"spell": "Conjure Fey",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 6,
+"spell": "Find the Path",
+"school": "Divination",
+"special": "C, M"
+},
+{
+"class": "Druid",
+"level": 6,
+"spell": "Flesh to Stone",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 6,
+"spell": "Heal",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 6,
+"spell": "Heroes’ Feast",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Druid",
+"level": 6,
+"spell": "Move Earth",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 6,
+"spell": "Sunbeam",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 6,
+"spell": "Transport via Plants",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 6,
+"spell": "Wall of Thorns",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 6,
+"spell": "Wind Walk",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 7,
+"spell": "Fire Storm",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 7,
+"spell": "Mirage Arcane",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 7,
+"spell": "Plane Shift",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Druid",
+"level": 7,
+"spell": "Regenerate",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 7,
+"spell": "Reverse Gravity",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 7,
+"spell": "Symbol",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Druid",
+"level": 8,
+"spell": "Animal Shapes",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 8,
+"spell": "Antipathy/Sympathy",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 8,
+"spell": "Befuddlement",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 8,
+"spell": "Control Weather",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 8,
+"spell": "Earthquake",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 8,
+"spell": "Incendiary Cloud",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 8,
+"spell": "Sunburst",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 8,
+"spell": "Tsunami",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 9,
+"spell": "Foresight",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Druid",
+"level": 9,
+"spell": "Shapechange",
+"school": "Transmutation",
+"special": "C, M"
+},
+{
+"class": "Druid",
+"level": 9,
+"spell": "Storm of Vengeance",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Druid",
+"level": 9,
+"spell": "True Resurrection",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Paladin",
+"level": 1,
+"spell": "Divine Favor",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 1,
+"spell": "Divine Smite",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 1,
+"spell": "Heroism",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Paladin",
+"level": 1,
+"spell": "Protection from Evil and Good",
+"school": "Abjuration",
+"special": "C, M"
+},
+{
+"class": "Paladin",
+"level": 1,
+"spell": "Purify Food and Drink",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Paladin",
+"level": 1,
+"spell": "Searing Smite",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 1,
+"spell": "Shield of Faith",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Paladin",
+"level": 1,
+"spell": "Bless",
+"school": "Enchantment",
+"special": "C, M"
+},
+{
+"class": "Paladin",
+"level": 1,
+"spell": "Command",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 1,
+"spell": "Cure Wounds",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 1,
+"spell": "Detect Evil and Good",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Paladin",
+"level": 1,
+"spell": "Detect Magic",
+"school": "Divination",
+"special": "C, R"
+},
+{
+"class": "Paladin",
+"level": 1,
+"spell": "Detect Poison and Disease",
+"school": "Divination",
+"special": "C, R"
+},
+{
+"class": "Paladin",
+"level": 2,
+"spell": "Aid",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 2,
+"spell": "Find Steed",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 2,
+"spell": "Gentle Repose",
+"school": "Necromancy",
+"special": "R, M"
+},
+{
+"class": "Paladin",
+"level": 2,
+"spell": "Lesser Restoration",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 2,
+"spell": "Locate Object",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Paladin",
+"level": 2,
+"spell": "Magic Weapon",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 2,
+"spell": "Prayer of Healing",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 2,
+"spell": "Protection from Poison",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 2,
+"spell": "Shining Smite",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Paladin",
+"level": 2,
+"spell": "Warding Bond",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Paladin",
+"level": 2,
+"spell": "Zone of Truth",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 3,
+"spell": "Create Food and Water",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 3,
+"spell": "Daylight",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 3,
+"spell": "Dispel Magic",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 3,
+"spell": "Magic Circle",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Paladin",
+"level": 3,
+"spell": "Remove Curse",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 3,
+"spell": "Revivify",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Paladin",
+"level": 4,
+"spell": "Aura of Life",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Paladin",
+"level": 4,
+"spell": "Banishment",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Paladin",
+"level": 4,
+"spell": "Death Ward",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 4,
+"spell": "Locate Creature",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Paladin",
+"level": 5,
+"spell": "Dispel Evil and Good",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Paladin",
+"level": 5,
+"spell": "Geas",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Paladin",
+"level": 5,
+"spell": "Greater Restoration",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Paladin",
+"level": 5,
+"spell": "Raise Dead",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Ranger",
+"level": 1,
+"spell": "Alarm",
+"school": "Abjuration",
+"special": "R"
+},
+{
+"class": "Ranger",
+"level": 1,
+"spell": "Animal Friendship",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 1,
+"spell": "Cure Wounds",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 1,
+"spell": "Detect Magic",
+"school": "Divination",
+"special": "C, R"
+},
+{
+"class": "Ranger",
+"level": 1,
+"spell": "Detect Poison and Disease",
+"school": "Divination",
+"special": "C, R"
+},
+{
+"class": "Ranger",
+"level": 1,
+"spell": "Ensnaring Strike",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 1,
+"spell": "Entangle",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 1,
+"spell": "Fog Cloud",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 1,
+"spell": "Goodberry",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 1,
+"spell": "Hunter’s Mark",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 1,
+"spell": "Jump",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 1,
+"spell": "Longstrider",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 1,
+"spell": "Speak with Animals",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Aid",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Animal Messenger",
+"school": "Enchantment",
+"special": "R"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Barkskin",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Darkvision",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Enhance Ability",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Find Traps",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Gust of Wind",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Lesser Restoration",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Locate Animals or Plants",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Locate Object",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Magic Weapon",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Pass without Trace",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Protection from Poison",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Silence",
+"school": "Illusion",
+"special": "C, R"
+},
+{
+"class": "Ranger",
+"level": 2,
+"spell": "Spike Growth",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 3,
+"spell": "Conjure Animals",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 3,
+"spell": "Daylight",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 3,
+"spell": "Dispel Magic",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 3,
+"spell": "Meld into Stone",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Ranger",
+"level": 3,
+"spell": "Nondetection",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Ranger",
+"level": 3,
+"spell": "Plant Growth",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 3,
+"spell": "Protection from Energy",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 3,
+"spell": "Revivify",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Ranger",
+"level": 3,
+"spell": "Speak with Plants",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 3,
+"spell": "Water Breathing",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Ranger",
+"level": 3,
+"spell": "Water Walk",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Ranger",
+"level": 3,
+"spell": "Wind Wall",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 4,
+"spell": "Conjure Woodland Beings",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 4,
+"spell": "Dominate Beast",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 4,
+"spell": "Freedom of Movement",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Ranger",
+"level": 4,
+"spell": "Locate Creature",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Ranger",
+"level": 4,
+"spell": "Stoneskin",
+"school": "Transmutation",
+"special": "C, M"
+},
+{
+"class": "Ranger",
+"level": 5,
+"spell": "Commune with Nature",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Ranger",
+"level": 5,
+"spell": "Greater Restoration",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Ranger",
+"level": 5,
+"spell": "Tree Stride",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Acid Splash",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Chill Touch",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Dancing Lights",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Elementalism",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Fire Bolt",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Light",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Mage Hand",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Mending",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Message",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Minor Illusion",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Poison Spray",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Prestidigitation",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Ray of Frost",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Shocking Grasp",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "Sorcerous Burst",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 0,
+"spell": "True Strike",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Burning Hands",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Charm Person",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Chromatic Orb",
+"school": "Evocation",
+"special": "M"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Color Spray",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Comprehend Languages",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Detect Magic",
+"school": "Divination",
+"special": "C, R"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Disguise Self",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Expeditious Retreat",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "False Life",
+"school": "Necromancy",
+"special": "–"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Feather Fall",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Fog Cloud",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Grease",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Ice Knife",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Jump",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Mage Armor",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Magic Missile",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Ray of Sickness",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Shield",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Silent Image",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Sleep",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 1,
+"spell": "Thunderwave",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Hold Person",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Invisibility",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Knock",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Levitate",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Magic Weapon",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Mirror Image",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Misty Step",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Scorching Ray",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "See Invisibility",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Shatter",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Spider Climb",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Suggestion",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Web",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Alter Self",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Blindness/Deafness",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Blur",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Darkness",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Darkvision",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Detect Thoughts",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Dragon’s Breath",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Enhance Ability",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Enlarge/Reduce",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Flame Blade",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Flaming Sphere",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 2,
+"spell": "Gust of Wind",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Blink",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Clairvoyance",
+"school": "Divination",
+"special": "C, M"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Counterspell",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Daylight",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Dispel Magic",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Fear",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Fireball",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Fly",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Gaseous Form",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Haste",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Hypnotic Pattern",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Lightning Bolt",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Major Image",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Protection from Energy",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Sleet Storm",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Slow",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Stinking Cloud",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Tongues",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Vampiric Touch",
+"school": "Necromancy",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Water Breathing",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Sorcerer",
+"level": 3,
+"spell": "Water Walk",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"spell": "Banishment",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"spell": "Blight",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"spell": "Charm Monster",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"spell": "Confusion",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"spell": "Dimension Door",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"spell": "Dominate Beast",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"spell": "Fire Shield",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"spell": "Greater Invisibility",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"spell": "Ice Storm",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"spell": "Polymorph",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"spell": "Stoneskin",
+"school": "Transmutation",
+"special": "C, M"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"spell": "Vitriolic Sphere",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 4,
+"spell": "Wall of Fire",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 5,
+"spell": "Animate Objects",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 5,
+"spell": "Arcane Hand",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 5,
+"spell": "Cloudkill",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 5,
+"spell": "Cone of Cold",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 5,
+"spell": "Creation",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 5,
+"spell": "Dominate Person",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 5,
+"spell": "Hold Monster",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 5,
+"spell": "Insect Plague",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 5,
+"spell": "Seeming",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 5,
+"spell": "Telekinesis",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 5,
+"spell": "Teleportation Circle",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Sorcerer",
+"level": 5,
+"spell": "Wall of Stone",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 6,
+"spell": "Chain Lightning",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 6,
+"spell": "Circle of Death",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Sorcerer",
+"level": 6,
+"spell": "Disintegrate",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 6,
+"spell": "Eyebite",
+"school": "Necromancy",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 6,
+"spell": "Flesh to Stone",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 6,
+"spell": "Freezing Sphere",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 6,
+"spell": "Globe of Invulnerability",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 6,
+"spell": "Mass Suggestion",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 6,
+"spell": "Move Earth",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 6,
+"spell": "Sunbeam",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 6,
+"spell": "True Seeing",
+"school": "Divination",
+"special": "M"
+},
+{
+"class": "Sorcerer",
+"level": 7,
+"spell": "Delayed Blast Fireball",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 7,
+"spell": "Etherealness",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 7,
+"spell": "Finger of Death",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 7,
+"spell": "Fire Storm",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 7,
+"spell": "Plane Shift",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Sorcerer",
+"level": 7,
+"spell": "Prismatic Spray",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 7,
+"spell": "Reverse Gravity",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 7,
+"spell": "Teleport",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 8,
+"spell": "Demiplane",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 8,
+"spell": "Dominate Monster",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 8,
+"spell": "Earthquake",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 8,
+"spell": "Incendiary Cloud",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Sorcerer",
+"level": 8,
+"spell": "Power Word Stun",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 8,
+"spell": "Sunburst",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 9,
+"spell": "Gate",
+"school": "Conjuration",
+"special": "C, M"
+},
+{
+"class": "Sorcerer",
+"level": 9,
+"spell": "Meteor Swarm",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 9,
+"spell": "Power Word Kill",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 9,
+"spell": "Time Stop",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Sorcerer",
+"level": 9,
+"spell": "Wish",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 0,
+"spell": "Chill Touch",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 0,
+"spell": "Eldritch Blast",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 0,
+"spell": "Mage Hand",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 0,
+"spell": "Minor Illusion",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 0,
+"spell": "Poison Spray",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 0,
+"spell": "Prestidigitation",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 0,
+"spell": "True Strike",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 1,
+"spell": "Bane",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 1,
+"spell": "Charm Person",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 1,
+"spell": "Comprehend Languages",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Warlock",
+"level": 1,
+"spell": "Detect Magic",
+"school": "Divination",
+"special": "C, R"
+},
+{
+"class": "Warlock",
+"level": 1,
+"spell": "Expeditious Retreat",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 1,
+"spell": "Hellish Rebuke",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 1,
+"spell": "Hex",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 1,
+"spell": "Hideous Laughter",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 1,
+"spell": "Illusory Script",
+"school": "Illusion",
+"special": "R, M"
+},
+{
+"class": "Warlock",
+"level": 1,
+"spell": "Protection from Evil and Good",
+"school": "Abjuration",
+"special": "C, M"
+},
+{
+"class": "Warlock",
+"level": 1,
+"spell": "Speak with Animals",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Warlock",
+"level": 1,
+"spell": "Unseen Servant",
+"school": "Conjuration",
+"special": "R"
+},
+{
+"class": "Warlock",
+"level": 2,
+"spell": "Darkness",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 2,
+"spell": "Enthrall",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 2,
+"spell": "Hold Person",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 2,
+"spell": "Invisibility",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 2,
+"spell": "Mind Spike",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 2,
+"spell": "Mirror Image",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 2,
+"spell": "Misty Step",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 2,
+"spell": "Ray of Enfeeblement",
+"school": "Necromancy",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 2,
+"spell": "Spider Climb",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 2,
+"spell": "Suggestion",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 3,
+"spell": "Gaseous Form",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 3,
+"spell": "Hypnotic Pattern",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 3,
+"spell": "Magic Circle",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Warlock",
+"level": 3,
+"spell": "Major Image",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 3,
+"spell": "Remove Curse",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 3,
+"spell": "Tongues",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 3,
+"spell": "Vampiric Touch",
+"school": "Necromancy",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 3,
+"spell": "Counterspell",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 3,
+"spell": "Dispel Magic",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 3,
+"spell": "Fear",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 3,
+"spell": "Fly",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 4,
+"spell": "Banishment",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 4,
+"spell": "Blight",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 4,
+"spell": "Charm Monster",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 4,
+"spell": "Dimension Door",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 4,
+"spell": "Hallucinatory Terrain",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 5,
+"spell": "Contact Other Plane",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Warlock",
+"level": 5,
+"spell": "Dream",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 5,
+"spell": "Hold Monster",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 5,
+"spell": "Mislead",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 5,
+"spell": "Planar Binding",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Warlock",
+"level": 5,
+"spell": "Scrying",
+"school": "Divination",
+"special": "C, M"
+},
+{
+"class": "Warlock",
+"level": 5,
+"spell": "Teleportation Circle",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Warlock",
+"level": 6,
+"spell": "Circle of Death",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Warlock",
+"level": 6,
+"spell": "Create Undead",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Warlock",
+"level": 6,
+"spell": "Eyebite",
+"school": "Necromancy",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 6,
+"spell": "True Seeing",
+"school": "Divination",
+"special": "M"
+},
+{
+"class": "Warlock",
+"level": 7,
+"spell": "Etherealness",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 7,
+"spell": "Finger of Death",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 7,
+"spell": "Forcecage",
+"school": "Evocation",
+"special": "C, M"
+},
+{
+"class": "Warlock",
+"level": 7,
+"spell": "Plane Shift",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Warlock",
+"level": 8,
+"spell": "Befuddlement",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 8,
+"spell": "Demiplane",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 8,
+"spell": "Dominate Monster",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 8,
+"spell": "Glibness",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 8,
+"spell": "Power Word Stun",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 9,
+"spell": "Astral Projection",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Warlock",
+"level": 9,
+"spell": "Foresight",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 9,
+"spell": "Gate",
+"school": "Conjuration",
+"special": "C, M"
+},
+{
+"class": "Warlock",
+"level": 9,
+"spell": "Imprisonment",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Warlock",
+"level": 9,
+"spell": "Power Word Kill",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Warlock",
+"level": 9,
+"spell": "True Polymorph",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Warlock",
+"level": 9,
+"spell": "Weird",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Mage Hand",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Mending",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Message",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Minor Illusion",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Poison Spray",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Prestidigitation",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Ray of Frost",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Shocking Grasp",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "True Strike",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Acid Splash",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Chill Touch",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Dancing Lights",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Elementalism",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Fire Bolt",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 0,
+"spell": "Light",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Alarm",
+"school": "Abjuration",
+"special": "R"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Burning Hands",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Charm Person",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Chromatic Orb",
+"school": "Evocation",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Color Spray",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Comprehend Languages",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Detect Magic",
+"school": "Divination",
+"special": "C, R"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Disguise Self",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Expeditious Retreat",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "False Life",
+"school": "Necromancy",
+"special": "–"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Feather Fall",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Find Familiar",
+"school": "Conjuration",
+"special": "R, M"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Floating Disk",
+"school": "Conjuration",
+"special": "R"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Fog Cloud",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Grease",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Hideous Laughter",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Ice Knife",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Identify",
+"school": "Divination",
+"special": "R, M"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Illusory Script",
+"school": "Illusion",
+"special": "R, M"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Jump",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Longstrider",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Mage Armor",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Magic Missile",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Protection from Evil and Good",
+"school": "Abjuration",
+"special": "C, M"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Ray of Sickness",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Shield",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Silent Image",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Sleep",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Thunderwave",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 1,
+"spell": "Unseen Servant",
+"school": "Conjuration",
+"special": "R"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Acid Arrow",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Alter Self",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Arcane Lock",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Arcanist’s Magic Aura",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Augury",
+"school": "Divination",
+"special": "R, M"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Blindness/Deafness",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Blur",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Continual Flame",
+"school": "Evocation",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Darkness",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Darkvision",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Detect Thoughts",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Dragon’s Breath",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Enhance Ability",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Enlarge/Reduce",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Flaming Sphere",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Gentle Repose",
+"school": "Necromancy",
+"special": "R, M"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Gust of Wind",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Hold Person",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Invisibility",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Knock",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Levitate",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Locate Object",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Magic Mouth",
+"school": "Illusion",
+"special": "R, M"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Magic Weapon",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Mind Spike",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Mirror Image",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Misty Step",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Ray of Enfeeblement",
+"school": "Necromancy",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Rope Trick",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Scorching Ray",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "See Invisibility",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Shatter",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Spider Climb",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Suggestion",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 2,
+"spell": "Web",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Fear",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Fireball",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Fly",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Gaseous Form",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Glyph of Warding",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Haste",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Hypnotic Pattern",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Lightning Bolt",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Magic Circle",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Major Image",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Nondetection",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Phantom Steed",
+"school": "Illusion",
+"special": "R"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Protection from Energy",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Remove Curse",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Sending",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Sleet Storm",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Slow",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Speak with Dead",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Stinking Cloud",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Tiny Hut",
+"school": "Evocation",
+"special": "R"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Tongues",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Vampiric Touch",
+"school": "Necromancy",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Water Breathing",
+"school": "Transmutation",
+"special": "R"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Animate Dead",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Bestow Curse",
+"school": "Necromancy",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Blink",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Clairvoyance",
+"school": "Divination",
+"special": "C, M"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Counterspell",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 3,
+"spell": "Dispel Magic",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Polymorph",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Private Sanctum",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Resilient Sphere",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Secret Chest",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Stone Shape",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Stoneskin",
+"school": "Transmutation",
+"special": "C, M"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Vitriolic Sphere",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Wall of Fire",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Arcane Eye",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Banishment",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Black Tentacles",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Blight",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Charm Monster",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Confusion",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Conjure Minor Elementals",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Control Water",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Dimension Door",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Divination",
+"school": "Divination",
+"special": "R, M"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Fabricate",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Faithful Hound",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Fire Shield",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Greater Invisibility",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Hallucinatory Terrain",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Ice Storm",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Locate Creature",
+"school": "Divination",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 4,
+"spell": "Phantasmal Killer",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Animate Objects",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Arcane Hand",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Cloudkill",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Cone of Cold",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Conjure Elemental",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Contact Other Plane",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Creation",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Dominate Person",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Dream",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Geas",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Hold Monster",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Legend Lore",
+"school": "Divination",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Mislead",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Modify Memory",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Passwall",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Planar Binding",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Scrying",
+"school": "Divination",
+"special": "C, M"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Seeming",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Summon Dragon",
+"school": "Conjuration",
+"special": "C, M"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Telekinesis",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Telepathic Bond",
+"school": "Divination",
+"special": "R"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Teleportation Circle",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Wall of Force",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 5,
+"spell": "Wall of Stone",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Chain Lightning",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Circle of Death",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Contingency",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Create Undead",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Disintegrate",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Eyebite",
+"school": "Necromancy",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Flesh to Stone",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Freezing Sphere",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Globe of Invulnerability",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Guards and Wards",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Instant Summons",
+"school": "Conjuration",
+"special": "R, M"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Irresistible Dance",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Magic Jar",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Mass Suggestion",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Move Earth",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Programmed Illusion",
+"school": "Illusion",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Sunbeam",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "True Seeing",
+"school": "Divination",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 6,
+"spell": "Wall of Ice",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Arcane Sword",
+"school": "Evocation",
+"special": "C, M"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Delayed Blast Fireball",
+"school": "Evocation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Etherealness",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Finger of Death",
+"school": "Necromancy",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Forcecage",
+"school": "Evocation",
+"special": "C, M"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Magnificent Mansion",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Mirage Arcane",
+"school": "Illusion",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Plane Shift",
+"school": "Conjuration",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Prismatic Spray",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Project Image",
+"school": "Illusion",
+"special": "C, M"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Reverse Gravity",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Sequester",
+"school": "Transmutation",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Simulacrum",
+"school": "Illusion",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Symbol",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 7,
+"spell": "Teleport",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 8,
+"spell": "Antimagic Field",
+"school": "Abjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 8,
+"spell": "Antipathy/Sympathy",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 8,
+"spell": "Befuddlement",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 8,
+"spell": "Clone",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 8,
+"spell": "Control Weather",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 8,
+"spell": "Demiplane",
+"school": "Conjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 8,
+"spell": "Dominate Monster",
+"school": "Enchantment",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 8,
+"spell": "Incendiary Cloud",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 8,
+"spell": "Maze",
+"school": "Conjuration",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 8,
+"spell": "Mind Blank",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 8,
+"spell": "Power Word Stun",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 8,
+"spell": "Sunburst",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 9,
+"spell": "Astral Projection",
+"school": "Necromancy",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 9,
+"spell": "Foresight",
+"school": "Divination",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 9,
+"spell": "Gate",
+"school": "Conjuration",
+"special": "C, M"
+},
+{
+"class": "Wizard",
+"level": 9,
+"spell": "Imprisonment",
+"school": "Abjuration",
+"special": "M"
+},
+{
+"class": "Wizard",
+"level": 9,
+"spell": "Meteor Swarm",
+"school": "Evocation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 9,
+"spell": "Power Word Kill",
+"school": "Enchantment",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 9,
+"spell": "Prismatic Wall",
+"school": "Abjuration",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 9,
+"spell": "Shapechange",
+"school": "Transmutation",
+"special": "C, M"
+},
+{
+"class": "Wizard",
+"level": 9,
+"spell": "Time Stop",
+"school": "Transmutation",
+"special": "—"
+},
+{
+"class": "Wizard",
+"level": 9,
+"spell": "True Polymorph",
+"school": "Transmutation",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 9,
+"spell": "Weird",
+"school": "Illusion",
+"special": "C"
+},
+{
+"class": "Wizard",
+"level": 9,
+"spell": "Wish",
+"school": "Conjuration",
+"special": "—"
+}
+]

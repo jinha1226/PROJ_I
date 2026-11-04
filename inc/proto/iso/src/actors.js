@@ -99,7 +99,7 @@ function prep(e, r, t, dt) {
     sp = { w: dl.w, h: dl.h, foot: dl.foot, px: list[idx], weapon: dl.weapon, top: dl.top };
   } else sp = sprite(k2, fr) || sprite(key, 0);
   if (!sp) return null;
-  const sc = SC * (e.boss && sp.w < 24 ? 2 : 1);
+  const sc = SC * ((e.boss && sp.w < 24) || (e.kind === 'mon' && e.s >= 2) ? 2 : 1); // 큰 몬스터는 두 배로 (히드라)
   if (!down) { pend.push([wxp, wyp, 0], .34 * sc, [wxp, wyp, (sp.foot * sc) / (COS * S) * .85]); castShadow(wxp, wyp, 0, .42 * sc, 2); }
   return { e, sp, sx: base.sx + ox, sy: base.sy + oy, d: base.d, sc, flash, down, lq, moving, fk };
 }

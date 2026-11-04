@@ -43,7 +43,7 @@
   const weaponAtk = (x, c, o, extra, then) => {
     const w = DN.weapon(c), base = [w.n, w.d, w.b + DN.bsum(c, 'dmgB')]; let any = null;
     for (let i = 0; i < DN.attacks(c) && o.hp > 0; i++) {
-      if (Math.hypot(o.x - c.x, o.y - c.y) > Math.max(c.def.range || 0, 1.5) + 0.3) break; // 밀려나 닿지 않으면 남은 공격은 못 한다
+      if (Math.hypot(o.x - c.x, o.y - c.y) > Math.max(G.Dnd.rng(c) || 0, 1.5) + 0.3) break; // 밀려나 닿지 않으면 남은 공격은 못 한다
       const r = DN.attack(c, o); if (!any || r.hit) any = r;
       if (!r.hit) { DN.miss(x.rt, o); continue; }
       DN.dieMin = DN.melee(c) && F().sk(c, 'fs_gwf') ? 3 : 0; let d = dmg(x, c, base, r.crit); DN.dieMin = 0; if (extra) d += dmg(x, c, extra, r.crit);
@@ -111,7 +111,7 @@
     sr_intim: { res: LONG(1), bonus: true, when: W.close(6, 2), run(c, x) { ring(x, c, 6, '#ff5a3a'); for (const o of near(x, c, 6)) cond(x, c, o, 'wis', 'frightened', 10); } },
     // ── 파이터 ──
     sr_second: { res: SHORT(m => (m.lv >= 10 ? 4 : m.lv >= 4 ? 3 : 2)), bonus: true, when: W.self(0.5), run(c, x) { heal(x, c, c, [1, 10, c.merc.lv]); if (F().sk(c, 'ft_tshift')) G.Opt.shift(x, c); } },
-    sr_surge: { res: SHORT(m => (m.lv >= 17 ? 2 : 1)), free: true, when: (c, x) => !!nearest(x, c, c.def.range + 0.5), run(c, x) { say(x, c, '쇄도', '#ffe08a'); F().allyAttack(x.f, x.rt, c, nearest(x, c, c.def.range + 0.5)); } },
+    sr_surge: { res: SHORT(m => (m.lv >= 17 ? 2 : 1)), free: true, when: (c, x) => !!nearest(x, c, G.Dnd.rng(c) + 0.5), run(c, x) { say(x, c, '쇄도', '#ffe08a'); F().allyAttack(x.f, x.rt, c, nearest(x, c, G.Dnd.rng(c) + 0.5)); } },
     sr_cleave: { when: W.close(1.8, 2), run(c, x) { const o = nearest(x, c, 1.8), o2 = x.rt.mons.find(q => q !== o && q.hp > 0 && GR.dist(q, c) <= 1.8); weaponAtk(x, c, o); if (o2) strike(x, c, o2, (w => [w.n, w.d])(DN.weapon(c)), 'hit'); } },
     sr_topple: { when: W.close(1.8), run(c, x) { const o = nearest(x, c, 1.8); weaponAtk(x, c, o, null, () => { if (!DN.has(o, 'prone')) cond(x, c, o, 'con', 'prone', 1); }); } },
     sr_push: { when: W.close(1.8), run(c, x) { const o = nearest(x, c, 1.8); weaponAtk(x, c, o, null, () => push(x, c, o, 2)); } },
@@ -128,7 +128,7 @@
       const o = nearest(x, c, 1.8), w = DN.weapon(c);
       for (let i = 0; i < (c.merc.lv >= 10 ? 3 : 2) && o.hp > 0; i++) { G.fx(x.rt, { k: 'slash', x: o.x, y: o.y, t: 0.2, rot: Math.random() - 0.5, flip: i % 2 === 0 }); if (strike(x, c, o, [w.n, w.d, w.b], 'hit').hit && F().sk(c, 'sr_ohtech') && !DN.has(o, 'prone')) cond(x, c, o, 'dex', 'prone', 1); }
     } },
-    sr_patient: { res: FOCUS(1), bonus: true, when: (c, x) => W.close(1.8)(c, x) && !DN.bon(c, 'dodge'), run(c, x) { DN.buff(c, 'dodge', R6(1), { hitDis: 1 }); ring(x, c, 0.9, '#e8c860'); } },
+    sr_patient: { res: FOCUS(1), bonus: true, when: (c, x) => W.close(1.8)(c, x) && !DN.bon(c, 'dodge'), run(c, x) { DN.buff(c, 'dodge', R6(1), { hitDis: 1 }); ring(x, c, 0.9, '#e8c860'); if (c.merc.lv >= 10) { const w = DN.weapon(c); c.thp = Math.max(c.thp || 0, DN.dice(2, w.d)); } } },
     sr_wind: { res: FOCUS(1), bonus: true, when: (c, x) => x.seen.some(o => GR.dist(o, c) > 3 && GR.dist(o, c) <= 8), run(c, x) { const o = x.seen.filter(o => GR.dist(o, c) > 3 && GR.dist(o, c) <= 8).sort((p, q) => q.hp - p.hp)[0]; beam(x, c, o, '#e8c860', 3); jump(x, c, o.x + (c.x > o.x ? 0.8 : -0.8), o.y); } },
     sr_stun: { res: FOCUS(1), when: W.close(1.8), run(c, x) { const o = x.seen.filter(q => GR.dist(q, c) <= 1.8 && !(q.stun > 0)).sort((p, q) => q.hp - p.hp)[0]; if (!o) return false; weaponAtk(x, c, o, null, () => cond(x, c, o, 'con', 'stunned', 1)); } },
     sr_whole: { res: LONG(wisUses), bonus: true, when: W.self(0.5), run(c, x) { heal(x, c, c, [1, DN.weapon(c).d, DN.mod(DN.ab(c.merc).wis)]); } },
@@ -205,7 +205,7 @@
     sr_cone: { res: SL(5), base: 5, when: W.close(4), run(c, x) { ring(x, c, 4, '#bfe8ff'); for (const o of near(x, c, 4)) saveHit(x, c, o, 'con', evo(c, lvUp(x, [8, 8], 1))); sfx('chime'); } },
     sr_meteor: { res: SL(9), base: 9, when: W.seen, run(c, x) { const tg = strong(x); G.fx(x.rt, { k: 'tile', key: 'fx_fire', x: tg.x, y: tg.y, t: 0.9, s: 3.5 }); G.J.shake('fantasy', 10, 0, 1, 0.35); for (const o of near(x, tg, 8)) saveHit(x, c, o, 'dex', evo(c, [20, 6, 0, [20, 6]])); sfx('boom'); } },
     // ── 종족 ──
-    sr_breath: { res: LONG(profUses), when: W.close(3), run(c, x) { ring(x, c, 3, '#ff8a3a'); const sp = [DN.tier(c), 10], dc = 8 + DN.mod(DN.ab(c.merc).con) + DN.prof(c.merc.lv); for (const o of near(x, c, 3)) { const ok = DN.save(o, 'dex', dc), v = dmg(x, c, sp) * (ok ? 0.5 : 1); F().hurt(x.f, x.rt, o, v, 'smite', c); } } },
+    sr_breath: { res: LONG(profUses), dt: 'fire', when: W.close(3), run(c, x) { G.Foe.dtype = G.SRD.line(c.merc, 'dragonborn')?.dt || 'fire'; ring(x, c, 3, '#ff8a3a'); const sp = [DN.tier(c), 10], dc = 8 + DN.mod(DN.ab(c.merc).con) + DN.prof(c.merc.lv); for (const o of near(x, c, 3)) { const ok = DN.save(o, 'dex', dc), v = dmg(x, c, sp) * (ok ? 0.5 : 1); F().hurt(x.f, x.rt, o, v, 'smite', c); } } },
   });
 
   G.Skill.H = { weaponAtk, roll, dmg, G0, near, pick, strong, alive, alive2, lowest, heal, strike, saveHit, cond, W, persist, R6, lvUp, tierS, ring, beam, push, pmod, nearest };
@@ -217,7 +217,7 @@
       // 생존자: 절반 아래면 차례마다 5 + 건강 · 지치지 않음: 임시 체력 1d8 + 지혜 · 신성한 후광: 곁의 적 10 광휘
       if (F().sk(c, 'sr_survivor') && c.hp < c.max * 0.5) c.hp = Math.min(c.max, c.hp + (5 + DN.mod(DN.ab(c.merc).con)) * kHP);
       const fighting = rt.mons.some(o => o.aggro && GR.dist(o, c) <= 8);
-      if (F().sk(c, 'sr_tireless') && fighting && !(c.thp > 0)) c.thp = (1 + U.rand(8) + Math.max(0, DN.mod(DN.ab(c.merc).wis))) * kHP;
+      if (F().sk(c, 'sr_tireless') && fighting && !(c.thp > 0) && G.Res.once(c.merc, 'tireless', Math.max(1, DN.mod(DN.ab(c.merc).wis)))) c.thp = (1 + U.rand(8) + Math.max(0, DN.mod(DN.ab(c.merc).wis))) * kHP;
       if (F().sk(c, 'sr_nimbus') && fighting) for (const o of rt.mons.filter(o => GR.dist(o, c) <= 6)) { G.Foe.dtype = 'radiant'; F().hurt(f, rt, o, 10 * F().allyAtk(f, c) / Math.max(1, DN.avg(DN.weapon(c))), 'dot', c); G.Foe.dtype = null; }
     }
     if (!c.pe || !c.pe.length) return;

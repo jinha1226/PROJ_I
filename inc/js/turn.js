@@ -64,7 +64,7 @@ G.Turn = (() => {
       const pool = U.shuffle(rt.mons.filter(o => !o.boss && !o.flee)).sort((a, b) => inRoom(a) - inRoom(b)); // 조우 방에 있던 몬스터부터 쓴다: 다른 무리가 섞이지 않게
       // 조우 방은 한 무리로 다시 짠다 (전체 수는 그대로)
       for (const r of rooms) {
-        const n = Math.min(pool.length, ENC_MIN + Math.min(ENC_MAX - ENC_MIN, Math.floor(f.floor / 8)));
+        const n = Math.min(pool.length, F().packN(f.floor)); // 무리 크기는 난이도 곡선
         for (const d of n ? G.Foe.troop(f.floor, n) : []) {
           const old = pool.pop(); rt.mons = rt.mons.filter(o => o !== old);
           const c = []; for (let t = 0; t < 12 && !c.length; t++) { const x = r.x + U.rand(r.w), y = r.y + U.rand(r.h); if (m.c[y * m.w + x] === '.') c.push(x, y); }
@@ -144,7 +144,7 @@ G.Turn = (() => {
     }
   }
   // 곧 일어날 트롤이 있고 이 사람이 태우러 가야 하나: 불이 있거나, 근접이거나, 남은 적이 그뿐일 때
-  const burnFirst = (rt, e) => { const all = foes(rt), b = all.filter(G.Foe.needsFire); return b.length && (G.Foe.burns(e) || (e.def.range || 0) < 2 || all.every(o => o.down)) ? b : []; };
+  const burnFirst = (rt, e) => { const all = foes(rt), b = all.filter(G.Foe.needsFire); return b.length && (G.Foe.burns(e) || (G.Dnd.rng(e) || 0) < 2 || all.every(o => o.down)) ? b : []; };
   function target(rt, e) {
     if (e.kind === 'mon') {
       return G.Foe.target(rt, e);
@@ -160,11 +160,12 @@ G.Turn = (() => {
     return G.Tactics.guardTarget(rt, e, fs) || G.Tactics.pick(rt, vis, e) || G.Tactics.pick(rt, fs, e); // 싸우는 상대 중에서만
   }
   // 사거리 (칸): 근접은 옆 칸(대각선 포함), 원거리는 직업 사거리
-  const reach = (e, tg) => (e.kind === 'mon' ? G.Foe.reach(e) : tg && tg.down && !G.Foe.burns(e) ? MELEE_R : e.def.range >= 2 ? e.def.range : MELEE_R); // 횃불은 곁에서
+  const reach = (e, tg) => (e.kind === 'mon' ? G.Foe.reach(e) : tg && tg.down && !G.Foe.burns(e) ? MELEE_R : G.Dnd.rng(e) >= 2 ? G.Dnd.rng(e) : MELEE_R); // 횃불은 곁에서
   // 한 차례의 이동력 (칸). D&D의 이동 속도 30피트 = 6칸이 기준
-  const CLS_MOVE = { monk: 8, barbarian: 7, rogue: 7, dragoon: 5, paladin: 5 };
+  // SRD: 종족 속도 + 몽크 비무장 이동(2 · 6 · 10 · 14 · 18레벨) · 바바리안 빠른 이동(5레벨, 중갑 제외) − 근력이 모자란 갑옷 2칸
+  const srdMove = m => { const SR = G.SRD, sp = G.Res.species(m), base = SR.SPECIES[sp] || { move: 6 }, ln = SR.line(m, sp), q = SR.armorOf(m), str = DN().ab(m).str; let c = ln?.move || base.move; if (m.cls === 'monk' && q.cat === 'none' && !SR.eq(m).shield) c += m.lv >= 18 ? 6 : m.lv >= 14 ? 5 : m.lv >= 10 ? 4 : m.lv >= 6 ? 3 : m.lv >= 2 ? 2 : 0; if (m.cls === 'barbarian' && m.lv >= 5 && q.cat !== 'heavy') c += 2; if (m.cls === 'archer' && m.lv >= 6 && q.cat !== 'heavy') c += 2; if (q.str && str < q.str) c -= 2; return c; }; // 레인저 6레벨: 떠돌이
   const moveOf = e => (DN().held(e) || (DN().bon(e, 'daze') && G.RT.fantasy?.party?.some(p => !p.dead && Math.hypot(p.x - e.x, p.y - e.y) <= G.Foe.reach(e))) ? 0 : e.stood ? Math.floor(moveBase(e) / 2) : moveBase(e)); // 붙잡힘 · 속박 0, 일어선 차례는 절반 (SRD)
-  const moveBase = e => (e.kind === 'mon' ? G.Foe.move(e) : Math.round((CLS_MOVE[e.merc?.cls] || 6) * (1 + (e.merc ? G.Guild.sum(e.merc, 'move') : 0) + DN().bsum(e, 'moveK')))); // 빠른 이동 · 이동 장비도 칸으로
+  const moveBase = e => (e.kind === 'mon' ? G.Foe.move(e) : Math.round((e.merc ? srdMove(e.merc) : 6) * (1 + (e.merc ? G.Guild.sum(e.merc, 'move') : 0) + DN().bsum(e, 'moveK')))); // 빠른 이동 · 이동 장비도 칸으로
 
   function step(f, rt, st, dt) {
     const m = rt.map;
@@ -325,7 +326,7 @@ G.Turn = (() => {
     G.Tactics.snap(rt); // 기술로 옮겨 간 사람이 겹치지 않게
     st.tg = target(rt, e);
     if (!st.tg) { pause(st, SKIP); return; }
-    const held = DN().held(e), keep = e.kind === 'mon' ? G.Foe.ranged(e) : e.def.range >= 2 && G.Tactics.keeps(e) && !st.tg.down, can = (x, y) => canHit(rt.map, e, x, y, st.tg);
+    const held = DN().held(e), keep = e.kind === 'mon' ? G.Foe.ranged(e) : G.Dnd.rng(e) >= 2 && G.Tactics.keeps(e) && !st.tg.down, can = (x, y) => canHit(rt.map, e, x, y, st.tg);
     // 유지 · 후퇴: 칠 수 없고 적이 멀면 자리를 지킨다
     if (e.kind !== 'mon' && !canHit(rt.map, e, e.x, e.y, st.tg) && G.Tactics.waits(rt, st, e)) { e.ready = true; G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.1, s: '준비', col: '#9fc8ff', t: 0.7, sz: 0.7 }); pause(st, SKIP); return; } // 준비 행동 (SRD): 적이 곁에 오면 반응으로 먼저 친다
     // 위기 지시: 체력이 낮은 근접은 후열 동료 곁으로 물러난다
@@ -359,7 +360,7 @@ G.Turn = (() => {
     if (rt.phase === 'dead') return;
     G.Story.afterAct(f, rt, e, tg, rec, hp0);
     report(f, rt, e, tg, rec, before, null);
-    if (e.merc && DN().boon(e.merc, 'dimension') && tg.hp > 0 && GR.dist(e, tg) <= MELEE_R && (e.def.range >= 2 || e.hp < e.max * 0.5)) G.Foe.shove(rt, e, tg, 6); // 차원 여행의 은혜: 공격 뒤 순간 이동
+    if (e.merc && DN().boon(e.merc, 'dimension') && tg.hp > 0 && GR.dist(e, tg) <= MELEE_R && (G.Dnd.rng(e) >= 2 || e.hp < e.max * 0.5)) G.Foe.shove(rt, e, tg, 6); // 차원 여행의 은혜: 공격 뒤 순간 이동
     const back = e.kind === 'mon' ? G.Foe.retreat(rt, e, tg) : null;
     if (back && back.length) { st.path = back; st.ph = 'back'; return; }
     pause(st, BEAT);

@@ -54,7 +54,7 @@ G.Persona = (() => {
     ROWS: ['front', 'mid', 'back'],
     stance(a) {
       const m = a.merc;
-      if (!m) return a.def.range >= 3 ? 'mid' : 'front';
+      if (!m) return G.Dnd.rng(a) >= 3 ? 'mid' : 'front';
       const c = G.S.w.fantasy.form?.[m.uid];
       if (c != null) return P.ROWS[c / 3 | 0];
       if (a._stLv === m.lv && a._st) return a._st;
