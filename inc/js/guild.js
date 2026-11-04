@@ -9,6 +9,7 @@ G.Guild = (() => {
   // 해금 순서는 나중에 정한다 (사용자) — 지금은 임시
   const BASE = ['archer', 'cleric', 'bard', 'scout'], TIER = { mage: 4, paladin: 4, barbarian: 4, dragoon: 8, monk: 8, warlock: 8, archmage: 12, rogue: 12 };
   const GEAR_K = 1.1, GEAR_BASE = 30, GEAR_G = 1.25, AUTO_FORGE = 0.5;
+  const TRAIT_MEMO = new Map();
   const TRAIN_K = 0.1, TEMPLE_K = 0.12, RETIRE_LV = 20, LV_MAX = 20, BOON_LV = 19, BOON_EVERY = 5, EPIC_K = 1.06, ROSTER_BASE = 8, OFFERS_BASE = 3, SLOT_LV = [1, 1, 3, 5], SKILL_N = 4, PROMO_LV = 3, PROMO_K = 60, LOOKS = 3, TAVERN_T = 150, INJURY_T = 90, DOWNS_TO_INJURY = 2, LV_STEP = 0.08;
   // 직업별 몸값 무게 (트리 면허 값 순서와 같다)
   const CLS_W = { archer: 1, scout: 1.1, bard: 1.2, cleric: 1.5, mage: 2, paladin: 2.5, barbarian: 2.5, dragoon: 3, monk: 3, warlock: 3, archmage: 4, rogue: 4 };
@@ -99,7 +100,7 @@ G.Guild = (() => {
     capLv(m) { if (m.lv > LV_MAX) { m.bt = (m.bt || 0) + m.lv - LV_MAX; m.lv = LV_MAX; } Gd.giveBoons(m); },
     // 사람마다의 배율: 레벨(+8%/레벨) · 기벽 · 장신구 · 전직 · 전직 스킬의 수치(G.D.MSKILLS의 atk·hp·cd·heal)
     mult(m, k) {
-      let v = k === 'atk' || k === 'hp' ? (1 + LV_STEP * (m.lv - 1)) * Math.pow(EPIC_K, m.bt || 0) : 1;
+      let v = k === 'atk' || k === 'hp' ? Math.pow(EPIC_K, m.bt || 0) : 1; // 레벨은 SRD대로 숙련 · 체력 · 공격 횟수 · 소마법 단계로 자란다
       // 장비 강화 (DESIGN.md 57): 무기 단계마다 피해 ×1.1 · 갑옷 단계마다 체력 ×1.1
       if (k === 'atk') v *= Math.pow(GEAR_K, Gd.gear(m).w);
       if (k === 'hp') v *= Math.pow(GEAR_K, Gd.gear(m).a);
@@ -146,7 +147,25 @@ G.Guild = (() => {
     // ── 개인 스킬 (DESIGN.md 43): 직업 일곱 중 넷. 칸은 Lv 1에 둘 · Lv 3에 셋 · Lv 5에 넷 ──
     // 넷을 뽑아 배우는 레벨 순으로 (DESIGN.md 56 ②: SRD 주문 · 기술은 그 레벨이 되어야 쓴다)
     // 첫 칸은 대표 기술(D.MSIG), 나머지 셋은 풀에서 — 배우는 레벨 순
-    roll: cls => { const sig = D.MSIG[cls]; return [sig, ...U.shuffle(D.MPOOL[cls].filter(k => k !== sig)).slice(0, SKILL_N - 1).sort((a, b) => Gd.skLv(cls, a) - Gd.skLv(cls, b))]; },
+    // 고르는 것은 행동 · 추가 행동뿐 (사용자 결정). 소모 없음 · 반응 · 늘 적용은 레벨이 되면 저절로 (Gd.traits)
+    isPick: k => { const q = G.Skill.kindOf(k); return (q === '행동' || q === '추가 행동') && !G.Skill.SK[k]?.auto; },
+    pickable: cls => G.Pool.POOL[cls].filter(Gd.isPick),
+    // 레벨 · 전직이 같으면 같은 목록이라 저장해 두고 (전투 중 수없이 부른다), 사람마다 굴린 선택 기능(G.Opt)을 뒤에 붙인다
+    traits: m => { const key = `${m.cls}|${m.lv}|${m.adv || ''}`; let b = TRAIT_MEMO.get(key); if (!b) { const auto = k => !Gd.isPick(k) && !D.MSKILLS[k]?.explore && m.lv >= Gd.skLv(m.cls, k); b = [...new Set(D.MPOOL[m.cls].filter(auto).concat(m.adv ? D.ADV[m.adv].sig.filter(auto) : []))]; TRAIT_MEMO.set(key, b); } const o = G.Opt.of(m); return o.length ? b.concat(o) : b; },
+    roll: (cls, lv = 1) => {
+      const sig = D.MSIG[cls], pool = Gd.pickable(cls), can = pool.filter(k => Gd.skLv(cls, k) <= lv), first = pool.includes(sig) && Gd.skLv(cls, sig) <= lv ? [sig] : [];
+      const rest = U.shuffle(can.filter(k => !first.includes(k))).sort((a, b) => Gd.skLv(cls, b) - Gd.skLv(cls, a) + (Math.random() - 0.5) * 8); // 높은 레벨 쪽을 조금 더
+      const later = U.shuffle(pool.filter(k => !can.includes(k) && !first.includes(k))).sort((a, b) => Gd.skLv(cls, a) - Gd.skLv(cls, b));
+      return [...first, ...rest, ...later].slice(0, SKILL_N);
+    },
+    // 레벨이 오르면 쓸 수 없던 칸 · 낮은 기술 하나를 새 기술로 (사람이 고른 칸은 그대로)
+    grow(m) {
+      if (m.skManual || m.lv % 2) return;
+      const pool = Gd.pickable(m.cls), can = pool.filter(k => Gd.skLv(m.cls, k) <= m.lv && !m.skills.includes(k)); if (!can.length) return;
+      const sig = D.MSIG[m.cls], i = m.skills.map((k, j) => [Gd.skLv(m.cls, k), j, k]).filter(x => x[2] !== sig).sort((a, b) => (a[0] > m.lv) - (b[0] > m.lv) || 0).sort((a, b) => (b[0] > m.lv) - (a[0] > m.lv) || a[0] - b[0])[0]; if (!i) return;
+      const best = can.slice().sort((a, b) => Gd.skLv(m.cls, b) - Gd.skLv(m.cls, a)).slice(0, 4);
+      if (i[0] > m.lv || Gd.skLv(m.cls, best[0]) > i[0]) m.skills[i[1]] = U.pick(best);
+    },
     skLv(cls, k) { const L = D.MSKILLS[k]?.lv; return typeof L === 'object' ? L[cls] || 1 : L || 1; },
     // 그 칸이 열리는 레벨: 칸 레벨(1 · 1 · 3 · 5)과 기술 레벨 중 큰 쪽
     slotLv: (i, m, k) => Math.max(SLOT_LV[i], m && k ? Gd.skLv(m.cls, k) : 1),
@@ -155,12 +174,17 @@ G.Guild = (() => {
     skillLv: m => Math.min(5, 1 + Math.floor(((m?.lv || 1) - 1) / 3)),
     // 쓸 수 있는 기술: 열린 칸 + 서브클래스 기능 중 그 레벨이 된 것
     // + 마법 입문 (출신 재주) 주문
-    active: m => [...new Set(Gd.slots(m).concat(m.adv ? D.ADV[m.adv].sig.filter(k => m.lv >= Gd.skLv(m.cls, k)) : [], G.Feat.spell(m) || []))],
+    picks: m => { const sig = m.adv ? D.ADV[m.adv].sig.filter(k => m.lv >= Gd.skLv(m.cls, k) && Gd.isPick(k)) : []; return [...new Set(sig.concat(Gd.slots(m), G.Feat.spell(m) || [], G.Res.species(m) === 'dragonborn' ? ['sr_breath'] : []))].slice(0, SKILL_N); },
+    active: m => { const x = G.Pool.of(m); return [...new Set(Gd.picks(m).concat(Gd.traits(m), x ? [x] : []))]; },
+    // 기술 쓰는 순서: 사람이 정했으면 그 순서(왼쪽부터), 아니면 큰 것부터
+    order(m, list) { const pri = m.skPri, rank = k => { const i = pri ? pri.indexOf(k) : -1; return i >= 0 ? i : pri ? 99 : -G.Res.cost(m, G.Skill.SK[k]?.res); }; return list.map((k, i) => [k, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]); },
+    // 이 기술을 맨 앞으로
+    first(m, k) { const cur = Gd.order(m, m.skills.slice()); m.skPri = [k, ...cur.filter(q => q !== k)]; },
     // ── 상위 직업 (DESIGN.md 40): 몸 수치 = 기본 직업 + 전직 덮어쓰기 ──
     def(m) {
-      if (!m.adv) return D.F.allies[m.cls];
+      if (!m.adv) return G.Opt.defOf(m, D.F.allies[m.cls]);
       const A = D.ADV[m.adv];
-      return ADEF[m.adv] || (ADEF[m.adv] = { ...D.F.allies[A.base], ...(A.def || {}), t: A.t, col: A.col, n: A.n });
+      return G.Opt.defOf(m, ADEF[m.adv] || (ADEF[m.adv] = { ...D.F.allies[A.base], ...(A.def || {}), t: A.t, col: A.col, n: A.n }));
     },
     // 그림: 직업(전직) 그림 + 고용 때 정해진 색 변형 (DESIGN.md 41)
     tile: m => { const t = Gd.def(m).t, c = m.look ? t + '_c' + m.look : t; return G.ARTSET && !G.ARTSET[c] ? t : c; },
@@ -179,7 +203,7 @@ G.Guild = (() => {
     },
     skill: (m, key) => !!m && Gd.active(m).includes(key),
     // 수치 패시브 합 (splash·sight·move처럼 더하는 것)
-    sum(m, k) { let v = k === 'move' ? G.Trinket.sum(m, k) + (G.Dnd.boon(m, 'dimension') ? 1 : 0) : 0; for (const s of Gd.active(m)) { const S = D.MSKILLS[s]; if (S && typeof S[k] === 'number') v += S[k]; } return v + G.Story.scarSum(m, k); },
+    sum(m, k) { let v = k === 'move' ? G.Trinket.sum(m, k) : 0; for (const s of Gd.active(m)) { const S = D.MSKILLS[s]; if (S && typeof S[k] === 'number') v += S[k]; } return v + G.Story.scarSum(m, k); },
     goldBonus(rt) { let g = 0; for (const a of rt.allies) if (a.merc && !a.dead) g += G.Trinket.sum(a.merc, 'gold'); return g; },
     name(f) {
       const used = new Set(f.mercs.map(m => m.name).concat((f.tavern?.offers || []).map(o => o.m.name)));
@@ -192,7 +216,7 @@ G.Guild = (() => {
       // 선술집 등급: 능력치를 등급+1번 굴려 합이 큰 쪽
       let ab = G.Dnd.rollAb(cls);
       for (let i = 0; i < tv; i++) { const b = G.Dnd.rollAb(cls); if (G.Dnd.sumAb(b) > G.Dnd.sumAb(ab)) ab = b; }
-      return Object.assign({ uid: f.nextUid = (f.nextUid || 0) + 1, cls, name: Gd.name(f), lv, xp: 0, feat: G.Feat.roll(), pers: G.Persona.roll(), ab, abCls: cls, skills: Gd.roll(cls), look: U.rand(LOOKS), inj: 0, downs: 0 }, extra);
+      return Object.assign({ uid: f.nextUid = (f.nextUid || 0) + 1, cls, name: Gd.name(f), lv, xp: 0, feat: G.Feat.roll(), pers: G.Persona.roll(), ab, abCls: cls, skills: Gd.roll(cls, extra.lv || 1), look: U.rand(LOOKS), inj: 0, downs: 0 }, extra);
     },
     price(f, m) {
       let p = (CLS_W[m.cls] || 1) * F().monGold(f.maxFloor) * 15 * (1 + 0.15 * (m.lv + (m.bt || 0) - 1));
@@ -268,7 +292,7 @@ G.Guild = (() => {
     // ── 던전에서 일어나는 일 ──
     // 처치: 살아 있는 출전 용병 모두 경험치 (보스 10)
     onKill(f, rt, mo) {
-      const base = (mo.boss ? 10 : 1) * (1 + 0.2 * Gd.fac(f, 'train'));
+      const base = (mo.boss ? 10 : 1) * (mo.xpK || 1) * (1 + 0.2 * Gd.fac(f, 'train'));
       // 훈련장: 출전하지 않은 사람(부상 제외)도 경험치 일부
       const tr = TRAIN_K * Gd.fac(f, 'train') + 0.1 * Gd.jobPow(f, 'coach');
       const body = rt.party || rt.allies;
@@ -280,7 +304,7 @@ G.Guild = (() => {
         m.xp += base * Gd.mult(m, 'xp');
         while (m.xp >= Gd.needOf(m)) {
           m.xp -= Gd.needOf(m);
-          if (m.lv < LV_MAX) m.lv++; else m.bt = (m.bt || 0) + 1;
+          if (m.lv < LV_MAX) { m.lv++; Gd.grow(m); } else m.bt = (m.bt || 0) + 1;
           Gd.giveBoons(m);
           a.max = a.kind === 'hero' ? F().heroHP(f) : F().allyHP(f, a);
           G.fx(rt, { k: 'text', x: a.x, y: a.y - 1.2, s: Gd.lvText(m), col: m.bt ? '#ffd27a' : '#9fe79f', t: 1.2, sz: 1.1, pop: true });
@@ -291,7 +315,7 @@ G.Guild = (() => {
     // 대기 인원 경험치 (훈련장): 레벨이 오르면 은혜도
     addXp(m, x) {
       m.xp += x;
-      while (m.xp >= Gd.needOf(m)) { m.xp -= Gd.needOf(m); if (m.lv < LV_MAX) m.lv++; else m.bt = (m.bt || 0) + 1; Gd.giveBoons(m); }
+      while (m.xp >= Gd.needOf(m)) { m.xp -= Gd.needOf(m); if (m.lv < LV_MAX) { m.lv++; Gd.grow(m); } else m.bt = (m.bt || 0) + 1; Gd.giveBoons(m); }
     },
     // 쓰러짐: 한 층에서 DOWNS_TO_INJURY번이면 부상 — 출전에서 빠지고 대기 중에 낫는다
     onDown(f, rt, a) {
@@ -332,9 +356,8 @@ G.Guild = (() => {
       if (!f.mercs) f.mercs = [];
       // 스킬 일곱 중 넷(DESIGN.md 43) 전의 용병: 풀에 남은 것은 두고 나머지를 풀에서 채운다
       for (const m of f.mercs.concat((f.tavern?.offers || []).map(o => o.m), f.leader ? [f.leader] : [])) {
-        const pool = D.MPOOL[m.cls], sig = D.MSIG[m.cls], keep = (m.skills || []).filter(k => pool.includes(k) && k !== sig);
-        // 대표 기술이 첫 칸 (DESIGN.md 66) · 풀에서 빠진 기술은 새로
-        m.skills = [sig, ...keep.concat(U.shuffle(pool.filter(k => k !== sig && !keep.includes(k))))].slice(0, SKILL_N);
+        const pool = Gd.pickable(m.cls), keep = (m.skills || []).filter(k => pool.includes(k));
+        m.skills = keep.concat(Gd.roll(m.cls, m.lv).filter(k => !keep.includes(k))).slice(0, SKILL_N); // 자동 기술로 옮겨 간 칸은 새로 채운다
         if (m.look == null) m.look = U.rand(LOOKS);
         // 기벽 · 요양소를 뺐다 (DESIGN.md 61): 옛 기벽은 지우고 출신 재주를 굴린다
         if (!m.feat) m.feat = G.Feat.roll();

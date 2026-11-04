@@ -33,8 +33,8 @@ G.UI.views.fantasy = function () {
       if (!p) { partyEl.append(h('div.d-col', null, h('div.d-slot.empty', null, '+'))); slots.push({ p: null }); continue; }
       const hp = bar('hp'), st = bar('st'), lv = h('b.d-lv'), down = h('b.d-down');
       // 스킬 넷 (DESIGN.md 43): 자동이라 누르지 않는다 — 아이콘 위로 쿨타임이 걷힌다. 아직 안 열린 칸은 흐리게
-      const sks = (p.merc?.skills || []).map((k, j) => { const S = G.D.MSKILLS[k]; return { k, j, el: h('i.d-sk', { 'data-tip': `${S.n} · ${S.d}${S.passive ? '' : ` · ${S.cool}초`}` }, G.T.el(S.t, 'd-ski')) }; });
-      const el = h('div.d-slot' + (p.kind === 'hero' ? '.lead' : ''), { on: { click: e => { e.stopPropagation(); if (p.merc) sheet.open(p.merc); } } }, G.T.el(p.t, 'd-img'), lv, down, hp, G.TURN ? st : null,
+      const sks = (p.merc?.skills || []).map((k, j) => { const S = G.D.MSKILLS[k]; return { k, j, el: h('i.d-sk', { 'data-tip': `${S.n} · ${G.Skill.desc(p.merc, k)}` }, G.T.el(S.t, 'd-ski')) }; });
+      const el = h('div.d-slot' + (p.kind === 'hero' ? '.lead' : ''), { on: { click: e => { e.stopPropagation(); if (p.merc) sheet.open(p.merc); } } }, G.T.el(p.t, 'd-img'), lv, down, hp, st,
         p.merc?.pers?.length ? h('div.d-pers', null, ...p.merc.pers.map(k => G.T.el('ni_' + G.D.PERSONA[k].ic, 'd-pi'))) : null);
       partyEl.append(h('div.d-col', null, el, sks.length ? h('div.d-sks', null, sks.map(x => x.el)) : null));
       slots.push({ p, el, hp, st, lv, down, sks });
@@ -61,7 +61,7 @@ G.UI.views.fantasy = function () {
   // 대화 기록 (G.Banter): 왼쪽 위. 말풍선을 놓쳐도 여기서 읽는다 — 오래된 줄일수록 흐리게
   const chatEl = h('div.f-chat');
   // 턴제 전투 (G.Turn): 위쪽 가운데에 라운드 · 차례 순서 · 배속, 그 아래 DM 자막
-  const turnBar = h('div.t-bar'), turnWho = h('b.t-who'), turnOrder = h('div.t-order'), turnX = h('button.t-x', { 'data-tip': '전투 배속 (T)', on: { click: e => { e.stopPropagation(); G.Turn.nextSpeed(f()); } } });
+  const turnBar = h('div.t-bar'), turnWho = h('b.t-who'), turnOrder = h('div.t-order'), turnX = h('button.t-x', { 'data-tip': '배속 (T)', on: { click: e => { e.stopPropagation(); G.Turn.nextSpeed(f()); } } });
   turnBar.append(turnWho, turnOrder, turnX);
   const dmEl = h('div.t-dm');
   // 묻기 (G.Story): 잠깐 멈추고 고르게 한다. 시간이 다 되면 파티가 정한 대로
@@ -86,7 +86,7 @@ G.UI.views.fantasy = function () {
     tog(rollEl, 'hidden', !r);
     if (!r) return;
     if (r.id !== rollId) {
-      rollId = r.id; rollAt = performance.now();
+      rollId = r.id; if (!r.keep) rollAt = performance.now();
       setText(rollWho, `${r.who} → ${r.tg ? r.tg + ' · ' : ''}${r.what}`);
       setText(rollCalc, r.calc || ''); setText(rollWord, r.word || ''); setText(rollRes, r.res || '');
       tog(rollEl, 'foe', !!r.foe);
@@ -104,7 +104,8 @@ G.UI.views.fantasy = function () {
     setText(dmEl, dm);
     drawRoll(st || (!s.town && (rt.scene || rt.rollT > G.S.runTime)), rt);
     if (!st) { turnKey = ''; return; }
-    setText(turnWho, `${st.round}라운드`);
+    const pay = G.Story.pay(s);
+    setText(turnWho, `${st.round}라운드${pay > 1 ? ` · 보상 ×${pay.toFixed(1)}` : ''}`);
     setText(turnX, `×${G.Turn.speed(s)}`);
     const list = st.order.filter(x => (x.e.kind === 'mon' ? rt.mons.includes(x.e) : !x.e.dead)), key = st.round + '|' + (st.cur ? list.indexOf(list.find(x => x.e === st.cur)) : -1) + '|' + list.length;
     if (key === turnKey) return;
@@ -127,7 +128,7 @@ G.UI.views.fantasy = function () {
   document.addEventListener('keydown', G.UI.fantasyKeys = e => {
     if (G.UI.cur !== 'fantasy' || e.target.closest?.('input,textarea')) return;
     if (e.key.toLowerCase() === 'm') { G.UI.bigMap = !G.UI.bigMap; e.preventDefault(); return; }
-    if (e.key.toLowerCase() === 't' && F.rt(f()).turn) { G.Turn.nextSpeed(f()); e.preventDefault(); return; }
+    if (e.key.toLowerCase() === 't' && !f().town) { G.Turn.nextSpeed(f()); e.preventDefault(); return; }
     const c = CMDS.find(x => x.key.toLowerCase() === e.key.toLowerCase());
     if (c) { c.fn(); e.preventDefault(); return; }
     const n = +e.key;
@@ -213,7 +214,7 @@ G.UI.views.fantasy = function () {
       orbHP.el.style.setProperty('--v', s.town ? 1 : hpR);
       tog(orbHP.el, 'low', !s.town && hpR < 0.3);
       setText(orbHP.v, s.town ? '' : `${Math.round(hpR * 100)}%`);
-      orbHP.el.dataset.tip = `원정대 체력 ${U.fmt(Math.max(0, ph.hp))}/${U.fmt(ph.max)} · 공격 ×${U.fmt(F.atkMult() * F.dmgMult(s))} · 체력 ×${U.fmt(F.sum(F.parts('hp')))} · 재생 ${(F.regen(s) * 100).toFixed(1)}%/초 · 오염 ${(F.corruption(s, rt) * 100).toFixed(1)}%/초`;
+      orbHP.el.dataset.tip = `원정대 체력 ${U.fmt(Math.max(0, ph.hp))}/${U.fmt(ph.max)} · 공격 ×${U.fmt(F.atkMult() * F.dmgMult(s))} · 체력 ×${U.fmt(F.sum(F.parts('hp')))}`;
       orbBag.el.style.setProperty('--v', s.town ? 0 : c / cap);
       tog(orbBag.el, 'full', !s.town && EX.full(s));
       setText(orbBag.v, s.town ? '' : U.fmt(c));
@@ -225,7 +226,7 @@ G.UI.views.fantasy = function () {
         const p = r.p, dead = p.dead;
         setW(r.hp.fill, dead ? 0 : p.hp / p.max);
         tog(r.hp, 'low', !dead && p.hp / p.max < 0.3);
-        if (G.TURN) { const sv = (p.merc && p.merc.stress) || 0; setW(r.st.fill, sv / 100); r.st.dataset.tip = `스트레스 ${Math.round(sv)}`; tog(r.st, 'low', sv >= 70); tog(r.el, 'broke', !!p.broke); }
+        { const sv = (p.merc && p.merc.stress) || 0; setW(r.st.fill, sv / 100); r.st.dataset.tip = `스트레스 ${Math.round(sv)}`; tog(r.st, 'low', sv >= 70); tog(r.el, 'broke', !!p.broke); }
         tog(r.el, 'down', dead);
         tog(r.el, 'on', !!p.merc && sheet.current() === p.merc);
         setText(r.lv, p.merc ? p.merc.lv : '');

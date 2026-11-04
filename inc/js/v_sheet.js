@@ -148,7 +148,7 @@ G.UI.charSheet = function () {
   }
   // ── 오른쪽: 기술 ──
   function drawSkills(s, m) {
-    const row = (S, k, tag, off, cls = '') => { const cd = h('i.cs-cd'), el = h('div.cs-sk' + cls + (off ? '.off' : ''), null, h('span.cs-skic', null, G.T.el(S.t, 'cs-skimg'), cd), h('div', null, h('b', null, tag + S.n), h('small', null, `${S.d}${S.passive || !S.cool ? '' : ` · ${S.cool}초`}${off ? ` · Lv ${off}` : ''}`))); if (k && S.cool) live.sk.push({ k, cd, max: S.cool }); return el; };
+    const row = (S, k, tag, off, cls = '') => { const cd = h('i.cs-cd'), el = h('div.cs-sk' + cls + (off ? '.off' : ''), null, h('span.cs-skic', null, G.T.el(S.t, 'cs-skimg'), cd), h('div', null, h('b', null, tag + S.n), h('small', null, `${G.Skill.desc(m, k)}${off ? ` · Lv ${off}` : ''}`))); if (k && S.cool) live.sk.push({ k, cd, max: S.cool }); return el; };
     return h('div.cs-sks', null,
       h('div.cs-skh', null, h('small', { 'data-tip': '용병 레벨로 오른다' }, '스킬 레벨'), h('b', null, '★' + GD.skillLv(m))),
       (m.skills || []).map((k, i) => { const lv = GD.slotLv(i, m, k); return row(D.MSKILLS[k], k, k === D.MSIG[m.cls] ? '★ ' : '', m.lv < lv ? lv : 0); }),

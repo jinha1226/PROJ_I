@@ -13,58 +13,76 @@ G.Trinket = (() => {
   const COND_N = { burn: '화상', poison: '독', shock: '느려짐', prone: '넘어짐', restrained: '속박', frightened: '공포', paralyzed: '마비', blinded: '실명', poisoned: '중독' };
   const TY_N = { undead: '언데드', fiend: '악마', giant: '거인', beast: '야수', humanoid: '인간형', ooze: '점액', plant: '식물' };
   const pct = v => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`;
+  const DT_N = { acid: '산성', bludgeoning: '둔기', cold: '냉기', fire: '화염', force: '역장', lightning: '번개', necrotic: '사령', piercing: '관통', poison: '독', psychic: '정신', radiant: '광휘', slashing: '베기', thunder: '천둥' };
+  const RES_TABLE = ['acid', 'cold', 'fire', 'force', 'lightning', 'necrotic', 'poison', 'psychic', 'radiant', 'thunder']; // SRD 표
+  const sign = v => `${v > 0 ? '+' : ''}${v}`;
   const PROPS = {
-    ac: { t: v => `AC${v > 0 ? '+' : ''}${v}`, sc: v => v * 3 },
-    hit: { t: v => `명중${v > 0 ? '+' : ''}${v}`, sc: v => v * 3 },
-    save: { t: v => `내성${v > 0 ? '+' : ''}${v}`, sc: v => v * 2 },
-    ab: { t: (k, v) => `${AB_N[k]}${v > 0 ? '+' : ''}${v}`, sc: (k, v) => v * 1.5 },
+    ac: { t: v => `AC${sign(v)}`, sc: v => v * 3 },
+    hit: { t: v => `명중${sign(v)}`, sc: v => v * 3 },
+    dmgB: { t: v => `피해${sign(v)}`, sc: v => v * 2.5 },
+    save: { t: v => `내성${sign(v)}`, sc: v => v * 2 },
+    ab: { t: (k, v) => `${AB_N[k]}${sign(v)}`, sc: (k, v) => v * 1.5 },
     set: { t: (k, v) => `${AB_N[k]} ${v}`, sc: (k, v) => (v - 15) * 1.2 },
-    cd: { t: v => `공격 간격 ${pct(v - 1)}`, sc: v => (1 - v) * 30 },
-    taken: { t: v => `받는 피해 ${pct(v - 1)}`, sc: v => (1 - v) * 30 },
-    regen: { t: v => `재생 ${(v * 100).toFixed(1)}%/초`, sc: v => v * 400 },
-    crit: { t: v => `치명 ${20 - v}~20`, sc: v => v * 4 },
-    critX: { t: v => `치명 피해 ×${v}`, sc: v => (v - 1) * 8 },
-    proc: { t: (k, p) => `${COND_N[k] || k} ${Math.round(p * 100)}%`, sc: (k, p) => p * 15 },
+    dc: { t: v => `주문 DC${sign(v)}`, sc: v => v * 3 },
+    ex: { t: (n, d, ty, only) => `${only ? only.map(q => TY_N[q] || q).join('·') + '에 ' : ''}${n}d${d}${ty ? ' ' + DT_N[ty] : ''}`, sc: (n, d, ty, only) => n * (d + 1) / 2 * (only ? 0.5 : 1) },
+    res: { t: k => `${DT_N[k]} 저항`, sc: () => 3 },
+    resPick: { t: () => '피해 종류 저항', sc: () => 3 },
+    immT: { t: k => `${DT_N[k]} 피해 면역`, sc: () => 3 },
     imm: { t: k => `${COND_N[k] || k} 면역`, sc: () => 2.5 },
-    slay: { t: k => `${TY_N[k] || k} ×2`, sc: () => 4 },
-    boss: { t: v => `보스 ${pct(v)}`, sc: v => v * 8 },
-    hitDis: { t: () => '전위(나를 노리면 불리)', sc: () => 6 },
+    magicRes: { t: () => '주문 내성 이점', sc: () => 6 },
+    hitDis: { t: () => '맞기 전까지 나를 노리면 불리', sc: () => 6 },
     nocrit: { t: () => '치명타 무시', sc: () => 5 },
     init: { t: () => '선제권 이점', sc: () => 3 },
-    vorpal: { t: () => '참수(치명타면 보스 아닌 적 즉사)', sc: () => 9 },
-    lifesteal: { t: v => `흡혈 ${Math.round(v * 100)}%`, sc: v => v * 40 },
-    gold: { t: v => `골드 ${pct(v)}`, sc: v => v * 5 },
-    xp: { t: v => `경험치 ${pct(v)}`, sc: v => v * 5 },
     move: { t: v => `이동 ${pct(v)}`, sc: v => v * 10 },
+    oaDis: { t: () => '기회 공격에 불리', sc: () => 1 },
+    deathTen: { t: () => '사망 내성 최소 10', sc: () => 3 },
+    hdX2: { t: () => '전투 뒤 회복 ×2', sc: () => 1 },
+    regenRest: { t: v => `전투 뒤 ${v}d6 회복`, sc: () => 4 },
+    evade: { t: v => `민첩 내성 실패를 성공으로 (층마다 ${v}번)`, sc: v => v * 1.5 },
+    noCover: { t: () => '절반 엄폐 무시', sc: () => 1 },
+    acSet: { t: v => `기본 AC ${v} + 민첩`, sc: () => 6 },
+    snare: { t: () => '원거리 피해 −1d10 − 민첩', sc: () => 3 },
+    beads: { t: () => '화염구 구슬', sc: () => 6 },
+    stand: { t: () => '끌려가는 거리 −2칸', sc: () => 1 },
+    acFar: { t: v => `원거리 공격에 AC+${v}`, sc: v => v * 1.5 },
+    wtype: { t: k => `${DT_N[k]} 피해`, sc: () => 1 },
+    vorpal: { t: () => '20: 머리를 벤다', sc: () => 9 },
+    destroy: { t: v => `체력 ${v} 이하면 파괴 (지혜 DC 15)`, sc: () => 2 },
+    giantProne: { t: v => `거인 넘어뜨림 (근력 DC ${v})`, sc: () => 1 },
+    oath: { t: () => '맹세한 적: 이점 · 3d6', sc: () => 7 },
+    reroll: { t: () => '실패한 내성 다시 굴림', sc: () => 2 },
+    nine: { t: () => '20: 체력 100 미만 즉사 (건강 DC 15)', sc: () => 6 },
+    venom: { t: () => '독: 건강 DC 15 · 2d10 · 중독', sc: () => 3 },
+    hpLv: { t: () => '최대 체력 + 레벨', sc: () => 3 },
+    sharp: { t: v => `20: 베기 ${v}`, sc: () => 5 },
+    lifeS: { t: v => `20: 사령 ${v} · 임시 체력`, sc: () => 5 },
+    extraAtk: { t: () => '추가 행동 공격', sc: () => 8 },
   };
   // 피해 % · 체력 % · 치유 %는 없다 (DESIGN.md 62): 그 숫자는 대장간 몫. 물건은 할 수 있는 일을 바꾼다
-  const FLAT = new Set(['atk', 'hp', 'heal']);
   // 랜다트 좋은 속성 (무게, 굴림) · 나쁜 속성 (DCSS 랜다트의 단점처럼)
   const r2 = (a, b) => a + Math.random() * (b - a);
-  const COND_PROC = ['burn', 'poison', 'shock', 'prone', 'frightened', 'restrained'], IMM = ['poisoned', 'frightened', 'restrained', 'paralyzed', 'prone'], SLAY = ['undead', 'fiend', 'giant', 'beast', 'humanoid'];
+  const IMM = ['poisoned', 'frightened', 'restrained', 'paralyzed'];
   const GOOD = [
-    [3, () => ['ac', 1 + U.rand(2)]], [3, () => ['hit', 1 + U.rand(2)]], [3, () => ['save', 1 + U.rand(2)]],
+    [3, () => ['ac', 1 + U.rand(2)]], [3, () => ['save', 1 + U.rand(2)]],
     [4, () => ['ab', U.pick(Object.keys(AB_N)), 1 + U.rand(3)]],
-    [2, () => ['cd', r2(0.85, 0.95)]], [2, () => ['regen', r2(0.004, 0.015)]], [2, () => ['taken', r2(0.85, 0.95)]],
-    [1, () => ['crit', 1]], [2, () => ['proc', U.pick(COND_PROC), r2(0.12, 0.3)]], [1, () => ['imm', U.pick(IMM)]],
-    [2, () => ['gold', r2(0.1, 0.3)]], [1, () => ['xp', r2(0.1, 0.3)]], [1, () => ['move', r2(0.05, 0.15)]], [0.5, () => ['hitDis', 1]],
+    [1, () => ['imm', U.pick(IMM)]], [1, () => ['res', U.pick(RES_TABLE)]], [1, () => ['init', 1]], [0.5, () => ['magicRes', 1]],
   ];
-  const AGOOD = [[4, () => ['ac', 1 + U.rand(2)]], [3, () => ['taken', r2(0.82, 0.93)]], [2, () => ['save', 1 + U.rand(2)]], [2, () => ['imm', U.pick(IMM)]], [1, () => ['regen', r2(0.004, 0.012)]], [1, () => ['nocrit', 1]], [1, () => ['init', 1]]];
-  const WGOOD = [[2, () => ['slay', U.pick(SLAY)]], [1, () => ['boss', r2(0.2, 0.5)]], [0.5, () => ['lifesteal', r2(0.05, 0.12)]]];
-  const BAD = [[2, () => ['taken', r2(1.08, 1.2)]], [1, () => ['cd', r2(1.05, 1.15)]], [1, () => ['ac', -1 - U.rand(2)]], [1, () => ['save', -1 - U.rand(2)]], [1, () => ['gold', -r2(0.1, 0.25)]]];
+  const AGOOD = [[4, () => ['ac', 1 + U.rand(2)]], [3, () => ['res', U.pick(RES_TABLE)]], [2, () => ['save', 1 + U.rand(2)]], [2, () => ['imm', U.pick(IMM)]], [1, () => ['nocrit', 1]]];
+  const WGOOD = [[3, () => ['hit', 1 + U.rand(3)]], [3, () => ['dmgB', 1 + U.rand(3)]], [2, () => ['ex', 1 + U.rand(2), U.pick([4, 6]), U.pick(['fire', 'cold', 'lightning', 'radiant', 'necrotic'])]], [1, () => ['ex', 2, 6, 'radiant', ['undead', 'fiend']]]];
+  const BAD = [[1, () => ['ac', -1 - U.rand(2)]], [1, () => ['save', -1 - U.rand(2)]], [1, () => ['hit', -1 - U.rand(2)]]];
   const wpick = list => { const tot = list.reduce((a, x) => a + x[0], 0); let r = Math.random() * tot; for (const x of list) if ((r -= x[0]) <= 0) return x[1]; return list[0][1]; };
 
   const T = {
-    SLOT_KEYS, CAP, PROPS,
+    SLOT_KEYS, CAP, PROPS, DT_N,
     all: f => f.trinkets || (f.trinkets = []),
     // 물건의 모양: 이름 · 아이콘 · 칸 · 직업 · 희귀도 · 속성
     def(t) {
       if (t.rand) return t.rand;
       const A = D.ARTS[t.k];
-      return A ? { n: A.n, en: A.en, ic: A.ic, slot: A.slot || 't', fit: A.fit, r: A.r, shield: A.shield, props: A.props, fixed: true } : null;
+      return A ? { n: A.n, en: A.en, ic: A.ic, slot: A.slot || 't', fit: A.fit, r: A.r, shield: A.shield, props: A.props.map(p => (p[0] === 'resPick' ? ['res', RES_TABLE[(t.id || 0) % RES_TABLE.length]] : p)), fixed: true } : null;
     },
     name: t => T.def(t)?.n || '?',
-    tags: t => T.def(t).props.map(p => { const P = PROPS[p[0]]; return P ? P.t(p[1], p[2]) : p[0]; }),
+    tags: t => T.def(t).props.map(p => { const P = PROPS[p[0]]; return P ? P.t(p[1], p[2], p[3], p[4]) : p[0]; }),
     tip: t => { const d = T.def(t); return `${d.n}${d.en ? ` (${d.en})` : ''}${d.fixed ? '' : ' · 랜다트'} · ${T.tags(t).join(' · ')}${d.fit ? ' · ' + d.fit.map(c => G.D.F.allies[c].n).join('/') : ''}`; },
     fits: (t, m) => { const d = T.def(t); return !d.fit || d.fit.includes(m.cls); },
     worn: (f, uid) => T.all(f).filter(t => t.on === uid),
@@ -90,35 +108,41 @@ G.Trinket = (() => {
     },
     imm: (m, cond) => T.props(m, 'imm').some(p => p[1] === cond),
     has: (m, k) => T.props(m, k).length > 0,
-    // 맞히는 피해 (F.hurt): 학살(그 생물 종류 ×2) · 보스
-    dmg(rt, a, o) {
-      if (!a.merc) return 1;
-      let v = 1;
-      for (const p of T.props(a.merc, 'slay')) if (o.ty === p[1]) v *= 2;
-      if (o.boss) for (const p of T.props(a.merc, 'boss')) v *= 1 + p[1];
-      return v;
+    // 맞혔을 때 (SRD 물건 효과): 추가 주사위 · 20의 효과. k = 피해 1점의 값 (주사위 → 게임 수치)
+    onHit(f, rt, a, o, k, nat) {
+      const m = a.merc, D = G.Dnd, hit = (v, ty) => { G.Foe.dtype = ty || D.weapon(a).t; F().hurt(f, rt, o, v * k, 'extra', a); G.Foe.dtype = null; }, sc = o.scale || 1;
+      if (!m || o.kind !== 'mon') return;
+      for (const p of T.props(m, 'ex')) if (o.hp > 0 && (!p[4] || p[4].includes(o.ty))) hit(D.dice(p[1], p[2]), p[3]);
+      if (T.has(m, 'oath') && o.hp > 0) { if (!a.sworn || a.sworn.hp <= 0) a.sworn = o; if (a.sworn === o) hit(D.dice(3, 6), 'piercing'); }
+      if (T.has(m, 'destroy') && o.hp > 0 && (o.ty === 'undead' || o.ty === 'fiend') && o.hp <= 25 * sc && !D.save(o, 'wis', 15)) { G.fx(rt, { k: 'text', x: o.x, y: o.y - 1.2, s: '파괴', col: '#ffe08a', t: 1, sz: 1, pop: true }); F().hurt(f, rt, o, o.hp * 9, 'extra', a); }
+      if (T.has(m, 'giantProne') && o.hp > 0 && o.ty === 'giant' && !D.save(o, 'str', 15)) D.give(rt, o, 'prone', 10, a);
+      if (T.has(m, 'venom') && o.hp > 0) { const s = G.Res.of(m); if (!s.sp.venom) { s.sp.venom = true; if (!D.save(o, 'con', 15)) { hit(D.dice(2, 10), 'poison'); if (o.hp > 0) D.give(rt, o, 'poisoned', 10, a); } } } // 새벽까지 한 번
+      if (nat !== 20 || o.hp <= 0) return;
+      if (D.boon(m, 'irresistible')) { const ab = D.ab(m); hit(Math.max(ab.str, ab.dex)); if (o.hp <= 0) return; }
+      for (const p of T.props(m, 'sharp')) hit(p[1], 'slashing');
+      for (const p of T.props(m, 'lifeS')) if (o.ty !== 'undead' && o.ty !== 'construct') { hit(p[1], 'necrotic'); a.thp = Math.max(a.thp || 0, p[1] * a.max / Math.max(1, D.srdHP(m))); }
+      if (T.has(m, 'vorpal') && o.hp > 0 && o.ty !== 'ooze' && o.ty !== 'plant') { G.fx(rt, { k: 'text', x: o.x, y: o.y - 1.2, s: '참수', col: '#ff6a6a', t: 1, sz: 1.1, pop: true }); F().hurt(f, rt, o, o.hp * 9, 'extra', a); }
+      if (T.has(m, 'nine') && o.hp > 0 && o.hp < 100 * sc) { const t = T.weapon(m); if (t) { if (t.ch == null) t.ch = 2 + U.rand(8); if (t.ch > 0 && !D.save(o, 'con', 15)) { t.ch--; G.fx(rt, { k: 'text', x: o.x, y: o.y - 1.2, s: '목숨을 앗다', col: '#ff6a6a', t: 1, sz: 1, pop: true }); F().hurt(f, rt, o, o.hp * 9, 'extra', a); } } }
     },
-    taken: (rt, a) => (a.merc ? T.prod(a.merc, 'taken') : 1),
-    // 기본 공격이 맞았을 때 (F.afterHit): 확률로 상태이상 — 지속 피해는 바로, 상태이상은 맞는 쪽 내성
-    proc(f, rt, a, o, dmg) {
-      for (const p of T.props(a.merc, 'proc')) {
-        if (!U.chance(p[2]) || o.hp <= 0) continue;
-        if (p[1] === 'burn' || p[1] === 'poison') F().inflict(f, rt, o, p[1], 3, a, dmg * 0.3);
-        else if (p[1] === 'shock') o.shock = Math.max(o.shock || 0, 2);
-        else if (!G.Dnd.save(o, p[1] === 'prone' || p[1] === 'restrained' ? 'str' : 'wis', G.Dnd.dc(a))) G.Dnd.give(rt, o, p[1], p[1] === 'prone' ? 1.5 : 3, a);
-      }
-    },
-    // 치명타가 났을 때 (F.allyAttack): 피해 배율을 돌려준다 — 예리함 · 흡혈 · 참수
-    onCrit(f, rt, a, o, d) {
-      if (!a.merc) return 1;
-      let k = 1;
-      for (const p of T.props(a.merc, 'critX')) k *= p[1];
-      for (const p of T.props(a.merc, 'lifesteal')) a.hp = Math.min(a.max, a.hp + a.max * p[1]);
-      if (T.has(a.merc, 'vorpal') && !o.boss && o.kind === 'mon') { G.fx(rt, { k: 'text', x: o.x, y: o.y - 1.2, s: '참수', col: '#ff6a6a', t: 1, sz: 1.1, pop: true }); return o.hp / Math.max(1, d) + 1; }
-      return k;
+    // 화염구 구슬 (SRD): 3레벨 화염구 8d6, DC 15, 구슬 1d6 + 3개. 적이 셋 이상 모였을 때 던진다. 그 차례의 행동을 쓴다
+    beads(f, rt, a) {
+      const m = a.merc; if (!m || !T.has(m, 'beads')) return false;
+      const t = T.of(m).find(q => T.def(q).props.some(p => p[0] === 'beads')); if (t.beads == null) t.beads = 4 + U.rand(6);
+      if (t.beads <= 0) return false;
+      const fs = rt.mons.filter(o => o.hp > 0 && o.aggro && F().sees(rt.map, a, o) && Math.hypot(o.x - a.x, o.y - a.y) <= 6), around = c => fs.filter(o => Math.hypot(o.x - c.x, o.y - c.y) <= 4);
+      if (!fs.length) return false;
+      const c = fs.reduce((p, q) => (around(q).length > around(p).length ? q : p)), list = around(c);
+      if (list.length < 3 || list.some(o => Math.hypot(o.x - a.x, o.y - a.y) <= 1.5)) return false;
+      t.beads--;
+      G.fx(rt, { k: 'ring', x: c.x, y: c.y, r: 4, t: 0.5, col: '#ff8a3a' });
+      const roll = G.Dnd.dice(8, 6), k = F().allyAtk(f, a) / Math.max(1, G.Dnd.avg(G.Dnd.weapon(a))) * G.Turn.pace;
+      G.Foe.dtype = 'fire';
+      for (const o of list) F().hurt(f, rt, o, roll * k * (G.Dnd.save(o, 'dex', 15) ? 0.5 : 1), 'extra', a);
+      G.Foe.dtype = null;
+      return true;
     },
     // 값어치 (자동 장착 · 넘칠 때 팔 순서)
-    score: t => T.def(t).props.reduce((a, p) => { const P = PROPS[p[0]]; return a + (P ? P.sc(p[1], p[2]) : 0); }, 0),
+    score: t => T.def(t).props.reduce((a, p) => { const P = PROPS[p[0]]; return a + (P ? P.sc(p[1], p[2], p[3], p[4]) : 0); }, 0),
     rarity: t => T.def(t).r,
     price: (f, t) => Math.ceil(F().monGold(Math.max(1, t.lv || f.maxFloor)) * 15 * Math.max(1, T.score(t))),
 
@@ -214,7 +238,7 @@ G.Trinket = (() => {
     migrate(f) {
       for (const t of T.all(f)) if (!t.rand && !(t.k && D.ARTS[t.k])) { t.rand = T.randart(f.maxFloor || 1); t.lv = f.maxFloor || 1; delete t.k; delete t.g; }
       // 옛 랜다트의 피해 % · 체력 % · 치유 %는 지운다 (다 지워지면 명중 +1 하나)
-      for (const t of T.all(f)) if (t.rand) { t.rand.props = t.rand.props.filter(p => !FLAT.has(p[0])); if (!t.rand.props.length) t.rand.props.push(['hit', 1]); }
+      for (const t of T.all(f)) if (t.rand) { t.rand.props = t.rand.props.filter(p => PROPS[p[0]]); if (!t.rand.props.length) t.rand.props.push(['hit', 1]); }
       // 장신구 두 칸 → 한 칸 (DESIGN.md 58): 칸마다 하나만 남긴다
       for (const m of f.mercs) { const seen = new Set(); for (const t of T.worn(f, m.uid)) { if (seen.has(T.slot(t))) t.on = null; else seen.add(T.slot(t)); } }
     },

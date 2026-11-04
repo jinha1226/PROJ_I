@@ -37,9 +37,10 @@ G.Season = (() => {
       const rows = G.Rivals.standings(f, rt).map(r => (r.us ? { ...r, floor: f.maxFloor } : r)).sort((a, b) => b.floor - a.floor || (a.us ? -1 : 1));
       const rank = rows.findIndex(r => r.us), st = G.Rivals.st(f);
       const won = Object.values(st).reduce((a, x) => a + x.losses, 0), lost = Object.values(st).reduce((a, x) => a + x.wins, 0);
-      const fame = f.maxFloor + (RANK_FAME[rank] || 0) + won;
+      const legend = G.Story.legendFame(f), anc = G.Story.seasonEnd(f);
+      const fame = f.maxFloor + (RANK_FAME[rank] || 0) + won + legend;
       G.Guild.earnFame(f, fame);
-      f.seasonEnd = { n: S.st(f).n, rank: rank + 1, of: rows.length, floor: f.maxFloor, won, lost, fame, rows: rows.map(r => ({ n: r.n, col: r.col, floor: r.floor, us: !!r.us })), t: RESULT_T };
+      f.seasonEnd = { n: S.st(f).n, rank: rank + 1, of: rows.length, floor: f.maxFloor, won, lost, fame, legend, anc, rows: rows.map(r => ({ n: r.n, col: r.col, floor: r.floor, us: !!r.us })), t: RESULT_T };
       G.log(`시즌 ${S.st(f).n} · ${rank + 1}위 · ${f.maxFloor}층 · 명성 +${fame}`, 'fantasy', 'good');
       G.J.sfx('fantasy', 'finish');
     },
@@ -57,6 +58,7 @@ G.Season = (() => {
       f.season = { n: old.n + 1, seed: (Math.random() * 2 ** 31) >>> 0, maps: {}, cov: {}, t: 0 };
       G.Rivals.news.length = 0; G.Rivals.said = {}; G.Rivals.peace = {};
       G.Guild.refresh(f);
+      G.Story.seasonNext(f);
       rt.rivals = []; rt.mons = []; rt.chests = []; rt.mapFl = null;
       G.Fantasy.refreshEnts(rt);
       G.log(`시즌 ${f.season.n} 시작`, 'fantasy', 'good');
@@ -83,7 +85,7 @@ G.Season = (() => {
       rt.seen = S.decode(S.st(f).maps[fl], m.w * m.h);
       rt.seenVer++;
       rt.mapFl = fl; rt.mapSaveT = SAVE_T;
-      m.passN = m.c.reduce((a, ch) => a + (ch !== '#' ? 1 : 0), 0);
+      m.passN = m.c.reduce((a, ch) => a + (ch !== '#' && ch !== '~' ? 1 : 0), 0);
     },
     save(f, rt) {
       if (!rt.map || rt.mapFl == null) return;
@@ -105,7 +107,7 @@ G.Season = (() => {
     sightBonus(rt) { const g = S.guides(rt); return (g.guide ? 2 : 0) + g.keen; },
     // 「아는 층」 기준: 80% · 길잡이가 있으면 50% · 길눈 하나마다 -10%p
     knowAt(rt) { const g = S.guides(rt); return Math.max(0.3, (g.guide ? GUIDE_AT : KNOW_AT) - KEEN_STEP * g.keen); },
-    known: (f, rt) => f.direct !== false && rt.mapFl != null && S.coverage(f, rt.mapFl) >= S.knowAt(rt),
+    known: (f, rt) => !G.Region.of(f) && f.direct !== false && rt.mapFl != null && S.coverage(f, rt.mapFl) >= S.knowAt(rt),
   };
   return S;
 })();

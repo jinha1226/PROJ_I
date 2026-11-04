@@ -27,15 +27,19 @@ G.Mission = (() => {
       return r && r.ok ? r.who : null;
     },
     // 굴린 결과까지: { who(굴린 사람), nat, mod, dc, ok } — 말풍선에 판정을 보여 줄 때 (실패해도 who가 있다)
-    roll(f, rt, sk, extra = 0) {
+    roll(f, rt, sk, extra = 0, by = null, fixDC = null) {
       const ms = rt.party.filter(p => p.merc && !p.dead), b = G.Dnd.best(ms.map(p => p.merc), sk);
       if (!b.m) return null;
       // 가장 잘하는 사람과 2 이내면 누구든 나선다 (늘 같은 사람만 말하지 않게)
-      const val = p => G.Dnd.best([p.merc], sk).v, who = U.pick(ms.filter(p => val(p) >= b.v - 2)), nat = G.Dnd.d20(0), mod = val(who), dc = DC(f.floor) + extra;
-      return { who, nat, mod, dc, ok: nat + mod >= dc };
+      const val = p => G.Dnd.best([p.merc], sk).v, who = by && !by.dead ? by : U.pick(ms.filter(p => val(p) >= b.v - 2)), nat = G.Dnd.d20(0), mod = val(who), dc = fixDC ?? DC(f.floor) + extra + (G.CHECK_DC || 0);
+      let tot = nat + mod;
+      if (tot < dc && G.Pool.of(who.merc) === 'x_tmind' && G.Res.can(who.merc, 'sr_second', G.Skill.SK.sr_second.res)) { tot += 1 + U.rand(10); if (tot >= dc) { G.Res.pay(who.merc, 'sr_second', G.Skill.SK.sr_second.res); G.Pool.used(who, 'x_tmind'); } } // 전술적 사고 (SRD): 실패에 d10. 그래도 실패면 소모 안 함
+      return { who, nat, mod: tot - nat, dc, ok: tot >= dc };
     },
     // 이 층의 임무 (시즌마다 같은 층은 같은 임무)
     kind(f, fl) {
+      return null; // 임무는 실시간 규칙이라 뺐다. 턴제로 다시 만들 때까지 없다 (DESIGN.md 77)
+      // eslint-disable-next-line no-unreachable
       if (fl < FIRST || F().isBoss(fl)) return null;
       return KEYS[Math.floor(G.Season.rng(f, fl * 31 + 7)() * KEYS.length)];
     },

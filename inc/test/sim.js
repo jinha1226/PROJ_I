@@ -11,13 +11,13 @@ function boot() {
   M.random = () => { st = (st + 0x6D2B79F5) >>> 0; let t = st; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const ctx = { console, Math: M, JSON, Date, btoa, atob };
   vm.createContext(ctx);
-  for (const f of ['core', 'data', 'grid', 'juice', 'tree', 'trees', 'season', 'fantasy', 'rivals', 'guild', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'combo', 'command', 'expedition', 'mission', 'explore', 'banter', 'turn', 'story', 'state'])
+  for (const f of ['core', 'data', 'srd_mons', 'grid', 'juice', 'tree', 'trees', 'season', 'fantasy', 'rivals', 'guild', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'srd_spells', 'spells', 'traits', 'options', 'pools', 'combo', 'command', 'expedition', 'mission', 'explore', 'banter', 'sight', 'tactics', 'foe', 'region', 'res', 'turn', 'flow', 'story', 'state'])
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', f + '.js'), 'utf8'), ctx, { filename: f + '.js' });
   return ctx.G;
 }
 const G = boot();
-// --turn: 처음 가는 층의 전투를 턴제로 (DESIGN.md 71)
-if (process.argv.includes('--turn')) G.TURN = true;
+// --check: 진행 순서가 G.Flow의 규칙을 지키는지 검사한다 (test/flow_rules.js)
+if (process.argv.includes('--check')) require('./flow_rules.js')(G);
 // 스킬 · 연계기 시전 횟수 (G.Skill · G.Combo가 센다)
 G.Sim = { casts: {}, combos: {} };
 G.newState();

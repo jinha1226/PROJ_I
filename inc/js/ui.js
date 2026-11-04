@@ -124,7 +124,8 @@ G.UI = {
         h('button.btn', { on: { click: () => { G.save(); this.toast('저장했다'); } } }, '지금 저장'),
         h('button.btn', { on: { click: () => { ta.value = G.exportSave(); ta.select(); } } }, '내보내기'),
         h('button.btn', { on: { click: () => { try { G.importSave(ta.value); G.save(); this.show(this.cur); this.toast('불러왔다'); } catch (e) { this.toast('저장 코드가 올바르지 않다', 'bad'); } } } }, '불러오기'),
-        h('button.btn.danger', { on: { click: () => { if (confirm('모든 진행을 지울까요? 되돌릴 수 없습니다.')) { G.hardReset(); G.save(); this.show('fantasy'); } } } }, '초기화'))),
+        h('button.btn.danger', { on: { click: () => { if (confirm('모든 진행을 지울까요? 되돌릴 수 없습니다.')) { G.hardReset(); G.save(); this.show('fantasy'); } } } }, '초기화')),
+      h('small.notice', { style: 'display:block;margin-top:12px;opacity:.7;line-height:1.4' }, G.D.NOTICE, ' Compatible with fifth edition.')),
     [{ label: '닫기' }]);
   },
 

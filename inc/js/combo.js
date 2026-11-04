@@ -87,13 +87,13 @@ G.Combo = (() => {
   // 무엇이 그 계기를 거나 (마을 표시용): 기술 키
   const BY = {
     prone: ['sr_topple', 'sr_ohtech', 'sr_cstrike'],
-    stunned: ['sr_stun', 'sr_devious', 'sr_sleep', 'sr_hypno', 'sr_turn', 'sr_hurl'],
+    stunned: ['sr_stun', 'sr_sleep', 'sr_hypno', 'sr_turn', 'sr_hurl'],
     paralyzed: ['sr_hold'],
     restrained: ['sr_ensnare', 'sr_entangle', 'sr_web'],
     frightened: ['sr_intim', 'sr_whisper', 'sr_fear', 'sr_turn'],
     poisoned: ['sr_cstrike'],
     burn: ['sr_searing', 'm_burn'],
-    blinded: ['sr_dark'],
+    blinded: ['sr_dark', 'sr_devious'],
     outlined: ['sr_gbolt'],
     hm: ['sr_hmark', 'sr_hex'],
     web_fire: ['sr_web', 'sr_entangle', 'sr_ensnare'],

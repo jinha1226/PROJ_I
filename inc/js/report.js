@@ -40,7 +40,7 @@ G.Report = (() => {
         const o = r.riv[d.id] || { w: 0, l: 0 }, beat = st[d.id].losses - o.l, lostTo = st[d.id].wins - o.w;
         if (beat > 0 || lostTo > 0) rivals.push({ n: d.n, col: d.col, beat, lostTo });
       }
-      f.report = { from: r.from, to: f.floor, why, got, lost, kills: (f.kills || 0) - r.kills, mercs, tkGain, tkLost, friends, rivals, dead: r.dead || [], broke: r.broke || [], avenged: r.avenged || [], seen: false, at: G.S.runTime };
+      f.report = { from: r.from, to: f.floor, why, got, lost, kills: (f.kills || 0) - r.kills, mercs, tkGain, tkLost, friends, rivals, legacy: r.legacy || 0, legend: r.legend || 0, dead: r.dead || [], broke: r.broke || [], avenged: r.avenged || [], seen: false, at: G.S.runTime };
       f.run = null;
     },
   };

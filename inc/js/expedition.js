@@ -49,6 +49,7 @@ G.Exp = (() => {
       G.Story.home(f);
       G.Report.make(f, why, keep, c - keep);
       f.press = 0;
+      f.front = null;
       f.gold += keep;
       f.last = { floor: f.floor, got: keep, lost: c - keep, why, who, at: G.S.runTime };
       f.carry = 0;
@@ -62,7 +63,7 @@ G.Exp = (() => {
       rt.homeAfterBoss = false;
       rt.leaving = null;
       F().refreshEnts(rt);
-      const msg = `${f.floor}층 · ${{ full: '짐 가득', wipe: '전멸', retreat: '방침 귀환', careful: '신중 귀환', manual: '귀환' }[why] || '귀환'} · 짐 +${U.fmt(keep)}${c - keep ? ` · 잃음 ${U.fmt(c - keep)}` : ''}`;
+      const msg = `${f.floor}층 · ${{ clear: '지역 완주', full: '짐 가득', wipe: '전멸', retreat: '방침 귀환', careful: '신중 귀환', manual: '귀환' }[why] || '귀환'} · 짐 +${U.fmt(keep)}${c - keep ? ` · 잃음 ${U.fmt(c - keep)}` : ''}`;
       G.log(msg, 'fantasy', why === 'wipe' ? 'bad' : 'good');
       G.J.sfx('fantasy', why === 'wipe' ? 'lose' : 'coin');
     },
@@ -80,6 +81,8 @@ G.Exp = (() => {
       if (f.autoTr !== false) G.Trinket.auto(f);
       f.floor = f.runStart = U.clamp(f.start || f.checkpoint || 1, 1, Math.max(1, f.checkpoint || 1));
       f.deaths = 0;
+      G.Res.longRest(f.mercs.concat(G.Guild.leader(f)));
+      f.front = f.frontLock || f.front || G.Foe.offer(1)[0]; // 원정 세력 (고른 게 없으면 무작위)
       rt.btDepart = true;
       F().newFloor(f, rt);
       G.Bond.depart(f, rt);

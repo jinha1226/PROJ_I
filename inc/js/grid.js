@@ -14,57 +14,70 @@ G.Grid = {
   },
   at: (m, x, y) => (x < 0 || y < 0 || x >= m.w || y >= m.h ? ' ' : m.c[y * m.w + x]),
   pass: (m, x, y) => m.passChars.includes(G.Grid.at(m, x, y)),
+  // 시야를 막지 않나: 깊은 물은 못 건너도 건너다보인다
+  clear: (m, x, y) => { const c = G.Grid.at(m, x, y); return c === '~' || m.passChars.includes(c); },
 
-  // 방과 복도로 된 던전 (DESIGN.md 37). '#' 벽, '.' 바닥, '>' 계단.
-  // 영역 분할(BSP): 맵을 maxRooms개 구역으로 나누고 구역마다 큰 방 하나 → 가까운 방끼리 최소 신장 트리로 짧게 잇고, loops개를 더 이어 갈림길.
-  // 시작 방은 가장 왼쪽, 계단 방은 시작에서 길로 가장 먼 방. rooms[0] = 시작, rooms[끝] = 계단.
-  // rng: 0~1 난수 함수 — 시즌 씨앗값으로 주면 같은 시즌의 같은 층은 늘 같은 모양 (G.Season)
-  dungeon(w, h, maxRooms = 9, loops = 0, rng = Math.random) {
-    const rand = n => Math.floor(rng() * n), c = new Array(w * h).fill('#'), MINW = 10, MINH = 8;
-    // 구역 나누기: 가장 넓은 구역을 긴 쪽으로 40~60% 자리에서 자른다
+  // 턴제 전용 던전: 방이 적고 크며, 모양이 다르고, 사이에 바위가 두껍고, 복도가 두 칸 (네 명이 지나고 싸울 수 있게).
+  // 만드는 법은 Brogue · DCSS처럼 방 모양 어휘를 섞는 쪽. kindAt: 0 보통 · 1 큰 방 · 2 동굴 · 3 복도 (그리는 쪽이 바닥을 고른다)
+  halls(w, h, maxRooms = 8, loops = 0, rng = Math.random) {
+    const rand = n => Math.floor(rng() * n), c = new Array(w * h).fill('#'), kindAt = new Uint8Array(w * h), MINW = 15, MINH = 11, PAD = 2;
     const leaves = [{ x: 1, y: 1, w: w - 2, h: h - 2 }];
     for (let guard = 0; leaves.length < maxRooms && guard < 200; guard++) {
       leaves.sort((p, q) => q.w * q.h - p.w * p.h);
       const L = leaves.find(l => l.w >= MINW * 2 || l.h >= MINH * 2);
       if (!L) break;
       leaves.splice(leaves.indexOf(L), 1);
-      const vert = L.w / MINW >= L.h / MINH ? L.w >= MINW * 2 : !(L.h >= MINH * 2);
-      if (vert) { const cut = Math.floor(L.w * (0.4 + rng() * 0.2)); leaves.push({ x: L.x, y: L.y, w: cut, h: L.h }, { x: L.x + cut, y: L.y, w: L.w - cut, h: L.h }); }
-      else { const cut = Math.floor(L.h * (0.4 + rng() * 0.2)); leaves.push({ x: L.x, y: L.y, w: L.w, h: cut }, { x: L.x, y: L.y + cut, w: L.w, h: L.h - cut }); }
+      const vert = L.w / MINW >= L.h / MINH ? L.w >= MINW * 2 : !(L.h >= MINH * 2), k = 0.42 + rng() * 0.16;
+      if (vert) { const cut = Math.floor(L.w * k); leaves.push({ x: L.x, y: L.y, w: cut, h: L.h }, { x: L.x + cut, y: L.y, w: L.w - cut, h: L.h }); }
+      else { const cut = Math.floor(L.h * k); leaves.push({ x: L.x, y: L.y, w: L.w, h: cut }, { x: L.x, y: L.y + cut, w: L.w, h: L.h - cut }); }
     }
-    // 구역마다 방 하나: 구역의 60~85% 크기 (방 사이에 짧은 복도가 남게)
+    const put = (x, y, k) => { c[y * w + x] = '.'; kindAt[y * w + x] = k; };
+    const SHAPES = ['hall', 'round', 'cross', 'cave', 'chamfer'], bag = [];
+    const nextShape = () => { if (!bag.length) { const s = SHAPES.slice(); while (s.length) bag.push(s.splice(rand(s.length), 1)[0]); } return bag.pop(); };
     const rooms = leaves.map(L => {
-      const rw = Math.max(5, Math.min(L.w - 2, Math.floor(L.w * (0.6 + rng() * 0.25)))), rh = Math.max(4, Math.min(L.h - 2, Math.floor(L.h * (0.6 + rng() * 0.25))));
-      const x = L.x + 1 + rand(Math.max(1, L.w - rw - 1)), y = L.y + 1 + rand(Math.max(1, L.h - rh - 1));
-      for (let yy = y; yy < y + rh; yy++) for (let xx = x; xx < x + rw; xx++) c[yy * w + xx] = '.';
-      return { x, y, w: rw, h: rh, cx: x + (rw >> 1), cy: y + (rh >> 1) };
+      const aw = L.w - PAD * 2, ah = L.h - PAD * 2, rw = Math.max(7, Math.min(aw, Math.floor(aw * (0.72 + rng() * 0.28)))), rh = Math.max(6, Math.min(ah, Math.floor(ah * (0.72 + rng() * 0.28))));
+      const x = L.x + PAD + rand(Math.max(1, aw - rw + 1)), y = L.y + PAD + rand(Math.max(1, ah - rh + 1)), cx = x + (rw >> 1), cy = y + (rh >> 1);
+      const shape = nextShape(), r = { x, y, w: rw, h: rh, cx, cy, shape };
+      if (shape === 'round') { const a = rw / 2, b = rh / 2; for (let yy = y; yy < y + rh; yy++) for (let xx = x; xx < x + rw; xx++) if (((xx + .5 - x - a) / a) ** 2 + ((yy + .5 - y - b) / b) ** 2 <= 1.02) put(xx, yy, 0); }
+      else if (shape === 'cross') { const ax = Math.max(3, rw >> 1), ay = Math.max(3, rh >> 1), x0 = cx - (ax >> 1), y0 = cy - (ay >> 1); for (let yy = y; yy < y + rh; yy++) for (let xx = x; xx < x + rw; xx++) if ((xx >= x0 && xx < x0 + ax) || (yy >= y0 && yy < y0 + ay)) put(xx, yy, 0); }
+      else if (shape === 'cave') {
+        // 동굴: 타원에 잡음을 얹고 두 번 다듬은 뒤, 가운데와 이어진 곳만 남긴다
+        const a = rw / 2, b = rh / 2; let on = new Uint8Array(rw * rh);
+        for (let j = 0; j < rh; j++) for (let i = 0; i < rw; i++) { const d = ((i + .5 - a) / a) ** 2 + ((j + .5 - b) / b) ** 2; on[j * rw + i] = d < .35 || (d < 1 && rng() < 0.72) ? 1 : 0; }
+        for (let n = 0; n < 2; n++) { const o = new Uint8Array(rw * rh); for (let j = 0; j < rh; j++) for (let i = 0; i < rw; i++) { let s = 0; for (let v = -1; v <= 1; v++) for (let u = -1; u <= 1; u++) if (i + u >= 0 && j + v >= 0 && i + u < rw && j + v < rh && on[(j + v) * rw + i + u]) s++; o[j * rw + i] = s >= 5 ? 1 : 0; } on = o; }
+        on[(cy - y) * rw + cx - x] = 1;
+        const seen = new Set([(cy - y) * rw + cx - x]), q = [[cx - x, cy - y]];
+        while (q.length) { const [i, j] = q.pop(); for (const [u, v] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = (j + v) * rw + i + u; if (i + u >= 0 && j + v >= 0 && i + u < rw && j + v < rh && on[k] && !seen.has(k)) { seen.add(k); q.push([i + u, j + v]); } } }
+        for (const k of seen) put(x + k % rw, y + Math.floor(k / rw), 2);
+      } else {
+        const cut = shape === 'chamfer' ? Math.min(3, Math.floor(Math.min(rw, rh) / 3)) : 1;
+        for (let yy = y; yy < y + rh; yy++) for (let xx = x; xx < x + rw; xx++) { const dx = Math.min(xx - x, x + rw - 1 - xx), dy = Math.min(yy - y, y + rh - 1 - yy); if (dx + dy >= cut) put(xx, yy, shape === 'hall' ? 1 : 0); }
+        // 큰 방: 두 줄 기둥 (복도가 지나는 가운데 줄은 비운다)
+        if (shape === 'hall' && rw >= 9 && rh >= 7) { const py = [y + 1 + (rh >= 9 ? 1 : 0), y + rh - 2 - (rh >= 9 ? 1 : 0)]; for (const yy of py) for (let xx = x + 2; xx < x + rw - 2; xx += 3) if (Math.abs(xx - cx) > 1 && Math.abs(yy - cy) > 1) { c[yy * w + xx] = '#'; kindAt[yy * w + xx] = 0; } }
+      }
+      return r;
     });
-    const dig = (x, y) => { c[y * w + x] = '.'; };
+    const dig2 = (x, y) => { for (let v = 0; v < 2; v++) for (let u = 0; u < 2; u++) { const X = x + u, Y = y + v; if (X > 0 && Y > 0 && X < w - 1 && Y < h - 1 && c[Y * w + X] !== '.') { c[Y * w + X] = '.'; kindAt[Y * w + X] = 3; } } };
     const link = (a, b) => {
-      if (rng() < 0.5) { for (let x = Math.min(a.cx, b.cx); x <= Math.max(a.cx, b.cx); x++) dig(x, a.cy); for (let y = Math.min(a.cy, b.cy); y <= Math.max(a.cy, b.cy); y++) dig(b.cx, y); }
-      else { for (let y = Math.min(a.cy, b.cy); y <= Math.max(a.cy, b.cy); y++) dig(a.cx, y); for (let x = Math.min(a.cx, b.cx); x <= Math.max(a.cx, b.cx); x++) dig(x, b.cy); }
+      if (rng() < 0.5) { for (let x = Math.min(a.cx, b.cx); x <= Math.max(a.cx, b.cx); x++) dig2(x, a.cy); for (let y = Math.min(a.cy, b.cy); y <= Math.max(a.cy, b.cy); y++) dig2(b.cx, y); }
+      else { for (let y = Math.min(a.cy, b.cy); y <= Math.max(a.cy, b.cy); y++) dig2(a.cx, y); for (let x = Math.min(a.cx, b.cx); x <= Math.max(a.cx, b.cx); x++) dig2(x, b.cy); }
     };
-    // 최소 신장 트리 (방 중심 거리) → 복도가 짧다
     const d2 = (a, b) => (a.cx - b.cx) ** 2 + (a.cy - b.cy) ** 2, inT = new Set([0]), edges = new Set();
     while (inT.size < rooms.length) {
       let best = null;
       for (const i of inT) for (let j = 0; j < rooms.length; j++) if (!inT.has(j) && (!best || d2(rooms[i], rooms[j]) < best[2])) best = [i, j, d2(rooms[i], rooms[j])];
       inT.add(best[1]); edges.add(best[0] + ',' + best[1]); link(rooms[best[0]], rooms[best[1]]);
     }
-    // 갈림길: 트리에 없는 가까운 짝 몇 개를 더 잇는다
     const extra = [];
     for (let i = 0; i < rooms.length; i++) for (let j = i + 1; j < rooms.length; j++) if (!edges.has(i + ',' + j) && !edges.has(j + ',' + i)) extra.push([i, j, d2(rooms[i], rooms[j])]);
     extra.sort((p, q) => p[2] - q[2]);
     for (const [i, j] of extra.slice(0, loops * 2).filter(() => rng() < 0.5).slice(0, loops)) link(rooms[i], rooms[j]);
-    const m = { w, h, c, poi: {}, passChars: '.>', ver: 1, dist: {}, rooms };
-    // 시작 = 가장 왼쪽 방, 계단 = 시작에서 길로 가장 먼 방
+    const m = { w, h, c, kindAt, poi: {}, passChars: '.>', ver: 1, dist: {}, rooms };
     rooms.sort((p, q) => p.cx - q.cx);
     const start = rooms[0], d = G.Grid.field(m, start.cx, start.cy);
     const end = rooms.slice(1).reduce((p, q) => (d[q.cy * w + q.cx] > d[p.cy * w + p.cx] ? q : p), rooms[1] || start);
     m.rooms = [start, ...rooms.filter(r => r !== start && r !== end), end];
-    m.dist = {};
-    m.start = start;
-    m.end = end;
+    m.dist = {}; m.start = start; m.end = end;
     c[end.cy * w + end.cx] = '>';
     return m;
   },
@@ -109,8 +122,8 @@ G.Grid = {
       const e2 = 2 * err, px = x, py = y;
       if (e2 >= dy) { err += dy; x += sx; }
       if (e2 <= dx) { err += dx; y += sy; }
-      if (x !== px && y !== py && !G.Grid.pass(m, x, py) && !G.Grid.pass(m, px, y)) return false;
-      if ((x !== tx || y !== ty) && !G.Grid.pass(m, x, y)) return false;
+      if (x !== px && y !== py && !G.Grid.clear(m, x, py) && !G.Grid.clear(m, px, y)) return false;
+      if ((x !== tx || y !== ty) && !G.Grid.clear(m, x, y)) return false;
     }
     return true;
   },

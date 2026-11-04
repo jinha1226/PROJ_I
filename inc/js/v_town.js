@@ -7,7 +7,7 @@ G.UI.fantasyTown = function () {
   const RS = G.Rivals.STANCES, ORDER = Object.keys(RS), RT = EX.RETREAT;
   const WHY = { wipe: '전멸', full: '짐 가득', retreat: '방침 귀환', careful: '신중 귀환', manual: '귀환' };
   // 스킬 넷 (DESIGN.md 43): 안 열린 칸은 흐리게(툴팁에 열리는 레벨) · ★ = 스킬 레벨(용병 레벨로 자동) · 상위 직업 스킬(sig)은 보랏빛 테두리로 뒤에
-  const skillEls = m => h('div.tw-sks', null, (m.skills || []).map((k, i) => { const S = G.D.MSKILLS[k], lv = GD.slotLv(i, m, k), off = m.lv < lv; return h('span.tw-sk' + (off ? '.off' : '') + (S.passive ? '.pas' : ''), { 'data-tip': `${S.n}${S.en ? ` (${S.en})` : ''} · ${S.d}${S.passive ? '' : ` · ${S.cool}초`}${off ? ` · Lv ${lv}` : ''}` }, G.T.el(S.t, 'xs'), h('small', null, (k === G.D.MSIG[m.cls] ? '★ ' : '') + S.n)); }),
+  const skillEls = m => h('div.tw-sks', null, (m.skills || []).map((k, i) => { const S = { ...G.D.MSKILLS[k], d: G.Skill.desc(m, k) }, lv = GD.slotLv(i, m, k), off = m.lv < lv; return h('span.tw-sk' + (off ? '.off' : '') + (S.passive ? '.pas' : ''), { 'data-tip': `${S.n}${S.en ? ` (${S.en})` : ''} · ${S.d}${off ? ` · Lv ${lv}` : ''}` }, G.T.el(S.t, 'xs'), h('small', null, (k === G.D.MSIG[m.cls] ? '★ ' : '') + S.n)); }),
     h('b.tw-slv', { 'data-tip': '스킬 레벨' }, '★' + GD.skillLv(m)),
     (m.adv ? G.D.ADV[m.adv].sig : []).map(k => { const S = G.D.MSKILLS[k], lv = GD.skLv(m.cls, k), off = m.lv < lv; return h('span.tw-sk.sig' + (off ? '.off' : ''), { 'data-tip': `${S.n}${S.en ? ` (${S.en})` : ''} · ${S.d}${off ? ` · Lv ${lv}` : ''}` }, G.T.el(S.t, 'xs'), h('small', null, S.n)); }),
     // 서사 은혜 (DESIGN.md 59)
@@ -101,8 +101,8 @@ G.UI.fantasyTown = function () {
     h('div.tw-side', null,
       h('div.tw-box', null, h('div.tw-h', null, h('b', null, '다음 임무')), aheadEl),
       h('div.tw-box', null, h('div.tw-h', null, h('b', null, '귀환 방침')), h('div.tw-opts', null, Object.keys(RT).map(k => (rtBtns[k] = h('button.tw-opt', { on: { click: () => { f().retreat = k; } } }, RT[k].n))))),
-      G.TURN ? h('div.tw-box', null, h('div.tw-h', null, h('b', null, '결정 방침')), h('div.tw-opts', null, Object.keys(G.Story.POLICY).map(k => (polBtns[k] = h('button.tw-opt', { 'data-tip': G.Story.POLICY[k].d, on: { click: () => { f().policy = k; } } }, G.Story.POLICY[k].n))))) : null,
-      G.TURN ? h('div.tw-box', null, h('div.tw-h', null, h('b', null, 'DM 성향')), h('div.tw-opts', null, Object.keys(G.Story.DMS).map(k => (dmBtns[k] = h('button.tw-opt', { 'data-tip': G.Story.DMS[k].d, on: { click: () => { f().dmStyle = k; } } }, G.Story.DMS[k].n))))) : null,
+      h('div.tw-box', null, h('div.tw-h', null, h('b', null, '결정 방침')), h('div.tw-opts', null, Object.keys(G.Story.POLICY).map(k => (polBtns[k] = h('button.tw-opt', { 'data-tip': G.Story.POLICY[k].d, on: { click: () => { f().policy = k; } } }, G.Story.POLICY[k].n))))),
+      h('div.tw-box', null, h('div.tw-h', null, h('b', null, 'DM 성향')), h('div.tw-opts', null, Object.keys(G.Story.DMS).map(k => (dmBtns[k] = h('button.tw-opt', { 'data-tip': G.Story.DMS[k].d, on: { click: () => { f().dmStyle = k; } } }, G.Story.DMS[k].n))))),
       h('div.tw-box', null, h('div.tw-h', null, h('b', null, '연계기')), comboEl),
       h('div.tw-box', null, h('div.tw-h', null, h('b', null, '관계')), bondEl),
       h('div.tw-box', null, h('div.tw-h', null, h('b', null, '지난 원정')), lastEl),
@@ -372,7 +372,7 @@ G.UI.fantasyTown = function () {
     resKey = R.n + '';
     setText(resEl.querySelector('.rs-t'), `시즌 ${R.n} 결과`);
     resSum.innerHTML = '';
-    const rows = G.Rivals.OFF ? [['최고층', `${R.floor}층`], ['쓰러진 사람', (s.fallen || []).filter(d => d.sn === R.n).length], ['명성', `+${R.fame}`]] : [['순위', `${R.rank} / ${R.of}`], ['최고층', `${R.floor}층`], ['라이벌 전적', `${R.won}승 ${R.lost}패`], ['명성', `+${R.fame}`]];
+    const rows = G.Rivals.OFF ? [['최고층', `${R.floor}층`], ['쓰러진 사람', (s.fallen || []).filter(d => d.sn === R.n).length], ...(R.legend ? [['전설', `+${R.legend}`]] : []), ...(R.anc ? [['새 조상', R.anc]] : []), ['명성', `+${R.fame}`]] : [['순위', `${R.rank} / ${R.of}`], ['최고층', `${R.floor}층`], ['라이벌 전적', `${R.won}승 ${R.lost}패`], ['명성', `+${R.fame}`]];
     for (const [k, v] of rows) resSum.append(h('div', null, h('small', null, k), h('b', null, v)));
     resRows.innerHTML = '';
     // 라이벌이 없는 동안은 순위표 대신 이번 시즌의 이야기 (죽음 · 승계 · 복수)
@@ -410,6 +410,7 @@ G.UI.fantasyTown = function () {
     repFoot.innerHTML = '';
     const line = (ic, items) => items.length && repFoot.append(h('div.tw-rf', null, h('small', null, ic), ...items));
     line('사망', (R.dead || []).map(n => h('span.tw-cb.gone', null, n)));
+    line('명성', [R.legacy ? h('span.tw-cb', null, `유산 +${R.legacy}`) : null, R.legend ? h('span.tw-cb', null, `전설 +${R.legend}`) : null].filter(Boolean));
     line('복수', (R.avenged || []).map(n => h('span.tw-cb', null, n)));
     line('무너짐', (R.broke || []).map(n => h('span.tw-cb.off', null, n)));
     line('마법 물건', [...R.tkGain.map(t => tChip(t, 'new')), ...R.tkLost.map(t => tChip(t, 'gone'))]);
@@ -421,16 +422,19 @@ G.UI.fantasyTown = function () {
   const logEl = h('div.tw-log'), logs = [];
   G.on('log', e => { if (e.world === 'fantasy') { logs.unshift({ s: e.msg, cls: e.cls, at: G.S.runTime }); if (logs.length > 60) logs.length = 60; keys.log = ''; } });
   // 모험 일지 · 추모 (G.Story)
-  const sagaEl = h('div.tw-log'), fallenEl = h('div.tw-log'), sagaSub = h('div.tw-sub', null, h('div.tw-h', null, h('b', null, '모험 일지')), sagaEl), fallenSub = h('div.tw-sub', null, h('div.tw-h', null, h('b', null, '추모')), fallenEl);
+  const sagaEl = h('div.tw-log'), fallenEl = h('div.tw-log'), sagaSub = h('div.tw-sub', null, h('div.tw-h', null, h('b', null, '모험 일지')), sagaEl), ancEl = h('small'), fallenSub = h('div.tw-sub', null, h('div.tw-h', null, h('b', null, '추모'), h('span.sp'), ancEl), fallenEl);
   let sagaKey = '';
   function drawSaga(s) {
-    const list = s.saga || [], dead = s.fallen || [], k = (list[0] ? list.length + list[0].s : '') + '|' + dead.length;
+    const list = s.saga || [], dead = s.fallen || [], k = (list[0] ? list.length + list[0].s : '') + '|' + dead.length + '|' + (s.ancestors || []).length;
     if (k === sagaKey) return;
     sagaKey = k;
     tog(sagaSub, 'hidden', !list.length); tog(fallenSub, 'hidden', !dead.length);
     sagaEl.innerHTML = ''; fallenEl.innerHTML = '';
+    const ak = G.Story.ancestorK(s);
+    setText(ancEl, ak > 1 ? `조상 ${(s.ancestors || []).length}명 · 금화 +${Math.round((ak - 1) * 100)}%` : '');
+    const anc = new Set((s.ancestors || []).map(a => a.name + a.sn));
     for (const x of list.slice(0, 60)) sagaEl.append(h('div', null, x.s));
-    for (const d of dead) fallenEl.append(h('div', null, h('b', null, d.name), ` · ${d.lead ? '단장 · ' : ''}${GD.def(d).n} Lv ${d.lv} · ${d.fl}층${d.by ? ` · ${d.by}` : ''}`));
+    for (const d of dead) fallenEl.append(h('div', null, anc.has(d.name + d.sn) ? '★ ' : '', h('b', null, d.name), ` · ${d.lead ? '단장 · ' : ''}${GD.def(d).n} Lv ${d.lv} · ${d.fl}층${d.by ? ` · ${d.by}` : ''}${d.legacy ? ` · 유산 +${d.legacy}` : ''}`));
   }
   panes.log = h('div.tw-pane', null, sagaSub, fallenSub, rivalSub, h('div.tw-sub', null, h('div.tw-h', null, h('b', null, '기록')), logEl));
   function drawLog() {
@@ -480,9 +484,9 @@ G.UI.fantasyTown = function () {
       h('div.tw-cr-ab', null, DN.AB.map(k => { const i = ord.indexOf(k), v = cr.vals[i]; return h('span' + (DN.key(cr.cls, k) ? '.key' : '') + (cr.swap === i ? '.sel' : '') + (v >= 16 ? '.hi' : v <= 8 ? '.lo' : ''), { on: { click: () => { if (cr.swap == null) cr.swap = i; else { const j = cr.swap; [cr.vals[i], cr.vals[j]] = [cr.vals[j], cr.vals[i]]; cr.swap = null; } re(); } } }, h('small', null, DN.AB_N[k]), h('b', null, v), h('i', null, DN.role(cr.cls, k))); })));
     // 기술: 직업 풀에서 넷
     // 첫 칸은 대표 기술(고정), 셋을 고른다
-    const pool = G.D.MPOOL[cr.cls], sig = G.D.MSIG[cr.cls];
+    const sig = G.D.MSIG[cr.cls], pool = GD.pickable(cr.cls).filter(k => GD.skLv(cr.cls, k) <= 3);
     crBody.append(h('div.tw-h', null, h('b', null, '기술'), h('small', null, ` ${cr.skills.length}/4`)), h('div.tw-cr-row', null, pool.map(k => { const S = G.D.MSKILLS[k], on = cr.skills.includes(k), lv = GD.skLv(cr.cls, k);
-      return h('button.tw-cr-opt' + (on ? '.on' : '') + (k === sig ? '.sig' : ''), { disabled: k === sig, 'data-tip': `${k === sig ? '대표 기술 · ' : ''}${S.n}${S.en ? ` (${S.en})` : ''} · ${S.d}${S.passive ? '' : ` · ${S.cool}초`}${lv > 1 ? ` · Lv ${lv}` : ''}`, on: { click: () => { if (k === sig) return; if (on) cr.skills = cr.skills.filter(q => q !== k); else if (cr.skills.length < 4) cr.skills = [...cr.skills, k]; re(); } } }, G.T.el(S.t, 'xs'), (k === sig ? '★ ' : '') + S.n, lv > 1 ? h('small', null, ` Lv${lv}`) : null); })));
+      return h('button.tw-cr-opt' + (on ? '.on' : '') + (k === sig ? '.sig' : ''), { disabled: k === sig, 'data-tip': `${k === sig ? '대표 기술 · ' : ''}${S.n}${S.en ? ` (${S.en})` : ''} · [${G.Skill.kindOf(k)}] ${S.d}${lv > 1 ? ` · Lv ${lv}` : ''}`, on: { click: () => { if (k === sig) return; if (on) cr.skills = cr.skills.filter(q => q !== k); else if (cr.skills.length < 4) cr.skills = [...cr.skills, k]; re(); } } }, G.T.el(S.t, 'xs'), (k === sig ? '★ ' : '') + S.n, lv > 1 ? h('small', null, ` Lv${lv}`) : null); })));
     // 출신 재주
     crBody.append(h('div.tw-h', null, h('b', null, '출신 재주')), h('div.tw-cr-row', null, Object.keys(G.D.FEATS).map(k => { const Ft = G.D.FEATS[k];
       return h('button.tw-cr-opt' + (cr.feat === k ? '.on' : ''), { 'data-tip': `${Ft.n} (${Ft.en}) · ${Ft.d}`, on: { click: () => { cr.feat = k; re(); } } }, G.T.el(Ft.t, 'xs'), Ft.n); })));

@@ -5,7 +5,7 @@
 G.Story = (() => {
   const U = G.U, GR = G.Grid;
   const F = () => G.Fantasy, B = () => G.Banter, DN = () => G.Dnd, GD = () => G.Guild;
-  const SAY = 1.7, DM = 2.3, ROLL = 1.6, SAGA_MAX = 300, GRUDGE_P = 0.6, SCAR_P = 0.35, SCAR_MAX = 3, FRIEND_AID = 1, OTHER_AID = 0.25, MEEK_AID = 0.6, WAKE_HP = 0.3, CHIEF_FLEE = 0.35, ASK_T = 7, RETREAT_DROP = 0.3, NEM_BRIBE = 0.3;
+  const SAY = 1.1, DM = 1.5, ROLL = 1.4, SAGA_MAX = 300, GRUDGE_P = 0.6, SCAR_P = 0.35, SCAR_MAX = 3, FRIEND_AID = 1, OTHER_AID = 0.25, MEEK_AID = 0.6, WAKE_HP = 0.3, CHIEF_FLEE = 0.35, ASK_T = 4, RETREAT_DROP = 0.3, NEM_BRIBE = 0.3;
   const nameOf = e => e.merc?.name || e.n || '';
   const jong = n => { const c = n.charCodeAt(n.length - 1) - 0xac00; return c >= 0 && c <= 11171 && c % 28 > 0; };
   const ig = n => n + (jong(n) ? '이' : '가'), eul = n => n + (jong(n) ? '을' : '를'), wa = n => n + (jong(n) ? '과' : '와');
@@ -28,6 +28,15 @@ G.Story = (() => {
   const STRESS_K = { coward: 1.3, meek: 1.15, hot: 0.9, brawler: 0.85 };
   const RESOLVE_DC = 16, RESOLVE_K = 1.5, RAGE_K = 1.4, VOW_K = 1.25, GRIEF_ATK = 0.9, GRIEF_RUNS = 3, HABIT_K = 1.15, BROKE_AFTER = 60, HOME_RELIEF = 40, REST_RELIEF = 25, REST_HP = 0.35;
   const HEAT_MIN = -3, HEAT_MAX = 5, HEAT_K = 0.18, EASY_LOW = 0.7, CRISIS_LOW = 0.35, STAIR_HP = 0.7, STAIR_STRESS = 40, STAIR_EVERY = 3, STAIR_HOME = 0.4, PRESS_STRESS = 6;
+  // 이야기가 곧 성장 (DESIGN.md 76): 위험은 보상으로, 죽음은 유산으로, 일지는 전설(명성)로, 살아남은 사람은 칭호로, 시즌이 끝나면 조상으로 남는다
+  const RISK_PAY = 0.3, LEGACY_K = 0.5, ANC_N = 3, ANC_GOLD = 0.02, HALL_GOLD = 0.04, ANC_MAX = 0.4, HEIR_PRICE = 0.5;
+  const TITLES = {
+    undying: { n: '죽지 않는 자', d: '사망 내성 +2', k: 'downs', need: 8, save: 2 },
+    avenger: { n: '복수자', d: '피해 ×1.1', k: 'avenged', need: 1, atk: 1.1 },
+    savior: { n: '구원자', d: '체력 ×1.1', k: 'saves', need: 8, hp: 1.1 },
+    steel: { n: '강철 심장', d: '스트레스 ×0.75', k: 'resolves', need: 3, stress: 0.75 },
+    veteran: { n: '백전노장', d: '피해 ×1.1 · 체력 ×1.05', k: 'crises', need: 15, atk: 1.1, hp: 1.05 },
+  };
   const LAST_SAVE = [0, 6, 10, 21], LEAD_AID = 0.45, DRY_K = 0.15, RECENT = 3, BLESS_K = 1.2, BLESS_FIGHTS = 3, FAVOR_P = 0.5, BETRAY_P = 0.25, HEX_RUNS = 2, HEX_ATK = 0.9;
   // DM 성향 (RimWorld의 스토리텔러 셋): 정석 · 느긋(세지 않고 자주 쉬게 한다) · 변덕(층마다 위험이 널뛴다)
   const DMS = {
@@ -44,12 +53,39 @@ G.Story = (() => {
   const living = rt => rt.party.filter(p => !p.dead && p.merc);
   const dm = (rt, s) => G.Turn.dm(rt, s);
   const say = (rt, who, s) => B().say(rt, who, s, { pri: true });
+  // 장면의 소품: 먼저 맵에 놓이고, 판정이 끝나면 상태가 바뀐다 (그리는 쪽은 G.Turn.vis로 받는다)
+  function stage(rt, r, sc, o) {
+    const m = rt.map, h = rt.hero, dx = r.cx - h.x, dy = r.cy - h.y, l = Math.hypot(dx, dy) || 1, open = (x, y) => m.c[y * m.w + x] === '.';
+    let at = null;
+    for (const d of [5, 4, 3, 6, 2]) { const x = Math.round(h.x + dx / l * d), y = Math.round(h.y + dy / l * d); if (open(x, y) && open(x + 1, y) && open(x, y + 1) && open(x - 1, y) && open(x, y - 1)) { at = [x, y]; break; } }
+    if (!at) at = freeCell(rt, r);
+    const P = { sc, x: at[0], y: at[1], state: 'idle', ...o };
+    (m.props || (m.props = [])).push(P);
+    return P;
+  }
+  // 철문은 방의 뒷벽(화면에 보이는 면)에 낸다. 알맞은 벽이 없으면 null
+  function wallDoor(rt, r) {
+    const m = rt.map, h = rt.hero, fl = (x, y) => m.c[y * m.w + x] === '.', wall = (x, y) => m.c[y * m.w + x] === '#';
+    let best = null, bd = 1e9;
+    const consider = (x, y, face, fx, fy) => { const d = Math.hypot(fx - h.x, fy - h.y); if (d >= 2 && d < bd && fl(fx, fy)) { bd = d; best = { sc: 'door', x, y, face, fx, fy, state: 'idle' }; } };
+    for (let y = Math.max(2, r.y - 2); y < Math.min(m.h - 2, r.y + r.h + 1); y++) for (let x = Math.max(2, r.x - 2); x < Math.min(m.w - 2, r.x + r.w + 1); x++) {
+      if (!wall(x, y)) continue;
+      if (fl(x, y + 1) && wall(x - 1, y) && wall(x + 1, y) && wall(x, y - 1) && wall(x, y - 2)) consider(x, y, 'y', x, y + 1);
+      if (fl(x + 1, y) && wall(x, y - 1) && wall(x, y + 1) && wall(x - 1, y) && wall(x - 2, y)) consider(x, y, 'x', x + 1, y);
+    }
+    if (best) (m.props || (m.props = [])).push(best);
+    return best;
+  }
+  // 굴리는 사람이 소품 앞으로 걸어간다
+  const approach = (rt, who, P) => { who.exT = { x: P.fx == null ? P.x + 1 : P.fx, y: P.fy == null ? P.y + 1 : P.fy }; };
+  const act = (rt, P, state, fx) => G.Turn.vis(rt, { k: 'prop', P, state, fx });
+  const atE = (rt, e, fx) => G.Turn.vis(rt, { k: 'at', e, fx });
   const hasPers = (p, k) => (p.merc.pers || []).includes(k);
 
   // 굴림 하나: 판독 패널에 보여 주고 성공 여부를 돌려준다
   function roll(rt, who, what, ab, dc, fit) {
     const m = who.merc, mod = DN().mod(DN().ab(m)[ab]) + (fit ? DN().prof(m.lv) : 0), nat = DN().d20(0), ok = nat !== 1 && (nat === 20 || nat + mod >= dc);
-    rt.roll = { id: (rt.roll ? rt.roll.id : 0) + 1, who: nameOf(who), what, nat, ok, calc: `${DN().AB_N[ab]} ${mod < 0 ? '−' : '+'}${Math.abs(mod)} · DC ${dc}`, word: nat === 20 ? '대성공' : nat === 1 ? '대실패' : ok ? '성공' : '실패', res: '' };
+    rt.roll = { id: (rt.roll ? rt.roll.id : 0) + 1, who: nameOf(who), what, nat, ok, need: dc - mod, calc: `${DN().AB_N[ab]} ${mod < 0 ? '−' : '+'}${Math.abs(mod)} · DC ${dc}`, word: nat === 20 ? '대성공' : nat === 1 ? '대실패' : ok ? '성공' : '실패', res: '' };
     return ok;
   }
   // 접근법 고르기: 잘하는 쪽 + 직업 + 성격 + 약간의 변덕. 다른 생각인 사람이 있으면 함께 돌려준다
@@ -91,16 +127,20 @@ G.Story = (() => {
     return { who: x.p || c.who, o: x.o, other: null, by: true };
   }
   function freeCell(rt, r) { const m = rt.map; for (let i = 0; i < 30; i++) { const x = r.x + U.rand(r.w), y = r.y + U.rand(r.h); if (m.c[y * m.w + x] === '.') return [x, y]; } return [r.cx, r.cy]; }
-  function pack(f, rt, r, n, extra) {
-    const band = G.D.F.bands[F().band(f.floor)], out = [];
-    for (let i = 0; i < n; i++) { const [x, y] = freeCell(rt, r); out.push(F().spawnMon(rt, f.floor, U.pick(band.mons), x, y, false, { aggro: true, major: true, ...extra })); }
+  // 나타나는 무리: 자리를 주면(cells) 거기서 일어나고, 아니면 보이지 않는 곳에서 걸어온다 (G.Sight)
+  const arrive = (rt, cell) => (cell ? { at: cell, opt: { spotted: true } } : { at: G.Sight.entry(rt), opt: { comeIn: true } });
+  function pack(f, rt, r, n, extra, cells) {
+    const out = [];
+    G.Foe.troop(f.floor, n).forEach((d, i) => { const { at, opt } = arrive(rt, cells && cells[i]); out.push(F().spawnMon(rt, f.floor, d, at[0], at[1], false, { aggro: true, major: true, ...opt, ...extra })); });
+    rt.nextFirst = 'foes';
     F().refreshEnts(rt);
     return out;
   }
-  function chief(f, rt, r, n, d, k = 3) {
-    const [x, y] = freeCell(rt, r), band = G.D.F.bands[F().band(f.floor)], base = d || U.pick(band.mons);
-    const o = F().spawnMon(rt, f.floor, base, x, y, false, { aggro: true, chief: true, s: 1.25, label: n, hp: F().monHP(f.floor) * k, max: F().monHP(f.floor) * k, atk: F().monAtk(f.floor) * 1.4, gold: F().monGold(f.floor) * 6 });
+  function chief(f, rt, r, n, d, k = 3, cell) {
+    const { at: [x, y], opt } = arrive(rt, cell), band = G.D.F.bands[F().band(f.floor)], base = d || U.pick(band.mons);
+    const o = F().spawnMon(rt, f.floor, base, x, y, false, { aggro: true, chief: true, s: 1.25, label: n, hp: F().monHP(f.floor) * k, max: F().monHP(f.floor) * k, atk: F().monAtk(f.floor) * 1.4, gold: F().monGold(f.floor) * 6, ...opt });
     o.n = n; o.base = { n: base.n, t: base.t, wpn: base.wpn, ty: base.ty };
+    rt.nextFirst = 'foes';
     F().refreshEnts(rt);
     return o;
   }
@@ -108,15 +148,46 @@ G.Story = (() => {
   const pay = (f, g) => { const c = Math.min(G.Exp.carry(f), g); f.carry -= c; return c; };
 
   // ── 조우 (생성기: yield = 다음 줄까지 기다릴 초) ──
+  // ── 야영 대화: 그 층에서 실제로 일어난 일로 말한다. 지어낸 사건은 없다 ──
+  const CAMP_OPEN = ['젖지 않은 나뭇가지를 모아 불을 붙인다.', '모닥불을 피우고 둘러앉는다.', '불이 붙자 다들 말없이 손을 내민다.', '짐을 내려놓고 불을 피운다. 오늘은 여기서 쉰다.'], CAMP_STRESS = 8, TALK_MAX = 2;
+  const nm = p => nameOf(p), rt0 = () => F().rt(G.S.w.fantasy);
+  const TALK = {
+    dead: [(a, b, d) => ({ a: `${d}, 끝내 못 데려왔어.`, b: '먹어 둬. 내일도 걸어야 해.', n: 2 }), (a, b, d) => ({ a: `${d} 몫까지 내가 들게.`, b: '같이 들어.', n: 2 }), (a, b, d) => ({ a: `${d}가 앉던 자리가 비었네.`, b: '…불이나 더 지피자.', n: 2 })],
+    saved: [(a, b) => ({ a: `${nm(b)}, 아까 네가 아니었으면 끝났어.`, b: '다음엔 네가 날 구해.', n: 3 }), (a, b) => ({ a: `${nm(b)}, 고맙다. 말은 해 둬야지.`, b: '말보다 술로 갚아.', n: 3 }), (a, b) => ({ a: `눈 뜨니까 ${nm(b)} 얼굴이더라.`, b: '그 얼굴 또 보기 싫으면 조심해.', n: 3 })],
+    down: [(a, b) => ({ a: `${nm(b)}, 일어설 수 있겠어?`, b: '다리는 아직 붙어 있어.', n: 1 }), (a, b) => ({ a: `${nm(b)}, 아까 그건 좀 위험했어.`, b: '알아. 다음엔 안 쓰러져.', n: 1 }), (a, b) => ({ a: `${nm(b)}, 상처 좀 보자.`, b: '별거 아니야. 좀 아플 뿐이지.', n: 1 })],
+    slay: [(a, b, x) => ({ a: `${nm(b)}, 그 ${x} 어떻게 잡은 거야?`, b: '운이 좋았어.', n: 1 }), (a, b, x) => ({ a: `${x} 쓰러질 때 봤어? ${nm(b)}, 대단하던데.`, b: '다음엔 네 차례야.', n: 1 })],
+    torch: [(a, b) => ({ a: '횃불로 트롤을 지지게 될 줄은 몰랐네.', b: '불 없었으면 아직도 싸우고 있었겠지.', n: 1 }), (a, b) => ({ a: '다음엔 기름을 더 챙기자.', b: '그 말 지난번에도 했어.', n: 1 })],
+    foe: [(a, b) => ({ a: '네 코 고는 소리에 또 못 자겠군.', b: '그럼 네가 망을 서.' }), (a, b) => ({ a: '내 쪽으로 불똥 튀잖아.', b: '자리를 옮기면 되겠네.' }), (a, b) => ({ a: `${nm(b)}, 아까 내 앞을 왜 막았어?`, b: '네가 거기 서 있었잖아.' })],
+    friend: [(a, b) => ({ a: '불 좀 더 키울까?', b: '네가 키우면 다 타. 내가 할게.' }), (a, b) => ({ a: '이번엔 내가 먼저 잘게.', b: '지난번에도 그랬어.' }), (a, b) => ({ a: `${nm(b)}, 양말 좀 말려.`, b: '이 냄새가 적을 쫓는 거야.' })],
+    idle: [(a, b) => ({ a: '여기 물은 마시지 마.', b: '이미 마셨어.', n: 1 }), (a, b) => ({ a: '발이 안 마르네.', b: '늪에서 뭘 바라.', n: 1 }), (a, b) => ({ a: '뭔가 물 밑에서 움직였어.', b: '보지 말고 자.', n: 1 })],
+  };
+  const talkSaid = new Set();
+  const line2 = (kind, a, b, x) => { const L = TALK[kind], o = L.map((_, i) => i).filter(i => !talkSaid.has(kind + i)), i = o.length ? U.pick(o) : U.rand(L.length); talkSaid.add(kind + i); if (!o.length) for (let j = 0; j < L.length; j++) talkSaid.delete(kind + j); return L[i](a, b, x); };
+  // 중요한 사건부터 최대 TALK_MAX토막: 죽음 > 구함 > 쓰러짐 > 횃불 > 큰 처치 > 앙숙 · 전우 > 잡담
+  function campTalks(f, rt, crew) {
+    const ev = rt.events || [], out = [], used = new Set(), rest = (...not) => crew.filter(p => !not.includes(p) && !used.has(p)), push = (a, b, kind, x) => { if (a && b && out.length < TALK_MAX) { used.add(a); used.add(b); out.push([a, b, line2(kind, a, b, x)]); } };
+    if (crew.length < 2) return out;
+    for (const e of ev.filter(q => q.k === 'dead')) { const l = rest(); push(l[0], l[1], 'dead', e.name); }
+    for (const e of ev.filter(q => q.k === 'saved')) if (crew.includes(e.a) && crew.includes(e.b)) push(e.b, e.a, 'saved');
+    for (const e of ev.filter(q => q.k === 'down')) if (crew.includes(e.a)) { const l = rest(e.a); if (l.length) push(U.pick(l), e.a, 'down'); }
+    for (const e of ev.filter(q => q.k === 'torch').slice(0, 1)) if (crew.includes(e.a)) { const l = rest(e.a); if (l.length) push(e.a, U.pick(l), 'torch'); }
+    for (const e of ev.filter(q => q.k === 'slay').slice(0, 1)) if (crew.includes(e.a)) { const l = rest(e.a); if (l.length) push(U.pick(l), e.a, 'slay', e.name); }
+    if (out.length < TALK_MAX) { const pairs = []; for (const a of rest()) for (const b of rest()) if (a.merc.uid < b.merc.uid) pairs.push([a, b, G.Bond.rel(f, a.merc, b.merc)]); const pr = pairs.find(x => x[2] === 'foe') || pairs.find(x => x[2] === 'friend'); if (pr) push(pr[0], pr[1], pr[2]); else if (!out.length && pairs.length) { const x = U.pick(pairs); push(x[0], x[1], 'idle'); } }
+    return out;
+  }
+
   const SCENES = {
     // 잠긴 문: 조용히 따면 보물, 부수면 소리가 난다
     *door(f, rt, r) {
+      const P = wallDoor(rt, r);
+      if (!P) return;
       dm(rt, '낡은 철문이 앞을 막고 있다. 자물쇠가 녹슬었다.');
       yield DM;
       const pick = { ab: 'dex', cls: ['rogue', 'monk', 'archer'], pers: { careful: 2, hot: -2 }, pol: ['careful', 'coin'], what: '자물쇠 따기', line: ['내가 따 볼게. 잠깐만.', '조용히 하자. 금방 열어.'] };
       const force = { ab: 'str', cls: ['barbarian', 'dragoon', 'paladin'], pers: { hot: 3, brawler: 2, careful: -2 }, pol: ['bold'], what: '문 부수기', line: ['비켜. 부수는 게 빨라.', '문이 사람보다 약하지.'] };
       const c = choose(rt, [pick, force]);
       if (!c) return;
+      approach(rt, c.who, P);
       say(rt, c.who, U.pick(c.o.line));
       yield SAY;
       if (c.other && Math.random() < 0.4) { say(rt, c.other.p, c.o === pick ? '그냥 부수자니까…' : '조용히 좀 하자니까!'); yield SAY; }
@@ -125,20 +196,24 @@ G.Story = (() => {
       if (c.o === pick && ok) {
         const g = reward(f, 8);
         rt.roll.res = `+${U.fmt(g)}`;
+        act(rt, P, 'open', 'coins');
         dm(rt, '찰칵. 문 너머에 먼지 쌓인 금화 궤짝이 있다.');
         G.Trinket.drop(f, rt, 'chest', r.cx, r.cy);
         add(f, `${f.floor}층 · ${ig(nameOf(c.who))} 잠긴 문을 조용히 땄다.`, [c.who.merc]);
       } else if (c.o === pick) {
+        act(rt, P, 'closed', 'rattle');
         dm(rt, '자물쇠 안에서 무언가 부러진다. 안쪽에서 발소리가 들린다.');
         pack(f, rt, r, 2);
       } else if (ok) {
         const g = reward(f, 5);
         rt.roll.res = `+${U.fmt(g)}`;
+        act(rt, P, 'broken', 'dust');
         dm(rt, '문이 쾅 하고 쓰러진다. 금화가 보인다 — 그리고 소리를 들은 것들도.');
         pack(f, rt, r, 2);
         add(f, `${f.floor}층 · ${ig(nameOf(c.who))} 철문을 맨몸으로 부쉈다.`, [c.who.merc]);
       } else {
         c.who.hp = Math.max(1, c.who.hp - c.who.max * 0.15);
+        act(rt, P, 'closed', 'rattle'); atE(rt, c.who, 'hurt');
         dm(rt, '문은 꿈쩍도 않고 어깨만 나갔다. 소리는 온 층에 울렸다.');
         say(rt, c.who, '…아무 말도 하지 마.');
         pack(f, rt, r, 3);
@@ -147,6 +222,7 @@ G.Story = (() => {
     // 잠든 무리: 기습 · 살금살금 지나가기 · 말 걸기. 우두머리가 살아 달아나면 나중에 돌아온다
     *camp(f, rt, r) {
       const n = `${U.pick(CHIEF)} ${U.pick(G.D.F.bands[F().band(f.floor)].mons).n}`;
+      const P = stage(rt, r, 'camp', { sleepers: [0, 1, 2].map(() => U.pick(G.D.F.bands[F().band(f.floor)].mons).n) }), beds = [[-1, -1], [1, -1], [0, 1]].map(([a, b]) => [P.x + a, P.y + b]); // 누워 있던 자리에서 일어난다
       dm(rt, `${n}의 무리가 모닥불 곁에서 잠들어 있다. 아직 우리를 못 봤다.`);
       yield DM;
       const ambush = { ab: 'dex', cls: ['rogue', 'archer'], pers: { hot: 3, brawler: 2, coward: -3 }, pol: ['bold', 'coin'], what: '기습', line: ['자는 놈부터 찌르자.', '내가 먼저 간다. 신호하면 따라와.'] };
@@ -160,27 +236,30 @@ G.Story = (() => {
       const ok = roll(rt, c.who, c.o.what, c.o.ab, dc, fitOf(c.who, c.o));
       yield ROLL;
       if (c.o === ambush) {
-        const boss = chief(f, rt, r, n), rest = pack(f, rt, r, 2);
+        const boss = chief(f, rt, r, n, null, 3, beds[0]), rest = pack(f, rt, r, 2, null, beds.slice(1));
+        act(rt, P, 'woken', ok ? 'dust' : 'clang');
         if (ok) { for (const o of [boss, ...rest]) o.stop = 6; dm(rt, `${nameOf(c.who)}의 칼이 먼저 닿았다. 무리가 허둥지둥 일어난다.`); add(f, `${f.floor}층 · ${ig(nameOf(c.who))} ${n}의 무리를 기습했다.`, [c.who.merc]); }
         else dm(rt, '발밑에서 뼛조각이 부러진다. 무리가 벌떡 일어난다!');
       } else if (c.o === sneak) {
-        if (ok) { const g = reward(f, 4); rt.roll.res = `+${U.fmt(g)}`; dm(rt, '숨소리 사이로 지나갔다. 나오는 길에 놈들의 주머니도 조금 가벼워졌다.'); add(f, `${f.floor}층 · ${n}의 무리 곁을 소리 없이 지나갔다.`, [c.who.merc]); }
-        else { chief(f, rt, r, n); pack(f, rt, r, 2); dm(rt, `${nameOf(c.who)}의 발이 냄비를 찼다. 땡그랑.`); }
+        if (ok) { const g = reward(f, 4); rt.roll.res = `+${U.fmt(g)}`; atE(rt, c.who, 'coins'); dm(rt, '숨소리 사이로 지나갔다. 나오는 길에 놈들의 주머니도 조금 가벼워졌다.'); add(f, `${f.floor}층 · ${n}의 무리 곁을 소리 없이 지나갔다.`, [c.who.merc]); }
+        else { chief(f, rt, r, n, null, 3, beds[0]); pack(f, rt, r, 2, null, beds.slice(1)); act(rt, P, 'woken', 'clang'); dm(rt, `${nameOf(c.who)}의 발이 냄비를 찼다. 땡그랑.`); }
       } else if (ok) {
         const g = pay(f, F().monGold(f.floor) * 3 * F().goldMult(f));
         rt.roll.res = g > 0 ? `통행료 −${U.fmt(g)}` : '';
+        act(rt, P, null, 'coins');
         dm(rt, `${ig(n)} 칼을 내린다. "통행료를 내면 지나가게 해 주지."`);
         add(f, `${f.floor}층 · ${ig(nameOf(c.who))} ${wa(n)} 협상해 피를 보지 않았다.`, [c.who.merc]);
         yield SAY;
         if (hasPers(c.who, 'greedy')) say(rt, c.who, '…이 돈 언젠가 돌려받을 거야.');
       } else {
-        chief(f, rt, r, n); pack(f, rt, r, 2);
+        chief(f, rt, r, n, null, 3, beds[0]); pack(f, rt, r, 2, null, beds.slice(1)); act(rt, P, 'woken', 'clang');
         dm(rt, `${ig(n)} 말을 끊고 칼을 뽑는다. "시끄러워."`);
       }
     },
     // 수상한 상인: 흥정 · 살피기. 욕심 많으면 덜컥 산다
     *merchant(f, rt, r) {
       const price = F().monGold(f.floor) * 10 * F().goldMult(f);
+      const P = stage(rt, r, 'merchant');
       dm(rt, '짐을 잔뜩 진 상인이 혼자 앉아 있다. "이런 데서 손님이라니, 싸게 드리지요."');
       yield DM;
       if (G.Exp.carry(f) < price * 0.4) { const p = U.pick(living(rt)); if (p) say(rt, p, '살 돈이 없어. 그냥 가자.'); yield SAY; return; }
@@ -189,21 +268,25 @@ G.Story = (() => {
       const dc = 13 + Math.floor(f.floor / 5), pass = { label: '그냥 지나간다', leave: true, pol: ['careful', 'coin'] }, c = yield* decide(f, rt, `수상한 상인 · ${U.fmt(price)}`, [haggle, eye], dc, [pass]);
       if (!c) return;
       if (c.o === pass) { dm(rt, '상인이 등 뒤에서 혀를 찬다. "후회할 텐데."'); return; }
+      approach(rt, c.who, P);
       say(rt, c.who, U.pick(c.o.line));
       yield SAY;
       const ok = roll(rt, c.who, c.o.what, c.o.ab, dc, fitOf(c.who, c.o));
       yield ROLL;
       if (c.o === eye && ok) {
+        act(rt, P, 'fled', 'coins');
         dm(rt, '가짜다. 들킨 상인이 짐을 내팽개치고 달아난다. 진짜 금화 몇 닢이 흘렀다.');
         const g = reward(f, 3); rt.roll.res = `+${U.fmt(g)}`;
         add(f, `${f.floor}층 · ${ig(nameOf(c.who))} 가짜 상인을 알아봤다.`, [c.who.merc]);
       } else if (ok) {
         const g = pay(f, price * 0.5); rt.roll.res = `−${U.fmt(g)}`;
+        act(rt, P, 'sold', 'holy');
         dm(rt, '상인이 한숨을 쉬며 물건을 내민다. "이러면 남는 게 없는데…"');
         G.Trinket.drop(f, rt, 'chest', c.who.x, c.who.y);
         add(f, `${f.floor}층 · ${ig(nameOf(c.who))} 상인에게서 반값에 물건을 샀다.`, [c.who.merc]);
       } else {
         const g = pay(f, price); rt.roll.res = `−${U.fmt(g)}`;
+        act(rt, P, 'gone', 'poof');
         dm(rt, '돌아서고 보니 상인은 없고, 산 물건은 돌멩이다.');
         say(rt, c.who, '…이건 아무한테도 말하지 마.');
         add(f, `${f.floor}층 · ${ig(nameOf(c.who))} 수상한 상인에게 돌멩이를 샀다.`, [c.who.merc]);
@@ -220,12 +303,24 @@ G.Story = (() => {
       if (b) { say(rt, b, U.pick(['그래. 조금만.', '…', '다음엔 더 잘하자.'])); yield SAY; }
     },
     // 계단 앞: 더 갈까, 돌아갈까. 욕심쟁이와 신중이 먼저 입을 연다
+    // 야영 (층 사이): 모닥불에 둘러앉아 쉬고, 방금 층에서 일어난 일을 이야기한다. 그다음 더 갈지 정한다
+    *camp(f, rt) {
+      const crew = living(rt), r = rt.flow?.r || rt.map.end;
+      const P = stage(rt, r, 'camp');
+      crew.forEach((p, i) => { const a = i / crew.length * 6.28 + 0.8; let x = Math.round(P.x + Math.cos(a) * 2), y = Math.round(P.y + Math.sin(a) * 2); if (!G.Grid.pass(rt.map, x, y)) { x = P.x + (i % 2 ? 1 : -1); y = P.y + (i < 2 ? 1 : -1); } p.exT = { x, y }; });
+      dm(rt, U.pick(CAMP_OPEN));
+      yield DM;
+      for (const p of crew) { p.hp = p.max; p.dying = null; S.stress(f, rt, p, -CAMP_STRESS); }
+      for (const [a, b, why] of campTalks(f, rt, crew)) { say(rt, a, why.a); yield SAY; if (b && why.b) { say(rt, b, why.b); yield SAY; } if (b && why.n) { G.Bond.add(f, rt, a.merc, b.merc, why.n); G.fx(rt, { k: 'text', x: b.x, y: b.y - 1.5, s: `정 +${why.n}`, col: '#ff9ec4', t: 1.2, sz: 0.8 }); yield SAY / 2; } }
+      rt.events = [];
+      yield* SCENES.stairs(f, rt);
+    },
     *stairs(f, rt) {
       const hp = F().partyHP(rt), rate = hp.max ? hp.hp / hp.max : 1, carry = G.Exp.carry(f), full = G.Exp.full(f), P = G.Persona, greedy = P.who(rt, 'greedy')[0], careful = P.who(rt, 'careful')[0];
       if (greedy) { say(rt, greedy, full ? '짐이야 더 묶으면 되지. 내려가자!' : '아직 더 벌 수 있어. 내려가자!'); yield SAY; }
       if (careful) { say(rt, careful, rate < STAIR_HP ? '이 상태로 더 내려가는 건 무리야.' : '이쯤에서 돌아가도 충분해.'); yield SAY; }
       let got = null;
-      ask(f, rt, `${f.floor}층 계단 · 체력 ${Math.round(rate * 100)}%`, [{ label: '내려간다', sub: full ? `짐 한도 +30% · 위험 증가` : '위험 증가' }, { label: '돌아간다', sub: `짐 +${U.fmt(carry)}` }], stairDef(f, rate, careful && !greedy), i => { got = i; });
+      ask(f, rt, G.Region.of(f) ? `${f.floor}층 야영` : `${f.floor}층 계단 · 체력 ${Math.round(rate * 100)}%`, [{ label: '내려간다', sub: `${full ? '짐 한도 +30% · ' : ''}위험 +1 · 보상 ×${(S.pay({ heat: Math.max(0, f.heat || 0) + 1 })).toFixed(1)}` }, { label: '돌아간다', sub: `짐 +${U.fmt(carry)}` }], stairDef(f, rate, careful && !greedy), i => { got = i; });
       while (got === null) yield 0.1;
       rt.stairAsk = f.floor;
       if (got === 1) { dm(rt, '오늘은 여기까지다. 왔던 길을 되짚는다.'); G.Exp.home(f, rt, 'retreat'); return; }
@@ -238,6 +333,7 @@ G.Story = (() => {
     *captive(f, rt, r) {
       const cls = U.pick(GD().licensed()), lv = Math.max(1, Math.round(living(rt).reduce((a, p) => a + p.merc.lv, 0) / (living(rt).length || 1)) - 2), m = GD().make(f, cls, { lv });
       m.lv = lv;
+      const P = stage(rt, r, 'cage', { cls });
       dm(rt, `철창 안에 ${GD().def(m).n} 한 사람이 묶여 있다. "제발… 꺼내 주시오."`);
       yield DM;
       const dc = 12 + Math.floor(f.floor / 5);
@@ -252,28 +348,33 @@ G.Story = (() => {
         if (p) { say(rt, p, '…그 사람, 두고 와도 되는 거야?'); S.stress(f, rt, p, 12); add(f, `${f.floor}층 · ${ig(nameOf(p))} 철창 속 ${eul(m.name)} 두고 온 일을 마음에 담았다.`, [p.merc]); }
         return;
       }
+      approach(rt, c.who, P);
       say(rt, c.who, U.pick(c.o.line));
       yield SAY;
       const ok = roll(rt, c.who, c.o.what, c.o.ab, dc, fitOf(c.who, c.o));
       yield ROLL;
-      if (!ok) { dm(rt, '쇠 부딪는 소리가 복도를 울린다. 간수들이 온다!'); pack(f, rt, r, 2); return; }
+      if (!ok) { act(rt, P, null, 'rattle'); dm(rt, '쇠 부딪는 소리가 복도를 울린다. 간수들이 온다!'); pack(f, rt, r, 2); return; }
       if (Math.random() < BETRAY_P) {
+        act(rt, P, 'empty', 'poof');
         dm(rt, `풀려난 ${ig(m.name)} 웃으며 칼을 뽑는다. "고맙군. 짐은 두고 가."`);
-        chief(f, rt, r, m.name, null, 2);
+        chief(f, rt, r, m.name, null, 2, [P.x, P.y]); // 철창에서 나온다
         add(f, `${f.floor}층 · ${ig(nameOf(c.who))} 철창에서 꺼내 준 ${m.name}에게 뒤통수를 맞았다.`, [c.who.merc]);
         return;
       }
+      act(rt, P, 'empty', f.mercs.length >= GD().ROSTER_MAX ? 'coins' : 'holy');
       if (f.mercs.length >= GD().ROSTER_MAX) { const g = reward(f, 5); rt.roll.res = `+${U.fmt(g)}`; dm(rt, `${ig(m.name)} 고개를 숙이고 품에서 금화를 꺼낸다. "자리가 없다면 이거라도."`); return; }
       f.mercs.push(m);
       G.Bond.add(f, rt, c.who.merc, m, 6);
       m.owes = c.who.merc.name;
       F().syncAllies(f);
       dm(rt, `${ig(m.name)} 비틀거리며 일어난다. "이 은혜는 칼로 갚겠소."`);
+      S.legend(f, 1);
       add(f, `${f.floor}층 · ${ig(nameOf(c.who))} 철창에서 구한 ${ig(m.name)} 용병단에 들어왔다.`, [c.who.merc, m]);
       G.log(`합류 · ${m.name} (${GD().def(m).n} Lv ${lv})`, 'fantasy', 'good');
     },
     // 피 마르지 않는 제단: 기도는 판정, 제물은 확실한 축복
     *shrine(f, rt) {
+      const P = stage(rt, rt.map.rooms.find(q => F().inRoom(q, rt.hero)) || rt.map.rooms[0], 'shrine');
       dm(rt, '이끼 낀 제단이 있다. 그릇에 담긴 피가 아직 마르지 않았다.');
       yield DM;
       const dc = 13 + Math.floor(f.floor / 5), price = G.Exp.carry(f) * 0.2;
@@ -283,7 +384,7 @@ G.Story = (() => {
       const c = yield* decide(f, rt, '피 묻은 제단', [pray], dc, price > 0 ? [offer, pass] : [pass]);
       if (!c || c.o === pass) { if (c) dm(rt, '아무도 제단을 돌아보지 않는다.'); return; }
       if (c.o === offer) {
-        pay(f, price); f.bless = BLESS_FIGHTS;
+        pay(f, price); f.bless = BLESS_FIGHTS; act(rt, P, 'fed', 'coins');
         dm(rt, '금화가 그릇 속으로 가라앉는다. 무기가 조금 가벼워진 기분이다.');
         add(f, `${f.floor}층 · 피 묻은 제단에 금화를 바쳤다.`);
         return;
@@ -292,14 +393,16 @@ G.Story = (() => {
       yield SAY;
       const ok = roll(rt, c.who, c.o.what, c.o.ab, dc, fitOf(c.who, c.o));
       yield ROLL;
-      if (ok) { for (const p of living(rt)) S.stress(f, rt, p, -20); dm(rt, '촛불도 없는데 제단이 잠깐 환해진다. 어깨가 가벼워졌다.'); add(f, `${f.floor}층 · ${ig(nameOf(c.who))} 제단에서 기도해 모두의 마음을 가라앉혔다.`, [c.who.merc]); return; }
+      if (ok) { for (const p of living(rt)) S.stress(f, rt, p, -20); act(rt, P, 'holy', 'holy'); dm(rt, '촛불도 없는데 제단이 잠깐 환해진다. 어깨가 가벼워졌다.'); add(f, `${f.floor}층 · ${ig(nameOf(c.who))} 제단에서 기도해 모두의 마음을 가라앉혔다.`, [c.who.merc]); return; }
       for (const p of living(rt)) S.stress(f, rt, p, 10);
       f.heat = Math.min(dmOf(f).max, (f.heat || 0) + 1);
+      act(rt, P, 'boil', 'blood');
       dm(rt, '그릇의 피가 끓어오른다. 아래쪽 어딘가에서 무언가 깨어났다.');
     },
     // 해골이 지키는 금화: 욕심의 대가
     *hoard(f, rt) {
       const g0 = F().monGold(f.floor) * 14 * F().goldMult(f), P = G.Persona, gr = P.who(rt, 'greedy')[0], ca = P.who(rt, 'careful')[0];
+      const pile = stage(rt, rt.map.rooms.find(q => F().inRoom(q, rt.hero)) || rt.map.rooms[0], 'hoard');
       dm(rt, '금화 더미 위에 해골이 앉아 있다. 손가락이 금화 한 닢을 움켜쥔 채다.');
       yield DM;
       if (gr) { say(rt, gr, '저 정도면 올해 장사 끝이야!'); yield SAY; }
@@ -314,6 +417,7 @@ G.Story = (() => {
         F().gain(f, g0);
         const who = gr || U.pick(living(rt));
         who.merc.hex = { left: HEX_RUNS };
+        act(rt, pile, 'taken', 'coins'); atE(rt, who, 'curse');
         for (const p of living(rt)) S.stress(f, rt, p, 8);
         f.heat = Math.min(dmOf(f).max, (f.heat || 0) + 2);
         dm(rt, `해골의 손가락이 ${nameOf(who)}의 손목을 스쳤다. 뼛속까지 차가워진다.`);
@@ -324,8 +428,9 @@ G.Story = (() => {
       yield SAY;
       const ok = roll(rt, c.who, c.o.what, c.o.ab, dc, fitOf(c.who, c.o));
       yield ROLL;
-      if (ok) { const g = g0 * 0.4; F().gain(f, g); rt.roll.res = `+${U.fmt(g)}`; dm(rt, '저주받지 않은 금화만 골라 담았다. 해골은 그대로 앉아 있다.'); add(f, `${f.floor}층 · ${ig(nameOf(c.who))} 해골의 금화에서 깨끗한 것만 골라냈다.`, [c.who.merc]); return; }
+      if (ok) { const g = g0 * 0.4; F().gain(f, g); rt.roll.res = `+${U.fmt(g)}`; act(rt, pile, 'some', 'coins'); dm(rt, '저주받지 않은 금화만 골라 담았다. 해골은 그대로 앉아 있다.'); add(f, `${f.floor}층 · ${ig(nameOf(c.who))} 해골의 금화에서 깨끗한 것만 골라냈다.`, [c.who.merc]); return; }
       c.who.merc.hex = { left: HEX_RUNS };
+      atE(rt, c.who, 'curse');
       dm(rt, `${ig(nameOf(c.who))} 금화를 집자 손끝이 검게 물든다.`);
       add(f, `${f.floor}층 · ${ig(nameOf(c.who))} 해골의 금화에 손을 댔다가 저주를 받았다.`, [c.who.merc]);
     },
@@ -362,6 +467,7 @@ G.Story = (() => {
       const g = reward(f, 10);
       for (const o of rt.mons) if (o.major && !o.aggro) { o.major = false; o.stop = 6; }
       dm(rt, `${ig(q.n)} 금화 주머니를 내려놓고 아래층 길을 가리킨다. +${U.fmt(g)}`);
+      S.legend(f, 1);
       add(f, `${f.floor}층 · ${q.fl}층에서 살려 보낸 ${ig(q.n)} 금화를 물고 돌아왔다.`);
       for (const p of living(rt)) S.stress(f, rt, p, -8);
     },
@@ -388,7 +494,7 @@ G.Story = (() => {
       yield ROLL;
       if (ok) {
         G.Bond.add(f, rt, a.merc, b.merc, 6);
-        for (const p of [a, b]) S.stress(f, rt, p, -10);
+        for (const p of [a, b]) { S.stress(f, rt, p, -10); atE(rt, p, 'calm'); }
         dm(rt, '칼이 다시 칼집으로 들어간다. 아무도 눈을 마주치지 않는다.');
         add(f, `${f.floor}층 · ${ig(nameOf(c.who))} ${wa(nameOf(a))} ${nameOf(b)}의 싸움을 말렸다.`, [c.who.merc, a.merc, b.merc]);
       } else { dm(rt, `${nameOf(c.who)}의 말은 아무도 듣지 않았다.`); S.brawl(f, rt, a, b); }
@@ -406,6 +512,7 @@ G.Story = (() => {
       if (got === 0) {
         for (const p of living(rt)) { S.stress(f, rt, p, -20); if (p.merc.grief && p.merc.grief.n === d.name) p.merc.grief.left = 1; }
         dm(rt, `돌을 쌓아 ${d.name}의 자리를 만들었다.`);
+        S.legend(f, 1);
         add(f, `${f.floor}층 · ${d.name}의 유해를 거두어 묻었다.`);
         return;
       }
@@ -449,6 +556,7 @@ G.Story = (() => {
     brawl(f, rt, a, b) {
       const v = p => DN().d20(0) + DN().mod(DN().ab(p.merc).str), [w, l] = v(a) >= v(b) ? [a, b] : [b, a];
       l.hp = Math.max(1, l.hp - l.max * 0.25);
+      G.Turn.vis(rt, { k: 'brawl', w, l });
       S.stress(f, rt, l, 12);
       S.stress(f, rt, w, -15);
       G.Bond.add(f, rt, a.merc, b.merc, 4);
@@ -456,12 +564,14 @@ G.Story = (() => {
       add(f, `${f.floor}층 · ${ig(nameOf(w))} ${wa(nameOf(l))} 주먹다짐 끝에 이겼다.`, [w.merc, l.merc]);
     },
     on: (f, rt) => G.Turn.on(f, rt),
+    clearWalk(rt) { for (const a of rt.party) if (a.exT && !(rt.ex && rt.ex.search)) a.exT = null; },
     // 흉터 수치 (G.Guild.mult · sum)
-    scarMul(m, k) { let v = k === 'atk' && m.grief ? GRIEF_ATK : 1; for (const id of m.scars || []) if (SCARS[id][k] != null && k !== 'hitB' && k !== 'move') v *= SCARS[id][k]; return v; },
+    scarMul(m, k) { let v = k === 'atk' && m.grief ? GRIEF_ATK : 1; for (const id of m.scars || []) if (SCARS[id][k] != null && k !== 'hitB' && k !== 'move') v *= SCARS[id][k]; for (const id of m.titles || []) if (TITLES[id][k]) v *= TITLES[id][k]; return v; },
     scarSum(m, k) { let v = 0; for (const id of m.scars || []) if ((k === 'hitB' || k === 'move') && SCARS[id][k]) v += SCARS[id][k]; return v; },
     // 방에 들어섰다 (G.Explore): 스토리텔러 — 힘들면 쉬어 갈 조우, 편하면 위험한 조우, 원한이 남았으면 그쪽을 먼저
     room(f, rt, ex, r, mons, chest) {
-      if (!S.on(f, rt) || mons.length || chest || rt.scene || rt.sceneFl === f.floor || r === rt.map.rooms[0]) return;
+      // 작은 몬스터만 있는 방은 조우가 될 수 있다 (거의 모든 방에 있어서, 막으면 장면이 거의 안 나온다)
+      if (!S.on(f, rt) || mons.some(o => o.major || o.chief || o.boss) || chest || rt.scene || rt.sceneFl === f.floor || r === rt.map.rooms[0]) return;
       if (f.restDue) { f.restDue = false; S.play(f, rt, ex, r, 'rest'); return; }
       const g = f.grudges && f.grudges.find(q => q.fl < f.floor), hp = F().partyHP(rt), hurt = hp.max ? 1 - hp.hp / hp.max : 0;
       if (g && Math.random() < GRUDGE_P) { f.grudges = f.grudges.filter(q => q !== g); S.play(f, rt, ex, r, 'nemesis', g); return; }
@@ -474,6 +584,48 @@ G.Story = (() => {
       f.recent = (f.recent || []).concat(k).slice(-RECENT);
       S.play(f, rt, ex, r, k);
     },
+    // ── 이야기가 곧 성장 ──
+    // 전설: 시즌 끝에 명성으로 바뀐다. 시즌 최고층만큼까지만 (같은 일을 되풀이해 벌지 못하게)
+    legend(f, n) {
+      const st = G.Season.st(f);
+      st.legend = (st.legend || 0) + n;
+      if (f.run) f.run.legend = (f.run.legend || 0) + n;
+    },
+    legendFame(f) { return Math.min(G.Season.st(f).legend || 0, f.maxFloor); },
+    // 한 일이 쌓이면 칭호가 된다
+    deed(f, rt, p, k) {
+      const m = p.merc;
+      if (!m) return;
+      const d = m.deeds || (m.deeds = {});
+      d[k] = (d[k] || 0) + 1;
+      for (const id in TITLES) {
+        const T = TITLES[id];
+        if (T.k !== k || d[k] < T.need || (m.titles || []).includes(id)) continue;
+        (m.titles = m.titles || []).push(id);
+        S.legend(f, 1);
+        add(f, `${f.floor}층 · ${ig(m.name)} 「${T.n}」${jong(T.n) ? '이라' : '라'} 불리기 시작했다.`, [m]);
+        G.log(`칭호 · ${m.name} · ${T.n}`, 'fantasy', 'good');
+        if (rt) G.Feat.banner(rt, p, '★', T.n, 'bond');
+      }
+    },
+    // 조상: 금화 보너스. 은퇴한 사람이 죽은 사람보다 두 배 — 살려서 보내는 쪽이 늘 낫다
+    ancestorK(f) { return 1 + Math.min(ANC_MAX, (f.ancestors || []).length * ANC_GOLD + (f.hall || []).length * HALL_GOLD); },
+    // 시즌이 끝났다 (G.Season.end): 이번 시즌에 쓰러진 사람 중 이름 있는 이가 조상이 된다
+    seasonEnd(f) {
+      const n = G.Season.st(f).n, top = (f.fallen || []).filter(d => d.sn === n).sort((a, b) => (b.lead * 5 + b.lv + b.titles.length * 3) - (a.lead * 5 + a.lv + a.titles.length * 3)).slice(0, ANC_N);
+      f.ancestors = top.map(d => ({ name: d.name, cls: d.cls, lv: d.lv, lead: d.lead, sn: n, titles: d.titles })).concat(f.ancestors || []);
+      return top.length;
+    },
+    // 다음 시즌 (G.Season.next): 가장 이름난 조상의 제자가 선술집을 찾아온다
+    seasonNext(f) {
+      const a = (f.ancestors || []).find(q => q.sn === G.Season.st(f).n - 1);
+      if (!a || !GD().licensed().includes(a.cls)) return;
+      const m = GD().make(f, a.cls, { lv: Math.max(1, Math.floor(a.lv / 2)) });
+      m.lv = Math.max(1, Math.floor(a.lv / 2));
+      m.heirOf = a.name;
+      GD().tavern(f).offers.unshift({ m, price: GD().price(f, m) * HEIR_PRICE });
+      add(f, `${a.name}의 제자 ${ig(m.name)} 선술집을 찾아왔다.`, [m]);
+    },
     // 지금 일어날 수 있는 사건 중 최근에 없던 것. 파티 사정에 맞는 사건은 더 자주
     pickScene(f, rt, hurt) {
       const crew = living(rt), w = { door: 2, camp: 2, merchant: hurt > 0.4 ? 4 : 1, shrine: 1.5, hoard: 1.5, captive: 1.5, mercy: 1.5 };
@@ -484,10 +636,13 @@ G.Story = (() => {
       return keys[0] || 'door';
     },
     // 목숨을 구했다: 그 짝에 처음일 때만 일지에 남기고, 구해진 사람은 빚을 기억한다
+    note(rt, k, a, b, name) { if (!rt.turn && k !== 'dead') return; (rt.events = rt.events || []).push({ k, a, b, name }); },
     owe(f, a, d, s) {
+      S.note(rt0(), 'saved', a, d);
       const m = d.merc, saved = m.savedBy || (m.savedBy = {});
       if (!saved[a.merc.uid]) add(f, s, [a.merc, m]);
       saved[a.merc.uid] = 1;
+      S.deed(f, null, a, 'saves');
       m.owes = a.merc.name;
     },
     play(f, rt, ex, r, k, arg) {
@@ -496,6 +651,8 @@ G.Story = (() => {
       f.sceneDry = -1;
       rt.roll = null;
       if (ex) ex.q.length = 0;
+      // 장면 동안 파티가 멈추므로, 그 방의 작은 몬스터는 치운다
+      if (r) { rt.mons = rt.mons.filter(o => o.major || o.chief || o.boss || !F().inRoom(r, o)); F().refreshEnts(rt); }
       rt.scene = { gen: SCENES[k](f, rt, r, arg), t: 0.2 };
     },
     // 매 틱 (G.Explore). true면 파티가 멈춰 있다
@@ -505,7 +662,7 @@ G.Story = (() => {
       if (S.askTick(rt, dt)) return true;
       if ((sc.t -= dt) > 0) return true;
       const n = sc.gen.next();
-      if (n.done) { rt.scene = null; return false; }
+      if (n.done) { rt.scene = null; S.clearWalk(rt); return false; }
       sc.t = n.value;
       return true;
     },
@@ -514,6 +671,7 @@ G.Story = (() => {
     onDown(f, rt, p, mo) {
       if (!rt.turn || !p.merc) return;
       p.dying = { ok: 0, no: 0, by: mo ? nameOf(mo) : null };
+      S.note(rt, 'down', p);
       p.downed = true;
       p.downBy = p.dying.by;
       rt.turn.downs++;
@@ -527,6 +685,11 @@ G.Story = (() => {
     askBack(f, rt, p, title, back) {
       if (rt.mons.some(o => o.boss && o.aggro) || !rt.party.some(q => !q.dead)) return;
       ask(f, rt, title, [{ label: '버틴다', sub: '내성에 맡긴다' }, { label: '끌고 후퇴', sub: `짐 −${Math.round(RETREAT_DROP * 100)}% · 귀환` }], back ? 1 : 0, i => { if (i === 1) S.retreat(f, rt, p); });
+    },
+    // 승산이 없다 (G.Foe.assess): 기본은 퇴각, 과감이면 버틴다
+    askRetreat(f, rt) {
+      if (rt.ask || rt.mons.some(o => o.boss && o.aggro)) return;
+      ask(f, rt, '승산이 없다', [{ label: '버틴다', sub: '끝까지 싸운다' }, { label: '퇴각', sub: `짐 −${Math.round(RETREAT_DROP * 100)}% · 귀환` }], polOf() === 'bold' ? 0 : 1, i => { if (i !== 1) return; f.carry = G.Exp.carry(f) * (1 - RETREAT_DROP); dm(rt, '물러난다. 다음엔 다르게 준비한다.'); G.Exp.home(f, rt, 'retreat'); });
     },
     retreat(f, rt, p) {
       p.dying = null;
@@ -548,12 +711,12 @@ G.Story = (() => {
     },
     answer(rt, i) { const a = rt.ask; if (!a) return; rt.ask = null; a.done(i); },
     deathSave(f, rt, p) {
-      const d = p.dying, nat = DN().d20(0);
+      const d = p.dying, rolled = DN().d20(0), nat = rolled <= 9 && G.Trinket.has(p.merc, 'deathTen') ? 10 : rolled, bonus = (p.merc.titles || []).reduce((a, id) => a + (TITLES[id].save || 0), 0);
       if (nat === 20) { S.wake(f, rt, p, 0.1); d.ok = 3; }
       else if (nat === 1) d.no += 2;
-      else if (nat >= 10) d.ok++;
+      else if (nat + bonus >= 10) d.ok++;
       else d.no++;
-      rt.roll = { id: (rt.roll ? rt.roll.id : 0) + 1, who: nameOf(p), what: '사망 내성', nat, ok: nat >= 10, calc: `성공 ${Math.min(d.ok, 3)} · 실패 ${Math.min(d.no, 3)}`, word: nat === 20 ? '일어났다' : nat === 1 ? '대실패' : nat >= 10 ? '버틴다' : '꺼져 간다', res: '' };
+      rt.roll = { id: (rt.roll ? rt.roll.id : 0) + 1, who: nameOf(p), what: '사망 내성', nat, need: 10 - bonus, ok: nat + bonus >= 10, calc: `성공 ${Math.min(d.ok, 3)} · 실패 ${Math.min(d.no, 3)}`, word: nat === 20 ? '일어났다' : nat === 1 ? '대실패' : nat + bonus >= 10 ? '버틴다' : '꺼져 간다', res: '' };
       if (d.no >= 3) S.die(f, rt, p);
       // 단장의 숨이 꺼져 간다: 한 번 더 묻는다. 기본은 후퇴 (용병단이 멈추지 않게 — 과감이면 버틴다)
       else if (p.merc.lead && d.no >= 1 && !rt.turn.askedLead && p.dying) { rt.turn.askedLead = true; S.askBack(f, rt, p, `${ig(nameOf(p))} 꺼져 간다`, polOf() !== 'bold'); }
@@ -588,11 +751,15 @@ G.Story = (() => {
     },
     die(f, rt, p) {
       const m = p.merc, by = p.dying && p.dying.by;
+      S.note(rt, 'dead', p, null, m.name);
       p.dying = null;
-      (f.fallen = f.fallen || []).unshift({ lead: !!m.lead, name: m.name, cls: m.cls, look: m.look, adv: m.adv, lv: m.lv, fl: f.floor, by, sn: G.Season.st(f).n, scars: (m.scars || []).length });
+      const fm = Math.max(1, Math.floor(GD().retireFame(m) * LEGACY_K));
+      GD().earnFame(f, fm);
+      if (f.run) f.run.legacy = (f.run.legacy || 0) + fm;
+      (f.fallen = f.fallen || []).unshift({ lead: !!m.lead, name: m.name, cls: m.cls, look: m.look, adv: m.adv, lv: m.lv, fl: f.floor, by, sn: G.Season.st(f).n, scars: (m.scars || []).length, legacy: fm, titles: m.titles || [] });
       add(f, `${f.floor}층 · ${ig(nameOf(p))} ${by ? by + '에게 ' : ''}쓰러져 돌아오지 못했다. Lv ${m.lv}.`, [m]);
       dm(rt, `${nameOf(p)}의 숨이 멎었다.`);
-      G.log(`사망 · ${m.name} (Lv ${m.lv}) · ${f.floor}층`, 'fantasy', 'bad');
+      G.log(`사망 · ${m.name} (Lv ${m.lv}) · ${f.floor}층 · 유산 명성 +${fm}`, 'fantasy', 'bad');
       const friend = rt.party.find(q => q !== p && !q.dead && q.merc && G.Bond.rel(f, q.merc, m) === 'friend'), any = friend || U.pick(living(rt).filter(q => q !== p));
       if (any) say(rt, any, friend ? `${B().call(p)}! 안 돼, 일어나!` : `${B().call(p)}…`);
       S.aftermath(f, rt, p, m, by);
@@ -624,6 +791,7 @@ G.Story = (() => {
       } else { hero.dead = true; hero.reviveT = 1e9; }
       F().syncAllies(f);
       f.gen = (f.gen || 1) + 1;
+      S.legend(f, 2);
       dm(rt, `${ig(heir.name)} 깃발을 집어 든다. ${f.gen}대 단장이다.`);
       add(f, `${f.floor}층 · ${ig(heir.name)} ${dead.name}의 뒤를 이어 ${f.gen}대 단장이 되었다.`, [heir]);
       G.log(`승계 · ${heir.name}`, 'fantasy', 'good');
@@ -653,6 +821,7 @@ G.Story = (() => {
     scar(f, rt, p, force) {
       const m = p.merc;
       if (!m) return;
+      S.deed(f, rt, p, 'downs');
       p.downed = false;
       m.scars = m.scars || [];
       if (m.scars.length >= SCAR_MAX || (!force && Math.random() > SCAR_P)) return;
@@ -673,7 +842,7 @@ G.Story = (() => {
       add(f, `${f.floor}층 · ${ig(o.n)} 복수를 맹세하며 달아났다.`, by ? [by.merc] : []);
       return true;
     },
-    chiefDown(f, rt, o, from) { dm(rt, `${ig(o.n)} 쓰러졌다.`); add(f, `${f.floor}층 · ${from?.merc ? ig(nameOf(from)) + ' ' : ''}${eul(o.n)} 끝장냈다.`, from?.merc ? [from.merc] : []); },
+    chiefDown(f, rt, o, from) { S.legend(f, o.times ? 3 : 1); dm(rt, `${ig(o.n)} 쓰러졌다.`); add(f, `${f.floor}층 · ${from?.merc ? ig(nameOf(from)) + ' ' : ''}${eul(o.n)} 끝장냈다.`, from?.merc ? [from.merc] : []); },
     // 조용할 때 지난 일을 꺼낸다 (G.Banter.talk)
     recall(f, rt) {
       if (!S.on(f, rt) || Math.random() > 0.15) return false;
@@ -683,6 +852,7 @@ G.Story = (() => {
     // 그 사람이 겪은 일을 입에 올린다: 슬픔 · 맹세 · 흉터 · 죽은 사람 · 원수 순서로 무게가 있는 것부터
     memory(f, rt, p) {
       const m = p.merc, dead = f.fallen && f.fallen[0], g = f.grudges && f.grudges[0], id = m.scars && U.pick(m.scars), at = id && m.scarAt && m.scarAt[id];
+      if (m.heirOf && Math.random() < 0.25) return say(rt, p, U.pick([`${m.heirOf} 선생이라면 어떻게 했을까.`, `${m.heirOf} 선생한테 배운 대로만 하자.`]));
       if (m.owes && Math.random() < 0.5) return say(rt, p, U.pick([`${m.owes}, 그때 네가 아니었으면 나 죽었어.`, `${m.owes}한테 빚이 있어. 안 잊어.`]));
       if (m.grief && Math.random() < 0.7) return say(rt, p, U.pick([`아직도 ${m.grief.n} 목소리가 들려.`, `${ig(m.grief.n)} 여기 있었으면 뭐라고 했을까.`, `${m.grief.n} 얘기는 하지 마.`]));
       if (m.vow && Math.random() < 0.7) return say(rt, p, `${m.vow.n}, 두고 봐. ${m.vow.who} 몫은 받아 낸다.`);
@@ -695,12 +865,15 @@ G.Story = (() => {
     // ── 위험의 굴곡 (RimWorld의 스토리텔러): 편하게 이기면 다음 조우가 세지고, 위기를 겪으면 약해지며 쉬어 갈 곳이 나온다 ──
     DMS, POLICY,
     pressure: f => { const h = f.heat || 0, D = dmOf(f); return 1 + (h > 0 ? D.k : D.ease) * h; },
-    heat(f, list) { const k = S.pressure(f); for (const o of list) if (!o.heated) { o.heated = true; o.atk *= k; o.hp *= k; o.max *= k; } },
+    // 위험의 값: 편한 날이 이어지면 세지는 만큼 더 번다 (금화 · 경험치). 강해질수록 더 큰 위험을 감당해 더 번다
+    pay: f => 1 + RISK_PAY * Math.max(0, f.heat || 0),
+    heat(f, list) { const k = S.pressure(f), pay = S.pay(f); for (const o of list) if (!o.heated) { o.heated = true; o.atk *= k; o.hp *= k; o.max *= k; o.gold *= pay; o.xpK = pay; } },
     omen: f => ((f.heat || 0) >= 3 ? U.pick(['너무 조용하다. 오래갈 리 없다.', '아래쪽에서 뭔가가 기다리는 기분이다.']) : (f.heat || 0) <= -2 ? U.pick(['공기가 한결 가볍다.', '한동안 무사할 것 같다.']) : null),
     settle(f, rt) {
       const st = rt.turn;
       if (!st) return;
       const D = dmOf(f);
+      if (st.low < CRISIS_LOW && rt.party.some(p => !p.dead)) { S.legend(f, 1); for (const p of living(rt)) S.deed(f, rt, p, 'crises'); }
       if (st.low < D.restAt || st.downs) { f.heat = Math.max(HEAT_MIN, Math.min(f.heat || 0, 0) - 1); f.restDue = true; }
       else if (st.low >= EASY_LOW) f.heat = Math.min(D.max, (f.heat || 0) + 1);
       if (f.bless > 0) f.bless--;
@@ -713,17 +886,20 @@ G.Story = (() => {
     stress(f, rt, p, n) {
       const m = p.merc;
       if (!m) return;
-      if (n > 0) { n *= (m.habit ? HABIT_K : 1); for (const k of m.pers || []) n *= STRESS_K[k] || 1; }
-      m.stress = U.clamp((m.stress || 0) + n, 0, 100);
+      if (n > 0) { n *= (m.habit ? HABIT_K : 1); for (const k of m.pers || []) n *= STRESS_K[k] || 1; for (const id of m.titles || []) n *= TITLES[id].stress || 1; }
+      const was = m.stress || 0; m.stress = U.clamp(was + n, 0, 100);
+      { const d = Math.round(m.stress - was); if (Math.abs(d) >= 5 && !G.quiet && p.x != null) G.fx(rt, { k: 'text', x: p.x, y: p.y - 1.5, s: `스트레스 ${d > 0 ? '+' : ''}${d}`, col: d > 0 ? '#c79af0' : '#9fe79f', t: 1, sz: 0.7 }); }
       if (m.stress >= 100 && rt.turn && !p.dead && !p.broke && !p.resolve) S.breakdown(f, rt, p);
     },
     breakdown(f, rt, p) {
       const m = p.merc, name = nameOf(p), nat = DN().d20(0), mod = DN().mod(DN().ab(m).wis);
-      rt.roll = { id: (rt.roll ? rt.roll.id : 0) + 1, who: name, what: '정신 판정', nat, ok: nat + mod >= RESOLVE_DC, calc: `지혜 ${mod < 0 ? '−' : '+'}${Math.abs(mod)} · DC ${RESOLVE_DC}`, word: nat + mod >= RESOLVE_DC ? '각성' : '무너짐', res: '' };
+      rt.roll = { id: (rt.roll ? rt.roll.id : 0) + 1, who: name, what: '정신 판정', nat, need: RESOLVE_DC - mod, ok: nat + mod >= RESOLVE_DC, calc: `지혜 ${mod < 0 ? '−' : '+'}${Math.abs(mod)} · DC ${RESOLVE_DC}`, word: nat + mod >= RESOLVE_DC ? '각성' : '무너짐', res: '' };
       if (nat + mod >= RESOLVE_DC) {
         p.resolve = true;
         m.stress = 40;
         p.hp = Math.min(p.max, p.hp + p.max * 0.25);
+        S.legend(f, 1);
+        S.deed(f, rt, p, 'resolves');
         dm(rt, `${ig(name)} 이를 악문다. 떨림이 멎었다.`);
         say(rt, p, '아직이야. 아직 안 끝났어.');
         add(f, `${f.floor}층 · 무너지기 직전의 ${ig(name)} 이를 악물고 일어섰다.`, [m]);
@@ -786,6 +962,8 @@ G.Story = (() => {
             e.merc.vow = null;
             S.stress(f, rt, e, -30);
             say(rt, e, `${v.who}, 봤어? 끝났어.`, true);
+            S.legend(f, 3);
+            S.deed(f, rt, e, 'avenged');
             add(f, `${f.floor}층 · ${ig(nameOf(e))} ${eul(v.n)} 쓰러뜨려 ${v.who}의 원수를 갚았다.`, [e.merc]);
             if (f.run) (f.run.avenged = f.run.avenged || []).push(`${nameOf(e)} → ${v.who}`);
           }
@@ -838,6 +1016,8 @@ G.Story = (() => {
       if (m.habit) out.push({ n: BREAKS[m.habit].n, d: '스트레스 ×1.15' });
       if (m.grief) out.push({ n: `${m.grief.n}의 죽음`, d: `피해 ×0.9 · 원정 ${m.grief.left}회` });
       if (m.vow) out.push({ n: `맹세 · ${m.vow.n}`, d: `${m.vow.who}의 원수 · 피해 ×1.25` });
+      for (const id of m.titles || []) out.push({ n: TITLES[id].n, d: TITLES[id].d });
+      if (m.heirOf) out.push({ n: `${m.heirOf}의 제자`, d: '조상의 뒤를 잇는 사람' });
       if (m.hex) out.push({ n: '저주', d: `피해 ×0.9 · 원정 ${m.hex.left}회` });
       if (m.owes) out.push({ n: `빚 · ${m.owes}`, d: '목숨을 구해 준 사람' });
       return out;
@@ -846,6 +1026,8 @@ G.Story = (() => {
     stairs(f, rt) {
       if (!S.on(f, rt) || rt.stairOK === f.floor || rt.scene || (rt.mission && !rt.mission.done)) return false;
       rt.stairOK = f.floor;
+      const reg = G.Region.of(f);
+      if (reg) { if (G.Region.done(f, reg)) return false; rt.stairAsk = f.floor; rt.roll = null; rt.scene = { gen: SCENES.camp(f, rt), t: 0.2 }; return true; }
       const hp = F().partyHP(rt), crew = living(rt), avg = crew.reduce((a, p) => a + (p.merc.stress || 0), 0) / (crew.length || 1);
       if (!G.Exp.full(f) && (hp.max ? hp.hp / hp.max : 1) >= STAIR_HP && avg < STAIR_STRESS && f.floor - (rt.stairAsk || f.runStart || 1) < STAIR_EVERY) return false;
       rt.stairAsk = f.floor;

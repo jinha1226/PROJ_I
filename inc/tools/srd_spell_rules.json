@@ -1,0 +1,1668 @@
+{
+"dancing-lights": {
+"k": "util"
+},
+"druidcraft": {
+"k": "util"
+},
+"elementalism": {
+"k": "util"
+},
+"light": {
+"k": "util"
+},
+"mage-hand": {
+"k": "util"
+},
+"mending": {
+"k": "util"
+},
+"message": {
+"k": "util"
+},
+"minor-illusion": {
+"k": "util"
+},
+"prestidigitation": {
+"k": "util"
+},
+"thaumaturgy": {
+"k": "util"
+},
+"guidance": {
+"k": "util"
+},
+"alarm": {
+"k": "util"
+},
+"comprehend-languages": {
+"k": "util"
+},
+"create-or-destroy-water": {
+"k": "util"
+},
+"detect-evil-and-good": {
+"k": "util"
+},
+"detect-magic": {
+"k": "util"
+},
+"detect-poison-and-disease": {
+"k": "util"
+},
+"disguise-self": {
+"k": "util"
+},
+"feather-fall": {
+"k": "util"
+},
+"find-familiar": {
+"k": "util"
+},
+"floating-disk": {
+"k": "util"
+},
+"goodberry": {
+"k": "util"
+},
+"identify": {
+"k": "util"
+},
+"illusory-script": {
+"k": "util"
+},
+"purify-food-and-drink": {
+"k": "util"
+},
+"silent-image": {
+"k": "util"
+},
+"speak-with-animals": {
+"k": "util"
+},
+"unseen-servant": {
+"k": "util"
+},
+"alter-self": {
+"k": "util"
+},
+"animal-messenger": {
+"k": "util"
+},
+"arcane-lock": {
+"k": "util"
+},
+"arcanists-magic-aura": {
+"k": "util"
+},
+"augury": {
+"k": "util"
+},
+"continual-flame": {
+"k": "util"
+},
+"darkvision": {
+"k": "util"
+},
+"detect-thoughts": {
+"k": "util"
+},
+"find-steed": {
+"k": "util"
+},
+"find-traps": {
+"k": "util"
+},
+"gentle-repose": {
+"k": "util"
+},
+"knock": {
+"k": "util"
+},
+"locate-animals-or-plants": {
+"k": "util"
+},
+"locate-object": {
+"k": "util"
+},
+"magic-mouth": {
+"k": "util"
+},
+"pass-without-trace": {
+"k": "util"
+},
+"prayer-of-healing": {
+"k": "util"
+},
+"rope-trick": {
+"k": "util"
+},
+"see-invisibility": {
+"k": "util"
+},
+"silence": {
+"k": "util"
+},
+"spider-climb": {
+"k": "util"
+},
+"zone-of-truth": {
+"k": "util"
+},
+"animate-dead": {
+"k": "util"
+},
+"clairvoyance": {
+"k": "util"
+},
+"create-food-and-water": {
+"k": "util"
+},
+"daylight": {
+"k": "util"
+},
+"fly": {
+"k": "util"
+},
+"gaseous-form": {
+"k": "util"
+},
+"glyph-of-warding": {
+"k": "util"
+},
+"magic-circle": {
+"k": "util"
+},
+"major-image": {
+"k": "util"
+},
+"meld-into-stone": {
+"k": "util"
+},
+"nondetection": {
+"k": "util"
+},
+"phantom-steed": {
+"k": "util"
+},
+"sending": {
+"k": "util"
+},
+"speak-with-dead": {
+"k": "util"
+},
+"speak-with-plants": {
+"k": "util"
+},
+"tiny-hut": {
+"k": "util"
+},
+"tongues": {
+"k": "util"
+},
+"water-breathing": {
+"k": "util"
+},
+"water-walk": {
+"k": "util"
+},
+"arcane-eye": {
+"k": "util"
+},
+"control-water": {
+"k": "util"
+},
+"divination": {
+"k": "util"
+},
+"fabricate": {
+"k": "util"
+},
+"hallucinatory-terrain": {
+"k": "util"
+},
+"locate-creature": {
+"k": "util"
+},
+"private-sanctum": {
+"k": "util"
+},
+"secret-chest": {
+"k": "util"
+},
+"stone-shape": {
+"k": "util"
+},
+"awaken": {
+"k": "util"
+},
+"commune": {
+"k": "util"
+},
+"commune-with-nature": {
+"k": "util"
+},
+"contact-other-plane": {
+"k": "util"
+},
+"creation": {
+"k": "util"
+},
+"dream": {
+"k": "util"
+},
+"geas": {
+"k": "util"
+},
+"hallow": {
+"k": "util"
+},
+"legend-lore": {
+"k": "util"
+},
+"passwall": {
+"k": "util"
+},
+"planar-binding": {
+"k": "util"
+},
+"raise-dead": {
+"k": "util"
+},
+"reincarnate": {
+"k": "util"
+},
+"scrying": {
+"k": "util"
+},
+"seeming": {
+"k": "util"
+},
+"telepathic-bond": {
+"k": "util"
+},
+"teleportation-circle": {
+"k": "util"
+},
+"tree-stride": {
+"k": "util"
+},
+"contingency": {
+"k": "util"
+},
+"create-undead": {
+"k": "util"
+},
+"find-the-path": {
+"k": "util"
+},
+"forbiddance": {
+"k": "util"
+},
+"guards-and-wards": {
+"k": "util"
+},
+"heroes-feast": {
+"k": "util"
+},
+"instant-summons": {
+"k": "util"
+},
+"magic-jar": {
+"k": "util"
+},
+"move-earth": {
+"k": "util"
+},
+"planar-ally": {
+"k": "util"
+},
+"programmed-illusion": {
+"k": "util"
+},
+"transport-via-plants": {
+"k": "util"
+},
+"true-seeing": {
+"k": "util"
+},
+"wind-walk": {
+"k": "util"
+},
+"word-of-recall": {
+"k": "util"
+},
+"etherealness": {
+"k": "util"
+},
+"magnificent-mansion": {
+"k": "util"
+},
+"mirage-arcane": {
+"k": "util"
+},
+"project-image": {
+"k": "util"
+},
+"resurrection": {
+"k": "util"
+},
+"sequester": {
+"k": "util"
+},
+"simulacrum": {
+"k": "util"
+},
+"symbol": {
+"k": "util"
+},
+"teleport": {
+"k": "util"
+},
+"animal-shapes": {
+"k": "util"
+},
+"antipathy-sympathy": {
+"k": "util"
+},
+"clone": {
+"k": "util"
+},
+"control-weather": {
+"k": "util"
+},
+"demiplane": {
+"k": "util"
+},
+"glibness": {
+"k": "util"
+},
+"tsunami": {
+"k": "util"
+},
+"astral-projection": {
+"k": "util"
+},
+"gate": {
+"k": "util"
+},
+"true-resurrection": {
+"k": "util"
+},
+"wish": {
+"k": "util"
+},
+"acid-splash": {
+"dt": "acid",
+"save": "dex",
+"half": false,
+"area": 1,
+"cantrip": 1,
+"k": "save"
+},
+"chill-touch": {
+"cantrip": 1,
+"noHeal": 1,
+"k": "atk"
+},
+"poison-spray": {
+"cantrip": 1,
+"k": "atk"
+},
+"shocking-grasp": {
+"cantrip": 1,
+"noReact": 1,
+"k": "atk"
+},
+"sorcerous-burst": {
+"dice": [
+1,
+8,
+0
+],
+"dt": "force",
+"cantrip": 1,
+"k": "atk"
+},
+"starry-wisp": {
+"cantrip": 1,
+"cond": "outlined",
+"condT": 1,
+"k": "atk"
+},
+"true-strike": {
+"dice": [
+1,
+6,
+0
+],
+"dt": "radiant",
+"cantrip": 1,
+"k": "atk"
+},
+"resistance": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"taken": 0.9
+}
+},
+"shillelagh": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"self": 1,
+"dmgB": 2
+}
+},
+"spare-the-dying": {
+"k": "stab"
+},
+"animal-friendship": {
+"only": "beast",
+"k": "cond",
+"save": "wis",
+"cond": "charmed",
+"T": 10
+},
+"bane": {
+"n": 3,
+"k": "cond",
+"save": "cha",
+"cond": "sapped",
+"T": 3
+},
+"burning-hands": {
+"k": "save"
+},
+"charm-person": {
+"only": "humanoid",
+"k": "cond",
+"save": "wis",
+"cond": "charmed",
+"T": 10
+},
+"color-spray": {
+"area": 3,
+"k": "cond",
+"save": "con",
+"cond": "blinded",
+"T": 1
+},
+"command": {
+"k": "cond",
+"save": "wis",
+"cond": "prone",
+"T": 1
+},
+"divine-favor": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"self": 1,
+"dmgB": 2.5
+}
+},
+"expeditious-retreat": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"self": 1,
+"moveK": 1
+}
+},
+"false-life": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"self": 1,
+"thp": [
+2,
+4,
+4
+]
+}
+},
+"fog-cloud": {
+"area": 4,
+"k": "cond",
+"save": null,
+"cond": "blinded",
+"T": 2
+},
+"grease": {
+"area": 2,
+"k": "cond",
+"save": "dex",
+"cond": "prone",
+"T": 1
+},
+"heroism": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"thp": [
+0,
+0,
+4
+],
+"imm": "frightened"
+}
+},
+"hideous-laughter": {
+"k": "cond",
+"save": "wis",
+"cond": "paralyzed",
+"T": 2
+},
+"ice-knife": {
+"splash": [
+2,
+6,
+"cold",
+"dex",
+1
+],
+"k": "atk"
+},
+"inflict-wounds": {
+"k": "save"
+},
+"jump": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"self": 1,
+"moveK": 0.5
+}
+},
+"longstrider": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"moveK": 0.33
+}
+},
+"mage-armor": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"self": 1,
+"ac": 3
+}
+},
+"protection-from-evil-and-good": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"hitDis": 1
+}
+},
+"ray-of-sickness": {
+"cond": "poisoned",
+"condT": 1,
+"k": "atk"
+},
+"sanctuary": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"hitDis": 1
+}
+},
+"acid-arrow": {
+"dot": [
+2,
+4
+],
+"k": "atk"
+},
+"aid": {
+"k": "buff",
+"T": 100,
+"n": 3,
+"props": {
+"thp": [
+0,
+0,
+5
+]
+}
+},
+"barkskin": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"ac": 2
+}
+},
+"blindness-deafness": {
+"k": "cond",
+"save": "con",
+"cond": "blinded",
+"T": 10
+},
+"blur": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"self": 1,
+"hitDis": 1
+}
+},
+"calm-emotions": {
+"area": 4,
+"k": "cond",
+"save": "cha",
+"cond": "sapped",
+"T": 3
+},
+"dragons-breath": {
+"dice": [
+3,
+6,
+0
+],
+"dt": "fire",
+"save": "dex",
+"half": true,
+"area": 3,
+"up": 1,
+"k": "save"
+},
+"enhance-ability": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"save": 2
+}
+},
+"enlarge-reduce": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"dmgB": 2.5
+}
+},
+"enthrall": {
+"k": "cond",
+"save": "wis",
+"cond": "sapped",
+"T": 3
+},
+"flame-blade": {
+"k": "summon",
+"dice": [
+3,
+6,
+0
+],
+"dt": "fire",
+"T": 100
+},
+"flaming-sphere": {
+"k": "field",
+"dice": [
+2,
+6,
+0
+],
+"dt": "fire",
+"save": "dex",
+"half": true,
+"area": 1,
+"T": 10
+},
+"gust-of-wind": {
+"area": 3,
+"k": "cond",
+"save": "str",
+"cond": "push",
+"T": 1
+},
+"heat-metal": {
+"k": "field",
+"dice": [
+2,
+8,
+0
+],
+"dt": "fire",
+"save": null,
+"half": true,
+"area": 0,
+"T": 10
+},
+"invisibility": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"hitDis": 1,
+"adv": 1
+}
+},
+"levitate": {
+"k": "cond",
+"save": "con",
+"cond": "restrained",
+"T": 3
+},
+"lesser-restoration": {
+"k": "clean"
+},
+"magic-weapon": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"hit": 1,
+"dmgB": 1
+}
+},
+"mind-spike": {
+"k": "save"
+},
+"mirror-image": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"self": 1,
+"hitDis": 1
+}
+},
+"phantasmal-force": {
+"k": "field",
+"dice": [
+2,
+8,
+0
+],
+"dt": "psychic",
+"save": "int",
+"half": false,
+"area": 0,
+"T": 10
+},
+"protection-from-poison": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"res_poison": 1
+}
+},
+"ray-of-enfeeblement": {
+"k": "cond",
+"save": "con",
+"cond": "sapped",
+"T": 10
+},
+"shining-smite": {
+"k": "rider",
+"dice": [
+2,
+6,
+0
+],
+"dt": "radiant",
+"cond": "outlined",
+"condT": 10
+},
+"suggestion": {
+"k": "cond",
+"save": "wis",
+"cond": "charmed",
+"T": 3
+},
+"warding-bond": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"ac": 1,
+"save": 1,
+"taken": 0.8
+}
+},
+"beacon-of-hope": {
+"k": "buff",
+"T": 10,
+"n": 6,
+"props": {
+"save": 2.5
+}
+},
+"bestow-curse": {
+"k": "cond",
+"save": "wis",
+"cond": "sapped",
+"T": 10
+},
+"blink": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"self": 1,
+"hitDis": 1
+}
+},
+"counterspell": {
+"k": "react"
+},
+"conjure-animals": {
+"k": "field",
+"dice": [
+3,
+10,
+0
+],
+"dt": "slashing",
+"save": "dex",
+"half": true,
+"area": 2,
+"T": 10
+},
+"dispel-magic": {
+"k": "clean"
+},
+"plant-growth": {
+"area": 8,
+"k": "cond",
+"save": null,
+"cond": "slow",
+"T": 10
+},
+"protection-from-energy": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"taken": 0.7
+}
+},
+"remove-curse": {
+"k": "clean"
+},
+"sleet-storm": {
+"area": 4,
+"k": "cond",
+"save": "dex",
+"cond": "prone",
+"T": 3
+},
+"stinking-cloud": {
+"area": 4,
+"k": "cond",
+"save": "con",
+"cond": "paralyzed",
+"T": 1
+},
+"wind-wall": {
+"area": 2,
+"k": "save"
+},
+"aura-of-life": {
+"k": "buff",
+"T": 10,
+"n": 6,
+"props": {
+"res_necrotic": 1
+}
+},
+"banishment": {
+"k": "cond",
+"save": "cha",
+"cond": "paralyzed",
+"T": 10
+},
+"black-tentacles": {
+"cond": "restrained",
+"condT": 1,
+"k": "field",
+"dice": [
+3,
+6,
+0
+],
+"dt": "bludgeoning",
+"save": "str",
+"half": false,
+"area": 4,
+"T": 10
+},
+"blight": {
+"k": "save"
+},
+"charm-monster": {
+"k": "cond",
+"save": "wis",
+"cond": "charmed",
+"T": 10
+},
+"compulsion": {
+"k": "cond",
+"save": "wis",
+"cond": "paralyzed",
+"T": 3
+},
+"confusion": {
+"area": 2,
+"k": "cond",
+"save": "wis",
+"cond": "paralyzed",
+"T": 3
+},
+"conjure-minor-elementals": {
+"k": "summon",
+"dice": [
+2,
+8,
+0
+],
+"dt": "fire",
+"T": 10
+},
+"conjure-woodland-beings": {
+"follow": 1,
+"k": "field",
+"dice": [
+5,
+8,
+0
+],
+"dt": "force",
+"save": "wis",
+"half": true,
+"area": 2,
+"T": 10
+},
+"death-ward": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"deathWard": 1
+}
+},
+"dimension-door": {
+"k": "blink",
+"cells": 8
+},
+"dominate-beast": {
+"only": "beast",
+"k": "cond",
+"save": "wis",
+"cond": "charmed",
+"T": 10
+},
+"faithful-hound": {
+"k": "summon",
+"dice": [
+4,
+8,
+0
+],
+"dt": "force",
+"T": 100
+},
+"fire-shield": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"self": 1,
+"res_cold": 1,
+"res_fire": 1
+}
+},
+"freedom-of-movement": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"imm": "restrained"
+}
+},
+"giant-insect": {
+"k": "summon",
+"dice": [
+2,
+8,
+0
+],
+"dt": "piercing",
+"T": 10
+},
+"greater-invisibility": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"hitDis": 1,
+"adv": 1
+}
+},
+"guardian-of-faith": {
+"follow": 1,
+"k": "field",
+"dice": [
+0,
+0,
+20
+],
+"dt": "radiant",
+"save": "dex",
+"half": true,
+"area": 2,
+"T": 10
+},
+"phantasmal-killer": {
+"dice": [
+4,
+10,
+0
+],
+"dt": "psychic",
+"save": "wis",
+"half": true,
+"k": "save"
+},
+"polymorph": {
+"k": "cond",
+"save": "wis",
+"cond": "paralyzed",
+"T": 10
+},
+"resilient-sphere": {
+"k": "cond",
+"save": "dex",
+"cond": "paralyzed",
+"T": 3
+},
+"stoneskin": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"res_slashing": 1,
+"res_piercing": 1,
+"res_bludgeoning": 1
+}
+},
+"vitriolic-sphere": {
+"half": true,
+"dot": [
+5,
+4
+],
+"k": "save"
+},
+"wall-of-fire": {
+"k": "field",
+"dice": [
+5,
+8,
+0
+],
+"dt": "fire",
+"save": "dex",
+"half": true,
+"area": 3,
+"T": 10
+},
+"animate-objects": {
+"k": "summon",
+"dice": [
+1,
+6,
+3
+],
+"dt": "force",
+"T": 10
+},
+"antilife-shell": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"self": 1,
+"hitDis": 1
+}
+},
+"arcane-hand": {
+"k": "summon",
+"dice": [
+5,
+8,
+0
+],
+"dt": "force",
+"T": 10
+},
+"cloudkill": {
+"k": "field",
+"dice": [
+5,
+8,
+0
+],
+"dt": "poison",
+"save": "con",
+"half": true,
+"area": 4,
+"T": 10
+},
+"conjure-elemental": {
+"k": "summon",
+"dice": [
+8,
+8,
+0
+],
+"dt": "lightning",
+"T": 10
+},
+"contagion": {
+"half": false,
+"k": "save"
+},
+"dispel-evil-and-good": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"hitDis": 1
+}
+},
+"dominate-person": {
+"only": "humanoid",
+"k": "cond",
+"save": "wis",
+"cond": "charmed",
+"T": 10
+},
+"flame-strike": {
+"dice": [
+10,
+6,
+0
+],
+"k": "save"
+},
+"greater-restoration": {
+"k": "clean"
+},
+"hold-monster": {
+"k": "cond",
+"save": "wis",
+"cond": "paralyzed",
+"T": 2
+},
+"insect-plague": {
+"k": "field",
+"dice": [
+4,
+10,
+0
+],
+"dt": "piercing",
+"save": "con",
+"half": true,
+"area": 4,
+"T": 10
+},
+"mass-cure-wounds": {
+"k": "heal",
+"heal": [
+5,
+8,
+0
+],
+"n": 6
+},
+"mislead": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"self": 1,
+"hitDis": 1,
+"adv": 1
+}
+},
+"modify-memory": {
+"k": "cond",
+"save": "wis",
+"cond": "charmed",
+"T": 1
+},
+"summon-dragon": {
+"k": "summon",
+"dice": [
+2,
+10,
+4
+],
+"dt": "fire",
+"T": 10
+},
+"telekinesis": {
+"k": "cond",
+"save": "str",
+"cond": "restrained",
+"T": 3
+},
+"wall-of-force": {
+"area": 3,
+"k": "cond",
+"save": null,
+"cond": "paralyzed",
+"T": 3
+},
+"wall-of-stone": {
+"area": 3,
+"k": "cond",
+"save": "dex",
+"cond": "paralyzed",
+"T": 2
+},
+"blade-barrier": {
+"k": "field",
+"dice": [
+6,
+10,
+0
+],
+"dt": "force",
+"save": "dex",
+"half": true,
+"area": 3,
+"T": 10
+},
+"circle-of-death": {
+"k": "save"
+},
+"conjure-fey": {
+"k": "summon",
+"dice": [
+3,
+12,
+0
+],
+"dt": "psychic",
+"T": 10
+},
+"disintegrate": {
+"dice": [
+10,
+6,
+40
+],
+"dt": "force",
+"save": "dex",
+"half": false,
+"area": 0,
+"k": "save"
+},
+"eyebite": {
+"k": "cond",
+"save": "wis",
+"cond": "paralyzed",
+"T": 10
+},
+"flesh-to-stone": {
+"k": "cond",
+"save": "con",
+"cond": "restrained",
+"T": 10
+},
+"freezing-sphere": {
+"area": 4,
+"k": "save"
+},
+"globe-of-invulnerability": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"self": 1,
+"hitDis": 1
+}
+},
+"harm": {
+"k": "save"
+},
+"heal": {
+"clean": 1,
+"k": "heal",
+"heal": [
+0,
+0,
+70
+],
+"n": 1
+},
+"irresistible-dance": {
+"k": "cond",
+"save": "wis",
+"cond": "paralyzed",
+"T": 3
+},
+"mass-suggestion": {
+"area": 6,
+"k": "cond",
+"save": "wis",
+"cond": "charmed",
+"T": 3
+},
+"sunbeam": {
+"cond": "blinded",
+"condT": 1,
+"k": "field",
+"dice": [
+6,
+8,
+0
+],
+"dt": "radiant",
+"save": "con",
+"half": true,
+"area": 2,
+"T": 10
+},
+"wall-of-ice": {
+"area": 3,
+"k": "save"
+},
+"wall-of-thorns": {
+"k": "field",
+"dice": [
+7,
+8,
+0
+],
+"dt": "piercing",
+"save": "dex",
+"half": true,
+"area": 3,
+"T": 10
+},
+"arcane-sword": {
+"k": "summon",
+"dice": [
+4,
+12,
+0
+],
+"dt": "force",
+"T": 10
+},
+"conjure-celestial": {
+"follow": 1,
+"k": "field",
+"dice": [
+6,
+12,
+0
+],
+"dt": "radiant",
+"save": "dex",
+"half": true,
+"area": 2,
+"T": 10
+},
+"delayed-blast-fireball": {
+"dice": [
+12,
+6,
+0
+],
+"dt": "fire",
+"k": "save"
+},
+"divine-word": {
+"area": 6,
+"k": "cond",
+"save": "cha",
+"cond": "paralyzed",
+"T": 10
+},
+"finger-of-death": {
+"dice": [
+7,
+8,
+30
+],
+"dt": "necrotic",
+"save": "con",
+"k": "save"
+},
+"fire-storm": {
+"area": 4,
+"k": "save"
+},
+"forcecage": {
+"k": "cond",
+"save": null,
+"cond": "paralyzed",
+"T": 10
+},
+"plane-shift": {
+"k": "cond",
+"save": "cha",
+"cond": "paralyzed",
+"T": 100
+},
+"prismatic-spray": {
+"k": "save"
+},
+"regenerate": {
+"k": "heal",
+"heal": [
+4,
+8,
+15
+],
+"n": 1
+},
+"reverse-gravity": {
+"area": 6,
+"k": "cond",
+"save": "dex",
+"cond": "paralyzed",
+"T": 3
+},
+"antimagic-field": {
+"k": "buff",
+"T": 10,
+"n": 1,
+"props": {
+"self": 1,
+"hitDis": 1
+}
+},
+"befuddlement": {
+"cond": "paralyzed",
+"condT": 2,
+"k": "save"
+},
+"dominate-monster": {
+"k": "cond",
+"save": "wis",
+"cond": "charmed",
+"T": 10
+},
+"earthquake": {
+"cond": "prone",
+"condT": 1,
+"k": "field",
+"dice": [
+12,
+6,
+0
+],
+"dt": "bludgeoning",
+"save": "dex",
+"half": true,
+"area": 8,
+"T": 10
+},
+"holy-aura": {
+"k": "buff",
+"T": 10,
+"n": 6,
+"props": {
+"hitDis": 1,
+"save": 2.5
+}
+},
+"incendiary-cloud": {
+"k": "field",
+"dice": [
+10,
+8,
+0
+],
+"dt": "fire",
+"save": "dex",
+"half": true,
+"area": 4,
+"T": 10
+},
+"maze": {
+"k": "cond",
+"save": null,
+"cond": "paralyzed",
+"T": 3
+},
+"mind-blank": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"imm": "charmed"
+}
+},
+"power-word-stun": {
+"k": "pw",
+"lim": 150,
+"cond": "stunned",
+"T": 3,
+"save": "con"
+},
+"sunburst": {
+"k": "save"
+},
+"foresight": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"hitDis": 1,
+"adv": 1
+}
+},
+"imprisonment": {
+"k": "cond",
+"save": "wis",
+"cond": "paralyzed",
+"T": 100
+},
+"mass-heal": {
+"clean": 1,
+"k": "heal",
+"heal": [
+0,
+0,
+100
+],
+"n": 6
+},
+"power-word-heal": {
+"clean": 1,
+"k": "heal",
+"heal": [
+0,
+0,
+999
+],
+"n": 1
+},
+"power-word-kill": {
+"k": "pw",
+"lim": 100,
+"kill": 1
+},
+"prismatic-wall": {
+"k": "field",
+"dice": [
+12,
+6,
+0
+],
+"dt": "fire",
+"save": "con",
+"half": true,
+"area": 4,
+"T": 10
+},
+"shapechange": {
+"k": "buff",
+"T": 100,
+"n": 1,
+"props": {
+"self": 1,
+"ac": 5,
+"dmgB": 10
+}
+},
+"storm-of-vengeance": {
+"k": "field",
+"dice": [
+6,
+6,
+0
+],
+"dt": "thunder",
+"save": "con",
+"half": true,
+"area": 8,
+"T": 10
+},
+"time-stop": {
+"k": "buff",
+"T": 2,
+"n": 1,
+"props": {
+"self": 1,
+"extraAtk": 2
+}
+},
+"true-polymorph": {
+"k": "cond",
+"save": "wis",
+"cond": "paralyzed",
+"T": 100
+},
+"weird": {
+"k": "save"
+}
+}

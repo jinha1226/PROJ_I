@@ -9,7 +9,7 @@ G.Feat = (() => {
   const Ft = {
     MI_K,
     def: m => (m && m.feat ? D.FEATS[m.feat] : null),
-    has: (m, k) => !!m && m.feat === k,
+    has: (m, k) => !!m && (m.feat === k || (m.cls === 'warlock' && (k === 'alert' || k === 'savage') && G.Opt.of(m).includes('iv_' + k))),
     roll: () => U.pick(Object.keys(D.FEATS)),
     // 마법 입문이 주는 주문 (직업 기술에 이미 있으면 그쪽 쿨다운)
     spell: m => Ft.def(m)?.spell || null,
