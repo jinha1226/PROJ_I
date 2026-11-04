@@ -49,9 +49,9 @@
   // 로그
   T('ft_evasion_r', '회피', 'Evasion', 'rogue', 7, '민첩 내성 성공 0 · 실패 절반');
   T('ft_slippery', '미끄러운 정신', 'Slippery Mind', 'rogue', 15, '지혜 · 매력 내성 숙련');
-  T('ft_stroke', '행운의 일격', 'Stroke of Luck', 'rogue', 20, '층마다 한 번 빗나간 공격을 명중으로');
+  T('ft_stroke', '행운의 일격', 'Stroke of Luck', 'rogue', 20, '빗나간 공격을 명중으로 (전투당 한 번)');
   // 위저드
-  T('ft_overchannel', '과충전', 'Overchannel', 'archmage', 14, '층마다 한 번 5레벨 이하 주문 피해 최대');
+  T('ft_overchannel', '과충전', 'Overchannel', 'archmage', 14, '5레벨 이하 주문 피해 최대 (전투당 한 번)');
   // 고르는 기능
   const A = (k, n, en, cls, lv, d, S, t = 'ui_star') => { const lvm = {}; for (const c of [].concat(cls)) { lvm[c] = lv; D.MPOOL[c].push(k); } D.MSKILLS[k] = { n, en, t, d, lv: lvm }; SK[k] = S; };
   A('ft_innate', '타고난 마력', 'Innate Sorcery', 'mage', 1, '10라운드 주문 DC +1 · 주문 공격 이점', { res: { long: 1 }, bonus: true, when: (c, x) => H.W.fight(c, x) && !DN.bon(c, 'innate'), run(c, x) { DN.buff(c, 'innate', H.R6(10), { dcB: 1, adv: 1 }); H.ring(x, c, 1, '#c9a6ff'); } });

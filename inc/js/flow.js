@@ -34,6 +34,8 @@ G.Flow = (() => {
     for (const o of rt.mons) o.major = true;
     // 숨은 무리: 방에 베일을 쳐 입구까지 보이지 않게 한다. 이 방들만 매복 판정을 굴린다 (G.Sight)
     for (const r of m.rooms) if (r !== m.rooms[0] && monsIn(rt, r).length && !monsIn(rt, r).some(o => o.boss) && U.chance(HIDDEN_P)) { G.Sight.veil(rt, r); r.ambush = true; }
+    G.Event.tagRooms(f, rt);
+    if (!known) G.Event.plan(f, rt, m.rooms.filter(r => r !== m.rooms[0] && !monsIn(rt, r).length && !chestIn(rt, r)), ST().dmOf(f).room);
     F().refreshEnts(rt);
     rt.trail = [{ x: rt.hero.x, y: rt.hero.y }];
     rt.flow = { map: m, st: 'travel', t: 0, r: null };
@@ -73,7 +75,7 @@ G.Flow = (() => {
       const fresh = m.rooms.find(r => !r.ent && F().inRoom(r, lead));
       if (fresh) { enter(f, rt, fresh); return; }
     }
-    const wants = rt.rush ? [] : m.rooms.filter(r => monsIn(rt, r).length || chestIn(rt, r));
+    const wants = rt.rush ? [] : m.rooms.filter(r => monsIn(rt, r).length || chestIn(rt, r) || (r.evSlot && !r.ent));
     const near = wants.reduce((b, r) => (!b || Math.hypot(r.cx - lead.x, r.cy - lead.y) < Math.hypot(b.cx - lead.x, b.cy - lead.y) ? r : b), null);
     if (near) {
       // 이미 들어간 방에 남은 일: 도착하면 처리한다

@@ -23,7 +23,7 @@ G.Skill = (() => {
     // 무엇을 소모하나: 행동 · 추가 행동 · 반응 · 늘 적용 (게임에서 실제로 쓰는 칸)
     kindOf: k => (D.MSKILLS[k]?.explore ? '탐험' : REACT[k] || SK[k]?.react ? '반응' : D.MSKILLS[k]?.passive ? '늘 적용' : SK[k]?.free ? '소모 없음' : SK[k]?.bonus ? '추가 행동' : '행동'),
     resOf: k => SK[k]?.res || AUTO_RES[k] || null,
-    desc(m, k) { const S = D.MSKILLS[k], R0 = Sk.resOf(k); return `[${Sk.kindOf(k)}] ${S.d}${R0 ? ` · 전투당 ${G.Res.usesOf(m, R0)}번` : ''}`; },
+    desc(m, k) { const S = D.MSKILLS[k], R0 = Sk.resOf(k); return `[${Sk.kindOf(k)}] ${S.d}${R0 ? ` · 전투당 ${G.Res.usesOf(m, R0, k)}번` : ''}`; },
     // 동료 한 명: 열린 칸의 스킬 중 쿨다운이 끝났고 쓸 만한 것 하나 (한 번 쓰면 GAP초 쉰다)
     tick(f, rt, a, dt, seen, bonus) {
       if (G.Skill.persist && !bonus && dt) G.Skill.persist(f, rt, a, dt);
@@ -52,8 +52,8 @@ G.Skill = (() => {
         G.Foe.dtype = over || skillType(k, a); G.Skill.dtOver = over;
         if (S.res && S.res.slot) x.slot = G.Res.castLevel(a.merc, S.res);
         if (S.conc) G.Res.conc(a, k);
-        const oc = S.res?.slot && S.res.slot <= 5 && !S.heal && F().sk(a, 'ft_overchannel') && !G.Res.of(a.merc).sp.oc;
-        if (oc) { G.Res.of(a.merc).sp.oc = true; G.Skill.maxDice = true; }
+        const oc = S.res?.slot && S.res.slot <= 5 && !S.heal && F().sk(a, 'ft_overchannel') && !G.Res.of(a.merc).fu.ft_overchannel;
+        if (oc) { G.Res.once(a.merc, 'ft_overchannel'); G.Skill.maxDice = true; }
         const mm = G.Opt.begin(a, k, S, x, one);
         const ran = S.run(a, x);
         G.Opt.end(a, mm, ran);

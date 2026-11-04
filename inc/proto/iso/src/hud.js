@@ -45,7 +45,7 @@ const SCH_IC = { fire: 's_fire_magic', cold: 's_ice_magic', lightning: 's_air_ma
 const skIcon = k => { const D = G.D.MSKILLS[k]; return G.DCSS.sk[k] || D?.ic || SCH_IC[D?.dt] || SCH_IC[D?.sch] || 's_cantrip'; };
 const KIND_C = { 행동: 'act', '추가 행동': 'bonus', 반응: 'react', '늘 적용': 'pas', '소모 없음': 'free', 탐험: 'explore' };
 function skShow(el, m, k) {
-  const D = G.D.MSKILLS[k], S0 = G.Skill.SK[k], rs = G.Skill.resOf(k), left = rs ? G.Res.usesOf(m, rs) - (G.Res.of(m).fu[k] || 0) : null, kind = G.Skill.kindOf(k), tags = [S0?.conc ? '집중' : '', G.D.SK_RANGE[k] ? `사거리 ${G.D.SK_RANGE[k]}` : ''].filter(Boolean).join(' · ');
+  const D = G.D.MSKILLS[k], S0 = G.Skill.SK[k], rs = G.Skill.resOf(k), left = rs ? G.Res.usesOf(m, rs, k) - (G.Res.of(m).fu[k] || 0) : null, kind = G.Skill.kindOf(k), tags = [S0?.conc ? '집중' : '', G.D.SK_RANGE[k] ? `사거리 ${G.D.SK_RANGE[k]}` : ''].filter(Boolean).join(' · ');
   skTip.textContent = '';
   const h1 = document.createElement('b'); h1.textContent = D.n; const en = document.createElement('small'); en.textContent = D.en || ''; const kd = document.createElement('span'); kd.className = 'kind k-' + KIND_C[kind]; kd.textContent = kind; const ty = document.createElement('i'); ty.textContent = tags; const d = document.createElement('p'); d.textContent = D.d; skTip.append(h1, en, kd); if (tags) skTip.append(ty); skTip.append(d);
   const lock = !G.Guild.active(m).includes(k); if (lock) { const u = document.createElement('em'); u.textContent = `Lv ${G.Guild.skLv(m.cls, k)}부터`; skTip.append(u); } else if (rs || !D.passive) { const u = document.createElement('em'); u.textContent = !rs ? '제한 없음' : f.town ? `전투당 ${G.Res.usesOf(m, rs)}번` : `이번 전투 ${left} / ${G.Res.usesOf(m, rs)}번`; skTip.append(u); }
@@ -128,7 +128,8 @@ function drawCrew(el) {
 }
 function ui(r) {
   const st = r.turn, $r = $('round');
-  $r.textContent = f.town ? '마을' : `${f.floor}층${st ? ` · ${st.round}라운드` : ''}`;
+  const rn = f.town ? '' : G.Event.nameAt(r, r.hero);
+  $r.textContent = f.town ? '마을' : `${f.floor}층${rn ? ` · ${rn}` : ''}${st ? ` · ${st.round}라운드` : ''}`;
   const inf = st && st.info, iKey = inf ? `${inf.n}|${inf.mv}|${inf.rg}` : '', iEl = $('turninfo');
   if (iEl.dataset.k !== iKey) { iEl.dataset.k = iKey; iEl.innerHTML = ''; if (inf) { const b = document.createElement('b'); b.textContent = inf.n; iEl.append(b, ` ${inf.cls} · `); const a1 = document.createElement('span'); a1.className = 'mv'; a1.textContent = `이동 ${inf.mv}`; const a2 = document.createElement('span'); a2.className = 'rg'; a2.textContent = `사거리 ${inf.rg}`; iEl.append(a1, ' · ', a2); } }
   const oKey = st ? st.order.map(x => (x.e.kind === 'mon' ? 'm' : x.e.uid || 'h')).join() + '|' + (st.cur ? st.order.findIndex(x => x.e === st.cur) : -1) : '';

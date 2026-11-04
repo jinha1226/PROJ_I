@@ -69,7 +69,7 @@ function drawScene(P, t) {
     } else { B(-.85 + sh, .85 + sh, 0, .1, 0, 3, IRON); B(-.2 + sh, .2 + sh, .1, .2, 1.3, 1.8, [150, 110, 60]); }
   } else if (P.sc === 'camp') {
     for (let i = 0; i < 8; i++) { const a = i / 8 * 6.28; sphere(x + Math.cos(a) * .7, y + Math.sin(a) * .7, .12, .2, STONE, 'solid'); }
-    if (!P._fx) P._fx = pfx('fire/campfire', x, y, 0, { under: true });
+    if (st !== 'cold' && !P._fx) P._fx = pfx('fire/campfire', x, y, 0, { under: true });
     if (st === 'woken' && P._zz) { for (const q of P._zz) q.fx.stop(); P._zz = null; }
     for (const [a, b] of [[-2.4, -1.2], [2.3, -1.4], [.2, 2.5]]) { block(x + a - 1, y + b - .45, 0, x + a + 1, y + b + .45, .08, [92, 66, 54]); if (st !== 'woken' && P.sleepers) { const i = [-2.4, 2.3, .2].indexOf(a), dl = dcssOf({ kind: 'mon', n: P.sleepers[i] }); if (dl) { const q = project(x + a, y + b, .1); blitRot({ w: dl.w, h: dl.h, foot: dl.foot, px: dl.fr.idle[0] }, q.sx, q.sy - 4, 1.57, SC, q.d + .05, { px: dl.w / 2, py: dl.foot / 2 }); } if (!P._zzOn) (P._zzL = P._zzL || []).push([x + a, y + b]); } }
     if (!P._zzOn && st !== 'woken' && P._zzL) { P._zzOn = true; P._zz = P._zzL.map(([zx, zy]) => pfx('status/sleep', zx, zy, 0, { under: false })).filter(Boolean); }
@@ -92,7 +92,9 @@ function drawScene(P, t) {
   } else if (P.sc === 'hoard') {
     const n = st === 'taken' ? 0 : st === 'some' ? 9 : 26;
     for (let i = 0; i < n; i++) { const a = hash(i, 11) * 6.28, q = hash(i, 13) * 1.5; sphere(x + Math.cos(a) * q, y + Math.sin(a) * q, .1 + (1.5 - q) * .34, .2, C.gold, 'solid'); }
-    propFig(...NPC.skel, x, y - .1, { dy: n ? -8 : 0 });
+    if (!P.plain) propFig(...NPC.skel, x, y - .1, { dy: n ? -8 : 0 });
+  } else if (P.sc === 'stranger') {
+    if (st !== 'gone') propFig(...NPC.merchant, x, y);
   }
 }
 function drawChest(x, y, st, age) {

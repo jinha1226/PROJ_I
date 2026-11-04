@@ -231,7 +231,7 @@ Object.assign(G.D.MSKILLS, {
   sr_whole: { n: '신체의 완전함', en: 'Wholeness of Body', t: 'b_regen', d: '체력 절반 아래 무술 주사위 + 지혜', lv: 6 },
   sr_quiver: { n: '진동 장', en: 'Quivering Palm', t: 'a_thunder', d: '명중하면 10d12 · 건강 내성 절반', lv: 17 },
   // 팔라딘
-  sr_lay: { n: '안수', en: 'Lay On Hands', t: 'fx_holy', d: '레벨 × 5 저장고에서 회복', lv: 1 },
+  sr_lay: { n: '안수', en: 'Lay On Hands', t: 'fx_holy', d: '레벨 × 5 회복', lv: 1 },
   sr_sof: { n: '신앙의 방패', en: 'Shield of Faith', t: 'd_shield', d: '가장 다친 동료 AC +2 · 집중', lv: 1 },
   sr_smite: { n: '신성 강타', en: 'Divine Smite', t: 'w_hammer', d: '무기로 맞히면 +2d8 (언데드 · 악마 +3d8)', lv: 2 },
   sr_searing: { n: '작열 강타', en: 'Searing Smite', t: 'fx_flame', d: '무기로 맞히면 +1d6 · 라운드마다 화상', lv: 2 },
@@ -312,7 +312,7 @@ Object.assign(G.D.MSKILLS, {
   sr_reflex: { n: '도둑의 반사신경', en: 'Thief’s Reflexes', t: 'st_haste', d: '첫 라운드에 두 번 행동', passive: true, lv: 17 },
   sr_nimbus: { n: '신성한 후광', en: 'Holy Nimbus', t: 'q_peak', d: '6칸 안 적 차례마다 광휘 10', passive: true, lv: 20 },
   sr_disciple: { n: '생명의 제자', en: 'Disciple of Life', t: 'fx_holy', d: '치유 + 2 + 주문 레벨', passive: true, lv: 3, heal: 1.3 },
-  sr_preserve: { n: '생명 보존', en: 'Preserve Life', t: 'u_god', d: '절반 아래 동료들 절반까지 · 저장고 레벨 × 5', lv: 6 },
+  sr_preserve: { n: '생명 보존', en: 'Preserve Life', t: 'u_god', d: '절반 아래 동료들 절반까지 · 합쳐서 레벨 × 5', lv: 6 },
   sr_peerless: { n: '비길 데 없는 기술', en: 'Peerless Skill', t: 'fx_song', d: '명중 +3', passive: true, lv: 14, hitB: 3 },
   sr_ward: { n: '자연의 수호', en: 'Nature’s Ward', t: 'b_regen', d: '중독 · 공포에 걸리지 않음', passive: true, lv: 10 },
   sr_dres: { n: '용의 회복력', en: 'Draconic Resilience', t: 'r_dragon', d: 'AC 10 + 민첩 + 매력 · 체력 + 레벨 + 2', passive: true, lv: 3, hp: 1.1 },

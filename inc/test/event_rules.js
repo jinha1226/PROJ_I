@@ -1,0 +1,110 @@
+'use strict';
+// 사건 시스템 규칙 (EVENT_SYSTEM_DIRECTION.md 8절의 시험 시나리오): node test/event_rules.js
+const fs = require('fs'), vm = require('vm'), path = require('path'); const ROOT = path.join(__dirname, '..');
+const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
+const lab = fs.readFileSync(ROOT + '/test/party_lab.js', 'utf8');
+for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(`${ROOT}/js/${n}.js`, 'utf8'), ctx, { filename: n + '.js' });
+const G = ctx.G, GD = G.Guild, F = G.Fantasy, E = G.Event, ST = G.Story; G.quiet = true; G.Foe.retreatOn = false;
+let ok = 0, bad = 0; const t = (n, c, x = '') => { if (c) ok++; else { bad++; console.log('실패:', n, x); } };
+function setup(cls, opt = {}) {
+  G.newState(); const f = G.S.w.fantasy, L = GD.leader(f); f.leaderNew = false; f.autoTr = f.autoParty = f.autoGo = false; L.lv = opt.lv || 8; L.xk = opt.lx || 'x_none'; L.xRoll = [];
+  f.mercs = [L]; f.lineup = cls.map(([c, x]) => { const m = GD.make(f, c, { lv: opt.lv || 8 }); m.xk = x || null; m.xRoll = []; f.mercs.push(m); return m.uid; });
+  F.syncAllies(f); const s = G.Season.st(f); s.seed = opt.seed ?? 42; s.t = 0; f.frontLock = opt.front || Object.keys(G.D.F.factions).find(k => k !== 'swamp'); f.policy = opt.pol || 'party'; f.start = f.checkpoint = f.floor = f.maxFloor = opt.fl || 3; f.town = true; f.seasonEnd = false; f.townT = 99; f.carry = 0; f.sceneN = 1; f.sceneDry = 0; f.recent = [];
+  const rt = F.rt(f); G.Exp.depart(f, rt); for (let i = 0; i < 400 && !rt.flow; i++) G.tick(1, 0.25);
+  return { f, rt };
+}
+const crew = [['cleric'], ['dragoon'], ['archer']];
+D: {
+  // 시드 재현: 같은 시드 → 같은 태그 · 같은 자리 · 같은 사건, 지형은 사건과 무관
+  const a = setup(crew, { seed: 7 }), ta = a.rt.map.rooms.map(r => r.tags[0]).join(), sa = JSON.stringify(a.f.ev.fl[a.f.floor]), ma = a.rt.map.c.join('');
+  const b = setup(crew, { seed: 7 }), tb = b.rt.map.rooms.map(r => r.tags[0]).join();
+  t('같은 시드 같은 태그', ta === tb, `${ta} | ${tb}`); t('같은 시드 같은 지형', ma === b.rt.map.c.join(''));
+  const c = setup(crew, { seed: 8 }); t('다른 시드 다른 태그나 지형', c.rt.map.rooms.map(r => r.tags[0]).join() !== ta || c.rt.map.c.join('') !== ma);
+  const w1 = setup(crew, { seed: 7, front: 'swamp' }), w2 = setup(crew, { seed: 7, front: 'swamp' }); t('늪도 같은 시드 같은 지형', w1.rt.map.c.join('') === w2.rt.map.c.join('')); t('늪은 야외 태그만', w1.rt.map.rooms.every(r => ['altar', 'ruin', 'thicket'].includes(r.tags[0])), w1.rt.map.rooms.map(r => r.tags[0])); for (const id of ['roof', 'darts', 'captive', 'shelter']) t(`늪에 ${id} 없음`, !['altar', 'ruin', 'thicket'].some(k => E.candidates(w1.f, { tags: [k] }, { hurt: 0.9, quarrel: false }).some(q => q.e.id === id)));
+  // 사건 난수를 얼마나 뽑든 지형 난수는 그대로
+  const R1 = G.Season.rng(a.f, 3)(); E.rng(a.f, 3, 'pick', 1)(); E.rng(a.f, 3, 'slot')(); t('지형 난수 분리', R1 === G.Season.rng(a.f, 3)());
+  t('사건 난수는 재현된다', E.rng(a.f, 3, 'pick', 1)() === E.rng(a.f, 3, 'pick', 1)()); t('용도마다 다르다', E.rng(a.f, 3, 'pick', 1)() !== E.rng(a.f, 3, 'slot', 1)());
+  // 정해지면 다시 와도 그대로 · 두 번 나오지 않는다
+  const S = setup(crew, { seed: 7 }), f = S.f, rt = S.rt, slot = f.ev.fl[f.floor]; slot.room = 1; slot.done = false; const r = rt.map.rooms[1]; r.ri = 1;
+  const got = E.at(f, rt, r, { hurt: 0.5, quarrel: false }); t('자리에서 사건', !!got || !E.candidates(f, r, { hurt: 0.5, quarrel: false }).length);
+  t('두 번 나오지 않는다', !E.at(f, rt, r, { hurt: 0.5, quarrel: false })); const keep = JSON.stringify(f.ev.fl[f.floor]); E.plan(f, rt, rt.map.rooms.slice(1), 0.4); t('다시 세워도 그대로', keep === JSON.stringify(f.ev.fl[f.floor]));
+  t('다른 방은 사건 없음', !E.at(f, rt, rt.map.rooms[2] || r, { hurt: 0 }));
+  // 태그에 따라 후보가 달라진다
+  const ids = tag => E.candidates(f, { tags: [tag] }, { hurt: 0.5, quarrel: false }).map(q => q.e.id); f.recent = []; f.ev.last = {};
+  t('태그마다 후보가 다르다', new Set(['prison', 'library', 'altar', 'treasury', 'cave'].map(k => ids(k).join())).size >= 4, ids('prison')); t('감옥에 철창', ids('prison').includes('captive') && !ids('library').includes('captive')); t('서고에 봉인', ids('library').includes('seal') && !ids('prison').includes('seal'));
+  t('최근 사건은 제외', (() => { f.recent = ['seal']; const n = ids('library').includes('seal'); f.recent = []; return !n; })()); t('쿨다운', (() => { f.ev.last.seal = f.floor; const n = ids('library').includes('seal'); f.ev.last = {}; return !n; })());
+  t('막다른 방은 입구 하나 + 다쳤을 때만', !E.candidates(f, { tags: ['deadend'] }, { hurt: 0 }).some(q => q.e.id === 'shelter') && E.candidates(f, { tags: ['deadend'] }, { hurt: 0.5 }).some(q => q.e.id === 'shelter') && !E.candidates(f, { tags: ['cave'] }, { hurt: 0.5 }).some(q => q.e.id === 'shelter')); t('다툼은 불화가 있을 때만', !E.candidates(f, { tags: [] }, { hurt: 0 }).some(q => q.e.id === 'quarrel') && E.candidates(f, { tags: [] }, { hurt: 0, quarrel: true }).some(q => q.e.id === 'quarrel'));
+  t('후보 없어도 정상', E.candidates({ ...f, floor: 1 }, { tags: ['cave'] }, { hurt: 0 }).length === 0);
+  // 빈 층이 아니면 빈 방만 자리가 된다
+  { const S2 = setup(crew, { seed: 9 }), s2 = S2.f.ev.fl[S2.f.floor], r2 = S2.rt.map.rooms[s2.room]; if (r2) t('자리는 빈 방', !S2.rt.mons.some(o => F.inRoom(r2, o)) && r2.evSlot); }
+}
+// 데이터 검사: 직업 없이도 막히지 않는다 (판정 없는 선택지가 꼭 있다)
+for (const e of E.LIST.filter(q => q.choices)) { t(`${e.id}: 지나갈 길이 있다`, e.choices.some(o => o.leave && !o.check && !o.x)); t(`${e.id}: 선택지 둘 이상`, e.choices.filter(o => !o.x).length >= 2); for (const o of e.choices) { if (o.check) t(`${e.id}/${o.label}: 판정 기술`, !!G.Dnd.SKILL_AB[o.check.sk], o.check.sk); for (const b of [o.win, o.lose, o.win?.fake, o.win?.real, o.lose?.fake, o.lose?.real]) for (const [k] of b?.ops || []) t(`${e.id}: 결과 ${k}`, !!E.ops[k]); } const os = e.choices; t(`${e.id}: 선택마다 결과가 다르다`, new Set(os.map(o => JSON.stringify([o.win?.ops, o.win?.flag, o.win?.fake?.ops, o.lose?.ops]))).size === os.length); }
+// 탐험 칸이 장면을 얻었다
+{ const a = setup([['bard', 'x_hut'], ['dragoon'], ['archer']]), b = setup(crew); const has = S => { const e = E.BY.shelter; return e.choices.filter(o => !o.x || E.hasX(S.rt, o.x)).map(o => o.label).join(); }; t('오두막: 있으면 선택지가 는다', has(a).includes('오두막') && !has(b).includes('오두막'), has(b));
+  for (const [cls, x, sk] of [['mage', 'x_arcana', 'arcana'], ['barbarian', 'x_surv', 'survival'], ['cleric', 'x_med', 'medicine']]) { const S = setup([[cls, x], ['dragoon'], ['archer']]), p = S.rt.party.find(q => q.merc && q.merc.cls === cls), m = p.merc; const on = G.Pool.skillK(m, sk), v = G.Dnd.skill(m, sk); t(`${x}: ${sk} 숙련`, on === 1 && v >= G.Dnd.mod(G.Dnd.ab(m)[G.Dnd.SKILL_AB[sk]]) + G.Dnd.prof(m.lv), `${on} ${v}`); m.xk = 'x_none'; t(`${x}: 칸을 빼면 숙련도 빠진다`, G.Pool.skillK(m, sk) === 0); }
+  const S = setup([['scout', 'x_detect'], ['dragoon'], ['archer']]), ch = E.BY.seal.choices[0].check, S0 = setup(crew); const pA = E.pct(S.rt, ch), mod = G.Dnd.best([E.who(S.rt, ch.sk).merc], ch.sk).v, base = Math.round(Math.max(0.05, Math.min(1, (21 - (ch.dc - mod)) / 20)) * 100); t('마법 탐지: 봉인에 이점', pA > base, `${pA} ${base}`); }
+// 각 사건의 각 선택 · 성공과 실패를 끝까지 돌린다 (결과가 실제로 반영되나)
+const stub = v => { const o = G.Mission.roll; G.Mission.roll = (f, rt, sk, x, who, dc) => ({ who, nat: v ? 20 : 1, mod: 0, dc, ok: v }); return () => { G.Mission.roll = o; }; };
+function play(e, i, win, fake, xParty) {
+  G.quiet = false; const S = setup(xParty || [['bard', 'x_hut'], ['dragoon'], ['archer']], { seed: 5 }), f = S.f, rt = S.rt; const r = rt.map.rooms.find(q => q !== rt.map.rooms[0] && !rt.mons.some(o => F.inRoom(q, o))) || rt.map.rooms[1]; r.ri = r.ri ?? 1;
+  rt.mons = rt.mons.filter(o => o.boss); const fk = E.fakeOf; E.fakeOf = () => fake; const un = stub(win); f.saga = []; f.askMeet = true; for (const p of rt.party) if (p.merc) p.merc.stress = 50; const gold = f.carry, str = rt.party.map(p => p.merc?.stress || 0).reduce((a, b) => a + b, 0), hp = rt.party.reduce((a, p) => a + p.hp, 0); for (const p of rt.party) p.hp = p.max * 0.5; const hp0 = rt.party.reduce((a, p) => a + p.hp, 0);
+  ST.play(f, rt, null, r, 'event', e); let n = 0, opts = null, def = null;
+  try { while (rt.scene && n++ < 400) { if (rt.ask) { opts = rt.ask.opts.map(o => o.label); def = rt.ask.def; const j = rt.ask.opts.findIndex(o => o.o === e.choices[i]); if (j < 0) { rt.ask = null; rt.scene = null; un(); E.fakeOf = fk; G.quiet = true; return null; } ST.answer(rt, j); } ST.tick(f, rt, 0.5); } } finally { un(); E.fakeOf = fk; G.quiet = true; }
+  return { f, rt, ended: !rt.scene, opts, def, gold: f.carry - gold, dHp: rt.party.reduce((a, p) => a + p.hp, 0) - hp0, stress: rt.party.map(p => p.merc?.stress || 0).reduce((a, b) => a + b, 0) - str, foes: rt.mons.filter(o => o.aggro).length, saga: f.saga.length, drop: (rt.chests || []).length };
+}
+for (const e of E.LIST.filter(q => q.choices && !q.chain)) e.choices.forEach((o, i) => { for (const win of o.check ? [true, false] : [true]) for (const fake of e.fake ? [true, false] : [false]) {
+  const R = play(e, i, win, fake); if (!R) continue; const n = `${e.id}/${o.label}/${win ? '성공' : '실패'}${e.fake ? (fake ? '/가짜' : '/진짜') : ''}`; t(`${n}: 끝난다`, R.ended);
+  const res = E.outcome(o, win, fake), ops = (res?.ops || []).map(q => q[0]); if (ops.includes('gold')) t(`${n}: 금화`, R.gold > 0, R.gold); if (ops.includes('fight') || ops.includes('ambush')) t(`${n}: 적`, R.foes > 0, R.foes); if (ops.includes('rest')) t(`${n}: 회복`, R.dHp > 0, R.dHp); if (ops.includes('stress')) t(`${n}: 스트레스`, R.stress !== 0, R.stress); if (res?.log) t(`${n}: 일지`, R.saga > 0);
+} });
+// 방치: 맡김은 판정이 낮으면 지나간다 · 방침이 고르는 것이 기본값 · 사람이 없어도 멈추지 않는다
+for (let i = 0; i < 40; i++) { const S = setup(crew, { pol: 'careful', seed: 100 + i }); for (const q of S.rt.party) if (q.merc) q.merc.pers = ['greedy']; const d = E.def(S.f, S.rt, E.BY.roof.choices); t('신중: 욕심쟁이뿐이어도 판정 쪽이나 지나가기', d !== 1, d); }
+{ const S = setup(crew, { pol: 'careful' }), o = E.BY.roof.choices; const B = setup(crew, { pol: 'bold' }); t('과감: 자루를 든다', E.def(B.f, B.rt, o) === 1, E.def(B.f, B.rt, o)); const C = setup(crew, { pol: 'coin' }); t('돈 먼저: 자루를 든다', E.def(C.f, C.rt, o) === 1, E.def(C.f, C.rt, o));
+  const q = setup(crew); G.quiet = true; const r = q.rt.map.rooms[1]; r.ri = 1; ST.play(q.f, q.rt, null, r, 'event', E.BY.seal); let n = 0; while (q.rt.scene && n++ < 400) ST.tick(q.f, q.rt, 0.5); t('방치해도 끝난다', !q.rt.scene); t('묻기가 남지 않는다', !q.rt.ask); }
+// 묻기는 시간이 지나면 기본값으로
+{ G.quiet = false; const q = setup(crew); const r = q.rt.map.rooms[1]; r.ri = 1; q.f.askMeet = true; ST.play(q.f, q.rt, null, r, 'event', E.BY.oldcamp); let n = 0, saw = false; while (q.rt.scene && n++ < 200) { if (q.rt.ask) saw = true; ST.tick(q.f, q.rt, 0.5); } G.quiet = true; t('시간제한: 물어보고 기본값으로 진행', saw && !q.rt.scene && !q.rt.ask); }
+// ── 방 태그 ──
+{ const fsrc = fs.readFileSync(ROOT + '/proto/iso/src/bake.js', 'utf8'); for (const k of Object.keys(E.NAMES)) { t(`${k}: 가구`, new RegExp(`\\b${k}\\(a, b, h\\)`).test(fsrc)); t(`${k}: 바닥색`, new RegExp(`\\b${k}: \\[`).test(fsrc)); }
+  const c = (rows) => ({ w: rows[0].length, h: rows.length, c: rows.join('').split('') }), R = { x: 2, y: 1, w: 3, h: 3 };
+  t('입구 하나', E.exits(c(['#######', '##...##', '##...##', '##...##', '###.###', '###.###', '#######']), R) === 1, E.exits(c(['#######', '##...##', '##...##', '##...##', '###.###', '###.###', '#######']), R)); t('입구 둘', E.exits(c(['#######', '##...##', '##...##', '.....##', '###.###', '###.###', '#######']), R) === 2);
+  const S = setup(crew, { seed: 3 }), rr = S.rt.map.rooms; t('모든 방에 태그', rr.every(r => r.tags && E.NAMES[r.tags[0]])); const p = S.rt.hero; p.x = rr[1].cx; p.y = rr[1].cy; t('서 있는 방 이름', E.nameAt(S.rt, p) === E.NAMES[rr[1].tags[0]]); t('복도에선 이름 없음', (() => { p.x = -5; p.y = -5; return E.nameAt(S.rt, p) === ''; })()); const W = setup(crew, { front: 'swamp' }); t('늪에 막다른 방 태그 없음', W.rt.map.rooms.every(r => !r.tags.includes('deadend'))); }
+// ── 연속 사건 ──
+function step(S, id, i, win) { const { f, rt } = S, e = E.BY[id], r = rt.map.rooms[1]; r.ri = 1; G.quiet = false; f.askMeet = true; const un = stub(win); ST.play(f, rt, null, r, 'event', e); let n = 0; try { while (rt.scene && n++ < 400) { if (rt.ask) { const j = rt.ask.opts.findIndex(o => o.o === e.choices[i]); ST.answer(rt, j); } ST.tick(f, rt, 0.5); } } finally { un(); G.quiet = true; } }
+const fresh = (o = {}) => { const S = setup(crew, { seed: 11, ...o }); S.f.runs = 1; S.rt.mons = S.rt.mons.filter(q => q.boss); S.f.recent = []; return S; };
+const canE = (S, id, c = { hurt: 0, quarrel: false }) => E.candidates(S.f, { tags: ['cave'] }, c).some(q => q.e.id === id);
+{ const S = fresh(), f = S.f, st = () => E.chainOf(f, 'ritual');
+  t('시작 전: 첫 단계만', canE(S, 'rit_tracks') && !canE(S, 'rit_wounded') && !canE(S, 'rit_altar'));
+  step(S, 'rit_tracks', 0, true); t('단서: flag', st().flags.known === 1); t('다음 단계로', st().stage === 1); t('첫 단계는 다시 안 나온다', !canE(S, 'rit_tracks')); t('같은 층엔 안 이어진다', !canE(S, 'rit_wounded')); t('대기 중이 아니면 강제 안 함', !E.pending(f));
+  f.floor++; t('다음 층에 이어진다', canE(S, 'rit_wounded')); t('대기 중이면 사건 자리가 생긴다', E.pending(f)); const w = E.candidates(f, { tags: ['cave'] }, { hurt: 0 }), wW = w.find(q => q.e.id === 'rit_wounded').w, mx = Math.max(...w.filter(q => !q.e.chain).map(q => q.w)); t('이어지는 단계가 우선', wW > mx, `${wW} ${mx}`); f.ev.fl[f.floor + 1] = undefined;
+  delete f.ev.fl[f.floor]; E.plan(f, S.rt, S.rt.map.rooms.slice(1), 0); t('확률 0이어도 자리', f.ev.fl[f.floor].room >= 0, JSON.stringify(f.ev.fl[f.floor]));
+  const rk = setup(crew, { front: 'swamp', seed: 11 }); rk.f.ev.chains.ritual = { stage: 1, st: 'on', fl: 1, run: 0, flags: {}, who: {} }; rk.f.floor = 5; t('늪 태그에서도 이어진다', E.candidates(rk.f, { tags: ['thicket'] }, { hurt: 0 }).some(q => q.e.id === 'rit_wounded'));
+  step(S, 'rit_wounded', 0, true); const saver = st().who.saver; t('살린 사람을 기억', !!saver); t('flag saved', st().flags.saved === 1); const nm = f.mercs.concat(GD.leader(f)).find(m => m.uid === saver)?.name; f.floor++;
+  t('다음 문장에 이름', E.text(f, E.BY.rit_altar, E.openOf(f, E.BY.rit_altar)).includes(nm || '??'), E.text(f, E.BY.rit_altar, E.openOf(f, E.BY.rit_altar))); t('알면 DC가 내려간다', E.dcOf(f, E.BY.rit_altar, E.BY.rit_altar.choices[0].check) === 10);
+  step(S, 'rit_altar', 2, true); t('준비: 대기', st().stage === 3 && st().wait === 'run' && st().flags.prepared === 1); f.floor += 5; t('같은 원정엔 안 나온다', !canE(S, 'rit_end')); f.runs++; t('다음 원정에 나온다', canE(S, 'rit_end'));
+  t('저장해도 그대로', JSON.stringify(JSON.parse(JSON.stringify(f.ev.chains))) === JSON.stringify(f.ev.chains));
+  step(S, 'rit_end', 0, true); t('맞서면 아직 안 끝난다', st().st === 'on' && st().stage === 3); const b = S.rt.mons.find(o => o.chain); t('우두머리 등장', !!b); t('준비: 우리 먼저', S.rt.nextFirst === 'party' && f.bless >= 3); t('달아나지 않는다', !ST.chiefTurn(f, S.rt, Object.assign(b, { hp: 1 })) && S.rt.mons.includes(b));
+  const before = (S.rt.chests || []).length + (f.trinketsDrop || 0), sg = f.saga.length; f.saga = []; E.chainWon(f, S.rt, b); t('쓰러뜨리면 끝', st().st === 'done' && st().res === 'won'); t('일지', f.saga.some(x => x.s.includes('붉은 의식'))); t('끝나면 다시 안 나온다', !canE(S, 'rit_end') && !canE(S, 'rit_tracks')); E.chainWon(f, S.rt, b); t('두 번 보상 없음', f.saga.filter(x => x.s.includes('붉은 의식')).length === 1); }
+{ const hpOf = fl => { const S = fresh(); S.f.floor = 6; S.f.ev.chains.ritual = { stage: 3, st: 'on', fl: 1, run: 0, flags: { [fl]: 1 }, who: {} }; S.f.runs = 2; step(S, 'rit_end', 0, true); return S.rt.mons.find(o => o.chain); }; const a = hpOf('broken'), c = hpOf('none'), d = hpOf('ignored'); t('끊으면 약하고 지나치면 세다', a.max < c.max && c.max < d.max, `${a.max} ${c.max} ${d.max}`); t('지나치면 공격도 세다', d.atk > c.atk);
+  const S = fresh(); S.f.ev.chains.ritual = { stage: 3, st: 'on', fl: 1, run: 0, flags: {}, who: {} }; S.f.floor = 6; step(S, 'rit_end', 1, true); t('물러나면 끝 (도망)', E.chainOf(S.f, 'ritual').st === 'done' && E.chainOf(S.f, 'ritual').res === 'fled'); t('적 없음', !S.rt.mons.some(o => o.chain)); t('위험이 오른다', (S.f.heat || 0) > 0);
+  const J = fresh(); step(J, 'rit_tracks', 2, true); t('안 보고 지나가도 의식은 계속', E.chainOf(J.f, 'ritual').stage === 1 && !E.chainOf(J.f, 'ritual').flags.known); }
+{ const go = (flag) => { const S = fresh(); S.f.floor = 8; S.f.runs = 3; S.f.ev.chains.robbers = { stage: 2, st: 'on', fl: 1, run: 1, flags: flag ? { [flag]: 1 } : {}, who: {}, wait: 'run' }; S.f.saga = []; const d0 = (S.rt.chests || []).length; step(S, 'rob_after', 0, true); return { S, foes: S.rt.mons.filter(o => o.aggro).length, st: E.chainOf(S.f, 'robbers'), saga: S.f.saga.length }; };
+  const p = go('pact'), q = go('paid'), r = go('fought'), n = go(null); t('약속: 싸움 없음 · 값', p.foes === 0 && p.saga === 1 && p.st.st === 'done'); t('내줬으면 더 많이 온다', q.foes === 3, q.foes); t('싸웠으면 복수', r.foes === 2, r.foes); t('기록이 없으면 조용히 끝', n.foes === 0 && n.st.st === 'done' && n.saga === 0);
+  const S = fresh(); step(S, 'rob_chest', 0, true); t('단도: 챙긴 사람', !!E.chainOf(S.f, 'robbers').who.first); t('2층 뒤에야', (S.f.floor += 1, !canE(S, 'rob_meet'))); S.f.floor += 1; t('무리 등장', canE(S, 'rob_meet')); t('단도를 들고 있으면 설득이 어렵다', E.dcOf(S.f, E.BY.rob_meet, E.BY.rob_meet.choices[0].check) === 20); S.f.carry = 1000; step(S, 'rob_meet', 2, true); t('짐이 준다', S.f.carry === 850, S.f.carry); t('다음 원정까지 기다린다', E.chainOf(S.f, 'robbers').wait === 'run' && !canE(S, 'rob_after')); S.f.runs++; t('다음 원정', canE(S, 'rob_after'));
+  G.Season.st(S.f).n += 1; t('시즌이 바뀌면 처음부터', !E.chainOf(S.f, 'robbers') && canE(S, 'rob_chest')); }
+// ── 더 넣은 사건 ──
+{ const T = fresh(); const r = T.rt.party.filter(p => p.merc); r[0].merc.name = '단장'; r[1].merc.name = '미크'; r[2].merc.name = '라티'; E.cur = { a: r[0], b: r[2], n: '온아' }; t('조사: 받침 있는 이름', E.text(T.f, E.BY.watch, '{a}가 {b}와 {n}을') === '단장이 라티와 온아를', E.text(T.f, E.BY.watch, '{a}가 {b}와 {n}을')); E.cur = { a: r[2], b: r[0], n: '미크' }; t('조사: 받침 없는 이름', E.text(T.f, E.BY.watch, '{a}가 {b}와 {n}을') === '라티가 단장과 미크를', E.text(T.f, E.BY.watch, '{a}가 {b}와 {n}을')); E.cur = null; }
+{ const c = (S, o = {}) => ({ hurt: 0, quarrel: false, party: S.rt.party.filter(p => p.merc && !p.dead), lv: 8, ...o }), ids = (S, tag, x) => E.candidates(S.f, { tags: [tag] }, c(S, x)).map(q => q.e.id);
+  const S = fresh(); for (const k of ['fear', 'mourn', 'stubborn', 'pocket']) t(`${k}: 조건이 없으면 안 나온다`, (() => { for (const p of S.rt.party) if (p.merc) { p.merc.stress = 0; p.merc.grief = null; p.merc.pers = []; p.hp = p.max; } return !ids(S, 'cave').includes(k); })());
+  const P = S.rt.party.find(p => p.merc); P.merc.stress = 70; t('떠는 손: 스트레스 60 이상', ids(S, 'cave').includes('fear')); P.merc.stress = 0; P.merc.grief = { n: '누구', left: 3 }; t('남은 사람: 슬픔이 있으면', ids(S, 'cave').includes('mourn')); P.merc.grief = null; P.hp = P.max * 0.3; t('괜찮다는 말: 많이 다쳤으면', ids(S, 'cave').includes('stubborn')); P.hp = P.max; P.merc.pers = ['greedy']; S.f.carry = 100; t('불룩한 주머니: 욕심쟁이 + 짐', ids(S, 'cave').includes('pocket')); S.f.carry = 0;
+  t('구르는 돌: 11레벨부터 (SRD)', !ids(S, 'cave', { lv: 10 }).includes('stone') && ids(S, 'cave', { lv: 11 }).includes('stone'));
+  const q = E.subject(S.f, S.rt, E.BY.fear); t('주인공', !!q.a); const s2 = E.subject(S.f, S.rt, E.BY.watch); t('짝은 둘이 다르다', s2.a && s2.b && s2.a !== s2.b); t('사건에 주인공 없으면 null', E.subject(S.f, S.rt, E.BY.seal) === null);
+  // 끝까지 돌려 실제 효과
+  const run = (id, i, win, pre) => { const T = fresh(); T.f.carry = 1000; const r = T.rt.party.filter(p => p.merc); pre && pre(r, T); const a = r[0]; const hp0 = a.hp, st0 = a.merc.stress; G.quiet = false; const sub0 = E.subject; E.subject = (f, rt, e) => (e.subject ? { a, b: r[1], n: a.merc.grief?.n || '' } : null); const bond0 = () => G.Bond.n(T.f, a.merc.uid, r[1].merc.uid); const b0 = bond0(); T.f.saga = []; step(T, id, i, win); E.subject = sub0; return { T, a, r, d: a.merc.stress - st0, heal: a.hp - hp0, bond: bond0() - b0, carry: T.f.carry, log: T.f.saga.map(x => x.s).join('|') }; };
+  const f1 = run('fear', 0, true, r => { r[0].merc.stress = 70; }); t('달래기: 그 사람 −25', f1.d === -25 || f1.d < -15, f1.d); t('말에 이름', f1.log.includes(f1.a.merc.name), f1.log); t('나서는 사람은 다른 사람', !f1.log.startsWith(`${f1.T.f.floor}층 · ${f1.a.merc.name}`), f1.log);
+  const f2 = run('fear', 1, true, r => { r[0].merc.stress = 70; }); t('다그치기: 일지에 이름 둘', /멱살/.test(f2.log) && f2.log.includes(f2.a.merc.name), f2.log); t('다그친 사람은 빈칸이 아니다', !/층 ·  /.test(f2.log), f2.log);
+  const w1 = run('watch', 0, true); t('망보기: 정이 오른다', w1.bond >= 10, w1.bond); const m1 = run('mourn', 0, true, r => { r[0].merc.grief = { n: '누구', left: 3 }; r[0].merc.stress = 20; }); t('기리기: 슬픔이 끝난다', !m1.a.merc.grief); t('기리기: 문장에 이름', m1.log.includes('누구'), m1.log); const h1 = run('stubborn', 0, true, r => { r[0].hp = r[0].max * 0.3; }); t('치료: 체력', h1.heal > 0, h1.heal); const p1 = run('pocket', 1, true, r => { r[0].merc.pers = ['greedy']; }); t('눈감기: 짐 −5%', p1.carry === 950, p1.carry);
+  const cut = fresh(); step(cut, 'shortcut', 0, true); t('지름길: 바로 내려간다', cut.rt.rush === true);
+  const lv = fresh(); const trap = (id, i) => { const T = fresh(); for (const p of T.rt.party) p.hp = p.max; const h0 = T.rt.party.reduce((a, p) => a + p.hp, 0); step(T, id, i, false); return T.rt.party.reduce((a, p) => a + p.hp, 0) - h0; }; let hurtN = 0; for (let i = 0; i < 12; i++) if (trap('statue', 0) < 0) hurtN++; t('석상: 불에 다친다', hurtN >= 10, hurtN); let st = 0; for (let i = 0; i < 12; i++) if (trap('needle', 0) < 0) st++; t('독침: 찔리면 다친다', st >= 10, st); let sto = 0; for (let i = 0; i < 12; i++) if (trap('stone', 0) < 0) sto++; t('돌: 깔리면 다친다', sto >= 3, sto); }
+{ const o = { hazard: 0, discovery: 0, encounter: 0, explore: 0, party: 0, big: 0 }; for (const e of E.LIST) o[e.type]++; t('문서의 첫 묶음: 유형별 수량', o.hazard >= 4 && o.discovery >= 4 && o.encounter >= 4 && o.explore >= 3 && o.party >= 3 && o.big >= 2, JSON.stringify(o)); console.log('유형별', JSON.stringify(o)); }
+console.log(`event_rules: 통과 ${ok} · 실패 ${bad}`);
+process.exit(bad ? 1 : 0);

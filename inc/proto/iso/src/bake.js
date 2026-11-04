@@ -51,7 +51,38 @@ function tree(x, y) {
   capsule([a, b, .6], [a + (s - .5) * .3, b + (hash(x, y) - .5) * .3, H0], .17, .1, BARK);
   for (let i = 0; i < 5; i++) { const u = hash(x + i, y * 2), v = hash(x * 2, y + i), w2 = hash(x + i, y + i); sphere(a + (u - .5) * 1.3, b + (v - .5) * 1.3, H0 + (w2 - .3) * .8, .55 + w2 * .3, LEAF[i % 3], 'rough'); }
 }
+// 방의 태그가 눈에 보이게: 바닥 색 + 벽가의 가구. 가운데는 비워 둔다 (장면 소품과 싸움 자리)
+const ROOM_TINT = { crypt: [70, 74, 92, .3], prison: [84, 78, 70, .34], library: [116, 78, 46, .3], altar: [120, 40, 46, .22], treasury: [176, 136, 60, .24], cave: [66, 58, 50, .38], collapsed: [130, 120, 104, .3], ruin: [120, 116, 96, .22], thicket: [60, 96, 52, .24] };
+const STONE_D = [128, 124, 122], STONE_L = [168, 162, 150], IRON_D = [70, 72, 80], WOOD_D = [92, 62, 40], WOOD_L = [132, 92, 58], GOLD_D = [226, 180, 70], BONE_D = [214, 206, 182], RED_D = [150, 44, 48], WAX = [240, 226, 180], LEAF_D = [58, 100, 58], LEAF_L = [84, 124, 66];
+const BOOKS = [[150, 50, 50], [60, 90, 140], [70, 120, 80], [170, 140, 70], [110, 70, 130]];
+const ROOM_DECO = {
+  crypt(a, b, h) { block(a - .95, b - .5, 0, a + .95, b + .5, .55, STONE_D); block(a - 1.05, b - .58, .55, a + 1.05, b + .58, .72, STONE_L); if (h > .6) sphere(a + .4, b + .75, .13, .16, BONE_D, 'solid'); },
+  prison(a, b, h) { for (let i = -2; i <= 2; i++) capsule([a + i * .34, b, 0], [a + i * .34, b, 2.2], .05, .05, IRON_D); capsule([a - .8, b, 2.2], [a + .8, b, 2.2], .06, .06, IRON_D); capsule([a - .8, b, .1], [a + .8, b, .1], .06, .06, IRON_D); if (h > .55) { capsule([a - .2, b + .5, .04], [a + .3, b + .75, .04], .05, .05, BONE_D); } },
+  library(a, b, h) { block(a - .95, b - .3, 0, a + .95, b + .3, 2, WOOD_D); for (let row = 0; row < 3; row++) for (let i = 0; i < 6; i++) { const c = BOOKS[Math.floor(hash(i + row * 7, a * 3 + b) * BOOKS.length)], x = a - .8 + i * .3; block(x, b + .3, .12 + row * .62, x + .22, b + .34, .5 + row * .62, c); } },
+  altar(a, b, h) { block(a - .5, b - .5, 0, a + .5, b + .5, .85, STONE_D); sphere(a, b, .98, .13, WAX, 'solid'); capsule([a, b, .85], [a, b, 1], .06, .06, WAX); block(a - .9, b + .55, 0, a + .9, b + 1, .04, RED_D); },
+  treasury(a, b, h) { block(a - .6, b - .38, 0, a + .6, b + .38, .55, WOOD_L); block(a - .62, b - .4, .55, a + .62, b + .4, .68, WOOD_D); for (let i = 0; i < 7; i++) sphere(a + (hash(i, a) - .5) * 1.5, b + .55 + hash(b, i) * .45, .09, .1, GOLD_D, 'solid'); },
+  cave(a, b, h) { for (let i = 0; i < 3; i++) { const u = a + (hash(i, a) - .5) * 1, v = b + (hash(b, i) - .5) * 1; capsule([u, v, 0], [u, v, .9 + hash(i, b) * 1.1], .3 - i * .05, .05, STONE_D); } },
+  collapsed(a, b, h) { for (let i = 0; i < 9; i++) sphere(a + (hash(i, a) - .5) * 1.7, b + (hash(b, i) - .5) * 1.7, .16, .16 + hash(i, b) * .2, i % 2 ? STONE_D : STONE_L, 'rough'); capsule([a - .3, b, .2], [a + .7, b + .35, .35], .24, .2, STONE_L); },
+  ruin(a, b, h) { capsule([a, b, 0], [a, b, .8 + h * 1.2], .28, .24, STONE_L); for (let i = 0; i < 5; i++) sphere(a + (hash(i, a) - .5) * 1.5, b + (hash(b, i) - .5) * 1.5, .12, .12 + hash(i, b) * .14, STONE_D, 'rough'); },
+  thicket(a, b, h) { for (let i = 0; i < 5; i++) sphere(a + (hash(i, a) - .5) * 1.2, b + (hash(b, i) - .5) * 1.2, .3 + hash(i, b) * .25, .32 + hash(b, i) * .22, i % 2 ? LEAF_D : LEAF_L, 'rough'); },
+};
+function decorRooms(m) {
+  for (const r of m.rooms || []) {
+    const tag = r.tags && r.tags[0], draw = ROOM_DECO[tag]; if (!draw || r === m.rooms[0]) continue;
+    const spots = [], open = (x, y) => isFloor(m, x, y) && m.c[y * m.w + x] !== '~';
+    for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) {
+      if (!open(x, y) || Math.hypot(x - r.cx, y - r.cy) < Math.min(r.w, r.h) * .32) continue;
+      // 벽을 등진 칸만 (숲 지도는 빈터 가장자리). 길목을 막지 않게 양옆이 트인 칸은 뺀다
+      const edge = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([a, b]) => !isFloor(m, x + a, y + b)).length;
+      if (edge === 1 || (m.theme === 'swamp' && Math.hypot((x - r.cx) / (r.w / 2), (y - r.cy) / (r.h / 2)) > .62)) spots.push([x, y]);
+    }
+    spots.sort((p, q) => hash(p[0] * 3 + r.ri, p[1] * 5) - hash(q[0] * 3 + r.ri, q[1] * 5));
+    const n = Math.min(spots.length, Math.max(2, Math.round((r.w + r.h) / 5))), used = [];
+    for (const [x, y] of spots) { if (used.length >= n) break; if (used.some(u => Math.hypot(u[0] - x, u[1] - y) < 3)) continue; used.push([x, y]); curCell = y * m.w + x; draw(wx(x), wy(y), hash(x, y)); }
+  }
+}
 function bakeRoom(m, w) {
+  if (G.Event && m.rooms) G.Event.tagMap(G.S.w.fantasy, m);
   Object.assign(win, w, { map: m }); win.cx = (w.x0 + w.x1) / 2; win.cy = (w.y0 + w.y1) / 2;
   const inW = (x, y) => x >= w.x0 && x <= w.x1 && y >= w.y0 && y <= w.y1;
   tufts = []; torches = [];
@@ -87,6 +118,12 @@ function bakeRoom(m, w) {
     const wet = noise(g.x * .55 + 9, g.y * .55 + 3);
     if (wet > .7 && hash(ix, iy) < (wet - .68) * 2.4) pix[i] = rampOf(C.moss)[clamp(Math.floor(2 + (bayer(ix, iy) * 2)), 0, 4)];
     if (wet > .68 && hash(ix * 3, iy * 5) < .09) tufts.push({ ix, iy, i, h: 1 + (hash(ix, iy * 2) * 3 | 0), ph: ix * .11 + iy * .19 + hash(ix, iy), c: hash(ix, iy) > .5 ? C.mossL : C.moss });
+  }
+  // 방 태그의 바닥 색
+  if (m.tagged) {
+    const tintAt = new Int16Array(m.w * m.h).fill(-1), TG = Object.keys(ROOM_TINT);
+    for (const r of m.rooms) { const t = TG.indexOf(r.tags && r.tags[0]); if (t >= 0 && r !== m.rooms[0]) for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h && isFloor(m, x, y) && m.c[y * m.w + x] !== '~' && m.c[y * m.w + x] !== ',') tintAt[y * m.w + x] = t; }
+    for (let i = 0; i < W * H; i++) { const c = big.cell[i]; if (c >= 0 && ground[i] && tintAt[c] >= 0) pix[i] = tintD(pix[i], ROOM_TINT[TG[tintAt[c]]]); }
   }
   // 그늘이 드는 벽 쪽
   const shStatic = [];
@@ -126,6 +163,7 @@ function bakeRoom(m, w) {
     if (h > .95) { for (let i = 0; i < 5; i++) { const a = wx(x) + (hash(i, x) - .5) * 1.1, b = wy(y) + (hash(y, i) - .5) * 1.1; sphere(a, b, .12, .13 + hash(i, y) * .14, C.stone, 'rough'); } }
     else if (h > .91) { capsule([wx(x) - .3, wy(y), .05], [wx(x) + .35, wy(y) + .2, .05], .05, .05, C.bone); sphere(wx(x) + .5, wy(y) - .1, .14, .15, C.bone, 'solid'); }
   }
+  if (m.tagged) decorRooms(m);
   curCell = m.end.cy * m.w + m.end.cx;
   if (m.end && inW(m.end.cx, m.end.cy)) { const ex = wx(m.end.cx), ey = wy(m.end.cy); for (let k = 0; k < 4; k++) block(ex - 1 + k * .4, ey - 1, -.02 + (3 - k) * .1, ex + 1, ey + 1 - k * .08, .0 + (3 - k) * .12, C.stone2); }
   // 정적 그림자 · 바닥의 음영 · 횃불빛

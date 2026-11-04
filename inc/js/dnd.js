@@ -29,7 +29,8 @@ G.Dnd = (() => {
     warlock: { hd: 8, pri: 'cha', order: ['cha', 'con', 'dex', 'wis', 'int', 'str'], armor: 'light', saves: ['wis', 'cha'], sk: ['investigation'] },
     archmage: { hd: 6, pri: 'int', order: ['int', 'con', 'dex', 'wis', 'cha', 'str'], armor: 'mage', saves: ['int', 'wis'], sk: ['investigation'] },
   };
-  const SKILL_AB = { perception: 'wis', investigation: 'int', persuasion: 'cha' };
+  const SKILL_AB = { perception: 'wis', investigation: 'int', persuasion: 'cha', arcana: 'int', survival: 'wis', medicine: 'wis', insight: 'wis', athletics: 'str' };
+  const SKILL_N = { perception: '지각', investigation: '조사', persuasion: '설득', arcana: '비전학', survival: '생존', medicine: '의학', insight: '통찰', athletics: '운동' };
   // 용병 정보가 없는 단장 몸(옛 저장)의 기본값. 보통 단장은 만든 캐릭터의 능력치를 쓴다
   const HERO_AB = { str: 16, dex: 12, con: 14, int: 10, wis: 12, cha: 13 }, HERO_SAVES = ['str', 'con'];
   // 몬스터: 층이 곧 도전 등급. AC 12 + 층/5 (최대 20) · 명중 +3 + 층/4 (최대 +13) · 내성 +1 + 층/5 · 능력 DC 10 + 층/4 (최대 19). 보스 AC +1 · 명중 · 내성 · DC +2
@@ -71,7 +72,7 @@ G.Dnd = (() => {
     return a.reduce((p, q) => p + q, 0);
   };
   const N = {
-    AB, AB_N, CLS, COND, SKILL_AB,
+    AB, AB_N, CLS, COND, SKILL_AB, SKILL_N,
     // ── 피해 (SRD): 주사위 + 능력 수정치. 치명타는 주사위만 두 배. 장비 · 트리 · 스킬 배율은 그 위에 곱한다 ──
     weapon(e) { const m = e.merc; if (m?.cls === 'warlock') { const o = G.Opt.of(m); if (o.includes('iv_pblade')) return { n: 1, d: 8, b: N.mod(N.ab(m).cha), t: G.Trinket.props(m, 'wtype')[0]?.[1] || 'radiant' }; if (o.includes('sr_agon')) return { n: 1, d: 10, b: N.mod(N.ab(m).cha), t: G.Trinket.props(m, 'wtype')[0]?.[1] || 'force' }; } const w = WEAPON[m?.cls] || WEAPON.dragoon; return { n: w[0], d: m?.cls === 'monk' ? (m.lv >= 17 ? 12 : m.lv >= 11 ? 10 : m.lv >= 5 ? 8 : 6) : w[1], b: w[2] && m ? N.mod(N.ab(m)[w[2]]) : 0, t: (m && G.Trinket.props(m, 'wtype')[0]?.[1]) || (m?.cls === 'monk' && m.lv >= 6 ? 'force' : w[3]) }; },
     avg: w => w.n * (w.d + 1) / 2 + w.b,
@@ -260,7 +261,7 @@ G.Dnd = (() => {
           if (G.Guild.skill(att.merc, 'ft_studied')) att.studied = tg;
           if (att.heroic) { att.heroic = false; return N.attackRollAgain(att, tg, critAt); } // 영웅적 전사
           if (att.seek) { att.seek = false; att.seekUsed = true; return N.attackRollAgain(att, tg, critAt); } // 추적 주문
-          if (G.Guild.skill(att.merc, 'ft_stroke')) { const sp0 = G.Res.of(att.merc).sp; if (!sp0.stroke) { sp0.stroke = true; N.flip(att, '행운의 일격'); hit = true; } }
+          if (G.Guild.skill(att.merc, 'ft_stroke')) { if (G.Res.once(att.merc, 'ft_stroke')) { N.flip(att, '행운의 일격'); hit = true; } }
         }
       }
       // 전투 기량의 은혜: 빗나간 공격 하나를 명중으로 (6초에 한 번)
@@ -301,9 +302,8 @@ G.Dnd = (() => {
       }
       if (!tg.merc) return false;
       if (G.Res.saveRetry(tg) && N.d20(0) + b >= dc) return N.flip(tg, '인간의 끈기');
-      const sp = G.Res.of(tg.merc).sp;
-      if (k === 'dex' && G.Trinket.has(tg.merc, 'evade') && (sp.evade || 0) < 3) { sp.evade = (sp.evade || 0) + 1; N.flip(tg, '회피의 반지'); return true; } // 하루 3충전 (SRD는 새벽에 1d3)
-      if (G.Trinket.has(tg.merc, 'reroll') && !sp.luck) { sp.luck = true; if (N.d20(0) + b >= dc) { N.flip(tg, '행운의 검'); return true; } }
+      if (k === 'dex' && G.Trinket.has(tg.merc, 'evade') && G.Res.once(tg.merc, 'evade', 3)) { N.flip(tg, '회피의 반지'); return true; } // SRD는 새벽에 1d3 충전 → 전투당 3번
+      if (G.Trinket.has(tg.merc, 'reroll') && G.Res.once(tg.merc, 'luck')) { if (N.d20(0) + b >= dc) { N.flip(tg, '행운의 검'); return true; } }
       // 파이터 불굴 (Indomitable): 실패한 내성을 다시 (20초에 한 번)
       if (G.Fantasy.sk(tg, 'sr_indom') && G.Res.can(tg.merc, 'sr_indom', { long: m => (m.lv >= 17 ? 3 : m.lv >= 13 ? 2 : 1) })) { G.Res.pay(tg.merc, 'sr_indom', { long: 1 }); if (N.d20(0) + b + tg.merc.lv >= dc) return N.flip(tg, '불굴'); return false; }
       // 운명의 은혜: 실패한 내성에 2d4 (10초에 한 번)

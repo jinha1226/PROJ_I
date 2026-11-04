@@ -123,7 +123,7 @@ G.Turn = (() => {
     roster(f, rt, st);
     if (!forced) rt.roll = null; // 판정 결과는 남겨 둔다
     dm(rt, st.first === 'party' ? `${count(foes(rt))} — 우리가 먼저 친다` : st.first === 'foes' ? `${count(foes(rt))} — 놈들이 먼저 덮친다!` : `${count(foes(rt))} — 전투 시작`);
-    G.Res.fightStart(rt.party);
+    G.Res.fightStart(rt.party); rt.undying = false;
     G.Story.beginFight(f, rt);
   }
   // 라운드 시작: 새로 합류한 사람 · 몬스터를 선제권대로 끼운다

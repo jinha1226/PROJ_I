@@ -38,7 +38,7 @@ G.Trinket = (() => {
     deathTen: { t: () => '사망 내성 최소 10', sc: () => 3 },
     hdX2: { t: () => '전투 뒤 회복 ×2', sc: () => 1 },
     regenRest: { t: v => `전투 뒤 ${v}d6 회복`, sc: () => 4 },
-    evade: { t: v => `민첩 내성 실패를 성공으로 (층마다 ${v}번)`, sc: v => v * 1.5 },
+    evade: { t: v => `민첩 내성 실패를 성공으로 (전투당 ${v}번)`, sc: v => v * 1.5 },
     noCover: { t: () => '절반 엄폐 무시', sc: () => 1 },
     acSet: { t: v => `기본 AC ${v} + 민첩`, sc: () => 6 },
     snare: { t: () => '원거리 피해 −1d10 − 민첩', sc: () => 3 },
@@ -116,7 +116,7 @@ G.Trinket = (() => {
       if (T.has(m, 'oath') && o.hp > 0) { if (!a.sworn || a.sworn.hp <= 0) a.sworn = o; if (a.sworn === o) hit(D.dice(3, 6), 'piercing'); }
       if (T.has(m, 'destroy') && o.hp > 0 && (o.ty === 'undead' || o.ty === 'fiend') && o.hp <= 25 * sc && !D.save(o, 'wis', 15)) { G.fx(rt, { k: 'text', x: o.x, y: o.y - 1.2, s: '파괴', col: '#ffe08a', t: 1, sz: 1, pop: true }); F().hurt(f, rt, o, o.hp * 9, 'extra', a); }
       if (T.has(m, 'giantProne') && o.hp > 0 && o.ty === 'giant' && !D.save(o, 'str', 15)) D.give(rt, o, 'prone', 10, a);
-      if (T.has(m, 'venom') && o.hp > 0) { const s = G.Res.of(m); if (!s.sp.venom) { s.sp.venom = true; if (!D.save(o, 'con', 15)) { hit(D.dice(2, 10), 'poison'); if (o.hp > 0) D.give(rt, o, 'poisoned', 10, a); } } } // 새벽까지 한 번
+      if (T.has(m, 'venom') && o.hp > 0) { if (G.Res.once(m, 'venom')) { if (!D.save(o, 'con', 15)) { hit(D.dice(2, 10), 'poison'); if (o.hp > 0) D.give(rt, o, 'poisoned', 10, a); } } } // SRD는 새벽까지 한 번 → 전투당
       if (nat !== 20 || o.hp <= 0) return;
       if (D.boon(m, 'irresistible')) { const ab = D.ab(m); hit(Math.max(ab.str, ab.dex)); if (o.hp <= 0) return; }
       for (const p of T.props(m, 'sharp')) hit(p[1], 'slashing');

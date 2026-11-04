@@ -12,7 +12,7 @@ G.Pool = (() => {
   X('x_pass', 'pass-without-trace', 's_shroud_of_golubria', '파티 은신 판정 +10');
   X('x_clair', 'clairvoyance', 's_portal_projectile', '층마다 아직 못 본 방 하나를 들여다본다');
   X('x_eye', 'arcane-eye', 's_portal_projectile', '눈이 라운드마다 6칸씩 앞서가며 주변 6칸을 본다');
-  X('x_hut', 'tiny-hut', 's_summon_forest', '안전한 쉼터 (아직 쓰이는 장면 없음)');
+  X('x_hut', 'tiny-hut', 's_summon_forest', '막다른 방에서 안전하게 쉰다');
   X('x_berry', 'goodberry', 's_regeneration', '열매 10개: 싸운 뒤 다친 동료가 하나에 체력 1씩 (야영까지)');
   X('x_prayer', 'prayer-of-healing', 's_elyvilon_heal_other', '다섯 명 2d8 회복 · 슬롯 레벨마다 +1d8 (사람마다 야영까지 한 번)');
   const POOL = {
@@ -37,9 +37,9 @@ G.Pool = (() => {
   SK_X('x_perc', '지각', 'Perception', ALL(['barbarian', 'dragoon', 'archer', 'rogue', 'scout', 'bard']), 's_ru_draw_out_power', '지각 숙련: 매복을 알아챈다');
   SK_X('x_inv', '조사', 'Investigation', ALL(['archer', 'rogue', 'warlock', 'archmage', 'bard']), 's_stabbing', '조사 숙련: 함정 · 상자 · 방 뒤지기');
   SK_X('x_stealth', '은신', 'Stealth', ALL(['monk', 'archer', 'rogue', 'bard']), 's_shroud_of_golubria', '은신 숙련: 들키지 않으면 적이 선제권 불리');
-  SK_X('x_arcana', '비전학', 'Arcana', ALL(['mage', 'warlock', 'archmage', 'scout', 'bard']), 's_spellcasting', '비전학 숙련 (아직 쓰이는 장면 없음)');
-  SK_X('x_surv', '생존', 'Survival', ALL(['barbarian', 'dragoon', 'archer', 'scout', 'bard']), 's_summon_forest', '생존 숙련 (아직 쓰이는 장면 없음)');
-  SK_X('x_med', '의학', 'Medicine', ALL(['cleric', 'scout', 'paladin', 'archmage', 'bard']), 's_cure_poison', '곁의 쓰러진 동료를 안정시킨다 (DC 10)');
+  SK_X('x_arcana', '비전학', 'Arcana', ALL(['mage', 'warlock', 'archmage', 'scout', 'bard']), 's_spellcasting', '비전학 숙련 (봉인 문자)');
+  SK_X('x_surv', '생존', 'Survival', ALL(['barbarian', 'dragoon', 'archer', 'scout', 'bard']), 's_summon_forest', '생존 숙련 (발자국)');
+  SK_X('x_med', '의학', 'Medicine', ALL(['cleric', 'scout', 'paladin', 'archmage', 'bard']), 's_cure_poison', '의학 숙련 · 곁의 쓰러진 동료를 안정시킨다 (DC 10)');
   SK_X('x_expert', '전문가', 'Expertise', { rogue: 1 }, 's_sure_blade', '조사 · 지각 · 은신에 숙련 두 배');
   SK_X('x_feral', '야성의 본능', 'Feral Instinct', { barbarian: 7 }, 's_beastly_appendage', '선제권 이점');
   SK_X('x_tmind', '전술적 사고', 'Tactical Mind', { dragoon: 2 }, 's_fighting', '판정에 실패하면 재기 한 번으로 +1d10 (실패하면 소모 안 함)');
@@ -75,7 +75,7 @@ G.Pool = (() => {
     // 쓰는 순간 이름을 띄운다
     used(p, k) { if (p && !G.quiet) (p.skLog = p.skLog || []).push(k); },
     // 숙련 (G.Dnd.skill): 전문가는 조사 · 지각에 두 배. 나머지는 탐험 칸의 그 기술
-    skillK(m, sk) { const k = Pool.of(m); if (k === 'x_expert' && (sk === 'investigation' || sk === 'perception')) return 2; return (k === 'x_perc' && sk === 'perception') || (k === 'x_inv' && sk === 'investigation') ? 1 : 0; },
+    skillK(m, sk) { const k = Pool.of(m); if (k === 'x_expert' && (sk === 'investigation' || sk === 'perception')) return 2; return (k === 'x_perc' && sk === 'perception') || (k === 'x_inv' && sk === 'investigation') || (k === 'x_arcana' && sk === 'arcana') || (k === 'x_surv' && sk === 'survival') || (k === 'x_med' && sk === 'medicine') ? 1 : 0; },
     // 전투 직전 은신 (SRD 집단 판정 · 놀람): 절반 이상이 적의 수동 지각을 넘으면 적이 선제권 불리
     sneak(rt, foes) { const crew = rt.party.filter(p => p.merc && !p.dead), DN = G.Dnd, pw = Pool.who(rt, 'x_pass') ? 10 : 0, pp = Math.max(0, ...foes.map(o => 10 + (o.stat?.save?.wis ?? 0))); let n = 0; for (const p of crew) { const k = Pool.of(p.merc), pr = DN.prof(p.merc.lv) * (k === 'x_expert' ? 2 : k === 'x_stealth' ? 1 : 0); if (DN.d20(0) + DN.mod(DN.ab(p.merc).dex) + pr + pw >= pp) n++; } return crew.length > 0 && n * 2 >= crew.length; },
     // 걷는 동안: 마법 탐지 · 투시 · 비전의 눈

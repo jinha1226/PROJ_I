@@ -45,9 +45,9 @@ G.Opt = (() => {
   iv('iv_smite', '섬뜩한 강타', 'Eldritch Smite', 5, '계약 무기로 맞히면 슬롯 레벨 + 1d8 역장 · 넘어짐', { base: 1, res: { slot: 1 }, free: true, dt: 'force', rider(c, x, o) { H.ring(x, o, 0.8, '#b98aff'); F().hurt(x.f, x.rt, o, H.dmg(x, c, [1 + (x.slot || 1), 8]), 'smite', c); if (o.hp > 0) DN.give(x.rt, o, 'prone', G.Res_ROUND, c); } }, { need: 'iv_pblade' });
   iv('iv_thirst', '갈망의 칼날', 'Thirsting Blade', 5, '계약 무기 공격 2번', null, { need: 'iv_pblade' });
   iv('iv_devour', '삼키는 칼날', 'Devouring Blade', 12, '계약 무기 공격 3번', null, { need: 'iv_thirst' });
-  iv('iv_life', '생명을 마시는 자', 'Lifedrinker', 9, '차례에 한 번 명중 +1d6 사령 · 체력 회복', null, { need: 'iv_pblade' });
+  iv('iv_life', '생명을 마시는 자', 'Lifedrinker', 9, '차례에 한 번 명중 +1d6 사령 · 체력 d8 + 건강 회복 (전투당 2번)', null, { need: 'iv_pblade' });
   iv('iv_cmaster', '사슬 주인의 권능', 'Investment of the Chain Master', 5, '사역마도 공격: 1d6 + 3 광휘', null, { need: 'iv_pchain' });
-  iv('iv_protect', '수호자의 선물', 'Gift of the Protectors', 9, '동료가 쓰러질 때 한 번 1로 버팀 (야영까지)', null, { need: 'iv_ptome' });
+  iv('iv_protect', '수호자의 선물', 'Gift of the Protectors', 9, '동료가 쓰러질 때 1로 버팀 (전투당 한 번)', null, { need: 'iv_ptome' });
   const PACTS = ['iv_pblade', 'iv_pchain', 'iv_ptome'];
   const petOf = (c, k) => (c.pe || []).some(e => e.sum === k);
   function chainTick(x, c) {
@@ -56,7 +56,7 @@ G.Opt = (() => {
   }
 
   // ── 메타매직 ── Careful Spell은 뺐다: 이 게임의 주문은 처음부터 동료를 맞히지 않는다
-  const M = 'mage', mm = (k, n, en, cost, d) => { reg(k, n, en, M, 2, `마력 ${cost} · ${d}`, null, { mm: cost }); LIST.mm.push(k); LV[k] = 2; };
+  const M = 'mage', mm = (k, n, en, cost, d) => { reg(k, n, en, M, 2, `전투당 ${cost === 1 ? 3 : 2}번 · ${d}`, null, { mm: cost }); LIST.mm.push(k); LV[k] = 2; };
   mm('sr_quicken', '주문 가속', 'Quickened Spell', 2, '주문을 추가 행동으로');
   mm('sr_twin', '쌍둥이 주문', 'Twinned Spell', 1, '한 명 주문이 둘에게');
   mm('mm_distant', '먼 주문', 'Distant Spell', 1, '닿는 적이 없으면 사거리 2배');
@@ -83,7 +83,7 @@ G.Opt = (() => {
   SUB('ft_shdef', '상위 사냥꾼의 방어', "Superior Hunter's Defense", 'hunter', 15, '큰 피해를 받으면 그 종류 저항 (라운드에 한 번)');
   SK.ft_shdef = { react: true, when: () => false, run: () => false };
   // 용 동반자: 슬롯 없이 · 집중 없이 용 소환 (야영까지 한 번)
-  SUB('ft_drcomp', '용 동반자', 'Dragon Companion', 'draconic', 18, '용 소환: 슬롯 · 집중 없이 (야영까지 한 번)', { auto: true, prio: 10, when: (c, x) => H.W.seen(c, x) && !G.Res.of(c.merc).sp.drcomp, run(c, x) { const s = SK.sp_summon_dragon, n = (c.pe || []).length; if (s.run(c, { ...x, slot: 5 }) === false) return false; G.Res.of(c.merc).sp.drcomp = true; for (const e of (c.pe || []).slice(n)) e.conc = false; H.ring(x, c, 1.4, '#ff9a4a'); } });
+  SUB('ft_drcomp', '용 동반자', 'Dragon Companion', 'draconic', 18, '용 소환: 슬롯 · 집중 없이', { auto: true, prio: 10, res: { long: 1 }, when: (c, x) => H.W.seen(c, x), run(c, x) { const s = SK.sp_summon_dragon, n = (c.pe || []).length; if (s.run(c, { ...x, slot: 5 }) === false) return false; for (const e of (c.pe || []).slice(n)) e.conc = false; H.ring(x, c, 1.4, '#ff9a4a'); } });
   // 야생 동반자 (드루이드 2): 야생 변신 한 번 → 사역마. 도움 행동: 적 하나에게 다음 공격 이점
   const wildRes = () => SK.sr_wild?.res;
   reg('ft_wcomp', '야생 동반자', 'Wild Companion', 'scout', 2, '야생 변신 한 번 · 사역마: 차례마다 적 하나에게 다음 공격 이점', { auto: true, prio: 5, when: (c, x) => H.W.fight(c, x) && !petOf(c, 'wild') && G.Res.can(c.merc, 'sr_wild', wildRes()), run(c, x) { G.Res.pay(c.merc, 'sr_wild', wildRes()); H.persist(c, 'gen', R6(100), { sum: 'wild', fn: x2 => helpTick(x2, c) }); helpTick(x, c); H.ring(x, c, 0.9, '#9fd8a0'); } }, { auto: true }); D.MPOOL.scout.push('ft_wcomp');
@@ -95,7 +95,7 @@ G.Opt = (() => {
     const t = H.nearest(x, c, 1.8); if (t) { G.Foe.dtype = 'radiant'; G.fx(x.rt, { k: 'slash', x: t.x, y: t.y, t: 0.25, rot: -0.3 }); H.strike(x, c, t, [1, 8, 2], 'hit'); G.Foe.dtype = null; }
     if (!e.healed) { const p = x.rt.party.filter(q => !q.dead && !q.noHeal && q.hp < q.max * 0.5 && Math.hypot(q.x - c.x, q.y - c.y) <= 1.8).sort((a, b) => a.hp / a.max - b.hp / b.max)[0]; if (p) { e.healed = true; H.heal(x, c, p, [2, 8, 2]); H.ring(x, p, 0.8, '#9fe79f'); } }
   }
-  // 신의 개입 (클레릭 10): 위험할 때 5레벨 이하 클레릭 주문 하나를 슬롯 없이 (야영까지 한 번). 20레벨: 소원 — 8레벨 이하 아무 주문, 2d4번 야영 동안 다시 못 쓴다
+  // 신의 개입 (클레릭 10): 위험할 때 5레벨 이하 클레릭 주문 하나를 슬롯 없이. 20레벨: 소원 — 8레벨 이하 아무 주문
   const danger = (c, x) => x.rt.party.some(p => !p.dead && p.hp < p.max * 0.4) || x.rt.mons.filter(o => o.hp > 0 && o.aggro).length >= 3 || x.seen.some(o => o.boss);
   const canCast = (k, c, x) => { const S = SK[k]; if (!S || !S.run || S.react || S.rider || S.free || S.conc && c.concK || !S.when) return null; const reach = D.SK_RANGE[k], x2 = { ...x, reach, base: S.base, slot: S.base || 0, seen: reach == null ? x.seen : x.seen.filter(o => Math.hypot(o.x - c.x, o.y - c.y) <= reach) }; const ty = G.Skill.spellType(k); if (ty && !S.heal && x2.seen.length) { x2.seen = x2.seen.filter(o => G.Foe.dealK(c, o, ty) >= 0.5); if (!x2.seen.length) return null; } try { return S.when(c, x2) ? x2 : null; } catch (e) { return null; } };
   const diPick = (c, x) => {
@@ -104,11 +104,11 @@ G.Opt = (() => {
     for (const k of list) { const x2 = canCast(k, c, x); if (x2) return { k, x2, wish: wish && SK[k].base > 5 }; }
     return null;
   };
-  reg('ft_intervene', '신의 개입', 'Divine Intervention', 'cleric', 10, '위험할 때 5레벨 이하 주문을 슬롯 없이 (야영까지 한 번) · 20레벨: 8레벨 이하', { auto: true, prio: 10, when: (c, x) => { const s = G.Res.of(c.merc).sp; return !s.di && !(c.merc.diLock > 0) && danger(c, x) && !!diPick(c, x); }, run(c, x) {
+  reg('ft_intervene', '신의 개입', 'Divine Intervention', 'cleric', 10, '위험할 때 5레벨 이하 주문을 슬롯 없이 · 20레벨: 8레벨 이하', { auto: true, prio: 10, res: { long: 1 }, when: (c, x) => danger(c, x) && !!diPick(c, x), run(c, x) {
     const p = diPick(c, x); if (!p) return false; const S = SK[p.k], ty = G.Skill.skillType(p.k, c);
     if (S.conc) G.Res.conc(c, p.k);
     G.Foe.dtype = ty; const ran = S.run(c, p.x2); G.Foe.dtype = null; if (ran === false) return false;
-    G.Res.of(c.merc).sp.di = true; if (p.wish) c.merc.diLock = DN.dice(2, 4);
+    
     H.ring(x, c, 1.6, '#fff3c4'); G.fx(x.rt, { k: 'text', x: c.x, y: c.y - 1.2, s: `신의 개입: ${D.MSKILLS[p.k].n}`, col: '#fff3c4', t: 1.2, sz: 0.85, pop: true });
   } }, { auto: true }); D.MPOOL.cleric.push('ft_intervene');
   // 마법의 비밀 (바드 10): 클레릭 · 드루이드 · 위저드 주문을 고를 수 있다
@@ -160,16 +160,15 @@ G.Opt = (() => {
       return list;
     },
     has: (a, k) => !!a.merc && Opt.of(a.merc).includes(k),
-    // ── 메타매직 포인트: 전투당 (2레벨 2 → 20레벨 6) ──
-    ptsMax: m => (m.cls === M && m.lv >= 2 ? 1 + Math.ceil(m.lv / 4) : 0),
-    left: a => (a.merc ? Opt.ptsMax(a.merc) - (G.Res.of(a.merc).fu.__mm || 0) : 0),
-    can: (a, k) => Opt.has(a, k) && Opt.left(a) >= D.MSKILLS[k].mm,
-    pay(a, k) { const f = G.Res.of(a.merc).fu; f.__mm = (f.__mm || 0) + D.MSKILLS[k].mm; },
+    // ── 메타매직: 다른 기술과 같은 전투당 횟수 (SRD 포인트 1 = 가벼움 3번 · 2 = 보통 2번) ──
+    mmRes: k => ({ focus: D.MSKILLS[k].mm }),
+    can: (a, k) => Opt.has(a, k) && G.Res.can(a.merc, k, Opt.mmRes(k)),
+    pay(a, k) { G.Res.pay(a.merc, k, Opt.mmRes(k)); },
     // 시전 직전: 어떤 메타매직을 붙이나. one = 이미 고른 하나 (둘은 안 된다 · 강화 · 추적만 겹친다)
     begin(a, k, S, x, one) {
       const out = { used: one ? [one] : [] }; if (!a.merc || a.merc.cls !== M || !isSpell(k)) return out;
       const slot = !!S.res?.slot, sk = G.Skill;
-      if (slot && !S.heal && Opt.can(a, 'mm_empower') && Opt.left(a) > (Opt.has(a, 'mm_seek') || Opt.has(a, 'mm_subtle') ? 1 : 0)) { DN.reroll = Math.max(1, DN.mod(DN.ab(a.merc).cha)); DN.rerollUsed = false; out.emp = true; }
+      if (slot && !S.heal && Opt.can(a, 'mm_empower')) { DN.reroll = Math.max(1, DN.mod(DN.ab(a.merc).cha)); DN.rerollUsed = false; out.emp = true; }
       if (slot && Opt.can(a, 'mm_seek')) { a.seek = true; out.seek = true; }
       if (!one && slot) {
         if ((S.conc || S.T >= 10) && Opt.can(a, 'mm_extend')) { sk.ext = true; if (S.conc) a.extConc = true; out.used.push('mm_extend'); }
@@ -187,7 +186,7 @@ G.Opt = (() => {
       if (out.tw && sk.twinUsed) pay.push('sr_twin');
       a.seek = false; a.seekUsed = false; sk.height = false; sk.heightUsed = false; sk.twin = false; sk.twinUsed = false;
       if (ran === false) { a.extConc = false; return; }
-      for (const k of out.used.concat(pay)) if (Opt.left(a) >= D.MSKILLS[k].mm) Opt.pay(a, k);
+      for (const k of out.used.concat(pay)) if (Opt.can(a, k)) Opt.pay(a, k);
     },
     // 변환: 지금 종류보다 더 잘 드는 종류가 있으면 (약점 · 면역 회피 · 트롤의 불)
     transmute(a, seen, ty) {
@@ -216,7 +215,7 @@ G.Opt = (() => {
       if (G.Guild.skill(m, 'ft_tmaster')) { if (!DN.has(o, 'sapped')) DN.give(rt, o, 'sapped', G.Res_ROUND, a); else o.shock = Math.max(o.shock || 0, 6); }
       if (m.cls !== W) return;
       if (Opt.has(a, 'iv_repel') && !DN.melee(a)) H.push(x, a, o, 2);
-      if (Opt.has(a, 'iv_life') && a.ldR !== round) { a.ldR = round; const u = F().allyAtk(f, a) / Math.max(1, DN.avg(DN.weapon(a))), s = G.Res.of(m).sp; G.Foe.dtype = 'necrotic'; F().hurt(f, rt, o, DN.dice(1, 6) * u, 'extra', a); G.Foe.dtype = null; if ((s.hd || 0) < m.lv && a.hp < a.max) { s.hd = (s.hd || 0) + 1; a.hp = Math.min(a.max, a.hp + Math.max(1, DN.dice(1, 8) + DN.mod(DN.ab(m).con)) * a.max / Math.max(1, DN.srdHP(m))); } }
+      if (Opt.has(a, 'iv_life') && a.ldR !== round) { a.ldR = round; const u = F().allyAtk(f, a) / Math.max(1, DN.avg(DN.weapon(a))), s = { short: 1 }; G.Foe.dtype = 'necrotic'; F().hurt(f, rt, o, DN.dice(1, 6) * u, 'extra', a); G.Foe.dtype = null; if (a.hp < a.max && G.Res.can(m, 'iv_life', s)) { G.Res.pay(m, 'iv_life', s); a.hp = Math.min(a.max, a.hp + Math.max(1, DN.dice(1, 8) + DN.mod(DN.ab(m).con)) * a.max / Math.max(1, DN.srdHP(m))); } }
     },
     // 빠져나오기: n칸 안의 빈 칸 중 곁에 적이 없는 가장 가까운 곳 (기회 공격 없음)
     away(x, c, n) {
