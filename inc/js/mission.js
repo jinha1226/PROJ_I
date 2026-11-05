@@ -33,7 +33,7 @@ G.Mission = (() => {
       // 가장 잘하는 사람과 2 이내면 누구든 나선다 (늘 같은 사람만 말하지 않게)
       const val = p => G.Dnd.best([p.merc], sk).v, who = by && !by.dead ? by : U.pick(ms.filter(p => val(p) >= b.v - 2)), nat = G.Dnd.d20(0), mod = val(who), dc = fixDC ?? DC(f.floor) + extra + (G.CHECK_DC || 0);
       let tot = nat + mod;
-      if (tot < dc && G.Pool.of(who.merc) === 'x_tmind' && G.Res.can(who.merc, 'sr_second', G.Skill.SK.sr_second.res)) { tot += 1 + U.rand(10); if (tot >= dc) { G.Res.pay(who.merc, 'sr_second', G.Skill.SK.sr_second.res); G.Pool.used(who, 'x_tmind'); } } // 전술적 사고 (SRD): 실패에 d10. 그래도 실패면 소모 안 함
+      if (tot < dc && G.Guild.skill(who.merc, 'x_tmind') && G.Res.can(who.merc, 'sr_second', G.Skill.SK.sr_second.res)) { tot += 1 + U.rand(10); if (tot >= dc) { G.Res.pay(who.merc, 'sr_second', G.Skill.SK.sr_second.res); G.Pool.used(who, 'x_tmind'); } } // 전술적 사고 (SRD): 실패에 d10. 그래도 실패면 소모 안 함
       return { who, nat, mod: tot - nat, dc, ok: tot >= dc };
     },
     // 이 층의 임무 (시즌마다 같은 층은 같은 임무)

@@ -6,7 +6,7 @@ const N = +process.argv[2] || 30;
 const M = Object.create(Math); let s0 = 12345;
 M.random = () => { s0 = (s0 + 0x6D2B79F5) >>> 0; let t = s0; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const ctx = { console, Math: M, JSON, Date, btoa, atob }; vm.createContext(ctx);
-for (const n of ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'tree', 'trees', 'season', 'fantasy', 'rivals', 'guild', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'srd_spells', 'spells', 'traits', 'options', 'pools', 'srd_species', 'combo', 'events', 'tutorial', 'skill_nums', 'command', 'expedition', 'mission', 'explore', 'banter', 'sight', 'tactics', 'foe', 'region', 'res', 'turn', 'flow', 'story', 'state'])
+for (const n of ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'tree', 'trees', 'season', 'fantasy', 'rivals', 'guild', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'srd_spells', 'spells', 'traits', 'options', 'pools', 'srd_species', 'skill_ai', 'combo', 'events', 'tutorial', 'skill_nums', 'command', 'expedition', 'mission', 'explore', 'banter', 'sight', 'tactics', 'foe', 'region', 'scn_astral', 'res', 'turn', 'flow', 'story', 'state'])
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, D = G.D, GD = G.Guild, F = G.Fantasy, LV = 20;
 const IGNORE = new Set(['hp', 'x', 'y', 'moving', 'atkT', 'gcd', 'cds', 'lastSk', 'flip', 'merc', 'def', 'dots_']);

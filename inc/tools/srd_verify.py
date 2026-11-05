@@ -19,6 +19,7 @@ for tb, n in [('spell', 339), ('background', 4), ('species', 9), ('feat', 17), (
 for tb, cols in [('spell', 'casting_time,range,components,duration,school'), ('monster', 'ac,hp,str,dex,con,cr,xp,type'), ('magic_item', 'rarity'), ('weapon', 'damage,weight,cost'), ('armor', 'ac,weight,cost')]:
     for k in cols.split(','):
         v = c.execute(f"SELECT count(*) FROM {tb} WHERE {k} IS NULL OR {k}='' OR {k}=0").fetchone()[0]; ck(f'{tb}.{k} 빈칸 없음', v == 0 or (k == 'xp' and tb == 'monster') or (k == 'cr' and c.execute("SELECT count(*) FROM monster WHERE cr=''").fetchone()[0] == 0), v)
+blank = [(a, b) for a, b, co in c.execute('SELECT class, level, columns FROM class_level') if any(v == '' for v in json.loads(co).values())]; ck('직업 레벨 표에 빈칸 없음', not blank, blank[:8])
 names = {re.sub(r'\W', '', r[0]).lower() for r in c.execute('SELECT title FROM manual_node')}; miss = [r[0] for r in c.execute('SELECT title FROM toc') if re.sub(r'\W', '', r[0]).lower() not in names]; ck(f'PDF 목차 520개 찾음 (못 찾음 {len(miss)})', len(miss) <= 3, miss)
 ck('검색', c.execute("SELECT count(*) FROM search WHERE search MATCH 'fireball'").fetchone()[0] > 0)
 print('실패', bad); sys.exit(1 if bad else 0)

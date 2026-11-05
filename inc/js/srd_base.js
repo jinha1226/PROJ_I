@@ -52,7 +52,10 @@ G.SRD = (() => {
   // 사람마다 고정인 난수 (uid로)
   const seed = (m, salt) => { let h = 2166136261 ^ salt; for (const c of String(m.uid ?? m.name ?? 0) + salt) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
   const pickN = (m, salt, list, n) => { const a = list.slice(), out = []; let h = seed(m, salt); while (out.length < n && a.length) { h = Math.imul(h ^ (h >>> 13), 1597334677) >>> 0; out.push(a.splice(h % a.length, 1)[0]); } return out; };
+  // 기술 설명: SRD 기술 표 번역
+  const SKILL_D = { athletics: '멀리 뛰기, 거친 물에서 뜨기, 물건 부수기', acrobatics: '어려운 상황에서 중심 잡기, 곡예', sleight: '소매치기, 물건 감추기, 손기술', stealth: '조용히 움직이고 숨어서 들키지 않기', arcana: '주문, 마법 물건, 다른 세계에 대한 지식', history: '역사적 사건, 인물, 나라, 문화에 대한 지식', investigation: '책에서 숨은 정보 찾기, 원리 추론', nature: '지형, 식물, 동물, 날씨에 대한 지식', religion: '신, 종교 의식, 성표에 대한 지식', animal: '동물 달래기, 훈련, 원하는 대로 행동시키기', insight: '상대의 기분과 의도 알아채기', medicine: '병 진단, 방금 죽은 자의 사인 알아내기', perception: '감각으로 놓치기 쉬운 것 알아채기', survival: '발자국 추적, 먹거리 찾기, 길 찾기, 자연 위험 피하기', deception: '그럴듯한 거짓말, 변장', intimidation: '위압하거나 위협해서 따르게 하기', performance: '연기, 이야기, 음악, 춤', persuasion: '정직하고 예의 바르게 설득하기' };
   const S = {
+    SKILL_D, RAW_CLS,
     WEAPON, ARMOR, SHIELD, PROP_N, MASTERY, CAT_N, CLS, BG, SPECIES, ALL18, RANGE_CAP: 8,
     // 배경: 재주에 맞는 배경을 찾고, 없으면 사람마다 고정
     bg(m) { if (m.bg && BG[m.bg]) return m.bg; const keys = Object.keys(BG), hit = keys.filter(k => BG[k].feat === m.feat); m.bg = (hit.length ? hit : keys)[seed(m, 11) % (hit.length || keys.length)]; return m.bg; },

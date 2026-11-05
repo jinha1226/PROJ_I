@@ -228,6 +228,7 @@ G.Event = (() => {
   // 지형을 건드리지 않고 방마다 태그 하나 (시즌 × 층 × 방 번호 — 다시 와도 같다)
   function tagMap(f, m) {
     if (m.tagged || !m.rooms) return; m.tagged = true;
+    if (m.fixed) { m.rooms.forEach((r, i) => { r.ri = i; }); return; } // 시나리오 지도는 방 태그가 정해져 있다
     const T = THEMES[f.front] || THEMES.def; // 지도 생성기를 정하는 것과 같은 값 (G.Region.of)
     m.rooms.forEach((r, i) => { r.ri = i; r.tags = [T[Math.floor(rng(f, f.floor, 'tag', i)() * T.length)]]; if (m.theme !== 'swamp' && r !== m.end && i > 0 && exits(m, r) === 1) r.tags.push('deadend'); });
   }
@@ -255,7 +256,7 @@ G.Event = (() => {
   const Ev = {
     LIST, BY, NAMES, tagRooms, tagMap, rng, candidates, chainOf, pending, exits,
     // 지금 서 있는 방의 이름 (화면 위쪽)
-    nameAt(rt, e) { const r = e && rt.map?.rooms?.find(q => q.tags && F().inRoom(q, e)); return r ? NAMES[r.tags[0]] : ''; },
+    nameAt(rt, e) { const r = e && rt.map?.rooms?.find(q => q.tags && F().inRoom(q, e)); return r ? r.title || NAMES[r.tags[0]] : ''; },
     // 층을 세울 때 (G.Flow): 빈 방 중에서 사건 자리를 정한다. 파티는 그 방에 들른다 (빈 방은 원래 지나치지 않으면 안 들어간다)
     plan(f, rt, rooms, room) {
       tagRooms(f, rt);
@@ -365,7 +366,7 @@ G.Event = (() => {
       relic(f, rt, q) { const at = q || rt.hero; G.Trinket.drop(f, rt, 'chest', at.x, at.y); },
       stress(f, rt, q, n) { for (const p of ST().living(rt)) ST().stress(f, rt, p, n); },
       heat(f, rt, q, n) { f.heat = Math.min(ST().dmOf(f).max, (f.heat || 0) + n); },
-      rest(f, rt) { for (const p of ST().living(rt)) { p.hp = Math.min(p.max, p.hp + p.max * ST().REST_HP); ST().stress(f, rt, p, -ST().REST_RELIEF); } },
+      rest(f, rt) { G.Res.shortRest(rt, ST().living(rt)); for (const p of ST().living(rt)) { p.hp = Math.min(p.max, p.hp + p.max * ST().REST_HP); ST().stress(f, rt, p, -ST().REST_RELIEF); } },
       scout(f, rt) { for (const r of rt.map.rooms) if (r.ambush) { r.ambush = false; G.Sight.revealRoom(rt, r); } const r = rt.map.rooms.find(q => !q.ent && !rt.seen[q.cy * rt.map.w + q.cx]); if (r) G.Sight.revealRoom(rt, r); },
       // 한 사람: 숨은 구덩이 표. 천장 · 독침은 전원 민첩 내성 (SRD)
       one(f, rt, q, tb, s) { const p = q && !q.dead ? q : U.pick(ST().living(rt)); if (p) Ev.hit(f, rt, p, DN().dice(FALL[tier(p.merc.lv)], s)); },

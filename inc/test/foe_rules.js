@@ -2,7 +2,7 @@
 // 몬스터 역할 · 특성 단위 검사: node test/foe_rules.js
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
-for (const n of ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'tree', 'trees', 'season', 'fantasy', 'rivals', 'guild', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'srd_spells', 'spells', 'traits', 'options', 'pools', 'srd_species', 'combo', 'events', 'tutorial', 'skill_nums', 'command', 'expedition', 'mission', 'explore', 'banter', 'sight', 'tactics', 'foe', 'region', 'res', 'turn', 'flow', 'story', 'state'])
+for (const n of ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'tree', 'trees', 'season', 'fantasy', 'rivals', 'guild', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'srd_spells', 'spells', 'traits', 'options', 'pools', 'srd_species', 'skill_ai', 'combo', 'events', 'tutorial', 'skill_nums', 'command', 'expedition', 'mission', 'explore', 'banter', 'sight', 'tactics', 'foe', 'region', 'scn_astral', 'res', 'turn', 'flow', 'story', 'state'])
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, FO = () => G.Foe; G.newState(); G.quiet = true;
 const f = G.S.w.fantasy, GD = G.Guild; GD.leader(f); f.leaderNew = false; f.lineup = ['archer', 'cleric', 'paladin'].map(c => { const m = GD.make(f, c, { lv: 7 }); f.mercs.push(m); return m.uid; }); G.Fantasy.syncAllies(f); f.floor = f.maxFloor = 8; f.checkpoint = f.start = 8; f.town = true; f.townT = 99;
@@ -148,10 +148,10 @@ f.front = 'undead'; let main = 0; for (let i = 0; i < 300; i++) { const b = G.D.
 // 기술도 표적 설정을 따른다
 // 자원 · 주문 (SRD)
 { const R = G.Res, cleric = f.mercs.find(m => m.cls === 'cleric'), pa2 = f.mercs.find(m => m.cls === 'paladin'), res1 = { slot: 1 }, res3 = { slot: 3 }; cleric.lv = 5; pa2.lv = 5; R.long(cleric); R.long(pa2);
-  ok('전투당 횟수: 가벼운 기술 3 · 큰 기술 1', R.usesOf(cleric, res1) === 3 && R.usesOf(cleric, res3) === 1);
-  ok('11레벨부터 +1', (() => { cleric.lv = 11; R.long(cleric); const v = R.usesOf(cleric, res3) === 2; cleric.lv = 5; R.long(cleric); return v; })());
-  ok('다 쓰면 못 쓰고, 전투가 시작되면 다시 찬다', (() => { R.pay(cleric, 'x', res3); const a = !R.can(cleric, 'x', res3); R.fightStart([{ merc: cleric }]); return a && R.can(cleric, 'x', res3); })());
-  ok('주문은 그 레벨의 가장 높은 레벨로 (클레릭 5레벨 = 3 · 팔라딘 5레벨 = 2)', R.castLevel(cleric, res1) === 3 && R.castLevel(pa2, res1) === 2);
+  ok('슬롯 표대로: 클레릭 5레벨 1레벨 이상 9 · 3레벨 2', R.usesOf(cleric, res1) === 9 && R.usesOf(cleric, res3) === 2);
+  ok('11레벨 슬롯', (() => { cleric.lv = 11; R.long(cleric); const v = R.usesOf(cleric, res3) === 9; cleric.lv = 5; R.long(cleric); return v; })());
+  ok('다 쓰면 못 쓰고, 전투로는 안 차고 긴 휴식에 찬다', (() => { R.pay(cleric, 'x', res3); R.pay(cleric, 'x', res3); const a = !R.can(cleric, 'x', res3); R.fightStart([{ merc: cleric }]); const b = !R.can(cleric, 'x', res3); R.long(cleric); return a && b && R.can(cleric, 'x', res3); })());
+  ok('남은 슬롯 중 낮은 것부터, 다 쓰면 높은 슬롯', (() => { const a = R.castLevel(cleric, res1) === 1; for (let i = 0; i < 4; i++) R.pay(cleric, 'x', res1); const b = R.castLevel(cleric, res1) === 2; R.long(cleric); return a && b; })());
   for (const q of rt.party) { q.dead = false; q.dying = null; q.hp = q.max; } 
   { const G1 = G.Skill.SK, c = rt.party.find(a => a.merc && a.merc.cls === 'cleric'), keep = cleric.skills; cleric.skills = ['sr_bless', 'sr_mhw', 'sr_gbolt', 'sr_sflame']; R.long(cleric); const mg = mon({ n: '산적', r: 'soldier' }, c.x + 1, c.y); mg.hp = mg.max = 9999; G.S.runTime += 1; const seen = [mg]; c.slotUsed = false; c.concK = null; c.hp = 1; c.lastBonus = null; c.lastSk = null;
     c.merc.sp = 'dwarf'; /* 종족 스킬이 먼저 나오지 않게 */ const rt0 = rt.turn; rt.turn = { round: 1 }; G.Skill.tick(f, rt, c, 0, seen, 1); ok('슬롯 주문은 추가 행동 첫 단계에 안 쓴다', !c.lastBonus); G.Skill.tick(f, rt, c, 0, seen); const a1 = c.lastSk, s1 = c.slotUsed; G.Skill.tick(f, rt, c, 0, seen, 2); ok('차례에 슬롯 주문 하나', a1 && s1 && !c.lastBonus);
@@ -161,7 +161,7 @@ f.front = 'undead'; let main = 0; for (let i = 0; i < 300; i++) { const b = G.D.
   ok('SRD 대조: 강타 · 속박의 일격은 추가 행동이고 맞힌 뒤에 붙는다', ['sr_smite', 'sr_searing', 'sr_ensnare'].every(k => G.Skill.kindOf(k) === '추가 행동' && G.Skill.SK[k].rider));
   { const pd = rt.party.find(a => a.merc && a.merc.cls === 'paladin'), keep = pd.merc.skills, rt0 = rt.turn; pd.merc.skills = ['sr_smite', 'sr_sap', 'sr_lay', 'sr_sof']; R.long(pd.merc); const mg = mon({ n: '산적', r: 'soldier' }, pd.x + 1, pd.y); mg.hp = mg.max = 5000; rt.turn = { round: 1, cur: pd }; pd.lastBonus = null; pd.slotUsed = false; pd.lastHitSk = null; const h0 = mg.hp; G.Skill.onHit(f, rt, pd, mg); ok('강타: 맞으면 추가 피해 · 추가 행동 · 슬롯 사용', mg.hp < h0 && pd.lastBonus === 'sr_smite' && pd.slotUsed); const h1 = mg.hp; G.Skill.onHit(f, rt, pd, mg); ok('강타: 차례에 한 번', mg.hp === h1); pd.lastHitSk = null; pd.lastBonus = 'sr_sof'; pd.slotUsed = false; const h2 = mg.hp; G.Skill.onHit(f, rt, pd, mg); ok('강타: 추가 행동을 이미 썼으면 못 쓴다', mg.hp === h2); rt.turn = rt0; pd.merc.skills = keep; R.long(pd.merc); rt.mons = rt.mons.filter(o => o !== mg); }
   ok('설명에 소모 칸이 붙는다', /^\[행동\]/.test(G.Skill.desc(cleric, 'sr_fireball')));
-  ok('설명에 전투당 횟수가 붙는다', /전투당 1번/.test(G.Skill.desc(cleric, 'sr_fireball')) && !/슬롯/.test(G.D.MSKILLS.sr_fireball.d));
+  ok('설명에 남은 횟수가 붙는다', /2번/.test(G.Skill.desc(cleric, 'sr_fireball')) && !/슬롯/.test(G.D.MSKILLS.sr_fireball.d));
   ok('집중: 새로 걸면 앞의 것이 끝난다', (() => { const c = rt.party.find(a => a.merc && a.merc.cls === 'cleric'), q = rt.party[0]; R.conc(c, 'bless'); R.concOn(c, q, 'bless', 100, { hit: 2.5 }); const a = G.Dnd.bon(q, 'bless'); R.conc(c, 'sof'); return a && !G.Dnd.bon(q, 'bless'); })());
   ok('종족은 저장된다', !!R.species(cleric) && R.SPECIES[R.species(cleric)]); cleric.lv = 7; pa2.lv = 7; R.long(cleric); R.long(pa2); }
 // 자리가 곧 행동

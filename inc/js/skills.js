@@ -19,17 +19,17 @@ G.Skill = (() => {
   const REACT = { sr_shield: 1, sr_rebuke: 1, sr_uncanny: 1, sr_deflect: 1, sr_cutting: 1, sr_retal: 1 }, AUTO_RES = { sr_shield: { slot: 1 }, sr_rebuke: { slot: 1 }, sr_indom: { long: 1 }, sr_luck: { long: 1 } };
   const Sk = {
     SK, pow, spellType, skillType,
-    // 설명 + 전투당 횟수
+    // 설명 + 횟수
     // 무엇을 소모하나: 행동 · 추가 행동 · 반응 · 늘 적용 (게임에서 실제로 쓰는 칸)
     kindOf: k => (D.MSKILLS[k]?.explore ? '탐험' : REACT[k] || SK[k]?.react ? '반응' : D.MSKILLS[k]?.passive ? '늘 적용' : SK[k]?.free ? '소모 없음' : SK[k]?.bonus ? '추가 행동' : '행동'),
     resOf: k => SK[k]?.res || AUTO_RES[k] || null,
-    desc(m, k) { const S = D.MSKILLS[k], R0 = Sk.resOf(k); const kd = Sk.kindOf(k); return `${kd === '늘 적용' || kd === '탐험' ? '' : `[${kd}] `}${S.d}${R0 ? ` · 전투당 ${G.Res.usesOf(m, R0, k)}번` : ''}`; },
+    desc(m, k) { const S = D.MSKILLS[k], R0 = Sk.resOf(k); const kd = Sk.kindOf(k); return `${kd === '늘 적용' || kd === '탐험' ? '' : `[${kd}] `}${S.d}${R0 ? ` · ${G.Res.usesOf(m, R0, k)}번` : ''}`; },
     // 동료 한 명: 열린 칸의 스킬 중 쿨다운이 끝났고 쓸 만한 것 하나 (한 번 쓰면 GAP초 쉰다)
     tick(f, rt, a, dt, seen, bonus) {
       if (G.Skill.persist && !bonus && dt) G.Skill.persist(f, rt, a, dt);
       if (!a.merc || a.dead) return;
       const pri = a.merc.skPri, rank = p => { if (SK[p]?.prio) return 1000 + SK[p].prio; const i = pri ? pri.indexOf(p) : -1; return i >= 0 ? 100 - i : G.Res.cost(a.merc, SK[p]?.res); }, dealt = p => { const t = spellType(p); if (!t || !seen.length) return 1; return Math.max(...seen.map(o => (o.stat ? G.Foe.typeK(o, t, a) + (t === 'fire' && G.Foe.needsFire(o) ? 2 : 0) : 1))); };
-      const list = G.Guild.active(a.merc).slice().sort((p, q) => rank(q) - rank(p) || dealt(q) - dealt(p)); // 사람이 정한 순서, 아니면 큰 것부터. 같으면 더 잘 드는 종류
+      const list = G.SkillAI && seen.length ? G.SkillAI.rank(G.Guild.active(a.merc), a, { f, rt, c: a, seen }, bonus) : G.Guild.active(a.merc).slice().sort((p, q) => rank(q) - rank(p) || dealt(q) - dealt(p)); // 상황마다 점수로 고른다 (G.SkillAI)
       for (const k of list) {
         const S = SK[k];
         const quick = bonus && S && !S.bonus && S.res && S.res.slot && G.Opt.can(a, 'sr_quicken'); // 주문 가속 (SRD): 주문을 추가 행동으로

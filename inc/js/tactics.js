@@ -6,7 +6,7 @@ G.Tactics = (() => {
   const DEPLOY_MOVE = 6, BOARD_GAP = 2, WALK_GAP = 1.5; // 진형 판 한 칸 = 바닥 2칸
   const cellOf = e => [Math.round(e.x), Math.round(e.y)];
   // 어려운 지형 (SRD): 얕은 물은 칸당 이동력 2. 헤엄치는 몬스터는 그대로
-  const stepCost = (m, e, x, y) => (m.c[y * m.w + x] === ',' && !e.stat?.swim && !(e.merc && (G.Opt.has(e, 'iv_ascend') || G.Opt.has(e, 'iv_depths') || G.Pool.of(e.merc) === 'x_acro' || G.Dnd.bsum(e, 'fly') > 0)) ? 2 : 1);
+  const stepCost = (m, e, x, y) => (m.c[y * m.w + x] === ',' && !e.stat?.swim && !(e.merc && (G.Opt.has(e, 'iv_ascend') || G.Opt.has(e, 'iv_depths') || G.Guild.skill(e.merc, 'x_acro') || G.Dnd.bsum(e, 'fly') > 0)) ? 2 : 1);
   const insertBy = (q, c) => { let i = q.length; while (i > 0 && q[i - 1][2] > c[2]) i--; q.splice(i, 0, c); }; // 앞쪽(처리한 곳)보다 뒤로만 끼운다: 비용이 커지기만 하므로 안전
   const fighters = rt => rt.party.filter(p => !p.dead || p.dying).concat(rt.mons.filter(o => o.hp > 0));
   const key = (m, x, y) => y * m.w + x;

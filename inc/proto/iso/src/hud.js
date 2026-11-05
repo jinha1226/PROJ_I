@@ -45,10 +45,10 @@ const SCH_IC = { fire: 's_fire_magic', cold: 's_ice_magic', lightning: 's_air_ma
 const skIcon = k => { const D = G.D.MSKILLS[k]; return G.DCSS.sk[k] || D?.ic || SCH_IC[D?.dt] || SCH_IC[D?.sch] || 's_cantrip'; };
 const KIND_C = { 행동: 'act', '추가 행동': 'bonus', 반응: 'react', '늘 적용': 'pas', '소모 없음': 'free', 탐험: 'explore' };
 function skShow(el, m, k) {
-  const D = G.D.MSKILLS[k], S0 = G.Skill.SK[k], rs = G.Skill.resOf(k), left = rs ? G.Res.usesOf(m, rs, k) - (G.Res.of(m).fu[k] || 0) : null, kind = G.Skill.kindOf(k), tags = [S0?.conc ? '집중' : '', G.D.SK_RANGE[k] ? `사거리 ${G.D.SK_RANGE[k]}` : ''].filter(Boolean).join(' · ');
+  const D = G.D.MSKILLS[k], S0 = G.Skill.SK[k], rs = G.Skill.resOf(k), left = rs ? G.Res.left(m, rs, k) : null, kind = G.Skill.kindOf(k), tags = [S0?.conc ? '집중' : '', G.D.SK_RANGE[k] ? `사거리 ${G.D.SK_RANGE[k]}` : ''].filter(Boolean).join(' · ');
   skTip.textContent = '';
   const h1 = document.createElement('b'); h1.textContent = D.n; const en = document.createElement('small'); en.textContent = D.en || ''; const kd = document.createElement('span'); kd.className = 'kind k-' + KIND_C[kind]; kd.textContent = kind === '늘 적용' || kind === '탐험' ? '' : kind; const ty = document.createElement('i'); ty.textContent = tags; const d = document.createElement('p'); d.textContent = D.d; skTip.append(h1, en, kd); if (tags) skTip.append(ty); skTip.append(d);
-  const lock = !G.Guild.active(m).includes(k); if (lock) { const u = document.createElement('em'); u.textContent = `Lv ${G.Guild.skLv(m.cls, k)}부터`; skTip.append(u); } else if (rs || !D.passive) { const u = document.createElement('em'); u.textContent = !rs ? '제한 없음' : f.town ? `전투당 ${G.Res.usesOf(m, rs)}번` : `이번 전투 ${left} / ${G.Res.usesOf(m, rs)}번`; skTip.append(u); }
+  const lock = !G.Guild.active(m).includes(k); if (lock) { const u = document.createElement('em'); u.textContent = `Lv ${G.Guild.skLv(m.cls, k)}부터`; skTip.append(u); } else if (rs || !D.passive) { const u = document.createElement('em'); u.textContent = !rs ? '제한 없음' : `${left} / ${G.Res.usesOf(m, rs, k)}`; skTip.append(u); }
   skTip.classList.remove('hidden');
   const a = el.getBoundingClientRect(), box = (el.closest('.pc, .cell') || el).getBoundingClientRect(), b = skTip.getBoundingClientRect(); // 카드 위로 띄워 이름 · 직업을 가리지 않는다
   skTip.style.left = Math.max(8, Math.min(innerWidth - b.width - 8, a.left + a.width / 2 - b.width / 2)) + 'px'; skTip.style.top = Math.max(8, box.top - b.height - 6) + 'px';
@@ -69,7 +69,7 @@ function skillRow(m, cls = '') {
 }
 function skillCounts(p, e) {
   const m = p.merc, row = e.querySelector('.sks'), fu = G.Res.of(m).fu; if (!row) return;
-  for (const b of row.children) { const c = b.querySelector('u'); if (!c) continue; const k = b.dataset.k, n = G.Res.usesOf(m, G.Skill.resOf(k)) - (fu[k] || 0), t = String(Math.max(0, n)); if (c.textContent !== t) { c.textContent = t; b.classList.toggle('none', n <= 0); } }
+  for (const b of row.children) { const c = b.querySelector('u'); if (!c) continue; const k = b.dataset.k, n = G.Res.left(m, G.Skill.resOf(k), k), t = String(Math.max(0, n)); if (c.textContent !== t) { c.textContent = t; b.classList.toggle('none', n <= 0); } }
 }
 // 원정 선택: 세력을 보고 전술을 맞춘 뒤 출발한다
 let briefFor = null;
@@ -116,8 +116,6 @@ function drawCrew(el) {
     const def = G.Guild.def(pick), head = mk('h4', '', pick.name || '단장'); head.append(mk('small', '', G.Res.SPECIES[G.Res.species(pick)].n + ' ' + def.n)); { const sb = mk('button', 'sheetbtn', '상세'); sb.onclick = () => openSheet(pick); head.append(sb); } side.append(head);
     side.append(mk('div', 'trait', G.Res.SPECIES[G.Res.species(pick)].d));
     side.append(mk('small', 'sk-h' + ((pick.stress || 0) >= 70 ? ' hot' : ''), `스트레스 ${Math.round(pick.stress || 0)} / 100`)); if (TU.brief(f, 'order')) { const o0 = skillRow(pick, 'pri'); if (TU.newInBrief(f, 'order')) o0.classList.add('t-new'); side.append(o0); }
-    { const xk = G.Pool.of(pick), all = G.Pool.can(pick); if (all.length && TU.brief(f, 'explore')) { const w = mk('div', 'traits' + (TU.newInBrief(f, 'explore') ? ' t-new' : '')); w.append(mk('small', '', '탐험')); const r = document.createElement('div'); r.className = 'sks'; for (const k of all) { const D = G.D.MSKILLS[k], b = document.createElement('i'); b.className = 'sk k-explore' + (k === xk ? ' sel' : ' off'); b.dataset.k = k; b.setAttribute('aria-label', D.n); b.tabIndex = 0; const im = document.createElement('img'); im.alt = ''; im.src = `dcss/${skIcon(k)}.png`; b.append(im); b.onpointerenter = () => skShow(b, pick, k); b.onpointerleave = () => skTip.classList.add('hidden'); b.onfocus = () => skShow(b, pick, k); b.onblur = () => skTip.classList.add('hidden'); b.onclick = () => { G.Pool.set(pick, k); skTip.classList.add('hidden'); briefFor = null; drawBrief(); }; r.append(b); } w.append(r); side.append(w); } }
-    { const xs = r0party(f).map(m => G.Pool.of(m)).filter(Boolean); if (xs.length) side.append(mk('small', 'sk-h', [...new Set(xs)].map(k => G.D.MSKILLS[k].n).join(' · '))); }
     { const tr = G.Guild.traits(pick); if (tr.length && TU.brief(f, 'order')) { const t2 = mk('div', 'traits'); t2.append(mk('small', '', '특성')); const r2 = document.createElement('div'); r2.className = 'sks'; for (const k of tr) { const b = document.createElement('i'); b.className = 'sk k-' + KIND_C[G.Skill.kindOf(k)]; b.dataset.k = k; const im = document.createElement('img'); im.alt = ''; im.src = `dcss/${skIcon(k)}.png`; b.append(im); b.onpointerenter = () => skShow(b, pick, k); b.onpointerleave = () => skTip.classList.add('hidden'); r2.append(b); } t2.append(r2); side.append(t2); } }
     if (TU.brief(f, 'target')) { side.append(mk('div', 'stance', T.stance(pick)));
     const now = T.of({ merc: pick }).target, row = mk('div', 'presets' + (TU.newInBrief(f, 'target') ? ' t-new' : ''));

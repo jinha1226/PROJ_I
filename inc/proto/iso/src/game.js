@@ -28,7 +28,8 @@ f.floor = f.maxFloor = startFl; f.checkpoint = f.start = startFl; f.town = true;
 f.dmStyle = q.get('dm') || 'steady';
 f.autoGo = false; // 출발은 원정 선택에서 (?go=1이면 바로)
 // 주소에 시험용 값이 없으면 새 게임: 튜토리얼로 시작한다
-const TUT_ON = q.get('tut') || !['lv', 'fl', 'crew', 'go', 'scene'].some(k => q.get(k));
+if (q.get('front')) f.frontLock = f.front = q.get('front');
+const TUT_ON = q.get('tut') || !['lv', 'fl', 'crew', 'go', 'scene', 'front'].some(k => q.get(k));
 if (TUT_ON) { f.mercs = []; G.Tut.start(f, G.Fantasy.rt(f)); } else if (q.get('go')) G.Exp.depart(f, G.Fantasy.rt(f));
 const rt = () => G.Fantasy.rt(f);
 G.isoFx = (id, ex, ey, o) => pfx(id, wx(ex), wy(ey), (o && o.z) || 0, o || {});

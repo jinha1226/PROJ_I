@@ -37,7 +37,7 @@ G.Opt = (() => {
   iv('iv_repel', '밀쳐내는 폭발', 'Repelling Blast', 2, '섬뜩한 폭발이 맞으면 2칸 밀침');
   iv('iv_vigor', '악마의 활력', 'Fiendish Vigor', 2, '전투 시작: 임시 체력 12', { free: true, when: (c, x) => H.W.fight(c, x) && !(c.thp > 0) && once(c, x, 'iv_vigor'), run(c, x) { c.thp = Math.max(c.thp || 0, 12 * c.max / Math.max(1, DN.srdHP(c.merc))); H.ring(x, c, 0.9, '#9fe79f'); } });
   iv('iv_gaze', '두 정신의 응시', 'Gaze of Two Minds', 5, '곁의 동료 자리에서 주문 사거리를 잰다');
-  iv('iv_shadow', '그림자와 하나', 'One with Shadows', 5, '체력 절반 아래: 투명 (전투당 한 번)', { prio: 3, when: (c, x) => c.hp < c.max * 0.5 && !DN.bon(c, 'iv_shadow') && !G.Res.of(c.merc).fu.iv_shadow, run(c, x) { G.Res.of(c.merc).fu.iv_shadow = 1; DN.buff(c, 'iv_shadow', R6(10), { hitDis: 1, adv: 1 }); H.ring(x, c, 0.9, '#6a5a9a'); } });
+  iv('iv_shadow', '그림자와 하나', 'One with Shadows', 5, '체력 절반 아래: 투명 (휴식까지 한 번)', { prio: 3, when: (c, x) => c.hp < c.max * 0.5 && !DN.bon(c, 'iv_shadow') && !G.Res.of(c.merc).fu.iv_shadow, run(c, x) { G.Res.of(c.merc).fu.iv_shadow = 1; DN.buff(c, 'iv_shadow', R6(10), { hitDis: 1, adv: 1 }); H.ring(x, c, 0.9, '#6a5a9a'); } });
   iv('iv_eye', '머나먼 세계의 환영', 'Visions of Distant Realms', 9, '전투 시작: 주변 12칸을 밝힌다', { free: true, when: (c, x) => H.W.fight(c, x) && once(c, x, 'iv_eye'), run(c, x) { G.Skill.reveal(x.rt, c.x, c.y, 12); H.ring(x, c, 2, '#c9a6ff'); } });
   iv('iv_witch', '마녀의 눈', 'Witch Sight', 15, '적의 투명이 내 공격에 통하지 않음');
   iv('iv_alert', '태고의 가르침: 경계', 'Lessons of the First Ones', 2, '선제권 + 숙련');
@@ -47,7 +47,7 @@ G.Opt = (() => {
   iv('iv_devour', '삼키는 칼날', 'Devouring Blade', 12, '계약 무기 공격 3번', null, { need: 'iv_thirst' });
   iv('iv_life', '생명을 마시는 자', 'Lifedrinker', 9, '차례에 한 번 명중 +1d6 사령 · 체력 d8 + 건강 회복 (전투당 2번)', null, { need: 'iv_pblade' });
   iv('iv_cmaster', '사슬 주인의 권능', 'Investment of the Chain Master', 5, '사역마도 공격: 1d6 + 3 광휘', null, { need: 'iv_pchain' });
-  iv('iv_protect', '수호자의 선물', 'Gift of the Protectors', 9, '동료가 쓰러질 때 1로 버팀 (전투당 한 번)', null, { need: 'iv_ptome' });
+  iv('iv_protect', '수호자의 선물', 'Gift of the Protectors', 9, '동료가 쓰러질 때 1로 버팀 (휴식까지 한 번)', null, { need: 'iv_ptome' });
   const PACTS = ['iv_pblade', 'iv_pchain', 'iv_ptome'];
   const petOf = (c, k) => (c.pe || []).some(e => e.sum === k);
   function chainTick(x, c) {
@@ -56,7 +56,7 @@ G.Opt = (() => {
   }
 
   // ── 메타매직 ── Careful Spell은 뺐다: 이 게임의 주문은 처음부터 동료를 맞히지 않는다
-  const M = 'mage', mm = (k, n, en, cost, d) => { reg(k, n, en, M, 2, `전투당 ${cost === 1 ? 3 : 2}번 · ${d}`, null, { mm: cost }); LIST.mm.push(k); LV[k] = 2; };
+  const M = 'mage', mm = (k, n, en, cost, d) => { reg(k, n, en, M, 2, `마력 ${cost} · ${d}`, null, { mm: cost }); LIST.mm.push(k); LV[k] = 2; };
   mm('sr_quicken', '주문 가속', 'Quickened Spell', 2, '주문을 추가 행동으로');
   mm('sr_twin', '쌍둥이 주문', 'Twinned Spell', 1, '한 명 주문이 둘에게');
   mm('mm_distant', '먼 주문', 'Distant Spell', 1, '닿는 적이 없으면 사거리 2배');
@@ -160,7 +160,7 @@ G.Opt = (() => {
       return list;
     },
     has: (a, k) => !!a.merc && Opt.of(a.merc).includes(k),
-    // ── 메타매직: 다른 기술과 같은 전투당 횟수 (SRD 포인트 1 = 가벼움 3번 · 2 = 보통 2번) ──
+    // ── 메타매직: SRD 마력 점수 (소서러 레벨) ──
     mmRes: k => ({ focus: D.MSKILLS[k].mm }),
     can: (a, k) => Opt.has(a, k) && G.Res.can(a.merc, k, Opt.mmRes(k)),
     pay(a, k) { G.Res.pay(a.merc, k, Opt.mmRes(k)); },

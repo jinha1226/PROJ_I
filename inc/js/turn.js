@@ -107,7 +107,7 @@ G.Turn = (() => {
   const big = o => !!(o.major || o.chief || o.boss);
   const foes = rt => rt.mons.filter(o => o.aggro && !o.flee); // 누구와 싸울지는 G.Flow가 aggro로 정한다
   const rt0 = () => G.RT.fantasy;
-  const initOf = (f, e) => { const nat = DN().d20(e.merc ? (G.Trinket.has(e.merc, 'init') || F().sk(e, 'ft_athlete') || G.Pool.of(e.merc) === 'x_feral' ? 1 : 0) : rt0()?.sneaked ? -1 : 0); return { e, nat, init: nat + dex(f, e) + (e.merc && F().sk(e, 'ft_jack') ? Math.floor(DN().prof(e.merc.lv) / 2) : 0) }; };
+  const initOf = (f, e) => { const nat = DN().d20(e.merc ? (G.Trinket.has(e.merc, 'init') || F().sk(e, 'ft_athlete') || F().sk(e, 'sr_feral') ? 1 : 0) : rt0()?.sneaked ? -1 : 0); return { e, nat, init: nat + dex(f, e) + (e.merc && F().sk(e, 'ft_jack') ? Math.floor(DN().prof(e.merc.lv) / 2) : 0) }; };
 
   function begin(f, rt) {
     const list = foes(rt);

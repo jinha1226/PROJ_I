@@ -718,126 +718,126 @@
 "level": 3,
 "prof_bonus": "+2",
 "features": "Deflect Attacks, Monk Subclass",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d6\", \"Focus Points\": \"3\", \"Unarmored Movement\": \"+10 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 4,
 "prof_bonus": "+2",
 "features": "Ability Score Improvement, Slow Fall",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d6\", \"Focus Points\": \"4\", \"Unarmored Movement\": \"+10 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 5,
 "prof_bonus": "+3",
 "features": "Extra Attack, Stunning Strike",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d8\", \"Focus Points\": \"5\", \"Unarmored Movement\": \"+10 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 6,
 "prof_bonus": "+3",
 "features": "Empowered Strikes, Subclass feature",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d8\", \"Focus Points\": \"6\", \"Unarmored Movement\": \"+15 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 7,
 "prof_bonus": "+3",
 "features": "Evasion",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d8\", \"Focus Points\": \"7\", \"Unarmored Movement\": \"+15 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 8,
 "prof_bonus": "+3",
 "features": "Ability Score Improvement",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d8\", \"Focus Points\": \"8\", \"Unarmored Movement\": \"+15 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 9,
 "prof_bonus": "+4",
 "features": "Acrobatic Movement",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d8\", \"Focus Points\": \"9\", \"Unarmored Movement\": \"+15 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 10,
 "prof_bonus": "+4",
 "features": "Heightened Focus, Self-Restoration",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d8\", \"Focus Points\": \"10\", \"Unarmored Movement\": \"+20 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 11,
 "prof_bonus": "+4",
 "features": "Subclass feature",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d10\", \"Focus Points\": \"11\", \"Unarmored Movement\": \"+20 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 12,
 "prof_bonus": "+4",
 "features": "Ability Score Improvement",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d10\", \"Focus Points\": \"12\", \"Unarmored Movement\": \"+20 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 13,
 "prof_bonus": "+5",
 "features": "Deflect Energy",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d10\", \"Focus Points\": \"13\", \"Unarmored Movement\": \"+20 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 14,
 "prof_bonus": "+5",
 "features": "Disciplined Survivor",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d10\", \"Focus Points\": \"14\", \"Unarmored Movement\": \"+25 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 15,
 "prof_bonus": "+5",
 "features": "Perfect Focus",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d10\", \"Focus Points\": \"15\", \"Unarmored Movement\": \"+25 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 16,
 "prof_bonus": "+5",
 "features": "Ability Score Improvement",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d10\", \"Focus Points\": \"16\", \"Unarmored Movement\": \"+25 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 17,
 "prof_bonus": "+6",
 "features": "Subclass feature",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d12\", \"Focus Points\": \"17\", \"Unarmored Movement\": \"+25 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 18,
 "prof_bonus": "+6",
 "features": "Superior Defense",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d12\", \"Focus Points\": \"18\", \"Unarmored Movement\": \"+30 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 19,
 "prof_bonus": "+6",
 "features": "Epic Boon",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d12\", \"Focus Points\": \"19\", \"Unarmored Movement\": \"+30 ft.\"}"
 },
 {
 "class": "Monk",
 "level": 20,
 "prof_bonus": "+6",
 "features": "Body and Mind",
-"columns": "{\"Martial Arts\": \"\", \"Focus Points\": \"\", \"Unarmored Movement\": \"\"}"
+"columns": "{\"Martial Arts\": \"1d12\", \"Focus Points\": \"20\", \"Unarmored Movement\": \"+30 ft.\"}"
 },
 {
 "class": "Paladin",
@@ -1271,133 +1271,133 @@
 "level": 2,
 "prof_bonus": "+2",
 "features": "Font of Magic, Metamagic",
-"columns": "{\"Sorcery Points\": \"2\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"2\", \"Cantrips\": \"4\", \"Prepared Spells\": \"4\", \"1\": \"3\", \"2\": \"—\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 3,
 "prof_bonus": "+2",
 "features": "Sorcerer Subclass",
-"columns": "{\"Sorcery Points\": \"3\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"3\", \"Cantrips\": \"4\", \"Prepared Spells\": \"6\", \"1\": \"4\", \"2\": \"2\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 4,
 "prof_bonus": "+2",
 "features": "Ability Score Improvement",
-"columns": "{\"Sorcery Points\": \"4\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"4\", \"Cantrips\": \"5\", \"Prepared Spells\": \"7\", \"1\": \"4\", \"2\": \"3\", \"3\": \"—\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 5,
 "prof_bonus": "+3",
 "features": "Sorcerous Restoration",
-"columns": "{\"Sorcery Points\": \"5\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"5\", \"Cantrips\": \"5\", \"Prepared Spells\": \"9\", \"1\": \"4\", \"2\": \"3\", \"3\": \"2\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 6,
 "prof_bonus": "+3",
 "features": "Subclass feature",
-"columns": "{\"Sorcery Points\": \"6\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"6\", \"Cantrips\": \"5\", \"Prepared Spells\": \"10\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"—\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 7,
 "prof_bonus": "+3",
 "features": "Sorcery Incarnate",
-"columns": "{\"Sorcery Points\": \"7\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"7\", \"Cantrips\": \"5\", \"Prepared Spells\": \"11\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"1\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 8,
 "prof_bonus": "+3",
 "features": "Ability Score Improvement",
-"columns": "{\"Sorcery Points\": \"8\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"8\", \"Cantrips\": \"5\", \"Prepared Spells\": \"12\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"2\", \"5\": \"—\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 9,
 "prof_bonus": "+4",
 "features": "—",
-"columns": "{\"Sorcery Points\": \"9\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"9\", \"Cantrips\": \"5\", \"Prepared Spells\": \"14\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"1\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 10,
 "prof_bonus": "+4",
 "features": "Metamagic",
-"columns": "{\"Sorcery Points\": \"10\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"10\", \"Cantrips\": \"6\", \"Prepared Spells\": \"15\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"—\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 11,
 "prof_bonus": "+4",
 "features": "—",
-"columns": "{\"Sorcery Points\": \"11\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"11\", \"Cantrips\": \"6\", \"Prepared Spells\": \"16\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 12,
 "prof_bonus": "+4",
 "features": "Ability Score Improvement",
-"columns": "{\"Sorcery Points\": \"12\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"12\", \"Cantrips\": \"6\", \"Prepared Spells\": \"16\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"—\", \"8\": \"—\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 13,
 "prof_bonus": "+5",
 "features": "—",
-"columns": "{\"Sorcery Points\": \"13\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"13\", \"Cantrips\": \"6\", \"Prepared Spells\": \"17\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"—\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 14,
 "prof_bonus": "+5",
 "features": "Subclass feature",
-"columns": "{\"Sorcery Points\": \"14\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"14\", \"Cantrips\": \"6\", \"Prepared Spells\": \"17\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"—\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 15,
 "prof_bonus": "+5",
 "features": "—",
-"columns": "{\"Sorcery Points\": \"15\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"15\", \"Cantrips\": \"6\", \"Prepared Spells\": \"18\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 16,
 "prof_bonus": "+5",
 "features": "Ability Score Improvement",
-"columns": "{\"Sorcery Points\": \"16\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"16\", \"Cantrips\": \"6\", \"Prepared Spells\": \"18\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"—\"}"
 },
 {
 "class": "Sorcerer",
 "level": 17,
 "prof_bonus": "+6",
 "features": "Metamagic",
-"columns": "{\"Sorcery Points\": \"17\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"17\", \"Cantrips\": \"6\", \"Prepared Spells\": \"19\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"2\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
 },
 {
 "class": "Sorcerer",
 "level": 18,
 "prof_bonus": "+6",
 "features": "Subclass feature",
-"columns": "{\"Sorcery Points\": \"18\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"18\", \"Cantrips\": \"6\", \"Prepared Spells\": \"20\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"1\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
 },
 {
 "class": "Sorcerer",
 "level": 19,
 "prof_bonus": "+6",
 "features": "Epic Boon",
-"columns": "{\"Sorcery Points\": \"19\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"19\", \"Cantrips\": \"6\", \"Prepared Spells\": \"21\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"2\", \"7\": \"1\", \"8\": \"1\", \"9\": \"1\"}"
 },
 {
 "class": "Sorcerer",
 "level": 20,
 "prof_bonus": "+6",
 "features": "Arcane Apotheosis",
-"columns": "{\"Sorcery Points\": \"20\", \"Cantrips\": \"\", \"Prepared Spells\": \"\", \"1\": \"\", \"2\": \"\", \"3\": \"\", \"4\": \"\", \"5\": \"\", \"6\": \"\", \"7\": \"\", \"8\": \"\", \"9\": \"\"}"
+"columns": "{\"Sorcery Points\": \"20\", \"Cantrips\": \"6\", \"Prepared Spells\": \"22\", \"1\": \"4\", \"2\": \"3\", \"3\": \"3\", \"4\": \"3\", \"5\": \"3\", \"6\": \"2\", \"7\": \"2\", \"8\": \"1\", \"9\": \"1\"}"
 },
 {
 "class": "Warlock",

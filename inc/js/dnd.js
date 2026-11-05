@@ -163,7 +163,7 @@ G.Dnd = (() => {
     // 숙련 (출신 재주): 셋 다 숙련
     // 기술: 능력 수정치 + 숙련(직업 · 배경 · 종족 · 재주) · 전문가는 두 배
     profs: m => m.profO || G.SRD.profs(m, G.Res.species(m)), // profO: 시험용 고정
-    skill(m, sk) { const xk = G.Pool.skillK(m, sk), pr = N.prof(m.lv), own = N.profs(m).includes(sk), ex = !m.profO && G.SRD.expert(m, G.Res.species(m)).includes(sk); return N.mod(N.ab(m)[SKILL_AB[sk]]) + Math.max(xk * pr, own ? (ex ? 2 : 1) * pr : 0, m.cls === 'bard' && m.lv >= 2 ? Math.floor(pr / 2) : 0) + G.SRD.orderBonus(m, sk, N.mod(N.ab(m).wis)); }, // 바드 만능 재주꾼: 숙련 없는 기술에 절반
+    skill(m, sk) { const pr = N.prof(m.lv), own = N.profs(m).includes(sk), ex = !m.profO && G.SRD.expert(m, G.Res.species(m)).includes(sk); return N.mod(N.ab(m)[SKILL_AB[sk]]) + Math.max(own ? (ex ? 2 : 1) * pr : 0, m.cls === 'bard' && m.lv >= 2 ? Math.floor(pr / 2) : 0) + G.SRD.orderBonus(m, sk, N.mod(N.ab(m).wis)); }, // 바드 만능 재주꾼: 숙련 없는 기술에 절반
     // 방치형이라 파티에서 가장 잘하는 사람이 굴린다 (그 사람을 함께 돌려준다)
     best(list, sk) { let b = null, v = -99; for (const m of list) { const s = N.skill(m, sk) + (N.reliable(m) ? 5 : 0); if (s > v) { v = s; b = m; } } return { m: b, v }; },
     // 로그 믿음직한 재능 (Reliable Talent): 숙련 판정은 10 아래로 굴리지 않는다 — 방치형 판정에서는 +5로

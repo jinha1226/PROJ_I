@@ -26,9 +26,9 @@ def order(ls, width):
     # 두 단에 걸친 표: 같은 기준선에 왼쪽 · 오른쪽 표 글자가 있고, 오른쪽 위에 따로 표 제목이 없으면 한 표
     wide = set(); tl = [l for l in ls if is_table(l)]; ly = {round(l['y0'] / 3) for l in tl if l['x0'] < mid}; ry = {round(l['y0'] / 3) for l in tl if l['x0'] >= mid}; both = sorted(ly & ry); grp = []
     for y in both + [None]:
-        if grp and (y is None or y - grp[-1] > 8):
+        if grp and (y is None or y - grp[-1] > 14):
             top = grp[0] * 3
-            own = any(l['f'] in HEAD and l['x0'] >= mid and top - 60 <= l['y0'] <= grp[-1] * 3 for l in ls)
+            own = any(l['f'] == ('GillSans-SemiBold', 10.5) and l['x0'] >= mid and top - 60 <= l['y0'] <= grp[-1] * 3 for l in ls)  # 오른쪽에 따로 표 제목
             hl = any(l['hdr'] and l['x0'] < mid and top - 48 <= l['y0'] <= grp[-1] * 3 for l in tl); hr = any(l['hdr'] and l['x0'] >= mid and top - 48 <= l['y0'] <= grp[-1] * 3 for l in tl)
             if not own and hl and hr and len(grp) >= 2: wide |= set(grp)
             grp = []
@@ -80,8 +80,11 @@ def build_table(rows, prev=None):
             for c in cs:
                 n = sum(1 for h in head if c[0] < h[1] + 2 and c[1] > h[0] - 2)
                 if n <= 1: head.append(c)
-    by = collections.defaultdict(list)
-    for r in rows: by[round(r['y0'] / 3)].append(r)
+    # 줄: 기준선이 2.5 안이면 같은 줄 (반올림 칸에 걸려 한 줄이 갈라지지 않게)
+    by = collections.defaultdict(list); lastY = None; key = 0
+    for r in sorted(rows, key=lambda r: r['y0']):
+        if lastY is None or r['y0'] - lastY > 2.5: key += 1
+        lastY = r['y0']; by[key].append(r)
     ys = sorted(by)
     cols = []  # [x0, x1]
     for c in sorted(head, key=lambda c: c[0]):

@@ -199,7 +199,7 @@ G.Fantasy = (() => {
     newFloor(f, rt) {
       // 떠나는 층의 지도 지식을 남기고, 이 시즌의 같은 층은 같은 모양으로 (G.Season)
       G.Season.save(f, rt);
-      const fl = f.floor, boss = F.isBoss(fl) && !G.Region.of(f), rooms = F.rooms(fl), rng = G.Season.rng(f, fl), [mw, mh] = F.dims(fl), reg = G.Region.of(f), m = reg ? reg.gen(mw, mh, rng) : GR.halls(mw, mh, Math.ceil(rooms * HALL_K), LOOPS, rng);
+      const fl = f.floor, boss = F.isBoss(fl) && !G.Region.of(f), rooms = F.rooms(fl), rng = G.Season.rng(f, fl), [mw, mh] = F.dims(fl), reg = G.Region.of(f), m = reg ? reg.gen(mw, mh, rng, f) : GR.halls(mw, mh, Math.ceil(rooms * HALL_K), LOOPS, rng);
       rt.map = m;
       rt.mons = [];
       rt.chests = [];

@@ -176,12 +176,12 @@ G.D.FEATS = {
 })();
 // 성격 (DESIGN.md 42): 축 셋(용기 · 욕심 · 싸움)에 둘씩. 한 사람은 0~2개, 같은 축에서는 하나만. ic = 머리 위 기호(ni_<ic>)
 G.D.PERSONA = {
-  hot: { n: '다혈질', ax: 'nerve', ic: 'pe_hot', d: '먼저 돌진 · 첫 타 ×1.5' },
-  coward: { n: '겁쟁이', ax: 'nerve', ic: 'pe_coward', d: '체력 30% · 3초 후퇴' },
-  greedy: { n: '욕심쟁이', ax: 'greed', ic: 'pe_greedy', d: '귀환 기준 -10%p' },
-  careful: { n: '신중', ax: 'greed', ic: 'pe_careful', d: '귀환 기준 +10%p' },
-  brawler: { n: '싸움꾼', ax: 'fight', ic: 'pe_brawler', d: '맞서기 라이벌에게 먼저 덤빔' },
-  meek: { n: '온순', ax: 'fight', ic: 'pe_meek', d: '라이벌전 빠짐 · 노려지지 않음' },
+  hot: { n: '다혈질', ax: 'nerve', ic: 'pe_hot', d: '선제권 +3 · 첫 라운드 공격 ×1.5' },
+  coward: { n: '겁쟁이', ax: 'nerve', ic: 'pe_coward', d: '체력 35% 미만 시 4칸 후퇴 · 그 차례 공격 안 함' },
+  greedy: { n: '욕심쟁이', ax: 'greed', ic: 'pe_greedy', d: '귀환 기준 −10%p · 2라운드부터 35% 확률로 금화 줍느라 차례 소모' },
+  careful: { n: '신중', ax: 'greed', ic: 'pe_careful', d: '귀환 기준 +10%p · 체력 50% 미만 시 방어: 다음 피해 절반' },
+  brawler: { n: '싸움꾼', ax: 'fight', ic: 'pe_brawler', d: '1~2라운드에 체력이 가장 높은 적을 노림' },
+  meek: { n: '온순', ax: 'fight', ic: 'pe_meek', d: '뒤쪽 대열 · 라이벌의 표적에서 빠짐' },
 };
 // 개인 기술 (DESIGN.md 43 · 56): 아래 SRD 목록이 전부. 쿨다운은 없다 (자원은 G.Skill.SK의 res) 배율이라 이름을 나눴다.
 // 출처 표기 (SRD 5.2.1 CC-BY-4.0가 요구하는 문구 그대로. NOTICE.md와 같다)
@@ -405,7 +405,7 @@ G.D.BOONS = {
   dimension: { n: '차원 여행의 은혜', en: 'Boon of Dimensional Travel', t: 'a_escape', d: '공격 뒤 6칸 순간 이동', pref: ['rogue', 'monk', 'scout'] },
   fate: { n: '운명의 은혜', en: 'Boon of Fate', t: 'ui_star', d: '실패한 내성에 2d4 (전투 1번)', pref: ['bard', 'cleric', 'paladin'] },
   irresistible: { n: '불가항력 공격의 은혜', en: 'Boon of Irresistible Offense', t: 'b_fury', d: '물리 저항 무시 · 20에 능력치만큼 피해', pref: ['rogue', 'archer', 'dragoon', 'barbarian'] },
-  recall: { n: '주문 회상의 은혜', en: 'Boon of Spell Recall', t: 'fx_zap', d: '기술마다 전투당 +1번', pref: ['archmage', 'mage', 'warlock', 'cleric', 'scout'] },
+  recall: { n: '주문 회상의 은혜', en: 'Boon of Spell Recall', t: 'fx_zap', d: '주문 슬롯 +1번', pref: ['archmage', 'mage', 'warlock', 'cleric', 'scout'] },
   night: { n: '밤의 영혼의 은혜', en: 'Boon of the Night Spirit', t: 'v_warlock', d: '어둠에서 정신 · 광휘 외 피해 저항', pref: ['warlock', 'rogue', 'monk'] },
   truesight: { n: '진시안의 은혜', en: 'Boon of Truesight', t: 'u_scout', d: '어둠 · 투명을 꿰뚫어 봄', pref: ['archer', 'mage', 'archmage', 'bard'] },
 };

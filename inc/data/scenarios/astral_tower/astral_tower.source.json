@@ -1,0 +1,552 @@
+{
+ "schema_version": "0.3.0",
+ "layer": "source",
+ "source": {
+  "id": "SRC-ASTRAL-TOWER",
+  "title": "The Astral Tower",
+  "creator": "Doomed Zone",
+  "url": "https://doomedzone.itch.io/the-astral-tower",
+  "rules_system": "Knave 2e",
+  "pdf_pages": 8,
+  "pdf_file": "Astral_Tower.pdf",
+  "license": {
+   "text": "CC0 1.0 (LICENSE 파일 · PDF 8쪽)",
+   "not_covered": [
+    {
+     "asset": "Dungeon Scrawl 지도: Angry Golem Games, Daniel F. Walthall 에셋",
+     "license": "CC BY-NC 4.0",
+     "use": "금지"
+    },
+    {
+     "asset": "Dungeon Scrawl 지도: Mark Gosbell 에셋",
+     "license": "CC0 1.0",
+     "use": "가능"
+    },
+    {
+     "asset": "표지 · 배경 이미지 (DALL-E 2)",
+     "license": "AI 생성",
+     "use": "사용 안 함"
+    }
+   ],
+   "rule": "글만 쓴다. 지도 그림과 이미지는 쓰지 않는다."
+  }
+ },
+ "summary": {
+  "pdf_pages": [
+   1
+  ],
+  "epigraph": "Adrift upon the boundless Etheric Sea, the Celestial Bodies move in accord with the Cosmic Currents, which are borne forth by the breath of divine agents, stirring mighty winds. Each Celestial Orb is, in truth, a vessel containing a slumbering godling, much akin to an egg. The steady course of their ethereal drifting doth preserve the peace of these unborn divinities, holding them in gentle repose. Yet, should these sacred beings awaken and emerge in their full divinity, a Great Reckoning shall befall, and with it, our world wouldst be brought to ruination.",
+  "text": "Located roughly 5 million miles from the planet's surface, the abandoned Tower of Ulvarum Orvernus stands atop an asteroid nearly a quarter mile in diameter. The asteroid maintains Earth-like gravity and a breathable atmosphere, with outdoor temperatures ranging between 40 and 50 degrees Fahrenheit, all sustained through the harnessed power of a bound Air Elemental and Earth Elemental. If either of these Elementals are freed of their bonds the asteroid's gravity and atmosphere will quickly return to its natural inhospitable state. The tower itself has 2 main entrances on the surface, or can be entered through any exterior window. There is an additional subterranean entrance that requires passing through a cavern of radioactive crystals. The asteroid has no native life, but besides creatures transported intentionally by Ulvarum, there is a cavern where several alien plant species have been exposed to the surface. Most of the species are not a threat but two species, Astraldendons and Astralmycons are dangerous to the PCs. If the PCs have the means they could travel to the asteroid intentionally or inadvertently by activating a forgotten portal on the planet and be in search of a way to return home. If escape is not the PCs primary goal, a suitable item placed in the tower or knowledge in the Towers extensive libraries can work as a hook. The Tower contains ample supplies and shelter for the PCs but also hostile entities and dangerous hazards. Unless noted, all exterior walls in the tower contain windows letting in a dim light, but otherwise rooms are dark unless description mentions otherwise. If the PCs are stranded they can escape using a ritual teleportation circle in the Arcane Library but unless they have prior experience will need the instructions located on the remains of the Ulvarum's former Apprentice located in the Xenobotanical Cavern."
+ },
+ "rooms": [
+  {
+   "id": "AT-R01",
+   "number": 1,
+   "name": "Main Hall",
+   "floor": "F1",
+   "text": "Main entrance large wooden doors. High vaulted ceilings with 2nd floor gallery on either side with ragged banners hanging. Empty throne at the end. Large high windows above gallery.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R02",
+   "number": 2,
+   "name": "Larder",
+   "floor": "F1",
+   "text": "3 large shelves and various barrels and crates containing various provisions mostly rotten. Two sealed barrels of salted pork are edible.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R03",
+   "number": 3,
+   "name": "Kitchen",
+   "floor": "F1",
+   "text": "Cooking hearth on the East wall. Small table and large workbench for cooking. Room is lined with shelves with pots and various other cooking supplies, 2 large barrels of water.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R04",
+   "number": 4,
+   "name": "Tower Stairwell First Floor",
+   "floor": "F1",
+   "text": "Outer hall decorated with faded portraits of various figures. Inner Stairwell going up and down.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R05",
+   "number": 5,
+   "name": "Library",
+   "floor": "F1",
+   "text": "Surrounded by an outside walkway with arched openings. Tall vaulted ceilings and tall bookshelves lining the walls. 9 stone pedestals each with an open book, floating balls of light over each of the books. Wide array of books, on subjects fantastical and mundane including many scientific style journals regarding experiment minutiae, 1d10 chance to contain any specific book characters are searching for. 9,900 books worth 198,000 GP, 31,000 pounds total weight.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R06",
+   "number": 6,
+   "name": "Side Entrance",
+   "floor": "F1",
+   "text": "Walls decorated with ragged banners and tapestries.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R07",
+   "number": 7,
+   "name": "Guardhouse Vault",
+   "floor": "F1",
+   "text": "Crates and barrels of guard supplies, whetstones, oil, leather straps, files, rivets, mail links etc. Small Table and chair. Southern part is a vault secured by iron bars from floor to ceiling and locked door set into the bars. Vault contains 2 chests, 2 barrels, and a large pile of various coins on the floor. Chests and barrels contain various coins and jewels, totaling 10,000 GP, and Reliquary Chamber Key",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R08",
+   "number": 8,
+   "name": "Apprentices Bedroom",
+   "floor": "F1",
+   "text": "Contains bed, shelf, wardrobe and table with chair. Bookshelf contains books with incomplete notes, remnants of failed spell scrolls, research notes describing observations of Astral Dendrum",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R09",
+   "number": 9,
+   "name": "Guards Bedroom",
+   "floor": "F1",
+   "text": "Smaller containing bed and shelving storage and round table. Notes are resting on the table. Notes detailing various activity, towards the end they mention leaving the vault key in Observatory",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R10",
+   "number": 10,
+   "name": "Vivarium",
+   "floor": "F1",
+   "text": "2 large workbenches, various empty cages, tool rack on the wall with various small tools. Large skeleton on the North workbench.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R11",
+   "number": 11,
+   "name": "Arboretum",
+   "floor": "F1",
+   "text": "Back half of the room is filled with various fruit bearing trees, grass and smaller bushes on the ground. All fruit regrows in 1 day",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R12",
+   "number": 12,
+   "name": "Prismatic Workshop",
+   "floor": "F1",
+   "text": "Workbenches and shelves overgrown with radiating crystals. PC's feel a warm sensation when entering the room, 1d4 damage each round after the first",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R13",
+   "number": 13,
+   "name": "Apothecary",
+   "floor": "F1",
+   "text": "Workbench with various tools: Mortar and pestle, Grinder, mixing bowls, Scales, glass graduated cylinders. Large Cauldron, Shelving with various bottles and jars. Sufficient tools and ingredients to attempt to brew several potions.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R14",
+   "number": 14,
+   "name": "Tower Stairwell 2nd Floor",
+   "floor": "F2",
+   "text": "Doors to the east and west, outer hall is decorated with faded portraits but are damaged and hung askew.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R15",
+   "number": 15,
+   "name": "Supply Closet",
+   "floor": "F2",
+   "text": "4 barrels containing ash, lye, straw and tallow in addition to miscellaneous brooms and brushes",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R16",
+   "number": 16,
+   "name": "Servants Quarters",
+   "floor": "F2",
+   "text": "Small bed and table and chair and personal items, clothes underneath bed.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R17",
+   "number": 17,
+   "name": "Study",
+   "floor": "F2",
+   "text": "Fireplace, a large table with 4 chairs, single large, leatherbound chair and circular table.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R18",
+   "number": 18,
+   "name": "Herbarium",
+   "floor": "F2",
+   "text": "Shelving on walls, with broken glass bottles, dirt and various powders on the floor. Growing in the center of the room is a large Astraldendron (AC 17, HP 32, LVL 8, Attack 2, Lash 1d6, MOV 10', MRL 10), Research Notes can be found here indicating this Astraldendrum was originally growing in a pot, also includes location of Xenobotanical Cavern and mentions Apprentice will be returning to cave for further research",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     3
+    ]
+   }
+  },
+  {
+   "id": "AT-R19",
+   "number": 19,
+   "name": "Reliquary Chamber",
+   "floor": "F2",
+   "text": "Locked door, contains a stone sarcophagus, and a life size statue of a woman in armor holding a sword with both hands on the hilt, the sword is pointed downward, resting on the ground. The room emanates an aura of calm, if the statue or sarcophagus are not disturbed PCs can safely rest in this room. If either statue or sarcophagus are disturbed statue will animate and attack PCs",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     6
+    ]
+   }
+  },
+  {
+   "id": "AT-R20",
+   "number": 20,
+   "name": "Opulent Bedroom",
+   "floor": "F2",
+   "text": "Large bed, table and chair, shelves and wardrobe full of elegant raiment. Back of Fireplace slides back if pushed leading to Arcane Library. Small scratches in the fireplace will be noticed on close inspection.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     6
+    ]
+   }
+  },
+  {
+   "id": "AT-R21",
+   "number": 21,
+   "name": "Arcane Library",
+   "floor": "F2",
+   "text": "No windows, Walls lined with bookshelves, three rows of shelving in middle of room. Work table and chair near the Fireplace door to the Opulent Bedroom. The high ceiling is supported with 4 pillars. Round table and two chairs in the back of the room, along with Empty barrel and a chest(Mimic), books are all notes of arcane nature including 6 spellbooks Large chalk circle containing geometric patterns is on the floor with unlit candles where the lines of the geometric patterns intersect. Using circle requires prior knowledge or instructions located on Apprentices remains in Xenobotanical Cavern.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     6
+    ]
+   }
+  },
+  {
+   "id": "AT-R22",
+   "number": 22,
+   "name": "Tempest Chamber",
+   "floor": "F3",
+   "text": "Air Elemental (AC 17, HP 32, LVL 8, Attack 2 (Lash 1d6, Gust 1d8 + push 30'), MOV 60' Fly, MRL 10, Immune to non-magical weapons, Vulnerable to fire (double damage), Incorporeal (can pass through small openings).contained in cylindrical, transparent containment structure etched with intricate arcane runes and glyphs along the base and top set into a circular pedestal, Wall carvings of additional carvings and runes. If the Air Elemental's containment is broken it will attack any creature it can find, the air atmosphere around the asteroid will become unbreakable in 1d4 + 1 days (1 day being 24 hours). PCs will notice air becoming stale and half way through being to experience noticeable trouble breathing.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     6
+    ]
+   }
+  },
+  {
+   "id": "AT-R23",
+   "number": 23,
+   "name": "Observatory",
+   "floor": "F4",
+   "text": "Large telescope, table covered in dusty, charts and maps. Various gears and other small parts strewn about the room. Vault Key is under papers on table.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     6
+    ]
+   }
+  },
+  {
+   "id": "AT-R24",
+   "number": 24,
+   "name": "Seismic Chamber",
+   "floor": "B1",
+   "text": "Bottom level of stairs, large open cavern, Earth Elemental (AC 18, HP 40, LVL 10, Attack 1 (Crush 2d6), MOV 20', MRL 11, NA 1-2, Immune to non-magical weapons, Vulnerable to lightning (double damage), Can burrow through earth and stone, Detects movement within 30' through the ground) bound in chains surrounded by stalagmites and stalactites with arcane runes and glyphs carved into them. If the Earth Elemental is freed it will attack any creature it can find and gravity will rapidly decrease to normal, atmosphere will be released into space. First few minutes: Players notice immediate lightness, winds felt as air rushes out of caverns. 10-30 minutes: Breathing becomes harder and windows increase. Temperature decreases 1-3 hours: the atmosphere is nearly gone and survival without intervention becomes impossible.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     6
+    ]
+   }
+  },
+  {
+   "id": "AT-R25",
+   "number": 25,
+   "name": "Crystal Caves",
+   "floor": "B1",
+   "text": "Large cavern filled with giant radiating crystals, PCs feel a warm sensation when entering cavern and take 1d8 damage each round after first. Carved stairs lead to outside. Skeleton of unknown creature is immediately spotted from stairs.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     6
+    ]
+   }
+  },
+  {
+   "id": "AT-R26",
+   "number": 26,
+   "name": "Xenobotanical Cavern",
+   "floor": "B1",
+   "text": "Large cavern with pool of water in the center. 6 Astraldendons are growing here along with 5 Astralmycons, as well as several other non dangerous, but alien, species.. Cavern appears to have multiple paths. The skeletal remains of Apprentice are located here along with journal. The journal includes notes about using the teleportation circle in the Arcane Library",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     6
+    ]
+   }
+  }
+ ],
+ "tables": [
+  {
+   "id": "AT-TAB-TOWER",
+   "name": "Tower Random Encounters",
+   "die": "1d10",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     2
+    ]
+   },
+   "rows": [
+    {
+     "roll": 1,
+     "encounter": "Animated Broom",
+     "notes": "Attempting to sweep up piles of dust, ignores PCs"
+    },
+    {
+     "roll": 2,
+     "encounter": "Black Pudding",
+     "notes": "Patrolling for food or in hiding waiting to ambush"
+    },
+    {
+     "roll": 3,
+     "encounter": "Animated Armor",
+     "notes": "Wandering the halls, patrolling for intruders."
+    },
+    {
+     "roll": 4,
+     "encounter": "2d4 Stirges",
+     "notes": "Hunting for food."
+    },
+    {
+     "roll": 5,
+     "encounter": "Familiar",
+     "notes": "Small, harmless, imp bound to the castle. Will provide useful information if PCs can free him"
+    },
+    {
+     "roll": 6,
+     "encounter": "1d6 Giant Rats",
+     "notes": "Hunting for food"
+    },
+    {
+     "roll": 7,
+     "encounter": "Will-o'-Wisp",
+     "notes": "Flickering through the halls, trying to lure PCs into dangerous areas like the Crystal Caves or the Seismic Chamber"
+    },
+    {
+     "roll": 8,
+     "encounter": "1d6 Giant Spiders",
+     "notes": "Hunting for food"
+    },
+    {
+     "roll": 9,
+     "encounter": "Ghost",
+     "notes": "Ghost of former servant, not initially hostile, not entirely sane"
+    },
+    {
+     "roll": 10,
+     "encounter": "Doppelganger",
+     "notes": "In the form of a figure from one of the faded paintings in the tower, will attempt to isolate and kill PCs"
+    }
+   ]
+  },
+  {
+   "id": "AT-TAB-ASTEROID",
+   "name": "Asteroid Random Encounters",
+   "die": "1d6",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     2
+    ]
+   },
+   "rows": [
+    {
+     "roll": 1,
+     "encounter": "Astraldendon",
+     "notes": "Remaining still unless attacked"
+    },
+    {
+     "roll": 2,
+     "encounter": "1d4 Astralmycons",
+     "notes": "Hidden among the rocks"
+    },
+    {
+     "roll": 3,
+     "encounter": "Roc",
+     "notes": "Originally caged on tower grounds, now hunting on asteroid's surface"
+    },
+    {
+     "roll": 4,
+     "encounter": "2d4 Stirges",
+     "notes": "Hunting for food"
+    },
+    {
+     "roll": 5,
+     "encounter": "1d6 Skeletons",
+     "notes": "Appears to be a pile of bones before assembling when PCs are close enough to attack"
+    },
+    {
+     "roll": 6,
+     "encounter": "Gargoyle",
+     "notes": "Originally guarding tower, but now is without purpose and not hostile"
+    }
+   ]
+  }
+ ],
+ "creatures": [
+  {
+   "id": "AT-C-DENDRON",
+   "name": "Astraldendum",
+   "stat": "AC 17, HP 32, LVL 8, Attack 2, Lash 1d6, MOV 10', MRL 10, NA Varies",
+   "text": "A towering, alien tree-like entity with a twisted trunk and long serpentine roots that spread across the floor searching for organic matter to feed on. The upper reaches are filled with sprawling, gnarled branches with hanging globes that resemble fungal growths, filled with a luminous fluid. Any creature within 30 feet must make a Wisdom Check DR 12 or suffer confusion for 1d4 rounds as the Astraldendum fills their mind with alien unintelligible thoughts.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     4
+    ]
+   }
+  },
+  {
+   "id": "AT-C-MYCON",
+   "name": "Astralmycons",
+   "stat": "",
+   "text": "Unnervingly large alien plant resembling mushrooms, between 1 and 2 feet in height. Thick fibrous stalk marked with pulsating veins. The caps are broad and irregularly shaped and are covered with bioluminescent spots that twinkle faintly in the dark. Astralmycons feed on psychic energy, drawing it out of those that linger nearby When disturbed, the Astralmycon, releases a cloud of shimmering, psychic spores that hang in the air in a 5 foot radius creatures in this area must make a Wisdom Check DR 12 or suffer confusion and minor hallucinations for 1d4 rounds. Exposure to Astralmycons for more than 5 minutes victims must make an Intelligence Check DR 12 or lose 1 point of Intelligence for 1d4 days.",
+   "provenance": {
+    "source_id": "SRC-ASTRAL-TOWER",
+    "pdf_pages": [
+     4
+    ]
+   }
+  }
+ ],
+ "source_flags": [
+  {
+   "id": "AT-FLAG-1",
+   "issue": "같은 식물 이름이 Astraldendum, Astraldendon, Astraldendron, Astral Dendrum으로 다르게 적힘",
+   "handling": "원문은 그대로 두고 정규화에서 AT-C-DENDRON 하나로 묶음"
+  },
+  {
+   "id": "AT-FLAG-2",
+   "issue": "22번 'unbreakable'과 24번 'windows increase'는 오자로 보임 ('unbreathable', 'winds increase' 추정)",
+   "handling": "원문 유지, 해석은 adaptation에"
+  },
+  {
+   "id": "AT-FLAG-3",
+   "issue": "26번 방 번호가 지도에 없음",
+   "handling": "연결을 추론으로 표시"
+  },
+  {
+   "id": "AT-FLAG-4",
+   "issue": "Astralmycons에 능력치가 없음",
+   "handling": "adaptation에서 정함"
+  },
+  {
+   "id": "AT-FLAG-5",
+   "issue": "조우표 Familiar는 imp라고 하지만 풀어 줄 방법과 알려 주는 정보가 없음",
+   "handling": "추측하지 않고 adaptation에서 정함"
+  },
+  {
+   "id": "AT-FLAG-6",
+   "issue": "19번 조각상의 능력치가 없음",
+   "handling": "adaptation에서 정함"
+  },
+  {
+   "id": "AT-FLAG-7",
+   "issue": "Air Elemental과 Astraldendum의 능력치 줄이 같음 (AC 17, HP 32, LVL 8)",
+   "handling": "원문 유지, SRD 수치를 쓰므로 영향 없음"
+  }
+ ]
+}

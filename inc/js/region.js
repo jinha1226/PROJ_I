@@ -91,6 +91,7 @@ G.Region = (() => {
     preview(f, key) { const reg = REGIONS[key]; if (!reg) return null; const hi = R.budget({ ...f, front: key }, 2), l = reg.pool.filter(n => xpOf(n) <= hi); return l.slice(-4); },
     // 층을 세울 때 (G.Turn.stage): 층이 깊을수록 어렵게. 끝 빈터엔 어려움 전투
     stage(f, rt, reg) {
+      if (reg.stage) { reg.stage(f, rt); return; }
       const m = rt.map, idx = Math.max(0, f.floor - (f.runStart || f.floor)), last = idx >= reg.len - 1, diff = Math.min(2, idx), mid = U.shuffle(m.rooms.slice(1, -1)).slice(0, ROOM_FIGHTS - (last ? 1 : 0)), rooms = last ? mid.concat(m.end) : mid;
       for (const r of rooms) {
         const names = R.pick(reg, R.budget(f, r === m.end ? 2 : diff)), cells = [];

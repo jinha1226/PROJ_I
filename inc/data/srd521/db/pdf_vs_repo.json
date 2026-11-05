@@ -556,6 +556,13 @@
 "tbl": "class_spell",
 "name": "Phantasmal Force",
 "field": "주문 설명 직업인데 목록에 없음",
+"pdf": "Wizard",
+"repo": ""
+},
+{
+"tbl": "class_spell",
+"name": "Phantasmal Force",
+"field": "주문 설명 직업인데 목록에 없음",
 "pdf": "Sorcerer",
 "repo": ""
 },
@@ -564,13 +571,6 @@
 "name": "Phantasmal Force",
 "field": "주문 설명 직업인데 목록에 없음",
 "pdf": "Bard",
-"repo": ""
-},
-{
-"tbl": "class_spell",
-"name": "Phantasmal Force",
-"field": "주문 설명 직업인데 목록에 없음",
-"pdf": "Wizard",
 "repo": ""
 }
 ]

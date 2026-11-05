@@ -22,7 +22,7 @@ G.SrdX = (() => {
     // 종족이 주는 스킬 (4칸 밖)
     skills(m) { const s = sp(m), L = SR.line(m, s), out = []; if (s === 'dragonborn') out.push('sr_breath', 'sx_fly'); if (s === 'orc') out.push('sx_orc'); if (s === 'goliath') { out.push('sx_large'); if (m.line === 'cloud') out.push('sx_cloud'); } if (L?.cantrip && SK[spellKey(L.cantrip)]) out.push(spellKey(L.cantrip)); for (const lv in L?.sp || {}) if (m.lv >= +lv && SK[spellKey(L.sp[lv])]) out.push(spellKey(L.sp[lv])); return out.filter(k => k !== 'sx_fly' && k !== 'sx_large' || m.lv >= 5).concat(X.classSkills(m)); },
     // 직업 · 하위 직업이 항상 주는 주문 (4칸 밖)
-    classSkills(m) { const out = []; if (m.cls === 'archer') out.push('sr_hmark'); if (m.cls === 'paladin' && m.lv >= 2) out.push('sr_smite'); if (m.cls === 'monk') out.push('sx_ma'); if (m.adv === 'draconic' && m.lv >= 14) out.push('sx_fly'); if (m.cls === 'bard' && m.lv >= 20) out.push('sp_power_word_heal', 'sp_power_word_kill'); for (const en of SR.subSpells(m)) { const k = byEn(en); if (k) out.push(k); } if (m.adv === 'lore' && m.lv >= 6) out.push(...X.discover(m)); return out.filter(k => SK[k]); },
+    classSkills(m) { const out = []; if (m.cls === 'archer') out.push('sr_hmark'); if (m.cls === 'paladin' && m.lv >= 2) out.push('sr_smite'); if (m.cls === 'monk') out.push('sx_ma'); if (DN.profs(m).includes('medicine')) out.push('x_med'); if (m.adv === 'draconic' && m.lv >= 14) out.push('sx_fly'); if (m.cls === 'bard' && m.lv >= 20) out.push('sp_power_word_heal', 'sp_power_word_kill'); for (const en of SR.subSpells(m)) { const k = byEn(en); if (k) out.push(k); } if (m.adv === 'lore' && m.lv >= 6) out.push(...X.discover(m)); return out.filter(k => SK[k]); },
     discover(m) { const P = ['sr_hword', 'sr_bless', 'sr_entangle', 'sr_mm', 'sr_fireball', 'sr_shield'].filter(k => SK[k]); const h = m.uid || 0; return [P[h % P.length], P[(h + 2) % P.length]]; },
     // 조상 · 계통의 저항
     resists(m) { const s = sp(m), L = SR.line(m, s), o = L?.dt ? [L.dt] : s === 'dwarf' ? ['poison'] : []; if (G.Guild.skill(m, 'sr_ward')) o.push(SR.landRes(m)); if (G.Guild.skill(m, 'sr_fres')) o.push(SR.fiendRes(m)); return o; },
@@ -52,9 +52,11 @@ G.SrdX = (() => {
     // 몽크 붙잡기: 일반 재주 (4레벨, 근력 또는 민첩 13)
     grappler: m => m.cls === 'monk' && m.lv >= 4 && (m.uid || 0) % 3 === 0,
   };
+  // SRD 직업 표: 하프 캐스터도 1레벨부터 1레벨 슬롯
+  for (const [k, c] of [['sr_smite', 'paladin'], ['sp_searing_smite', 'paladin'], ['sr_cure', 'archer']]) { const M = D.MSKILLS[k]; if (!M) continue; if (typeof M.lv === 'object') M.lv[c] = 1; else M.lv = 1; }
   // 근접 무기 숙련은 스킬 칸이 아니라 든 무기로 (Weapon Mastery)
   const WM = new Set(['wm_slow', 'wm_graze', 'wm_vex', 'wm_nick', 'sr_cleave', 'sr_topple', 'sr_push', 'sr_sap']);
-  for (const c of Object.keys(D.MPOOL)) D.MPOOL[c] = D.MPOOL[c].filter(k => !WM.has(k));
+  for (const c of Object.keys(D.MPOOL)) D.MPOOL[c] = D.MPOOL[c].filter(k => !WM.has(k)); for (const c of Object.keys(G.Pool.POOL)) G.Pool.POOL[c] = G.Pool.POOL[c].filter(k => !WM.has(k));
   const adv0 = DN.adv; DN.adv = function (att, tg) { const v = adv0.apply(this, arguments); return att?.merc && tg?.grabby === att && X.grappler(att.merc) ? (typeof v === 'number' ? Math.min(1, v + 1) : v) : v; };
   return X;
 })();

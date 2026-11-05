@@ -1,0 +1,211 @@
+{
+ "schema_version": "0.1",
+ "note": "라이선스는 작품마다 다시 확인한다. CC0는 원작 글에 대한 것이고 그림 · 지도는 별도다.",
+ "scenarios": [
+  {
+   "id": "a-pale-lantern",
+   "title": "A Pale Lantern",
+   "creator": "Doomed Zone",
+   "url": "https://doomedzone.itch.io/a-pale-lantern",
+   "kind": "adventure",
+   "systems": [
+    "Shadowdark"
+   ],
+   "pdf": "pale_lantern.pdf",
+   "size": "3.4 MB",
+   "license": "CC0 1.0 (원작 글)",
+   "license_evidence": "LICENSE 파일 읽음",
+   "asset_rule": "글만 사용. 지도 · 이미지 · 사진은 파일별 확인 전 사용 금지",
+   "extraction": "미착수"
+  },
+  {
+   "id": "codex-ossium",
+   "title": "Codex Ossium",
+   "creator": "Doomed Zone",
+   "url": "https://doomedzone.itch.io/codex-ossium",
+   "kind": "system",
+   "systems": [
+    "Shadowdark"
+   ],
+   "pdf": "codex_ossium.pdf",
+   "size": "6.8 MB",
+   "license": "CC0 1.0 (원작 글)",
+   "license_evidence": "상품 페이지 확인, 라이선스 파일 아직 안 읽음",
+   "asset_rule": "글만 사용. 지도 · 이미지 · 사진은 파일별 확인 전 사용 금지",
+   "extraction": "미착수"
+  },
+  {
+   "id": "doomed-to-die-1",
+   "title": "Doomed to Die #1 - Beneath Stillroot",
+   "creator": "Doomed Zone",
+   "url": "https://doomedzone.itch.io/doomed-to-die-1",
+   "kind": "adventure",
+   "systems": [
+    "Shadowdark"
+   ],
+   "pdf": "doomed_to_die_1.pdf",
+   "size": "11 MB",
+   "license": "CC0 1.0 (원작 글)",
+   "license_evidence": "상품 페이지 확인, 라이선스 파일 아직 안 읽음",
+   "asset_rule": "글만 사용. 지도 · 이미지 · 사진은 파일별 확인 전 사용 금지",
+   "extraction": "미착수"
+  },
+  {
+   "id": "doomed-to-die-2",
+   "title": "Doomed to Die #2 - The Tower of Dreams",
+   "creator": "Doomed Zone",
+   "url": "https://doomedzone.itch.io/doomed-to-die-2",
+   "kind": "adventure",
+   "systems": [
+    "Shadowdark"
+   ],
+   "pdf": "doomed_to_die_2.pdf",
+   "size": "9.4 MB",
+   "license": "CC0 1.0 (원작 글)",
+   "license_evidence": "상품 페이지 확인, 라이선스 파일 아직 안 읽음",
+   "asset_rule": "글만 사용. 지도 · 이미지 · 사진은 파일별 확인 전 사용 금지",
+   "extraction": "미착수"
+  },
+  {
+   "id": "doomed-to-die-3",
+   "title": "Doomed to Die #3 - Sludge Knights",
+   "creator": "Doomed Zone",
+   "url": "https://doomedzone.itch.io/doomed-to-die-3",
+   "kind": "adventure",
+   "systems": [
+    "Shadowdark"
+   ],
+   "pdf": "doomed_to_die_3.pdf",
+   "size": "12 MB",
+   "license": "CC0 1.0 (원작 글)",
+   "license_evidence": "상품 페이지 확인, 라이선스 파일 아직 안 읽음",
+   "asset_rule": "글만 사용. 지도 · 이미지 · 사진은 파일별 확인 전 사용 금지",
+   "extraction": "미착수"
+  },
+  {
+   "id": "pharmacy-run",
+   "title": "Pharmacy Run",
+   "creator": "Doomed Zone",
+   "url": "https://doomedzone.itch.io/pharmacy-run",
+   "kind": "other_genre",
+   "systems": [],
+   "pdf": "",
+   "size": "",
+   "license": "CC0 1.0 (원작 글)",
+   "license_evidence": "상품 페이지 확인, 라이선스 파일 아직 안 읽음",
+   "asset_rule": "글만 사용. 지도 · 이미지 · 사진은 파일별 확인 전 사용 금지",
+   "extraction": "미착수"
+  },
+  {
+   "id": "terror-of-dunmoor",
+   "title": "The Terror of Dunmoor",
+   "creator": "Doomed Zone",
+   "url": "https://doomedzone.itch.io/terror-of-dunmoor",
+   "kind": "adventure",
+   "systems": [
+    "Shadowdark"
+   ],
+   "pdf": "terror_of_dunmoor.pdf",
+   "size": "33 MB",
+   "license": "CC0 1.0 (원작 글)",
+   "license_evidence": "LICENSE 파일 읽음",
+   "asset_rule": "글만 사용. 지도 · 이미지 · 사진은 파일별 확인 전 사용 금지",
+   "extraction": "미착수"
+  },
+  {
+   "id": "the-astral-tower",
+   "title": "The Astral Tower",
+   "creator": "Doomed Zone",
+   "url": "https://doomedzone.itch.io/the-astral-tower",
+   "kind": "adventure",
+   "systems": [
+    "Knave",
+    "Shadowdark"
+   ],
+   "pdf": "Astral_Tower.pdf",
+   "size": "8.3 MB",
+   "license": "CC0 1.0 (원작 글)",
+   "license_evidence": "LICENSE 파일과 PDF 읽음",
+   "asset_rule": "글만 사용. 지도 · 이미지 · 사진은 파일별 확인 전 사용 금지",
+   "extraction": "완료 (원문 · 정규화)"
+  },
+  {
+   "id": "the-corpseless-coffin",
+   "title": "The Corpseless Coffin",
+   "creator": "Doomed Zone",
+   "url": "https://doomedzone.itch.io/the-corpseless-coffin",
+   "kind": "adventure",
+   "systems": [
+    "Shadowdark"
+   ],
+   "pdf": "corpseless_coffin.pdf",
+   "size": "4 MB",
+   "license": "CC0 1.0 (원작 글)",
+   "license_evidence": "상품 페이지 확인, 라이선스 파일(LISCENCE) 아직 안 읽음",
+   "asset_rule": "글만 사용. 지도 · 이미지 · 사진은 파일별 확인 전 사용 금지",
+   "extraction": "미착수"
+  },
+  {
+   "id": "the-lost-tomb-of-queen-rhawen",
+   "title": "The Lost Tomb of Queen Rhawen",
+   "creator": "Doomed Zone",
+   "url": "https://doomedzone.itch.io/the-lost-tomb-of-queen-rhawen",
+   "kind": "adventure",
+   "systems": [
+    "Shadowdark"
+   ],
+   "pdf": "tomb_of_queen_rhawen.pdf",
+   "size": "7.8 MB",
+   "license": "CC0 1.0 (원작 글)",
+   "license_evidence": "LICENSE 파일 읽음",
+   "asset_rule": "글만 사용. 지도 · 이미지 · 사진은 파일별 확인 전 사용 금지",
+   "extraction": "미착수"
+  },
+  {
+   "id": "the-mist-beyond-manerton",
+   "title": "The Mist Beyond Manerton",
+   "creator": "Doomed Zone",
+   "url": "https://doomedzone.itch.io/the-mist-beyond-manerton",
+   "kind": "adventure",
+   "systems": [
+    "Shadowdark"
+   ],
+   "pdf": "mist_beyond_manerton.pdf",
+   "size": "10 MB",
+   "license": "CC0 1.0 (원작 글)",
+   "license_evidence": "LICENSE 파일 읽음",
+   "asset_rule": "글만 사용. 지도 · 이미지 · 사진은 파일별 확인 전 사용 금지",
+   "extraction": "미착수"
+  },
+  {
+   "id": "the-old-blood",
+   "title": "The Old Blood",
+   "creator": "Doomed Zone",
+   "url": "https://doomedzone.itch.io/the-old-blood",
+   "kind": "adventure",
+   "systems": [
+    "Shadowdark"
+   ],
+   "pdf": "old_blood.pdf",
+   "size": "73 MB",
+   "license": "CC0 1.0 (원작 글)",
+   "license_evidence": "상품 페이지 확인, PDF p.88은 SCENARIO_DATABASE_PLAN.md 기준 (원본 미확인)",
+   "asset_rule": "글만 사용. 지도 · 이미지 · 사진은 파일별 확인 전 사용 금지",
+   "extraction": "목록 수준 v0.2"
+  },
+  {
+   "id": "the-white-beast-of-sel-vorynn",
+   "title": "The White Beast of Sel Vorynn",
+   "creator": "Doomed Zone",
+   "url": "https://doomedzone.itch.io/the-white-beast-of-sel-vorynn",
+   "kind": "adventure",
+   "systems": [],
+   "pdf": "The_White_Beast_of_Sel_Vorryn.pdf",
+   "size": "1 MB",
+   "license": "CC0 1.0 (원작 글)",
+   "license_evidence": "상품 페이지 확인, 라이선스 파일(LISCENCE) 아직 안 읽음",
+   "asset_rule": "글만 사용. 지도 · 이미지 · 사진은 파일별 확인 전 사용 금지",
+   "extraction": "미착수"
+  }
+ ]
+}

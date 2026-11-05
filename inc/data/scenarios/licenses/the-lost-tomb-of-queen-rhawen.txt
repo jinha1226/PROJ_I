@@ -1,0 +1,25 @@
+
+"Lost Tomb of Queen Rhawen” is an independent product published under the Shadowdark RPG Third-Party License and is not affiliated with The Arcane Library, LLC. Shadowdark RPG © 2023 The Arcane Library, LLC.
+
+All original text and content in this module (excluding third-party materials listed below) is
+dedicated to the public domain under the Creative Commons Zero (CC0 1.0) Public Domain
+Dedication
+
+This means you can copy, modify, distribute, and use it for any purpose, even
+commercially, without permission. No attribution is required, but it is appreciated.
+
+For full details, visit: https://creativecommons.ora/publicdomain/zero/1.0/
+
+Third-Party Materials & Attributions
+
+Some materials in this module are used under other licenses that may have attribution or
+non-commercial restrictions:
+
+Dungeon Map made with Dungeon Scrawl (https://app.dungeonscrawl.com) using art assets by:
+  Angry Golem Games (CC BY-NC 4.0) - https://www.drivethrurpg.com/en/publisher/12502/angry-golem-games
+  Daniel F. Walthall (CC BY-NC 4.0) - https://www.patreon.com/axebane
+  Mark Gosbell (CC0 1.0) - https://markgosbell.itch.io/70-free-flat-greyscale-dungeon-assets
+
+Overland Map made with Inkarnate (https://inkarnate.com).
+
+Cover and page background images generated using DALL-E 2, OpenAI.

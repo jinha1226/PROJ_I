@@ -92,7 +92,7 @@ G.Explore = (() => {
       const p = rt.party.filter(q => !q.dead).sort((a, b) => GR.dist(a, t) - GR.dist(b, t))[0];
       if (p && p.merc) {
         const lv = p.merc.lv, tier = lv >= 17 ? 3 : lv >= 11 ? 2 : lv >= 5 ? 1 : 0, kk = p.max / Math.max(1, G.Dnd.srdHP(p.merc)); let fall = G.Dnd.dice(FALL_D[tier], 6);
-        if (G.Pool.of(p.merc) === 'x_fall') { fall = Math.max(0, fall - lv * 5); G.Pool.used(p, 'x_fall'); }
+        if (G.Guild.skill(p.merc, 'x_fall')) { fall = Math.max(0, fall - lv * 5); G.Pool.used(p, 'x_fall'); }
         const spike = t.pit?.spike ? G.Dnd.dice(SPIKE_D[tier], 8) : 0;
         F().hurtMember(f, rt, p, (fall + spike) * kk, null);
       }

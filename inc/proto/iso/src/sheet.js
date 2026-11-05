@@ -1,7 +1,7 @@
 'use strict';
 // 캐릭터 상태창 (DESIGN.md 106): 세 칸. 왼쪽 위 페이퍼돌과 장비 · 왼쪽 아래 스탯 · 가운데 숙련 전부 · 오른쪽 스킬. 설명은 줄에 마우스를 올리면 뜬다.
 // 숫자는 색으로 먼저 읽힌다. 설명문은 없고 자세한 뜻은 마우스를 올리면 나온다.
-const SH = { el: null, m: null, open: false, pin: null, tip: null, own: null };
+const SH = { el: null, m: null, open: false, pin: null, tip: null, own: null, tab: 'tr', drag: null, fold: {} };
 const shEl = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 const abCol = v => (v >= 18 ? 'v5' : v >= 15 ? 'v4' : v >= 12 ? 'v3' : v >= 9 ? 'v2' : 'v1'); // 1~20: 낮음 → 높음
 const bonusCol = v => (v >= 9 ? 'v5' : v >= 6 ? 'v4' : v >= 3 ? 'v3' : v >= 0 ? 'v2' : 'v1');
@@ -22,21 +22,24 @@ function itemIcon(m, sl, it) {
   return `../../assets/tiles/${t}.png`;
 }
 const shIcon = k => { const i = shEl('i', 'sk k-' + (KIND_C[G.Skill.kindOf(k)] || 'act')), im = document.createElement('img'); im.alt = ''; im.src = `dcss/${skIcon(k)}.png`; i.append(im); return i; };
-// 기술 한 줄: 아이콘 · 이름 · 주사위 · 남은 횟수. 설명은 호버, 마을에서 누르면 맨 앞으로 / 탐험은 이걸로
+// 기술 한 줄: 아이콘 · 이름 · 주사위 · 남은 횟수. 설명은 호버
 function shTipHide() { SH.tip?.classList.add('hidden'); }
 // 호버 창 하나를 돌려 쓴다: 기술 · 장비 · 짧은 글(data-tip). 기준 칸의 화면 안쪽 옆에 뜬다. 장비를 누르면 고정되어 버튼을 누를 수 있다
 function shTipPut(anchor, node, cls) { if (!SH.tip) { SH.tip = shEl('div', 'hidden'); SH.tip.id = 'shtip'; document.body.append(SH.tip); } SH.tip.textContent = ''; SH.tip.className = cls || ''; SH.tip.append(node); const a = anchor.getBoundingClientRect(), b = SH.tip.getBoundingClientRect(), x = a.left + a.width / 2 < innerWidth / 2 ? a.right + 8 : a.left - b.width - 8; SH.tip.style.left = Math.max(8, Math.min(innerWidth - b.width - 8, x)) + 'px'; SH.tip.style.top = Math.max(8, Math.min(innerHeight - b.height - 8, a.top + a.height / 2 - b.height / 2)) + 'px'; }
 function shTipShow(row, m, k) { if (!SH.pin) shTipPut(row, shSkillDetail(m, k)); }
 function shSkillRow(m, k, on, act) {
-  const D = G.D.MSKILLS[k], rs = G.Skill.resOf(k), n0 = rs ? G.Res.usesOf(m, rs, k) : null, left = rs ? n0 - (G.Res.of(m).fu[k] || 0) : null, r = shEl('button', 'skr' + (on === false ? ' off' : '') + (act ? ' act' : ''));
-  const nm0 = G.SkillNum_at(k, m.cls, m.lv); r.append(shIcon(k), shEl('span', 'n', D.n), shEl('small', 'kd', nm0?.d || ''), shEl('b', 'us' + (left === 0 ? ' none' : ''), rs ? `${left}/${n0}` : ''));
+  const D = G.D.MSKILLS[k], rs = G.Skill.resOf(k), n0 = rs ? G.Res.usesOf(m, rs, k) : null, left = rs ? G.Res.left(m, rs, k) : null, lv = G.Guild.skLv(m.cls, k), locked = lv > m.lv, r = shEl('button', 'skr' + (on === false || locked ? ' off' : '') + (act ? ' act' : ''));
+  const nm0 = G.SkillNum_at(k, m.cls, m.lv); r.append(shIcon(k), shEl('span', 'n', D.n), shEl('small', 'kd', locked ? `Lv ${lv}` : nm0?.d || ''));
   r.onpointerenter = () => shTipShow(r, m, k); r.onpointerleave = () => { if (!SH.pin) shTipHide(); }; r.onfocus = () => shTipShow(r, m, k); r.onblur = () => { if (!SH.pin) shTipHide(); }; if (act) r.onclick = () => { act(); drawSheet(); }; return r;
 }
+// 끌어 놓기: 칸 사이 순서 바꾸기 · 전체 목록에서 칸으로 · 칸에서 목록으로 빼기 (마을에서만)
+function shDrag(r, m, k, from) { r.draggable = true; r.ondragstart = e => { shTipHide(); SH.drag = { k, from }; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', k); r.classList.add('drag'); }; r.ondragend = () => { SH.drag = null; r.classList.remove('drag'); }; }
+function shDrop(el, fn) { el.ondragover = e => { if (SH.drag) { e.preventDefault(); el.classList.add('over'); } }; el.ondragleave = () => el.classList.remove('over'); el.ondrop = e => { e.preventDefault(); el.classList.remove('over'); if (SH.drag) { fn(SH.drag); SH.drag = null; drawSheet(); } }; }
 function shSkillDetail(m, k) {
   const w = shEl('div', 'skd'); if (!k || !G.D.MSKILLS[k]) { w.append(shEl('span', 'nil', '—')); return w; }
   const D = G.D.MSKILLS[k], S0 = G.Skill.SK[k], rs = G.Skill.resOf(k), DN = G.Dnd, head = shEl('div', 'dh'); head.append(shIcon(k)); const nm = shEl('div', ''); nm.append(shEl('b', '', D.n), shEl('small', '', D.en || '')); head.append(nm); w.append(head);
   const num = G.SkillNum_at(k, m.cls, m.lv), sp = Object.values(G.SRD_SP).find(q => q.en === D.en), ty = num?.t || G.Skill.spellType(k), kind = G.Skill.kindOf(k), dc = 8 + DN.prof(m.lv) + DN.mod(DN.ab(m)[DN.cls(m).pri]) + G.Trinket.sum(m, 'dc'), COND = DN.COND || {};
-  const facts = [num?.d ? [S0?.heal ? '회복' : '피해', `${num.d}${!S0?.heal && DT[ty] ? ' ' + DT[ty] : ''}`] : null, num?.sv ? ['내성', `${DN.AB_N[num.sv]} DC ${dc}`] : null, num?.c?.length ? ['상태', num.c.map(q => COND[q]?.n || q).join(' · ')] : null, sp?.area ? ['범위', `반경 ${sp.area}칸`] : null, G.D.SK_RANGE[k] != null ? ['사거리', G.D.SK_RANGE[k] ? `${G.D.SK_RANGE[k]}칸` : '자신'] : null, kind === '늘 적용' || kind === '탐험' ? null : ['소모', kind], rs ? ['전투당', `${G.Res.usesOf(m, rs, k)}번`] : null, S0?.conc ? ['집중', ''] : null, S0?.res?.slot ? ['시전', `${G.Res.castLevel(m, S0.res)}레벨`] : null].filter(Boolean), g = shEl('div', 'facts');
+  const facts = [num?.d ? [S0?.heal ? '회복' : '피해', `${num.d}${!S0?.heal && DT[ty] ? ' ' + DT[ty] : ''}`] : null, num?.sv ? ['내성', `${DN.AB_N[num.sv]} DC ${dc}`] : null, num?.c?.length ? ['상태', num.c.map(q => COND[q]?.n || q).join(' · ')] : null, sp?.area ? ['범위', `반경 ${sp.area}칸`] : null, G.D.SK_RANGE[k] != null ? ['사거리', G.D.SK_RANGE[k] ? `${G.D.SK_RANGE[k]}칸` : '자신'] : null, kind === '늘 적용' || kind === '탐험' ? null : ['소모', kind], rs?.slot ? ['사용', `${rs.slot}레벨 슬롯`] : rs ? [rs.focus ? (m.cls === 'monk' ? '집중' : '마력') : rs.short ? '짧은 휴식' : '긴 휴식', rs.focus ? `${rs.focus}점` : f.town ? `${G.Res.usesOf(m, rs, k)}번` : `${G.Res.left(m, rs, k)}/${G.Res.usesOf(m, rs, k)}`] : null, S0?.conc ? ['집중', ''] : null, null].filter(Boolean), g = shEl('div', 'facts');
   for (const [a, b] of facts) { const q = shEl('span', ''); q.append(shEl('small', '', a), shEl('b', '', b)); g.append(q); } w.append(g, shEl('p', 'ds', D.d || ''));
   const lv = G.Guild.skLv(m.cls, k); if (lv > m.lv) w.append(shEl('em', '', `Lv ${lv}부터`));
   return w;
@@ -65,7 +68,7 @@ function drawSheet() {
   // 머리글
   const head = shEl('header', 'sh-h'); head.style.setProperty('--c', def.col);
   const tt = shEl('div', 'tt'), nm = shEl('h2', '', m.name || '단장'); nm.append(shEl('b', 'lv', `Lv ${m.lv}`)); const sp0 = G.Res.species(m), ln0 = G.SRD.line(m, sp0); tt.append(nm, shEl('small', '', `${ln0 && /엘프|노움/.test(ln0.n) ? ln0.n : (ln0 ? ln0.n + ' ' : '') + SP.n} ${def.n} · ${G.SRD.BG[G.SRD.bg(m)].n}${m.lead ? ' · 단장' : ''}`)); head.append(tt);
-  const P = G.D.PERSONA, tags = shEl('div', 'tags'), ft = G.Feat.def(m); for (const k of m.pers || []) { const q = shEl('span', 'tag', P[k]?.n || k); q.dataset.tip = P[k]?.d || ''; tags.append(q); } if (ft) { const q = shEl('span', 'tag', ft.n); q.dataset.tip = ft.d || ''; tags.append(q); } head.append(tags);
+  const P = G.D.PERSONA, ft = G.Feat.def(m); head.append(shEl('div', 'sp0'));
   const hd = (n, v, t) => { const q = shEl('div', 'hd'); q.append(shEl('small', '', n), shEl('b', '', v)); if (t) q.dataset.tip = t; return q; };
   head.append(hd('체력', `${Math.round(hp)}/${Math.round(hpMax)}`), hd('AC', a ? DN.ac(a) : '-'), hd('공격', w ? `${w.n}d${w.d}` : `d${c.hd}`), hd('숙련', sg0(pr)));
   const x = shEl('button', 'x', '닫기'); x.onclick = closeSheet; head.append(x); box.append(head);
@@ -84,13 +87,15 @@ function drawSheet() {
   for (const id of m.scars || []) if (SC[id]) bad.push({ n: SC[id].n, d: SC[id].d });
   if (m.habit) { const h0 = marks.find(q => q.d === '스트레스 ×1.15'); if (h0) { good.splice(good.indexOf(h0), 1); bad.push(h0); } }
   const lst = (h, list, cls) => { const b = shEl('div', 'pc-l ' + cls); b.append(shEl('h5', '', h)); if (!list.length) b.append(shEl('span', 'nil', '—')); const g = shEl('div', 'tags'); for (const q of list) { const i = shEl('span', 'tag', q.n); if (q.d) i.dataset.tip = q.d; g.append(i); } b.append(g); return b; };
-  R0.append(lst('장점', [...hiAb, ...G.SRD.SPECIES[sp0].traits.map(q => ({ n: q[0], d: q[1] })), ...(ln0 ? [{ n: ln0.n, d: ln0.d || (ln0.dt ? `${DT[ln0.dt]} 저항` : '') }] : []), ...good], 'up'), lst('단점', [...loAb, ...bad], 'dn'));
+  if ((m.pers || []).length) { const pb0 = shEl('div', 'pers'); pb0.append(shEl('h5', '', '성격')); for (const k of m.pers) { const q = shEl('div', 'prs'); q.append(shEl('b', '', P[k]?.n || k), shEl('span', '', P[k]?.d || '')); pb0.append(q); } R0.append(pb0); }
+  R0.append(lst('장점', [...hiAb, ...G.SRD.SPECIES[sp0].traits.map(q => ({ n: q[0], d: q[1] })), ...(ln0 ? [{ n: ln0.n, d: ln0.d || (ln0.dt ? `${DT[ln0.dt]} 저항` : '') }] : []), ...(ft ? [{ n: ft.n, d: ft.d }] : []), ...good], 'up'), lst('단점', [...loAb, ...bad], 'dn'));
   const fr = shEl('div', 'tags'); for (const o of f.mercs.concat(GD.leader(f))) { if (o === m || o.dead) continue; const rel = G.Bond.rel(f, m, o); if (!rel) continue; fr.append(shEl('span', 'tag ' + rel, `${o.name || '단장'} ${rel === 'friend' ? '전우' : '앙숙'}`)); } if (fr.children.length) { R0.append(shEl('h5', '', '관계'), fr); } L.append(R0); LF.append(L);
   // 가운데: 숙련 전부. SRD 18기술(숙련은 표시) · 내성 · 장비 숙련
   const M = shEl('section', 'sh-c prf'), TR = DN.TRAIN[m.cls] || []; M.append(shEl('h5', '', '기술'));
-  for (const k of Object.keys(DN.SKILL_AB)) { const v = DN.skill(m, k), on = DN.profs(m).includes(k) || G.Pool.skillK(m, k) > 0, q = shEl('div', 'pfr' + (on ? ' on' : '')); q.append(shEl('i', 'dot'), shEl('span', '', DN.SKILL_N[k]), shEl('small', '', DN.AB_N[DN.SKILL_AB[k]]), shEl('b', bonusCol(v), sg0(v))); M.append(q); }
+  for (const k of Object.keys(DN.SKILL_AB)) { const v = DN.skill(m, k), on = DN.profs(m).includes(k), q = shEl('div', 'pfr' + (on ? ' on' : '')); q.dataset.tip = G.SRD.SKILL_D[k]; q.append(shEl('i', 'dot'), shEl('span', '', DN.SKILL_N[k]), shEl('small', '', DN.AB_N[DN.SKILL_AB[k]]), shEl('b', bonusCol(v), sg0(v))); M.append(q); }
   M.append(shEl('h5', '', '장비'));
-  for (const [h, v] of [['무기', TR[0]], ['갑옷', TR[1]], ['도구', [TR[2], G.SRD.BG[G.SRD.bg(m)].tool].filter(Boolean).join(' · ')]]) { if (!v) continue; const q = shEl('div', 'pft'); q.append(shEl('small', '', h), shEl('span', '', v)); M.append(q); }
+  const SR0 = G.SRD, wN = Object.keys(SR0.WEAPON).filter(q => SR0.canW(m, q)).map(q => SR0.WEAPON[q].n).join(', '), aN = Object.keys(SR0.ARMOR).filter(q => q !== 'none' && SR0.canA(m, q)).map(q => SR0.ARMOR[q].n).join(', ') + (SR0.canShield(m.cls) ? ', 방패' : '');
+  for (const [h, v, tip] of [['무기', TR[0], `명중에 숙련 보너스: ${wN}`], ['갑옷', TR[1], aN ? `입어도 판정 불리 · 주문 제한 없음: ${aN}` : '갑옷 훈련 없음'], ['도구', [TR[2], SR0.BG[SR0.bg(m)].tool].filter(Boolean).join(' · '), '그 도구를 쓰는 판정에 숙련 보너스']]) { if (!v) continue; const q = shEl('div', 'pft'); q.append(shEl('small', '', h), shEl('span', '', v)); q.dataset.tip = tip; M.append(q); }
   body.append(M);
   // 왼쪽 맨 아래: 지금 상태 한 줄
   const foot = shEl('footer', 'sh-f'), s0 = Math.round(m.stress || 0), cell = (h, v, cls) => { const q = shEl('div', 'cd'); q.append(shEl('small', '', h), v.nodeType ? v : shEl('b', cls || '', v)); return q; };
@@ -98,8 +103,16 @@ function drawSheet() {
   const bars = shEl('div', 'bars'), fm = m.form || []; for (let i = 0; i < 5; i++) { const v = fm[i], q = shEl('i', v == null ? 'none' : v >= 0.35 ? 'hi' : v >= 0.15 ? 'mid' : 'lo'); q.style.height = (v == null ? 4 : 4 + Math.min(1, v * 1.6) * 18) + 'px'; if (v != null) q.dataset.tip = `피해 비중 ${Math.round(v * 100)}%`; bars.append(q); } foot.append(cell('최근 전투', bars));
   for (const [n, v] of [['전투', m.fights], ['처치', m.kills], ['쓰러짐', m.downs], ['구함', deeds.saves], ['위기', deeds.crises]]) foot.append(cell(n, v ?? 0));
   // 오른쪽: 기술
-  const K = shEl('section', 'sh-c sk-p'), picks = GD.order(m, GD.picks(m)), traits = GD.traits(m), xs = G.Pool.can(m), xk = G.Pool.of(m), live = GD.active(m), scroll = shEl('div', 'sk-l'), sec = (h, list, fn) => { if (!list.length) return; scroll.append(shEl('h5', '', h)); for (const k of list) scroll.append(fn(k)); };
-  sec('스킬', picks, k => shSkillRow(m, k, undefined, town && live.includes(k) && picks[0] !== k ? () => GD.first(m, k) : null)); sec('종족 · 직업', G.SrdX.skills(m), k => shSkillRow(m, k)); sec('탐험', xs, k => shSkillRow(m, k, k === xk, town && k !== xk ? () => G.Pool.set(m, k) : null)); sec('특성', traits, k => shSkillRow(m, k)); K.append(scroll); body.append(K); box.append(foot);
+  const K = shEl('section', 'sh-c sk-p'), traits = GD.traits(m), L0 = GD.limits(m.cls, m.lv), spells = GD.spellList(m.cls), sel = new Set(m.skills || []), nC = (m.skills || []).filter(q => GD.spLv(q) === 0).length, nP = (m.skills || []).filter(q => GD.spLv(q) > 0).length, levels = [...new Set(spells.map(q => GD.spLv(q)).filter(q => q > 0))].sort((p, q) => p - q);
+  GD.fillSlots(m); const nAt = L => (m.skills || []).filter(q => GD.spLv(q) === L).length, tabsDef = [...(spells.some(q => GD.spLv(q) === 0) ? [['c', `소마법 ${nAt(0)}`]] : []), ...levels.map(q => ['L' + q, `${q}레벨 ${nAt(q)}`]), ['f', '기능'], ['t', '특성']]; if (!tabsDef.some(q => q[0] === SH.tab)) SH.tab = tabsDef[0][0];
+  const h0 = shEl('div', 'skh'); h0.append(shEl('h5', '', spells.length ? `소마법 ${nC}/${L0.cantrip} · 준비 ${nP}/${L0.prepared}` : '기능')); if (town && spells.length) { const rec = shEl('button', 'mini', '추천'); rec.onclick = () => { GD.useRecommend(m); drawSheet(); }; h0.append(rec); } K.append(h0);
+  const T0 = G.Res.table(m); if (T0.length) { const rs0 = G.Res.of(m), row = shEl('div', 'slbar'); row.append(shEl('small', '', '시전 횟수')); T0.forEach((n, i) => { if (n) { const q = shEl('span', ''); q.append(shEl('small', '', `${i + 1}레벨`), shEl('b', '', town ? `${n}` : `${n - (rs0.sl[i] || 0)}/${n}`)); row.append(q); } }); K.append(row); } if (G.Res.pool(m)) { const row = shEl('div', 'slbar'), q = shEl('span', ''); q.append(shEl('small', '', m.cls === 'monk' ? '집중' : '마력'), shEl('b', '', town ? `${G.Res.pool(m)}` : `${G.Res.pool(m) - G.Res.of(m).fp}/${G.Res.pool(m)}`)); row.append(q); K.append(row); }
+  const tabs = shEl('div', 'sk-tabs'); for (const [t, n] of tabsDef) { const q = shEl('button', 'tb' + (SH.tab === t ? ' on' : ''), n); q.onclick = () => { SH.tab = t; drawSheet(); }; tabs.append(q); } K.append(tabs);
+  const scroll = shEl('div', 'sk-l'), sec = (h, list, fn) => { if (!list.length) return; if (h) scroll.append(shEl('h5', '', h)); for (const q of list) scroll.append(fn(q)); };
+  if (SH.tab === 'c' || SH.tab[0] === 'L') { const lv0 = SH.tab === 'c' ? 0 : +SH.tab.slice(1), list = spells.filter(q => GD.spLv(q) === lv0).sort((p, q) => (sel.has(q) - sel.has(p)) || G.D.MSKILLS[p].n.localeCompare(G.D.MSKILLS[q].n)); const row0 = q => { const on = sel.has(q), r = shSkillRow(m, q, on ? undefined : true, town ? () => GD.toggle(m, q) : null); if (on) r.classList.add('in'); return r; }, noC = q => !!G.D.MSKILLS[q]?.noAuto, fold = (id, name, l, def) => { if (!l.length) return; const key = `${SH.tab}:${id}`, open = SH.fold[key] ?? def, h = shEl('button', 'fold' + (open ? ' on' : ''), `${open ? '▾' : '▸'} ${name} ${l.filter(q => sel.has(q)).length}/${l.length}`); h.onclick = () => { SH.fold[key] = !open; drawSheet(); }; scroll.append(h); if (open) for (const q of l) scroll.append(row0(q)); }; fold('c', '전투', list.filter(q => !noC(q)), true); fold('n', '비전투', list.filter(noC), false); }
+  else if (SH.tab === 'f') { const acts = GD.pickable(m.cls).filter(q => GD.spLv(q) == null && G.D.MSKILLS[q]).sort((p, q) => GD.skLv(m.cls, p) - GD.skLv(m.cls, q)); sec('', acts, q => shSkillRow(m, q)); sec('종족 · 직업', G.SrdX.skills(m).filter(q => GD.spLv(q) == null), q => shSkillRow(m, q)); }
+  else { sec('', traits, q => shSkillRow(m, q)); }
+  K.append(scroll); body.append(K); box.append(foot);
   scrl.style.setProperty('--h', box.offsetHeight + 'px');
   if (SH.pin) shTipPut(doll, shGearTip(m, SH.pin, a, true), 'pin');
 }

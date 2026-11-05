@@ -7,13 +7,13 @@
   T('ft_danger', '위험 감지', 'Danger Sense', 'barbarian', 2, '민첩 내성 이점');
   T('ft_mindless', '무심한 격노', 'Mindless Rage', 'barbarian', 6, '격노 중 공포 · 매혹 면역');
   T('ft_pounce', '본능적 도약', 'Instinctive Pounce', 'barbarian', 7, '격노할 때 이동 절반 더');
-  T('ft_persist', '끊임없는 격노', 'Persistent Rage', 'barbarian', 15, '격노 전투당 +1번');
+  T('ft_persist', '끊임없는 격노', 'Persistent Rage', 'barbarian', 15, '격노 +1번');
   T('ft_might', '불굴의 힘', 'Indomitable Might', 'barbarian', 18, '근력 내성 최소값 = 근력');
   T('ft_champion', '원초의 투사', 'Primal Champion', 'barbarian', 20, '근력 · 건강 +4');
   // 바드
   T('ft_jack', '만능 재주꾼', 'Jack of All Trades', 'bard', 2, '숙련 없는 판정 · 선제권 + 숙련 절반');
   T('ft_counter', '대항 매력', 'Countercharm', 'bard', 7, '지혜 · 매력 내성 이점');
-  T('ft_superinsp', '탁월한 영감', 'Superior Inspiration', 'bard', 18, '바드의 영감 전투당 +1번');
+  T('ft_superinsp', '탁월한 영감', 'Superior Inspiration', 'bard', 18, '바드의 영감 +1번');
   // 클레릭
   T('ft_sear', '언데드 불태우기', 'Sear Undead', 'cleric', 5, '언데드 퇴치에 지혜만큼 d8 광휘');
   T('ft_bhealer', '축복받은 치유사', 'Blessed Healer', 'cleric', 6, '남을 치유하면 나도 2 + 주문 레벨');
@@ -21,10 +21,10 @@
   T('ft_bstrike2', '향상된 축복받은 일격', 'Improved Blessed Strikes', 'cleric', 14, '축복받은 일격 2d8');
   T('ft_supreme', '최고의 치유', 'Supreme Healing', 'cleric', 17, '치유 주사위는 늘 최대');
   // 드루이드
-  T('ft_resurge', '야생의 재기', 'Wild Resurgence', 'scout', 5, '야생 변신 전투당 +1번');
+  T('ft_resurge', '야생의 재기', 'Wild Resurgence', 'scout', 5, '야생 변신 +1번');
   T('ft_fury', '원소의 분노', 'Elemental Fury', 'scout', 7, '차례에 한 번 명중 +1d8 화염');
   T('ft_fury2', '향상된 원소의 분노', 'Improved Elemental Fury', 'scout', 15, '원소의 분노 2d8');
-  T('ft_archdruid', '대드루이드', 'Archdruid', 'scout', 20, '야생 변신 전투당 +1번');
+  T('ft_archdruid', '대드루이드', 'Archdruid', 'scout', 20, '야생 변신 +1번');
   // 파이터
   T('ft_athlete', '뛰어난 운동선수', 'Remarkable Athlete', 'dragoon', 3, '선제권 이점');
   T('ft_heroic', '영웅적 전사', 'Heroic Warrior', 'dragoon', 10, '차례마다 빗나간 공격 한 번 다시');

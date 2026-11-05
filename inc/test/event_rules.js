@@ -7,8 +7,8 @@ for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/
 const G = ctx.G, GD = G.Guild, F = G.Fantasy, E = G.Event, ST = G.Story; G.quiet = true; G.Foe.retreatOn = false;
 let ok = 0, bad = 0; const t = (n, c, x = '') => { if (c) ok++; else { bad++; console.log('실패:', n, x); } };
 function setup(cls, opt = {}) {
-  G.newState(); const f = G.S.w.fantasy, L = GD.leader(f); f.leaderNew = false; f.autoTr = f.autoParty = f.autoGo = false; L.lv = opt.lv || 8; L.xk = opt.lx || 'x_none'; L.xRoll = [];
-  f.mercs = [L]; f.lineup = cls.map(([c, x]) => { const m = GD.make(f, c, { lv: opt.lv || 8 }); m.xk = x || null; m.xRoll = []; f.mercs.push(m); return m.uid; });
+  G.newState(); const f = G.S.w.fantasy, L = GD.leader(f); f.leaderNew = false; f.autoTr = f.autoParty = f.autoGo = false; L.lv = opt.lv || 8; L.skills = (L.skills || []).filter(k => !G.D.MSKILLS[k]?.noAuto);
+  f.mercs = [L]; f.lineup = cls.map(([c, x]) => { const m = GD.make(f, c, { lv: opt.lv || 8 }); if (x && G.D.MSKILLS[x]?.noAuto) { m.skills = [x, ...m.skills]; m.skManual = true; } f.mercs.push(m); return m.uid; });
   F.syncAllies(f); const s = G.Season.st(f); s.seed = opt.seed ?? 42; s.t = 0; f.frontLock = opt.front || Object.keys(G.D.F.factions).find(k => k !== 'swamp'); f.policy = opt.pol || 'party'; f.start = f.checkpoint = f.floor = f.maxFloor = opt.fl || 3; f.town = true; f.seasonEnd = false; f.townT = 99; f.carry = 0; f.sceneN = 1; f.sceneDry = 0; f.recent = [];
   const rt = F.rt(f); G.Exp.depart(f, rt); for (let i = 0; i < 400 && !rt.flow; i++) G.tick(1, 0.25);
   return { f, rt };
@@ -42,7 +42,6 @@ D: {
 for (const e of E.LIST.filter(q => q.choices)) { t(`${e.id}: 지나갈 길이 있다`, e.choices.some(o => o.leave && !o.check && !o.x)); t(`${e.id}: 선택지 둘 이상`, e.choices.filter(o => !o.x).length >= 2); for (const o of e.choices) { if (o.check) t(`${e.id}/${o.label}: 판정 기술`, !!G.Dnd.SKILL_AB[o.check.sk], o.check.sk); for (const b of [o.win, o.lose, o.win?.fake, o.win?.real, o.lose?.fake, o.lose?.real]) for (const [k] of b?.ops || []) t(`${e.id}: 결과 ${k}`, !!E.ops[k]); } const os = e.choices; t(`${e.id}: 선택마다 결과가 다르다`, new Set(os.map(o => JSON.stringify([o.win?.ops, o.win?.flag, o.win?.fake?.ops, o.lose?.ops]))).size === os.length); }
 // 탐험 칸이 장면을 얻었다
 { const a = setup([['bard', 'x_hut'], ['dragoon'], ['archer']]), b = setup(crew); const has = S => { const e = E.BY.shelter; return e.choices.filter(o => !o.x || E.hasX(S.rt, o.x)).map(o => o.label).join(); }; t('오두막: 있으면 선택지가 는다', has(a).includes('오두막') && !has(b).includes('오두막'), has(b));
-  for (const [cls, x, sk] of [['mage', 'x_arcana', 'arcana'], ['barbarian', 'x_surv', 'survival'], ['cleric', 'x_med', 'medicine']]) { const S = setup([[cls, x], ['dragoon'], ['archer']]), p = S.rt.party.find(q => q.merc && q.merc.cls === cls), m = p.merc; const on = G.Pool.skillK(m, sk), v = G.Dnd.skill(m, sk); t(`${x}: ${sk} 숙련`, on === 1 && v >= G.Dnd.mod(G.Dnd.ab(m)[G.Dnd.SKILL_AB[sk]]) + G.Dnd.prof(m.lv), `${on} ${v}`); m.xk = 'x_none'; t(`${x}: 칸을 빼면 숙련도 빠진다`, G.Pool.skillK(m, sk) === 0); }
   const S = setup([['scout', 'x_detect'], ['dragoon'], ['archer']]), ch = E.BY.seal.choices[0].check, S0 = setup(crew); const pA = E.pct(S.rt, ch), mod = G.Dnd.best([E.who(S.rt, ch.sk).merc], ch.sk).v, base = Math.round(Math.max(0.05, Math.min(1, (21 - (ch.dc - mod)) / 20)) * 100); t('마법 탐지: 봉인에 이점', pA > base, `${pA} ${base}`); }
 // 각 사건의 각 선택 · 성공과 실패를 끝까지 돌린다 (결과가 실제로 반영되나)
 const stub = v => { const o = G.Mission.roll; G.Mission.roll = (f, rt, sk, x, who, dc) => ({ who, nat: v ? 20 : 1, mod: 0, dc, ok: v }); return () => { G.Mission.roll = o; }; };

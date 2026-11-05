@@ -10,7 +10,7 @@ G.Guild = (() => {
   const BASE = ['archer', 'cleric', 'bard', 'scout'], TIER = { mage: 4, paladin: 4, barbarian: 4, dragoon: 8, monk: 8, warlock: 8, archmage: 12, rogue: 12 };
   const GEAR_K = 1.1, GEAR_BASE = 30, GEAR_G = 1.25, AUTO_FORGE = 0.5;
   const TRAIT_MEMO = new Map();
-  const TRAIN_K = 0.1, TEMPLE_K = 0.12, RETIRE_LV = 20, LV_MAX = 20, BOON_LV = 19, BOON_EVERY = 5, EPIC_K = 1.06, ROSTER_BASE = 8, OFFERS_BASE = 3, SLOT_LV = [1, 1, 3, 5], SKILL_N = 4, PROMO_LV = 3, PROMO_K = 60, LOOKS = 3, TAVERN_T = 150, INJURY_T = 90, DOWNS_TO_INJURY = 2, LV_STEP = 0.08;
+  const TRAIN_K = 0.1, TEMPLE_K = 0.12, RETIRE_LV = 20, LV_MAX = 20, BOON_LV = 19, BOON_EVERY = 5, EPIC_K = 1.06, ROSTER_BASE = 8, OFFERS_BASE = 3, SLOT_LV = [1, 1, 3, 5, 7], SKILL_N = 5, PROMO_LV = 3, PROMO_K = 60, LOOKS = 3, TAVERN_T = 150, INJURY_T = 90, DOWNS_TO_INJURY = 2, LV_STEP = 0.08;
   // 직업별 몸값 무게 (트리 면허 값 순서와 같다)
   const CLS_W = { archer: 1, scout: 1.1, bard: 1.2, cleric: 1.5, mage: 2, paladin: 2.5, barbarian: 2.5, dragoon: 3, monk: 3, warlock: 3, archmage: 4, rogue: 4 };
   const F = () => G.Fantasy;
@@ -154,29 +154,42 @@ G.Guild = (() => {
     // 레벨 · 전직이 같으면 같은 목록이라 저장해 두고 (전투 중 수없이 부른다), 사람마다 굴린 선택 기능(G.Opt)을 뒤에 붙인다
     traits: m => { const key = `${m.cls}|${m.lv}|${m.adv || ''}`; let b = TRAIT_MEMO.get(key); if (!b) { const auto = k => !Gd.isPick(k) && !D.MSKILLS[k]?.explore && m.lv >= Gd.skLv(m.cls, k); b = [...new Set(D.MPOOL[m.cls].filter(auto).concat(m.adv ? D.ADV[m.adv].sig.filter(auto) : []))]; TRAIT_MEMO.set(key, b); } const o = G.Opt.of(m); return o.length ? b.concat(o) : b; },
     roll: (cls, lv = 1) => {
-      const sig = D.MSIG[cls], pool = Gd.pickable(cls), can = pool.filter(k => Gd.skLv(cls, k) <= lv), first = pool.includes(sig) && Gd.skLv(cls, sig) <= lv ? [sig] : [];
-      const rest = U.shuffle(can.filter(k => !first.includes(k))).sort((a, b) => Gd.skLv(cls, b) - Gd.skLv(cls, a) + (Math.random() - 0.5) * 8); // 높은 레벨 쪽을 조금 더
-      const later = U.shuffle(pool.filter(k => !can.includes(k) && !first.includes(k))).sort((a, b) => Gd.skLv(cls, a) - Gd.skLv(cls, b));
-      return [...first, ...rest, ...later].slice(0, SKILL_N);
+      const L = Gd.limits(cls, lv), pool = Gd.pickable(cls).filter(k => !D.MSKILLS[k]?.noAuto && Gd.spLv(k) != null && Gd.skLv(cls, k) <= lv), sig = D.MSIG[cls], pick = (list, n) => { const first = list.includes(sig) ? [sig] : []; return [...first, ...U.shuffle(list.filter(k => k !== sig)).sort((a, b) => Gd.skLv(cls, b) - Gd.skLv(cls, a) + (Math.random() - 0.5) * 8)].slice(0, n); };
+      return [...pick(pool.filter(k => Gd.spLv(k) === 0), L.cantrip), ...pick(pool.filter(k => Gd.spLv(k) > 0), L.prepared)];
     },
     // 레벨이 오르면 쓸 수 없던 칸 · 낮은 기술 하나를 새 기술로 (사람이 고른 칸은 그대로)
-    grow(m) {
-      if (m.skManual || m.lv % 2) return;
-      const pool = Gd.pickable(m.cls), can = pool.filter(k => Gd.skLv(m.cls, k) <= m.lv && !m.skills.includes(k)); if (!can.length) return;
-      const sig = D.MSIG[m.cls], i = m.skills.map((k, j) => [Gd.skLv(m.cls, k), j, k]).filter(x => x[2] !== sig).sort((a, b) => (a[0] > m.lv) - (b[0] > m.lv) || 0).sort((a, b) => (b[0] > m.lv) - (a[0] > m.lv) || a[0] - b[0])[0]; if (!i) return;
-      const best = can.slice().sort((a, b) => Gd.skLv(m.cls, b) - Gd.skLv(m.cls, a)).slice(0, 4);
-      if (i[0] > m.lv || Gd.skLv(m.cls, best[0]) > i[0]) m.skills[i[1]] = U.pick(best);
-    },
+    grow(m) { Gd.fillSlots(m); },
     skLv(cls, k) { const L = D.MSKILLS[k]?.lv; return typeof L === 'object' ? L[cls] || 1 : L || 1; },
-    // 그 칸이 열리는 레벨: 칸 레벨(1 · 1 · 3 · 5)과 기술 레벨 중 큰 쪽
-    slotLv: (i, m, k) => Math.max(SLOT_LV[i], m && k ? Gd.skLv(m.cls, k) : 1),
+    // 주문 레벨 (0 소마법 · 없으면 주문이 아닌 기능)
+    spLv(k) { const e = D.MSKILLS[k]?.en; if (!e) return null; if (!Gd._lvOf) { Gd._lvOf = {}; for (const id in G.SRD_SP) Gd._lvOf[G.SRD_SP[id].en] = G.SRD_SP[id].lv; } return Gd._lvOf[e] ?? null; },
+    // 고르는 수 (SRD 직업 표): 소마법 · 준비 주문
+    limits(cls, lv) { const o = G.SRD_RAW.CLASS_LV[G.SRD.RAW_CLS[cls]]?.[lv] || {}; return { cantrip: parseInt(o.Cantrips) || 0, prepared: parseInt(o['Prepared Spells']) || 0 }; },
+    nSlots(cls, lv) { const L = Gd.limits(cls, lv); return L.cantrip + L.prepared; },
+    // 그 직업 주문 전체: 전투 동작이 없는 것은 칸에 넣어도 전투에서 쓰지 않는다
+    spellList(cls) { if (!Gd._sp) Gd._sp = {}; if (Gd._sp[cls]) return Gd._sp[cls]; const RAW = G.SRD.RAW_CLS[cls], have = new Set(), out = []; for (const k of G.Pool.POOL[cls].concat(D.MPOOL[cls])) { const L = Gd.spLv(k); if (L != null && !have.has(D.MSKILLS[k].en)) { have.add(D.MSKILLS[k].en); out.push(k); } } for (const id in G.SRD_SP) { const o = G.SRD_SP[id]; if (!o.cls.includes(RAW) || have.has(o.en)) continue; const k = 'su_' + id.replace(/-/g, '_'); D.MSKILLS[k] = D.MSKILLS[k] || { n: o.ko, en: o.en, t: 'fx_zap', d: '', lv: { [cls]: Gd.lvAtSpell(cls, o.lv) }, noAuto: true }; D.MSKILLS[k].lv[cls] = Gd.lvAtSpell(cls, o.lv); G.Skill.SK[k] = G.Skill.SK[k] || { when: () => false, run() {}, noCombat: true }; D.SK_RANGE[k] = o.rng || 0; have.add(o.en); out.push(k); } return (Gd._sp[cls] = out); },
+    lvAtSpell(cls, L) { if (!L) return 1; const T = G.SRD_RAW.CLASS_LV[G.SRD.RAW_CLS[cls]]; if (cls === 'warlock') return L > 5 ? [11, 13, 15, 17][L - 6] : [1, 3, 5, 7, 9][L - 1]; for (let i = 1; i <= 20; i++) if (T[i]?.[String(L)] && T[i][String(L)] !== '—') return i; return 21; },
+    // 주문이 아닌 기능은 레벨이 되면 다 쓴다 (SRD)
+    feats: m => Gd.pickable(m.cls).filter(k => Gd.spLv(k) == null && m.lv >= Gd.skLv(m.cls, k)),
+    // 칸 하나 넣고 빼기 (상태창)
+    toggle(m, k) { const s = (m.skills = (m.skills || []).slice()), i = s.indexOf(k); if (i >= 0) { s.splice(i, 1); m.skManual = true; return true; } const L = Gd.limits(m.cls, m.lv), cant = Gd.spLv(k) === 0, n = s.filter(q => (Gd.spLv(q) === 0) === cant).length; if (n >= (cant ? L.cantrip : L.prepared)) return false; if (m.lv < Gd.skLv(m.cls, k)) return false; s.push(k); m.skManual = true; return true; },
+    // 그 칸의 기술이 열리는 레벨
+    slotLv: (i, m, k) => (m && k ? Gd.skLv(m.cls, k) : 1),
     slots: m => (m.skills || []).filter((s, i) => m.lv >= Gd.slotLv(i, m, s)),
+    // 옛 저장: 네 칸뿐이면 다섯째를 채운다
+    fillSlots(m) { if (m.skManual) return; const L = Gd.limits(m.cls, m.lv), cur = (m.skills || []).filter(k => Gd.spLv(k) != null), c = cur.filter(k => Gd.spLv(k) === 0), p = cur.filter(k => Gd.spLv(k) > 0), add = Gd.roll(m.cls, m.lv).filter(k => !cur.includes(k)); for (const k of add) { if (Gd.spLv(k) === 0 && c.length < L.cantrip) c.push(k); else if (Gd.spLv(k) > 0 && p.length < L.prepared) p.push(k); } m.skills = [...c, ...p]; },
+    // 사람이 고르는 칸 (상태창 끌어 놓기): 순서가 곧 쓰는 순서
+    SKILL_N,
+    setSlot(m, i, k) { const s = (m.skills = (m.skills || []).slice()), j = s.indexOf(k); if (j === i) return; if (j >= 0) { s[j] = s[i]; s[i] = k; if (s[j] == null) s.splice(j, 1); } else if (i < s.length) s[i] = k; else s.push(k); m.skManual = true; m.skPri = s.slice(); },
+    dropSlot(m, k) { const s = (m.skills || []).filter(q => q !== k); m.skills = s; m.skManual = true; m.skPri = s.slice(); },
+    // 추천: 지금 쓸 수 있는 전투 주문 중 수치가 있고 레벨 높은 것부터 · 회복 직업은 회복을 먼저
+    recommend(m) { const L = Gd.limits(m.cls, m.lv), pool = Gd.pickable(m.cls).filter(k => Gd.skLv(m.cls, k) <= m.lv && !D.MSKILLS[k]?.noAuto && Gd.spLv(k) != null), num = k => (G.SkillNum_at?.(k, m.cls, m.lv)?.d ? 1 : 0), heal = k => (G.Skill.SK[k]?.heal ? 1 : 0), by = l => l.slice().sort((a, b) => heal(b) - heal(a) || num(b) - num(a) || Gd.skLv(m.cls, b) - Gd.skLv(m.cls, a)); return [...by(pool.filter(k => Gd.spLv(k) === 0)).slice(0, L.cantrip), ...by(pool.filter(k => Gd.spLv(k) > 0)).slice(0, L.prepared)]; },
+    useRecommend(m) { m.skills = Gd.recommend(m); m.skManual = false; m.skPri = m.skills.slice(); },
     // 스킬 레벨 1~5: 용병 Lv 1 · 4 · 7 · 10 · 13 (DESIGN.md 43)
     skillLv: m => Math.min(5, 1 + Math.floor(((m?.lv || 1) - 1) / 3)),
     // 쓸 수 있는 기술: 열린 칸 + 서브클래스 기능 중 그 레벨이 된 것
     // + 마법 입문 (출신 재주) 주문
-    picks: m => { const sig = m.adv ? D.ADV[m.adv].sig.filter(k => m.lv >= Gd.skLv(m.cls, k) && Gd.isPick(k)) : []; return [...new Set(sig.concat(Gd.slots(m), G.Feat.spell(m) || []))].slice(0, SKILL_N); },
-    active: m => { const x = G.Pool.of(m); return [...new Set(Gd.picks(m).concat(Gd.traits(m), x ? [x] : [], G.SrdX ? G.SrdX.skills(m) : []))]; },
+    picks: m => { const sig = m.adv ? D.ADV[m.adv].sig.filter(k => m.lv >= Gd.skLv(m.cls, k) && Gd.isPick(k)) : []; return [...new Set(sig.concat(Gd.slots(m), G.Feat.spell(m) || [], Gd.feats(m)))]; },
+    active: m => [...new Set(Gd.picks(m).concat(Gd.traits(m), G.SrdX ? G.SrdX.skills(m) : []))],
     // 기술 쓰는 순서: 사람이 정했으면 그 순서(왼쪽부터), 아니면 큰 것부터
     order(m, list) { const pri = m.skPri, rank = k => { const i = pri ? pri.indexOf(k) : -1; return i >= 0 ? i : pri ? 99 : -G.Res.cost(m, G.Skill.SK[k]?.res); }; return list.map((k, i) => [k, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]); },
     // 이 기술을 맨 앞으로
