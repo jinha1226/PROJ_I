@@ -8,10 +8,11 @@ G.Region = (() => {
   const XP = { 0: 10, 0.125: 25, 0.25: 50, 0.5: 100, 1: 200, 2: 450, 3: 700, 4: 1100, 5: 1800, 6: 2300, 7: 2900, 8: 3900, 9: 5000, 10: 5900, 11: 7200, 12: 8400, 13: 10000, 14: 11500, 15: 13000, 16: 15000, 17: 18000, 18: 20000, 19: 22000, 20: 25000 };
   const MAX_FOES = 6, ROOM_FIGHTS = 2;
   const xpOf = n => XP[G.SRD_MON[G.D.F.STAT[n][0]].cr];
+  const DANGER_N = ['', '낮음', '보통', '높음', '초과'], NO_HIT_N = '공격 안 통함';
   const REGIONS = {
     swamp: {
       n: '늪', len: 3, gen: (w, h, rng) => swamp(w, h, rng), note: '얕은 물: 이동 2배 소모',
-      pool: ['독사', '작은 버섯', '큰 개구리', '늪 점액', '악어', '왕뱀', '황토 젤리', '진흙 점액', '버섯 거인', '대왕 악어', '히드라', '고목 엔트'],
+      pool: ['독사', '보라 버섯', '거대 개구리', '회색 점액', '악어', '거대 왕뱀', '황토 젤리', '블랙 푸딩', '슈블링 마운드', '거대 악어', '히드라', '트리언트'],
     },
   };
 
@@ -73,6 +74,30 @@ G.Region = (() => {
     // 파티 평균 레벨과 인원
     party(f) { const ms = [G.Guild.leader(f), ...F().lineup(f).map(u => G.Guild.get(f, u))].filter(Boolean), lv = Math.round(ms.reduce((a, m) => a + m.lv, 0) / Math.max(1, ms.length)); return { lv: U.clamp(lv, 1, 20), n: ms.length }; },
     budget(f, diff) { const p = R.party(f); return BUDGET[p.lv - 1][diff] * p.n; },
+    // 위험도: 적 XP 합을 파티 예산(SRD 낮음 · 보통 · 높음)에 댄다. 높음을 넘으면 초과 (SRD에 없는 구분)
+    danger(f, list) {
+      const P = R.party(f), b = BUDGET[P.lv - 1], xp = list.reduce((a, o) => a + (XP[o.stat?.cr] || 0), 0);
+      if (!xp) return { tier: 0, xp: 0, cap: 0, n: '' };
+      const i = [0, 1, 2].find(k => xp <= b[k] * P.n), tier = i === undefined ? 4 : i + 1;
+      return { tier, xp, cap: b[i === undefined ? 2 : i] * P.n, n: DANGER_N[tier] };
+    },
+    // 지금 표시할 위험도. 전투 중: 싸우는 적 기준의 최고값 (적이 줄어도 내려가지 않는다) · 탐험 중: 시야 안의 적
+    dangerNow(f, rt) {
+      const st = rt.turn;
+      if (!st) return R.dangerAt(f, rt, rt.mons.filter(o => o.hp > 0 && F().inView(rt, o.x, o.y)));
+      const d = R.dangerAt(f, rt, rt.mons.filter(o => o.hp > 0 && o.aggro)), top = st.dangerTop;
+      if (!top || d.tier > top.tier || (d.tier === top.tier && d.xp > top.xp)) st.dangerTop = d;
+      return st.dangerTop;
+    },
+    // 경험치 예산은 상성을 모른다: 살아 있는 전원의 공격이 안 들으면(도감으로 아는 면역만, G.Foe.useless) 예산과 상관없이 맨 위 단계
+    dangerAt(f, rt, list) {
+      const d = R.danger(f, list), al = rt.party.filter(p => !p.dead && !p.dying);
+      return d.tier && al.length && al.every(p => G.Foe.useless(p, list)) ? { ...d, tier: 4, n: NO_HIT_N } : d;
+    },
+    BUDGET, XP, MAX_FOES,
+    // 일반 던전의 조우 예산: 층 레벨 기준. 20레벨을 넘는 깊이와 위험도는 몬스터 수와 CR로만 나타난다
+    // SRD 조우 예산 (XP · 캐릭터 레벨 × 인원): 난이도 낮음 0 · 보통 1 · 높음 2. 층 위험도(f.heat)는 난이도를 한 단계씩 올린다. 튜토리얼은 낮음의 절반
+    floorBudget(f, fl, diff) { const d = G.Tut.safe(f) ? 0 : Math.min(2, diff + Math.floor(f.heat || 0)); return BUDGET[F().floorLv(fl) - 1][d] * R.party(f).n / (G.Tut.safe(f) ? 2 : 1); }, /* 튜토리얼: 낮음보다 작게 (예산은 상한) */
     // 예산 안에서 무리를 짠다: 큰 놈부터 뽑고 남은 돈을 작은 놈으로 채운다. 한 전투 최대 MAX_FOES
     pick(reg, budget, nMax = MAX_FOES) {
       const pool = reg.pool.filter(n => xpOf(n) <= budget), out = [];

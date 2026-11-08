@@ -22,7 +22,13 @@
 | `spell`, `monster`, `glossary` | 주문, 몬스터, 규칙 용어 |
 | `pdf_vs_repo` | PDF와 5e-bits의 차이 |
 
-## 다시 만들기
+## 다시 만들기 (2026-11-08 고침)
+pymupdf가 없으면 PyPI의 PyMuPDF · PyMuPDFb 1.24.10 휠을 받아 압축을 푼 폴더를 PYTHONPATH로 준다 (pip 불필요).
+- `srd_parse.py`: 본문 중간에 표 제목(10.5pt 제목)이 끼면 표 뒤의 본문을 앞 절로 되돌린다. 전에는 표 제목 절에 붙어 격노 · 바드의 영감 · 야생 변신 · 주문 시전 등 본문이 잘려 보였다.
+- 대조: PDF 글줄 29,314개 중 DB에 없는 줄 1 (표 머리의 말줄임표).
+- `python3 tools/srd_mons_db.py`: 몬스터 330종 능력치표 원문 → `js/srd_mons.js` (모든 칸 · 특성 · 행동 · 보너스 행동 · 반응 · 전설 행동 · 감각 · 상태 면역). 옛 `srd_mons.py`(외부 API 64종 · DC 짐작)는 쓰지 않는다.
+- `python3 tools/srd_spells_db.py`: 주문 339개에 원문 칸(`srd`)을 붙이고 게임 값과 원문의 차이를 `spell_check.json`에 (상태는 원문대로 고친다).
+
 ```
 PYTHONPATH=<pymupdf 경로> python3 tools/srd_parse.py
 python3 tools/srd_db.py

@@ -4,8 +4,8 @@
 const ALLOWED = {
   travel: ['deploy', 'fight', 'ambush', 'scene', 'checks', 'loot', 'stairs'],
   checks: ['loot'], scene: ['arrive', 'deploy', 'fight', 'loot'], arrive: ['deploy', 'fight'], ambush: ['deploy', 'fight'], deploy: ['fight'],
-  fight: ['after'], after: ['search', 'loot'], search: ['wait'], wait: ['loot', 'deploy', 'fight'],
-  loot: ['travel', 'wait', 'deploy', 'fight'], stairs: ['stairScene', 'travel'], stairScene: [],
+  fight: ['after'], after: ['loot'], wait: ['loot', 'deploy', 'fight'],
+  loot: ['travel', 'wait', 'deploy', 'fight'], stairs: ['stairScene', 'travel', 'stairAsk'], stairAsk: ['stairs', 'travel'], stairScene: [],
 };
 module.exports = G => {
   const bad = {}, note = k => { bad[k] = (bad[k] || 0) + 1; }, seen = {};
@@ -28,20 +28,20 @@ module.exports = G => {
     if (rt.turn) {
       if (rt.mons.some(o => o.aggro && !o.flee && !o.spotted)) note('전투 상대가 안 보임');
       if (!rt.mons.some(o => o.aggro && !o.flee && o.hp > 0)) { rt.turn._idle = (rt.turn._idle || 0) + dt; if (rt.turn._idle > 1.5) note('적이 없는데 전투가 계속됨'); }
-    } if (rt.turn && (rt.turn.ph === 'move' || rt.turn.ph === 'show') && G.Tactics.overlap(rt)) note('한 칸에 두 명'); return r; };
+    } if (rt.turn && (rt.turn.ph === 'move' || rt.turn.ph === 'show') && G.Tactics.overlap(rt, rt.turn.ph === 'move' ? rt.turn.cur : null)) note('한 칸에 두 명'); return r; };
   // 안 보이던 적이 눈앞에 생기지 않는다: 파티가 보는 자리에, 본 적 없는 몬스터가 나타나면 위반 (누워 있던 자리 · 철창 · 미믹은 spotted로 나온다)
   const spawn = F.spawnMon;
   F.spawnMon = function (rt, fl, d, x, y, boss, o) { const e = spawn.apply(this, arguments); if (rt.flow && rt.flow.map === rt.map && rt.party.length && !(o && o.spotted) && rt.party.some(p => !p.dead && F.sees(rt.map, p, { x, y }))) note('보이는 곳에 몬스터 생성'); return e; };
   const sup = G.Sight.update;
   G.Sight.update = function (rt) { const was = new Set(rt.mons.filter(o => o.spotted)); sup.apply(this, arguments); for (const o of rt.mons) if (o.spotted && !was.has(o) && rt.veil && rt.veil.has(Math.round(o.y) * rt.map.w + Math.round(o.x))) note('베일 안의 적이 보임'); for (const o of rt.mons) if (o.spotted && !was.has(o) && !(rt.seen[Math.round(o.y) * rt.map.w + Math.round(o.x)])) note('어둠 위에 보이는 적'); };
-  // 숨 고르기 · 방 뒤지기 중에는 많아야 한 사람만 걷는다 (전투가 끝난 뒤 다 같이 흩어지지 않는다)
+  // 숨 고르기 중에는 아무도 걷지 않는다 (전투가 끝난 뒤 다 같이 흩어지지 않는다)
   const flowTick = G.Flow.tick;
   G.Flow.tick = function (f, rt, speed, dt) {
     const st0 = rt.flow && rt.flow.map === rt.map ? rt.flow.st : null, pos = rt.party.map(p => [p, p.x, p.y]);
     flowTick.apply(this, arguments);
-    if (st0 !== 'after' && st0 !== 'search') return;
-    const lead = rt.hero.dead ? rt.party.find(p => !p.dead) : rt.hero, n = pos.filter(([p, x, y]) => Math.hypot(p.x - x, p.y - y) > 0.001 && (st0 === 'search' || Math.hypot(x - lead.x, y - lead.y) <= 3.5)).length;
-    if (n > (st0 === 'search' ? 1 : 0)) note(`${st0} 중 ${n}명이 움직임`);
+    if (st0 !== 'after') return;
+    const lead = rt.hero.dead ? rt.party.find(p => !p.dead) : rt.hero, n = pos.filter(([p, x, y]) => Math.hypot(p.x - x, p.y - y) > 0.001 && Math.hypot(x - lead.x, y - lead.y) <= 3.5).length;
+    if (n > 0) note(`${st0} 중 ${n}명이 움직임`);
   };
   // 모든 몬스터에 역할이 있고, 무리 이름이 그 구간의 몬스터를 가리킨다
   for (const k of Object.keys(G.D.F.mon)) if (!G.Foe.ROLES[G.D.F.mon[k].r]) note(`역할 없는 몬스터: ${k}`);

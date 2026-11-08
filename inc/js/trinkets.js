@@ -5,13 +5,13 @@
 // 기본은 자동 장착(f.autoTr). 마을 「마법 물건」 탭에서 직접 바꾸면 자동이 꺼진다.
 G.Trinket = (() => {
   const U = G.U, D = G.D;
-  const SLOT_KEYS = ['w', 'a', 't'], CAP = 12, BOSS_P = 0.6, RIVAL_P = 0.4, CHEST_P = 0.06, WIPE_LOSE = 0.25, FIXED_P = 0.3, R_W = { 1: 8, 2: 4, 3: 2, 4: 1 };
+  const SLOT_KEYS = ['w', 'a', 't'], CAP = 12, BOSS_P = 0.6, RIVAL_P = 0.4, CHEST_P = 0.5, MON_P = 0.1, CARRY_TY = new Set(['humanoid', 'fey', 'fiend', 'undead', 'giant', 'monstrosity', 'dragon']), WIPE_LOSE = 0.25, FIXED_P = 0.3, R_W = { 0: 16, 1: 8, 2: 4, 3: 2, 4: 1 };
   const F = () => G.Fantasy;
   const now = () => G.S.runTime;
   // 속성: 이름표(DCSS 각인처럼 짧게) · 값 쓰는 법 · 랜다트 무게와 굴림(gen) · 값어치(sc)
   const AB_N = { str: '근력', dex: '민첩', con: '건강', int: '지능', wis: '지혜', cha: '매력' };
   const COND_N = { burn: '화상', poison: '독', shock: '느려짐', prone: '넘어짐', restrained: '속박', frightened: '공포', paralyzed: '마비', blinded: '실명', poisoned: '중독' };
-  const TY_N = { undead: '언데드', fiend: '악마', giant: '거인', beast: '야수', humanoid: '인간형', ooze: '점액', plant: '식물' };
+  const TY_N = { undead: '언데드', fiend: '악마', giant: '거인', beast: '야수', humanoid: '인간형', ooze: '점액', plant: '식물', dragon: '용', aberration: '이계', elemental: '원소', construct: '구조물', monstrosity: '괴수', fey: '요정', celestial: '천상' };
   const pct = v => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`;
   const DT_N = { acid: '산성', bludgeoning: '둔기', cold: '냉기', fire: '화염', force: '역장', lightning: '번개', necrotic: '사령', piercing: '관통', poison: '독', psychic: '정신', radiant: '광휘', slashing: '베기', thunder: '천둥' };
   const RES_TABLE = ['acid', 'cold', 'fire', 'force', 'lightning', 'necrotic', 'poison', 'psychic', 'radiant', 'thunder']; // SRD 표
@@ -31,6 +31,8 @@ G.Trinket = (() => {
     imm: { t: k => `${COND_N[k] || k} 면역`, sc: () => 2.5 },
     magicRes: { t: () => '주문 내성 이점', sc: () => 6 },
     hitDis: { t: () => '맞기 전까지 나를 노리면 불리', sc: () => 6 },
+    invis: { t: () => '투명', sc: () => 10 }, // 투명 반지 (SRD): 끼고 있는 동안 투명
+    invisCloak: { t: () => '투명 · 충전 3', sc: () => 9 }, // 투명 망토 (SRD): 충전 하나로 1시간 투명, 새벽에 1d3 충전 (G.Res)
     nocrit: { t: () => '치명타 무시', sc: () => 5 },
     init: { t: () => '선제권 이점', sc: () => 3 },
     move: { t: v => `이동 ${pct(v)}`, sc: v => v * 10 },
@@ -144,7 +146,7 @@ G.Trinket = (() => {
     // 값어치 (자동 장착 · 넘칠 때 팔 순서)
     score: t => T.def(t).props.reduce((a, p) => { const P = PROPS[p[0]]; return a + (P ? P.sc(p[1], p[2], p[3], p[4]) : 0); }, 0),
     rarity: t => T.def(t).r,
-    price: (f, t) => Math.ceil(F().monGold(Math.max(1, t.lv || f.maxFloor)) * 15 * Math.max(1, T.score(t))),
+    price: (f, t) => Math.floor(G.Items.VALUE[T.def(t).r] / 2), // SRD 값의 절반
 
     // ── 만들기 ──
     // 이 깊이에서 나올 수 있는 가장 높은 희귀도
@@ -178,11 +180,13 @@ G.Trinket = (() => {
     },
     // 하나 주웠다: 고정 물건 30%(남은 게 있으면) · 아니면 랜다트. 가장 가까운 동료 머리 위에 현판
     gain(f, rt, x, y) {
-      const fl = f.floor || 1, k = Math.random() < FIXED_P ? T.fixed(f, fl) : null;
-      const t = { id: f.trUid = (f.trUid || 0) + 1, lv: fl, on: null };
-      if (k) { t.k = k; (f.artSeen = f.artSeen || []).push(k); } else t.rand = T.randart(fl);
+      const fl = f.floor || 1, k = T.fixed(f, fl); // SRD 물건만. 이번 판에 다 나왔으면 판매용 물건
+      if (!k) { const q = G.Items.pickSell(fl) || G.Items.pickGear(); if (q) G.Items.treasure(f, rt, q.en, q.n, q.gp, x, y); return null; }
+      const t = { id: f.trUid = (f.trUid || 0) + 1, lv: fl, on: null, k };
+      (f.artSeen = f.artSeen || []).push(k);
       T.all(f).push(t);
-      const d = T.def(t), col = ['#f4efe2', '#6fb4ff', '#c06bff', '#ffb547'][d.r - 1];
+      const d = T.def(t); (f.trip = f.trip || []).push(d.n);
+      const col = ['#f4efe2', '#6fb4ff', '#c06bff', '#ffb547'][d.r - 1];
       const who = rt && x != null && rt.allies.filter(a => !a.dead).sort((p, q) => Math.hypot(p.x - x, p.y - y) - Math.hypot(q.x - x, q.y - y))[0];
       if (who) { G.Feat.banner(rt, who, d.ic, d.n, 'loot', col); G.Banter.line(rt, 'loot', who, { m: d.n }); }
       G.log(`마법 물건 · ${d.ic} ${d.n}`, 'fantasy', 'good');
@@ -190,10 +194,13 @@ G.Trinket = (() => {
       if (f.autoTr !== false) T.auto(f);
       return t;
     },
+    carries: mo => CARRY_TY.has(mo.ty) && !mo.boss, // 물건을 지니는 몬스터 (짐승 · 점액 · 식물은 아니다)
     // 보스 · 라이벌 · 상자: 확률로 물건, 아니면 잡템(짐 골드)
     drop(f, rt, src, x, y) {
-      if (U.chance(src === 'boss' ? BOSS_P : src === 'chest' ? CHEST_P : RIVAL_P)) return T.gain(f, rt, x, y);
-      if (src !== 'chest') F().gain(f, F().monGold(f.floor) * 5 * F().goldMult(f));
+      if (src === 'mon') return U.chance(MON_P) ? G.Items.loot(f, rt, 'mon', x, y) : null;
+      if (src === 'chest') return U.chance(CHEST_P) ? G.Items.loot(f, rt, 'chest', x, y) : null;
+      if (U.chance(src === 'boss' ? BOSS_P : RIVAL_P)) return T.gain(f, rt, x, y);
+      if (src !== 'chest') F().gain(f, F().monGold(f.floor) * 5);
     },
     overflow(f) {
       const st = T.store(f).sort((a, b) => T.score(a) - T.score(b));

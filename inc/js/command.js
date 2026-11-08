@@ -5,7 +5,6 @@
 G.Cmd = (() => {
   const GR = G.Grid;
   const RALLY_T = 25, PICK_R = 0.9, MEMBER_R = 0.6, FOCUS_COL = '#ffd24a';
-  const ta = k => G.Tree.add('fantasy', G.S.w.fantasy.tree, k);
 
   const C = {
     setFocus(rt, m, auto) {
@@ -24,11 +23,9 @@ G.Cmd = (() => {
       const cand = [];
       // 원정대를 누르면 그 사람 상태창
       for (const p of rt.party) if (!p.dead && p.merc) cand.push({ o: p, k: 'member', r: MEMBER_R });
-      for (const e of G.Rivals.members(rt)) if (seen(e)) cand.push({ o: e, k: 'rival', r: PICK_R });
       for (const o of rt.mons) if (seen(o)) cand.push({ o, k: 'mon', r: PICK_R + o.s * 0.3 });
       const hit = cand.filter(c => d(c.o) <= (stairs ? 0.45 : c.r)).sort((a, b) => d(a.o) - d(b.o))[0];
       if (hit && hit.k === 'member') { G.UI?.sheet?.open(hit.o.merc); return true; }
-      if (hit && hit.k === 'rival') { G.Rivals.openAsk(rt, G.Rivals.partyOf(rt, hit.o)); return true; }
       if (hit) {
         const mo = hit.o;
         C.setFocus(rt, mo);
@@ -52,23 +49,14 @@ G.Cmd = (() => {
       G.Banter.line(rt, 'rally', rt.hero.dead ? null : rt.hero, null, { pri: true });
       return true;
     },
-    // 집결 지점에 닿았다 (집결 나팔: 10초간 공격 속도)
-    arrive(f, rt) {
-      rt.rally = null;
-      if (ta('t_rally')) G.Fantasy.buff(f, rt, rt.hero, 'static', 10);
-    },
+    // 집결 지점에 닿았다
+    arrive(f, rt) { rt.rally = null; },
     tick(f, rt, dt) {
       if (rt.focus && (rt.focus.hp <= 0 || !rt.mons.includes(rt.focus))) C.setFocus(rt, null);
       const r = rt.rally;
       if (r) {
-        if ((r.t -= dt) <= 0) rt.rally = null;
+        if ((r.t -= (rt.gdt ?? dt)) <= 0) rt.rally = null; // 집결 지속: 게임 시간(전투 중 라운드)
         else if ((r.pulse -= dt) <= 0) { r.pulse = 0.7; G.fx(rt, { k: 'ring', x: r.x, y: r.y, r: 0.8, t: 0.7, col: '#9fe0ff' }); }
-      }
-      // 전술 본능: 직접 고른 표적이 없으면 보이는 적 중 보스, 아니면 체력이 가장 많은 덤벼 오는 적
-      if (ta('t_auto') && (!rt.focus || rt.focusAuto)) {
-        const seen = rt.mons.filter(o => o.aggro && G.Fantasy.inView(rt, o.x, o.y));
-        const pick = seen.find(o => o.boss) || seen.sort((a, b) => b.hp - a.hp)[0] || null;
-        if (pick !== rt.focus) C.setFocus(rt, pick, true);
       }
     },
     // 지금 걸린 명령 (화면 왼쪽 위 한 줄)

@@ -41,10 +41,10 @@ G.Persona = (() => {
       if (low < COWARD_AT && P.free(rt, e, 'coward')) { P.fire(rt, e, 'coward'); G.Story.backOff(rt, e); return true; }
       if (low < CAREFUL_AT && P.free(rt, e, 'careful')) { P.fire(rt, e, 'careful', 't_guard'); e.guard = true; return true; }
       if (st.round >= 2 && P.free(rt, e, 'greedy') && Math.random() < GREEDY_P) {
-        const g = G.Fantasy.monGold(f.floor) * GREEDY_GOLD * G.Fantasy.goldMult(f);
+        const g = G.Fantasy.monGold(f.floor) * GREEDY_GOLD;
         P.fire(rt, e, 'greedy', 't_grab');
         G.Fantasy.gain(f, g);
-        G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.1, s: '+' + U.fmt(g), col: '#ffd24a', t: 1, sz: 0.85 });
+        G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.1, s: '+' + U.coin(g), col: '#ffd24a', t: 1, sz: 0.85 });
         return true;
       }
       return false;

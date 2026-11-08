@@ -14,31 +14,42 @@ G.D.F = {
   // 몬스터 (DESIGN.md 56): ty = SRD 생물 종류(언데드 퇴치 · 신성 강타 · 인간형 포박이 본다) · fx = 맞히면 30%로 거는 고유 능력 [상태이상, 내성 능력, 초]
   // 몬스터 도감. r = 역할 (G.Foe.ROLES) · tr = 특성 · mv = 이동력 덮어쓰기 · ty = SRD 종류 · fx = 고유 능력
   mon: {
-    '꼬마 좀비': { t: 'm_rat', ty: 'undead', r: 'brute', tr: ['fort'], mv: 4 }, '좀비': { t: 'm_ghoul', wpn: 'w_cleaver', ty: 'undead', r: 'soldier', tr: ['fort'], mv: 4 }, '얼음 좀비': { t: 'm_troll', ty: 'undead', r: 'brute', tr: ['fort'], mv: 4 },
-    '해골': { t: 'm_bat', wpn: 'w_rusty', ty: 'undead', r: 'soldier' }, '해골 궁수': { t: 'm_bat', ty: 'undead', r: 'artillery' }, '강령술사': { t: 'm_lich', ty: 'humanoid', r: 'controller' }, '호박 망령': { t: 'm_spell', ty: 'undead', r: 'controller' },
-    '고블린': { t: 'm_goblin', wpn: 'w_knife', ty: 'humanoid', r: 'skirmisher', tr: ['nimble'] }, '고블린 궁수': { t: 'm_goblin', ty: 'humanoid', r: 'artillery', tr: ['nimble'] }, '고블린 주술사': { t: 'm_goblin', ty: 'humanoid', r: 'support', hand: 'p_hand1_quarterstaff' },
-    '오크 전사': { t: 'm_skeleton', wpn: 'w_axe', ty: 'humanoid', r: 'soldier', tr: ['aggr'] }, '가면 오크': { t: 'm_warg', wpn: 'w_waraxe', ty: 'humanoid', r: 'brute', tr: ['aggr'] }, '오크 궁수': { t: 'm_skeleton', ty: 'humanoid', r: 'artillery' }, '오크 주술사': { t: 'm_mandrake', wpn: 'w_gstaff', ty: 'humanoid', r: 'support' },
-    '히드라': { t: 'm_mandrake', ty: 'monstrosity', r: 'brute', s: 2.2 }, '독사': { t: 'm_rat', ty: 'beast', r: 'skirmisher' }, '큰 개구리': { t: 'm_rat', ty: 'beast', r: 'skirmisher' }, '악어': { t: 'm_rat', ty: 'beast', r: 'brute' }, '왕뱀': { t: 'm_rat', ty: 'beast', r: 'soldier' }, '대왕 악어': { t: 'm_rat', ty: 'beast', r: 'brute' }, '황토 젤리': { t: 'm_slime', ty: 'ooze', r: 'brute' }, '오우거': { t: 'm_golem', ty: 'giant', r: 'brute' }, '트롤': { t: 'm_troll2', ty: 'giant', r: 'brute', tr: ['regen'] },
-    '숲 늑대': { t: 'm_wolf', ty: 'beast', r: 'skirmisher', tr: ['pack'] }, '워골': { t: 'm_ogre', wpn: 'w_mace', ty: 'monstrosity', r: 'skirmisher', tr: ['pack'] }, '동굴 곰': { t: 'm_bear', ty: 'beast', r: 'brute' },
-    '산적': { t: 'm_bandit', ty: 'humanoid', r: 'soldier' }, '산적 궁수': { t: 'm_bandit', ty: 'humanoid', r: 'artillery' }, '놀 전사': { t: 'm_gnollb', ty: 'humanoid', r: 'brute' }, '놀 정찰병': { t: 'm_gnoll', ty: 'humanoid', r: 'artillery' }, '놀 주술사': { t: 'm_gshaman', ty: 'humanoid', r: 'support' },
-    '늪 점액': { t: 'm_slime', ty: 'ooze', r: 'brute', mv: 4 }, '진흙 점액': { t: 'm_phantom', ty: 'ooze', r: 'brute', mv: 4 }, '작은 버섯': { t: 'm_mush', ty: 'plant', r: 'controller', mv: 4 }, '버섯 거인': { t: 'm_lmush', ty: 'plant', r: 'controller', mv: 4 }, '고목 엔트': { t: 'm_ent', ty: 'plant', r: 'brute', tr: ['regen'], mv: 4 },
-    '임프': { t: 'm_shroom', ty: 'fiend', r: 'skirmisher', tr: ['nimble'] }, '초트': { t: 'm_spider', ty: 'fiend', r: 'controller' }, '대악마': { t: 'm_demon', ty: 'fiend', r: 'brute' }, '돌 골렘': { t: 'm_golem2', ty: 'construct', r: 'soldier' },
+    '좀비': { t: 'm_ghoul', ty: 'undead', r: 'soldier', tr: ['fort'] }, '오우거 좀비': { t: 'm_troll', ty: 'undead', r: 'brute', tr: ['fort'] }, '해골': { t: 'm_bat', ty: 'undead', r: 'soldier', mix: true }, '구울': { t: 'm_ghoul', ty: 'undead', r: 'soldier' },
+    '와이트': { t: 'm_skeleton', ty: 'undead', r: 'soldier', mix: true }, '망령': { t: 'm_spell', ty: 'undead', r: 'brute' }, '뱀파이어 스폰': { t: 'm_lich', ty: 'undead', r: 'skirmisher' }, '메이지': { t: 'm_lich', ty: 'humanoid', r: 'controller' },
+    '고블린 졸개': { t: 'm_goblin', ty: 'fey', r: 'skirmisher', mix: true, tr: ['nimble'] }, '고블린 전사': { t: 'm_goblin', ty: 'fey', r: 'skirmisher', mix: true, tr: ['nimble'] }, '고블린 두목': { t: 'm_goblin', ty: 'fey', r: 'skirmisher', tr: ['nimble'] }, '홉고블린 전사': { t: 'm_goblin', ty: 'fey', r: 'soldier', mix: true },
+    '홉고블린 대장': { t: 'm_goblin', ty: 'fey', r: 'soldier', mix: true }, '버그베어 전사': { t: 'm_goblin', ty: 'fey', r: 'brute' }, '불량배': { t: 'm_bandit', ty: 'humanoid', r: 'soldier', mix: true }, '불량배 두목': { t: 'm_bandit', ty: 'humanoid', r: 'brute', mix: true },
+    '수련 사제': { t: 'm_bandit', ty: 'humanoid', r: 'support' }, '사제': { t: 'm_bandit', ty: 'humanoid', r: 'support' }, '산적': { t: 'm_bandit', ty: 'humanoid', r: 'soldier', mix: true }, '산적 두목': { t: 'm_bandit', ty: 'humanoid', r: 'soldier', mix: true },
+    '놀 전사': { t: 'm_gnollb', ty: 'fiend', r: 'brute', mix: true }, '오우거': { t: 'm_golem', ty: 'giant', r: 'brute' }, '트롤': { t: 'm_troll2', ty: 'giant', r: 'brute', tr: ['regen'] }, '히드라': { t: 'm_mandrake', ty: 'monstrosity', r: 'brute', s: 2.2 },
+    '독사': { t: 'm_rat', ty: 'beast', r: 'skirmisher' }, '거대 개구리': { t: 'm_rat', ty: 'beast', r: 'skirmisher' }, '악어': { t: 'm_rat', ty: 'beast', r: 'brute' }, '거대 왕뱀': { t: 'm_rat', ty: 'beast', r: 'soldier' },
+    '거대 악어': { t: 'm_rat', ty: 'beast', r: 'brute' }, '늑대': { t: 'm_wolf', ty: 'beast', r: 'skirmisher', tr: ['pack'] }, '다이어 울프': { t: 'm_wolf', ty: 'beast', r: 'brute', tr: ['pack'] }, '워그': { t: 'm_ogre', ty: 'fey', r: 'skirmisher' },
+    '갈색 곰': { t: 'm_bear', ty: 'beast', r: 'brute' }, '회색 점액': { t: 'm_slime', ty: 'ooze', r: 'brute' }, '황토 젤리': { t: 'm_slime', ty: 'ooze', r: 'brute' }, '블랙 푸딩': { t: 'm_phantom', ty: 'ooze', r: 'brute' },
+    '보라 버섯': { t: 'm_mush', ty: 'plant', r: 'brute' }, '슈블링 마운드': { t: 'm_lmush', ty: 'plant', r: 'brute' }, '트리언트': { t: 'm_ent', ty: 'plant', r: 'brute' }, '드레치': { t: 'm_shroom', ty: 'fiend', r: 'soldier' },
+    '임프': { t: 'm_shroom', ty: 'fiend', r: 'skirmisher', tr: ['nimble'] }, '바브드 데빌': { t: 'm_demon', ty: 'fiend', r: 'soldier' }, '본 데빌': { t: 'm_spider', ty: 'fiend', r: 'brute' }, '혼드 데빌': { t: 'm_demon', ty: 'fiend', r: 'brute' },
+    '아이스 데빌': { t: 'm_demon', ty: 'fiend', r: 'brute' }, '마릴리스': { t: 'm_demon', ty: 'fiend', r: 'brute' }, '발로르': { t: 'm_demon', ty: 'fiend', r: 'brute' }, '돌 골렘': { t: 'm_golem2', ty: 'construct', r: 'soldier' },
+    '미노타우로스 해골': { t: 'm_bat', ty: 'undead', r: 'brute' },
   },
   // 세력: 원정 전에 알려 준다. 구간(bands)마다 함께 나오는 무리 (앞줄 · 뒷줄은 역할로 나뉜다)
   factions: {
-    green: { n: '오크', by: [['고블린', '고블린 궁수'], ['고블린', '고블린 궁수', '고블린 주술사'], ['오크 전사', '가면 오크', '오크 궁수', '오크 주술사'], ['오크 전사', '가면 오크', '오크 궁수', '오크 주술사'], ['가면 오크', '트롤', '오크 궁수', '오크 주술사'], ['오우거', '트롤', '오크 궁수', '오크 주술사']] },
-    beast: { n: '야수', by: [['숲 늑대'], ['숲 늑대'], ['숲 늑대', '동굴 곰'], ['숲 늑대', '동굴 곰', '히드라'], ['워골', '동굴 곰', '히드라'], ['워골', '오우거', '히드라']] },
-    undead: { n: '언데드', by: [['꼬마 좀비', '해골 궁수'], ['해골', '꼬마 좀비', '해골 궁수'], ['해골', '좀비', '해골 궁수'], ['좀비', '얼음 좀비', '강령술사'], ['좀비', '얼음 좀비', '강령술사'], ['얼음 좀비', '돌 골렘', '강령술사', '호박 망령']] },
-    raider: { n: '약탈자', by: [['산적', '산적 궁수'], ['산적', '산적 궁수'], ['놀 전사', '산적', '놀 정찰병', '놀 주술사'], ['놀 전사', '놀 정찰병', '놀 주술사'], ['놀 전사', '놀 정찰병', '놀 주술사'], ['놀 전사', '오우거', '놀 정찰병', '놀 주술사']] },
-    swamp: { n: '늪', by: [['늪 점액', '작은 버섯'], ['늪 점액', '작은 버섯'], ['진흙 점액', '작은 버섯'], ['진흙 점액', '버섯 거인', '히드라'], ['히드라', '진흙 점액', '버섯 거인'], ['히드라', '고목 엔트', '버섯 거인']] },
-    fiend: { n: '악마', by: [['임프'], ['임프'], ['임프'], ['임프', '초트'], ['임프', '초트'], ['대악마', '임프', '초트']] },
+    green: { n: '고블린', by: [['고블린 졸개', '고블린 전사'], ['고블린 졸개', '고블린 전사', '고블린 두목'], ['고블린 전사', '홉고블린 전사', '고블린 두목'], ['홉고블린 전사', '버그베어 전사', '홉고블린 대장'], ['홉고블린 대장', '버그베어 전사', '오우거'], ['오우거', '트롤', '홉고블린 대장']] },
+    beast: { n: '야수', by: [['늑대'], ['늑대'], ['늑대', '갈색 곰'], ['늑대', '갈색 곰', '히드라'], ['워그', '갈색 곰', '히드라'], ['워그', '거대 악어', '히드라']] },
+    undead: { n: '언데드', by: [['좀비', '해골'], ['좀비', '해골', '구울'], ['해골', '구울', '와이트'], ['와이트', '오우거 좀비', '망령'], ['오우거 좀비', '망령', '뱀파이어 스폰'], ['망령', '뱀파이어 스폰', '메이지']] },
+    raider: { n: '약탈자', by: [['산적'], ['산적', '수련 사제'], ['불량배', '놀 전사', '수련 사제'], ['불량배', '놀 전사', '산적 두목', '수련 사제'], ['불량배 두목', '놀 전사', '사제'], ['불량배 두목', '오우거', '사제', '메이지']] },
+    swamp: { n: '늪', by: [['회색 점액', '보라 버섯'], ['회색 점액', '보라 버섯'], ['블랙 푸딩', '보라 버섯'], ['블랙 푸딩', '슈블링 마운드', '히드라'], ['히드라', '블랙 푸딩', '슈블링 마운드'], ['히드라', '트리언트', '슈블링 마운드']] },
+    fiend: { n: '악마', by: [['드레치'], ['드레치', '임프'], ['드레치', '임프'], ['임프', '바브드 데빌', '본 데빌'], ['바브드 데빌', '본 데빌'], ['혼드 데빌', '아이스 데빌', '마릴리스', '발로르']] },
   },
   bands: [{ to: 5 }, { to: 15 }, { to: 30 }, { to: 50 }, { to: 80 }, { to: 1e9 }],
   // 보스: 큰 그림(32px)은 s를 작게 — 그림 자체가 이미 두 칸이다
   bosses: [
-    { n: '늪의 군주', e: '👑', t: 'b_slimeking', s: 2, ty: 'ooze' }, { n: '놀 감독관', e: '👺', t: 'b_goblinchief', ty: 'humanoid' }, { n: '해골 기사', e: '💀', t: 'b_bat', ty: 'undead' },
-    { n: '거대 좀비', e: '🧟', t: 'b_skeleton', s: 1.1, ty: 'undead' }, { n: '숲의 수호자', e: '🛡️', t: 'b_wolf', ty: 'beast' }, { n: '오우거 대장', e: '🗿', t: 'b_troll', s: 1.1, ty: 'giant' },
-    { n: '심연의 초트', e: '👿', t: 'b_spider', ty: 'fiend' }, { n: '역병 거인', e: '🧟', t: 'b_ogre', s: 1.1, ty: 'giant' }, { n: '강령술사 군주', e: '🧙', t: 'b_lich', ty: 'humanoid' }, { n: '황금 대악마', e: '😈', t: 'b_dragon', s: 1.1, ty: 'fiend' },
+    { n: '블랙 푸딩', e: '👑', t: 'b_slimeking', s: 2, ty: 'ooze' },
+    { n: '산적 두목', e: '👺', t: 'b_goblinchief', ty: 'humanoid' },
+    { n: '미노타우로스 해골', e: '💀', t: 'b_bat', ty: 'undead' },
+    { n: '오우거 좀비', e: '🧟', t: 'b_skeleton', s: 1.1, ty: 'undead' },
+    { n: '다이어 울프', e: '🛡️', t: 'b_wolf', ty: 'beast' },
+    { n: '오우거', e: '🗿', t: 'b_troll', s: 1.1, ty: 'giant' },
+    { n: '본 데빌', e: '👿', t: 'b_spider', ty: 'fiend' },
+    { n: '돌 골렘', e: '🧟', t: 'b_ogre', s: 1.1, ty: 'construct' },
+    { n: '메이지', e: '🧙', t: 'b_lich', ty: 'humanoid' },
+    { n: '발로르', e: '😈', t: 'b_dragon', s: 1.1, ty: 'fiend' },
   ],
   // 동료: col 직업 색(카드·칩), 영웅 기본 공격력 대비 배율, 사거리(칸), 공격 간격(초)
   allies: {
@@ -47,7 +58,7 @@ G.D.F = {
     archer: { col: '#c8566a', n: '레인저', t: 'u_archer', wpn: 'w_bow', atk: 0.6, hp: 1.2, range: 5, cd: 1.0, proj: 'fx_arrow' },
     // 클레릭: 기본 행동 = 치유(70% 아래 동료) 또는 신성한 불꽃(민첩 내성) · 바드: 기본 = 잔인한 조롱 같은 소마법 + 바드의 영감(song)
     cleric: { col: '#e9dfbf', n: '클레릭', t: 'u_cleric', wpn: 'w_holymace', atk: 0.6, hp: 0.96, range: 4, cd: 2.0, heal: 0.12, proj: 'fx_holy', saveAtk: 'dex' },
-    bard: { col: '#e0a040', n: '바드', t: 'u_bard', atk: 0.3, hp: 0.96, range: 4, cd: 1.5, proj: 'fx_ice', song: true },
+    bard: { col: '#e0a040', n: '바드', t: 'u_bard', atk: 0.3, hp: 0.96, range: 4, cd: 1.5, proj: 'fx_ice', saveAtk: 'wis', saveCond: 'sapped' }, // 잔인한 조롱 (SRD): 지혜 내성, 실패하면 다음 공격 불리 · 바드의 영감은 횟수가 있는 직업 기능(sr_insp)이라 저절로 도는 노래(song)를 뺐다
     mage: { col: '#e2742e', n: '소서러', t: 'u_mage', wpn: 'w_staff', atk: 1.4, hp: 0.72, range: 5, cd: 1.8, proj: 'fx_flame' },
     paladin: { col: '#8fc4ef', n: '팔라딘', t: 'u_paladin', wpn: 'w_hammer', atk: 0.8, hp: 1.2, range: 1.3, cd: 1.0 },
     dragoon: { col: '#6f8fe8', n: '파이터', t: 'u_dragoon', wpn: 'w_spear', atk: 3, hp: 1.2, range: 1.5, cd: 1.4 },
@@ -83,9 +94,9 @@ G.D.F = {
 // 출신 재주 (DESIGN.md 61 · SRD 5.2.1 Origin Feats — 원문 4종, 마법 입문은 주문 목록 셋으로 나눔)
 G.D.FEATS = {
   alert: { n: '경계', en: 'Alert', t: 'a_seal', d: '선제권 + 숙련 보너스' },
-  mi_cleric: { n: '마법 입문 · 클레릭', en: 'Magic Initiate (Cleric)', t: 'fx_holy', d: '치유의 말', spell: 'sr_hword' },
-  mi_druid: { n: '마법 입문 · 드루이드', en: 'Magic Initiate (Druid)', t: 'w_board', d: '얽힘', spell: 'sr_entangle' },
-  mi_wizard: { n: '마법 입문 · 위저드', en: 'Magic Initiate (Wizard)', t: 'fx_zap', d: '마법 화살', spell: 'sr_mm' },
+  mi_cleric: { n: '마법 입문 · 클레릭', en: 'Magic Initiate (Cleric)', t: 'fx_holy', d: '클레릭 소마법 2 · 1레벨 주문 1 (휴식마다 1번 무료)' },
+  mi_druid: { n: '마법 입문 · 드루이드', en: 'Magic Initiate (Druid)', t: 'w_board', d: '드루이드 소마법 2 · 1레벨 주문 1 (휴식마다 1번 무료)' },
+  mi_wizard: { n: '마법 입문 · 위저드', en: 'Magic Initiate (Wizard)', t: 'fx_zap', d: '위저드 소마법 2 · 1레벨 주문 1 (휴식마다 1번 무료)' },
   savage: { n: '야만적 공격자', en: 'Savage Attacker', t: 'b_fury', d: '한 턴에 한 번 피해를 두 번 굴려 큰 쪽' },
   skilled: { n: '숙련', en: 'Skilled', t: 'v_explorer', d: '기술 숙련 3' },
 };
@@ -252,7 +263,7 @@ Object.assign(G.D.MSKILLS, {
   sr_revive: { n: '소생술', en: 'Revivify', t: 'u_god', d: '쓰러진 동료 체력 1', lv: 5 },
   sr_mhw: { n: '집단 치유의 말', en: 'Mass Healing Word', t: 'b_regen', d: '파티 2d4 + 능력치', lv: 5 },
   // 바드
-  sr_insp: { n: '바드의 영감', en: 'Bardic Inspiration', t: 'fx_song', d: '동료 명중 · 내성 +d6~d12 · 10라운드', lv: 1 },
+  sr_insp: { n: '바드의 영감', en: 'Bardic Inspiration', t: 'fx_song', d: '동료 한 명 · D20 굴림에 실패하면 d6~d12를 더한다 · 한 번', lv: { bard: 1 } },
   sr_faerie: { n: '요정 불꽃', en: 'Faerie Fire', t: 'fx_song', d: '반경 2칸 민첩 내성 · 빛남 10라운드 · 집중', lv: 1 },
   sr_mock: { n: '잔인한 조롱', en: 'Vicious Mockery', t: 'b_fury', d: '1d6 (Lv 5 · 11 · 17에 +d6) · 지혜 내성 · 다음 공격 불리', lv: 1 },
   sr_whisper: { n: '불협화음의 속삭임', en: 'Dissonant Whispers', t: 'fx_zap', d: '3d6 · 지혜 내성 절반 · 공포', lv: 1 },
@@ -312,7 +323,7 @@ Object.assign(G.D.MSKILLS, {
   sr_reflex: { n: '도둑의 반사신경', en: 'Thief’s Reflexes', t: 'st_haste', d: '첫 라운드에 두 번 행동', passive: true, lv: 17 },
   sr_nimbus: { n: '신성한 후광', en: 'Holy Nimbus', t: 'q_peak', d: '6칸 안 적 차례마다 광휘 10', passive: true, lv: 20 },
   sr_disciple: { n: '생명의 제자', en: 'Disciple of Life', t: 'fx_holy', d: '치유 + 2 + 주문 레벨', passive: true, lv: 3, heal: 1.3 },
-  sr_preserve: { n: '생명 보존', en: 'Preserve Life', t: 'u_god', d: '절반 아래 동료들 절반까지 · 합쳐서 레벨 × 5', lv: 6 },
+  sr_preserve: { n: '생명 보존', en: 'Preserve Life', t: 'u_god', d: '절반 아래 동료들 절반까지 · 합쳐서 레벨 × 5 · 신성 변환', lv: 3 }, // SRD 생명 권역 3레벨
   sr_peerless: { n: '비길 데 없는 기술', en: 'Peerless Skill', t: 'fx_song', d: '빗나간 공격 · 실패한 판정에 영감 주사위', passive: true, lv: 14 },
   sr_ward: { n: '자연의 수호', en: 'Nature’s Ward', t: 'b_regen', d: '중독 면역 · 땅에 맞는 피해 저항', passive: true, lv: 10 },
   sr_dres: { n: '용의 회복력', en: 'Draconic Resilience', t: 'r_dragon', d: 'AC 10 + 민첩 + 매력 · 체력 + 레벨 + 2', passive: true, lv: 3, hp: 1.1 },
@@ -334,7 +345,7 @@ G.D.APT = {
   escape: { cls: ['monk', 'rogue', 'archer'], d: n => `제한 시간 +${10 * n}초` },
 };
 G.D.MPOOL = {
-  barbarian: ['sr_rage', 'sr_reckless', 'sr_brutal', 'sr_relent', 'sr_fastmove'],
+  barbarian: ['sr_rage', 'sr_reckless', 'sr_brutal', 'sr_relent', 'sr_fastmove', 'sr_feral'],
   bard: ['sr_faerie', 'sr_mock', 'sr_hword', 'sr_whisper', 'sr_tw', 'sr_sleep', 'sr_shatter', 'sr_hypno'],
   cleric: ['sr_cure', 'sr_bless', 'sr_gbolt', 'sr_turn', 'sr_sweapon', 'sr_guard', 'sr_revive', 'sr_mhw'],
   scout: ['sr_pflame', 'sr_entangle', 'sr_hword', 'sr_wild', 'sr_moon', 'sr_spike', 'sr_call', 'sr_ice'],
@@ -342,7 +353,7 @@ G.D.MPOOL = {
   monk: ['sr_flurry', 'sr_patient', 'sr_wind', 'sr_deflect', 'sr_stun', 'sr_selfrest'],
   paladin: ['sr_lay', 'sr_sof', 'sr_bless', 'sr_smite', 'sr_searing', 'sr_aura', 'sr_radiant'],
   archer: ['sr_hmark', 'sr_ensnare', 'sr_cure', 'sr_spike', 'sr_tireless', 'sr_precise'],
-  rogue: ['sr_cunning', 'sr_steady', 'sr_cstrike', 'sr_uncanny', 'sr_reliable', 'sr_devious'],
+  rogue: ['sr_cunning', 'sr_steady', 'sr_cstrike', 'sr_uncanny', 'sr_reliable', 'sr_devious', 'sr_elusive'],
   mage: ['sr_firebolt', 'sr_chroma', 'sr_quicken', 'sr_twin', 'sr_sray', 'sr_fireball', 'sr_lbolt', 'sr_chain'],
   warlock: ['sr_eb', 'sr_hex', 'sr_rebuke', 'sr_agon', 'sr_dark', 'sr_fear', 'sr_vtouch'],
   archmage: ['sr_rof', 'sr_mm', 'sr_shield', 'sr_misty', 'sr_hold', 'sr_web', 'sr_fireball', 'sr_haste', 'sr_slow', 'sr_cone', 'sr_meteor'],
@@ -353,15 +364,15 @@ G.D.MPOOL = {
 // 서브클래스 (SRD 5.2.1 — 직업마다 하나, DESIGN.md 56): Lv 3에 골드를 내고 들어간다. 기능(sig)은 그 레벨이 되면 저절로 켜진다. 수치 배율은 없다
 G.D.ADV = {
   hunter: { base: 'archer', n: '헌터', en: 'Hunter', t: 'v_hunter', col: '#7fbf5a', sig: ['sr_colossus', 'sr_mdef', 'sr_sprey'] },
-  life: { base: 'cleric', n: '생명 권역', en: 'Life Domain', t: 'v_priest', col: '#fff3c4', sig: ['sr_disciple', 'sr_preserve'] },
+  life: { base: 'cleric', n: '생명 권역', en: 'Life Domain', t: 'v_priest', col: '#fff3c4', sig: ['sr_disciple', 'sr_preserve', 'ft_bhealer', 'ft_supreme'] },
   lore: { base: 'bard', n: '전승 학파', en: 'College of Lore', t: 'v_maestro', col: '#f0c060', sig: ['sr_cutting', 'sr_peerless'] },
   draconic: { base: 'mage', n: '용의 혈통', en: 'Draconic Sorcery', t: 'v_arch', col: '#ff9a4a', sig: ['sr_dres', 'sr_affinity'] },
-  devotion: { base: 'paladin', n: '헌신의 맹세', en: 'Oath of Devotion', t: 'v_crusader', col: '#e8d070', sig: ['sr_sacred', 'sr_nimbus'] },
-  champion: { base: 'dragoon', n: '챔피언', en: 'Champion', t: 'v_dknight', col: '#5ac0a0', sig: ['sr_impcrit', 'sr_survivor'] },
-  evoker: { base: 'archmage', n: '방출계 학파', en: 'Evoker', t: 'v_thunder', col: '#8fd8ff', sig: ['sr_potent', 'sr_empower'] },
+  devotion: { base: 'paladin', n: '헌신의 맹세', en: 'Oath of Devotion', t: 'v_crusader', col: '#e8d070', sig: ['sr_sacred', 'sr_nimbus', 'ft_adev', 'ft_sprotect'] },
+  champion: { base: 'dragoon', n: '챔피언', en: 'Champion', t: 'v_dknight', col: '#5ac0a0', sig: ['sr_impcrit', 'sr_survivor', 'ft_athlete', 'ft_heroic'] },
+  evoker: { base: 'archmage', n: '방출계 학파', en: 'Evoker', t: 'v_thunder', col: '#8fd8ff', sig: ['sr_potent', 'sr_empower', 'ft_overchannel'] },
   thief: { base: 'rogue', n: '도둑', en: 'Thief', t: 'v_thiefk', col: '#e0b040', sig: ['sr_fasthands', 'sr_reflex'] },
-  land: { base: 'scout', n: '대지의 회합', en: 'Circle of the Land', t: 'v_explorer', col: '#a0d070', sig: ['sr_landaid', 'sr_ward'] },
-  berserker: { base: 'barbarian', n: '광전사의 길', en: 'Path of the Berserker', t: 'v_berserk', col: '#d04a3a', sig: ['sr_frenzy', 'sr_intim', 'sr_retal'] },
+  land: { base: 'scout', n: '대지의 회합', en: 'Circle of the Land', t: 'v_explorer', col: '#a0d070', sig: ['sr_landaid', 'sr_ward', 'ft_sanctuary'] },
+  berserker: { base: 'barbarian', n: '광전사의 길', en: 'Path of the Berserker', t: 'v_berserk', col: '#d04a3a', sig: ['sr_frenzy', 'sr_intim', 'sr_retal', 'ft_mindless'] },
   openhand: { base: 'monk', n: '열린 손의 전사', en: 'Warrior of the Open Hand', t: 'xx_disc', col: '#e8c860', sig: ['sr_ohtech', 'sr_whole', 'sr_quiver'] },
   fiend: { base: 'warlock', n: '악마 후원자', en: 'Fiend Patron', t: 'v_warlock', col: '#9a5ad0', sig: ['sr_dob', 'sr_luck', 'sr_fres', 'sr_hurl'] },
 };
@@ -371,14 +382,6 @@ G.D.ADV_OLD = { sniper: 'hunter', priest: 'life', inquis: 'life', maestro: 'lore
 // 이름: 앞·뒤 음절을 하나씩
 G.D.NAMES = [['아', '리', '엘', '카', '렌', '도', '세', '라', '유', '하', '진', '루', '테', '바', '노', '시', '온', '미', '가', '벨'], ['린', '안', '로', '스', '나', '온', '델', '르', '아', '윤', '크', '티', '엔', '라', '드', '몬', '샤', '베', '오', '하']];
 
-// ───────── 라이벌 원정대 (DESIGN.md 29) ─────────
-// lead·crew는 F.allies 그림·수치를 빌린다. pace: 내려가는 빠르기, hostile: 우리든 다른 라이벌이든 마주치면 덤빈다,
-// thief: 보스 층에 숨어들어 약해진 보스를 가로챈다, friendly: 위기에 빠진 우리를 돕는다
-G.D.RIVALS = [
-  { id: 'lion', n: '붉은 사자단', col: '#ff6a4a', lead: 'paladin', crew: ['dragoon', 'cleric'], pace: 1.04, hostile: true, d: '돌격' },
-  { id: 'arrow', n: '은빛 화살', col: '#8fd3ff', lead: 'archer', crew: ['mage', 'bard'], pace: 1.0, friendly: true, d: '우호' },
-  { id: 'hand', n: '검은 손', col: '#c08cff', lead: 'rogue', crew: ['rogue', 'archmage'], pace: 0.98, hostile: true, thief: true, d: '보스 강탈' },
-];
 
 
 // 직업 기본 장비 (DESIGN.md 57 — SRD 5.2.1 직업 시작 장비): 용병마다 무기 · 갑옷 두 칸. 대장간에서 골드로 강화한다.
@@ -411,23 +414,14 @@ G.D.BOONS = {
 };
 
 // 길드 (DESIGN.md 60): 명성으로 짓는 시설 — 시즌을 넘어 남는 유일한 층. 비용 base × g^레벨
+// 건물: 금화로 짓고, 명성이 있어야 그 단계를 지을 수 있다 (need[단계]). 값 · 조건은 시험값
 G.D.FAC = {
-  hall: { n: '길드관', t: 'u_legend', max: 2, base: 15, g: 3, d: l => `명단 +${2 * l}` },
-  tavern: { n: '선술집', t: 'u_bard', max: 5, base: 3, g: 2, d: l => `신입 Lv +${l} · 능력치 ${l + 1}번 굴려 좋은 쪽 · 후보 +${Math.floor(l / 2)}` },
-  train: { n: '훈련장', t: 'w_board', max: 5, base: 3, g: 2, d: l => `경험치 +${l * 20}% · 대기 인원도 ${l * 10}%` },
-  temple: { n: '신전', t: 'fx_holy', max: 5, base: 4, g: 2, d: l => `부상 시간 −${l * 12}% · 축복: 층 처음 ${l * 20}초 명중·내성 +2` },
-  vault: { n: '금고', t: 'x_chest', max: 5, base: 4, g: 2.3, d: l => `시즌 시작 금고 ×${Math.pow(2, l)}` },
-  archive: { n: '기록관', t: 'u_armor', max: 2, base: 10, g: 3.6, d: l => `시즌 넘김 레벨 유지 ${50 + 25 * l}%` },
-  trade: { n: '상단', t: 'ui_gold', max: 10, base: 2, g: 1.5, d: l => `골드 +${l * 15}%` },
-};
-
-// 대기실 배치 (DESIGN.md 64): 쉬는 용병을 시설 자리에 앉힌다. 그 능력치 수정치가 효과를 키운다 (배율 p = 1 + 0.15 × 수정치, 최소 0.5)
-// fac = 그 시설을 지어야 자리가 생긴다 (대장간은 처음부터)
-G.D.JOBS = {
-  smith: { n: '대장장이', t: 'w_hammer', ab: 'str', fac: null, d: p => `강화 비용 −${Math.round(8 * p)}%` },
-  coach: { n: '교관', t: 'w_board', ab: 'wis', fac: 'train', d: p => `대기 인원 경험치 +${Math.round(10 * p)}%` },
-  priest: { n: '사제', t: 'fx_holy', ab: 'wis', fac: 'temple', d: p => `부상 시간 −${Math.round(12 * p)}%` },
-  merchant: { n: '상인', t: 'ui_gold', ab: 'cha', fac: 'trade', d: p => `골드 +${Math.round(8 * p)}%` },
+  hall: { n: '숙소', t: 'u_legend', max: 3, base: 1000, g: 3, need: [30, 100, 300], d: l => `명단 ${8 + 4 * l}명` },
+  tavern: { n: '모집소', t: 'u_bard', max: 3, base: 500, g: 3, need: [0, 100, 300], d: l => `신입 Lv +${l} · 능력치 ${l + 1}번 굴려 좋은 쪽 · 후보 +${Math.floor(l / 2)}` },
+  train: { n: '훈련장', t: 'w_board', max: 3, base: 500, g: 3, need: [30, 100, 300], d: l => `경험치 +${l * 20}% · 대기 인원도 ${l * 10}%` },
+  temple: { n: '신전', t: 'fx_holy', max: 3, base: 500, g: 3, need: [0, 100, 300], d: l => `금화로 부상 치료 · 부상 시간 −${l * 12}%` },
+  pub: { n: '주점', t: 'x_table', max: 3, base: 300, g: 3, need: [0, 30, 100], d: l => `금화로 스트레스 −${20 + 10 * l}` },
+  forge: { n: '대장간', t: 'u_sword', max: 3, base: 1000, g: 3, need: [30, 100, 300], d: l => `상점 물건 ${l === 1 ? '희귀까지' : l === 2 ? '매우 희귀까지' : '더 많이'}` },
 };
 
 // 기술 사거리 (칸). 표적은 시전자에게서 이 거리 안에 있어야 한다. 검사는 G.Skill.tick 한 곳에서 한다 (DESIGN.md 77)
@@ -444,18 +438,19 @@ for (const [r, names] of Object.entries({
   8: 'hword fireball hmark hex call ice lbolt chain mhw insp mm meteor',
 })) for (const n of names.split(' ')) G.D.SK_RANGE['sr_' + n] = +r;
 
+// ───────── SRD 몬스터 넓히기 (DESIGN.md 161, test/foe_rules.js 「층별 몬스터」): 새 세력 여섯 · 기존 세력에 더한 몬스터 ─────────
+// 능력치는 G.SRD_MON 원문 그대로 (STAT). dl = DCSS 그림 (G.DCSS.mon보다 먼저), t = 옛 그림 묶음. 구간 목록은 CR 상한 [1, 1, 4, 9, 10, ∞] 안에서 CR 순 (tools: 이 목록은 SRD 표로 만들었다)
+Object.assign(G.D.F.mon, {'코볼트 전사':{t:'m_goblin',dl:'m_goblin',ty:'dragon',r:'skirmisher'},'유사용':{t:'m_bat',dl:'m_raven',ty:'dragon',r:'skirmisher'},'황동 새끼 용':{t:'m_demon',dl:'m_hydra1',ty:'dragon',r:'brute'},'흰 새끼 용':{t:'m_demon',dl:'m_hydra1',ty:'dragon',r:'brute'},'검은 새끼 용':{t:'m_demon',dl:'m_hydra1',ty:'dragon',r:'brute'},'초록 새끼 용':{t:'m_demon',dl:'m_hydra1',ty:'dragon',r:'brute'},'푸른 새끼 용':{t:'m_demon',dl:'m_hydra1',ty:'dragon',r:'brute'},'붉은 새끼 용':{t:'m_demon',dl:'m_hydra1',ty:'dragon',r:'brute'},'반룡':{t:'m_bandit',dl:'m_orc_knight',ty:'dragon',r:'soldier'},'와이번':{t:'m_bat',dl:'m_hydra1',ty:'dragon',r:'brute'},'어린 흰 용':{t:'m_demon',dl:'m_hydra2',ty:'dragon',r:'brute'},'어린 검은 용':{t:'m_demon',dl:'m_hydra2',ty:'dragon',r:'brute'},'어린 초록 용':{t:'m_demon',dl:'m_hydra2',ty:'dragon',r:'brute'},'어린 푸른 용':{t:'m_demon',dl:'m_hydra2',ty:'dragon',r:'brute'},'어린 붉은 용':{t:'m_demon',dl:'m_hydra2',ty:'dragon',r:'brute'},'흰 성룡':{t:'m_demon',dl:'m_hydra3',ty:'dragon',r:'brute'},'붉은 성룡':{t:'m_demon',dl:'m_hydra4',ty:'dragon',r:'brute'},'붉은 고룡':{t:'m_demon',dl:'m_hydra5',ty:'dragon',r:'brute'},'광전사':{t:'m_bandit',dl:'m_human2',ty:'humanoid',r:'brute'},'에틴':{t:'m_ogre',dl:'m_two_headed_ogre',ty:'giant',r:'brute'},'언덕 거인':{t:'m_troll2',dl:'m_hill_giant',ty:'giant',r:'brute'},'돌 거인':{t:'m_troll2',dl:'m_stone_giant',ty:'giant',r:'brute'},'서리 거인':{t:'m_troll2',dl:'m_stone_giant',ty:'giant',r:'brute'},'불 거인':{t:'m_troll2',dl:'m_hill_giant',ty:'giant',r:'brute'},'구름 거인':{t:'m_troll2',dl:'m_stone_giant',ty:'giant',r:'brute'},'폭풍 거인':{t:'m_troll2',dl:'m_stone_giant',ty:'giant',r:'brute'},'증기 메피트':{t:'m_demon',dl:'m_crimson_imp',ty:'elemental',r:'skirmisher'},'먼지 메피트':{t:'m_demon',dl:'m_crimson_imp',ty:'elemental',r:'skirmisher'},'얼음 메피트':{t:'m_demon',dl:'m_crimson_imp',ty:'elemental',r:'skirmisher'},'용암 메피트':{t:'m_demon',dl:'m_crimson_imp',ty:'elemental',r:'skirmisher'},'마그민':{t:'m_demon',dl:'m_lemure',ty:'elemental',r:'soldier'},'아제르 파수꾼':{t:'m_bandit',dl:'m_executioner',ty:'elemental',r:'soldier'},'가고일':{t:'m_golem',dl:'m_gargoyle',ty:'elemental',r:'soldier'},'불의 정령':{t:'m_spell',dl:'m_hellion',ty:'elemental',r:'brute'},'물의 정령':{t:'m_slime',dl:'m_azure_jelly',ty:'elemental',r:'brute'},'공기 정령':{t:'m_phantom',dl:'m_air_elemental',ty:'elemental',r:'brute'},'대지 정령':{t:'m_golem',dl:'m_earth_elemental',ty:'elemental',r:'brute'},'살라맨더':{t:'m_demon',dl:'m_hellion',ty:'elemental',r:'soldier'},'조른':{t:'m_golem',dl:'m_earth_elemental',ty:'elemental',r:'brute'},'투명 추적자':{t:'m_phantom',dl:'m_phantom',ty:'elemental',r:'skirmisher'},'지니':{t:'m_phantom',dl:'m_air_elemental',ty:'elemental',r:'brute'},'이프리트':{t:'m_demon',dl:'m_balrug',ty:'elemental',r:'brute'},'그림록':{t:'m_ghoul',dl:'m_zombie_small',ty:'aberration',r:'soldier'},'스터지':{t:'m_bat',dl:'m_vampire_mosquito',ty:'monstrosity',r:'skirmisher'},'다크맨틀':{t:'m_bat',dl:'m_raven',ty:'aberration',r:'skirmisher'},'지껄이는 입':{t:'m_slime',dl:'m_royal_jelly',ty:'aberration',r:'controller'},'그릭':{t:'m_spider',dl:'m_swamp_worm',ty:'aberration',r:'skirmisher'},'추울':{t:'m_spider',dl:'m_alligator_snapping_turtle',ty:'aberration',r:'brute'},'오튜그':{t:'m_slime',dl:'m_shapeshifter',ty:'aberration',r:'brute'},'로퍼':{t:'m_mush',dl:'m_swamp_worm',ty:'aberration',r:'controller'},'클로커':{t:'m_phantom',dl:'m_phantom',ty:'aberration',r:'skirmisher'},'아볼레스':{t:'m_slime',dl:'m_swamp_worm',ty:'aberration',r:'controller'},'코카트리스':{t:'m_bat',dl:'m_raven',ty:'monstrosity',r:'skirmisher'},'녹 괴물':{t:'m_rat',dl:'m_alligator_baby',ty:'monstrosity',r:'soldier'},'하피':{t:'m_bat',dl:'m_raven',ty:'monstrosity',r:'controller'},'히포그리프':{t:'m_bat',dl:'m_raven',ty:'monstrosity',r:'skirmisher'},'앵크헤그':{t:'m_spider',dl:'m_orb_spider',ty:'monstrosity',r:'brute'},'오울베어':{t:'m_bear',dl:'m_black_bear',ty:'monstrosity',r:'brute'},'바실리스크':{t:'m_rat',dl:'m_alligator',ty:'monstrosity',r:'controller'},'만티코어':{t:'m_wolf',dl:'m_warg',ty:'monstrosity',r:'artillery'},'겨울 늑대':{t:'m_wolf',dl:'m_wolf',ty:'monstrosity',r:'brute'},'불레트':{t:'m_rat',dl:'m_alligator_snapping_turtle',ty:'monstrosity',r:'brute'},'메두사':{t:'m_bandit',dl:'m_shapeshifter',ty:'monstrosity',r:'controller'},'키메라':{t:'m_wolf',dl:'m_hellion',ty:'monstrosity',r:'brute'},'베히르':{t:'m_rat',dl:'m_anaconda',ty:'monstrosity',r:'brute'},'레모라즈':{t:'m_rat',dl:'m_swamp_worm',ty:'monstrosity',r:'brute'},'보라 벌레':{t:'m_rat',dl:'m_swamp_worm',ty:'monstrosity',r:'brute'},'호문쿨루스':{t:'m_demon',dl:'m_crimson_imp',ty:'construct',r:'skirmisher'},'날아다니는 검':{t:'m_golem',dl:'m_undying_armoury',ty:'construct',r:'skirmisher'},'움직이는 갑옷':{t:'m_golem',dl:'m_undying_armoury',ty:'construct',r:'soldier'},'질식시키는 양탄자':{t:'m_slime',dl:'m_jelly',ty:'construct',r:'controller'},'살덩이 골렘':{t:'m_golem2',dl:'m_zombie_ogre',ty:'construct',r:'brute'},'고르곤':{t:'m_golem',dl:'m_warg',ty:'construct',r:'brute'},'방패 수호자':{t:'m_golem',dl:'m_iron_golem',ty:'construct',r:'soldier'},'진흙 골렘':{t:'m_golem2',dl:'m_earth_elemental',ty:'construct',r:'brute'},'강철 골렘':{t:'m_golem',dl:'m_iron_golem',ty:'construct',r:'brute'},'그림자':{t:'m_phantom',dl:'m_phantom',ty:'undead',r:'skirmisher'},'스펙터':{t:'m_phantom',dl:'m_ghost',ty:'undead',r:'skirmisher'},'가스트':{t:'m_ghoul',dl:'m_ghoul',ty:'undead',r:'soldier'},'미라':{t:'m_ghoul',dl:'m_bog_body',ty:'undead',r:'brute'},'유령':{t:'m_phantom',dl:'m_ghost',ty:'undead',r:'controller'},'뱀파이어':{t:'m_lich',dl:'m_vampire',ty:'undead',r:'brute'},'미라 군주':{t:'m_lich',dl:'m_bog_body',ty:'undead',r:'controller'},'리치':{t:'m_lich',dl:'m_lich',ty:'undead',r:'artillery'},'사브르이빨 호랑이':{t:'m_wolf',dl:'m_warg',ty:'beast',r:'skirmisher'},'북극곰':{t:'m_bear',dl:'m_black_bear',ty:'beast',r:'brute'},'거대 전갈':{t:'m_spider',dl:'m_orb_spider',ty:'beast',r:'brute'},'매머드':{t:'m_bear',dl:'m_two_headed_ogre',ty:'beast',r:'brute'},'거대 유인원':{t:'m_ogre',dl:'m_ogre',ty:'beast',r:'brute'},'티라노사우루스':{t:'m_rat',dl:'m_alligator',ty:'beast',r:'brute'},'광신도':{t:'m_bandit',dl:'m_human3',ty:'humanoid',r:'soldier'},'광신자':{t:'m_bandit',dl:'m_necromancer',ty:'humanoid',r:'support'},'기사':{t:'m_bandit',dl:'m_orc_knight',ty:'humanoid',r:'soldier'},'노련한 전사':{t:'m_bandit',dl:'m_orc_warrior',ty:'humanoid',r:'soldier'},'검투사':{t:'m_bandit',dl:'m_vault_guard',ty:'humanoid',r:'brute'},'해적 선장':{t:'m_bandit',dl:'m_human4',ty:'humanoid',r:'soldier'},'암살자':{t:'m_bandit',dl:'m_human',ty:'humanoid',r:'skirmisher'},'대마법사':{t:'m_lich',dl:'m_necromancer',ty:'humanoid',r:'artillery'},'레뮤어':{t:'m_demon',dl:'m_lemure',ty:'fiend',r:'soldier'},'퀘이짓':{t:'m_demon',dl:'m_crimson_imp',ty:'fiend',r:'skirmisher'},'지옥견':{t:'m_wolf',dl:'m_warg',ty:'fiend',r:'brute'},'수염 데빌':{t:'m_demon',dl:'m_red_devil',ty:'fiend',r:'soldier'},'브록':{t:'m_demon',dl:'m_tormentor',ty:'fiend',r:'brute'},'사슬 데빌':{t:'m_demon',dl:'m_executioner',ty:'fiend',r:'controller'},'헤즈루':{t:'m_demon',dl:'m_hellion',ty:'fiend',r:'brute'},'글라브레주':{t:'m_demon',dl:'m_tormentor',ty:'fiend',r:'brute'},'피트 핀드':{t:'m_demon',dl:'m_balrug',ty:'fiend',r:'brute'},'버그베어 추적자':{t:'m_gnollb',dl:'m_orc_warrior',ty:'fey',r:'skirmisher'}});
+Object.assign(G.D.F.factions, {dragon:{n:'용',by:[['코볼트 전사','유사용','황동 새끼 용'],['코볼트 전사','유사용','황동 새끼 용'],['황동 새끼 용','검은 새끼 용','초록 새끼 용','푸른 새끼 용','붉은 새끼 용'],['반룡','어린 흰 용','어린 검은 용','어린 초록 용','어린 푸른 용'],['와이번','어린 검은 용','어린 초록 용','어린 푸른 용','어린 붉은 용'],['어린 초록 용','어린 붉은 용','흰 성룡','붉은 성룡','붉은 고룡']]},giant:{n:'거인',by:[['늑대','불량배'],['늑대','불량배'],['늑대','불량배','오우거','광전사','에틴'],['트롤','돌 거인','서리 거인','불 거인','구름 거인'],['트롤','돌 거인','서리 거인','불 거인','구름 거인'],['언덕 거인','서리 거인','불 거인','구름 거인','폭풍 거인']]},elemental:{n:'원소',by:[['증기 메피트','먼지 메피트','얼음 메피트','용암 메피트','마그민'],['증기 메피트','먼지 메피트','얼음 메피트','용암 메피트','마그민'],['먼지 메피트','용암 메피트','마그민','아제르 파수꾼','가고일'],['물의 정령','대지 정령','살라맨더','조른','투명 추적자'],['물의 정령','대지 정령','살라맨더','조른','투명 추적자'],['대지 정령','조른','투명 추적자','지니','이프리트']]},aberration:{n:'이계',by:[['스터지','그림록','다크맨틀'],['스터지','그림록','다크맨틀'],['스터지','다크맨틀','지껄이는 입','그릭','추울'],['지껄이는 입','추울','오튜그','로퍼','클로커'],['그릭','오튜그','로퍼','클로커','아볼레스'],['그릭','오튜그','로퍼','클로커','아볼레스']]},monstrosity:{n:'괴수',by:[['스터지','코카트리스','녹 괴물','하피','히포그리프'],['스터지','코카트리스','녹 괴물','하피','히포그리프'],['히포그리프','오울베어','바실리스크','만티코어','겨울 늑대'],['바실리스크','겨울 늑대','불레트','메두사','키메라'],['바실리스크','겨울 늑대','불레트','메두사','키메라'],['불레트','키메라','베히르','레모라즈','보라 벌레']]},construct:{n:'구조물',by:[['호문쿨루스','날아다니는 검','움직이는 갑옷'],['호문쿨루스','날아다니는 검','움직이는 갑옷'],['호문쿨루스','날아다니는 검','움직이는 갑옷','질식시키는 양탄자'],['움직이는 갑옷','살덩이 골렘','고르곤','방패 수호자','진흙 골렘'],['질식시키는 양탄자','고르곤','방패 수호자','진흙 골렘','돌 골렘'],['살덩이 골렘','방패 수호자','진흙 골렘','돌 골렘','강철 골렘']]}});
+{ const X = {undead:[['그림자','스펙터'],['그림자','스펙터'],['미라','유령'],['미라','유령'],[],['미라 군주','리치']],beast:[[],[],['북극곰','거대 전갈'],['거대 유인원','티라노사우루스'],['거대 유인원','티라노사우루스'],['거대 유인원','티라노사우루스']],raider:[['광신도'],[],['기사','노련한 전사'],['해적 선장','암살자'],['해적 선장','암살자'],['암살자','대마법사']],fiend:[['레뮤어','퀘이짓'],['퀘이짓'],['지옥견','수염 데빌'],['헤즈루','글라브레주'],['헤즈루','글라브레주'],['글라브레주','피트 핀드']],green:[['워그'],['워그'],['워그','버그베어 추적자'],['버그베어 추적자'],[],[]]}; for (const k in X) X[k].forEach((l, b) => { const a = G.D.F.factions[k].by[b]; for (const n of l) if (!a.includes(n)) a.push(n); }); }
+G.D.F.STAT_ADD = {'코볼트 전사':['kobold-warrior'],'유사용':['pseudodragon'],'황동 새끼 용':['brass-dragon-wyrmling'],'흰 새끼 용':['white-dragon-wyrmling'],'검은 새끼 용':['black-dragon-wyrmling'],'초록 새끼 용':['green-dragon-wyrmling'],'푸른 새끼 용':['blue-dragon-wyrmling'],'붉은 새끼 용':['red-dragon-wyrmling'],'반룡':['half-dragon'],'와이번':['wyvern'],'어린 흰 용':['young-white-dragon'],'어린 검은 용':['young-black-dragon'],'어린 초록 용':['young-green-dragon'],'어린 푸른 용':['young-blue-dragon'],'어린 붉은 용':['young-red-dragon'],'흰 성룡':['adult-white-dragon'],'붉은 성룡':['adult-red-dragon'],'붉은 고룡':['ancient-red-dragon'],'광전사':['berserker'],'에틴':['ettin'],'언덕 거인':['hill-giant'],'돌 거인':['stone-giant'],'서리 거인':['frost-giant'],'불 거인':['fire-giant'],'구름 거인':['cloud-giant'],'폭풍 거인':['storm-giant'],'증기 메피트':['steam-mephit'],'먼지 메피트':['dust-mephit'],'얼음 메피트':['ice-mephit'],'용암 메피트':['magma-mephit'],'마그민':['magmin'],'아제르 파수꾼':['azer-sentinel'],'가고일':['gargoyle'],'불의 정령':['fire-elemental'],'물의 정령':['water-elemental'],'공기 정령':['air-elemental'],'대지 정령':['earth-elemental'],'살라맨더':['salamander'],'조른':['xorn'],'투명 추적자':['invisible-stalker'],'지니':['djinni'],'이프리트':['efreeti'],'그림록':['grimlock'],'스터지':['stirge'],'다크맨틀':['darkmantle'],'지껄이는 입':['gibbering-mouther'],'그릭':['grick'],'추울':['chuul'],'오튜그':['otyugh'],'로퍼':['roper'],'클로커':['cloaker'],'아볼레스':['aboleth'],'코카트리스':['cockatrice'],'녹 괴물':['rust-monster'],'하피':['harpy'],'히포그리프':['hippogriff'],'앵크헤그':['ankheg'],'오울베어':['owlbear'],'바실리스크':['basilisk'],'만티코어':['manticore'],'겨울 늑대':['winter-wolf'],'불레트':['bulette'],'메두사':['medusa'],'키메라':['chimera'],'베히르':['behir'],'레모라즈':['remorhaz'],'보라 벌레':['purple-worm'],'호문쿨루스':['homunculus'],'날아다니는 검':['animated-flying-sword'],'움직이는 갑옷':['animated-armor'],'질식시키는 양탄자':['animated-rug-of-smothering'],'살덩이 골렘':['flesh-golem'],'고르곤':['gorgon'],'방패 수호자':['shield-guardian'],'진흙 골렘':['clay-golem'],'강철 골렘':['iron-golem'],'그림자':['shadow'],'스펙터':['specter'],'가스트':['ghast'],'미라':['mummy'],'유령':['ghost'],'뱀파이어':['vampire'],'미라 군주':['mummy-lord'],'리치':['lich'],'사브르이빨 호랑이':['saber-toothed-tiger'],'북극곰':['polar-bear'],'거대 전갈':['giant-scorpion'],'매머드':['mammoth'],'거대 유인원':['giant-ape'],'티라노사우루스':['tyrannosaurus-rex'],'광신도':['cultist'],'광신자':['cultist-fanatic'],'기사':['knight'],'노련한 전사':['warrior-veteran'],'검투사':['gladiator'],'해적 선장':['pirate-captain'],'암살자':['assassin'],'대마법사':['archmage'],'레뮤어':['lemure'],'퀘이짓':['quasit'],'지옥견':['hell-hound'],'수염 데빌':['bearded-devil'],'브록':['vrock'],'사슬 데빌':['chain-devil'],'헤즈루':['hezrou'],'글라브레주':['glabrezu'],'피트 핀드':['pit-fiend'],'버그베어 추적자':['bugbear-stalker']};
+
 // 구간마다 나올 수 있는 몬스터 목록을 세력에서 만든다
 { const D = G.D.F; D.bands.forEach((b, i) => { const names = [...new Set(Object.values(D.factions).flatMap(x => x.by[i]))]; b.mons = names.map(n => ({ n, ...D.mon[n] })); }); }
 
-// 몬스터 → SRD 5.2.1 능력치표 (js/srd_mons.js). 5.2.1에 오크 능력치는 없어 오크는 Tough · Tough Boss 표를 쓴다.
-// spell = 그 표에 원거리 공격이 없는 시전자의 공격 [명중, 주사위 개수, 주사위, 더함, 종류] — 게임용 추가
+// 몬스터 → SRD 5.2.1 능력치표 (js/srd_mons.js). 이름은 그 표의 몬스터 이름이고, 표 밖의 공격을 붙이지 않는다 (test/art_rules.js)
 G.D.F.STAT = {
-  '꼬마 좀비': ['zombie'], '좀비': ['zombie'], '얼음 좀비': ['ogre-zombie'], '해골': ['skeleton'], '해골 궁수': ['skeleton'], '강령술사': ['mage'], '호박 망령': ['wraith', { spell: [6, 2, 8, 3, 'necrotic'] }],
-  '고블린': ['goblin-warrior'], '고블린 궁수': ['goblin-warrior'], '고블린 주술사': ['priest-acolyte'],
-  '오크 전사': ['tough'], '가면 오크': ['tough-boss'], '오크 궁수': ['tough'], '오크 주술사': ['priest-acolyte'], '오우거': ['ogre'], '트롤': ['troll'], '히드라': ['hydra'], '독사': ['venomous-snake'], '큰 개구리': ['giant-frog'], '악어': ['crocodile'], '왕뱀': ['giant-constrictor-snake'], '대왕 악어': ['giant-crocodile'], '황토 젤리': ['ochre-jelly'],
-  '숲 늑대': ['wolf'], '워골': ['worg'], '동굴 곰': ['brown-bear'], '산적': ['bandit'], '산적 궁수': ['bandit'], '놀 전사': ['gnoll-warrior'], '놀 정찰병': ['gnoll-warrior'], '놀 주술사': ['priest-acolyte'],
-  '늪 점액': ['gray-ooze'], '진흙 점액': ['black-pudding'], '작은 버섯': ['violet-fungus', { spell: [2, 1, 8, 0, 'poison'] }], '버섯 거인': ['shambling-mound', { spell: [7, 2, 8, 4, 'poison'] }], '고목 엔트': ['treant'],
-  '임프': ['imp'], '초트': ['bone-devil', { spell: [7, 2, 8, 4, 'fire'] }], '대악마': ['balor'], '돌 골렘': ['stone-golem'],
-  '늪의 군주': ['black-pudding'], '놀 감독관': ['bandit-captain'], '해골 기사': ['minotaur-skeleton'], '거대 좀비': ['ogre-zombie'], '숲의 수호자': ['dire-wolf'], '오우거 대장': ['ogre'], '심연의 초트': ['bone-devil'], '역병 거인': ['stone-golem'], '강령술사 군주': ['mage'], '미믹': ['mimic'], '황금 고블린': ['goblin-minion'],
+  '좀비': ['zombie'], '오우거 좀비': ['ogre-zombie'], '해골': ['skeleton'], '구울': ['ghoul'], '와이트': ['wight'], '망령': ['wraith'], '뱀파이어 스폰': ['vampire-spawn'], '메이지': ['mage'], '고블린 졸개': ['goblin-minion'], '고블린 전사': ['goblin-warrior'], '고블린 두목': ['goblin-boss'], '홉고블린 전사': ['hobgoblin-warrior'], '홉고블린 대장': ['hobgoblin-captain'], '버그베어 전사': ['bugbear-warrior'], '불량배': ['tough'], '불량배 두목': ['tough-boss'], '수련 사제': ['priest-acolyte'], '사제': ['priest'], '산적': ['bandit'], '산적 두목': ['bandit-captain'], '놀 전사': ['gnoll-warrior'], '오우거': ['ogre'], '트롤': ['troll'], '히드라': ['hydra'], '독사': ['venomous-snake'], '거대 개구리': ['giant-frog'], '악어': ['crocodile'], '거대 왕뱀': ['giant-constrictor-snake'], '거대 악어': ['giant-crocodile'], '늑대': ['wolf'], '다이어 울프': ['dire-wolf'], '워그': ['worg'], '갈색 곰': ['brown-bear'], '회색 점액': ['gray-ooze'], '황토 젤리': ['ochre-jelly'], '블랙 푸딩': ['black-pudding'], '보라 버섯': ['violet-fungus'], '슈블링 마운드': ['shambling-mound'], '트리언트': ['treant'], '드레치': ['dretch'], '임프': ['imp'], '바브드 데빌': ['barbed-devil'], '본 데빌': ['bone-devil'], '혼드 데빌': ['horned-devil'], '아이스 데빌': ['ice-devil'], '마릴리스': ['marilith'], '발로르': ['balor'], '돌 골렘': ['stone-golem'], '미노타우로스 해골': ['minotaur-skeleton'], '미믹': ['mimic'],
 };
+Object.assign(G.D.F.STAT, G.D.F.STAT_ADD); // SRD 몬스터 넓히기
 G.D.SK_RANGE.sr_breath = 3;

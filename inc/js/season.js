@@ -2,67 +2,18 @@
 // 시즌 지도 (DESIGN.md 0·36): 시즌마다 던전 씨앗값이 하나 — 같은 시즌의 같은 층은 늘 같은 모양.
 // 층마다 본 칸(지도 지식)을 시즌 동안 저장하고, 탐사율이 기준을 넘으면 그 층은 「아는 층」:
 // 원정대가 헤매지 않고 주요 지점(보스 · 보물 방 · 계단)만 곧장 돈다. 길잡이·길눈 특성이 시야와 기준을 낮춘다.
-// 시즌 (DESIGN.md 38): 접속해 플레이한 시간으로 LEN초. 끝나면 순위·최고층·라이벌 전적으로 명성 → 명성 트리(영구).
-// 다음 시즌: 한 번만 찍는 트리 노드(기술·★짝·전술·훈련)는 남고, 여러 레벨짜리 수치 노드 · 금고 · 층 · 지도 · 라이벌은 처음부터.
-// 용병은 남고 레벨은 절반(명성 「전통」으로 더 남긴다).
+// 시즌 끝 · 다음 시즌(옛 방치형의 초기화 · 명성 · 라이벌 순위)은 지웠다 (DESIGN.md 161).
 G.Season = (() => {
   const KNOW_AT = 0.8, GUIDE_AT = 0.5, KEEN_STEP = 0.1, SAVE_T = 5;
-  const LEN = 45 * 60, RESULT_T = 30, RANK_FAME = [10, 6, 3, 0], START_GOLD = 60;
 
   const S = {
-    LEN,
     st(f) {
       if (!f.season) f.season = { n: 1, seed: (Math.random() * 2 ** 31) >>> 0, maps: {}, cov: {}, t: 0 };
       if (f.season.t == null) f.season.t = 0;
       return f.season;
     },
-    left: f => Math.max(0, LEN - S.st(f).t),
 
 
-    // ── 시즌 시계: 접속 중 틱에서만 흐른다 (오프라인 보상은 시즌을 끝내지 않는다). 끝났으면 true ──
-    clock(f, rt, dt) {
-      const R = f.seasonEnd;
-      if (R) {
-        if (f.autoGo !== false && G.S.runTime >= (f.townHold || 0) && (R.t -= dt) <= 0) S.next(f, rt);
-        return true;
-      }
-      const s = S.st(f);
-      if ((s.t += dt) < LEN) return false;
-      S.end(f, rt);
-      return true;
-    },
-    // 시즌 끝: 원정 중이면 짐을 챙겨 귀환하고 결과를 남긴다
-    end(f, rt) {
-      if (!f.town) G.Exp.home(f, rt, 'manual');
-      const rows = G.Rivals.standings(f, rt).map(r => (r.us ? { ...r, floor: f.maxFloor } : r)).sort((a, b) => b.floor - a.floor || (a.us ? -1 : 1));
-      const rank = rows.findIndex(r => r.us), st = G.Rivals.st(f);
-      const won = Object.values(st).reduce((a, x) => a + x.losses, 0), lost = Object.values(st).reduce((a, x) => a + x.wins, 0);
-      const legend = G.Story.legendFame(f), anc = G.Story.seasonEnd(f);
-      const fame = f.maxFloor + (RANK_FAME[rank] || 0) + won + legend;
-      G.Guild.earnFame(f, fame);
-      f.seasonEnd = { n: S.st(f).n, rank: rank + 1, of: rows.length, floor: f.maxFloor, won, lost, fame, legend, anc, rows: rows.map(r => ({ n: r.n, col: r.col, floor: r.floor, us: !!r.us })), t: RESULT_T };
-      G.log(`시즌 ${S.st(f).n} · ${rank + 1}위 · ${f.maxFloor}층 · 명성 +${fame}`, 'fantasy', 'good');
-      G.J.sfx('fantasy', 'finish');
-    },
-    // 다음 시즌: 한 번만 찍는 노드만 남기고, 나머지는 처음부터
-    next(f, rt) {
-      for (const n of G.Tree.defs.fantasy) if ((n.max || 1) > 1) delete f.tree[n.id];
-      f.tree._c = {};
-      f.gold = START_GOLD * Math.pow(2, G.Guild.fac(f, 'vault'));
-      f.artSeen = [];
-      Object.assign(f, { floor: 1, maxFloor: 1, checkpoint: 1, start: 1, startAuto: true, carry: 0, buffs: {}, cds: {}, deaths: 0, last: null, rivals: {}, seasonEnd: null, town: true, townT: 0 });
-      const keep = Math.min(1, 0.5 + 0.25 * G.Guild.fac(f, 'archive'));
-      // 레벨 + 서사 단계를 한 줄로 줄인다 (DESIGN.md 59). 받은 은혜는 남는다
-      for (const m of G.Guild.crew(f)) { const e = Math.max(1, Math.round((m.lv + (m.bt || 0)) * keep)); Object.assign(m, { lv: Math.min(G.Guild.LV_MAX, e), bt: Math.max(0, e - G.Guild.LV_MAX), xp: 0, inj: 0, downs: 0 }); }
-      const old = S.st(f);
-      f.season = { n: old.n + 1, seed: (Math.random() * 2 ** 31) >>> 0, maps: {}, cov: {}, t: 0 };
-      G.Rivals.news.length = 0; G.Rivals.said = {}; G.Rivals.peace = {};
-      G.Guild.refresh(f);
-      G.Story.seasonNext(f);
-      rt.rivals = []; rt.mons = []; rt.chests = []; rt.mapFl = null;
-      G.Fantasy.refreshEnts(rt);
-      G.log(`시즌 ${f.season.n} 시작`, 'fantasy', 'good');
-    },
     // 그 층의 난수 (시즌 씨앗 × 층) — 지도 모양과 보물 방 자리
     rng(f, fl) { return G.Grid.seeded(Math.imul(S.st(f).seed ^ 0x9e3779b9, 31) + fl * 7919); },
 

@@ -44,13 +44,13 @@
 {
 "term": "Area of Effect",
 "tag": "",
-"text": "The descriptions of many spells and other features specify that they have an area of effect, which typically has one of six shapes. These shapes are defined elsewhere in this glossary:\nCone Cylinder Line Cube Emanation Sphere\nAn area of effect has a point of origin, a location from which the effect’s energy erupts. The rules for each shape specify how to position its point of origin. If all straight lines extending from the point of origin to a location in the area of effect are blocked, that location isn’t included in the area of effect. To block a line, an obstruction must provide Total Cover. See also “Cover.” If the creator of an area of effect places it at an unseen point and an obstruction—such as a wall— is between the creator and that point, the point of origin comes into being on the near side of the obstruction.",
+"text": "The descriptions of many spells and other features specify that they have an area of effect, which typically has one of six shapes. These shapes are defined elsewhere in this glossary:\nCone Cylinder Line Cube Emanation Sphere\nAn area of effect has a point of origin, a location from which the effect’s energy erupts. The rules for each shape specify how to position its point of origin. If all straight lines extending from the point of origin to a location in the area of effect are blocked, that location isn’t included in the area of effect. To block a line, an obstruction must provide Total Cover. See also “Cover.”   If the creator of an area of effect places it at an unseen point and an obstruction—such as a wall— is between the creator and that point, the point of origin comes into being on the near side of the obstruction.",
 "page": 177
 },
 {
 "term": "Armor Class",
 "tag": "",
-"text": "An Armor Class (AC) is the target number for an attack roll. AC represents how difficult it is to hit a target. Your base AC calculation is 10 plus your Dexterity modifier. If a rule gives you another base AC calculation, you choose which calculation to use; you can’t use more than one. See also “Attack Roll.”",
+"text": "An Armor Class (AC) is the target number for an attack roll. AC represents how difficult it is to hit a target.   Your base AC calculation is 10 plus your Dexterity modifier. If a rule gives you another base AC calculation, you choose which calculation to use; you can’t use more than one. See also “Attack Roll.”",
 "page": 177
 },
 {
@@ -110,7 +110,7 @@
 {
 "term": "Breaking Objects",
 "tag": "",
-"text": "Objects can be harmed by attacks and by some spells, using the rules below. If an object is exceedingly fragile, the GM may allow a creature to break it automatically with the Attack or Utilize action.\nArmor Class. The Object Armor Class table suggests ACs for various substances.",
+"text": "Objects can be harmed by attacks and by some spells, using the rules below. If an object is exceedingly fragile, the GM may allow a creature to break it automatically with the Attack or Utilize action.\nArmor Class. The Object Armor Class table suggests ACs for various substances.\nHit Points. An object is destroyed when it has 0 Hit Points. The Object Hit Points table suggests Hit Points for fragile and resilient objects that are Large or smaller. To track Hit Points for a Huge or Gargantuan object, divide it into Large or smaller sections, and track each section’s Hit Points separately. The GM determines whether destroying part of an object causes the whole thing to collapse.\nDamage Types and Objects. Objects have Immunity to Poison and Psychic damage. The GM might decide that some damage types are more or less effective against an object. For example, Bludgeoning damage works well for smashing things but not for cutting. Paper or cloth objects might have Vulnerability to Fire damage.\nDamage Threshold. Big objects, such as castle walls, often have extra resilience represented by a damage threshold. See also “Damage Threshold.”\nNo Ability Scores. An object lacks ability scores unless a rule assigns scores to the object. Without ability scores, an object can’t make ability checks, and it fails all saving throws.",
 "page": 177
 },
 {
@@ -146,7 +146,7 @@
 {
 "term": "Carrying Capacity",
 "tag": "",
-"text": "Your size and Strength score determine the maximum weight in pounds that you can carry, as shown in the Carrying Capacity table. The table also shows the maximum weight you can drag, lift, or push. While dragging, lifting, or pushing weight in excess of the maximum weight you can carry, your Speed can be no more than 5 feet.",
+"text": "Your size and Strength score determine the maximum weight in pounds that you can carry, as shown in the Carrying Capacity table. The table also shows the maximum weight you can drag, lift, or push.   While dragging, lifting, or pushing weight in excess of the maximum weight you can carry, your Speed can be no more than 5 feet.",
 "page": 178
 },
 {
@@ -170,7 +170,7 @@
 {
 "term": "Climbing",
 "tag": "",
-"text": "While you’re climbing, each foot of movement costs\n1 extra foot (2 extra feet in Difficult Terrain). You ignore this extra cost if you have a Climb Speed and use it to climb.\nAt the GM’s option, climbing a slippery surface or one with few handholds might require a successful DC 15 Strength (Athletics) check.",
+"text": "While you’re climbing, each foot of movement costs\n1 extra foot (2 extra feet in Difficult Terrain). You ignore this extra cost if you have a Climb Speed and use it to climb.\n  At the GM’s option, climbing a slippery surface or one with few handholds might require a successful DC 15 Strength (Athletics) check.",
 "page": 178
 },
 {
@@ -194,7 +194,7 @@
 {
 "term": "Cone",
 "tag": "Area of Effect",
-"text": "A Cone is an area of effect that extends in straight lines from a point of origin in a direction its creator chooses. A Cone’s width at any point along its length is equal to that point’s distance from the point of origin. For example, a Cone is 15 feet wide at a point along its length that is 15 feet from the point of origin. The effect that creates a Cone specifies its maximum length. A Cone’s point of origin isn’t included in the area of effect unless its creator decides otherwise.",
+"text": "A Cone is an area of effect that extends in straight lines from a point of origin in a direction its creator chooses. A Cone’s width at any point along its length is equal to that point’s distance from the point of origin. For example, a Cone is 15 feet wide at a point along its length that is 15 feet from the point of origin. The effect that creates a Cone specifies its maximum length.   A Cone’s point of origin isn’t included in the area of effect unless its creator decides otherwise.",
 "page": 179
 },
 {
@@ -230,7 +230,7 @@
 {
 "term": "Cube",
 "tag": "Area of Effect",
-"text": "A Cube is an area of effect that extends in straight lines from a point of origin located anywhere on a face of the Cube. The effect that creates a Cube specifies its size, which is the length of each side. A Cube’s point of origin isn’t included in the area of effect unless its creator decides otherwise.",
+"text": "A Cube is an area of effect that extends in straight lines from a point of origin located anywhere on a face of the Cube. The effect that creates a Cube specifies its size, which is the length of each side.   A Cube’s point of origin isn’t included in the area of effect unless its creator decides otherwise.",
 "page": 179
 },
 {
@@ -242,7 +242,7 @@
 {
 "term": "Cylinder",
 "tag": "Area of Effect",
-"text": "A Cylinder is an area of effect that extends in straight lines from a point of origin located at the center of the circular top or bottom of the Cylinder. The effect that creates a Cylinder specifies the radius of the Cylinder’s base and the Cylinder’s height. A Cylinder’s point of origin is included in the area of effect.",
+"text": "A Cylinder is an area of effect that extends in straight lines from a point of origin located at the center of the circular top or bottom of the Cylinder. The effect that creates a Cylinder specifies the radius of the Cylinder’s base and the Cylinder’s height.   A Cylinder’s point of origin is included in the area of effect.",
 "page": 180
 },
 {
@@ -290,13 +290,13 @@
 {
 "term": "Dash",
 "tag": "Action",
-"text": "When you take the Dash action, you gain extra movement for the current turn. The increase equals your Speed after applying any modifiers. With a Speed of 30 feet, for example, you can move up to\n60 feet on your turn if you Dash. If your Speed of 30 feet is reduced to 15 feet, you can move up to 30 feet this turn if you Dash. If you have a special speed, such as a Fly Speed or Swim Speed, you can use that speed instead of your Speed when you take this action. You choose which speed to use each time you take it. See also “Speed.”",
+"text": "When you take the Dash action, you gain extra movement for the current turn. The increase equals your Speed after applying any modifiers. With a Speed of 30 feet, for example, you can move up to\n60 feet on your turn if you Dash. If your Speed of 30 feet is reduced to 15 feet, you can move up to 30 feet this turn if you Dash.   If you have a special speed, such as a Fly Speed or Swim Speed, you can use that speed instead of your Speed when you take this action. You choose which speed to use each time you take it. See also “Speed.”",
 "page": 180
 },
 {
 "term": "Dead",
 "tag": "",
-"text": "A dead creature has no Hit Points and can’t regain them unless it is first revived by magic such as the Raise Dead or Revivify spell. When such a spell is cast, the spirit knows who is casting it and can refuse. The spirit of a dead creature has left the body and departed for the Outer Planes, and reviving the creature requires calling the spirit back. If the creature returns to life, the revival effect determines the creature’s current Hit Points. Unless otherwise stated, the creature returns to life with any conditions, magical contagions, or curses that were affecting it at death if the durations of those effects are still ongoing. If the creature died with any Exhaustion levels, it returns with 1 fewer level. If the creature had Attunement to one or more magic items, it is no longer attuned to them.",
+"text": "A dead creature has no Hit Points and can’t regain them unless it is first revived by magic such as the Raise Dead or Revivify spell. When such a spell is cast, the spirit knows who is casting it and can refuse. The spirit of a dead creature has left the body and departed for the Outer Planes, and reviving the creature requires calling the spirit back.   If the creature returns to life, the revival effect determines the creature’s current Hit Points. Unless otherwise stated, the creature returns to life with any conditions, magical contagions, or curses that were affecting it at death if the durations of those effects are still ongoing. If the creature died with any Exhaustion levels, it returns with 1 fewer level. If the creature had Attunement to one or more magic items, it is no longer attuned to them.",
 "page": 180
 },
 {
@@ -320,7 +320,7 @@
 {
 "term": "Difficult Terrain",
 "tag": "",
-"text": "If a space is Difficult Terrain, every foot of movement in that space costs 1 extra foot. For example, moving 5 feet through Difficult Terrain costs 10 feet of movement. Difficult Terrain isn’t cumulative; either a space is Difficult Terrain or it isn’t. A space is Difficult Terrain if the space contains any of the following or something similar:\n•\tA creature that isn’t Tiny or your ally •\tFurniture that is sized for creatures of your size or larger •\tHeavy snow, ice, rubble, or undergrowth •\tLiquid that’s between shin- and waist-deep •\tA narrow opening sized for a creature one size smaller than you •\tA slope of 20 degrees or more",
+"text": "If a space is Difficult Terrain, every foot of movement in that space costs 1 extra foot. For example, moving 5 feet through Difficult Terrain costs 10 feet of movement. Difficult Terrain isn’t cumulative; either a space is Difficult Terrain or it isn’t.   A space is Difficult Terrain if the space contains any of the following or something similar:\n•\tA creature that isn’t Tiny or your ally •\tFurniture that is sized for creatures of your size or larger •\tHeavy snow, ice, rubble, or undergrowth •\tLiquid that’s between shin- and waist-deep •\tA narrow opening sized for a creature one size smaller than you •\tA slope of 20 degrees or more",
 "page": 181
 },
 {
@@ -350,13 +350,13 @@
 {
 "term": "Dodge",
 "tag": "Action",
-"text": "If you take the Dodge action, you gain the following benefits: until the start of your next turn, any attack roll made against you has Disadvantage if you can see the attacker, and you make Dexterity saving throws with Advantage. You lose these benefits if you have the Incapacitated condition or if your Speed is 0.",
+"text": "If you take the Dodge action, you gain the following benefits: until the start of your next turn, any attack roll made against you has Disadvantage if you can see the attacker, and you make Dexterity saving throws with Advantage.   You lose these benefits if you have the Incapacitated condition or if your Speed is 0.",
 "page": 181
 },
 {
 "term": "Emanation",
 "tag": "Area of Effect",
-"text": "An Emanation is an area of effect that extends in straight lines from a creature or an object in all directions. The effect that creates an Emanation specifies the distance it extends. An Emanation moves with the creature or object that is its origin unless it is an instantaneous or a stationary effect. An Emanation’s origin (creature or object) isn’t included in the area of effect unless its creator decides otherwise.",
+"text": "An Emanation is an area of effect that extends in straight lines from a creature or an object in all directions. The effect that creates an Emanation specifies the distance it extends.   An Emanation moves with the creature or object that is its origin unless it is an instantaneous or a stationary effect.   An Emanation’s origin (creature or object) isn’t included in the area of effect unless its creator decides otherwise.",
 "page": 181
 },
 {
@@ -386,13 +386,13 @@
 {
 "term": "Expertise",
 "tag": "",
-"text": "Expertise is a feature that enhances your use of a skill proficiency. When you make an ability check with a skill proficiency in which you have Expertise, your Proficiency Bonus is doubled for that check unless the bonus is doubled by another feature. If you gain Expertise, you gain it in one skill in which you have proficiency. You can’t have Expertise in the same skill proficiency more than once. See also “Playing the Game” (“Proficiency”).",
+"text": "Expertise is a feature that enhances your use of a skill proficiency. When you make an ability check with a skill proficiency in which you have Expertise, your Proficiency Bonus is doubled for that check unless the bonus is doubled by another feature.   If you gain Expertise, you gain it in one skill in which you have proficiency. You can’t have Expertise in the same skill proficiency more than once. See also “Playing the Game” (“Proficiency”).",
 "page": 182
 },
 {
 "term": "Falling",
 "tag": "Hazard",
-"text": "A creature that falls takes 1d6 Bludgeoning damage at the end of the fall for every 10 feet it fell, to a maximum of 20d6. When the creature lands, it has the Prone condition unless it avoids taking any damage from the fall. A creature that falls into water or another liquid can use its Reaction to make a DC 15 Strength (Athletics) or Dexterity (Acrobatics) check to hit the surface head or feet first. On a successful check, any damage resulting from the fall is halved.",
+"text": "A creature that falls takes 1d6 Bludgeoning damage at the end of the fall for every 10 feet it fell, to a maximum of 20d6. When the creature lands, it has the Prone condition unless it avoids taking any damage from the fall.   A creature that falls into water or another liquid can use its Reaction to make a DC 15 Strength (Athletics) or Dexterity (Acrobatics) check to hit the surface head or feet first. On a successful check, any damage resulting from the fall is halved.",
 "page": 182
 },
 {
@@ -458,19 +458,19 @@
 {
 "term": "Heroic Inspiration",
 "tag": "",
-"text": "If you (a player character) have Heroic Inspiration, you can expend it to reroll any die immediately after rolling it, and you must use the new roll. If you gain Heroic Inspiration but already have it, it’s lost unless you give it to a player character who lacks it.",
+"text": "If you (a player character) have Heroic Inspiration, you can expend it to reroll any die immediately after rolling it, and you must use the new roll.   If you gain Heroic Inspiration but already have it, it’s lost unless you give it to a player character who lacks it.",
 "page": 183
 },
 {
 "term": "Hide",
 "tag": "Action",
-"text": "With the Hide action, you try to hide yourself. To do so, you must succeed on a DC 15 Dexterity (Stealth) check while you’re Heavily Obscured or behind Three-Quarters Cover or Total Cover, and you must be out of any enemy’s line of sight; if you can see a creature, you can discern whether it can see you. On a successful check, you have the Invisible condition while hidden. Make note of your check’s total, which is the DC for a creature to find you with a Wisdom (Perception) check. You stop being hidden immediately after any of the following occurs: you make a sound louder than a whisper, an enemy finds you, you make an attack roll, or you cast a spell with a Verbal component.",
+"text": "With the Hide action, you try to hide yourself. To do so, you must succeed on a DC 15 Dexterity (Stealth) check while you’re Heavily Obscured or behind Three-Quarters Cover or Total Cover, and you must be out of any enemy’s line of sight; if you can see a creature, you can discern whether it can see you.   On a successful check, you have the Invisible condition while hidden. Make note of your check’s total, which is the DC for a creature to find you with a Wisdom (Perception) check.   You stop being hidden immediately after any of the following occurs: you make a sound louder than a whisper, an enemy finds you, you make an attack roll, or you cast a spell with a Verbal component.",
 "page": 183
 },
 {
 "term": "High Jump",
 "tag": "",
-"text": "When you make a High Jump, you leap into the air a number of feet equal to 3 plus your Strength modifier (minimum of 0 feet) if you move at least\n10 feet on foot immediately before the jump. When you make a standing High Jump, you can jump only half that distance. Either way, each foot of the jump costs a foot of movement. You can extend your arms half your height above yourself during the jump. Thus, you can reach a distance equal to the height of the jump plus 1½ times your height.",
+"text": "When you make a High Jump, you leap into the air a number of feet equal to 3 plus your Strength modifier (minimum of 0 feet) if you move at least\n10 feet on foot immediately before the jump. When you make a standing High Jump, you can jump only half that distance. Either way, each foot of the jump costs a foot of movement.   You can extend your arms half your height above yourself during the jump. Thus, you can reach a distance equal to the height of the jump plus 1½ times your height.",
 "page": 183
 },
 {
@@ -500,7 +500,7 @@
 {
 "term": "Illusions",
 "tag": "",
-"text": "Spells and other effects sometimes create magical illusions. Such an effect defines what the illusion does and which senses or mental faculties it deceives. If an illusion manifests in space, the illusion is insubstantial and weightless, yet it seems to be affected by the environment as if the illusion were real unless the effect that created it specifies otherwise. For example, a visual illusion of a creature casts shadows and reflections, and wind appears to affect the illusory creature. Similarly, an audible illusion echoes in an echoey space.",
+"text": "Spells and other effects sometimes create magical illusions. Such an effect defines what the illusion does and which senses or mental faculties it deceives.   If an illusion manifests in space, the illusion is insubstantial and weightless, yet it seems to be affected by the environment as if the illusion were real unless the effect that created it specifies otherwise. For example, a visual illusion of a creature casts shadows and reflections, and wind appears to affect the illusory creature. Similarly, an audible illusion echoes in an echoey space.",
 "page": 183
 },
 {
@@ -536,7 +536,7 @@
 {
 "term": "Initiative",
 "tag": "",
-"text": "Initiative determines the order of turns during combat. The combat rules in “Playing the Game” explain how to roll Initiative. Sometimes a GM might have combatants use their Initiative scores instead of rolling Initiative. Your Initiative score equals 10 plus your Dexterity modifier. If you have Advantage on Initiative rolls, increase your Initiative score by 5. If you have Disadvantage on those rolls, decrease that score by 5. See also “Playing the Game” (“Combat”).",
+"text": "Initiative determines the order of turns during combat. The combat rules in “Playing the Game” explain how to roll Initiative.   Sometimes a GM might have combatants use their Initiative scores instead of rolling Initiative. Your Initiative score equals 10 plus your Dexterity modifier. If you have Advantage on Initiative rolls, increase your Initiative score by 5. If you have Disadvantage on those rolls, decrease that score by 5. See also “Playing the Game” (“Combat”).",
 "page": 184
 },
 {
@@ -554,7 +554,7 @@
 {
 "term": "Knocking Out a Creature",
 "tag": "",
-"text": "When you would reduce a creature to 0 Hit Points with a melee attack, you can instead reduce the creature to 1 Hit Point. The creature then has the Unconscious condition and starts a Short Rest. The creature remains Unconscious until it regains any Hit Points or until someone uses an action to administer first aid to it, which requires a successful DC 10 Wisdom (Medicine) check.",
+"text": "When you would reduce a creature to 0 Hit Points with a melee attack, you can instead reduce the creature to 1 Hit Point. The creature then has the Unconscious condition and starts a Short Rest.   The creature remains Unconscious until it regains any Hit Points or until someone uses an action to administer first aid to it, which requires a successful DC 10 Wisdom (Medicine) check.",
 "page": 184
 },
 {
@@ -566,25 +566,25 @@
 {
 "term": "Line",
 "tag": "Area of Effect",
-"text": "A Line is an area of effect that extends from a point of origin in a straight path along its length and covers an area defined by its width. The effect that creates a Line specifies its length and width. A Line’s point of origin isn’t included in the area of effect unless its creator decides otherwise.",
+"text": "A Line is an area of effect that extends from a point of origin in a straight path along its length and covers an area defined by its width. The effect that creates a Line specifies its length and width.   A Line’s point of origin isn’t included in the area of effect unless its creator decides otherwise.",
 "page": 184
 },
 {
 "term": "Long Jump",
 "tag": "",
-"text": "When you make a Long Jump, you leap horizontally a number of feet up to your Strength score if you\nmove at least 10 feet immediately before the jump. When you make a standing Long Jump, you can leap only half that distance. Either way, each foot you jump costs a foot of movement. If you land in Difficult Terrain, you must succeed on a DC 10 Dexterity (Acrobatics) check or have the Prone condition. This Long Jump rule assumes that the height of the jump doesn’t matter, such as a jump across a stream or chasm. At your GM’s option, you must succeed on a DC 10 Strength (Athletics) check to clear a low obstacle (no taller than a quarter of the jump’s distance), such as a hedge or low wall. Otherwise, you hit the obstacle.",
+"text": "When you make a Long Jump, you leap horizontally a number of feet up to your Strength score if you\nmove at least 10 feet immediately before the jump. When you make a standing Long Jump, you can leap only half that distance. Either way, each foot you jump costs a foot of movement.   If you land in Difficult Terrain, you must succeed on a DC 10 Dexterity (Acrobatics) check or have the Prone condition.   This Long Jump rule assumes that the height of the jump doesn’t matter, such as a jump across a stream or chasm. At your GM’s option, you must succeed on a DC 10 Strength (Athletics) check to clear a low obstacle (no taller than a quarter of the jump’s distance), such as a hedge or low wall. Otherwise, you hit the obstacle.",
 "page": 184
 },
 {
 "term": "Long Rest",
 "tag": "",
-"text": "A Long Rest is a period of extended downtime—at least 8 hours—available to any creature. During a Long Rest, you sleep for at least 6 hours and perform no more than 2 hours of light activity, such as reading, talking, eating, or standing watch. During sleep, you have the Unconscious condition. After you finish a Long Rest, you must wait at least\n16 hours before starting another one.\nBenefits of the Rest. To start a Long Rest, you must have at least 1 Hit Point. When you finish the rest, you gain the following benefits:\nRegain All HP. You regain all lost Hit Points and all\nspent Hit Point Dice. If your Hit Point maximum was reduced, it returns to normal. Ability Scores Restored. If any of your ability\nscores were reduced, they return to normal. Exhaustion Reduced. If you have the Exhaustion\ncondition, its level decreases by 1. Special Feature. Some features are recharged by a\nLong Rest. If you have such a feature, it recharges in the way specified in its description.\nInterrupting the Rest. A Long Rest is stopped by the following interruptions:\n• Rolling Initiative\n• Casting a spell other than a cantrip\n• Taking any damage\n• 1 hour of walking or other physical exertion\nIf you rested at least 1 hour before the interruption, you gain the benefits of a Short Rest. See also “Short Rest.” You can resume a Long Rest immediately after an interruption. If you do so, the rest requires 1 additional hour per interruption to finish.",
+"text": "A Long Rest is a period of extended downtime—at least 8 hours—available to any creature. During a Long Rest, you sleep for at least 6 hours and perform no more than 2 hours of light activity, such as reading, talking, eating, or standing watch.   During sleep, you have the Unconscious condition. After you finish a Long Rest, you must wait at least\n16 hours before starting another one.\nBenefits of the Rest. To start a Long Rest, you must have at least 1 Hit Point. When you finish the rest, you gain the following benefits:\nRegain All HP. You regain all lost Hit Points and all\nspent Hit Point Dice. If your Hit Point maximum was reduced, it returns to normal. Ability Scores Restored. If any of your ability\nscores were reduced, they return to normal. Exhaustion Reduced. If you have the Exhaustion\ncondition, its level decreases by 1. Special Feature. Some features are recharged by a\nLong Rest. If you have such a feature, it recharges in the way specified in its description.\nInterrupting the Rest. A Long Rest is stopped by the following interruptions:\n• Rolling Initiative\n• Casting a spell other than a cantrip\n• Taking any damage\n• 1 hour of walking or other physical exertion\nIf you rested at least 1 hour before the interruption, you gain the benefits of a Short Rest. See also “Short Rest.”   You can resume a Long Rest immediately after an interruption. If you do so, the rest requires 1 additional hour per interruption to finish.",
 "page": 185
 },
 {
 "term": "Magic",
 "tag": "Action",
-"text": "When you take the Magic action, you cast a spell that has a casting time of an action or use a feature or magic item that requires a Magic action to be activated.\nIf you cast a spell that has a casting time of 1 minute or longer, you must take the Magic action on each turn of that casting, and you must maintain Concentration while you do so. If your Concentration is broken, the spell fails, but you don’t expend a spell slot. See also “Concentration.”",
+"text": "When you take the Magic action, you cast a spell that has a casting time of an action or use a feature or magic item that requires a Magic action to be activated.\n  If you cast a spell that has a casting time of 1 minute or longer, you must take the Magic action on each turn of that casting, and you must maintain Concentration while you do so. If your Concentration is broken, the spell fails, but you don’t expend a spell slot. See also “Concentration.”",
 "page": 185
 },
 {
@@ -596,7 +596,7 @@
 {
 "term": "Malnutrition",
 "tag": "Hazard",
-"text": "A creature needs an amount of food per day based on its size, as shown in the Food Needs per Day table. A creature that eats but consumes less than half the required food for a day must succeed on a DC\n10 Constitution saving throw or gain 1 Exhaustion level at the day’s end. A creature that eats nothing for 5 days automatically gains 1 Exhaustion level at the end of the fifth day as well as an additional level at the end of each subsequent day without food. Exhaustion caused by malnutrition can’t be removed until the creature eats the full amount of food required for a day. See also “Exhaustion.”",
+"text": "A creature needs an amount of food per day based on its size, as shown in the Food Needs per Day table. A creature that eats but consumes less than half the required food for a day must succeed on a DC\n10 Constitution saving throw or gain 1 Exhaustion level at the day’s end. A creature that eats nothing for 5 days automatically gains 1 Exhaustion level at the end of the fifth day as well as an additional level at the end of each subsequent day without food.   Exhaustion caused by malnutrition can’t be removed until the creature eats the full amount of food required for a day. See also “Exhaustion.”",
 "page": 185
 },
 {
@@ -638,7 +638,7 @@
 {
 "term": "Passive Perception",
 "tag": "",
-"text": "Passive Perception is a score that reflects a creature’s general awareness of its surroundings. The GM uses this score when determining whether a creature notices something without consciously making a Wisdom (Perception) check. A creature’s Passive Perception equals 10 plus the creature’s Wisdom (Perception) check bonus. If the creature has Advantage on such checks, increase the score by 5. If the creature has Disadvantage on them, decrease the score by 5. For example, a level\n1 character with a Wisdom of 15 and proficiency in Perception has a Passive Perception of 14 (10 + 2 + 2). If that character has Advantage on Wisdom (Perception) checks, the score becomes 19.",
+"text": "Passive Perception is a score that reflects a creature’s general awareness of its surroundings. The GM uses this score when determining whether a creature notices something without consciously making a Wisdom (Perception) check.   A creature’s Passive Perception equals 10 plus the creature’s Wisdom (Perception) check bonus. If the creature has Advantage on such checks, increase the score by 5. If the creature has Disadvantage on them, decrease the score by 5. For example, a level\n1 character with a Wisdom of 15 and proficiency in Perception has a Passive Perception of 14 (10 + 2 + 2). If that character has Advantage on Wisdom (Perception) checks, the score becomes 19.",
 "page": 186
 },
 {
@@ -698,7 +698,7 @@
 {
 "term": "Ready",
 "tag": "Action",
-"text": "You take the Ready action to wait for a particular circumstance before you act. To do so, you take this action on your turn, which lets you act by taking a Reaction before the start of your next turn. First, you decide what perceivable circumstance will trigger your Reaction. Then, you choose the action you will take in response to that trigger, or you choose to move up to your Speed in response to it. Examples include “If the cultist steps on the\ntrapdoor, I’ll pull the lever that opens it,” and “If the zombie steps next to me, I move away.” When the trigger occurs, you can either take your Reaction right after the trigger finishes or ignore the trigger. When you Ready a spell, you cast it as normal (expending any resources used to cast it) but hold its energy, which you release with your Reaction when the trigger occurs. To be readied, a spell must have a casting time of an action, and holding on to the spell’s magic requires Concentration, which you can maintain up to the start of your next turn. If your Concentration is broken, the spell dissipates without taking effect.",
+"text": "You take the Ready action to wait for a particular circumstance before you act. To do so, you take this action on your turn, which lets you act by taking a Reaction before the start of your next turn.   First, you decide what perceivable circumstance will trigger your Reaction. Then, you choose the action you will take in response to that trigger, or you choose to move up to your Speed in response to it. Examples include “If the cultist steps on the\ntrapdoor, I’ll pull the lever that opens it,” and “If the zombie steps next to me, I move away.”   When the trigger occurs, you can either take your Reaction right after the trigger finishes or ignore the trigger.   When you Ready a spell, you cast it as normal (expending any resources used to cast it) but hold its energy, which you release with your Reaction when the trigger occurs. To be readied, a spell must have a casting time of an action, and holding on to the spell’s magic requires Concentration, which you can maintain up to the start of your next turn. If your Concentration is broken, the spell dissipates without taking effect.",
 "page": 186
 },
 {
@@ -800,7 +800,7 @@
 {
 "term": "Sphere",
 "tag": "Area of Effect",
-"text": "A Sphere is an area of effect that extends in straight lines from a point of origin outward in all directions. The effect that creates a Sphere specifies the distance it extends as the radius of the Sphere. A Sphere’s point of origin is included in the Sphere’s area of effect.",
+"text": "A Sphere is an area of effect that extends in straight lines from a point of origin outward in all directions. The effect that creates a Sphere specifies the distance it extends as the radius of the Sphere.   A Sphere’s point of origin is included in the Sphere’s area of effect.",
 "page": 188
 },
 {
@@ -818,7 +818,7 @@
 {
 "term": "Study",
 "tag": "Action",
-"text": "When you take the Study action, you make an Intelligence check to study your memory, a book, a clue, or another source of knowledge and call to mind an important piece of information about it. The Areas of Knowledge table suggests which skills are applicable to various areas of knowledge.",
+"text": "When you take the Study action, you make an Intelligence check to study your memory, a book, a clue, or another source of knowledge and call to mind an important piece of information about it.   The Areas of Knowledge table suggests which skills are applicable to various areas of knowledge.",
 "page": 189
 },
 {
@@ -860,13 +860,13 @@
 {
 "term": "Telepathy",
 "tag": "",
-"text": "Telepathy is a magical ability that allows a creature to communicate mentally with another creature within a specified range. Unless a rule states otherwise, the contacted creature doesn’t need to share a language with the telepath to understand this communication, but the contacted creature must be able to understand at least one language or be telepathic itself to understand. A telepath doesn’t need to see a contacted creature, and the telepath can start or end the telepathic contact at any time (no action required). Telepathic contact can’t be initiated and is immediately broken if either the telepath or the other creature has the Incapacitated condition. Telepathic contact is also broken if the contacted creature is no longer within the telepathy’s range or if the telepath contacts a different creature within range. A creature without telepathy can receive telepathic messages but can’t initiate a telepathic conversation. Once a telepathic conversation starts, the non-telepath can communicate mentally to the telepath until the telepathic connection ends.",
+"text": "Telepathy is a magical ability that allows a creature to communicate mentally with another creature within a specified range. Unless a rule states otherwise, the contacted creature doesn’t need to share a language with the telepath to understand this communication, but the contacted creature must be able to understand at least one language or be telepathic itself to understand.   A telepath doesn’t need to see a contacted creature, and the telepath can start or end the telepathic contact at any time (no action required). Telepathic contact can’t be initiated and is immediately broken if either the telepath or the other creature has the Incapacitated condition. Telepathic contact is also broken if the contacted creature is no longer within the telepathy’s range or if the telepath contacts a different creature within range.   A creature without telepathy can receive telepathic messages but can’t initiate a telepathic conversation. Once a telepathic conversation starts, the non-telepath can communicate mentally to the telepath until the telepathic connection ends.",
 "page": 190
 },
 {
 "term": "Teleportation",
 "tag": "",
-"text": "Teleportation is a special kind of magical transportation. If you teleport, you disappear and reappear elsewhere instantly, without moving through the intervening space. This transportation doesn’t expend movement unless a rule tells you otherwise, and teleportation never provokes Opportunity Attacks. When you teleport, all the equipment you’re wearing and carrying teleports with you. If you’re touching another creature when you teleport, that creature doesn’t teleport with you unless the teleportation effect says otherwise. If the destination space of your teleportation is occupied by another creature or blocked by a solid obstacle, you instead appear in the nearest unoccupied space of your choice. The description of a teleportation effect tells you if you must see the teleportation’s destination.",
+"text": "Teleportation is a special kind of magical transportation. If you teleport, you disappear and reappear elsewhere instantly, without moving through the intervening space. This transportation doesn’t expend movement unless a rule tells you otherwise, and teleportation never provokes Opportunity Attacks.   When you teleport, all the equipment you’re wearing and carrying teleports with you. If you’re touching another creature when you teleport, that creature doesn’t teleport with you unless the teleportation effect says otherwise.   If the destination space of your teleportation is occupied by another creature or blocked by a solid obstacle, you instead appear in the nearest unoccupied space of your choice.   The description of a teleportation effect tells you if you must see the teleportation’s destination.",
 "page": 190
 },
 {
@@ -878,7 +878,7 @@
 {
 "term": "Tremorsense",
 "tag": "",
-"text": "A creature with Tremorsense can pinpoint the location of creatures and moving objects within a specific range, provided that the creature with Tremorsense and anything it is detecting are both in contact with the same surface (such as the ground, a wall, or a ceiling) or the same liquid. Tremorsense can’t detect creatures or objects in the air, and it doesn’t count as a form of sight.",
+"text": "A creature with Tremorsense can pinpoint the location of creatures and moving objects within a specific range, provided that the creature with Tremorsense and anything it is detecting are both in contact with the same surface (such as the ground, a wall, or a ceiling) or the same liquid.   Tremorsense can’t detect creatures or objects in the air, and it doesn’t count as a form of sight.",
 "page": 190
 },
 {
@@ -890,7 +890,7 @@
 {
 "term": "Unarmed Strike",
 "tag": "",
-"text": "Instead of using a weapon to make a melee attack, you can use a punch, kick, headbutt, or similar forceful blow. In game terms, this is an Unarmed Strike—a melee attack that involves you using your body to damage, grapple, or shove a target within 5 feet of you. Whenever you use your Unarmed Strike, choose one of the following options for its effect.\nDamage. You make an attack roll against the target. Your bonus to the roll equals your Strength modifier plus your Proficiency Bonus. On a hit, the target takes Bludgeoning damage equal to 1 plus your Strength modifier.\nGrapple. The target must succeed on a Strength or Dexterity saving throw (it chooses which), or it has the Grappled condition. The DC for the saving throw and any escape attempts equals 8 plus your Strength modifier and Proficiency Bonus. This grapple is possible only if the target is no more than one size larger than you and if you have a hand free to grab it. See also “Grappling.”\nShove. The target must succeed on a Strength or Dexterity saving throw (it chooses which), or you either push it 5 feet away or cause it to have the Prone condition. The DC for the saving throw equals 8 plus your Strength modifier and Proficiency Bonus. This shove is possible only if the target is no more than one size larger than you.",
+"text": "Instead of using a weapon to make a melee attack, you can use a punch, kick, headbutt, or similar forceful blow. In game terms, this is an Unarmed Strike—a melee attack that involves you using your body to damage, grapple, or shove a target within 5 feet of you.   Whenever you use your Unarmed Strike, choose one of the following options for its effect.\nDamage. You make an attack roll against the target. Your bonus to the roll equals your Strength modifier plus your Proficiency Bonus. On a hit, the target takes Bludgeoning damage equal to 1 plus your Strength modifier.\nGrapple. The target must succeed on a Strength or Dexterity saving throw (it chooses which), or it has the Grappled condition. The DC for the saving throw and any escape attempts equals 8 plus your Strength modifier and Proficiency Bonus. This grapple is possible only if the target is no more than one size larger than you and if you have a hand free to grab it. See also “Grappling.”\nShove. The target must succeed on a Strength or Dexterity saving throw (it chooses which), or you either push it 5 feet away or cause it to have the Prone condition. The DC for the saving throw equals 8 plus your Strength modifier and Proficiency Bonus. This shove is possible only if the target is no more than one size larger than you.",
 "page": 190
 },
 {

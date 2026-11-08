@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>인형 파츠 도감</title>
+<style>
+  body { margin:0; background:#1e1c24; color:#ece4d4; font:14px system-ui, sans-serif; }
+  header { position:sticky; top:0; background:#2a2632; padding:10px 16px; border-bottom:1px solid #4a4256; display:flex; gap:8px; flex-wrap:wrap; align-items:center; z-index:2; }
+  header a { color:#e8c870; text-decoration:none; padding:2px 6px; border:1px solid #4a4256; border-radius:4px; font-size:13px; }
+  h2 { margin:22px 16px 6px; font-size:17px; } h2 small { color:#9a90a8; font-weight:400; margin-left:6px; }
+  p.note { margin:0 16px 8px; color:#9a90a8; font-size:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(104px, 1fr)); gap:6px; padding:0 16px; }
+  .it { background:#2a2632; border:1px solid #3a3444; border-radius:6px; padding:6px 4px 4px; text-align:center; }
+  .it .im { height:72px; display:flex; align-items:center; justify-content:center; }
+  .it img { max-width:92px; max-height:70px; }
+  .it div.n { font-size:10px; color:#b8aec4; word-break:break-all; margin-top:3px; }
+  .it b { color:#e8c870; font-size:10px; }
+</style>
+</head>
+<body>
+<header><b>인형 파츠 도감</b> <span id="sum" style="color:#9a90a8"></span> <span id="nav"></span></header>
+<div id="out"></div>
+<script>
+// LAYERLAB 「2D Minimal - Character Maker」 파츠 목록 (assets/chars/rig.json). 유료 에셋이라 로컬에서만 본다.
+const GROUP = [
+  ['장비', ['Helmet', 'Chest', 'Shield', 'Sword', 'Axe', 'Blunt', 'Spear', 'Staff', 'Wand', 'Bow', 'Crossbow', 'Arrow', 'Sub_Item']],
+  ['몸', ['Hair', 'Helmet_Hair', 'Eye', 'Beard', 'Default', 'Other']],
+];
+const KO = { Helmet: '투구 · 모자', Chest: '갑옷 · 옷', Shield: '방패', Sword: '검', Axe: '도끼', Blunt: '둔기', Spear: '창', Staff: '지팡이', Wand: '완드', Bow: '활', Crossbow: '석궁', Arrow: '화살', Sub_Item: '왼손 물건', Hair: '머리', Helmet_Hair: '투구용 머리', Eye: '눈', Beard: '수염', Default: '몸통', Other: '연출용' };
+const NOTE = {
+  Helmet: '투구를 쓰면 머리는 같은 번호의 「투구용 머리」로 바뀐다',
+  Bow: 'Bow_Line_* 는 시위 (활과 함께 자동)', Crossbow: '_Down 은 석궁 아랫부분 (짝으로 자동)',
+  Sub_Item: '방패 자리(왼손)에 드는 물건: 책 · 물약 · 마법구 · 해골 · 버섯 · 주괴 · 음식 등',
+  Hair: '흰색 그림 — 게임에서 머리색으로 칠한다', Beard: '흰색 그림 — 머리색으로 칠한다',
+};
+fetch('assets/chars/rig.json').then(r => r.json()).then(({ catalog }) => {
+  const out = document.getElementById('out'), nav = document.getElementById('nav'); let total = 0;
+  for (const [g, cats] of GROUP) for (const c of cats) {
+    const list = catalog[c] || []; total += list.length;
+    const a = document.createElement('a'); a.href = '#' + c; a.textContent = `${KO[c] || c} ${list.length}`; nav.append(a, ' ');
+    const h = document.createElement('h2'); h.id = c; h.innerHTML = `${KO[c] || c} <small>${c} · ${list.length}개 · ${g}</small>`; out.append(h);
+    if (NOTE[c]) { const p = document.createElement('p'); p.className = 'note'; p.textContent = NOTE[c]; out.append(p); }
+    const grid = document.createElement('div'); grid.className = 'grid';
+    list.forEach((n, i) => {
+      const it = document.createElement('div'); it.className = 'it';
+      it.innerHTML = `<div class="im"><img loading="lazy" src="assets/chars/parts/${c}/${n}.png" alt=""></div><b>${i}</b><div class="n">${n.replace(/^FA_|^WP_Main_|^Body_/, '').replace(/^FA_WP_(Main|Sub)_/, '')}</div>`;
+      grid.append(it);
+    });
+    out.append(grid);
+  }
+  document.getElementById('sum').textContent = `· 전체 ${total}개`;
+});
+</script>
+</body>
+</html>

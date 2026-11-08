@@ -57,7 +57,7 @@ def styled(l):
         if 'Bold' in s['font'] or 'SemiBold' in s['font']: o += '**' + t.strip() + '** ' if t.endswith(' ') else '**' + t.strip() + '**'
         elif 'Italic' in s['font']: o += '_' + t.strip() + '_' + (' ' if t.endswith(' ') else '')
         else: o += t
-    return o.replace('****', '').replace('\t', ' ').rstrip()
+    return re.sub(r'(?<=\S) {2,}', ' ', o.replace('****', '').replace('\t', ' ')).rstrip()  # 판본에 따라 생기는 겹친 빈칸
 def is_table(l): return l['f'][0].startswith('GillSans') and l['f'] not in HEAD and not l['f'][0].startswith('GillSans-SemiBold-SC') and l['f'][1] > 6.5 and l['f'][1] != 12.0
 def cells_of(l):
     """한 줄의 단어를 간격으로 묶어 칸으로 (탭으로 이어진 span도 나눈다)"""
@@ -129,7 +129,9 @@ def main():
         if has or (prevT and prevT.get('colx') and len(xs) >= 2):
             hdr, data, colx = build_table(tbl, prevT.get('colx') if prevT else None)
             if not has and prevT: prevT['rows'] += data
-            elif data: cur['tables'].append(dict(page=tbl_page, title=cur['title'] if cur['level'] == 5 else '', columns=hdr, rows=data, colx=colx))
+            elif data:
+                cur['tables'].append(dict(page=tbl_page, title=cur['title'] if cur['level'] == 5 else '', columns=hdr, rows=data, colx=colx))
+                if cur['level'] == 5 and not cur['text'] and cur.get('capOf') is not None: cur['cap'] = True  # 표 제목뿐인 절: 표 뒤의 본문은 앞 절의 것이다
             else: cur['text'].insert(0, ' '.join(h for h in hdr if h))  # 표가 아닌 머리 줄 (시전 시간 · 도구 정보)
         else:
             run = None; lastq = None
@@ -151,19 +153,32 @@ def main():
                 flush_table(); end_para(); lv = HEAD[l['f']]
                 if last and last['f'] == l['f'] and last.get('pn') == pn and abs(l['y0'] - last['y1']) < l['f'][1] * 1.7 and cur['level'] == lv and not cur['text'] and not cur['tables']:
                     cur['title'] += ' ' + l['t']
-                else: cur = new(lv, l['t'], pn)
+                else:
+                    prev = cur['capOf'] if cur.get('cap') else cur['id']
+                    cur = new(lv, l['t'], pn)
+                    if lv == 5: cur['capOf'] = prev
                 l['pn'] = pn; last = l; cur['end'] = pn; continue
             if is_table(l):
                 end_para()
                 if not tbl: tbl_page = pn
                 tbl.append(l); l['pn'] = pn; last = l; cur['end'] = pn; continue
-            flush_table(); s = styled(l); cur['end'] = pn
-            newp = para is None or not last or last.get('pn') != pn or abs(l['y0'] - last['y1']) > 13.5 or l['x0'] - last['x0'] > 6 or l['spans'][0]['font'].endswith('BoldItalic') or re.match(r'^[•\d]+[.:]?\s', s)
+            flush_table(); s = styled(l)
+            if cur.get('cap'):  # 표 제목 절 뒤의 본문 → 표가 끼어든 앞 절로 돌아간다. 문장이 이어지면 앞 문단에 붙인다
+                cap = cur; cur = nodes[cap['capOf']]; cap.pop('cap', None); cap['resumed'] = cur['id']
+                stack[cur['level']] = cur['id']
+                for lv2 in range(cur['level'] + 1, 8): stack[lv2] = None
+                end_para()
+                if cur['text'] and (s[:1].islower() or not re.search(r'[.:!?”)]\s*$', cur['text'][-1])):
+                    para = cur['text'].pop(); para = para[:-1] + s if para.endswith('-') and s[:1].islower() else para + ' ' + s
+                    l['pn'] = pn; last = l; cur['end'] = pn; continue
+            cur['end'] = pn
+            newp =para is None or not last or last.get('pn') != pn or abs(l['y0'] - last['y1']) > 13.5 or l['x0'] - last['x0'] > 6 or l['spans'][0]['font'].endswith('BoldItalic') or re.match(r'^[•\d]+[.:]?\s', s)
             if newp: end_para(); para = s
             else: para = para[:-1] + s if para.endswith('-') and s[:1].islower() else para + ' ' + s
             l['pn'] = pn; last = l
     flush_table(); end_para()
     for n in nodes: n['text'] = '\n'.join(n['text']).replace('MODSAVE', 'MOD SAVE')
+    for n in nodes: n.pop('cap', None); n.pop('capOf', None)
     toc = d.get_toc(); titles = {re.sub(r'\W', '', n['title']).lower() for n in nodes}; miss = [t for t in toc if re.sub(r'\W', '', t[1]).lower() not in titles]
     for n in nodes:
         for t in n['tables']: t.pop('colx', None)

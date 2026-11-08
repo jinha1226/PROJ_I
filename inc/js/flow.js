@@ -2,21 +2,24 @@
 // 턴제 층의 진행 순서 (DESIGN.md 77): 다음에 무슨 일이 일어날지는 여기서만 정한다.
 // 다른 모듈(G.Turn 전투 · G.Story 장면 · G.Explore 판정)은 Flow가 부를 때만 움직인다. 몬스터도 전투가 시작되기 전에는 움직이지 않는다.
 //
-//   travel ──방에 들어섬──▶ enter ──▶ scene | checks | ambush ──▶ deploy ──▶ fight ──▶ after ──▶ search ──▶ loot ──▶ travel
+//   travel ──방에 들어섬──▶ enter ──▶ scene | checks | ambush ──▶ deploy ──▶ fight ──▶ after ──▶ loot ──▶ travel
 //   travel ──적이 보임───▶ deploy ──▶ fight   (기습당하면 deploy 없이 바로 fight)
-//   travel ──갈 곳 없음──▶ stairs ──▶ 다음 층
+//   travel ──갈 곳 없음──▶ stairs ──▶ 다음 층   (안 간 방이 남으면 stairAsk: 내려간다 → stairs, 마저 본다 → travel)
 G.Flow = (() => {
   const F = () => G.Fantasy, GR = G.Grid, U = G.U, T = () => G.Turn, X = () => G.Explore, ST = () => G.Story;
-  const HEAD_N = 6, ARRIVE_V = 4, ARRIVE_MAX = 4, REGROUP_R = 3.5, REGROUP_MAX = 4, DEPLOY_V = 5, DEPLOY_T = 1.6, AFTER_T = 0.9, SEARCH_MAX = 3, STASH_REACH = 1.2, SIGHT_R = 7, HIDDEN_P = 0.35, BRACE_T = 0.5, AMBUSH_T = 1.3, GAP_T = 0.4, TRAIL_STEP = 0.4, TRAIL_MAX = 60, TRAIL_GAP = 1.6, RUSH_K = 1.4, KNOWN_GOLD = 0.5, FOLLOW_K = 1.1, RANK = { front: 0, mid: 1, back: 2 };
+  const HEAD_N = 6, ARRIVE_V = 4, ARRIVE_MAX = 4, REGROUP_R = 3.5, REGROUP_MAX = 4, DEPLOY_V = 5, DEPLOY_T = 1.6, AFTER_T = 0.9, SIGHT_R = 7, HIDDEN_P = 0.35, BRACE_T = 0.5, AMBUSH_T = 1.3, GAP_T = 0.4, TRAIL_STEP = 0.4, TRAIL_MAX = 60, TRAIL_GAP = 1.6, RUSH_K = 1.4, KNOWN_GOLD = 0.5, FOLLOW_K = 1.1, RANK = { front: 0, mid: 1, back: 2 };
 
   const leadOf = rt => (rt.hero.dead ? rt.party.find(p => !p.dead) : rt.hero);
   const roomOf = (rt, o) => rt.map.rooms.find(r => F().inRoom(r, o)) || null;
-  const monsIn = (rt, r) => rt.mons.filter(o => F().inRoom(r, o));
-  const chestIn = (rt, r) => rt.chests.find(c => !c.relic && F().inRoom(r, c));
+  const monsIn = (rt, r) => rt.mons.filter(o => inR(rt, r, o));
+  const inR = (rt, r, o) => (rt.map.scn === 'astral' ? o.x >= r.x - 0.5 && o.x < r.x + r.w - 0.5 && o.y >= r.y - 0.5 && o.y < r.y + r.h - 0.5 : F().inRoom(r, o));
+  const chestIn = (rt, r) => rt.chests.find(c => !c.relic && inR(rt, r, c) && (rt.map.scn !== 'astral' || G.Scn.open(rt, c)));
 
   // ── 층 시작 ──
   function init(f, rt) {
     const m = rt.map, known = G.Season.known(f, rt);
+    G.Sum.floor(rt); G.Terrain.gen(rt.map); G.Light.floor(rt); rt.diffs = [];
+    G.Util.floor(f, rt); // 점술 · 길 찾기 · 물건 찾기 … (전투 밖 주문)
     X().state(f, rt);
     for (const r of m.rooms) r.ent = known;
     m.rooms[0].ent = true;
@@ -65,6 +68,26 @@ G.Flow = (() => {
     });
   }
 
+  // ── 탐험 방침 (DESIGN.md 127): full = 갈 수 있는 방을 모두 들른 뒤 계단, fast = 볼일 있는 방만. rt.rush(바로 계단)와는 다르다 ──
+  const policy = f => (f.explore === 'fast' ? 'fast' : 'full');
+  const full = (f, rt) => policy(f) === 'full' || !!rt.flow.more; // 계단에서 「마저 본다」: 이 층만 꼼꼼히
+  // 지금 길이 있는 방만 센다: 잠긴 방 · 비밀문 뒤는 칸이 막혀 길이 없다
+  const canReach = (rt, r, lead) => (rt.map.scn === 'astral' ? G.Scn.reachable(rt, r, lead) : GR.field(rt.map, r.cx, r.cy)[Math.round(lead.y) * rt.map.w + Math.round(lead.x)] >= 0);
+  const unseen = (rt, r) => !r.ent && r !== rt.map.start && r !== rt.map.end;
+  const pending = (rt, lead) => rt.map.rooms.filter(r => unseen(rt, r) && canReach(rt, r, lead));
+  // 계단에 왔는데 안 간 방이 남았으면 묻는다. 기본값은 방침. 묻는 동안이거나 되돌아가면 true
+  function stairAsk(f, rt) {
+    const fl = rt.flow, lead = leadOf(rt);
+    if (rt.rush || fl.stairAsked || !lead) return false;
+    const n = pending(rt, lead).length; if (!n) return false;
+    fl.stairAsked = true;
+    ST().ask(f, rt, `안 간 방 ${n}`, [{ label: '내려간다', sub: '' }, { label: '마저 본다', sub: '' }], policy(f) === 'full' ? 1 : 0, i => {
+      if (i === 1) { fl.more = true; fl.stairAsked = false; go(rt, 'travel'); } else go(rt, 'stairs');
+    });
+    if (rt.ask) go(rt, 'stairAsk');
+    return fl.st !== 'stairs';
+  }
+
   // ── 이동: 적이 보이면 싸우고, 새 방에 들어서면 멈추고, 갈 곳이 없으면 계단으로 ──
   function travel(f, rt, speed, dt) {
     const m = rt.map, lead = leadOf(rt);
@@ -72,17 +95,20 @@ G.Flow = (() => {
     if (!rt.rush) {
       const seen = rt.mons.find(o => o.spotted && o.hp > 0 && GR.dist(o, lead) <= SIGHT_R && F().sees(m, lead, o));
       if (seen) { const r = roomOf(rt, seen); if (r) r.ent = true; fight(f, rt, r, seen); return; }
-      const fresh = m.rooms.find(r => !r.ent && F().inRoom(r, lead));
+      const fresh = m.rooms.find(r => !r.ent && F().inRoom(r, lead) && (m.scn !== 'astral' || G.Scn.inside(rt, r, lead)));
       if (fresh) { enter(f, rt, fresh); return; }
     }
-    const wants = rt.rush ? [] : m.rooms.filter(r => monsIn(rt, r).length || chestIn(rt, r) || (r.evSlot && !r.ent));
+    if (m.scn === 'astral') G.Scn.route(f, rt, lead);
+    const wants = rt.rush ? [] : m.rooms.filter(r => (monsIn(rt, r).length || chestIn(rt, r) || (r.evSlot && (!r.ent || m.scn === 'astral') && (full(f, rt) || m.scn !== 'astral' || G.Scn.GOT[r.id] || G.Scn.WORLD[r.id])) || (full(f, rt) && unseen(rt, r))) && canReach(rt, r, lead));
     const near = wants.reduce((b, r) => (!b || Math.hypot(r.cx - lead.x, r.cy - lead.y) < Math.hypot(b.cx - lead.x, b.cy - lead.y) ? r : b), null);
     if (near) {
       // 이미 들어간 방에 남은 일: 도착하면 처리한다
-      if (F().inRoom(near, lead)) { const mons = monsIn(rt, near); rt.flow.r = near; if (near.ambush) ambush(f, rt, near, mons); else if (mons.length) fight(f, rt, near); else go(rt, 'loot'); return; }
+      if (F().inRoom(near, lead) && (m.scn !== 'astral' || G.Scn.inside(rt, near, lead))) { const mons = monsIn(rt, near); rt.flow.r = near; if (near.ambush) ambush(f, rt, near, mons); else if (mons.length) fight(f, rt, near); else go(rt, 'loot'); return; }
+      if (m.scn === 'astral' && G.Scn.walk(f, rt, lead, near, speed, dt)) return;
       GR.moveTo(m, lead, near.cx, near.cy, speed, dt, 0.5);
       return;
     }
+    if (m.scn === 'astral') { if (!G.Scn.canExit(rt) || !G.Scn.open(rt, { x: m.end.cx, y: m.end.cy })) { G.Exp.home(f, rt, 'retreat'); return; } if (G.Scn.walk(f, rt, lead, m.end, speed, dt)) return; }
     if (GR.moveTo(m, lead, m.end.cx, m.end.cy, rt.rush ? speed * RUSH_K : speed, dt, 0.3)) go(rt, 'stairs');
   }
 
@@ -120,7 +146,7 @@ G.Flow = (() => {
 
   function fight(f, rt, r, one) {
     rt.flow.r = r;
-    const list = r ? monsIn(rt, r) : [one];
+    const list = r ? monsIn(rt, r).filter(o => rt.map.scn !== 'astral' || G.Grid.field(rt.map, r.cx, r.cy)[Math.round(o.y) * rt.map.w + Math.round(o.x)] >= 0) : [one];
     if (one && !list.includes(one)) list.push(one);
     // 싸움이 시작되면 그 방과 상대가 전부 보인다: 안 보이는 적과는 싸우지 않는다
     if (r) G.Sight.revealRoom(rt, r);
@@ -141,7 +167,7 @@ G.Flow = (() => {
     if (!fl.plans.length || fl.t <= 0) go(rt, 'fight');
   }
 
-  // ── 싸움이 끝났다: 이긴 방만 뒤진다 ──
+  // ── 싸움이 끝났다 ──
   function afterFight(f, rt) {
     G.Res.afterFight(rt);
     const r = rt.flow.r;
@@ -159,10 +185,9 @@ G.Flow = (() => {
     for (const p of rt.party) { if (p.dead || p === lead || GR.dist(p, lead) <= REGROUP_R) continue; all = false; GR.moveTo(rt.map, p, lead.x, lead.y, speed * RUSH_K, dt, REGROUP_R - 0.5); }
     return all || rt.flow.t <= -REGROUP_MAX;
   }
-  // 숨을 고른 뒤 이긴 방을 뒤진다
+  // 숨을 고른 뒤 전리품으로
   function afterBeat(f, rt) {
-    const r = rt.flow.r;
-    if (r && !r.searched && !monsIn(rt, r).length && !G.Season.known(f, rt)) { X().startSearch(f, rt, X().state(f, rt), r); go(rt, 'search', SEARCH_MAX); return; }
+    G.Camp.auto(f, rt);
     go(rt, 'loot', GAP_T);
   }
 
@@ -173,13 +198,6 @@ G.Flow = (() => {
     if (GR.moveTo(rt.map, lead, chest.x, chest.y, speed, dt, 0.9)) { F().openChest(f, rt, chest); go(rt, 'wait', 1); if (rt.mons.some(o => o.mimic && o.aggro)) { fight(f, rt, r); } }
   }
 
-  // 굴리는 사람이 상자 앞에 도착해야 주사위를 굴린다
-  function search(f, rt, ex, speed, dt) {
-    const who = X().searcher(ex), P = X().stash(ex);
-    if (who && P && !who.dead && rt.flow.t > 0 && !GR.moveTo(rt.map, who, P.x, P.y, speed, dt, STASH_REACH)) return;
-    X().endSearch(f, rt, ex, true);
-    go(rt, 'wait', 1.4);
-  }
   // 장면에서 불려 온 적: 파티는 멈춰 있고, 적이 시야 안으로 걸어 들어온 뒤에 싸움이 시작된다
   function arrive(rt, dt) {
     const lead = leadOf(rt), comers = rt.mons.filter(o => o.aggro && !o.spotted);
@@ -197,9 +215,13 @@ G.Flow = (() => {
   }
 
   return {
+    policy,
+    unseenRooms: (f, rt) => { const lead = leadOf(rt); return lead ? pending(rt, lead) : []; },
     // 매 틱. 전투 · 장면 · 판정 · 이동 중 하나만 돈다
     tick(f, rt, speed, dt) {
       G.Tut.tick(f, rt, dt);
+      G.Sum.tick(f, rt, dt); // 아군 생물: 시간 · 따라 걷기
+      if (rt.map?.scn === 'astral') G.Scn.frame(f, rt, dt);
       if (!rt.flow || rt.flow.map !== rt.map) init(f, rt);
       const fl = rt.flow, ex = X().state(f, rt);
       for (const p of rt.party) p.moving = false;
@@ -217,10 +239,14 @@ G.Flow = (() => {
         case 'arrive': arrive(rt, dt); break;
         case 'deploy': deploy(rt, dt); break;
         case 'after': if (regroup(rt, speed, dt) && fl.t <= 0) afterBeat(f, rt); break;
-        case 'search': search(f, rt, ex, speed, dt); break;
         case 'wait': if (fl.t <= 0 && X().idle(ex)) go(rt, 'loot'); break;
         case 'loot': if (fl.t <= 0) loot(f, rt, speed, dt); break;
+        case 'stairAsk': if (!rt.ask) go(rt, 'stairs'); else ST().askTick(rt, dt); break;
         case 'stairs':
+          { const w = G.Tut.wallFoe(f, rt); if (w) { fight(f, rt, null, w); break; } } // 튜토리얼 화력의 벽
+          if (G.Tut.gate(f, rt)) { ST().tick(f, rt, dt); break; } // 튜토리얼 열쇠의 벽: 계단을 막는 문. 사건은 여기서 돌린다
+          if (stairAsk(f, rt)) break;
+          G.Camp.auto(f, rt);
           if (!f.auto && !rt.rush) { rt.stairWait = true; break; }
           if (ST().stairs(f, rt)) { go(rt, 'stairScene'); break; }
           F().descend(f, rt); return;

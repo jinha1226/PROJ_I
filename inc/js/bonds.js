@@ -1,11 +1,11 @@
 'use strict';
 // 관계 (DESIGN.md 46): 같이 다닌 사람끼리 정이 든다. 누구와 누구를 함께 보내느냐가 결정이 된다.
 // f.bonds = { 'uidA-uidB': 정 } — 같이 층을 내려갈 때마다 +1, 서로 연계기를 이으면 +1.
-// 전우(정 FRIEND_N 이상): 둘 사이 연계기 쿨다운 ×0.6 · 피해 ×1.3, 이으면 머리 위에 하트.
+// 전우(정 FRIEND_N 이상): 둘 사이 연계기 쿨다운 ×0.6, 이으면 머리 위에 하트. 피해는 곱하지 않는다 (SRD 수치).
 // 앙숙: 같은 축 반대 성격(다혈질 — 겁쟁이 · 욕심쟁이 — 신중 · 싸움꾼 — 온순). 서로의 연계기를 잇지 않는다. 정이 2배 쌓이면 화해해 전우가 된다.
 G.Bond = (() => {
   const U = G.U, D = G.D;
-  const FRIEND_N = 12, MAKEUP_K = 2, FRIEND_CD = 0.6, FRIEND_DMG = 1.3;
+  const FRIEND_N = 12, MAKEUP_K = 2, FRIEND_CD = 0.6;
   const key = (a, b) => a < b ? `${a}-${b}` : `${b}-${a}`;
   const B = {
     FRIEND_N,
@@ -44,7 +44,7 @@ G.Bond = (() => {
       G.Banter.line(rt, 'combo', a, { m: G.Banter.call(b) });
       if (B.rel(f, a.merc, b.merc) !== 'friend') return 1;
       G.fx(rt, { k: 'emote', key: 'rl_heart', ent: b, x: b.x, y: b.y, t: 1.2 });
-      return FRIEND_DMG;
+      return 1; // SRD 수치: 관계는 피해를 곱하지 않는다 (CORE_LOOP_GUIDE 2절)
     },
     cdK: (f, a, b) => a.merc && b.merc && B.rel(f, a.merc, b.merc) === 'friend' ? FRIEND_CD : 1,
     // 출발할 때 앙숙이 같이 있으면 서로에게 핏대 (한 번)

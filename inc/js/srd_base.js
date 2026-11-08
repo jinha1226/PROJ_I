@@ -1,6 +1,6 @@
 'use strict';
 // SRD 5.2.1 기본 표 그대로: 무기 · 갑옷 · 배경 · 종족 · 직업 숙련 (DESIGN.md 107). 숫자를 고치려면 원문을 먼저 본다.
-// 사거리는 5피트 = 1칸, 주문처럼 RANGE_CAP칸까지만 (화면 시야)
+// 사거리는 5피트 = 1칸, SRD 값 그대로 (js/srd_range.js)
 G.SRD = (() => {
   const R = G.SRD_RAW, KO_W = { club: '곤봉', dagger: '단검', greatclub: '대곤봉', handaxe: '손도끼', javelin: '투창', 'light-hammer': '경량 망치', mace: '메이스', quarterstaff: '쿼터스태프', sickle: '낫', spear: '창', dart: '다트', 'light-crossbow': '경량 석궁', shortbow: '쇼트보우', sling: '슬링', battleaxe: '배틀액스', flail: '플레일', glaive: '글레이브', greataxe: '그레이트액스', greatsword: '그레이트소드', halberd: '할버드', lance: '랜스', longsword: '롱소드', maul: '몰', morningstar: '모닝스타', pike: '파이크', rapier: '레이피어', scimitar: '시미터', shortsword: '쇼트소드', trident: '삼지창', warhammer: '워해머', 'war-pick': '워픽', whip: '채찍', blowgun: '취관', 'hand-crossbow': '손 석궁', 'heavy-crossbow': '중량 석궁', longbow: '롱보우', musket: '머스킷', pistol: '권총' };
   const KO_A = { 'padded-armor': '누비 갑옷', 'leather-armor': '가죽 갑옷', 'studded-leather-armor': '징 박은 가죽 갑옷', 'hide-armor': '짐승 가죽 갑옷', 'chain-shirt': '체인 셔츠', 'scale-mail': '스케일 메일', breastplate: '흉갑', 'half-plate-armor': '하프 플레이트', 'ring-mail': '링 메일', 'chain-mail': '체인 메일', 'splint-armor': '스플린트 갑옷', 'plate-armor': '판금 갑옷' };
@@ -30,7 +30,7 @@ G.SRD = (() => {
   };
   const CLS = {}; for (const k in CLS0) { const q = R.CLASS[RAW_CLS[k]]; CLS[k] = { ...CLS0[k], sk: q.n, from: q.from.map(skK) }; }
   // 배경: 능력치 셋(+2 · +1 또는 +1 · +1 · +1) · 기원 재주 · 기술 둘 · 도구
-  const BG_KO = { acolyte: ['수행자', '서예 도구'], criminal: ['범죄자', '도둑 도구'], sage: ['현자', '서예 도구'], soldier: ['군인', '놀이 도구'] }, FEAT_K = { 'magic-initiate:Cleric': 'mi_cleric', 'magic-initiate:Wizard': 'mi_wizard', alert: 'alert', 'savage-attacker': 'savage' };
+  const BG_KO = { acolyte: ['수행자', '서예 도구'], criminal: ['범죄자', '도둑 도구'], sage: ['현자', '서예 도구'], soldier: ['군인', '놀이 도구'] }, FEAT_K = { 'magic-initiate:Cleric': 'mi_cleric', 'magic-initiate:Wizard': 'mi_wizard', 'magic-initiate': 'mi_wizard' /* 현자: 데이터에 주문 목록이 빠졌다. PDF는 Wizard */, alert: 'alert', 'savage-attacker': 'savage' };
   const BG = {}; for (const k in R.BG) { const q = R.BG[k]; BG[k] = { n: BG_KO[k][0], en: q.en, ab: q.ab, feat: FEAT_K[q.note ? `${q.feat}:${q.note}` : q.feat], sk: q.prof.filter(p => p.startsWith('skill-')).map(skK), tool: BG_KO[k][1] }; }
   // 종족: 속도 · 암시야 · 계통은 원문 데이터에서. 특성 글은 한글 요약
   const SP0 = {
@@ -54,24 +54,32 @@ G.SRD = (() => {
   const pickN = (m, salt, list, n) => { const a = list.slice(), out = []; let h = seed(m, salt); while (out.length < n && a.length) { h = Math.imul(h ^ (h >>> 13), 1597334677) >>> 0; out.push(a.splice(h % a.length, 1)[0]); } return out; };
   // 기술 설명: SRD 기술 표 번역
   const SKILL_D = { athletics: '멀리 뛰기, 거친 물에서 뜨기, 물건 부수기', acrobatics: '어려운 상황에서 중심 잡기, 곡예', sleight: '소매치기, 물건 감추기, 손기술', stealth: '조용히 움직이고 숨어서 들키지 않기', arcana: '주문, 마법 물건, 다른 세계에 대한 지식', history: '역사적 사건, 인물, 나라, 문화에 대한 지식', investigation: '책에서 숨은 정보 찾기, 원리 추론', nature: '지형, 식물, 동물, 날씨에 대한 지식', religion: '신, 종교 의식, 성표에 대한 지식', animal: '동물 달래기, 훈련, 원하는 대로 행동시키기', insight: '상대의 기분과 의도 알아채기', medicine: '병 진단, 방금 죽은 자의 사인 알아내기', perception: '감각으로 놓치기 쉬운 것 알아채기', survival: '발자국 추적, 먹거리 찾기, 길 찾기, 자연 위험 피하기', deception: '그럴듯한 거짓말, 변장', intimidation: '위압하거나 위협해서 따르게 하기', performance: '연기, 이야기, 음악, 춤', persuasion: '정직하고 예의 바르게 설득하기' };
+  const KIT = { fs_gwf: { w: 'greatsword', shield: false }, fs_defense: { w: 'longsword', shield: true }, fs_twf: { w: 'shortsword', shield: false } };
   const S = {
     SKILL_D, RAW_CLS,
-    WEAPON, ARMOR, SHIELD, PROP_N, MASTERY, CAT_N, CLS, BG, SPECIES, ALL18, RANGE_CAP: 8,
+    WEAPON, ARMOR, SHIELD, PROP_N, MASTERY, CAT_N, CLS, BG, SPECIES, ALL18,
     // 배경: 재주에 맞는 배경을 찾고, 없으면 사람마다 고정
     bg(m) { if (m.bg && BG[m.bg]) return m.bg; const keys = Object.keys(BG), hit = keys.filter(k => BG[k].feat === m.feat); m.bg = (hit.length ? hit : keys)[seed(m, 11) % (hit.length || keys.length)]; return m.bg; },
     // 배경 능력치: 직업 놓는 순서에서 먼저인 쪽에 +2 · 다음에 +1
-    bgAb(m, order) { const b = BG[S.bg(m)].ab, sorted = b.slice().sort((p, q) => order.indexOf(p) - order.indexOf(q)); return { [sorted[0]]: 2, [sorted[1]]: 1 }; },
+    bgAb(m, order) { if (m.bgAdj) return m.bgAdj; const b = BG[S.bg(m)].ab, sorted = b.slice().sort((p, q) => order.indexOf(p) - order.indexOf(q)); return { [sorted[0]]: 2, [sorted[1]]: 1 }; },
     line(m, sp) { const L = SPECIES[sp]?.line; if (!L) return null; const K = Object.keys(L); if (!m.line || !L[m.line]) m.line = K[seed(m, 23) % K.length]; return L[m.line]; },
     feat2(m, sp) { return sp === 'human' ? (m.feat === 'skilled' ? 'alert' : 'skilled') : null; },
     // 기술 숙련 전부: 직업 · 배경 · 종족 · 재주
-    profs(m, sp) { const c = CLS[m.cls] || CLS.archer, out = new Set(pickN(m, 31, c.from, c.sk)), hasF = k => m.feat === k || S.feat2(m, sp) === k; for (const k of BG[S.bg(m)].sk) out.add(k); if (m.cls === 'barbarian' && m.lv >= 3) for (const k of pickN(m, 47, c.from.filter(q => !out.has(q)), 1)) out.add(k); if (m.adv === 'lore') for (const k of pickN(m, 53, ALL18.filter(q => !out.has(q)), 3)) out.add(k); if (sp === 'human') out.add(pickN(m, 37, ALL18, 1)[0]); if (sp === 'elf') out.add(pickN(m, 41, ['insight', 'perception', 'survival'], 1)[0]); if (hasF('skilled')) for (const k of pickN(m, 43, ALL18, 3)) out.add(k); return [...out]; },
+    profs(m, sp) { const c = CLS[m.cls] || CLS.archer, out = new Set(m.skillPick || pickN(m, 31, c.from, c.sk)), hasF = k => m.feat === k || S.feat2(m, sp) === k; for (const k of BG[S.bg(m)].sk) out.add(k); if (m.cls === 'barbarian' && m.lv >= 3) for (const k of pickN(m, 47, c.from.filter(q => !out.has(q)), 1)) out.add(k); if (m.adv === 'lore') for (const k of pickN(m, 53, ALL18.filter(q => !out.has(q)), 3)) out.add(k); if (sp === 'human') out.add(pickN(m, 37, ALL18, 1)[0]); if (sp === 'elf') out.add(pickN(m, 41, ['insight', 'perception', 'survival'], 1)[0]); if (hasF('skilled')) for (const k of pickN(m, 43, ALL18, 3)) out.add(k); return [...out]; },
     // 전문가 (숙련 두 배): 바드 2 · 9레벨 · 로그 1 · 6레벨 · 레인저 2 · 9레벨 · 위저드 2레벨(학자)
     expert(m, sp) { const P = S.profs(m, sp), n = { bard: m.lv >= 9 ? 4 : m.lv >= 2 ? 2 : 0, rogue: m.lv >= 6 ? 4 : 2, archer: m.lv >= 9 ? 3 : m.lv >= 2 ? 1 : 0, archmage: m.lv >= 2 ? 1 : 0 }[m.cls] || 0; if (!n) return []; const from = m.cls === 'archmage' ? P.filter(k => ['arcana', 'history', 'investigation', 'medicine', 'nature', 'religion'].includes(k)) : P; return pickN(m, 59, from, n); },
     // 신성한 / 원초적 질서: 클레릭 · 드루이드 1레벨 (사람마다 고정)
     order(m) { if (m.cls === 'cleric') return seed(m, 61) % 2 ? 'protector' : 'thaumaturge'; if (m.cls === 'scout') return seed(m, 61) % 2 ? 'warden' : 'magician'; return null; },
     orderBonus(m, sk, wisMod) { const o = S.order(m); if ((o === 'thaumaturge' && (sk === 'arcana' || sk === 'religion')) || (o === 'magician' && (sk === 'arcana' || sk === 'nature'))) return Math.max(1, wisMod); return 0; },
     // 장비: 사람마다 m.eq = { w, a, shield }. 처음은 직업 시작 장비
-    eq(m) { if (!m.eq || m.eqCls !== m.cls || !WEAPON[m.eq.w] || !ARMOR[m.eq.a]) { const st = (CLS[m.cls] || CLS.archer).start; m.eq = { ...st, shield: !!st.shield }; m.eqCls = m.cls; } return m.eq; },
+    eq(m) {
+      if (!m.eq || m.eqCls !== m.cls || !WEAPON[m.eq.w] || !ARMOR[m.eq.a]) { const st = (CLS[m.cls] || CLS.archer).start; m.eq = { ...st, shield: !!st.shield }; m.eqCls = m.cls; m.eqFs = null; }
+      // 파이터의 기본 무기는 전투 방식을 따른다. 직접 바꾼 무기는 건드리지 않는다
+      if (m.cls === 'dragoon' && G.Opt) { const fs = (m.opts || (m.opts = G.Opt.roll(m))).fs?.[0]; if (fs && m.eqFs !== fs) { const was = KIT[m.eqFs] || CLS.dragoon.start, kit = KIT[fs]; if (kit && m.eq.w === was.w && !!m.eq.shield === !!was.shield) Object.assign(m.eq, kit); m.eqFs = fs; } }
+      return m.eq;
+    },
+    // 전투 방식이 지금 장비로 효과를 내나 (SRD Fighting Style Feats)
+    styleOn(m, k) { const e = S.eq(m), w = S.weaponOf(m), p = w.props || []; if (k === 'fs_gwf') return w.rng === 'melee' && !e.shield && (p.includes('two') || p.includes('versatile')); if (k === 'fs_twf') return p.includes('light') && !e.shield; if (k === 'fs_defense') return S.armorOf(m).cat !== 'none'; return true; },
     weaponOf: m => WEAPON[S.eq(m).w] || WEAPON.unarmed,
     armorOf: m => ARMOR[S.eq(m).a] || ARMOR.none,
     canWeapon(cls, k) { const w = WEAPON[k], c = CLS[cls]; if (!w || !c || w.hidden) return false; return c.w.some(q => q === w.cat || (q === 'martial-light' && w.cat === 'martial' && w.props.includes('light')) || (q === 'martial-fl' && w.cat === 'martial' && (w.props.includes('light') || w.props.includes('finesse')))); },

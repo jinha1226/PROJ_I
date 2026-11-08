@@ -2,6 +2,8 @@
 // SRD 5.2.1 종족 특성 · 무기 숙련 · 재주의 전투 동작 (DESIGN.md 107). 표는 G.SRD
 G.SrdX = (() => {
   const D = G.D, SK = G.Skill.SK, H = G.Skill.H, DN = G.Dnd, SR = G.SRD, R6 = H.R6, sp = m => G.Res.species(m), prof = c => DN.prof(c.merc.lv), onceBy = (c, k, n) => G.Res.once(c.merc, k, n);
+  // 직업과 상관없는 SRD 행동 (상태창 기능 탭)
+  for (const [k, n, en, ic, d] of [['ac_ready', '준비', 'Ready', 'st_haste', '적이 곁에 오면 반응으로 공격'], ['ac_oa', '기회 공격', 'Opportunity Attack', 'b_fury', '곁을 벗어나는 적을 반응으로 공격'], ['ac_dodge', '회피', 'Dodge', 'b_regen', '다음 차례까지 나를 노리는 공격에 불리']]) D.MSKILLS[k] = { n, en, t: ic, d, lv: 1, common: true };
   const add = (k, n, en, t, d, S) => { SK[k] = S; D.MSKILLS[k] = { n, en, t, d, lv: 1 }; D.SK_RANGE[k] = S.rng ?? 0; };
   const LONG = { long: 1 };
   add('sx_orc', '아드레날린', 'Adrenaline Rush', 'st_haste', '추가 행동 질주 · 임시 체력 = 숙련 보너스', { res: LONG, bonus: true, when: H.W.fight, run(c) { DN.buff(c, 'dash', R6(1), { moveK: 1 }); c.thp = Math.max(c.thp || 0, prof(c)); } });
@@ -18,11 +20,19 @@ G.SrdX = (() => {
   const enMap = {}; for (const k in D.MSKILLS) if (SK[k]?.run && D.MSKILLS[k].en) enMap[D.MSKILLS[k].en] = enMap[D.MSKILLS[k].en] || k;
   const byEn = en => enMap[en] || null, lvMap = {}; for (const id in G.SRD_SP) lvMap[G.SRD_SP[id].en] = G.SRD_SP[id].lv;
   const lvlOf = k => lvMap[D.MSKILLS[k]?.en];
+  // 언어 (SRD 5.2.1 캐릭터 만들기: 공용어 + 표준 언어 표에서 둘. 로그는 도둑 은어, 드루이드는 드루이드어). 굴려 정하고 저장한다
+  const LANG_N = { common: '공용어', sign: '공용 수화', draconic: '용언', dwarvish: '드워프어', elvish: '엘프어', giant: '거인어', gnomish: '노움어', goblin: '고블린어', halfling: '하플링어', orc: '오크어', cant: '도둑 은어', druidic: '드루이드어' };
+  const LANG_D12 = ['sign', 'draconic', 'dwarvish', 'dwarvish', 'elvish', 'elvish', 'giant', 'gnomish', 'goblin', 'halfling', 'halfling', 'orc'];
   const X = {
+    LANG_N,
+    langs(m) {
+      if (!m.langs) { const r = G.Grid.seeded((m.uid || 0) * 7919 + 101), got = []; for (let i = 0; i < 40 && got.length < 2; i++) { const k = LANG_D12[Math.floor(r() * 12)]; if (!got.includes(k)) got.push(k); } m.langs = got; }
+      return ['common', ...m.langs, ...(m.cls === 'rogue' ? ['cant'] : m.cls === 'scout' ? ['druidic'] : [])];
+    },
     // 종족이 주는 스킬 (4칸 밖)
     skills(m) { const s = sp(m), L = SR.line(m, s), out = []; if (s === 'dragonborn') out.push('sr_breath', 'sx_fly'); if (s === 'orc') out.push('sx_orc'); if (s === 'goliath') { out.push('sx_large'); if (m.line === 'cloud') out.push('sx_cloud'); } if (L?.cantrip && SK[spellKey(L.cantrip)]) out.push(spellKey(L.cantrip)); for (const lv in L?.sp || {}) if (m.lv >= +lv && SK[spellKey(L.sp[lv])]) out.push(spellKey(L.sp[lv])); return out.filter(k => k !== 'sx_fly' && k !== 'sx_large' || m.lv >= 5).concat(X.classSkills(m)); },
     // 직업 · 하위 직업이 항상 주는 주문 (4칸 밖)
-    classSkills(m) { const out = []; if (m.cls === 'archer') out.push('sr_hmark'); if (m.cls === 'paladin' && m.lv >= 2) out.push('sr_smite'); if (m.cls === 'monk') out.push('sx_ma'); if (DN.profs(m).includes('medicine')) out.push('x_med'); if (m.adv === 'draconic' && m.lv >= 14) out.push('sx_fly'); if (m.cls === 'bard' && m.lv >= 20) out.push('sp_power_word_heal', 'sp_power_word_kill'); for (const en of SR.subSpells(m)) { const k = byEn(en); if (k) out.push(k); } if (m.adv === 'lore' && m.lv >= 6) out.push(...X.discover(m)); return out.filter(k => SK[k]); },
+    classSkills(m) { const out = []; if (m.cls === 'archer') out.push('sr_hmark'); if (m.cls === 'paladin' && m.lv >= 2) out.push('sr_smite'); if (m.cls === 'monk') out.push('sx_ma'); if (DN.profs(m).includes('medicine')) out.push('x_med'); out.push(...X.miAll(m)); if (m.adv === 'draconic' && m.lv >= 14) out.push('sx_fly'); if (m.cls === 'bard' && m.lv >= 20) out.push('sp_power_word_heal', 'sp_power_word_kill'); for (const en of SR.subSpells(m)) { const k = byEn(en); if (k) out.push(k); } if (m.adv === 'lore' && m.lv >= 6) out.push(...X.discover(m)); return out.filter(k => SK[k]); },
     discover(m) { const P = ['sr_hword', 'sr_bless', 'sr_entangle', 'sr_mm', 'sr_fireball', 'sr_shield'].filter(k => SK[k]); const h = m.uid || 0; return [P[h % P.length], P[(h + 2) % P.length]]; },
     // 조상 · 계통의 저항
     resists(m) { const s = sp(m), L = SR.line(m, s), o = L?.dt ? [L.dt] : s === 'dwarf' ? ['poison'] : []; if (G.Guild.skill(m, 'sr_ward')) o.push(SR.landRes(m)); if (G.Guild.skill(m, 'sr_fres')) o.push(SR.fiendRes(m)); return o; },
@@ -42,9 +52,18 @@ G.SrdX = (() => {
       if (k === 'sap') DN.give(rt, tg, 'sapped', R6(1), a);
       if (k === 'slow') tg.shock = Math.max(tg.shock || 0, 6);
       if (k === 'vex') DN.buff(a, 'vex', R6(1), { adv: 1 });
-      if (k === 'topple' && !DN.has(tg, 'prone')) H.cond(x, a, tg, 'con', 'prone', 1);
+      if (k === 'topple' && !DN.has(tg, 'prone')) H.cond(x, a, tg, 'con', 'prone', 1, DN.dc(a, DN.atkAb(m)));
     },
     onMiss(f, rt, a, tg) { const m = a.merc; if (m && SR.masteryOf(m) === 'graze') { const w = DN.weapon(a); G.Fantasy.hurt(f, rt, tg, Math.max(1, w.b) * H.G0({ f, rt }, a), 'hit', a); } },
+    // 마법 입문 (SRD Magic Initiate): 그 목록의 소마법 2 · 1레벨 주문 1. 직업과 상관없이 쓴다. 시전 능력은 지능 · 지혜 · 매력 중 높은 것
+    MI: { mi_cleric: 'cleric', mi_druid: 'scout', mi_wizard: 'archmage' },
+    miFeats: m => [m.feat, SR.feat2(m, sp(m))].filter(q => q && X.MI[q]),
+    miPick(m, fk) { const all = m.mi || (m.mi = {}); if (all[fk]) return all[fk]; const L = G.Guild.spellList(X.MI[fk]), use = n => L.filter(k => G.Guild.spLv(k) === n && !D.MSKILLS[k]?.noAuto), at = (l, salt) => l.slice().sort((a, b) => ((m.uid || 0) * 31 + salt + a.length) % 7 - ((m.uid || 0) * 31 + salt + b.length) % 7 || a.localeCompare(b)); return (all[fk] = { c: at(use(0), 3).slice(0, 2), s: at(use(1), 5)[0] || null }); },
+    miAll(m) { const o = []; for (const fk of X.miFeats(m)) { const q = X.miPick(m, fk); o.push(...q.c); if (q.s) o.push(q.s); } return o; },
+    miToggle(m, fk, k) { const q = X.miPick(m, fk), lv = G.Guild.spLv(k); if (lv === 0) { const i = q.c.indexOf(k); if (i >= 0) q.c.splice(i, 1); else if (q.c.length < 2) q.c.push(k); else return false; } else q.s = q.s === k ? null : k; return true; },
+    // 주문의 능력: 마법 입문은 셋 중 높은 것, 주능력과 주문 능력이 다른 직업(팔라딘 · 레인저)은 주문일 때 직업 능력. 그 밖은 null (DESIGN.md 124)
+    castAb(m, k) { if (!(m.skills || []).includes(k) && X.miAll(m).includes(k)) { const ab = DN.ab(m); return ['int', 'wis', 'cha'].reduce((b, q) => (ab[q] > ab[b] ? q : b)); } const c = DN.cls(m); return c.dc !== c.pri && (G.Guild.spLv(k) != null || k === 'fs_blessed' || k === 'fs_druidic') ? c.dc : null; },
+    miFree: (m, k) => X.miFeats(m).some(fk => X.miPick(m, fk).s === k),
     // 위저드 18레벨 주문 숙달: 고른 스킬 중 1 · 2레벨 주문 하나씩은 제한 없이
     mastered(m) { const out = []; for (const lv of [1, 2]) { const k = G.Guild.picks(m).find(q => lvlOf(q) === lv); if (k) out.push(k); } return out; },
     // 위저드 20레벨 대표 주문: 3레벨 주문 둘 +1번

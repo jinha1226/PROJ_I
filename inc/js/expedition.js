@@ -18,7 +18,7 @@ G.Exp = (() => {
   const E = {
     RETREAT,
     carry: f => f.carry || 0,
-    cap: f => F().monGold(f.floor) * CAP_K * (1 + (f.press || 0) * PRESS_CAP),
+    cap: f => F().monGold(f.floor) * CAP_K * 10 * (1 + (f.press || 0) * PRESS_CAP) * (G.RT.fantasy && (G.Util.carry(G.RT.fantasy) || G.ItemX?.devour(G.RT.fantasy)) ? 1.5 : 1), // 떠다니는 원반 · 보이지 않는 하인 (SRD): 짐 더
     // 짐에 넣는다 (F.gain): 한도까지만
     stow(f, n) { f.carry = Math.min(E.cap(f), (f.carry || 0) + n); },
     full: f => (f.carry || 0) >= E.cap(f) * 0.999,
@@ -43,15 +43,19 @@ G.Exp = (() => {
     },
     // 마을로 (why: 'wipe' 전멸 · 'retreat' 방침 · 'manual' 귀환 단추)
     home(f, rt, why, who) {
+      for (const p of rt.party || []) { G.Dnd.clearExh(p, 'suffoc'); p.breath = null; } // 다시 숨을 쉬면 질식으로 얻은 탈진은 모두 사라진다 (SRD)
       G.Season.save(f, rt);
-      const c = E.carry(f), keep = why === 'wipe' ? c * WIPE_KEEP : c;
+      const c = E.carry(f), base = E.cap(f) / 1.5, eaten = G.ItemX?.devour(rt) ? Math.max(0, c - base) : 0, keep = (why === 'wipe' ? c * WIPE_KEEP : c) - eaten; if (eaten) G.log?.('삼키는 가방이었다 · 짐을 잃었다', 'fantasy', 'bad'); // 삼키는 가방 (SRD)
       if (why === 'wipe') G.Trinket.wipe(f, rt);
       G.Story.home(f);
       G.Report.make(f, why, keep, c - keep);
       f.press = 0;
       f.front = null;
       f.gold += keep;
+      G.Util.raise(f); G.ItemX?.golem(f); // 골렘 교본 (SRD) // 사자 소생 · 부활 · 환생 (SRD): 이번 원정에 죽은 동료를 재료값을 내고
       f.last = { floor: f.floor, got: keep, lost: c - keep, why, who, at: G.S.runTime };
+      G.Items.sellAll(f, why); f.lastHome = (f.lastHome || 0) + 1;
+      if (why === 'clear') G.Guild.earnFame(f, 20, '의뢰 완수');
       f.carry = 0;
       f.town = true;
       f.townT = 0;
@@ -59,12 +63,12 @@ G.Exp = (() => {
       f.deaths = 0;
       if (f.startAuto !== false) f.start = f.checkpoint || 1;
       G.Cmd.clear(rt);
-      rt.rivals = []; rt.prompt = null; rt.ask = null; rt.scene = null; rt.ambush = null; rt.mons = []; rt.chests = [];
+      rt.prompt = null; rt.ask = null; rt.scene = null; rt.ambush = null; rt.mons = []; rt.chests = [];
       rt.phase = 'town';
       rt.homeAfterBoss = false;
       rt.leaving = null;
       F().refreshEnts(rt);
-      const msg = `${f.floor}층 · ${{ clear: '지역 완주', full: '짐 가득', wipe: '전멸', retreat: '방침 귀환', careful: '신중 귀환', manual: '귀환' }[why] || '귀환'} · 짐 +${U.fmt(keep)}${c - keep ? ` · 잃음 ${U.fmt(c - keep)}` : ''}`;
+      const msg = `${f.floor}층 · ${{ clear: '지역 완주', full: '짐 가득', wipe: '전멸', retreat: '방침 귀환', careful: '신중 귀환', manual: '귀환' }[why] || '귀환'} · 짐 +${U.coin(keep)}${c - keep ? ` · 잃음 ${U.coin(c - keep)}` : ''}`;
       G.log(msg, 'fantasy', why === 'wipe' ? 'bad' : 'good');
       G.J.sfx('fantasy', why === 'wipe' ? 'lose' : 'coin');
     },
@@ -76,10 +80,11 @@ G.Exp = (() => {
       return true;
     },
     depart(f, rt) {
-      G.Guild.autoForge(f);
+      if (E.leaderHurt(f)) return false; // 단장이 다 나을 때까지 떠나지 않는다 (신전에서 바로 치료할 수 있다)
+      f.trip = []; G.Items.recharge(f);
       f.town = false;
       f.runs = (f.runs || 0) + 1;
-      if (f.autoTr !== false) G.Trinket.auto(f);
+      if (f.autoTr !== false) { G.Trinket.auto(f); G.Camp.stock(f); }
       f.floor = f.runStart = U.clamp(f.start || f.checkpoint || 1, 1, Math.max(1, f.checkpoint || 1));
       f.deaths = 0;
       G.Res.longRest(f.mercs.concat(G.Guild.leader(f)));
@@ -93,16 +98,17 @@ G.Exp = (() => {
     // 마을: 부상이 TOWN_HEAL배 빨리 낫는다. 자동 출발은 TOWN_MIN초 뒤, 출전할 사람이 다 나았거나 TOWN_MAX초가 지나면
     townTick(f, rt, dt) {
       f.townT = (f.townT || 0) + dt;
-      for (const m of f.mercs) if (m.inj > 0) m.inj = Math.max(0, m.inj - dt * (TOWN_HEAL - 1));
+      for (const m of G.Guild.crew(f)) if (m.inj > 0) m.inj = Math.max(0, m.inj - dt * (TOWN_HEAL - 1));
       if (f.autoGo !== false && E.departIn(f) <= 0) E.depart(f, rt);
     },
     // 마을 화면을 만지는 동안은 자동 출발을 미룬다 (탭을 둘러보다 끌려 나가지 않게)
     hold(f) { f.townHold = G.S.runTime + HOLD_T; },
-    // 자동 출발까지 남은 초 (Infinity: 자동 출발 꺼짐)
+    leaderHurt: f => (G.Guild.leader(f).inj || 0) > 0,
+    // 자동 출발까지 남은 초 (Infinity: 자동 출발 꺼짐). 단장이 다쳤으면 나을 때까지 (용병처럼 두고 갈 수 없다)
     departIn(f) {
-      if (f.autoGo === false || f.seasonEnd) return Infinity;
+      if (f.autoGo === false) return Infinity;
       const hurt = f.mercs.some(m => m.inj > 0), t = f.townT || 0;
-      return Math.max(0, TOWN_MIN - t, (f.townHold || 0) - G.S.runTime, hurt ? Math.min(TOWN_MAX - t, Math.max(...f.mercs.map(m => m.inj || 0)) / TOWN_HEAL) : 0);
+      return Math.max(0, TOWN_MIN - t, E.leaderHurt(f) ? G.Guild.leader(f).inj / TOWN_HEAL : 0, (f.townHold || 0) - G.S.runTime, hurt ? Math.min(TOWN_MAX - t, Math.max(...f.mercs.map(m => m.inj || 0)) / TOWN_HEAL) : 0);
     },
     // 원정 중: 귀환 방침. 보스와 싸우는 중에는 물러서지 않는다 (보스전은 이기거나 전멸하거나)
     tick(f, rt) {
@@ -111,7 +117,7 @@ G.Exp = (() => {
       if (rt.leaving) { if (rt.phase !== 'dead' && G.S.runTime >= rt.leaving.t) E.home(f, rt, 'careful', rt.leaving.who); return; }
       if (rt.floorT < HOME_GRACE || rt.phase === 'dead' || rt.mons.some(o => o.boss && o.aggro)) return;
       if (f.fullHome !== false && E.full(f)) rt.homeAfterBoss = true;
-      if (!R.at) return;
+      if (!R.at || G.Tut.safe(f)) return; // 첫 원정은 체력으로 돌아오지 않는다 (끝까지 간다)
       // 살아 있는 사람 기준 (쓰러진 동료는 곧 일어나므로, 한 명 쓰러졌다고 바로 돌아오지 않게)
       let hp = 0, max = 0;
       for (const p of rt.party) if (!p.dead) { hp += Math.max(0, p.hp); max += p.max || 0; }

@@ -24,6 +24,13 @@ const U = G.U = {
     for (const x of list) { r -= w(x); if (r <= 0) return x; }
     return list[list.length - 1];
   },
+  // 돈 (SRD 동전): 1 GP = 10 SP = 100 CP. 0이 아닌 단위만 (5.4 → 5 GP 4 SP)
+  coin(v) {
+    if (!isFinite(v)) return '∞';
+    const neg = v < 0, c = Math.round(Math.abs(v) * 100), gp = Math.floor(c / 100), sp = Math.floor(c / 10) % 10, cp = c % 10, out = [];
+    if (gp) out.push(gp.toLocaleString() + ' GP'); if (sp) out.push(sp + ' SP'); if (cp) out.push(cp + ' CP');
+    return (neg ? '-' : '') + (out.join(' ') || '0 GP');
+  },
   fmt(n) {
     if (!isFinite(n)) return '∞';
     if (n < 0) return '-' + U.fmt(-n);

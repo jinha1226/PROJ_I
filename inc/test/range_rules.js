@@ -1,0 +1,17 @@
+// 사거리 · 이동이 SRD 원문(data/srd521/db)과 같은가. 표는 5피트 칸, 게임 사거리는 그 1/4
+const fs = require('fs'), path = require('path'), vm = require('vm'), ROOT = path.join(__dirname, '..');
+const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx); const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
+for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', n + '.js'), 'utf8'), ctx);
+const G = ctx.G, C = c => G.SRD_RANGE.cells(c), D = G.D, GD = G.Guild, DN = G.Dnd; let ok = 0, bad = 0; const t = (n, c, x) => { if (c) ok++; else { bad++; console.log('  실패:', n, x ?? ''); } };
+const db = f => JSON.parse(fs.readFileSync(path.join(ROOT, 'data/srd521/db', f + '.json'), 'utf8')), norm = s => s.toLowerCase().replace(/’/g, "'");
+const SP = {}; for (const s of db('spell')) SP[norm(s.name)] = s;
+let n = 0; for (const k in D.MSKILLS) { const s = SP[norm(D.MSKILLS[k].en || '')]; if (!s || G.Guild.spLv(k) == null) continue; const r = s.range, have = D.SK_RANGE[k], m = /(\d+) feet/.exec(r); n++; if (m) t(s.name + ' ' + r, have === C(+m[1] / 5), have); else if (/Touch/.test(r)) t(s.name + ' 접촉', have === 1.5, have); else if (/mile|Sight/.test(r)) t(s.name + ' ' + r, have === 999, have); }
+console.log('  주문', n);
+for (const [en, c] of [['Longbow', 30], ['Shortbow', 16], ['Light Crossbow', 16], ['Heavy Crossbow', 20], ['Hand Crossbow', 6], ['Sling', 6], ['Dart', 4]]) { const w = Object.values(G.SRD.WEAPON).find(q => q.en === en); t(en, w.ft / 5 === c, w.ft); }
+G.quiet = true; G.newState(); const f = G.S.w.fantasy, mk = (c, o) => { const m = GD.make(f, c, { lv: 5, ...o }); return { merc: m, def: GD.def(m), x: 0, y: 0, kind: 'ally' }; };
+for (const [c, want] of [['cleric', 12], ['bard', 12], ['mage', 24], ['archmage', 12], ['scout', 12]]) t(c + ' 소마법 ' + want, DN.rng(mk(c)) === C(want), DN.rng(mk(c)));
+const a = mk('archer'); t('장궁 15칸', DN.rng(a) === 15, DN.rng(a)); t('장궁 긴 사거리 60칸', DN.rngL(a) === 60); t('비율 예시', C(30) === 15 && C(12) === 6 && C(24) === 12 && C(6) === 3 && C(1.5) === 1.5 && C(999) === 999); const tg = { x: 40, y: 0, kind: 'mon', bf: {}, hp: 9, max: 9 }; a.longNow = true; t('긴 사거리에서 불리', DN.farDis(a, tg)); tg.x = 14; t('기본 사거리 안은 불리 없음', !DN.farDis(a, tg)); a.longNow = false;
+const dg = mk('dragoon'); dg.merc.gear = dg.merc.gear || {}; G.SRD.weaponOf = (o => m => (m === dg.merc ? G.SRD.WEAPON.dagger : o(m)))(G.SRD.weaponOf); t('단검 던지기 6칸', DN.rngL(dg) === 6, DN.rngL(dg)); t('평소엔 근접', DN.melee(dg) && DN.rng(dg) < 2); dg.longNow = true; t('던지면 원거리', !DN.melee(dg) && DN.rng(dg) === 6); tg.x = 2; t('2칸 안 던지기는 불리 없음', !DN.farDis(dg, tg)); tg.x = 5; t('2칸 넘으면 불리', DN.farDis(dg, tg));
+const mon = (id, role) => ({ kind: 'mon', stat: G.SRD_MON[id], role }); t('트롤 10피트', G.Foe.reach(mon('troll', 'brute')) === 2.9, G.Foe.reach(mon('troll', 'brute'))); t('궁수 고블린 8칸', G.Foe.reach(mon('goblin-warrior', 'artillery')) === 8); t('긴 사거리 32칸', G.Foe.reachL(mon('goblin-warrior', 'artillery')) === 32); t('옆 칸 몬스터', G.Foe.reach(mon('wolf', 'soldier')) === 1.5);
+for (const m of db('monster')) { const id = Object.keys(G.SRD_MON).find(i => norm(G.SRD_MON[i].n || '') === norm(m.name)); if (!id) continue; const w = /^(\d+) ft/.exec(m.speed), fly = /Fly (\d+)/.exec(m.speed), mv = G.SRD_MON[id].mv; t(m.name + ' 이동 ' + m.speed, mv === +w?.[1] / 5 || (fly && mv === +fly[1] / 5), mv); }
+console.log(`range_rules: 통과 ${ok} · 실패 ${bad}`); if (bad) process.exitCode = 1;

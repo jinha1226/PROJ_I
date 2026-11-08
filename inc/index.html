@@ -2,76 +2,37 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>용병단</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
-<body data-theme="fantasy">
-<div id="app"></div>
-<div id="toasts"></div>
-<div id="modal" class="hidden"><div id="modalbox"></div></div>
-<script src="js/core.js"></script>
-<script src="js/data.js"></script>
-<script src="js/srd_gen.js"></script>
-<script src="js/srd_base.js"></script>
-<script src="js/srd_mons.js"></script>
-<script src="js/grid.js"></script>
-<script src="js/juice.js"></script>
-<script src="js/sfx.js"></script>
-<script src="js/tree.js"></script>
-<script src="js/trees.js"></script>
-<script src="js/season.js"></script>
-<script src="js/fantasy.js"></script>
-<script src="js/rivals.js"></script>
-<script src="js/guild.js"></script>
-<script src="js/persona.js"></script>
-<script src="js/dnd.js"></script>
-<script src="js/feats.js"></script>
-<script src="js/trinkets.js"></script>
-<script src="js/bonds.js"></script>
-<script src="js/report.js"></script>
-  <script src="js/skills.js"></script>
-<script src="js/srd.js"></script>
-<script src="js/srd_spells.js"></script>
-<script src="js/spells.js"></script>
-<script src="js/traits.js"></script>
-<script src="js/options.js"></script>
-<script src="js/pools.js"></script>
-<script src="js/srd_species.js"></script>
-<script src="js/skill_ai.js"></script>
-  <script src="js/combo.js"></script>
-  <script src="js/events.js"></script>
-  <script src="js/tutorial.js"></script>
-  <script src="js/skill_nums.js"></script>
-<script src="js/command.js"></script>
-<script src="js/expedition.js"></script>
-<script src="js/mission.js"></script>
-<script src="js/explore.js"></script>
-<script src="js/banter.js"></script>
-<script src="js/sight.js"></script>
-<script src="js/tactics.js"></script>
-<script src="js/foe.js"></script>
-<script src="js/region.js"></script>
-<script src="js/scn_astral.js"></script>
-<script src="js/res.js"></script>
-<script src="js/turn.js"></script>
-<script src="js/flow.js"></script>
-<script src="js/story.js"></script>
-<script src="js/state.js"></script>
-<script src="js/coach.js"></script>
-<script src="js/tileset.js"></script>
+<body>
+<div id="wrap">
+  <div id="top"><span id="round"></span><span id="danger"></span><span id="order"></span><span id="turninfo"></span></div>
+  <div id="stage"><canvas id="c"></canvas><div id="floats"></div>
+    <div id="roll" class="hidden"><canvas id="die" width="44" height="44"></canvas><div><small class="h"></small><b class="w"></b><div class="a"></div></div></div>
+    <div id="dm" class="hidden"></div>
+    <div id="ask" class="hidden"><h3></h3><div class="opts"></div><div class="bar"></div></div>
+  </div>
+  <div id="brief" class="hidden"></div>
+  <div id="party"></div>
+  <div id="fboard" class="hidden"></div>
+  <div id="glog"></div>
+</div>
+<div id="fps"></div>
+<script>
+  // 개발 중: 옛 파일이 캐시에 남아 코드가 어긋나지 않게 매번 새로 받는다
+  const VER = Date.now();
+  // 파일을 직접 열면 브라우저가 그림 읽기를 막아 화면이 나오지 않는다
+  if (location.protocol === 'file:') document.write('<div style="position:fixed;inset:0;z-index:99;background:#17151c;color:#ece4d4;display:flex;align-items:center;justify-content:center;font:18px sans-serif">http://localhost:8765/ 로 열어 주세요</div>');
+  for (const n of ['core','data','srd_gen','srd_base','srd_mons','grid','juice','season','fantasy','guild','create','persona','dnd','feats','trinkets','bonds','report','skills','srd','srd_spells','srd_upcast','spells','traits','options','pools','utilspell','srd_species','multiclass','srd_range','srd_items','items','skill_ai','team','camp','skill_fx','events','npc','tutorial','skill_nums','command','expedition','mission','explore','banter','lines_danger','sight','tactics','foe','summon','light','monact', 'actions', 'lore','region','scn_astral','tut_map','res','turn','flow','story','state'])
+    document.write(`<script src="js/${n}.js?v=${VER}"><\/script>`);
+</script>
 <script src="js/artset.js"></script>
-<script src="js/tiles.js"></script>
-<script src="js/render.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/v_tree.js"></script>
-<script src="js/v_world.js"></script>
-<script src="js/v_sheet.js"></script>
-<script src="js/v_town.js"></script>
-<script src="js/v_fantasy.js"></script>
-<script src="js/main.js"></script>
+<script src="assets/dcss/map.js"></script>
+<script src="js/iso/pixelfx/pixelfx.bundle.js"></script>
+<script src="js/paperdoll.js"></script>
+<!-- 파일 사이에서 최상위 이름을 공유한다: 순서가 곧 의존 순서 -->
+<script>for (const n of ['core','models','bake','sprites','minidoll','game','fxlayer','pfx','vfx','hdbg','dice','actors','props','sheet','town','hud','cmdui','codex','war','create','main']) document.write(`<script src="js/iso/${n}.js?v=${VER}"><\/script>`);</script>
 </body>
 </html>

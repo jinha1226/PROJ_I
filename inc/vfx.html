@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VFX 갤러리</title>
+<style>
+:root { --bg:#17151c; --panel:#201d28; --line:#3a3548; --ink:#ece6da; --dim:#9a93a8; --gold:#ffd24a; }
+* { box-sizing:border-box; }
+html,body { height:100%; margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui,"Malgun Gothic",sans-serif; }
+#app { display:grid; grid-template-columns:320px 1fr; height:100vh; }
+#side { border-right:1px solid var(--line); display:flex; flex-direction:column; min-height:0; background:var(--panel); }
+#q { margin:10px; padding:7px 9px; background:var(--bg); color:inherit; border:1px solid var(--line); font:inherit; }
+#list { overflow:auto; flex:1; padding:0 6px 12px; }
+h2 { font-size:12px; color:var(--gold); margin:14px 6px 4px; font-weight:600; }
+.it { display:flex; justify-content:space-between; gap:8px; width:100%; padding:4px 8px; background:none; border:0; border-left:2px solid transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.it small { color:var(--dim); white-space:nowrap; }
+.it:hover { background:#2c2838; }
+.it:focus-visible { outline:1px solid var(--gold); }
+.it.on { background:#37304a; border-left-color:var(--gold); }
+#main { display:flex; flex-direction:column; min-width:0; padding:14px; gap:10px; overflow:auto; }
+#top { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+button.b { background:var(--panel); color:inherit; border:1px solid var(--line); padding:5px 12px; font:inherit; cursor:pointer; }
+button.b:hover { border-color:var(--dim); }
+button.b.on { border-color:var(--gold); color:var(--gold); }
+#name { font-size:20px; font-weight:600; }
+#meta { color:var(--dim); font-size:13px; min-height:1.4em; }
+canvas { display:block; image-rendering:pixelated; border:1px solid var(--line); max-width:100%; width:960px; height:auto; aspect-ratio:480/250; background:#000; }
+@media (max-width:760px) { #app { grid-template-columns:1fr; grid-template-rows:45vh 1fr; height:auto; min-height:100vh; } #side { border-right:0; border-bottom:1px solid var(--line); } }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="side"><input id="q" type="search" placeholder="검색" aria-label="스킬 검색"><div id="list"></div></aside>
+  <main id="main">
+    <div id="top">
+      <button class="b" id="replay">다시 (Space)</button>
+      <button class="b" id="auto">전체 재생</button>
+      <span>속도</span>
+      <button class="b sp on" data-s="1">×1</button><button class="b sp" data-s="0.5">×½</button><button class="b sp" data-s="0.2">×⅕</button>
+    </div>
+    <div id="name"></div>
+    <div id="meta"></div>
+    <canvas id="cv" width="480" height="250"></canvas>
+  </main>
+</div>
+<script>
+// 게임과 같은 코드(js/skill_fx.js 표 · pixelfx 묶음)로 같은 시간에 재생한다. 재생 값은 js/iso/pfx.js의 playCast와 맞춘다
+var G = window.G || {};
+const load = src => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error(src)); document.head.append(s); });
+const CAST_T = 1.4, LOOP_T = 1.1, FLY_T = .28, MISSILE_HIT = .82, FX_LIGHT = .62, FX_MAX = 48;
+const W = 480, H = 250, CHEST = 18;
+const $ = id => document.getElementById(id), lerp = (a, b, u) => a + (b - a) * u, rgb = (r, g, b) => (255 << 24 | Math.min(255, b | 0) << 16 | Math.min(255, g | 0) << 8 | Math.min(255, r | 0)) >>> 0;
+const COOL = [28, 22, 62], WARM = [255, 232, 180];
+function tone(c) { // js/iso/sprites.js tone
+  let r = c & 255, g = c >> 8 & 255, b = c >> 16 & 255; const l = r * .3 + g * .59 + b * .11, sat = .74;
+  r = lerp(l, r, sat); g = lerp(l, g, sat); b = lerp(l, b, sat);
+  const k = (1 - l / 255) * .3, w = (l / 255) * .12;
+  r = lerp(lerp(r, COOL[0], k), WARM[0], w); g = lerp(lerp(g, COOL[1], k), WARM[1], w); b = lerp(lerp(b, COOL[2], k), WARM[2], w);
+  if (l < 34) { r = lerp(r, 44, .75); g = lerp(g, 38, .75); b = lerp(b, 54, .75); }
+  return rgb(r, g, b);
+}
+const img = n => new Promise(r => { const m = new Image(); m.onload = () => r(m); m.onerror = () => r(null); m.src = `assets/dcss/${n}.png`; });
+async function doll(parts) { // 층을 겹쳐 인물 한 장 + 이펙트가 쓰는 윤곽
+  const c = document.createElement('canvas'); c.width = c.height = 32; const x = c.getContext('2d', { willReadFrequently: true });
+  for (const m of await Promise.all(parts.map(img))) if (m) x.drawImage(m, 0, 0);
+  const d = new Uint32Array(x.getImageData(0, 0, 32, 32).data.buffer), px = new Uint32Array(1024), data = new Uint8Array(1024); let top = 32, foot = 0;
+  for (let i = 0; i < 1024; i++) if ((d[i] >>> 24) > 110) { px[i] = tone(d[i]); data[i] = 1; const y = i >> 5; if (y < top) top = y; if (y >= foot) foot = y + 1; }
+  return { mask: { w: 32, h: 32, data }, pixels: px, x: -16, y: -foot, w: 32, h: 32, k: 2, head: [0, top - foot], chest: [0, Math.round((top - foot) * .62)], foot };
+}
+let frame, live = [], ents = [], floor, image, pix, ctx, TB, PFX, speed = 1, cur = null, autoOn = false, autoT = 0, list = [];
+function paintFloor() { // 칸을 눈으로 재도록 게임과 같은 비율의 마름모 판
+  const b = new Uint32Array(W * H), c0 = rgb(38, 32, 48), c1 = rgb(45, 38, 56), TW = 64, TH = 32;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const u = Math.floor((x / TW + y / TH)), v = Math.floor((y / TH - x / TW)); b[y * W + x] = (u + v) & 1 ? c0 : c1; }
+  return b;
+}
+function spawn(id, x, y, o = {}) {
+  const mod = PFX.mods[id]; if (!mod || live.length >= FX_MAX) return null; const m = mod.meta, { k = 1, e, to, ...opt } = o;
+  const q = { fx: PFX.createFx(mod, { seed: 1 + (Math.random() * 9999 | 0), x: Math.round(x), y: Math.round(y), actor: e || NOBODY, ...opt }), x, y, to, k, age: 0, life: 0, then: null, thenAt: 0 };
+  live.push(q); return q;
+}
+const NOBODY = { mask: { w: 24, h: 38, data: new Uint8Array(24 * 38) }, pixels: new Uint32Array(24 * 38), x: -12, y: -38, w: 24, h: 38, k: 2, head: [0, -38], chest: [0, -26] };
+const speedOf = m => (m.loop ? 1 : Math.max(1, (m.duration || 1) / CAST_T));
+function play1(id, x, y, extra, opt) { const m = PFX.mods[id]?.meta; if (!m) return null; if (id.startsWith('status/') && !extra.e) return null; const q = spawn(id, x, y, { k: speedOf(m), ...opt, ...extra }); if (q && m.loop) q.life = LOOP_T; return q; }
+function cast(e) {
+  live.length = 0;
+  const [me, foe, f2, f3] = ents, opt = e.opt || {};
+  if (e.mode === 'me') { play1(e.id, me.x, me.y, { e: me.a }, opt); return; }
+  if (e.mode === 'to') { play1(e.id, foe.x, foe.y, { e: foe.a }, opt); return; }
+  if (e.mode === 'all') { for (const t of [foe, f2, f3]) play1(e.id, t.x, t.y, { e: t.a }, opt); return; }
+  const dx = foe.x - me.x, dy = foe.y - me.y, reach = Math.hypot(dx, dy), m = PFX.mods[e.id]?.meta; if (!m) return;
+  const hit = () => { const m2 = PFX.mods[e.hit]?.meta; if (!m2) return; const q = spawn(e.hit, foe.x, foe.y, { k: speedOf(m2), e: foe.a }); if (q && m2.loop) q.life = LOOP_T; };
+  if (m.options?.reach != null) { const q = play1(e.id, me.x, me.y, { angle: Math.atan2(dy, dx), reach, height: 0 }, opt); if (q && e.hit) { q.then = hit; q.thenAt = MISSILE_HIT * m.duration / q.k; } }
+  else if (e.mode === 'fly') { const q = spawn(e.id, me.x, me.y - CHEST, { ...opt, angle: Math.atan2(dy, dx), to: { x0: me.x, y0: me.y - CHEST, x1: foe.x, y1: foe.y - CHEST, t: FLY_T } }); if (q) { q.then = hit; q.thenAt = FLY_T; } }
+  else play1(e.id, me.x, me.y, dx < 0 ? { flip: true, angle: -Math.atan2(dy, -dx) } : { angle: Math.atan2(dy, dx) }, opt);
+}
+function step(dt) {
+  for (let i = live.length - 1; i >= 0; i--) { const q = live[i]; q.age += dt;
+    if (q.life && q.age > q.life) { q.life = 0; q.fx.stop(); }
+    if (q.then && q.age >= q.thenAt) { const go = q.then; q.then = null; go(); }
+    if (q.to) { const u = Math.min(1, q.age / q.to.t); q.fx.options.x = Math.round(lerp(q.to.x0, q.to.x1, u)); q.fx.options.y = Math.round(lerp(q.to.y0, q.to.y1, u)); if (u >= 1) { live.splice(i, 1); continue; } }
+    try { q.fx.update(dt * q.k); } catch (err) { console.error('이펙트 오류', q.fx.meta?.name, err); live.splice(i, 1); continue; }
+    if (q.fx.done()) live.splice(i, 1);
+  }
+}
+const toneMap = new Map();
+function draw() {
+  pix.set(floor);
+  for (const t of ents) { const a = t.a, x0 = Math.round(t.x) + a.x, y0 = Math.round(t.y) + a.y; for (let j = 0; j < a.foot; j++) for (let i = 0; i < 32; i++) { const c = a.pixels[j * 32 + (t.flip ? 31 - i : i)]; if (c) { const k = (y0 + j) * W + x0 + i; if (k >= 0 && k < pix.length) pix[k] = c; } } }
+  const Cc = frame.color, Ll = frame.light;
+  for (const q of live) {
+    try { q.fx.draw(frame); } catch (err) { console.error('이펙트 오류', q.fx.meta?.name, err); q.fx.stop(); }
+    for (let i = 0; i < Cc.length; i++) { const c = Cc[i], l = Ll[i] & 0xffffff; if (!c && !l) continue; Cc[i] = 0; Ll[i] = 0; let d = pix[i]; const ca = c >>> 24;
+      if (ca) { const key = c | 0xff000000; let tc = toneMap.get(key); if (tc === undefined) { tc = tone(key); toneMap.set(key, tc); } if (ca >= 250) d = tc; else { const u = ca / 255; d = rgb(lerp(d & 255, tc & 255, u), lerp(d >> 8 & 255, tc >> 8 & 255, u), lerp(d >> 16 & 255, tc >> 16 & 255, u)); } }
+      if (l) d = rgb(Math.min(255, (d & 255) + (l & 255) * FX_LIGHT), Math.min(255, (d >> 8 & 255) + (l >> 8 & 255) * FX_LIGHT), Math.min(255, (d >> 16 & 255) + (l >> 16 & 255) * FX_LIGHT));
+      pix[i] = d; }
+  }
+  ctx.putImageData(image, 0, 0);
+}
+const MODE = { to: '대상', all: '대상 전부', me: '자신', fly: '투사체', dir: '방향' };
+function pick(it, el) {
+  cur = it; document.querySelectorAll('.it.on').forEach(x => x.classList.remove('on')); if (el) { el.classList.add('on'); el.scrollIntoView({ block: 'nearest' }); }
+  $('name').textContent = it.n; $('meta').textContent = [it.en, MODE[it.e.mode], it.e.id + (it.e.hit ? ' → ' + it.e.hit : '')].filter(Boolean).join(' · ');
+  cast(it.e);
+}
+const CAT = [['fire/', '불'], ['ice/', '얼음'], ['lightning/', '번개 · 천둥'], ['nature/', '자연 · 독'], ['holy/', '빛 · 치유'], ['shadow/', '어둠 · 저주'], ['status/', '상태'], ['arcane/', '비전'], ['projectiles/', '비전'], ['scifi/', '비전'], ['spawn/', '소환 · 변신'], ['explosions/', '폭발'], ['melee/', '무기'], ['impacts/', '무기']];
+const catOf = id => (CAT.find(c => id.startsWith(c[0])) || [0, '기타'])[1];
+function build(q = '') {
+  const box = $('list'); box.textContent = ''; const s = q.trim().toLowerCase(), by = new Map();
+  for (const it of list) { if (s && !`${it.n} ${it.en} ${it.e.id}`.toLowerCase().includes(s)) continue; const c = it.cat; if (!by.has(c)) by.set(c, []); by.get(c).push(it); }
+  for (const [c, l] of by) { const h = document.createElement('h2'); h.textContent = `${c} ${l.length}`; box.append(h);
+    for (const it of l) { const b = document.createElement('button'); b.className = 'it' + (it === cur ? ' on' : ''); const a = document.createElement('span'); a.textContent = it.n; const sm = document.createElement('small'); sm.textContent = it.e.id.split('/')[1]; b.append(a, sm); b.onclick = () => { setAuto(false); pick(it, b); }; it.el = b; box.append(b); } }
+}
+function setAuto(on) { autoOn = on; autoT = 0; $('auto').classList.toggle('on', on); }
+function nextAuto() { const vis = list.filter(it => it.el && it.el.isConnected); if (!vis.length) return; const i = vis.indexOf(cur); const it = vis[(i + 1) % vis.length]; pick(it, it.el); }
+(async () => {
+  const html = await (await fetch('index.html')).text(), names = JSON.parse(/for \(const n of (\[[^\]]*\])\)/.exec(html)[1].replace(/'/g, '"'));
+  for (const n of names) await load(`js/${n}.js`);
+  await load('assets/dcss/map.js'); await load('js/iso/pixelfx/pixelfx.bundle.js');
+  G = window.G; PFX = G.PFX; TB = G.SkillFx.TABLE;
+  ctx = $('cv').getContext('2d'); image = ctx.createImageData(W, H); pix = new Uint32Array(image.data.buffer); floor = paintFloor(); frame = PFX.createFrame(W, H, 0, 0);
+  const mk = async (parts, x, y, flip) => ({ a: await doll(parts), x, y, flip });
+  const orc = ['m_orc_warrior'];
+  ents = [await mk(G.DCSS.cls.archmage, 130, 150, false), await mk(orc, 330, 130, true), await mk(orc, 372, 170, true), await mk(orc, 290, 180, true)];
+  for (const k of Object.keys(TB)) { const D = G.D.MSKILLS[k] || {}; list.push({ k, n: D.n || k, en: D.en || '', e: TB[k], cat: catOf(TB[k].id) }); }
+  for (const [nm, sk] of Object.entries(G.SkillFx.FOE)) list.push({ k: 'foe:' + nm, n: nm, en: `→ ${G.D.MSKILLS[sk]?.n || sk}`, e: TB[sk], cat: '몬스터 원거리' });
+  list.push({ k: 'foe:arrow', n: '활 · 쇠뇌 · 투척', en: '', e: { mode: 'fly', id: 'projectiles/arrow', hit: 'impacts/hit-spark', opt: null }, cat: '몬스터 원거리' });
+  const order = [...new Set(CAT.map(c => c[1])), '몬스터 원거리', '기타']; list.sort((a, b) => order.indexOf(a.cat) - order.indexOf(b.cat) || a.e.id.localeCompare(b.e.id) || a.n.localeCompare(b.n, 'ko'));
+  build(); $('q').oninput = e => build(e.target.value);
+  $('replay').onclick = () => { if (cur) cast(cur.e); };
+  $('auto').onclick = () => { setAuto(!autoOn); if (autoOn) nextAuto(); };
+  for (const b of document.querySelectorAll('.sp')) b.onclick = () => { speed = +b.dataset.s; document.querySelectorAll('.sp').forEach(x => x.classList.toggle('on', x === b)); };
+  addEventListener('keydown', e => { if (e.target === $('q')) return; if (e.code === 'Space') { e.preventDefault(); if (cur) cast(cur.e); } if (e.code === 'ArrowDown' || e.code === 'ArrowUp') { e.preventDefault(); setAuto(false); const vis = list.filter(it => it.el?.isConnected), i = vis.indexOf(cur), n = vis[(i + (e.code === 'ArrowDown' ? 1 : -1) + vis.length) % vis.length]; if (n) pick(n, n.el); } });
+  pick(list[0], list[0].el);
+  let t0 = performance.now();
+  const loop = t => { const dt = Math.min(.05, (t - t0) / 1000); t0 = t; step(dt * speed); if (autoOn) { autoT += dt * speed; if (autoT > CAST_T + .5) { autoT = 0; nextAuto(); } } draw(); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+  window.__ready = list.length;
+})().catch(err => { document.getElementById('meta').textContent = location.protocol === 'file:' ? 'http://localhost:8765/vfx.html 로 여세요' : String(err); });
+</script>
+</body>
+</html>

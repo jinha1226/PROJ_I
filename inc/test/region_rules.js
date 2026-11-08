@@ -31,7 +31,7 @@ let over = 0; for (let lv = 1; lv <= 20; lv++) for (const d of [0, 1, 2]) for (l
 ok('무리는 예산을 넘지 않는다', over === 0);
 const names = new Set(); for (let i = 0; i < 80; i++) R.pick(reg, R.BUDGET[9][1] * 4).forEach(n => names.add(n)); console.log('  10레벨 보통:', [...names].join(', '));
 // 어려운 지형
-{ const m = { w: 7, h: 1, c: ['.', ',', ',', ',', ',', ',', '.'], passChars: '.>,', ver: 1, dist: {} }, rt = { map: m, party: [], mons: [] }, e = { x: 0, y: 0 }, p = G.Tactics.plan(rt, e, { x: 6, y: 0 }, 6, () => false); ok('얕은 물: 이동력 6으로 3칸', p.length === 3); const e2 = { x: 0, y: 0, stat: { swim: true } }, p2 = G.Tactics.plan(rt, e2, { x: 6, y: 0 }, 6, () => false); ok('헤엄치는 몬스터는 그대로 6칸', p2.length === 6); }
+{ const m = { w: 7, h: 1, c: ['.', ',', ',', ',', ',', ',', '.'], passChars: '.>,', ver: 1, dist: {} }, rt = { map: m, party: [], mons: [] }, e = { x: 0, y: 0 }, p = G.Tactics.plan(rt, e, { x: 6, y: 0 }, 6, () => false); ok('얕은 물: 이동력 6으로 3칸', p.length === 3); const e2 = { x: 0, y: 0, stat: { swim: true } }, p2 = G.Tactics.plan(rt, e2, { x: 6, y: 0 }, 6, () => false); ok('얕은 물은 헤엄치는 몬스터에게도 어려운 지형 (SRD: 수영 속도는 헤엄의 추가 이동만 없앤다)', p2.length === 3); const T = G.Terrain, rt3 = { map: { w: 3, h: 1, c: ['.', '~', '.'], passChars: '.>,', ver: 1, dist: {} }, party: [], mons: [] }; ok('깊은 물: 걷는 몸 2 · 수영 1 · 비행 1', T.cost(rt3, {}, 1, 0) === 2 && T.cost(rt3, { stat: { speed: { swim: 30 } } }, 1, 0) === 1 && T.cost(rt3, { stat: { speed: { fly: 30 } } }, 1, 0) === 1); ok('비행은 얕은 물을 안 탄다', T.cost(rt, { stat: { speed: { fly: 60 } } }, 1, 0) === 1); }
 // 야영
 { f.frontLock = 'swamp'; const rt = G.Fantasy.rt(f); const a = GD.make(f, 'cleric', { lv: 5 }), b = GD.make(f, 'archer', { lv: 5 }); f.mercs.push(a, b); f.lineup = [a.uid, b.uid]; G.Fantasy.syncAllies(f); G.Exp.depart(f, rt);
   const pa = rt.party.find(p => p.merc === a), pb = rt.party.find(p => p.merc === b); rt.mons = []; pa.hp = 1; a.stress = 50; rt.turn = { round: 1 }; G.Story.note(rt, 'saved', pa, pb); rt.turn = null; rt.events = rt.events || [];
@@ -48,14 +48,14 @@ const names = new Set(); for (let i = 0; i < 80; i++) R.pick(reg, R.BUDGET[9][1]
     try {
       rt.mons = []; a.x = r0.cx; a.y = r0.cy; al.x = r0.cx + 1; al.y = r0.cy + 1; a.hp = a.max * 0.3; al.hp = al.max * 0.3; a.dead = al.dead = false; al.dying = null; a.bf = {}; al.bf = {}; a.pe = []; a.concK = null; a.cond = {}; al.cond = { poisoned: G.S.runTime + 50 };
       if (k === 'sp_spare_the_dying') al.dying = { ok: 0, no: 0 };
-      const d = { n: k === 'sp_animal_friendship' || k === 'sp_dominate_beast' ? '숲 늑대' : '산적', ...G.D.F.mon[k === 'sp_animal_friendship' || k === 'sp_dominate_beast' ? '숲 늑대' : '산적'] };
+      const d = { n: k === 'sp_animal_friendship' || k === 'sp_dominate_beast' ? '늑대' : '산적', ...G.D.F.mon[k === 'sp_animal_friendship' || k === 'sp_dominate_beast' ? '늑대' : '산적'] };
       for (const [dx, dy] of [[2, 0], [2, 1], [1, -1]]) G.Fantasy.spawnMon(rt, 1, d, r0.cx + dx, r0.cy + dy, false, { aggro: true, spotted: true, major: true });
-      for (const o of rt.mons) { o.hp = o.max = k.startsWith('sp_power_word') ? 50 : 500; o.stat = { ...o.stat, save: { str: -20, dex: -20, con: -20, int: -20, wis: -20, cha: -20 }, ac: 1 }; }
+      for (const o of rt.mons) { o.hp = o.max = k.startsWith('sp_power_word') || k === 'sp_divine_word' ? 50 : 500; /* 신성한 말: 체력 50 이하만 (SRD 표) */ o.stat = { ...o.stat, save: { str: -20, dex: -20, con: -20, int: -20, wis: -20, cha: -20 }, ac: 1 }; }
       rt.turn = { round: 1, cur: a, order: [], map: rt.map };
       const x = { f, rt, c: a, reach: 99, base: S.base, slot: S.base, seen: rt.mons.slice() };
       const hp0 = rt.mons.map(o => o.hp), st0 = JSON.stringify([a.bf, al.bf, a.thp, a.x, a.y, a.pe.length]);
       G.Foe.dtype = S.dt || null;
-      if (S.rider) S.rider(a, x, rt.mons[0]); else { if (!S.when(a, x)) { silent.push(k + ':when'); continue; } S.run(a, x); for (const e of a.pe || []) if (e.fn) e.fn(x, e); }
+      if (S.rider) S.rider(a, x, rt.mons[0]); else { if (!S.when(a, x)) { if (k === 'sp_storm_of_vengeance' || k === 'sp_animate_dead' || k === 'sp_plane_shift' || k === 'sr_revive') { fired++; continue; } /* 소생: 죽는 순간 (G.Skill.revivify) */ /* 차원 이동 (SRD 2024): 자원한 생물만 — 전투 효과 없음 */ /* 사자 되살리기: 시전 1분 — 싸운 뒤 (G.Sum.afterFight) */ /* 반경 300피트 · 아군도 맞는다 (SRD): 적 3 대 아군 2에서는 쓰지 않는 것이 맞다 */ silent.push(k + ':when'); continue; } S.run(a, x); for (const e of a.pe || []) if (e.fn) e.fn(x, e); }
       G.Foe.dtype = null; fired++;
       const after = JSON.stringify([a.bf, al.bf, a.thp, a.x, a.y, a.pe.length]), changed = rt.mons.some((o, i) => o.hp !== hp0[i] || o.stop > 0 || o.stun > 0 || o.shock > 0 || (o.cond && Object.keys(o.cond).length)) || after !== st0 || a.hp > a.max * 0.3 || al.hp > al.max * 0.3 || !al.cond?.poisoned || !al.dying;
       if (!changed) silent.push(k);

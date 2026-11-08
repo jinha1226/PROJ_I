@@ -1,28 +1,39 @@
 'use strict';
-// 전투 칸 (DESIGN.md 77): 전투 중에는 칸마다 한 명만 선다. 이동은 칸 단위, 경로는 다른 인물이 있는 칸을 돌아간다.
+// 전투 칸 (DESIGN.md 77, 117): 전투 중에는 칸마다 한 명만 선다. 이동은 칸 단위, 자기편 칸은 지나갈 수 있고 멈출 수 없으며, 적 칸은 돌아간다.
 // 대각선도 1칸이고(D&D 기본), 벽 모서리는 대각선으로 가로지르지 못한다.
 G.Tactics = (() => {
   const GR = G.Grid, F = () => G.Fantasy;
   const DEPLOY_MOVE = 6, BOARD_GAP = 2, WALK_GAP = 1.5; // 진형 판 한 칸 = 바닥 2칸
   const cellOf = e => [Math.round(e.x), Math.round(e.y)];
   // 어려운 지형 (SRD): 얕은 물은 칸당 이동력 2. 헤엄치는 몬스터는 그대로
-  const stepCost = (m, e, x, y) => (m.c[y * m.w + x] === ',' && !e.stat?.swim && !(e.merc && (G.Opt.has(e, 'iv_ascend') || G.Opt.has(e, 'iv_depths') || G.Guild.skill(e.merc, 'x_acro') || G.Dnd.bsum(e, 'fly') > 0)) ? 2 : 1);
+  const stepCost = (m, e, x, y) => { const rt = G.RT.fantasy; if (rt?.map === m && G.Terrain) return G.Terrain.cost(rt, e, x, y) === 2 && e.merc && (G.Opt.has(e, 'iv_ascend') || G.Guild.skill(e.merc, 'x_acro')) && m.c[y * m.w + x] === ',' ? 1 : G.Terrain.cost(rt, e, x, y); return m.c[y * m.w + x] === ',' ? 2 : 1; }; // SRD 지형 (G.Terrain): 어려운 지형 · 헤엄 · 비행
   const insertBy = (q, c) => { let i = q.length; while (i > 0 && q[i - 1][2] > c[2]) i--; q.splice(i, 0, c); }; // 앞쪽(처리한 곳)보다 뒤로만 끼운다: 비용이 커지기만 하므로 안전
   const fighters = rt => rt.party.filter(p => !p.dead || p.dying).concat(rt.mons.filter(o => o.hp > 0));
   const key = (m, x, y) => y * m.w + x;
-  const stepOK = (m, x, y, dx, dy) => GR.pass(m, x + dx, y + dy) && (!dx || !dy || (GR.pass(m, x + dx, y) && GR.pass(m, x, y + dy)));
+  const stepOK = (m, x, y, dx, dy, e) => { const rt = G.RT.fantasy, ok = (u, v) => (e && rt?.map === m && G.Terrain ? G.Terrain.enter(rt, e, u, v) : GR.pass(m, u, v)); return ok(x + dx, y + dy) && (!dx || !dy || (ok(x + dx, y) && ok(x, y + dy))); }; // 깊은 물은 날거나 헤엄치는 몸만
   function taken(rt, except) {
     const m = rt.map, s = new Set();
     for (const e of fighters(rt)) if (e !== except) { const [x, y] = cellOf(e); s.add(key(m, x, y)); }
     return s;
   }
-  // 가장 가까운 빈 칸
+  // 상대편이 선 칸: 지나갈 수 없다
+  function foesOf(rt, e) {
+    const m = rt.map, s = new Set(), mon = e.kind === 'mon';
+    for (const o of fighters(rt)) if (o !== e && (o.kind === 'mon') !== mon) { const [x, y] = cellOf(o); s.add(key(m, x, y)); }
+    return s;
+  }
+  // 걸어서 닿는 가장 가까운 빈 칸 (벽 건너로 보내지 않는다). 벽 안에 있으면 벽을 지나 가장 가까운 바닥으로
   function freeNear(m, x0, y0, used) {
-    const q = [[x0, y0]], seen = new Set([key(m, x0, y0)]);
+    const q = [[x0, y0]], seen = new Set([key(m, x0, y0)]), free = GR.pass(m, x0, y0);
     for (let i = 0; i < q.length; i++) {
       const [x, y] = q[i];
       if (GR.pass(m, x, y) && !used.has(key(m, x, y))) return [x, y];
-      for (const [dx, dy] of GR.DIR) { const nx = x + dx, ny = y + dy, k = key(m, nx, ny); if (nx > 0 && ny > 0 && nx < m.w - 1 && ny < m.h - 1 && !seen.has(k)) { seen.add(k); q.push([nx, ny]); } }
+      for (const [dx, dy] of GR.DIR) {
+        const nx = x + dx, ny = y + dy, k = key(m, nx, ny);
+        if (nx <= 0 || ny <= 0 || nx >= m.w - 1 || ny >= m.h - 1 || seen.has(k)) continue;
+        if (free && !GR.walkable(m, x, y, nx, ny)) continue;
+        seen.add(k); q.push([nx, ny]);
+      }
     }
     return [x0, y0];
   }
@@ -37,7 +48,7 @@ G.Tactics = (() => {
     healer: [{ n: '함께 싸움', pos: 'charge', heal: 'crisis', low: 'fight' }, { n: '치유 우선', pos: 'kite', heal: 'early', low: 'fall' }, { n: '치유 우선', pos: 'kite', heal: 'early', low: 'fall' }],
   };
   const HOME_ROW = { front: 0, skirm: 0, ranged: 1, healer: 2 };
-  const HEAL_AT = { early: 0.75, crisis: 0.35 }, HOLD_R = 3, HOLD_ROUNDS = 2, KEEP_R = 3, LOW_HP = 0.35, GUARD_R = 1.5;
+  const MELEE_REACH = 1.8, HEAL_AT = { early: 0.75, crisis: 0.35 }, HOLD_R = 3, HOLD_ROUNDS = 2, KEEP_R = 3, LOW_HP = 0.35, GUARD_R = 1.5;
   const roleOf = m => ROLE[m?.cls] || 'front';
   const rowOf = m => { const c = m ? G.S.w.fantasy.form?.[m.uid] : null; return c == null ? HOME_ROW[roleOf(m)] : c / 3 | 0; };
   const stanceOf = m => STANCE[roleOf(m)][rowOf(m)];
@@ -60,6 +71,7 @@ G.Tactics = (() => {
       // 원거리는 지금 자리에서 쏠 수 있는 적부터: 표적 때문에 전열 앞으로 튀어나가지 않는다
       const rg = e.def && G.Dnd.rng(e) >= 2 ? G.Dnd.rng(e) : 0, here = rg ? list.filter(o => dist(o, e) <= rg) : [];
       if (rg && of(e).pos === 'kite' && here.length) list = here;
+      if (t === 'near' && e.merc) { const r = rg || MELEE_REACH, adv = list.filter(o => dist(o, e) <= r && G.Dnd.adv(e, o) > 0); if (adv.length) return near(adv); } // 동료가 만든 이점을 쓴다 (넘어짐 · 돕기 · 빛남). 닿는 적 안에서만
       if (t === 'weak') return list.reduce((a, b) => (b.hp < a.hp ? b : a));
       if (t === 'back') { const r = list.filter(G.Foe.back); return near(r.length ? r : list); }
       return near(list);
@@ -87,34 +99,36 @@ G.Tactics = (() => {
     },
     cellOf,
     // 모두를 칸 위에 세운다 (전투 시작 · 밀침 · 소환 뒤). 이미 칸 위에 혼자 서 있으면 그대로
-    // walker: 걷는 중인 사람은 건드리지 않고 그 칸만 비워 둔다
+    // walker: 걷는 중인 사람은 건드리지 않는다. 그가 지나가는 칸의 아군도 밀어내지 않고, 새로 자리를 찾는 사람만 그 칸을 피한다
     snap(rt, walker) {
-      const m = rt.map, used = new Set();
-      if (walker) used.add(key(m, ...cellOf(walker)));
+      const m = rt.map, used = new Set(), extra = [];
       for (const e of fighters(rt)) {
         if (e === walker) continue;
         const [x, y] = cellOf(e), k = key(m, x, y);
-        if (!used.has(k) && GR.pass(m, x, y)) { used.add(k); e.x = x; e.y = y; continue; }
-        const [nx, ny] = freeNear(m, x, y, used);
+        if (!used.has(k) && GR.pass(m, x, y)) { used.add(k); e.x = x; e.y = y; } else extra.push(e);
+      }
+      if (walker) used.add(key(m, ...cellOf(walker)));
+      for (const e of extra) {
+        const [nx, ny] = freeNear(m, ...cellOf(e), used);
         used.add(key(m, nx, ny)); e.x = nx; e.y = ny;
       }
     },
     // 이번 차례의 경로. hits(x, y): 그 칸에서 칠 수 있나. 칠 수 있는 가장 가까운 칸으로, 없으면 표적에 가장 가까워지는 칸으로
     // strict: 그런 칸이 없으면 걷지 않는다
     plan(rt, e, tg, budget, hits, strict) {
-      const m = rt.map, [sx, sy] = cellOf(e), used = taken(rt, e), start = key(m, sx, sy), prev = new Map([[start, null]]), q = [[sx, sy, 0]];
+      const m = rt.map, [sx, sy] = cellOf(e), used = taken(rt, e), foes = foesOf(rt, e), start = key(m, sx, sy), prev = new Map([[start, null]]), q = [[sx, sy, 0]];
       if (hits(sx, sy)) return [];
       const [tx, ty] = cellOf(tg), far = GR.field(m, tx, ty);
       let goal = null, best = far[start] >= 0 ? far[start] : 1e9, near = start;
       for (let i = 0; i < q.length; i++) {
-        const [x, y, d] = q[i], k = key(m, x, y);
-        if (k !== start && hits(x, y)) { goal = k; break; }
-        const v = far[k]; if (k !== start && v >= 0 && v < best) { best = v; near = k; }
+        const [x, y, d] = q[i], k = key(m, x, y), stop = k !== start && !used.has(k);
+        if (stop && hits(x, y)) { goal = k; break; }
+        const v = far[k]; if (stop && v >= 0 && v < best) { best = v; near = k; }
         if (d >= budget) continue;
         for (const [dx, dy] of GR.DIR) {
-          if (!stepOK(m, x, y, dx, dy)) continue;
+          if (!stepOK(m, x, y, dx, dy, e)) continue;
           const nk = key(m, x + dx, y + dy), nd = d + stepCost(m, e, x + dx, y + dy);
-          if (prev.has(nk) || used.has(nk) || nd > budget) continue;
+          if (prev.has(nk) || foes.has(nk) || nd > budget) continue;
           prev.set(nk, k); insertBy(q, [x + dx, y + dy, nd]);
         }
       }
@@ -142,7 +156,13 @@ G.Tactics = (() => {
       const out = []; for (const c of this.plan(rt, e, tg, budget, can)) { if (!ok(c.x, c.y)) break; out.push(c); }
       return out;
     },
-    blocked(rt, e, path) { if (!path.length) return; const m = rt.map, k = key(m, path[0].x, path[0].y); if (Math.hypot(path[0].x - e.x, path[0].y - e.y) < 1.01 && taken(rt, e).has(k)) path.length = 0; },
+    // 그사이 바로 앞에 적이 섰으면 멈추고, 도착 칸에 누가 들어왔으면 그 앞 빈 칸까지만 간다
+    blocked(rt, e, path) {
+      if (!path.length) return;
+      const m = rt.map, at = c => key(m, c.x, c.y), used = taken(rt, e);
+      if (Math.hypot(path[0].x - e.x, path[0].y - e.y) < 1.01 && foesOf(rt, e).has(at(path[0]))) { path.length = 0; return; }
+      while (path.length && used.has(at(path[path.length - 1]))) path.pop();
+    },
     // 경로를 따라 걷는다. 끝까지 갔으면 true
     walk(e, path, v, dt) {
       let left = v * dt;
@@ -163,7 +183,9 @@ G.Tactics = (() => {
     },
     // 전투 대형: 진형 판(f.form, 윗줄이 전열)을 그대로 바닥에 옮긴다. 앞장선 사람의 칸이 기준이고, 적 쪽이 앞이다
     deploy(rt, lead, foe) {
-      const m = rt.map, f = G.S.w.fantasy, form = F().formation(f), [lx, ly] = cellOf(lead), dx = Math.sign(Math.round(foe.x) - lx), dy = Math.sign(Math.round(foe.y) - ly), sx = -dy, sy = dx || 1, used = new Set([key(m, lx, ly)]), plans = [];
+      const m = rt.map, f = G.S.w.fantasy, form = F().formation(f), [lx, ly] = cellOf(lead), fx = Math.sign(Math.round(foe.x) - lx), fy = Math.sign(Math.round(foe.y) - ly), hx = Math.sign(Math.round((rt.headX || 0) * 2)), hy = Math.sign(Math.round((rt.headY || 0) * 2)),
+        // 걷던 대형을 유지한다: 적이 앞쪽 반원에 있으면 가던 방향이 앞이고, 옆이나 뒤에 있을 때만 적 쪽으로 돈다
+        keep = (hx || hy) && hx * fx + hy * fy > 0, dx = keep ? hx : fx || (fy ? 0 : 1), dy = keep ? hy : fy, sx = -dy, sy = dx, used = new Set([key(m, lx, ly)]), plans = [];
       for (const o of rt.mons) if (o.hp > 0) used.add(key(m, ...cellOf(o)));
       const c0 = lead.merc ? form[lead.merc.uid] : null, r0 = c0 == null ? 0 : c0 / 3 | 0, q0 = c0 == null ? 1 : c0 % 3;
       for (const p of rt.party.filter(q => !q.dead && !q.dying && q !== lead)) {
@@ -177,11 +199,12 @@ G.Tactics = (() => {
     },
     // 차례 표시 (그리는 쪽이 읽는다): move 갈 수 있는 칸 · attack 도착한 칸에서 칠 수 있는 칸 · path 실제로 걸을 칸
     overlay(rt, e, budget, range, path) {
-      const m = rt.map, used = taken(rt, e), [sx, sy] = cellOf(e), move = new Map([[key(m, sx, sy), 0]]), q = [[sx, sy, 0]];
+      const m = rt.map, used = taken(rt, e), foes = foesOf(rt, e), [sx, sy] = cellOf(e), move = new Map([[key(m, sx, sy), 0]]), q = [[sx, sy, 0]];
       for (let i = 0; i < q.length; i++) {
         const [x, y, d] = q[i]; if (d >= budget) continue;
-        for (const [dx, dy] of GR.DIR) { if (!stepOK(m, x, y, dx, dy)) continue; const k = key(m, x + dx, y + dy), nd = d + stepCost(m, e, x + dx, y + dy); if (move.has(k) || used.has(k) || nd > budget) continue; move.set(k, nd); insertBy(q, [x + dx, y + dy, nd]); }
+        for (const [dx, dy] of GR.DIR) { if (!stepOK(m, x, y, dx, dy, e)) continue; const k = key(m, x + dx, y + dy), nd = d + stepCost(m, e, x + dx, y + dy); if (move.has(k) || foes.has(k) || nd > budget) continue; move.set(k, nd); insertBy(q, [x + dx, y + dy, nd]); }
       }
+      for (const k of used) move.delete(k);
       const end = path.length ? path[path.length - 1] : { x: sx, y: sy }, attack = new Set(), R = Math.ceil(range);
       for (let y = end.y - R; y <= end.y + R; y++) for (let x = end.x - R; x <= end.x + R; x++) {
         if (x < 1 || y < 1 || x >= m.w - 1 || y >= m.h - 1 || (x === end.x && y === end.y) || !GR.pass(m, x, y) || Math.hypot(x - end.x, y - end.y) > range) continue;
@@ -189,7 +212,7 @@ G.Tactics = (() => {
       }
       return { move, attack, path: new Set(path.map(p => key(m, p.x, p.y))) };
     },
-    // 겹친 사람이 있나 (test/flow_rules.js)
-    overlap(rt) { const s = new Set(); for (const e of fighters(rt)) { const k = key(rt.map, ...cellOf(e)); if (s.has(k)) return true; s.add(k); } return false; },
+    // 겹친 사람이 있나 (test/flow_rules.js). walker: 자기편 칸을 지나가는 중인 사람은 세지 않는다
+    overlap(rt, walker) { const s = new Set(); for (const e of fighters(rt)) { if (e === walker) continue; const k = key(rt.map, ...cellOf(e)); if (s.has(k)) return true; s.add(k); } return false; },
   };
 })();

@@ -12,8 +12,9 @@
   const dmg = (x, c, s, crit) => Math.max(1, roll(s, crit)) * G0(x, c);
   const avgS = s => s[0] * (s[1] + 1) / 2 + (s[2] || 0);
   const R6 = n => n * G.Res_ROUND * (G.Skill.ext && n >= 10 ? 2 : 1); // 라운드 → 초 (연장 주문: 1분 이상만 2배)
-  const pmod = c => DN.mod(DN.ab(c.merc)[DN.cls(c.merc).pri]);
+  const pmod = c => DN.mod(DN.ab(c.merc)[c.castAb || DN.cls(c.merc).dc]);
   const tierS = (c, s) => [s[0] * DN.tier(c), s[1], s[2] || 0];
+  const over = (x, base) => Math.max(0, (x.slot || base) - base); // 슬롯이 원래 레벨보다 몇 위인가
   const lvUp = (x, s, per) => [s[0] + Math.max(0, (x.slot || 1) - (x.base || 1)) * per, s[1], s[2] || 0]; // 높은 슬롯: 주사위가 늘어난다
   const near = (x, p, r) => { const lim = x.reach === 1.5 && p === x.c ? 1.5 : r; return x.rt.mons.filter(o => GR.dist(o, p) <= lim); };
   const pick = x => { const t = x.rt.focus; return t && t.hp > 0 && x.seen.includes(t) ? t : G.Tactics.pick(x.rt, x.seen, x.c); };
@@ -29,13 +30,13 @@
   const alive2 = x => x.rt.party.filter(p => p.dying && Math.hypot(p.x - x.c.x, p.y - x.c.y) <= x.reach);
   const lowest = (x, r) => alive(x).filter(p => !p.noHeal && p.hp < p.max * Math.min(r, G.Tactics.healAt(x.c) === 0.35 ? 0.35 : r)).sort((p, q) => p.hp / p.max - q.hp / q.max)[0];
   // 치유: 주사위 + 시전 능력 (생명의 제자: 2 + 슬롯 레벨). 체력 배율만큼 함께 자란다
-  const heal = (x, c, p, s) => { const k = p.merc ? p.max / Math.max(1, DN.srdHP(p.merc)) : 1, amt = (Math.max(1, F().sk(c, 'ft_supreme') ? s[0] * s[1] + (s[2] || 0) : roll(s)) + (F().sk(c, 'sr_disciple') ? 2 + (x.slot || 1) : 0)) * k * (c.merc ? G.Guild.mult(c.merc, 'heal') : 1); if (p !== c && F().sk(c, 'ft_bhealer')) c.hp = Math.min(c.max, c.hp + (2 + (x.slot || 1)) * (c.merc ? c.max / Math.max(1, DN.srdHP(c.merc)) : 1)); p.hp = Math.min(p.max, p.hp + amt); G.fx(x.rt, { k: 'tile', key: 'fx_holy', x: p.x, y: p.y, t: 0.7 }); };
+  const heal = (x, c, p, s) => { const k = p.merc ? p.max / Math.max(1, DN.srdHP(p.merc)) : 1, amt = (Math.max(1, F().sk(c, 'ft_supreme') ? s[0] * s[1] + (s[2] || 0) : roll(s)) + (F().sk(c, 'sr_disciple') ? 2 + (x.slot || 1) : 0)) + 0 * k; /* SRD: 치유는 주사위 그대로 */ if (p !== c && F().sk(c, 'ft_bhealer')) c.hp = Math.min(c.max, c.hp + 2 + (x.slot || 1)); p.hp = Math.min(p.max, p.hp + amt); G.fx(x.rt, { k: 'tile', key: 'fx_holy', x: p.x, y: p.y, t: 0.7 }); };
   const fireB = (c, s) => (F().sk(c, 'sr_affinity') ? [s[0], s[1], (s[2] || 0) + pmod(c), s[3]] : s); // 원소 친화: 화염 + 매력
   const evo = (c, s) => (F().sk(c, 'sr_empower') ? [s[0], s[1], (s[2] || 0) + pmod(c), s[3]] : s); // 강화된 방출: 방출계 + 지능
   // 명중 주문: 굴려서 맞으면 주사위 (치명타는 주사위 두 배)
   const strike = (x, c, o, s, src = 'smite') => {
     const r = DN.attack(c, o);
-    if (!r.hit) { DN.miss(x.rt, o); if (F().sk(c, 'sr_potent')) F().hurt(x.f, x.rt, o, dmg(x, c, s) / 2, 'hit', c); return r; }
+    if (!r.hit) { DN.miss(x.rt, o); if (F().sk(c, 'sr_potent') && !x.slot) F().hurt( /* 강력한 소마법 (SRD): 소마법만 */x.f, x.rt, o, dmg(x, c, s) / 2, 'hit', c); return r; }
     F().hurt(x.f, x.rt, o, dmg(x, c, s, r.crit), r.crit ? 'crit' : src, c);
     return r;
   };
@@ -46,7 +47,7 @@
       if (Math.hypot(o.x - c.x, o.y - c.y) > Math.max(G.Dnd.rng(c) || 0, 1.5) + 0.3) break; // 밀려나 닿지 않으면 남은 공격은 못 한다
       const r = DN.attack(c, o); if (!any || r.hit) any = r;
       if (!r.hit) { DN.miss(x.rt, o); continue; }
-      DN.dieMin = DN.melee(c) && F().sk(c, 'fs_gwf') ? 3 : 0; let d = dmg(x, c, base, r.crit); DN.dieMin = 0; if (extra) d += dmg(x, c, extra, r.crit);
+      DN.dieMin = DN.melee(c) && F().sk(c, 'fs_gwf') && G.SRD.styleOn(c.merc, 'fs_gwf') ? 3 : 0; let d = dmg(x, c, base, r.crit) + DN.bdice(c, 'dmgD') * G0(x, c) /* 확대 1d4 (SRD) */; DN.dieMin = 0; if (extra) d += dmg(x, c, extra, r.crit);
       const sn = Math.max(0, DN.sneak(x.rt, c, o, r.adv) - (c.snMinus || 0)); if (sn) d += DN.dice(sn * (r.crit ? 2 : 1), 6) * G0(x, c); d += DN.frenzy(c) * G0(x, c);
       F().hurt(x.f, x.rt, o, d, r.crit ? 'crit' : 'hit', c);
       if (o.hp > 0) G.Skill.onHit(x.f, x.rt, c, o);
@@ -57,21 +58,74 @@
   // 내성 주문: 실패하면 다 · half면 성공 때 절반. 성공했는지 돌려준다
   const saveHit = (x, c, o, ab, s, half = true) => {
     const ok = DN.save(o, ab, DN.dc(c)), d = dmg(x, c, s);
-    const v = ok ? (half || F().sk(c, 'sr_potent') ? d / 2 : 0) : d;
+    const v = ok ? (half || (F().sk(c, 'sr_potent') && !x.slot) ? d / 2 : 0) : d; // 강력한 소마법 (SRD): 소마법만
     if (v > 0) F().hurt(x.f, x.rt, o, v, 'smite', c);
     return ok;
   };
   // 상태이상 주문: 내성 실패면 건다 (n라운드)
-  const cond = (x, c, o, ab, k, n) => {
-    if (o.hp <= 0 || DN.save(o, ab, DN.dc(c))) { G.fx(x.rt, { k: 'text', x: o.x, y: o.y - 1, s: '저항', col: '#9aa0a8', t: 0.7, sz: 0.7 }); return false; }
+  const cond = (x, c, o, ab, k, n, dc) => {
+    if (o.hp <= 0 || DN.save(o, ab, dc ?? DN.dc(c))) { G.fx(x.rt, { k: 'text', x: o.x, y: o.y - 1, s: '저항', col: '#9aa0a8', t: 0.7, sz: 0.7 }); return false; }
     if (k === 'stunned' || k === 'paralyzed') {
       const f = k === 'stunned' ? 'stun' : 'stop';
-      o[f] = Math.max(o[f] || 0, n * 6);
+      o[f] = Math.max(o[f] || 0, R6(n)); /* 라운드 (G.Res_ROUND) */
       G.fx(x.rt, { k: 'text', x: o.x, y: o.y - 1.1, s: DN.COND[k].n, col: '#c9a6ff', t: 1, sz: 0.85, pop: true });
-      G.Combo.on(x.f, x.rt, f, c, o);
     } else DN.give(x.rt, o, k, R6(n), c);
     return true;
   };
+  // ── 범위 (SRD 「Areas of Effect」): 원문 모양 · 크기 그대로. 1칸 = 5피트, 상한 없음. 범위 안의 모든 생물 — 아군도 (조각 주문 · Sculpt Spells만 예외) ──
+  // A = { shape: sphere · cylinder · emanation · cube · square · cone · line, ft, w(직선 폭), self(시전자에서 시작) }
+  const isMon = (x, o) => o.kind === 'mon' || x.rt.mons.includes(o); // 시험용 몸에는 kind가 없을 수 있다
+  const isFoe = (x, o) => (x.c?.kind === 'mon' ? !isMon(x, o) : isMon(x, o)); // 시전자 편에서 본 적 (몬스터가 쓰면 우리 쪽이 적)
+  const AREA = {
+    // 범위 안의 생물: 원점에서 벽에 가리지 않은 몸만 (SRD: 범위는 막힌 곳 너머로 퍼지지 않는다)
+    hits(x, c, A, aim, up = 0) {
+      const L = A.ft / 5 + up, rt = x.rt, all = rt.mons.filter(o => o.hp > 0).concat(rt.party.filter(p => !p.dead), (rt.sums || []).filter(s => s.hp > 0)); // 아군 생물도 범위에 든다
+      const dx0 = aim.x - c.x, dy0 = aim.y - c.y, l0 = Math.hypot(dx0, dy0) || 1, ux = dx0 / l0, uy = dy0 / l0;
+      let cx = aim.x, cy = aim.y;
+      if ((A.shape === 'cube' || A.shape === 'square') && A.self) { cx = c.x + ux * (L / 2 + 0.5); cy = c.y + uy * (L / 2 + 0.5); }
+      const radial = A.shape === 'sphere' || A.shape === 'cylinder', origin = radial || ((A.shape === 'cube' || A.shape === 'square') && !A.self) ? { x: cx, y: cy } : c;
+      return all.filter(o => {
+        if (A.shape === 'emanation' && o === c) return false; // 발산은 시전자를 빼고
+        const vx = o.x - c.x, vy = o.y - c.y, along = vx * ux + vy * uy, perp = Math.abs(vx * uy - vy * ux);
+        let ok;
+        if (radial) ok = Math.hypot(o.x - cx, o.y - cy) <= L + 0.5;
+        else if (A.shape === 'emanation') ok = Math.hypot(vx, vy) <= L + 0.5;
+        else if (A.shape === 'cube' || A.shape === 'square') ok = Math.abs(o.x - cx) <= L / 2 + 0.5 && Math.abs(o.y - cy) <= L / 2 + 0.5;
+        else if (A.shape === 'cone') ok = o !== c && along > 0 && along <= L + 0.5 && perp <= along / 2 + 0.5; // 원뿔: 거리만큼 넓어진다 (폭 = 거리)
+        else if (A.shape === 'line') ok = o !== c && along > 0 && along <= L + 0.5 && perp <= (A.w || 5) / 10 + 0.5;
+        return ok && (!rt.map || F().sees(rt.map, origin, o));
+      });
+    },
+    // 겨누기: 맞힐 적 수 − 아군 수 × 2가 가장 큰 곳. 아군만 다치거나 적이 없으면 null (쓰지 않는다)
+    aim(x, c, A, up = 0, reach = 99, sculpt = false) {
+      let best = null, bs = 0;
+      for (const t of x.seen) {
+        if (!A.self && Math.hypot(t.x - c.x, t.y - c.y) > reach + 0.5) continue;
+        const h = AREA.hits(x, c, A, t, up), foes = h.filter(o => isFoe(x, o)).length, allies = sculpt ? 0 : h.filter(o => !isFoe(x, o)).length, s = foes - 2 * allies;
+        if (foes && s > bs) { bs = s; best = t; }
+      }
+      return best;
+    },
+    // 내성 피해를 범위의 모두에게 (아군은 G.Foe.blast: 회피 · 저항 · 탈진까지 같은 규칙). onFail(o): 실패한 몸에 붙는 효과
+    // ab가 없으면 내성 없이 모두 맞는다 · dual = [개수, 면, 종류]: 같은 내성으로 들어가는 둘째 피해 (화염 강타: 화염 + 광휘)
+    save(x, c, list, ab, s, half = true, onFail, sculpt = false, dual = null, dc0 = null) {
+      const parts = [[Math.max(1, H0.roll(s)), G.Foe.dtype]].concat(dual ? [[DN.dice(dual[0], dual[1]), dual[2]]] : []), dc = dc0 ?? DN.dc(c), t0 = G.Foe.dtype, mul = c.merc ? G0(x, c) : 1;
+      for (const o of list) {
+        if (!isFoe(x, o) && sculpt) continue; // 조각 주문 (SRD 방출계 6레벨) · 고른 생물만: 같은 편은 피해가 없다
+        const mon = isMon(x, o), ok = ab ? DN.save(o, ab, dc) : false, ev = ab === 'dex' && !mon && (F().sk(o, 'ft_evasion') || F().sk(o, 'ft_evasion_r')); // 회피 (SRD): 성공 0 · 실패 절반
+        const k = mon ? (ok ? (half || (c.merc && F().sk(c, 'sr_potent') && !x.slot) ? 0.5 : 0) : 1) : ok ? (ev || !half ? 0 : 0.5) : ev ? 0.5 : 1;
+        for (const [roll, t] of parts) { G.Foe.dtype = t; if (k <= 0) continue; if (mon) F().hurt(x.f, x.rt, o, roll * mul * k, 'smite', c); else G.Foe.blast(x.f, x.rt, { atk: 1 }, o, roll * k, null, 0, t); }
+        G.Foe.dtype = t0;
+        if (!ok && onFail && (mon ? o.hp > 0 : !o.dead)) onFail(o);
+      }
+    },
+  };
+  const H0 = { roll };
+  AREA.cast = (x, c, k, A, o = {}) => { const sc = o.choice || o.sculpt || sculptOf(c, k), t = o.at || AREA.aim(x, c, A, o.up || 0, x.reach ?? 99, sc); if (!t) return null; let list = AREA.hits(x, c, A, t, o.up || 0); if (o.choice) list = list.filter(q => isFoe(x, q)); return { t, list, sc }; };
+  // 상태 범위: 몬스터는 cond (n라운드), 아군은 같은 내성으로 DN.give
+  AREA.cond = (x, c, list, ab, k, n, after) => { for (const o of list) { if (o.kind === 'mon') { if (cond(x, c, o, ab, k, n) && after) after(o); } else if (!DN.save(o, ab, DN.dc(c))) { DN.give(x.rt, o, k, R6(n), c); if (after) after(o); } } };
+  const schoolOf = k => { const en = G.D.MSKILLS[k]?.en; if (!en) return ''; for (const id in G.SRD_SP || {}) if (G.SRD_SP[id].en === en) return G.SRD_SP[id].sch; return ''; };
+  const sculptOf = (c, k) => !!F().sk(c, 'ft_sculpt') && schoolOf(k) === 'evocation'; // 조각 주문: 방출계만
   const W = {
     seen: (c, x) => x.seen.length > 0,
     pack: n => (c, x) => x.seen.length >= n,
@@ -88,13 +142,13 @@
     // ── 공용 주문 ──
     sr_cure: { heal: true, res: SL(1), base: 1, when: W.low(0.5), run(c, x) { heal(x, c, lowest(x, 0.5), lvUp(x, [2, 8, pmod(c)], 2)); sfx('bell'); } },
     sr_hword: { heal: true, res: SL(1), base: 1, bonus: true, when: W.low(0.6), run(c, x) { const p = lowest(x, 0.6); beam(x, c, p, '#9fe79f', 2); heal(x, c, p, lvUp(x, [2, 4, pmod(c)], 2)); } },
-    sr_bless: { res: SL(1), base: 1, conc: true, when: W.fight, run(c, x) { for (const p of alive(x).sort((p, q) => GR.dist(p, c) - GR.dist(q, c)).slice(0, 3)) { G.Res.concOn(c, p, 'bless', R6(10), { hit: 2.5, save: 2.5 }); ring(x, p, 0.8, '#ffe08a'); } } },
-    sr_spike: { res: SL(2), base: 2, conc: true, when: W.pack(2), run(c, x) { const tg = pick(x); x.rt.fields.push({ x: tg.x, y: tg.y, r: 4, t: R6(10), dps: avgS([2, 4]) * G0(x, c) / G.Res_ROUND, key: 'q_herb', c }); ring(x, tg, 4, '#7fcf8a'); } },
+    sr_bless: { res: SL(1), base: 1, conc: true, when: W.fight, run(c, x) { for (const p of alive(x).sort((p, q) => GR.dist(p, c) - GR.dist(q, c)).slice(0, 3 + over(x, 1))) { G.Res.concOn(c, p, 'bless', R6(10), { hitD: 4, saveD: 4 }); /* 축복 (SRD): 명중 · 내성에 1d4 */ ring(x, p, 0.8, '#ffe08a'); } } },
+    sr_spike: { res: SL(2), base: 2, conc: true, when: W.pack(2), run(c, x) { const tg = pick(x); x.rt.fields.push({ x: tg.x, y: tg.y, r: 4, t: R6(100), dice: [2, 4], key: 'q_herb', c } /* 가시 성장 (SRD): 1칸 움직일 때마다 2d4 (F.fieldMove) · 10분 집중 */); G.Terrain.add(x.rt, { x: tg.x, y: tg.y, r: 4, until: G.S.runTime + R6(100), by: c, conc: true }); /* 어려운 지형 */ ring(x, tg, 4, '#7fcf8a'); } },
     sr_fireball: { res: SL(3), base: 3, when: W.pack(2), run(c, x) {
-      const tg = pick(x), s = fireB(c, evo(c, lvUp(x, [8, 6], 1)));
+      const tg = AREA.aim(x, c, { shape: 'sphere', ft: 20 }, 0, x.reach ?? 99, sculptOf(c, 'sr_fireball')); if (!tg) return false; const s = fireB(c, evo(c, lvUp(x, [8, 6], 1)));
       G.fx(x.rt, { k: 'proj', key: 'fx_fire', x: c.x, y: c.y, x2: tg.x, y2: tg.y, t: 0.25 });
       G.fx(x.rt, { k: 'tile', key: 'fx_fire', x: tg.x, y: tg.y, t: 0.6, s: 2.2 });
-      for (const o of near(x, tg, 4)) saveHit(x, c, o, 'dex', s);
+      const q = AREA.cast(x, c, 'sr_fireball', { shape: 'sphere', ft: 20 }, { at: tg }); if (q) { G.Foe.dtype = 'fire'; AREA.save(x, c, q.list, 'dex', s, true, null, q.sc); G.Foe.dtype = null; } // 화염구 (SRD): 반경 20피트 구, 아군도
       sfx('boom');
     } },
     // ── 바바리안 ──
@@ -112,12 +166,12 @@
     // ── 파이터 ──
     sr_second: { res: SHORT(m => (m.lv >= 10 ? 4 : m.lv >= 4 ? 3 : 2)), bonus: true, when: W.self(0.5), run(c, x) { heal(x, c, c, [1, 10, c.merc.lv]); if (F().sk(c, 'ft_tshift')) G.Opt.shift(x, c); } },
     sr_surge: { res: SHORT(m => (m.lv >= 17 ? 2 : 1)), free: true, when: (c, x) => !!nearest(x, c, G.Dnd.rng(c) + 0.5), run(c, x) { say(x, c, '쇄도', '#ffe08a'); F().allyAttack(x.f, x.rt, c, nearest(x, c, G.Dnd.rng(c) + 0.5)); } },
-    sr_cleave: { when: W.close(1.8, 2), run(c, x) { const o = nearest(x, c, 1.8), o2 = x.rt.mons.find(q => q !== o && q.hp > 0 && GR.dist(q, c) <= 1.8); weaponAtk(x, c, o); if (o2) strike(x, c, o2, (w => [w.n, w.d])(DN.weapon(c)), 'hit'); } },
-    sr_topple: { when: W.close(1.8), run(c, x) { const o = nearest(x, c, 1.8); weaponAtk(x, c, o, null, () => { if (!DN.has(o, 'prone')) cond(x, c, o, 'con', 'prone', 1); }); } },
+    sr_cleave: { when: W.close(1.8, 2), run(c, x) { const o = nearest(x, c, 1.8), o2 = x.rt.mons.find(q => q !== o && q.hp > 0 && GR.dist(q, c) <= 1.8); const r = weaponAtk(x, c, o); if (o2 && r.hit) strike(x, c, o2, (w => [w.n, w.d])(DN.weapon(c)), 'hit'); } }, // 가르기 (SRD): 첫 표적을 맞혀야 곁의 둘째를 친다
+    sr_topple: { when: W.close(1.8), run(c, x) { const o = nearest(x, c, 1.8); weaponAtk(x, c, o, null, () => { if (!DN.has(o, 'prone')) cond(x, c, o, 'con', 'prone', 1, DN.dc(c, DN.atkAb(c.merc))); }); } },
     sr_push: { when: W.close(1.8), run(c, x) { const o = nearest(x, c, 1.8); weaponAtk(x, c, o, null, () => push(x, c, o, 2)); } },
     sr_sap: { when: W.close(1.8), run(c, x) { const o = nearest(x, c, 1.8); weaponAtk(x, c, o, null, () => DN.give(x.rt, o, 'sapped', R6(1), c)); } },
     // ── 로그 ──
-    sr_cunning: { bonus: true, when: (c, x) => W.seen(c, x) && !DN.bon(c, 'cunning'), run(c, x) { const o = x.seen.slice().sort((p, q) => p.hp - q.hp)[0]; beam(x, c, o, '#b98aff', 2); jump(x, c, o.x + (c.x > o.x ? -0.8 : 0.8), o.y); DN.buff(c, 'cunning', R6(1), { adv: 1 }); } },
+    sr_cunning: { bonus: true, when: (c, x) => x.rt.turn && W.seen(c, x), run(c, x) { return G.Act.cunning(x.f, x.rt, c) ? undefined : false; } }, // 교활한 행동 (SRD 로그 2): 추가 행동으로 질주 · 물러나기 · 숨기
     sr_steady: { bonus: true, when: (c, x) => W.seen(c, x) && !DN.bon(c, 'steady'), run(c, x) { DN.buff(c, 'steady', R6(1), { adv: 1 }); ring(x, c, 0.7, '#ffd24a'); } },
     // 교활한 일격 (SRD): 기습 주사위를 줄여 효과. 위험하면 물러나기, 아니면 중독 · 넘어뜨리기. 11레벨부터 효과 둘
     sr_cstrike: { when: W.close(2), run(c, x) { const o = nearest(x, c, 2), two = F().sk(c, 'ft_icunning'), low = c.hp < c.max * 0.4; c.snMinus = two ? 2 : 1; let done = false; weaponAtk(x, c, o, null, () => { if (done) return; done = true; const eff = [].concat(low ? ['out'] : [], DN.has(o, 'poisoned') ? [] : ['poison'], DN.has(o, 'prone') ? [] : ['trip']).slice(0, two ? 2 : 1); for (const e of eff) { if (o.hp <= 0) break; if (e === 'poison') cond(x, c, o, 'con', 'poisoned', 10); else if (e === 'trip') cond(x, c, o, 'dex', 'prone', 1); else G.Opt.away(x, c, 3); } }); c.snMinus = 0; } },
@@ -125,10 +179,10 @@
     sr_devious: { when: W.close(2), run(c, x) { const o = nearest(x, c, 2), sn = Math.ceil(c.merc.lv / 2), many = x.rt.mons.filter(q => q.hp > 0 && q.aggro).length >= 2, k = sn >= 7 && many && !o.boss ? 'ko' : sn >= 4 && !DN.has(o, 'blinded') ? 'blind' : 'daze'; c.snMinus = { ko: 6, blind: 3, daze: 2 }[k]; let done = false; weaponAtk(x, c, o, null, () => { if (done || o.hp <= 0) return; done = true; if (k === 'ko') { if (cond(x, c, o, 'con', 'paralyzed', 10)) { o.koHit = true; say(x, o, '기절', '#c9a6ff'); } } else if (k === 'blind') cond(x, c, o, 'dex', 'blinded', 1); else if (!DN.save(o, 'con', DN.dc(c))) { DN.buff(o, 'daze', R6(1), {}); say(x, o, '멍함', '#c9a6ff'); } }); c.snMinus = 0; } },
     // ── 몽크 ──
     sr_flurry: { res: FOCUS(1), bonus: true, when: W.close(1.8), run(c, x) {
-      const o = nearest(x, c, 1.8), w = DN.weapon(c);
+      const o = nearest(x, c, 1.8), w = DN.weapon(c); if (F().sk(c, 'ft_fleet')) c.fleetN = G.Turn.no(); // 날랜 걸음 (SRD 열린 손 11)
       for (let i = 0; i < (c.merc.lv >= 10 ? 3 : 2) && o.hp > 0; i++) { G.fx(x.rt, { k: 'slash', x: o.x, y: o.y, t: 0.2, rot: Math.random() - 0.5, flip: i % 2 === 0 }); if (strike(x, c, o, [w.n, w.d, w.b], 'hit').hit && F().sk(c, 'sr_ohtech') && !DN.has(o, 'prone')) cond(x, c, o, 'dex', 'prone', 1); }
     } },
-    sr_patient: { res: FOCUS(1), bonus: true, when: (c, x) => W.close(1.8)(c, x) && !DN.bon(c, 'dodge'), run(c, x) { DN.buff(c, 'dodge', R6(1), { hitDis: 1 }); ring(x, c, 0.9, '#e8c860'); if (c.merc.lv >= 10) { const w = DN.weapon(c); c.thp = Math.max(c.thp || 0, DN.dice(2, w.d)); } } },
+    sr_patient: { res: FOCUS(1), bonus: true, when: (c, x) => W.close(1.8)(c, x) && !DN.bon(c, 'dodge'), run(c, x) { DN.buff(c, 'dodge', R6(1), { hitDis: 1 }); if (F().sk(c, 'ft_fleet')) c.fleetN = G.Turn.no(); ring(x, c, 0.9, '#e8c860'); if (c.merc.lv >= 10) { const w = DN.weapon(c); c.thp = Math.max(c.thp || 0, DN.dice(2, w.d)); } } },
     sr_wind: { res: FOCUS(1), bonus: true, when: (c, x) => x.seen.some(o => GR.dist(o, c) > 3 && GR.dist(o, c) <= 8), run(c, x) { const o = x.seen.filter(o => GR.dist(o, c) > 3 && GR.dist(o, c) <= 8).sort((p, q) => q.hp - p.hp)[0]; beam(x, c, o, '#e8c860', 3); jump(x, c, o.x + (c.x > o.x ? 0.8 : -0.8), o.y); } },
     sr_stun: { res: FOCUS(1), when: W.close(1.8), run(c, x) { const o = x.seen.filter(q => GR.dist(q, c) <= 1.8 && !(q.stun > 0)).sort((p, q) => q.hp - p.hp)[0]; if (!o) return false; weaponAtk(x, c, o, null, () => cond(x, c, o, 'con', 'stunned', 1)); } },
     sr_whole: { res: LONG(wisUses), bonus: true, when: W.self(0.5), run(c, x) { heal(x, c, c, [1, DN.weapon(c).d, DN.mod(DN.ab(c.merc).wis)]); } },
@@ -138,86 +192,103 @@
     sr_sof: { res: SL(1), base: 1, bonus: true, conc: true, when: (c, x) => W.fight(c, x) && !alive(x).some(p => DN.bon(p, 'sof')), run(c, x) { const p = alive(x).sort((p, q) => p.hp / p.max - q.hp / q.max)[0]; G.Res.concOn(c, p, 'sof', R6(10), { ac: 2 }); ring(x, p, 0.9, '#8fc4ef'); } },
     // ── 맞힌 뒤에 붙는 기술 (SRD): 무기 공격이 맞으면 G.Skill.onHit이 부른다 ──
     sr_smite: { res: { slot: 1 }, base: 1, bonus: true, rider(c, x, o) { const s = lvUp(x, [2 + (DN.undead(o) || DN.fiend(o) ? 1 : 0), 8], 1); G.Foe.dtype = 'radiant'; F().hurt(x.f, x.rt, o, dmg(x, c, s), 'smite', c); G.Foe.dtype = null; G.fx(x.rt, { k: 'impact', x: o.x, y: o.y, s: 1.8, col: '#fff3c4', t: 0.25 }); if (F().sk(c, 'ft_sprotect')) for (const p of alive(x)) DN.buff(p, 'sprot', R6(1), { ac: 2 }); } },
-    sr_searing: { res: SL(1), base: 1, bonus: true, rider(c, x, o) { G.Foe.dtype = 'fire'; F().hurt(x.f, x.rt, o, dmg(x, c, lvUp(x, [1, 6], 1)), 'smite', c); G.Foe.dtype = null; if (o.hp > 0) F().inflict(x.f, x.rt, o, 'burn', R6(2), c, avgS([1, 6]) * G0(x, c) / G.Res_ROUND); } },
+    sr_searing: { res: SL(1), base: 1, bonus: true, rider(c, x, o) { G.Foe.dtype = 'fire'; F().hurt(x.f, x.rt, o, dmg(x, c, lvUp(x, [1, 6], 1)), 'smite', c); G.Foe.dtype = null; if (o.hp > 0) F().inflict(x.f, x.rt, o, 'burn', R6(10), c, { dice: lvUp(x, [1, 6], 1), save: ['con', DN.dc(c)], dt: 'fire' }) /* 작열 강타 (SRD): 차례 시작마다 1d6(+슬롯), 건강 내성에 성공하면 끝 */; } },
     sr_sacred: { res: SHORT(m => (m.lv >= 11 ? 3 : 2)), free: true, when: (c, x) => W.fight(c, x) && !DN.bon(c, 'sacred'), run(c, x) { DN.buff(c, 'sacred', R6(10), { hit: Math.max(1, DN.mod(DN.ab(c.merc).cha)) }); ring(x, c, 1, '#fff3c4'); } },
     // ── 레인저 · 워락: 표식 (내가 맞히면 +1d6, F.hurt) ──
-    sr_hmark: { res: { long: m => (m.lv >= 17 ? 6 : m.lv >= 13 ? 5 : m.lv >= 9 ? 4 : m.lv >= 5 ? 3 : 2) }, base: 1, bonus: true, conc: true, when: (c, x) => x.seen.some(o => !(o.hm && o.hm.by === c && o.hm.until > now())) && !x.seen.some(o => o.hm && o.hm.by === c && o.hm.until > now()), run(c, x) { const o = strong(x); o.hm = { by: c, until: now() + R6(100) }; G.Combo.on(x.f, x.rt, 'hm', c, o); beam(x, c, o, '#ff5a3a', 1); } },
-    sr_hex: { res: SL(1), base: 1, bonus: true, conc: true, when: (c, x) => x.seen.some(o => !(o.hm && o.hm.by === c && o.hm.until > now())) && !x.seen.some(o => o.hm && o.hm.by === c && o.hm.until > now()), run(c, x) { const o = strong(x); o.hm = { by: c, until: now() + R6(100) }; G.Combo.on(x.f, x.rt, 'hm', c, o); beam(x, c, o, '#9a5ad0', 1); } },
-    sr_ensnare: { res: SL(1), base: 1, bonus: true, conc: true, rider(c, x, o) { cond(x, c, o, 'str', 'restrained', 2); } },
+    sr_hmark: { res: { long: m => (m.lv >= 17 ? 6 : m.lv >= 13 ? 5 : m.lv >= 9 ? 4 : m.lv >= 5 ? 3 : 2) }, base: 1, bonus: true, conc: true, when: (c, x) => x.seen.some(o => !(o.hm && o.hm.by === c && o.hm.until > now())) && !x.seen.some(o => o.hm && o.hm.by === c && o.hm.until > now()), run(c, x) { const o = strong(x); o.hm = { by: c, until: now() + R6(100) }; beam(x, c, o, '#ff5a3a', 1); } },
+    sr_hex: { res: SL(1), base: 1, bonus: true, conc: true, when: (c, x) => x.seen.some(o => !(o.hm && o.hm.by === c && o.hm.until > now())) && !x.seen.some(o => o.hm && o.hm.by === c && o.hm.until > now()), run(c, x) { const o = strong(x); o.hm = { by: c, until: now() + R6(100) }; beam(x, c, o, '#9a5ad0', 1); } },
+    sr_ensnare: { res: SL(1), base: 1, bonus: true, conc: true, rider(c, x, o) { if (cond(x, c, o, 'str', 'restrained', 2)) persist(c, 'gen', R6(2), { conc: true, slot: x.slot, fn: x2 => { if (o.hp <= 0 || !DN.has(o, 'restrained')) return; G.Foe.dtype = 'piercing'; F().hurt(x2.f, x2.rt, o, dmg(x2, c, [1 + over(x2, 1), 6]), 'dot', c); G.Foe.dtype = null; } }); } }, // 속박된 동안 차례마다 1d6 관통
     // ── 클레릭 ──
     sr_gbolt: { res: SL(1), base: 1, when: W.seen, run(c, x) { const o = strong(x); beam(x, c, o, '#fff3c4', 3); if (strike(x, c, o, lvUp(x, [4, 6], 1)).hit && o.hp > 0) DN.give(x.rt, o, 'outlined', R6(1), c); } },
     sr_sflame: { when: W.seen, run(c, x) { const o = pick(x); G.fx(x.rt, { k: 'tile', key: 'fx_holy', x: o.x, y: o.y, t: 0.6, s: 1.3 }); saveHit(x, c, o, 'dex', tierS(c, [1, 8]), false); } },
-    sr_turn: { res: SHORT(m => (m.lv >= 18 ? 4 : m.lv >= 6 ? 3 : 2)), when: (c, x) => x.seen.some(o => DN.undead(o) && GR.dist(o, c) <= 6), run(c, x) { ring(x, c, 6, '#fff3c4'); for (const o of x.seen.filter(o => DN.undead(o) && GR.dist(o, c) <= 6)) if (cond(x, c, o, 'wis', 'frightened', 10)) o.stun = Math.max(o.stun || 0, 6); } },
-    sr_sweapon: { res: SL(2), base: 2, bonus: true, conc: true, when: (c, x) => W.fight(c, x) && !(c.pe || []).some(e => e.k === 'sw'), run(c, x) { persist(c, 'sw', 60, { conc: true }); } },
+    sr_turn: { res: SHORT(m => (m.lv >= 18 ? 4 : m.lv >= 6 ? 3 : 2)), when: (c, x) => x.seen.some(o => DN.undead(o) && GR.dist(o, c) <= 6), run(c, x) { ring(x, c, 6, '#fff3c4'); const sear = F().sk(c, 'ft_sear') ? DN.dice(Math.max(1, DN.mod(DN.ab(c.merc).wis)), 8) * G0(x, c) : 0; for (const o of x.seen.filter(o => DN.undead(o) && GR.dist(o, c) <= 6)) if (cond(x, c, o, 'wis', 'frightened', 10)) { DN.give(x.rt, o, 'incapacitated', R6(10), c); if (sear) { G.Foe.dtype = 'radiant'; F().hurt(x.f, x.rt, o, sear, 'smite', c); G.Foe.dtype = null; } o.endOnDmg = ['frightened', 'incapacitated']; } } }, // 언데드 퇴치 (SRD): 공포 · 행동 불능 1분, 피해를 받으면 끝 · 언데드 불태우기의 피해로는 끝나지 않는다
+    sr_sweapon: { res: SL(2), base: 2, bonus: true, conc: true, when: (c, x) => W.fight(c, x) && !(c.pe || []).some(e => e.k === 'sw'), run(c, x) { persist(c, 'sw', 60, { conc: true, slot: x.slot }); } },
     sr_guard: { res: SL(3), base: 3, conc: true, when: W.close(3), run(c, x) { persist(c, 'sg', 60, { conc: true, slot: x.slot }); ring(x, c, 3, '#fff3c4'); } },
-    sr_revive: { res: SL(3), base: 3, when: (c, x) => alive2(x).length > 0, run(c, x) { const p = alive2(x)[0]; G.Story.wake(x.f, x.rt, p, 1 / Math.max(1, p.max)); beam(x, c, p, '#fff3c4'); G.fx(x.rt, { k: 'tile', key: 'fx_holy', x: p.x, y: p.y, t: 0.8 }); sfx('bell'); } },
+    sr_revive: { res: SL(3), base: 3, when: () => false, /* 죽는 순간 (G.Skill.revivify) */ run(c, x) { const p = alive2(x)[0]; G.Story.wake(x.f, x.rt, p, 1 / Math.max(1, p.max)); beam(x, c, p, '#fff3c4'); G.fx(x.rt, { k: 'tile', key: 'fx_holy', x: p.x, y: p.y, t: 0.8 }); sfx('bell'); } },
     sr_preserve: { res: SHORT(m => (m.lv >= 18 ? 4 : m.lv >= 6 ? 3 : 2)), when: (c, x) => alive(x).filter(p => !p.noHeal && p.hp < p.max * 0.5).length >= 2, run(c, x) { let pool = c.merc.lv * 5 * (c.max / Math.max(1, DN.srdHP(c.merc))); for (const p of alive(x)) if (!p.noHeal && p.hp < p.max * 0.5) { const a = Math.min(pool, p.max * 0.5 - p.hp); p.hp += a; pool -= a; G.fx(x.rt, { k: 'tile', key: 'fx_holy', x: p.x, y: p.y, t: 0.8 }); } ring(x, c, 4, '#fff3c4'); sfx('bell'); } },
-    sr_mhw: { heal: true, res: SL(3), base: 3, bonus: true, when: (c, x) => { const ph = F().partyHP(x.rt); return ph.hp < ph.max * 0.6; }, run(c, x) { for (const p of alive(x).slice(0, 6)) if (!p.noHeal) heal(x, c, p, lvUp(x, [2, 4, pmod(c)], 2)); sfx('bell'); } },
+    sr_mhw: { heal: true, res: SL(3), base: 3, bonus: true, when: (c, x) => { const ph = F().partyHP(x.rt); return ph.hp < ph.max * 0.6; }, run(c, x) { for (const p of alive(x).slice(0, 6)) if (!p.noHeal) heal(x, c, p, lvUp(x, [2, 4, pmod(c)], 1)); sfx('bell'); } },
     // ── 바드 ──
-    sr_insp: { res: LONG(chaUses), bonus: true, when: W.fight, run(c, x) { const p = alive(x).filter(p => p !== c && p.kind === 'ally' && !DN.bon(p, 'insp')).sort((p, q) => F().allyAtk(x.f, q) - F().allyAtk(x.f, p))[0]; if (!p) return false; const d = c.merc.lv >= 15 ? 12 : c.merc.lv >= 10 ? 10 : c.merc.lv >= 5 ? 8 : 6; DN.buff(p, 'insp', R6(10), { hit: (d + 1) / 2, save: (d + 1) / 2 }); beam(x, c, p, '#e0a040', 2); G.fx(x.rt, { k: 'tile', key: 'fx_song', x: p.x, y: p.y - 0.8, t: 0.8 }); } },
-    sr_faerie: { res: SL(1), base: 1, conc: true, when: W.pack(2), run(c, x) { const tg = pick(x); ring(x, tg, 2, '#e08aff'); for (const o of near(x, tg, 2)) cond(x, c, o, 'dex', 'outlined', 10); } },
+    sr_insp: { res: LONG(chaUses), bonus: true, when: W.fight, run(c, x) { const p = alive(x).filter(p => p !== c && p.kind === 'ally' && !DN.bon(p, 'insp')).sort((p, q) => F().allyAtk(x.f, q) - F().allyAtk(x.f, p))[0]; if (!p) return false; const d = c.merc.lv >= 15 ? 12 : c.merc.lv >= 10 ? 10 : c.merc.lv >= 5 ? 8 : 6; DN.buff(p, 'insp', R6(600), { inspD: d }); /* 바드의 영감 (SRD): 1시간 안에 D20 굴림에 실패하면 굴려 더하고 사라진다 (G.Dnd.attackRoll · saveRoll) */ beam(x, c, p, '#e0a040', 2); G.fx(x.rt, { k: 'tile', key: 'fx_song', x: p.x, y: p.y - 0.8, t: 0.8 }); } },
+    sr_faerie: { res: SL(1), base: 1, conc: true, when: W.seen, run(c, x) { const q = AREA.cast(x, c, 'sr_faerie', { shape: 'cube', ft: 20 }); if (!q) return false; ring(x, q.t, 2, '#e08aff'); AREA.cond(x, c, q.list, 'dex', 'outlined', 10); } }, // 요정 불꽃 (SRD): 20피트 정육면체
     sr_mock: { when: W.seen, run(c, x) { const o = strong(x); beam(x, c, o, '#ff8a6a', 1); if (!saveHit(x, c, o, 'wis', tierS(c, [1, 6]), false)) DN.give(x.rt, o, 'sapped', R6(1), c); } },
     sr_whisper: { res: SL(1), base: 1, when: W.seen, run(c, x) { const o = strong(x); beam(x, c, o, '#c9a6ff', 2); if (!saveHit(x, c, o, 'wis', lvUp(x, [3, 6], 1))) DN.give(x.rt, o, 'frightened', R6(1), c); } },
-    sr_tw: { res: SL(1), base: 1, when: W.close(2), run(c, x) { ring(x, c, 2, '#8fd8ff'); for (const o of near(x, c, 2)) if (!saveHit(x, c, o, 'con', lvUp(x, [2, 8], 1))) push(x, c, o, 2); G.J.shake('fantasy', 5, 0, 1, 0.15); } },
-    sr_sleep: { res: SL(1), base: 1, conc: true, when: W.seen, run(c, x) { const tg = pick(x); ring(x, tg, 1, '#c9a6ff'); for (const o of near(x, tg, 1).filter(o => !DN.undead(o) && o.ty !== 'construct')) cond(x, c, o, 'wis', 'stunned', 2); } }, // 5.2.1: 5피트 반경, 지혜 내성, 행동 불능
-    sr_shatter: { res: SL(2), base: 2, when: W.pack(2), run(c, x) { const tg = pick(x); G.fx(x.rt, { k: 'impact', x: tg.x, y: tg.y, s: 2, col: '#8fd8ff', t: 0.3 }); for (const o of near(x, tg, 2)) saveHit(x, c, o, 'con', lvUp(x, [3, 8], 1)); } },
-    sr_hypno: { res: SL(3), base: 3, conc: true, when: W.pack(3), run(c, x) { const tg = pick(x); ring(x, tg, 3, '#e08aff'); for (const o of near(x, tg, 3)) cond(x, c, o, 'wis', 'stunned', 3); } },
+    sr_tw: { res: SL(1), base: 1, when: W.close(3), run(c, x) { const q = AREA.cast(x, c, 'sr_tw', { shape: 'cube', ft: 15, self: true }); if (!q) return false; ring(x, c, 2, '#8fd8ff'); G.Foe.dtype = 'thunder'; AREA.save(x, c, q.list, 'con', lvUp(x, [2, 8], 1), true, o => push(x, c, o, 2), q.sc); G.Foe.dtype = null; G.J.shake('fantasy', 5, 0, 1, 0.15); } }, // 천둥파 (SRD): 시전자에서 15피트 정육면체, 실패하면 10피트 밀림
+    sr_sleep: { res: SL(1), base: 1, conc: true, when: W.seen, run(c, x) { const tg = pick(x); ring(x, tg, 1, '#c9a6ff'); const q = AREA.cast(x, c, 'sr_sleep', { shape: 'sphere', ft: 5 }, { choice: true, at: tg }); if (!q) return false; AREA.cond(x, c, q.list.filter(o => !(o.stat?.cimm || []).includes('exhaustion') && !DN.undead(o) && o.ty !== 'construct'), 'wis', 'incapacitated', 2, o => { o.sleep = { dc: DN.dc(c) }; o.endOnDmg = ['incapacitated', 'unconscious', 'prone']; }); } }, // 탈진 면역 · 잠들지 않는 몸은 자동 성공 (SRD) // 수면 (SRD): 지혜 내성 실패면 다음 차례 끝까지 행동 불능, 그때 다시 내성 — 또 실패하면 의식 없음 (G.Foe.turnEnd). 피해를 받으면 끝
+    sr_shatter: { res: SL(2), base: 2, when: W.seen, run(c, x) { const q = AREA.cast(x, c, 'sr_shatter', { shape: 'sphere', ft: 10 }); if (!q) return false; G.fx(x.rt, { k: 'impact', x: q.t.x, y: q.t.y, s: 2, col: '#8fd8ff', t: 0.3 }); G.Foe.dtype = 'thunder'; AREA.save(x, c, q.list, 'con', lvUp(x, [3, 8], 1), true, null, q.sc); G.Foe.dtype = null; } }, // 분쇄 (SRD): 반경 10피트 구
+    sr_hypno: { res: SL(3), base: 3, conc: true, when: W.pack(2), run(c, x) { const q = AREA.cast(x, c, 'sr_hypno', { shape: 'cube', ft: 30 }); if (!q) return false; ring(x, q.t, 3, '#e08aff'); AREA.cond(x, c, q.list, 'wis', 'charmed', 10, o => { DN.give(x.rt, o, 'incapacitated', R6(10), c); o.endOnDmg = ['charmed', 'incapacitated']; }); } }, // 최면 무늬 (SRD): 30피트 정육면체 · 보는 모두 // 최면 무늬 (SRD): 매혹 · 그동안 행동 불능 · 피해를 받으면 끝
     // ── 드루이드 ──
     sr_pflame: { when: W.seen, run(c, x) { const o = pick(x); G.fx(x.rt, { k: 'proj', key: 'fx_flame', x: c.x, y: c.y, x2: o.x, y2: o.y, t: 0.25 }); strike(x, c, o, tierS(c, [1, 8])); } },
-    sr_entangle: { res: SL(1), base: 1, conc: true, when: W.pack(2), run(c, x) { const tg = pick(x); ring(x, tg, 2, '#7fcf8a'); for (const o of near(x, tg, 2)) cond(x, c, o, 'str', 'restrained', 3); } },
+    sr_entangle: { res: SL(1), base: 1, conc: true, when: W.seen, run(c, x) { const q = AREA.cast(x, c, 'sr_entangle', { shape: 'square', ft: 20 }); if (!q) return false; ring(x, q.t, 2, '#7fcf8a'); AREA.cond(x, c, q.list.filter(o => o !== c), 'str', 'restrained', 10); G.Terrain.add(x.rt, { x: q.t.x, y: q.t.y, r: 2, sq: true, until: G.S.runTime + R6(10), by: c, conc: true }); } }, // 휘감기 · 어려운 지형 (SRD): 20피트 정사각형 · 시전자 말고 모두 · 1분
     sr_wild: { res: SHORT(m => (m.lv >= 17 ? 4 : m.lv >= 6 ? 3 : 2)), bonus: true, when: (c, x) => W.fight(c, x) && !c.wild, run(c, x) {
       c.wild = { t: c.t, def: c.def }; c.t = 'm_bear'; c.def = Object.assign({}, c.def, { range: 1.3, proj: null, wpn: null });
       c.thp = (c.thp || 0) + c.merc.lv * (c.max / Math.max(1, DN.srdHP(c.merc))); // 임시 체력: 드루이드 레벨
       persist(c, 'wild', R6(100)); ring(x, c, 1.2, '#7fcf8a'); G.J.shake('fantasy', 4, 0, 1, 0.15);
     } },
-    sr_landaid: { heal: true, res: SHORT(m => (m.lv >= 17 ? 4 : m.lv >= 6 ? 3 : 2)), when: W.pack(2), run(c, x) { const tg = pick(x); ring(x, tg, 2, '#7fcf8a'); for (const o of near(x, tg, 2)) saveHit(x, c, o, 'con', [2, 6]); const p = lowest(x, 0.9); if (p) heal(x, c, p, [2, 6]); } },
+    sr_landaid: { heal: true, res: SHORT(m => (m.lv >= 17 ? 4 : m.lv >= 6 ? 3 : 2)), when: W.seen, run(c, x) { const q = AREA.cast(x, c, 'sr_landaid', { shape: 'sphere', ft: 10 }, { choice: true }); if (!q) return false; const n = c.merc.lv >= 14 ? 4 : c.merc.lv >= 10 ? 3 : 2; ring(x, q.t, 2, '#7fcf8a'); G.Foe.dtype = 'necrotic'; AREA.save(x, c, q.list, 'con', [n, 6], true, null, true); G.Foe.dtype = null; const p = lowest(x, 0.9); if (p) heal(x, c, p, [n, 6]); } }, // 대지의 도움 (SRD): 반경 10피트 구 · 고른 생물 · 2d6 (10레벨 3d6 · 14레벨 4d6) 사령 + 한 생물 같은 만큼 치유
     sr_moon: { res: SL(2), base: 2, conc: true, when: W.seen, run(c, x) { persist(c, 'moon', 60, { tg: strong(x), conc: true, slot: x.slot }); } },
     sr_call: { res: SL(3), base: 3, conc: true, when: W.fight, run(c, x) { persist(c, 'call', 60, { conc: true, slot: x.slot }); } },
-    sr_ice: { res: SL(4), base: 4, when: W.pack(2), run(c, x) { const tg = pick(x); G.fx(x.rt, { k: 'ring', x: tg.x, y: tg.y, r: 4, t: 0.6, col: '#bfe8ff' }); for (const o of near(x, tg, 4)) { saveHit(x, c, o, 'dex', [2 + Math.max(0, (x.slot || 4) - 4), 10, 0, [4, 6]]); o.shock = Math.max(o.shock || 0, 6); } } },
+    sr_ice: { res: SL(4), base: 4, when: W.seen, run(c, x) { const q = AREA.cast(x, c, 'sr_ice', { shape: 'cylinder', ft: 20 }); if (!q) return false; G.fx(x.rt, { k: 'ring', x: q.t.x, y: q.t.y, r: 4, t: 0.6, col: '#bfe8ff' }); G.Foe.dtype = 'bludgeoning'; AREA.save(x, c, q.list, 'dex', [2 + Math.max(0, (x.slot || 4) - 4), 10, 0, [4, 6]], true, null, q.sc); G.Foe.dtype = null; for (const o of q.list) o.shock = Math.max(o.shock || 0, 6); G.Terrain.add(x.rt, { x: q.t.x, y: q.t.y, r: 4, until: G.S.runTime + R6(1), by: c }); } }, // 얼음 폭풍 · 다음 차례 끝까지 어려운 지형 (SRD): 반경 20피트 원기둥 · 2d10 타격 + 4d6 냉기 · 어려운 지형
     // ── 소서러 ──
     sr_firebolt: { when: W.seen, run(c, x) { for (const o of [pick(x)]) { G.fx(x.rt, { k: 'proj', key: 'fx_flame', x: c.x, y: c.y, x2: o.x, y2: o.y, t: 0.25 }); strike(x, c, o, fireB(c, tierS(c, [1, 10]))); } } },
     sr_chroma: { res: SL(1), base: 1, when: W.seen, run(c, x) { const ts = G.Skill.twin && x.seen.length > 1 ? (G.Skill.twinUsed = true, x.seen.slice().sort((p, q) => q.hp - p.hp).slice(0, 2)) : [strong(x)]; for (const o of ts) { G.fx(x.rt, { k: 'proj', key: 'fx_zap', x: c.x, y: c.y, x2: o.x, y2: o.y, t: 0.25 }); strike(x, c, o, lvUp(x, [3, 8], 1)); } } },
     sr_sray: { res: SL(2), base: 2, when: W.seen, run(c, x) { const ts = x.seen.slice().sort((p, q) => GR.dist(p, c) - GR.dist(q, c)), n = 3 + Math.max(0, (x.slot || 2) - 2); for (let i = 0; i < n; i++) { const o = ts[i % ts.length]; if (o.hp <= 0) continue; beam(x, c, o, '#ff8a3a', 2); strike(x, c, o, fireB(c, [2, 6])); } } },
-    sr_lbolt: { res: SL(3), base: 3, when: W.seen, run(c, x) {
-      const tg = pick(x), dx = tg.x - c.x, dy = tg.y - c.y, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, len = x.reach == null ? 9 : x.reach; let reach = len;
-      for (let t = 0.5; t <= len; t += 0.25) if (!GR.pass(x.rt.map, Math.round(c.x + ux * t), Math.round(c.y + uy * t))) { reach = t; break; }
-      const hits = x.rt.mons.filter(o => { const px = o.x - c.x, py = o.y - c.y, t = px * ux + py * uy; return t > 0 && t <= reach && Math.abs(px * uy - py * ux) < 0.8; });
-      if (!hits.length) return false;
-      G.fx(x.rt, { k: 'beam', x: c.x, y: c.y, x2: c.x + ux * reach, y2: c.y + uy * reach, col: '#8fd8ff', w: 4, t: 0.3 });
-      for (const o of hits) saveHit(x, c, o, 'dex', evo(c, lvUp(x, [8, 6], 1)));
+    sr_lbolt: { res: SL(3), base: 3, when: W.seen, run(c, x) { // 번개 화살 (SRD): 시전자에서 100피트 길이 · 5피트 폭 직선 · 아군도 · 벽에서 멈춘다 (AREA.hits가 시야로 가린다)
+      const q = AREA.cast(x, c, 'sr_lbolt', { shape: 'line', ft: 100, w: 5, self: true }); if (!q) return false;
+      const dx = q.t.x - c.x, dy = q.t.y - c.y, l = Math.hypot(dx, dy) || 1;
+      G.fx(x.rt, { k: 'beam', x: c.x, y: c.y, x2: c.x + dx / l * 20, y2: c.y + dy / l * 20, col: '#8fd8ff', w: 4, t: 0.3 });
+      G.Foe.dtype = 'lightning'; AREA.save(x, c, q.list, 'dex', evo(c, lvUp(x, [8, 6], 1)), true, null, q.sc); G.Foe.dtype = null;
       sfx('smite');
     } },
-    sr_chain: { res: SL(6), base: 6, when: W.pack(2), run(c, x) { const tg = strong(x), hits = F().chainFrom(x.rt, tg, 4, 3); G.fx(x.rt, { k: 'chain', pts: [[c.x, c.y], ...hits.map(o => [o.x, o.y])], col: '#8fd8ff', t: 0.3 }); for (const o of hits) saveHit(x, c, o, 'dex', evo(c, [10, 8])); sfx('smite'); } },
+    sr_chain: { res: SL(6), base: 6, when: W.pack(2), run(c, x) { const tg = strong(x), hits = F().chainFrom(x.rt, tg, 4 + over(x, 6), 3); G.fx(x.rt, { k: 'chain', pts: [[c.x, c.y], ...hits.map(o => [o.x, o.y])], col: '#8fd8ff', t: 0.3 }); for (const o of hits) saveHit(x, c, o, 'dex', evo(c, [10, 8])); sfx('smite'); } },
     // ── 워락 ──
     sr_eb: { when: (c, x) => W.seen(c, x) && !(F().sk(c, 'iv_pblade') && near(x, c, 1.8).length), run(c, x) { const o = pick(x), s = [1, 10, F().sk(c, 'sr_agon') ? pmod(c) : 0]; for (let i = 0; i < DN.tier(c) && o.hp > 0; i++) { beam(x, c, o, '#b98aff', 2); if (strike(x, c, o, s).hit && o.hp > 0 && F().sk(c, 'iv_repel')) push(x, c, o, 2); } } },
     sr_hurl: { res: LONG(1), free: true, rider(c, x, o) { G.fx(x.rt, { k: 'tile', key: 'fx_fire', x: o.x, y: o.y, t: 0.8, s: 2 }); if (!saveHit(x, c, o, 'cha', [8, 10], false)) o.stun = Math.max(o.stun || 0, 6); } },
-    sr_dark: { res: SL(2), base: 2, conc: true, when: W.pack(2), run(c, x) { const tg = pick(x); persist(c, 'dark', 60, { x: tg.x, y: tg.y, conc: true }); } },
-    sr_fear: { res: SL(3), base: 3, conc: true, when: W.close(4), run(c, x) { ring(x, c, 4, '#9a5ad0'); for (const o of near(x, c, 4)) cond(x, c, o, 'wis', 'frightened', 3); } },
+    sr_dark: { res: SL(2), base: 2, conc: true, when: (c, x) => W.pack(2)(c, x) && (G.Opt.has(c, 'iv_dsight') || G.Light.special(c).blind > 0), run(c, x) { const tg = pick(x); (x.rt.darks = x.rt.darks || []).push({ x: tg.x, y: tg.y, r: 3, until: G.S.runTime + R6(100), lv: x.slot || 2, by: c }); ring(x, tg, 3, 'rgba(40,20,60,0.8)'); } }, // 어둠 (SRD): 반경 15피트 마법적 어둠 · 어둠 시야로도 못 본다 · 나는 악마의 시야로 본다
+    sr_fear: { res: SL(3), base: 3, conc: true, when: W.seen, run(c, x) { const q = AREA.cast(x, c, 'sr_fear', { shape: 'cone', ft: 30, self: true }); if (!q) return false; ring(x, c, 4, '#9a5ad0'); AREA.cond(x, c, q.list, 'wis', 'frightened', 10); } }, // 공포 (SRD): 30피트 원뿔 · 1분
     sr_vtouch: { res: SL(3), base: 3, conc: true, when: W.close(1.8), run(c, x) { const o = nearest(x, c, 1.8), hp0 = o.hp; beam(x, c, o, '#ff5a7a', 3); if (strike(x, c, o, lvUp(x, [3, 6], 1)).hit) c.hp = Math.min(c.max, c.hp + Math.max(0, hp0 - Math.max(0, o.hp)) * 0.5); } },
     // ── 위저드 ──
     sr_rof: { when: W.seen, run(c, x) { const o = pick(x); beam(x, c, o, '#bfe8ff', 3); if (strike(x, c, o, tierS(c, [1, 8])).hit) o.shock = Math.max(o.shock || 0, 6); } },
     sr_mm: { res: SL(1), base: 1, when: W.seen, run(c, x) { const ts = x.seen.slice().sort((p, q) => p.hp - q.hp), n = 3 + Math.max(0, (x.slot || 1) - 1); for (let i = 0; i < n; i++) { const o = ts[i % ts.length]; if (o.hp <= 0) continue; G.fx(x.rt, { k: 'proj', key: 'fx_zap', x: c.x, y: c.y, x2: o.x, y2: o.y, t: 0.2 + i * 0.05 }); F().hurt(x.f, x.rt, o, dmg(x, c, evo(c, [1, 4, 1])), 'hit', c); } } },
     sr_misty: { res: SL(2), base: 2, bonus: true, when: (c, x) => c.hp < c.max * 0.4 && near(x, c, 1.5).length > 0, run(c, x) { const o = nearest(x, c, 1.5), dx = c.x - o.x, dy = c.y - o.y, l = Math.hypot(dx, dy) || 1; ring(x, c, 0.8, '#c9a6ff'); jump(x, c, c.x + dx / l * 6, c.y + dy / l * 6); ring(x, c, 0.8, '#c9a6ff'); } },
-    sr_hold: { res: SL(2), base: 2, conc: true, when: (c, x) => x.seen.some(o => DN.humanoid(o) && !(o.stop > 0)), run(c, x) { const os = x.seen.filter(o => DN.humanoid(o) && !(o.stop > 0)).sort((p, q) => q.hp - p.hp).slice(0, F().sk(c, 'sr_twin') ? 2 : 1); for (const o of os) { beam(x, c, o, '#c9a6ff', 2); cond(x, c, o, 'wis', 'paralyzed', 2); } } },
-    sr_web: { res: SL(2), base: 2, conc: true, when: W.pack(2), run(c, x) { const tg = pick(x); ring(x, tg, 2, '#e8e8e8'); for (const o of near(x, tg, 2)) cond(x, c, o, 'dex', 'restrained', 3); } },
+    sr_hold: { res: SL(2), base: 2, conc: true, when: (c, x) => x.seen.some(o => DN.humanoid(o) && !(o.stop > 0)), run(c, x) { const os = x.seen.filter(o => DN.humanoid(o) && !(o.stop > 0)).sort((p, q) => q.hp - p.hp).slice(0, (F().sk(c, 'sr_twin') ? 2 : 1) + over(x, 2)); for (const o of os) { beam(x, c, o, '#c9a6ff', 2); if (cond(x, c, o, 'wis', 'paralyzed', 10)) { (o.rep = o.rep || []).push({ k: 'paralyzed', ab: 'wis', dc: DN.dc(c) }); if (c.concK) (c.concK.conds = c.concK.conds || []).push([o, 'paralyzed']); } } } }, // 홀드 퍼슨 (SRD): 1분 · 집중 · 차례 끝마다 지혜 재내성
+    sr_web: { res: SL(2), base: 2, conc: true, when: W.seen, run(c, x) { const q = AREA.cast(x, c, 'sr_web', { shape: 'cube', ft: 20 }); if (!q) return false; ring(x, q.t, 2, '#e8e8e8'); AREA.cond(x, c, q.list, 'dex', 'restrained', 600, o => { o.escape = { ab: ['str'], dc: DN.dc(c) }; if (c.concK) (c.concK.conds = c.concK.conds || []).push([o, 'restrained']); }); /* 속박: 행동을 써서 근력(운동) 판정으로 벗어날 때까지 (SRD) */ G.Terrain.add(x.rt, { x: q.t.x, y: q.t.y, r: 2, sq: true, until: G.S.runTime + R6(600), by: c, conc: true }); } }, // 거미줄 · 어려운 지형 (SRD): 20피트 정육면체 · 1시간 집중
     sr_haste: { res: SL(3), base: 3, conc: true, when: (c, x) => W.fight(c, x) && !alive(x).some(p => DN.bon(p, 'haste')), run(c, x) { const p = alive(x).filter(p => !p.def?.heal).sort((p, q) => (q.kind === 'ally' ? F().allyAtk(x.f, q) : 0) - (p.kind === 'ally' ? F().allyAtk(x.f, p) : 0))[0]; G.Res.concOn(c, p, 'haste', R6(10), { ac: 2, extraAtk: 1 }); ring(x, p, 0.9, '#8fd8ff'); } },
-    sr_slow: { res: SL(3), base: 3, conc: true, when: W.pack(2), run(c, x) { const tg = pick(x); ring(x, tg, 3, '#8fd8ff'); for (const o of near(x, tg, 3).slice(0, 6)) if (!DN.save(o, 'wis', DN.dc(c))) { o.shock = Math.max(o.shock || 0, 60); DN.buff(o, 'slow', R6(10), { ac: -2 }); } } },
-    sr_cone: { res: SL(5), base: 5, when: W.close(4), run(c, x) { ring(x, c, 4, '#bfe8ff'); for (const o of near(x, c, 4)) saveHit(x, c, o, 'con', evo(c, lvUp(x, [8, 8], 1))); sfx('chime'); } },
-    sr_meteor: { res: SL(9), base: 9, when: W.seen, run(c, x) { const tg = strong(x); G.fx(x.rt, { k: 'tile', key: 'fx_fire', x: tg.x, y: tg.y, t: 0.9, s: 3.5 }); G.J.shake('fantasy', 10, 0, 1, 0.35); for (const o of near(x, tg, 8)) saveHit(x, c, o, 'dex', evo(c, [20, 6, 0, [20, 6]])); sfx('boom'); } },
+    sr_slow: { res: SL(3), base: 3, conc: true, when: W.pack(2), run(c, x) { const q = AREA.cast(x, c, 'sr_slow', { shape: 'cube', ft: 40 }, { choice: true }); if (!q) return false; ring(x, q.t, 3, '#8fd8ff'); for (const o of q.list.slice(0, 6)) if (!DN.save(o, 'wis', DN.dc(c))) { /* 감속 (SRD): 40피트 정육면체 · 고른 여섯 */ o.shock = Math.max(o.shock || 0, 60); DN.buff(o, 'slow', R6(10), { ac: -2 }); } } },
+    sr_cone: { res: SL(5), base: 5, when: W.seen, run(c, x) { const q = AREA.cast(x, c, 'sr_cone', { shape: 'cone', ft: 60, self: true }); if (!q) return false; ring(x, c, 4, '#bfe8ff'); G.Foe.dtype = 'cold'; AREA.save(x, c, q.list, 'con', evo(c, lvUp(x, [8, 8], 1)), true, null, q.sc); G.Foe.dtype = null; sfx('chime'); } }, // 냉기 원뿔 (SRD): 60피트 원뿔
+    sr_meteor: { res: SL(9), base: 9, when: W.seen, run(c, x) { const A = { shape: 'sphere', ft: 40 }, sc = sculptOf(c, 'sr_meteor'), hit = new Set(); for (let i = 0; i < 4; i++) { const rest = x.seen.filter(o => !hit.has(o)); if (!rest.length) break; const t = AREA.aim({ ...x, seen: rest }, c, A, 0, x.reach ?? 99, sc); if (!t) break; G.fx(x.rt, { k: 'tile', key: 'fx_fire', x: t.x, y: t.y, t: 0.9, s: 3.5 }); for (const o of AREA.hits(x, c, A, t)) hit.add(o); } if (!hit.size) return false; G.J.shake('fantasy', 10, 0, 1, 0.35); G.Foe.dtype = 'fire'; AREA.save(x, c, [...hit], 'dex', evo(c, [20, 6, 0, [20, 6]]), true, null, sc); G.Foe.dtype = null; sfx('boom'); } }, // 유성 폭풍 (SRD): 반경 40피트 구 넷 · 겹쳐도 한 번
     // ── 종족 ──
-    sr_breath: { res: LONG(profUses), dt: 'fire', when: W.close(3), run(c, x) { G.Foe.dtype = G.SRD.line(c.merc, 'dragonborn')?.dt || 'fire'; ring(x, c, 3, '#ff8a3a'); const sp = [DN.tier(c), 10], dc = 8 + DN.mod(DN.ab(c.merc).con) + DN.prof(c.merc.lv); for (const o of near(x, c, 3)) { const ok = DN.save(o, 'dex', dc), v = dmg(x, c, sp) * (ok ? 0.5 : 1); F().hurt(x.f, x.rt, o, v, 'smite', c); } } },
+    sr_breath: { res: LONG(profUses), dt: 'fire', when: W.close(3), run(c, x) { G.Foe.dtype = G.SRD.line(c.merc, 'dragonborn')?.dt || 'fire'; const sp = [DN.tier(c), 10], dc = 8 + DN.mod(DN.ab(c.merc).con) + DN.prof(c.merc.lv), A1 = { shape: 'cone', ft: 15, self: true }, A2 = { shape: 'line', ft: 30, w: 5, self: true }, score = A => { const t = AREA.aim(x, c, A); return t ? [t, AREA.hits(x, c, A, t)] : null; }, a1 = score(A1), a2 = score(A2), sc = q => (q ? q[1].filter(o => o.kind === 'mon').length - 2 * q[1].filter(o => o.kind !== 'mon').length : -99), q = sc(a2) > sc(a1) ? a2 : a1; if (!q) { G.Foe.dtype = null; return false; } ring(x, c, 3, '#ff8a3a'); const roll = dmg(x, c, sp); for (const o of q[1]) { const ok = DN.save(o, 'dex', dc), v = roll * (ok ? 0.5 : 1); if (o.kind === 'mon') F().hurt(x.f, x.rt, o, v, 'smite', c); else G.Foe.blast(x.f, x.rt, { atk: 1 }, o, v, null, 0, G.Foe.dtype); } G.Foe.dtype = null; } }, // 숨결 무기 (SRD 드래곤본): 15피트 원뿔 또는 30피트 직선 (5피트 폭), 쓸 때마다 고른다 · 한 번 굴려 모두에게
   });
 
-  G.Skill.H = { weaponAtk, roll, dmg, G0, near, pick, strong, alive, alive2, lowest, heal, strike, saveHit, cond, W, persist, R6, lvUp, tierS, ring, beam, push, pmod, nearest };
+  // 슬롯 한 레벨 위마다 늘어나는 양 (lvUp · 지속 효과의 e.slot과 같은 값. test/desc_rules.js가 대조한다)
+  G.Skill.UP = { sp_animate_dead: '2마리', sr_cure: '2d8', sr_hword: '2d4', sr_mhw: '1d4', sr_fireball: '1d6', sr_smite: '1d8', sr_searing: '1d6', sr_gbolt: '1d6', sr_whisper: '1d6', sr_tw: '1d8', sr_shatter: '1d8', sr_vtouch: '1d6', sr_cone: '1d8', sr_chroma: '1d8', sr_lbolt: '1d6', sr_guard: '1d8', sr_moon: '1d10', sr_call: '1d10', sr_ice: '1d10', sr_mm: '1발', sr_sray: '1발', sr_sweapon: '1d8', sr_ensnare: '1d6', sr_rebuke: '1d10', sr_chain: '1번', sr_bless: '1명', sr_hold: '1명' };
+  G.Skill.revivify = (f, rt, p) => { if (!p.merc || (f.gold || 0) < 300) return false; const c = rt.party.find(q => q !== p && q.merc && !q.dead && !q.dying && !DN.out(q) && G.Guild.picks(q.merc).includes('sr_revive') && G.Res.can(q.merc, 'sr_revive', { slot: 3 }) && Math.hypot(q.x - p.x, q.y - p.y) <= 12); if (!c) return false; G.Res.pay(c.merc, 'sr_revive', { slot: 3 }); f.gold -= 300; p.dying = null; p.dead = false; p.stable = false; p.hp = 1; G.fx(rt, { k: 'tile', key: 'fx_holy', x: p.x, y: p.y, t: 0.8 }); G.Turn.dm?.(rt, `${c.merc.name}의 소생 · ${p.merc.name} 돌아왔다`); (c.skLog = c.skLog || []).push('sr_revive'); return true; }; // 소생 (SRD): 1분 안에 죽은 동료, 체력 1
+  G.Skill.H = { AREA, isMon, isFoe, sculptOf, weaponAtk, roll, dmg, G0, near, pick, strong, alive, alive2, lowest, heal, strike, saveHit, cond, W, persist, R6, lvUp, tierS, ring, beam, push, pmod, nearest };
   // 이어지는 효과: 시전자의 차례마다 한 번
+  // 차례를 마칠 때 (SRD): 영혼 수호자 · 월광 안에서 차례를 끝낸 적은 내성 — 실패하면 피해, 성공하면 절반
+  G.Skill.endTurn = (f, rt, o) => {
+    if (!o || o.kind !== 'mon' || o.hp <= 0) return;
+    for (const c of rt.party) {
+      if (c.dead || !c.pe || !c.pe.length) continue;
+      const x = { f, rt, c, seen: [o] };
+      for (const e of c.pe) {
+        if (o.hp <= 0) return;
+        if (e.endFn) { e.endFn(x, o); continue; } /* 숲의 존재 · 천상체 소환 (SRD): 그 안에서 차례를 마치면 */
+        if (e.k === 'sg' && Math.hypot(o.x - c.x, o.y - c.y) <= 3) { G.Foe.dtype = 'radiant'; saveHit(x, c, o, 'wis', [3 + Math.max(0, (e.slot || 3) - 3), 8]); G.Foe.dtype = null; }
+        else if (e.k === 'moon' && e.cx != null && Math.hypot(o.x - e.cx, o.y - e.cy) <= 1) { G.Foe.dtype = 'radiant'; saveHit(x, c, o, 'con', [2 + Math.max(0, (e.slot || 2) - 2), 10]); G.Foe.dtype = null; }
+      }
+    }
+  };
+  // 차례를 시작할 때 (SRD): 원소 소환의 영혼 곁에서 차례를 시작한 생물 · 붙잡힌 생물의 다시 내성
+  G.Skill.startOf = (f, rt, o) => { for (const c of rt.party) { if (c.dead || !c.pe?.length) continue; for (const e of c.pe) if (e.startFn) e.startFn({ f, rt, c, seen: [o] }, o); } };
   G.Skill.persist = (f, rt, c, dt) => {
     if (c.merc && !c.dead) {
-      const rg = G.Trinket.sum(c.merc, 'regen'); if (rg && c.hp < c.max) c.hp = Math.min(c.max, c.hp + c.max * rg * dt);
+      const rg = G.Trinket.sum(c.merc, 'regen'); if (rg && c.hp < c.max) { c._rgA = (c._rgA || 0) + c.max * rg * dt; const g = Math.floor(c._rgA); c._rgA -= g; c.hp = Math.min(c.max, c.hp + g); }
       const kHP = c.max / Math.max(1, DN.srdHP(c.merc)), xg = { f, c };
       // 생존자: 절반 아래면 차례마다 5 + 건강 · 지치지 않음: 임시 체력 1d8 + 지혜 · 신성한 후광: 곁의 적 10 광휘
-      if (F().sk(c, 'sr_survivor') && c.hp < c.max * 0.5) c.hp = Math.min(c.max, c.hp + (5 + DN.mod(DN.ab(c.merc).con)) * kHP);
+      if (F().sk(c, 'sr_survivor') && c.hp < c.max * 0.5) c.hp = Math.min(c.max, c.hp + Math.round((5 + DN.mod(DN.ab(c.merc).con)) * kHP));
       const fighting = rt.mons.some(o => o.aggro && GR.dist(o, c) <= 8);
-      if (F().sk(c, 'sr_tireless') && fighting && !(c.thp > 0) && G.Res.once(c.merc, 'tireless', Math.max(1, DN.mod(DN.ab(c.merc).wis)))) c.thp = (1 + U.rand(8) + Math.max(0, DN.mod(DN.ab(c.merc).wis))) * kHP;
+      if (F().sk(c, 'sr_tireless') && fighting && !(c.thp > 0) && G.Res.once(c.merc, 'tireless', Math.max(1, DN.mod(DN.ab(c.merc).wis)))) c.thp = Math.max(1, 1 + U.rand(8) + DN.mod(DN.ab(c.merc).wis)) * kHP;
       if (F().sk(c, 'sr_nimbus') && fighting) for (const o of rt.mons.filter(o => GR.dist(o, c) <= 6)) { G.Foe.dtype = 'radiant'; F().hurt(f, rt, o, 10 * F().allyAtk(f, c) / Math.max(1, DN.avg(DN.weapon(c))), 'dot', c); G.Foe.dtype = null; }
     }
     if (!c.pe || !c.pe.length) return;
@@ -228,11 +299,11 @@
       if (e.tick > 0) continue;
       e.tick = 1; x.slot = e.slot;
       if (e.fn) { x.slot = e.slot; e.fn(x, e); continue; }
-      if (e.k === 'sw') { const o = nearest(x, c, 6); if (o) { G.Foe.dtype = 'force'; G.fx(rt, { k: 'tile', key: 'w_holymace', x: o.x - 0.4, y: o.y - 0.5, t: 0.35 }); strike(x, c, o, [1, 8, pmod(c)]); G.Foe.dtype = null; } }
-      else if (e.k === 'sg') { G.Foe.dtype = 'radiant'; ring(x, c, 3, 'rgba(255,243,196,0.5)'); for (const o of near(x, c, 3)) { saveHit(x, c, o, 'wis', [3 + Math.max(0, (e.slot || 3) - 3), 8]); o.shock = Math.max(o.shock || 0, 6); } G.Foe.dtype = null; }
-      else if (e.k === 'moon') { if (!e.tg || e.tg.hp <= 0) e.tg = x.seen.slice().sort((p, q) => q.hp - p.hp)[0]; if (!e.tg) continue; G.Foe.dtype = 'radiant'; G.fx(rt, { k: 'tile', key: 'fx_holy', x: e.tg.x, y: e.tg.y, t: 0.6, s: 1.4 }); for (const o of near(x, e.tg, 1)) saveHit(x, c, o, 'con', [2 + Math.max(0, (e.slot || 2) - 2), 10]); G.Foe.dtype = null; }
+      if (e.k === 'sw') { const o = nearest(x, c, 6); if (o) { G.Foe.dtype = 'force'; G.fx(rt, { k: 'tile', key: 'w_holymace', x: o.x - 0.4, y: o.y - 0.5, t: 0.35 }); strike(x, c, o, [1 + over({ slot: e.slot }, 2), 8, pmod(c)]); G.Foe.dtype = null; } }
+      else if (e.k === 'sg') { ring(x, c, 3, 'rgba(255,243,196,0.5)'); for (const o of near(x, c, 3)) o.shock = Math.max(o.shock || 0, G.Res_ROUND); } /* 영혼 수호자 (SRD): 피해는 그 안에서 차례를 마칠 때 (G.Skill.endTurn) · 안에서는 느려진다 */
+      else if (e.k === 'moon') { if (!e.tg || e.tg.hp <= 0) e.tg = x.seen.slice().sort((p, q) => q.hp - p.hp)[0]; if (!e.tg) continue; G.Foe.dtype = 'radiant'; G.fx(rt, { k: 'tile', key: 'fx_holy', x: e.tg.x, y: e.tg.y, t: 0.6, s: 1.4 }); e.cx = e.tg.x; e.cy = e.tg.y; for (const o of near(x, e.tg, 1)) saveHit(x, c, o, 'con', [2 + Math.max(0, (e.slot || 2) - 2), 10]); G.Foe.dtype = null; } /* 월광 (SRD): 옮겨 들어간 자리 · 그 안에서 차례를 마친 몸 */
       else if (e.k === 'call') { const o = U.pick(x.seen); if (!o) continue; G.Foe.dtype = 'lightning'; G.fx(rt, { k: 'bolt', x: o.x, y: o.y, t: 0.3, col: '#8fd8ff' }); for (const q of near(x, o, 1)) saveHit(x, c, q, 'dex', [3 + Math.max(0, (e.slot || 3) - 3), 10]); G.Foe.dtype = null; }
-      else if (e.k === 'dark') { G.fx(rt, { k: 'ring', x: e.x, y: e.y, r: 3, t: 0.5, col: 'rgba(40,20,60,0.8)' }); for (const o of rt.mons) if (Math.hypot(o.x - e.x, o.y - e.y) <= 3) DN.give(rt, o, 'blinded', G.Res_ROUND, c); }
+      else if (e.k === 'dark') { /* 옛 저장의 어둠: 이제 rt.darks (G.Light) */ }
     }
     c.pe = c.pe.filter(e => e.t > 0);
   };

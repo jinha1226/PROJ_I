@@ -1,0 +1,126 @@
+{
+ "Acid Arrow": [
+  "절반 True ≠ False"
+ ],
+ "Animate Objects": [
+  "피해 [1, 6, 3] ≠ None"
+ ],
+ "Arcane Sword": [
+  "피해 [4, 12, 0] ≠ None"
+ ],
+ "Befuddlement": [
+  "고침: 상태 incapacitated → incapacitated",
+  "상태 incapacitated는 원문에 없음 (원문: 없음)"
+ ],
+ "Confusion": [
+  "고침: 상태 incapacitated → incapacitated",
+  "상태 incapacitated는 원문에 없음 (원문: 없음)"
+ ],
+ "Conjure Animals": [
+  "내성 dex ≠ str"
+ ],
+ "Conjure Elemental": [
+  "피해 [8, 8, 0] ≠ None"
+ ],
+ "Conjure Fey": [
+  "피해 [3, 12, 0] ≠ None"
+ ],
+ "Conjure Minor Elementals": [
+  "피해 [2, 8, 0] ≠ None"
+ ],
+ "Delayed Blast Fireball": [
+  "피해 [12, 6, 0] ≠ None"
+ ],
+ "Divine Word": [
+  "고침: 상태 incapacitated → incapacitated",
+  "상태 deafened는 원문에 없음 (원문: 없음)",
+  "상태 blinded는 원문에 없음 (원문: 없음)",
+  "상태 incapacitated는 원문에 없음 (원문: 없음)",
+  "상태 stunned는 원문에 없음 (원문: 없음)"
+ ],
+ "Dragon’s Breath": [
+  "피해 [3, 6, 0] ≠ None"
+ ],
+ "Flame Blade": [
+  "피해 [3, 6, 0] ≠ None"
+ ],
+ "Fly": [
+  "고침: k util → custom"
+ ],
+ "Fog Cloud": [
+  "상태 blinded는 원문에 없음 (원문: 없음)"
+ ],
+ "Forcecage": [
+  "내성 None ≠ cha",
+  "상태 restrained는 원문에 없음 (원문: invisible)"
+ ],
+ "Giant Insect": [
+  "피해 [2, 8, 0] ≠ None"
+ ],
+ "Heat Metal": [
+  "내성 None ≠ con"
+ ],
+ "Levitate": [
+  "상태 restrained는 원문에 없음 (원문: 없음)"
+ ],
+ "Magic Missile": [
+  "피해 None ≠ [1, 4, 1]",
+  "피해 종류 None ≠ force"
+ ],
+ "Maze": [
+  "고침: 상태 incapacitated → incapacitated",
+  "상태 incapacitated는 원문에 없음 (원문: 없음)"
+ ],
+ "Plane Shift": [
+  "내성 cha ≠ None",
+  "고침: 상태 incapacitated → incapacitated",
+  "상태 incapacitated는 원문에 없음 (원문: 없음)"
+ ],
+ "Polymorph": [
+  "고침: 상태 incapacitated → incapacitated",
+  "상태 incapacitated는 원문에 없음 (원문: 없음)"
+ ],
+ "Prismatic Spray": [
+  "절반 True ≠ False",
+  "피해 [12, 6, 0] ≠ None",
+  "상태 restrained는 원문에 없음 (원문: 없음)",
+  "상태 petrified는 원문에 없음 (원문: 없음)"
+ ],
+ "Prismatic Wall": [
+  "절반 True ≠ False",
+  "피해 [12, 6, 0] ≠ None",
+  "상태 petrified는 원문에 없음 (원문: blinded)",
+  "상태 restrained는 원문에 없음 (원문: blinded)"
+ ],
+ "Resilient Sphere": [
+  "고침: 상태 incapacitated → incapacitated",
+  "상태 incapacitated는 원문에 없음 (원문: 없음)"
+ ],
+ "Reverse Gravity": [
+  "고침: 상태 incapacitated → incapacitated",
+  "상태 incapacitated는 원문에 없음 (원문: 없음)"
+ ],
+ "Sorcerous Burst": [
+  "피해 [1, 8, 0] ≠ None"
+ ],
+ "Storm of Vengeance": [
+  "피해 [6, 6, 0] ≠ [2, 6, 0]"
+ ],
+ "Summon Dragon": [
+  "피해 [2, 10, 4] ≠ None"
+ ],
+ "True Polymorph": [
+  "고침: 상태 incapacitated → incapacitated",
+  "상태 incapacitated는 원문에 없음 (원문: 없음)"
+ ],
+ "True Strike": [
+  "피해 [1, 6, 0] ≠ None"
+ ],
+ "Wall of Force": [
+  "상태 restrained는 원문에 없음 (원문: invisible)"
+ ],
+ "Wall of Stone": [
+  "고침: 상태 incapacitated → incapacitated",
+  "상태 incapacitated는 원문에 없음 (원문: 없음)"
+ ]
+}

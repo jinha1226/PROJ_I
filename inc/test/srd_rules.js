@@ -11,18 +11,18 @@ for (const [k, n, d, ty] of [['greataxe', 1, 12, 'slashing'], ['mace', 1, 6, 'bl
 for (const [k, b, dm, st] of [['leather-armor', 11, 99, 0], ['chain-shirt', 13, 2, 0], ['chain-mail', 16, 0, 13], ['plate-armor', 18, 0, 15], ['studded-leather-armor', 12, 99, 0]]) { const q = SR.ARMOR[k]; t(k, q.base === b && q.dexMax === dm && q.str === st); }
 // 시작 장비 · 무기 · AC
 const start = { barbarian: 'greataxe', bard: 'dagger', cleric: 'mace', scout: 'sickle', dragoon: 'greatsword', paladin: 'longsword', archer: 'longbow', rogue: 'shortsword', mage: 'spear', warlock: 'sickle', archmage: 'quarterstaff' };
-for (const c in start) { const m = mk(c); t(`${c} 시작 무기`, SR.eq(m).w === start[c]); t(`${c} 숙련 기술 수 이상`, DN.profs(m).length >= SR.CLS[c].sk + 2 - 1); t(`${c} 고른 기술은 직업 표에서`, DN.profs(m).length > 0); t(`${c} 도구 · 무기 숙련 표`, DN.TRAIN[c].length === 3); }
-{ const m = mk('dragoon'), a = { merc: m }; m.ab = { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 }; m.abCls = 'dragoon'; t('체인 메일 16', DN.acBase(a) === 16 + G.Guild.magic(0) + (GD.skill(m, 'fs_defense') ? 1 : 0)); }
+for (const c in start) { const m = mk(c); if (c === 'dragoon') m.opts = { fs: ['fs_gwf'] }; t(`${c} 시작 무기`, SR.eq(m).w === start[c]); t(`${c} 숙련 기술 수 이상`, DN.profs(m).length >= SR.CLS[c].sk + 2 - 1); t(`${c} 고른 기술은 직업 표에서`, DN.profs(m).length > 0); t(`${c} 도구 · 무기 숙련 표`, DN.TRAIN[c].length === 3); }
+{ const m = mk('dragoon'), a = { merc: m }; m.opts = { fs: ['fs_gwf'] }; m.ab = { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 10 }; m.abCls = 'dragoon'; t('체인 메일 16', DN.acBase(a) === 16 + (GD.skill(m, 'fs_defense') ? 1 : 0)); }
 { const m = mk('rogue'), ab = DN.ab(m); t('가죽 11 + 민첩', DN.acBase({ merc: m }) === 11 + DN.mod(ab.dex) + (GD.skill(m, 'fs_defense') ? 1 : 0)); }
 { const m = mk('archmage'), ab = DN.ab(m); t('비무장 10 + 민첩', DN.acBase({ merc: m }) === 10 + DN.mod(ab.dex)); t('소마법 공격', DN.weapon({ merc: m }).t === 'cold'); t('폭발 · 연쇄 없음', !G.D.F.allies.archmage.chain && !G.D.F.allies.mage.splash); t('곁에서는 무기', DN.gearWeapon(m).t === 'bludgeoning'); }
 { const m = mk('cleric'); t('메이스 1d6', DN.gearWeapon(m).d === 6 && DN.gearWeapon(m).t === 'bludgeoning'); t('방패 AC 포함', SR.eq(m).shield); }
 { const m = mk('monk', { lv: 5 }); t('몽크 무술 d8', DN.weapon({ merc: m }).d === 8); const m2 = mk('monk', { lv: 20 }); t('몸과 마음', DN.ab(m2).wis > 20 || DN.ab(m2).dex > 20); }
 // 양용: 방패 없으면 큰 주사위
-{ const m = mk('dragoon'); SR.eq(m).w = 'longsword'; t('양용 d10', DN.weapon({ merc: m }).d === 10); SR.eq(m).shield = true; t('방패면 d8', DN.weapon({ merc: m }).d === 8); }
+{ const m = mk('dragoon'); m.opts = { fs: ['fs_gwf'] }; SR.eq(m).w = 'longsword'; t('양용 d10', DN.weapon({ merc: m }).d === 10); SR.eq(m).shield = true; t('방패면 d8', DN.weapon({ merc: m }).d === 8); }
 // 무기 사거리 · 근접
-{ const m = mk('dragoon'), e = { merc: m, def: { range: 1.5 } }; SR.eq(m).w = 'longbow'; t('롱보우 8칸', DN.rng(e) === 8); t('원거리는 근접 아님', !DN.melee(e)); SR.eq(m).w = 'glaive'; t('글레이브 긴 거리', DN.rng(e) === 2.5); }
+{ const m = mk('dragoon'), e = { merc: m, def: { range: 1.5 } }; SR.eq(m).w = 'longbow'; t('롱보우 15칸', DN.rng(e) === 15); t('원거리는 근접 아님', !DN.melee(e)); SR.eq(m).w = 'glaive'; t('글레이브 긴 거리', DN.rng(e) === 2.9); }
 // 무기 숙련 · 직업
-t('파이터 숙련', SR.masteryOf(mk('dragoon')) === 'graze'); t('클레릭은 없음', !SR.masteryOf(mk('cleric'))); t('스킬 칸에서 빠짐', !G.D.MPOOL.dragoon.includes('sr_cleave'));
+t('파이터 숙련', (m => { m.opts = { fs: ['fs_gwf'] }; return SR.masteryOf(m); })(mk('dragoon')) === 'graze'); t('클레릭은 없음', !SR.masteryOf(mk('cleric'))); t('스킬 칸에서 빠짐', !G.D.MPOOL.dragoon.includes('sr_cleave'));
 // 무기 · 갑옷 훈련
 t('위저드는 갑옷 못 입음', !SR.canArmor('archmage', 'leather')); t('바드는 군용 무기 못 씀', !SR.canWeapon('bard', 'longsword')); t('로그는 기교 군용', SR.canWeapon('rogue', 'rapier') && !SR.canWeapon('rogue', 'greatsword')); t('몽크는 경량 군용', SR.canWeapon('monk', 'shortsword') && !SR.canWeapon('monk', 'longsword'));
 // 종족
@@ -39,4 +39,6 @@ for (const b of Object.keys(SR.BG)) { const m = mk('dragoon', { bg: b, sp: 'dwar
 { const m = mk('cleric', { lv: 9, adv: 'life' }); t('생명 권역 주문', SR.subSpells(m).includes('Mass Cure Wounds') && G.SrdX.classSkills(m).length > 0); }
 { const m = mk('archer'); t('레인저 사냥꾼의 표식', G.SrdX.skills(m).includes('sr_hmark')); }
 { const m = mk('archmage', { lv: 20 }), k = G.SrdX.signature(m); if (k.length) t('대표 주문 +1', G.Res.usesOf(m, G.Skill.resOf(k[0]), k[0]) >= 2); const g = mk('monk', { lv: 4, uid: 3 }); t('붙잡기 재주', G.SrdX.grappler(g)); }
+// 마법 입문: 직업과 상관없이
+{ const m = mk('dragoon', { feat: 'mi_cleric', bg: 'acolyte', sp: 'dwarf', lv: 5 }), q = G.SrdX.miPick(m, 'mi_cleric'), act = GD.active(m); t('파이터: 소마법 2', q.c.length === 2 && q.c.every(k => act.includes(k) && GD.spLv(k) === 0), q.c.join()); t('파이터: 1레벨 주문', q.s && act.includes(q.s) && GD.spLv(q.s) === 1, q.s); const res = G.Skill.resOf(q.s); t('슬롯 없어도 쓴다', G.Res.can(m, q.s, res) && G.Res.left(m, res, q.s) === 1); G.Res.pay(m, q.s, res); t('한 번 쓰면 끝', !G.Res.can(m, q.s, res)); G.Res.long(m); t('긴 휴식에 찬다', G.Res.can(m, q.s, res)); m.ab = { str: 16, dex: 12, con: 14, int: 8, wis: 13, cha: 9 }; m.abCls = 'dragoon'; const AB = DN.ab(m); t('시전 능력은 높은 것', G.SrdX.castAb(m, q.c[0]) === (AB.wis >= AB.int && AB.wis >= AB.cha ? 'wis' : AB.int >= AB.cha ? 'int' : 'cha')); const a = { merc: m, castAb: 'wis', def: { range: 1.3 } }; t('주문 DC는 시전 능력', DN.dc(a) - DN.dc({ merc: m, def: a.def }) === DN.mod(AB.wis) - DN.mod(AB[DN.cls(m).pri]), DN.dc(a)); G.SrdX.miToggle(m, 'mi_cleric', q.c[0]); t('빼면 줄어든다', G.SrdX.miPick(m, 'mi_cleric').c.length === 1); const m2 = mk('cleric', { feat: 'mi_cleric', bg: 'acolyte', sp: 'dwarf', lv: 5 }), s2 = G.SrdX.miPick(m2, 'mi_cleric').s, r2 = G.Skill.resOf(s2), n2 = G.Res.usesOf(m2, r2, s2); t('슬롯이 있으면 무료 1번 더', G.Res.left(m2, r2, s2) === n2 && n2 >= 10, n2); }
 console.log(`srd_rules: 통과 ${ok} · 실패 ${bad}`); if (bad) process.exitCode = 1;

@@ -10,7 +10,7 @@ G.Banter = (() => {
   const DEF_CD = 6, CD = { stairs: 30, fight: 10, clear: 10, crit: 8, fumble: 14, combo: 12, hurt: 6, healing: 6, look: 7, quiet: 5, loot: 2, chest: 5, levelup: 1 };
   const now = () => G.S.runTime;
   // 같은 줄을 다시 꺼내기까지 (초). 없어도 되는 대사는 고를 게 없으면 침묵한다
-  const SAID_T = 300, SILENT = new Set(['crit', 'fumble', 'fight', 'clear', 'look', 'quiet', 'spotAmbush', 'search', 'hurt', 'combo', 't_big', 't_guard', 't_grab', 'p_hot', 'p_coward', 'p_careful', 'p_greedy', 'p_brawler', 'p_meek']);
+  const SAID_T = 300, SILENT = new Set(['crit', 'fumble', 'fight', 'clear', 'look', 'quiet', 'spotAmbush', 'hurt', 'combo', 't_big', 't_guard', 't_grab', 'p_hot', 'p_coward', 'p_careful', 'p_greedy', 'p_brawler', 'p_meek']);
 
   // 대사: 키 → { any, 성격 · 직업 } — 말하는 사람에게 맞는 묶음이 있으면 그쪽을 먼저. {m} = 상대 이름 · 몬스터 · 물건 ({m이} {m은} {m을} {m과} {m야} {m다}: 받침에 맞춰)
   const LINES = {
@@ -26,9 +26,6 @@ G.Banter = (() => {
     spotAmbush: { any: ['어둠 속에 눈이 있어.', '기다리고 있어. 조심해.', '벽 뒤에 숨소리가 들려.', '저쪽에 뭔가 웅크리고 있어.', '칼부터 뽑아. 들켰어.', '안에 뭔가 있어. 먼저 치자.', '숨어 있어! 눈치 못 챈 척해.', '움직였어, 저쪽!'], archer: ['내 화살이 먼저야.', '움직이지 마. 조준 중이야.', '저기 숨었어. 내가 먼저 쏜다.'] },
     spotChest: { any: ['저기 상자 있다.', '보물이다! 저 구석에.'], greedy: ['상자다! 내가 찜했어!'] },
     spotMimic: { any: ['저 상자 수상해. 숨 쉬는데?', '미믹이야! 열지 마… 아니, 패고 열자.', '상자에 이빨이 있어.'] },
-    search: { any: ['구석까지 봐.', '빈손으로 나가긴 아깝지.', '정리됐네. 좀 뒤져 보자.', '흩어져서 찾아봐.', '돈 될 만한 게 있나 보자.', '뭐 떨어진 거 없어?'], greedy: ['주머니부터 뒤져!'], careful: ['함정 조심하고, 천천히 찾아.'] },
-    found: { any: ['이건 누가 안 가져갔네.', '여기 틈에 끼어 있었어.', '작지만 돈이야.', '주머니 하나 주웠어.', '벽돌 뒤에 있었어!', '운이 좋은데.', '여기 있다!', '찾았어, 금화야.', '바닥 밑에 숨겨 놨네.', '오, 이거 돈 되겠는데.'], greedy: ['내 거… 아니, 우리 거!'] },
-    nofind: { any: ['쥐똥뿐이야.', '시간만 버렸네.', '여긴 볼 거 없어.', '텅 비었어.', '아무것도 없네.', '허탕이야. 가자.', '먼지밖에 없어.', '이미 누가 털어 갔나 봐.'], greedy: ['이럴 리가 없는데… 한 번만 더.'] },
     trap: { any: ['으악, 함정!', '젠장, 밟았어!', '발밑이 꺼졌어!'], coward: ['그러니까 조심하자고 했잖아!'] },
     trapBlame: { any: ['별거 없다며!', '{m야}, 잘 좀 보라고!', '다 봤다더니 이게 뭐야!'] },
     fight: { any: ['칼 뽑아!', '자리 잡아!', '조심해, 많아!', '{m다}, 앞을 막아!', '온다!', '{m다}! 붙어!', '대열 유지해!', '{m다}. 정신 차려.'], hot: ['내가 먼저 간다!', '드디어 몸 좀 풀겠네!'], coward: ['왜 우리 쪽으로 와!', '{m다}! 어떡해!'], brawler: ['덤벼 봐, 어디!'], meek: ['저, 저는 뒤를 볼게요.', '다치지 말아요, 다들.', '싸우기 싫은데…'], cleric: ['다치면 바로 말해!'], bard: ['좋아, 노래 한 곡 뽑아 볼까!'], mage: ['가까이 오기 전에 끝낸다.'], barbarian: ['으하하! 와라!'], paladin: ['물러서지 마라!'] },
@@ -86,7 +83,7 @@ G.Banter = (() => {
     { l: ['지도 제대로 보는 거 맞지?', '지도 없는데.', '…아.'] },
     // 층 깊이
     { when: c => c.depth < 6, l: ['여긴 아직 얕은 편이지?', '방심하다 죽는 것도 이런 데야.'] },
-    { when: c => c.depth >= 6 && c.depth < 15, l: ['고블린 냄새 안 나?', '네 양말 냄새야.'] },
+    { when: c => c.front === 'green', l: ['고블린 냄새 안 나?', '네 양말 냄새야.'] },
     { when: c => c.depth >= 15, l: ['꽤 깊이 왔네.', '올라갈 길 기억나?', '그런 건 내려가고 생각하자.'] },
     { when: c => c.depth >= 15, l: ['점점 추워지는 거 같아.', '돌벽이 땀을 흘리고 있어. 기분 나빠.'] },
     { when: c => c.depth >= 40, l: ['이 깊이까지 온 사람 또 있을까?', '있겠지. 저기 뼈가 그 사람들이고.'] },
@@ -124,11 +121,11 @@ G.Banter = (() => {
     { a: 'warlock', l: ['가끔 벽 너머에서 누가 날 불러.', '대답은 하지 마.', '이미 했는데.'] },
     { a: 'rogue', l: ['{b야}, 네 주머니 좀 가벼워 보인다.', '…내 금화 돌려줘.', '어머, 이게 왜 여기 있지.'] },
     { a: 'archer', l: ['화살 몇 개 남았어?', '너 맞힐 만큼은.'] },
-    { a: 'barbarian', l: ['배고프다. 저 쥐 구워 먹을까.', '제발 그러지 마.'] },
+    { a: 'barbarian', l: ['배고프다. 뭐든 구워 먹고 싶어.', '제발 아무거나 줍지 마.'] },
     { a: 'monk', l: ['호흡을 가다듬어. 그럼 덜 지쳐.', '내 호흡은 비명 지를 때만 안 흐트러져.'] },
     { a: 'paladin', l: ['약한 자를 지키는 게 우리 일이다.', '우린 돈 받고 온 건데.', '…그것도 맞다.'] },
     { a: 'scout', l: ['저 이끼, 먹을 수 있어.', '먹어 봤어?', '한 번. 사흘 앓았어.'] },
-    { a: 'dragoon', l: ['창은 길수록 좋아. 멀리서 찌르면 안 다치거든.', '그래서 복도마다 걸리는구나.'] },
+    { a: 'dragoon', when: c => c.layout !== 'cavern' && c.layout !== 'warren', l: ['창은 길수록 좋아. 멀리서 찌르면 안 다치거든.', '그래서 복도마다 걸리는구나.'] },
     // 혼잣말 (혼자일 때)
     { solo: true, l: ['혼자 오니까 조용해서 좋네.'] },
     { solo: true, l: ['동료 좀 구할걸 그랬나.'] },
@@ -147,22 +144,28 @@ G.Banter = (() => {
   const chatOf = rt => rt.chat || (rt.chat = []);
 
   const B = {
+    // 대사 데이터 파일(js/lines_*.js)이 더한다 (DIALOGUE_GUIDE.md)
+    addLines(more) { for (const k in more) { const d = LINES[k] || (LINES[k] = {}); for (const tag in more[k]) d[tag] = (d[tag] || []).concat(more[k][tag]); } },
+    addTalks(list) { TALKS.push(...list); },
+    LINES, get TALKS() { return TALKS; },
     LINES, TALKS, call: callOf,
     // 말풍선 첫 줄: 무슨 판정 · 눈 + 수정치 · 목표 · 결과
     tag: (what, r) => ({ s: `${what} ${r.nat}${r.mod < 0 ? '' : '+'}${r.mod} ${r.ok ? '≥' : '<'} ${r.dc} ${r.ok ? '성공' : '실패'}`, ok: r.ok }),
     // 명중 굴림의 20 · 1
     hitTag: (tg, nat) => ({ s: `${tg.n ? tg.n + '에게 ' : ''}공격 ${nat} ${nat === 20 ? '대성공' : '대실패'}`, ok: nat === 20 }),
     // 지금 떠 있는 말풍선 (그리기)
-    live(rt) { const t = now(); return rt.bubbles && rt.bubbles.length ? (rt.bubbles = rt.bubbles.filter(b => b.until > t && !b.e.dead)) : null; },
+    live(rt) { const t = now(); return rt.bubbles && rt.bubbles.length ? (rt.bubbles = rt.bubbles.filter(b => (b.until > t || b.hold > Date.now()) && !b.e.dead)) : null; },
     // 말풍선 + 대화 기록. pri: 꼭 보여 줄 말이면 true(자리가 없으면 가장 오래된 것을 밀어낸다)
     say(rt, who, s, opt = {}) {
       if (G.quiet || !who || !s) return false;
       const list = B.live(rt) || (rt.bubbles = []), t = now(), mine = list.find(b => b.e === who);
       if (mine && !opt.pri) return false;
+      if (mine && mine.hold > Date.now()) return false; // 꼭 들어야 하는 말 (opt.hold)은 다 보일 때까지 덮지 않는다. 전투 시계는 차례마다 뛰니 실제 시간으로 잰다
       if (!mine && list.length >= MAX_BUB) { if (!opt.pri) return false; list.shift(); }
       if (mine) list.splice(list.indexOf(mine), 1);
       const len = s.length + (opt.tag ? opt.tag.s.length : 0);
-      list.push({ e: who, s, tag: opt.tag, col: opt.col, at: t, until: t + U.clamp(SHOW_MIN + len * PER_CHAR, SHOW_MIN, SHOW_MAX) });
+      const show = U.clamp(SHOW_MIN + len * PER_CHAR, SHOW_MIN, SHOW_MAX);
+      list.push({ e: who, s, tag: opt.tag, col: opt.col, at: t, until: t + show, hold: opt.hold ? Date.now() + show * 1000 : 0 });
       const chat = chatOf(rt);
       chat.push({ n: nameOf(who), col: who.merc ? G.Guild.def(who.merc).col : '#c9c2b2', s, tag: opt.tag, t: G.S.runTime, id: rt.chatId = (rt.chatId || 0) + 1 });
       if (chat.length > CHAT_MAX) chat.shift();
@@ -175,12 +178,14 @@ G.Banter = (() => {
       if (!set) return null;
       const mine = tags(who).filter(k => set[k]), list = mine.length && Math.random() < 0.7 ? set[U.pick(mine)] : set.any;
       // 방금 들은 말은 다시 하지 않는다: 그 사람 몫이 없으면 공통에서, 그것도 없으면 조용히 (들어야 하는 줄은 그대로)
-      const seen = B.said || (B.said = {}), t = now(), left = l => (l || []).filter(s => !(seen[s] > t)), got = left(list).length ? left(list) : left(set.any);
+      const seen = B.said || (B.said = {}), t = now(), left = l => (l || []).filter(s => !(seen[s] > t) && B.fits(s)), got = left(list).length ? left(list) : left(set.any);
       if (!got.length && SILENT.has(key)) return null;
       const s = U.pick(got.length ? got : list);
       seen[s] = t + SAID_T;
       return fill(s, v);
     },
+    // 장소에 맞는 말인가 (DESIGN.md 147): 늪(야외)에서는 벽 · 복도 · 천장 · 던전 이야기를 하지 않는다
+    fits(s, rt = G.RT?.fantasy) { return !(rt?.map?.theme === 'swamp' && /벽|복도|천장|던전/.test(s)); },
     // 상황 대사. who가 없으면 살아 있는 사람 중에서 (성격 · 직업이 맞는 사람을 먼저). 같은 키는 쿨다운
     line(rt, key, who, v, opt = {}) {
       if (G.quiet || !rt.party) return null;
@@ -203,7 +208,7 @@ G.Banter = (() => {
       if (G.Story.recall(f, rt)) return;
       const ps = U.shuffle(living(rt));
       if (!ps.length) return;
-      const hp = F().partyHP(rt), a0 = ps[0], ctx = { depth: f.floor, hp: hp.max ? hp.hp / hp.max : 1, bag: G.Exp.carry(f) / (G.Exp.cap(f) || 1), mission: rt.mission && !rt.mission.done && !rt.mission.fail ? rt.mission.k : null, time: rt.floorT, rel: null };
+      const hp = F().partyHP(rt), a0 = ps[0], ctx = { front: f.front, layout: rt.map?.layout || 'halls', out: rt.map?.theme === 'swamp', depth: f.floor, hp: hp.max ? hp.hp / hp.max : 1, bag: G.Exp.carry(f) / (G.Exp.cap(f) || 1), mission: rt.mission && !rt.mission.done && !rt.mission.fail ? rt.mission.k : null, time: rt.floorT, rel: null };
       if (ps.length < 2) {
         const t = U.pick(TALKS.filter(q => q.solo));
         B.say(rt, a0, t.l[0]);
@@ -215,7 +220,7 @@ G.Banter = (() => {
       ctx.rel = G.Bond.rel(f, a.merc, b.merc);
       const opts = [];
       for (const q of TALKS) {
-        if (q.solo || (q.when && !q.when(ctx))) continue;
+        if (q.solo || (q.when && !q.when(ctx)) || !q.l.every(s => B.fits(s, rt))) continue;
         if (q.a) { const hit = ps.find(p => tags(p).includes(q.a)); if (!hit) continue; }
         opts.push(q);
       }
@@ -291,12 +296,10 @@ G.Banter = (() => {
       const ms = rt.mission;
       if (ms && !st.ms) { st.ms = true; B.line(rt, 'ms_' + ms.k, null, null, { pri: true }); }
       if (ms && !st.msEnd && (ms.done || ms.fail)) { st.msEnd = true; B.line(rt, ms.done ? 'msWin' : 'msLose', null, null, { pri: true }); }
-      // 라이벌: 눈에 들어온 파티마다 한 번
-      for (const p of rt.rivals || []) if (!st.rv.has(p.d.id) && p.mem.some(e => !e.dead && F().inView(rt, e.x, e.y))) { st.rv.add(p.d.id); B.line(rt, 'rival', null, { m: p.d.n }); }
       // 짐
       if (G.Exp.full(f) && !st.full) { st.full = true; B.line(rt, 'full'); }
       // 조용히 걷는 중이면 잡담
-      const quiet = !fight && !rt.barkQ?.length && !(rt.quietT > t) && !rt.ex?.search && !(rt.ex?.brace > 0) && rt.phase !== 'dead';
+      const quiet = !fight && !rt.barkQ?.length && !(rt.quietT > t) && !(rt.ex?.brace > 0) && rt.phase !== 'dead';
       if (quiet && !(rt.talkT > t)) { rt.talkT = t + TALK_MIN + Math.random() * (TALK_MAX - TALK_MIN); B.talk(f, rt); }
     },
   };

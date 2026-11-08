@@ -13,16 +13,16 @@ G.Opt = (() => {
   // ── 전투 방식 (Fighting Style) ──
   const castClose = (c, x) => H.W.seen(c, x) && (!H.near(x, c, 1.8).length || x.seen.every(o => G.Foe.typeK(o, DN.weapon(c).t, c) < 1));
   opt('fs', 'fs_archery', '궁술', 'Archery', 'archer', 2, '원거리 무기 명중 +2');
-  opt('fs', 'fs_defense', '방어', 'Defense', 'dragoon', 1, 'AC +1');
-  opt('fs', 'fs_gwf', '대형 무기 전투', 'Great Weapon Fighting', 'dragoon', 1, '근접 무기 주사위의 1 · 2를 3으로');
-  opt('fs', 'fs_twf', '쌍수 전투', 'Two-Weapon Fighting', 'dragoon', 1, '곁의 적에게 무기 주사위 + 능력치', { bonus: true, when: H.W.close(1.8), run(c, x) { const o = H.nearest(x, c, 1.8), w = DN.weapon(c); H.strike(x, c, o, [w.n, w.d, w.b], 'hit'); } }, { t: 'w_knife' });
+  opt('fs', 'fs_defense', '방어', 'Defense', 'dragoon', 1, '갑옷: AC +1');
+  opt('fs', 'fs_gwf', '대형 무기 전투', 'Great Weapon Fighting', 'dragoon', 1, '양손 근접 무기: 주사위의 1 · 2를 3으로');
+  opt('fs', 'fs_twf', '쌍수 전투', 'Two-Weapon Fighting', 'dragoon', 1, '경량 무기 두 자루: 곁의 적에게 무기 주사위 + 능력치', { bonus: true, when: (c, x) => G.SRD.styleOn(c.merc, 'fs_twf') && H.W.close(1.8)(c, x), run(c, x) { const o = H.nearest(x, c, 1.8), w = DN.weapon(c); H.strike(x, c, o, [w.n, w.d, w.b], 'hit'); } }, { t: 'w_knife' });
   opt('fs', 'fs_blessed', '축복받은 전사', 'Blessed Warrior', 'paladin', 2, '신성한 불꽃 · 민첩 내성 · 광휘', { dt: 'radiant', when: castClose, run(c, x) { const o = H.pick(x); if (!o) return false; const dc = 8 + DN.prof(c.merc.lv) + DN.mod(DN.ab(c.merc).cha), s = H.tierS(c, [1, 8]); H.beam(x, c, o, '#ffe08a', 2); if (!DN.save(o, 'dex', dc)) F().hurt(x.f, x.rt, o, H.dmg(x, c, s), 'smite', c); } });
   opt('fs', 'fs_druidic', '드루이드 전사', 'Druidic Warrior', 'archer', 2, '별빛 도깨비불 · 명중 · 광휘 · 빛남', { dt: 'radiant', when: castClose, run(c, x) { const o = H.pick(x); if (!o) return false; H.beam(x, c, o, '#bfe0ff', 2); if (H.strike(x, c, o, H.tierS(c, [1, 8])).hit && o.hp > 0) DN.give(x.rt, o, 'outlined', G.Res_ROUND, c); } });
   D.SK_RANGE.fs_twf = 1.5; D.SK_RANGE.fs_blessed = 6; D.SK_RANGE.fs_druidic = 6;
   const FS_OF = { dragoon: ['fs_defense', 'fs_gwf', 'fs_twf'], paladin: ['fs_defense', 'fs_blessed'], archer: ['fs_archery', 'fs_defense', 'fs_druidic'] };
   for (const k of ['fs_defense', 'fs_gwf', 'fs_twf']) D.MSKILLS[k].lv = { dragoon: 1, paladin: 2, archer: 2 };
 
-  // ── 초월 주문 (Eldritch Invocations) ── 전투 효과가 없는 다섯은 뺐다: Devil's Sight · Mask of Many Faces · Master of Myriad Forms · Misty Visions · Whispers of the Grave
+  // ── 초월 주문 (Eldritch Invocations) ── 전투 효과가 없는 넷은 뺐다 (악마의 시야는 빛 · 시야가 생겨 넣었다, G.Light): Mask of Many Faces · Master of Myriad Forms · Misty Visions · Whispers of the Grave
   const W = 'warlock', iv = (k, n, en, lv, d, S, extra) => opt('iv', k, n, en, W, lv, d, S, extra);
   const once = (c, x, key) => { const s = G.Res.of(c.merc).fu; if (s[key]) return false; s[key] = 1; return true; };
   iv('iv_pblade', '칼날의 계약', 'Pact of the Blade', 1, '근접 무기 1d8 + 매력 · 광휘');
@@ -33,12 +33,13 @@ G.Opt = (() => {
   iv('iv_ascend', '상승의 걸음', 'Ascendant Step', 5, '험지 · 얕은 물 이동 비용 없음');
   iv('iv_depths', '심연의 선물', 'Gift of the Depths', 5, '얕은 물 이동 비용 없음');
   iv('iv_mind', '섬뜩한 정신', 'Eldritch Mind', 1, '집중 유지 내성 이점');
-  iv('iv_spear', '섬뜩한 창', 'Eldritch Spear', 2, '섬뜩한 폭발 사거리 +3칸');
+  iv('iv_spear', '섬뜩한 창', 'Eldritch Spear', 2, '섬뜩한 폭발 사거리 +레벨×30피트');
   iv('iv_repel', '밀쳐내는 폭발', 'Repelling Blast', 2, '섬뜩한 폭발이 맞으면 2칸 밀침');
   iv('iv_vigor', '악마의 활력', 'Fiendish Vigor', 2, '전투 시작: 임시 체력 12', { free: true, when: (c, x) => H.W.fight(c, x) && !(c.thp > 0) && once(c, x, 'iv_vigor'), run(c, x) { c.thp = Math.max(c.thp || 0, 12 * c.max / Math.max(1, DN.srdHP(c.merc))); H.ring(x, c, 0.9, '#9fe79f'); } });
   iv('iv_gaze', '두 정신의 응시', 'Gaze of Two Minds', 5, '곁의 동료 자리에서 주문 사거리를 잰다');
   iv('iv_shadow', '그림자와 하나', 'One with Shadows', 5, '체력 절반 아래: 투명 (휴식까지 한 번)', { prio: 3, when: (c, x) => c.hp < c.max * 0.5 && !DN.bon(c, 'iv_shadow') && !G.Res.of(c.merc).fu.iv_shadow, run(c, x) { G.Res.of(c.merc).fu.iv_shadow = 1; DN.buff(c, 'iv_shadow', R6(10), { hitDis: 1, adv: 1 }); H.ring(x, c, 0.9, '#6a5a9a'); } });
   iv('iv_eye', '머나먼 세계의 환영', 'Visions of Distant Realms', 9, '전투 시작: 주변 12칸을 밝힌다', { free: true, when: (c, x) => H.W.fight(c, x) && once(c, x, 'iv_eye'), run(c, x) { G.Skill.reveal(x.rt, c.x, c.y, 12); H.ring(x, c, 2, '#c9a6ff'); } });
+  iv('iv_dsight', '악마의 시야', "Devil's Sight", 2, '120피트 안의 어스름 · 어둠(마법적 어둠도)을 본다');
   iv('iv_witch', '마녀의 눈', 'Witch Sight', 15, '적의 투명이 내 공격에 통하지 않음');
   iv('iv_alert', '태고의 가르침: 경계', 'Lessons of the First Ones', 2, '선제권 + 숙련');
   iv('iv_savage', '태고의 가르침: 야만', 'Lessons of the First Ones', 2, '차례에 한 번 무기 피해를 두 번 굴려 큰 쪽');
@@ -83,7 +84,7 @@ G.Opt = (() => {
   SUB('ft_shdef', '상위 사냥꾼의 방어', "Superior Hunter's Defense", 'hunter', 15, '큰 피해를 받으면 그 종류 저항 (라운드에 한 번)');
   SK.ft_shdef = { react: true, when: () => false, run: () => false };
   // 용 동반자: 슬롯 없이 · 집중 없이 용 소환 (야영까지 한 번)
-  SUB('ft_drcomp', '용 동반자', 'Dragon Companion', 'draconic', 18, '용 소환: 슬롯 · 집중 없이', { auto: true, prio: 10, res: { long: 1 }, when: (c, x) => H.W.seen(c, x), run(c, x) { const s = SK.sp_summon_dragon, n = (c.pe || []).length; if (s.run(c, { ...x, slot: 5 }) === false) return false; for (const e of (c.pe || []).slice(n)) e.conc = false; H.ring(x, c, 1.4, '#ff9a4a'); } });
+  SUB('ft_drcomp', '용 동반자', 'Dragon Companion', 'draconic', 18, '용 소환: 슬롯 · 집중 없이', { auto: true, prio: 10, res: { long: 1 }, when: (c, x) => H.W.seen(c, x), run(c, x) { const s = SK.sp_summon_dragon; if (s.run(c, { ...x, slot: 5 }) === false) return false; for (const e of G.Sum.alive(x.rt)) if (e.by === c && e.src === 'Summon Dragon') { e.conc = false; e.until = G.S.runTime + H.R6(10); } H.ring(x, c, 1.4, '#ff9a4a'); } }); /* 용 동반자 (SRD 18): 슬롯 없이 · 집중 없이 1분 */
   // 야생 동반자 (드루이드 2): 야생 변신 한 번 → 사역마. 도움 행동: 적 하나에게 다음 공격 이점
   const wildRes = () => SK.sr_wild?.res;
   reg('ft_wcomp', '야생 동반자', 'Wild Companion', 'scout', 2, '야생 변신 한 번 · 사역마: 차례마다 적 하나에게 다음 공격 이점', { auto: true, prio: 5, when: (c, x) => H.W.fight(c, x) && !petOf(c, 'wild') && G.Res.can(c.merc, 'sr_wild', wildRes()), run(c, x) { G.Res.pay(c.merc, 'sr_wild', wildRes()); H.persist(c, 'gen', R6(100), { sum: 'wild', fn: x2 => helpTick(x2, c) }); helpTick(x, c); H.ring(x, c, 0.9, '#9fd8a0'); } }, { auto: true }); D.MPOOL.scout.push('ft_wcomp');
@@ -160,10 +161,15 @@ G.Opt = (() => {
       return list;
     },
     has: (a, k) => !!a.merc && Opt.of(a.merc).includes(k),
+    // 전투 방식 고르기: SRD는 레벨이 오를 때마다 바꿀 수 있다
+    fsList: m => (Opt.count(m, 'fs') ? FS_OF[m.cls] || [] : []),
+    fsNow: m => (m.opts || (m.opts = Opt.roll(m))).fs?.[0] || null,
+    canFs: m => m.fsLv == null || m.fsLv < m.lv,
+    setFs(m, k, free) { if (!Opt.fsList(m).includes(k) && !free) return false; if (!free && !Opt.canFs(m)) return false; const r = m.opts || Opt.roll(m); m.opts = { ...r, fs: [k, ...(r.fs || []).filter(q => q !== k)] }; m.fsLv = m.lv; return true; },
     // ── 메타매직: SRD 마력 점수 (소서러 레벨) ──
     mmRes: k => ({ focus: D.MSKILLS[k].mm }),
     can: (a, k) => Opt.has(a, k) && G.Res.can(a.merc, k, Opt.mmRes(k)),
-    pay(a, k) { G.Res.pay(a.merc, k, Opt.mmRes(k)); },
+    pay(a, k) { if (G.Guild.skill(a.merc, 'ft_apotheosis') && DN.bon(a, 'innate') && a.apoN !== G.Turn.no()) { a.apoN = G.Turn.no(); return; } G.Res.pay(a.merc, k, Opt.mmRes(k)); }, // 비전 승천 (SRD 소서러 20)
     // 시전 직전: 어떤 메타매직을 붙이나. one = 이미 고른 하나 (둘은 안 된다 · 강화 · 추적만 겹친다)
     begin(a, k, S, x, one) {
       const out = { used: one ? [one] : [] }; if (!a.merc || a.merc.cls !== M || !isSpell(k)) return out;
@@ -207,7 +213,7 @@ G.Opt = (() => {
       const list = Opt.of(m), blade = list.includes('iv_pblade'), spear = list.includes('iv_spear');
       if (!blade && !spear) return base;
       const C = base._opt || Object.defineProperty(base, '_opt', { value: {}, enumerable: false })._opt, key = blade ? 'blade' : 'spear';
-      return C[key] || (C[key] = blade ? { ...base, range: 1.3, proj: null, wpn: 'w_sword' } : { ...base, range: base.range + 3 });
+      return C[key] || (C[key] = blade ? { ...base, range: 1.3, proj: null, wpn: 'w_sword' } : { ...base });
     },
     // 무기가 맞았을 때 (G.Skill.onHit)
     onHit(f, rt, a, o) {

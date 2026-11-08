@@ -8,20 +8,29 @@ G.Guild = (() => {
   // 선술집에 나오는 직업: 기본 넷은 처음부터, 나머지는 이번 시즌 최고층으로 (트리와 상관없다 — DESIGN.md 38)
   // 해금 순서는 나중에 정한다 (사용자) — 지금은 임시
   const BASE = ['archer', 'cleric', 'bard', 'scout'], TIER = { mage: 4, paladin: 4, barbarian: 4, dragoon: 8, monk: 8, warlock: 8, archmage: 12, rogue: 12 };
-  const GEAR_K = 1.1, GEAR_BASE = 30, GEAR_G = 1.25, AUTO_FORGE = 0.5;
+  const XP_TOTAL = [0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000];
   const TRAIT_MEMO = new Map();
-  const TRAIN_K = 0.1, TEMPLE_K = 0.12, RETIRE_LV = 20, LV_MAX = 20, BOON_LV = 19, BOON_EVERY = 5, EPIC_K = 1.06, ROSTER_BASE = 8, OFFERS_BASE = 3, SLOT_LV = [1, 1, 3, 5, 7], SKILL_N = 5, PROMO_LV = 3, PROMO_K = 60, LOOKS = 3, TAVERN_T = 150, INJURY_T = 90, DOWNS_TO_INJURY = 2, LV_STEP = 0.08;
+  const TRAIN_K = 0.1, TEMPLE_K = 0.12, RETIRE_LV = 20, LV_MAX = 20, BOON_LV = 19, BOON_EVERY = 5, ROSTER_BASE = 8, OFFERS_BASE = 3, SLOT_LV = [1, 1, 3, 5, 7], SKILL_N = 5, PROMO_LV = 3, PROMO_K = 60, LOOKS = 3, TAVERN_T = 150, INJURY_T = 90, DOWNS_TO_INJURY = 1, LV_STEP = 0.08;
   // 직업별 몸값 무게 (트리 면허 값 순서와 같다)
   const CLS_W = { archer: 1, scout: 1.1, bard: 1.2, cleric: 1.5, mage: 2, paladin: 2.5, barbarian: 2.5, dragoon: 3, monk: 3, warlock: 3, archmage: 4, rogue: 4 };
   const F = () => G.Fantasy;
-  const ta = k => G.Tree.add('fantasy', G.S.w.fantasy.tree, k);
 
   const ADEF = {};
   const Gd = {
     TIER, PROMO_LV,
     // 신전 축복: 층에 들어선 뒤 이 초 동안 명중 · 내성 +2 (SRD 「Bless」 1d4의 평균쯤)
     blessT: () => 20 * Gd.fac(null, 'temple'),
-    get ROSTER_MAX() { return ROSTER_BASE + 2 * Gd.fac(null, 'hall'); },
+    get ROSTER_MAX() { return ROSTER_BASE + 4 * Gd.fac(null, 'hall'); },
+    // 명성: 쓰지 않고 쌓인다. 등급이 오르면 더 좋은 용병과 건물이 열린다
+    FAME_RANK: [[0, '무명', 2], [30, '알려진', 4], [100, '이름난', 7], [300, '유명한', 11], [800, '전설의', 16]],
+    rank(f) { const v = f.fameAll || 0, R = Gd.FAME_RANK; let i = 0; while (i + 1 < R.length && v >= R[i + 1][0]) i++; return { i, n: R[i][1], cap: R[i][2], next: R[i + 1]?.[0] ?? null }; },
+    facNeed: (f, k) => { const l = Gd.fac(f, k), N = D.FAC[k].need; return N ? N[l] ?? 0 : 0; },
+    canBuild: (f, k) => Gd.fac(f, k) < D.FAC[k].max && (f.fameAll || 0) >= Gd.facNeed(f, k) && (f.gold || 0) >= Gd.facCost(f, k),
+    // 신전 · 주점: 귀환해서 금화로
+    treatCost: m => 20 * m.lv,
+    treat(f, m) { const c = Gd.treatCost(m); if (Gd.fac(f, 'temple') < 1 || !(m.inj > 0) || f.gold < c) return false; f.gold -= c; m.inj = 0; G.Fantasy.syncAllies(f); return true; },
+    drinkCost: m => 5 * m.lv,
+    drink(f, m) { const c = Gd.drinkCost(m), l = Gd.fac(f, 'pub'); if (l < 1 || !(m.stress > 0) || f.gold < c || m.drank === (f.lastHome || 0)) return false; f.gold -= c; m.stress = Math.max(0, m.stress - (20 + 10 * l)); m.drank = f.lastHome || 0; return true; },
     offersN: () => OFFERS_BASE + Math.floor(Gd.fac(null, 'tavern') / 2),
     licensed: () => { const fl = G.S.w.fantasy.maxFloor; return Object.keys(D.F.allies).filter(id => BASE.includes(id) || fl >= (TIER[id] || 1e9)); },
     // 다음에 열리는 직업과 그 층 (선술집 머리줄)
@@ -34,7 +43,6 @@ G.Guild = (() => {
         const top = f.mercs.reduce((a, m) => Math.max(a, m.lv), 1);
         f.leader = Gd.make(f, 'dragoon', { lv: Math.max(1, top), lead: true, name: '단장', look: 0, pers: [] });
         f.leader.lv = Math.max(1, top);
-        if (f.heroGear) { f.leader.gear = { w: f.heroGear.w || 0, a: f.heroGear.a || 0 }; delete f.heroGear; }
         f.leaderNew = true;
       }
       return f.leader;
@@ -46,45 +54,34 @@ G.Guild = (() => {
       const L = Gd.leader(f);
       if (!f.leaderNew) return false;
       const sig = D.MSIG[o.cls], rest = o.skills.filter(k => k !== sig).sort((a, b) => Gd.skLv(o.cls, a) - Gd.skLv(o.cls, b));
-      Object.assign(L, { cls: o.cls, name: o.name || L.name, ab: { ...o.ab }, abCls: o.cls, feat: o.feat, look: o.look || 0, skills: [sig, ...rest].slice(0, SKILL_N), adv: null });
+      Object.assign(L, { cls: o.cls, name: o.name || L.name, ab: { ...o.ab }, abCls: o.cls, feat: o.feat, look: o.look || 0, skills: o.manual || o.bg ? o.skills.slice() : [sig, ...rest].slice(0, SKILL_N), adv: null }); // o.bg: G.Create가 만든 값은 SRD 주문 수를 그대로 둔다
+      if (o.fs && G.Create?.FS[o.cls]?.includes(o.fs)) G.Opt.setFs(L, o.fs, true);
+      if (o.bg) Object.assign(L, { bg: o.bg, sp: o.sp, line: o.line || undefined, bgAdj: o.bgAdj, skillPick: o.skillPick || undefined, skManual: !!o.manual });
       f.leaderNew = false;
       G.log(`단장 · ${L.name} (${Gd.def(L).n})`, 'fantasy', 'good');
       const rt = G.RT.fantasy;
       if (rt) rt.resyncHero = true;
       return true;
     },
-    // 출전할 수 있는 사람: 다치지 않았고 대기실 일을 맡지 않은 사람
-    ready: f => f.mercs.filter(m => !(m.inj > 0) && !m.job),
-    // ── 대기실 배치 (DESIGN.md 64 · 픽 미 업의 대기실): 자리마다 한 사람, 그 능력치가 효과를 키운다 ──
-    jobOf: (f, k) => (f || G.S.w.fantasy).mercs.find(m => m.job === k) || null,
-    jobOpen: (f, k) => !D.JOBS[k].fac || Gd.fac(f, D.JOBS[k].fac) > 0,
-    jobPow(f, k, m) { m = m || Gd.jobOf(f, k); return m && Gd.jobOpen(f, k) ? Math.max(0.5, 1 + 0.15 * G.Dnd.mod(G.Dnd.ab(m)[D.JOBS[k].ab])) : 0; },
-    assign(f, k, uid) {
-      if (!Gd.jobOpen(f, k)) return false;
-      for (const m of f.mercs) if (m.job === k) delete m.job;
-      const m = uid != null && Gd.get(f, uid);
-      if (m && !m.lead) { delete m.job; for (const q of f.mercs) if (q.job === k) delete q.job; m.job = k; f.lineup = (f.lineup || []).filter(u => u !== uid); }
-      F().syncAllies(f);
-      return true;
-    },
-    need: lv => Math.round(6 * Math.pow(lv, 1.5)),
+    // 출전할 수 있는 사람: 다치지 않은 사람
+    ready: f => f.mercs.filter(m => !(m.inj > 0)),
+    // 다음 레벨까지 경험치 (SRD Character Advancement). 20레벨 뒤는 마지막 칸과 같다
+    need: lv => (XP_TOTAL[Math.min(lv, 19)] - XP_TOTAL[Math.min(lv, 19) - 1]),
     // ── 길드 시설 (DESIGN.md 60): f.fac = { 키: 레벨 }. 명성으로 짓고 시즌을 넘어 남는다 ──
-    // 이름값: 지금까지 번 명성(f.fameAll) 1마다 피해·체력 +1% — 시설과 따로 늘 붙는 프레스티지 배율
-    renown: f => 1 + 0.01 * ((f || G.S.w.fantasy).fameAll || 0),
-    earnFame(f, n) { f.fame = (f.fame || 0) + n; f.fameAll = (f.fameAll || 0) + n; },
-    fac: (f, k) => ((f || G.S.w.fantasy).fac || {})[k] || 0,
+    earnFame(f, n, why) { const r0 = Gd.rank(f).i; f.fame = (f.fame || 0) + n; f.fameAll = (f.fameAll || 0) + n; if (why) G.log(`명성 +${n} · ${why}`, 'fantasy', 'good'); const r = Gd.rank(f); if (r.i > r0) G.log(`용병단 등급: ${r.n}`, 'fantasy', 'good'); },
+    fac: (f, k) => Math.max(D.FAC[k] ? 1 : 0, ((f || G.S.w.fantasy).fac || {})[k] || 0), // 완성된 마을 (DESIGN.md 155): 건물은 처음부터 1단계로 서 있다
     facCost: (f, k) => (Gd.fac(f, k) >= D.FAC[k].max ? Infinity : Math.ceil(D.FAC[k].base * Math.pow(D.FAC[k].g, Gd.fac(f, k)))),
     build(f, k) {
       const c = Gd.facCost(f, k);
-      if ((f.fame || 0) < c) return false;
-      f.fame -= c;
+      if ((f.gold || 0) < c || (f.fameAll || 0) < Gd.facNeed(f, k)) return false; // 금화로 짓되 명성이 있어야 한다
+      f.gold -= c;
       (f.fac = f.fac || {})[k] = Gd.fac(f, k) + 1;
       G.log(`시설 · ${D.FAC[k].n} ${f.fac[k]}`, 'fantasy', 'good');
       return true;
     },
     // ── 서사 (DESIGN.md 59): 레벨은 20에서 멈추고, 그 뒤 경험치는 서사 단계(m.bt)로 — 단계마다 피해 · 체력 ×1.06, 끝없이 ──
     LV_MAX,
-    needOf: m => Gd.need(m.lv + (m.bt || 0)),
+    needOf: m => Gd.need(m.lv),
     // 은혜: Lv 19에 하나, 서사 단계 5마다 하나 더. 직업이 먼저 고르는 것부터
     boonsDue: m => (m.lv >= BOON_LV ? 1 : 0) + Math.floor((m.bt || 0) / BOON_EVERY),
     giveBoons(m) {
@@ -100,10 +97,8 @@ G.Guild = (() => {
     capLv(m) { if (m.lv > LV_MAX) { m.bt = (m.bt || 0) + m.lv - LV_MAX; m.lv = LV_MAX; } Gd.giveBoons(m); },
     // 사람마다의 배율: 레벨(+8%/레벨) · 기벽 · 장신구 · 전직 · 전직 스킬의 수치(G.D.MSKILLS의 atk·hp·cd·heal)
     mult(m, k) {
-      let v = k === 'atk' || k === 'hp' ? Math.pow(EPIC_K, m.bt || 0) : 1; // 레벨은 SRD대로 숙련 · 체력 · 공격 횟수 · 소마법 단계로 자란다
-      // 장비 강화 (DESIGN.md 57): 무기 단계마다 피해 ×1.1 · 갑옷 단계마다 체력 ×1.1
-      if (k === 'atk') v *= Math.pow(GEAR_K, Gd.gear(m).w);
-      if (k === 'hp') v *= Math.pow(GEAR_K, Gd.gear(m).a);
+      if (k === 'atk' || k === 'hp') return 1; // 피해 · 체력은 SRD 계산 그대로 (DESIGN.md 121)
+      let v = 1;
       v *= G.Trinket.prod(m, k);
       const A = m.adv && D.ADV[m.adv];
       if (A && A[k] != null) v *= A[k];
@@ -111,48 +106,23 @@ G.Guild = (() => {
       for (const s of Gd.active(m)) { const S = D.MSKILLS[s]; if (S && typeof S[k] === 'number' && k !== 'move' && k !== 'splash' && k !== 'sight') v *= S[k]; }
       return v;
     },
-    // ── 장비 (DESIGN.md 57): 무기 · 갑옷 강화 단계 m.gear = { w, a }. 끝없이 오르고, 10단계마다 마법 +1(명중 · AC, 최대 +3) ──
-    gear: m => m.gear || (m.gear = { w: 0, a: 0 }),
-    gearK: GEAR_K,
-    magic: n => Math.min(3, Math.floor(n / 10)),
-    gearCost: (m, slot) => Math.ceil(GEAR_BASE * (CLS_W[m.cls] || 1) * Math.pow(GEAR_G, Gd.gear(m)[slot]) * (1 - 0.08 * Gd.jobPow(null, 'smith'))),
+    // 마법 무기 (SRD): 장착한 마법 물건(+1 무기 · 명중 보너스)이 있으면. 옛 강화 단계(m.gear)는 지웠다
+    magicW: m => !!(G.Trinket.weapon(m) || G.Trinket.sum(m, 'hit') > 0),
     // 장비 이름 (DESIGN.md 58): 아티팩트를 끼면 그 이름. 방패 직업의 무기 칸은 「무기 + 방패」 — 마법 무기 + 방패 / 무기 + 마법 방패
     gearName(m, slot) {
-      const SR = G.SRD, g = { w: [SR.weaponOf(m).n], a: [SR.armorOf(m).cat === 'none' && (m.cls === 'barbarian' || m.cls === 'monk') ? '비무장 방어' : SR.armorOf(m).n] }, mg = Gd.magic(Gd.gear(m)[slot]), art = slot === 'w' ? G.Trinket.weapon(m) : G.Trinket.armor(m), pre = mg ? '+' + mg + ' ' : '';
+      const SR = G.SRD, g = { w: [SR.weaponOf(m).n], a: [SR.armorOf(m).cat === 'none' && (m.cls === 'barbarian' || m.cls === 'monk') ? '비무장 방어' : SR.armorOf(m).n] }, art = slot === 'w' ? G.Trinket.weapon(m) : G.Trinket.armor(m), pre = '';
       if (slot !== 'w' || !SR.eq(m).shield) return pre + (art ? G.Trinket.name(art) : g[slot][0]);
       if (art && G.Trinket.def(art).shield) return `${pre}${g.w[0]} + ${G.Trinket.name(art)}`;
       return `${pre}${art ? G.Trinket.name(art) : g.w[0]} + 방패`;
-    },
-    upgrade(f, m, slot) {
-      const c = Gd.gearCost(m, slot);
-      if (f.gold < c) return false;
-      f.gold -= c;
-      Gd.gear(m)[slot]++;
-      const a = G.RT.fantasy?.party?.find(q => q.merc === m);
-      if (a && slot === 'a') { const r = a.hp / (a.max || 1); a.max = F().allyHP(f, a); a.hp = a.max * r; }
-      return true;
-    },
-    // 자동 강화 (f.autoForge, 기본 켜짐 — 자동 장착처럼): 출발할 때 금고의 AUTO_FORGE까지, 출전하는 사람의 가장 싼 강화부터
-    autoForge(f) {
-      if (f.autoForge === false) return;
-      const line = [Gd.leader(f), ...F().lineup(f).map(u => Gd.get(f, u)).filter(Boolean)], budget = f.gold * AUTO_FORGE;
-      let spent = 0;
-      for (let i = 0; i < 200; i++) {
-        let best = null;
-        for (const m of line) for (const s of ['w', 'a']) { const c = Gd.gearCost(m, s); if (!best || c < best.c) best = { m, s, c }; }
-        if (!best || spent + best.c > budget) break;
-        spent += best.c;
-        Gd.upgrade(f, best.m, best.s);
-      }
     },
     // ── 개인 스킬 (DESIGN.md 43): 직업 일곱 중 넷. 칸은 Lv 1에 둘 · Lv 3에 셋 · Lv 5에 넷 ──
     // 넷을 뽑아 배우는 레벨 순으로 (DESIGN.md 56 ②: SRD 주문 · 기술은 그 레벨이 되어야 쓴다)
     // 첫 칸은 대표 기술(D.MSIG), 나머지 셋은 풀에서 — 배우는 레벨 순
     // 고르는 것은 행동 · 추가 행동뿐 (사용자 결정). 소모 없음 · 반응 · 늘 적용은 레벨이 되면 저절로 (Gd.traits)
     isPick: k => { const q = G.Skill.kindOf(k); return (q === '행동' || q === '추가 행동') && !G.Skill.SK[k]?.auto; },
-    pickable: cls => G.Pool.POOL[cls].filter(Gd.isPick),
+    pickable: cls => (Gd._pk = Gd._pk || {})[cls] || (Gd._pk[cls] = [...new Set(G.Pool.POOL[cls].concat(Gd.spellList(cls).filter(k => G.Skill.SK[k]?.run && (!D.MSKILLS[k]?.noAuto || D.MSKILLS[k]?.util) && !G.Skill.SK[k]?.noCombat)))].filter(Gd.isPick)), // SRD: 그 직업 주문 목록 전체에서 준비한다 (전투 효과가 있는 것)
     // 레벨 · 전직이 같으면 같은 목록이라 저장해 두고 (전투 중 수없이 부른다), 사람마다 굴린 선택 기능(G.Opt)을 뒤에 붙인다
-    traits: m => { const key = `${m.cls}|${m.lv}|${m.adv || ''}`; let b = TRAIT_MEMO.get(key); if (!b) { const auto = k => !Gd.isPick(k) && !D.MSKILLS[k]?.explore && m.lv >= Gd.skLv(m.cls, k); b = [...new Set(D.MPOOL[m.cls].filter(auto).concat(m.adv ? D.ADV[m.adv].sig.filter(auto) : []))]; TRAIT_MEMO.set(key, b); } const o = G.Opt.of(m); return o.length ? b.concat(o) : b; },
+    traits: m => { const key = `${m.cls}|${m.lv}|${m.adv || ''}`; let b = TRAIT_MEMO.get(key); if (!b) { const auto = k => !Gd.isPick(k) && !D.MSKILLS[k]?.explore && m.lv >= Gd.skLv(m.cls, k); b = [...new Set(D.MPOOL[m.cls].filter(k => auto(k) && !Gd.subOnly(k)).concat(m.adv ? D.ADV[m.adv].sig.filter(auto) : []))]; TRAIT_MEMO.set(key, b); } const o = G.Opt.of(m); return o.length ? b.concat(o) : b; },
     roll: (cls, lv = 1) => {
       const L = Gd.limits(cls, lv), pool = Gd.pickable(cls).filter(k => !D.MSKILLS[k]?.noAuto && Gd.spLv(k) != null && Gd.skLv(cls, k) <= lv), sig = D.MSIG[cls], pick = (list, n) => { const first = list.includes(sig) ? [sig] : []; return [...first, ...U.shuffle(list.filter(k => k !== sig)).sort((a, b) => Gd.skLv(cls, b) - Gd.skLv(cls, a) + (Math.random() - 0.5) * 8)].slice(0, n); };
       return [...pick(pool.filter(k => Gd.spLv(k) === 0), L.cantrip), ...pick(pool.filter(k => Gd.spLv(k) > 0), L.prepared)];
@@ -166,10 +136,13 @@ G.Guild = (() => {
     limits(cls, lv) { const o = G.SRD_RAW.CLASS_LV[G.SRD.RAW_CLS[cls]]?.[lv] || {}; return { cantrip: parseInt(o.Cantrips) || 0, prepared: parseInt(o['Prepared Spells']) || 0 }; },
     nSlots(cls, lv) { const L = Gd.limits(cls, lv); return L.cantrip + L.prepared; },
     // 그 직업 주문 전체: 전투 동작이 없는 것은 칸에 넣어도 전투에서 쓰지 않는다
+    // 만들기 화면의 미리보기: 단장 몸에 고른 값을 얹는다. 실제 단장은 건드리지 않는다
+    preview: (f, o) => ({ ...Gd.leader(f), ...o, ab: { ...o.ab }, abCls: o.cls, feat: o.feat || (o.bg && G.SRD.BG[o.bg].feat), skills: o.skills || [], adv: null, lv: 1, mi: undefined, ...(o.fs && G.Create?.FS[o.cls]?.includes(o.fs) ? { opts: { fs: [o.fs] }, eq: null, eqFs: null } : {}) }),
     spellList(cls) { if (!Gd._sp) Gd._sp = {}; if (Gd._sp[cls]) return Gd._sp[cls]; const RAW = G.SRD.RAW_CLS[cls], have = new Set(), out = []; for (const k of G.Pool.POOL[cls].concat(D.MPOOL[cls])) { const L = Gd.spLv(k); if (L != null && !have.has(D.MSKILLS[k].en)) { have.add(D.MSKILLS[k].en); out.push(k); } } for (const id in G.SRD_SP) { const o = G.SRD_SP[id]; if (!o.cls.includes(RAW) || have.has(o.en)) continue; const k = 'su_' + id.replace(/-/g, '_'); D.MSKILLS[k] = D.MSKILLS[k] || { n: o.ko, en: o.en, t: 'fx_zap', d: '', lv: { [cls]: Gd.lvAtSpell(cls, o.lv) }, noAuto: true }; D.MSKILLS[k].lv[cls] = Gd.lvAtSpell(cls, o.lv); G.Skill.SK[k] = G.Skill.SK[k] || { when: () => false, run() {}, noCombat: true }; D.SK_RANGE[k] = o.rng || 0; have.add(o.en); out.push(k); } return (Gd._sp[cls] = out); },
     lvAtSpell(cls, L) { if (!L) return 1; const T = G.SRD_RAW.CLASS_LV[G.SRD.RAW_CLS[cls]]; if (cls === 'warlock') return L > 5 ? [11, 13, 15, 17][L - 6] : [1, 3, 5, 7, 9][L - 1]; for (let i = 1; i <= 20; i++) if (T[i]?.[String(L)] && T[i][String(L)] !== '—') return i; return 21; },
     // 주문이 아닌 기능은 레벨이 되면 다 쓴다 (SRD)
-    feats: m => Gd.pickable(m.cls).filter(k => Gd.spLv(k) == null && m.lv >= Gd.skLv(m.cls, k)),
+    feats: m => [...new Set(Gd.pickable(m.cls).concat(D.MPOOL[m.cls].filter(Gd.isPick)))].filter(k => Gd.spLv(k) == null && m.lv >= Gd.skLv(m.cls, k) && (!Gd.subOnly(k) || D.ADV[m.adv]?.sig.includes(k))), // 하위 직업 기능은 그 하위 직업만 (SRD)
+    subOnly: k => { if (!Gd._subK) { Gd._subK = new Set(); for (const a of Object.values(D.ADV)) for (const q of a.sig) Gd._subK.add(q); } return Gd._subK.has(k); },
     // 칸 하나 넣고 빼기 (상태창)
     toggle(m, k) { const s = (m.skills = (m.skills || []).slice()), i = s.indexOf(k); if (i >= 0) { s.splice(i, 1); m.skManual = true; return true; } const L = Gd.limits(m.cls, m.lv), cant = Gd.spLv(k) === 0, n = s.filter(q => (Gd.spLv(q) === 0) === cant).length; if (n >= (cant ? L.cantrip : L.prepared)) return false; if (m.lv < Gd.skLv(m.cls, k)) return false; s.push(k); m.skManual = true; return true; },
     // 그 칸의 기술이 열리는 레벨
@@ -188,8 +161,8 @@ G.Guild = (() => {
     skillLv: m => Math.min(5, 1 + Math.floor(((m?.lv || 1) - 1) / 3)),
     // 쓸 수 있는 기술: 열린 칸 + 서브클래스 기능 중 그 레벨이 된 것
     // + 마법 입문 (출신 재주) 주문
-    picks: m => { const sig = m.adv ? D.ADV[m.adv].sig.filter(k => m.lv >= Gd.skLv(m.cls, k) && Gd.isPick(k)) : []; return [...new Set(sig.concat(Gd.slots(m), G.Feat.spell(m) || [], Gd.feats(m)))]; },
-    active: m => [...new Set(Gd.picks(m).concat(Gd.traits(m), G.SrdX ? G.SrdX.skills(m) : []))],
+    picks: m => { const words = m.cls === 'bard' && m.lv >= 20 ? ['sp_power_word_heal', 'sp_power_word_kill'].filter(k => D.MSKILLS[k]) : []; /* 창조의 말 (SRD 바드 20): 늘 준비 */ const sig = m.adv ? D.ADV[m.adv].sig.filter(k => m.lv >= Gd.skLv(m.cls, k) && Gd.isPick(k)) : []; return [...new Set(sig.concat(Gd.slots(m), G.Feat.spell(m) || [], Gd.feats(m), words))]; },
+    active: m => [...new Set(Gd.picks(m).concat(Gd.traits(m), G.SrdX ? G.SrdX.skills(m) : [], ['it_wonder', 'it_sphere'].filter(k => G.Skill.SK[k])))], // 들고 있는 마법 물건 (경이의 완드 · 소멸의 구)
     // 기술 쓰는 순서: 사람이 정했으면 그 순서(왼쪽부터), 아니면 큰 것부터
     order(m, list) { const pri = m.skPri, rank = k => { const i = pri ? pri.indexOf(k) : -1; return i >= 0 ? i : pri ? 99 : -G.Res.cost(m, G.Skill.SK[k]?.res); }; return list.map((k, i) => [k, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]); },
     // 이 기술을 맨 앞으로
@@ -218,7 +191,6 @@ G.Guild = (() => {
     skill: (m, key) => !!m && Gd.active(m).includes(key),
     // 수치 패시브 합 (splash·sight·move처럼 더하는 것)
     sum(m, k) { let v = k === 'move' ? G.Trinket.sum(m, k) : 0; for (const s of Gd.active(m)) { const S = D.MSKILLS[s]; if (S && typeof S[k] === 'number') v += S[k]; } return v + G.Story.scarSum(m, k); },
-    goldBonus(rt) { let g = 0; for (const a of rt.allies) if (a.merc && !a.dead) g += G.Trinket.sum(a.merc, 'gold'); return g; },
     name(f) {
       const used = new Set(f.mercs.map(m => m.name).concat((f.tavern?.offers || []).map(o => o.m.name)));
       for (let i = 0; i < 20; i++) { const n = U.pick(D.NAMES[0]) + U.pick(D.NAMES[1]); if (!used.has(n)) return n; }
@@ -226,10 +198,10 @@ G.Guild = (() => {
     },
     // 새 용병: 레벨은 지금 깊이를 따라간다. 기벽 긍정 하나 · 부정 하나 (DESIGN.md 44 — 몸값에 곱해진다)
     make(f, cls, extra = {}) {
-      const tv = Gd.fac(f, 'tavern'), lv = Math.min(LV_MAX - 2, Math.max(1, Math.round(F().depth(f.maxFloor) / 4) + U.rand(3) - 1) + tv);
+      const tv = Gd.fac(f, 'tavern'), rk = Gd.rank(f), lv = Math.min(rk.cap + tv, LV_MAX - 2, Math.max(1, Math.round(F().depth(f.maxFloor) / 4) + U.rand(3) - 1) + tv);
       // 선술집 등급: 능력치를 등급+1번 굴려 합이 큰 쪽
       let ab = G.Dnd.rollAb(cls);
-      for (let i = 0; i < tv; i++) { const b = G.Dnd.rollAb(cls); if (G.Dnd.sumAb(b) > G.Dnd.sumAb(ab)) ab = b; }
+      for (let i = 0; i < tv + rk.i; i++) { const b = G.Dnd.rollAb(cls); if (G.Dnd.sumAb(b) > G.Dnd.sumAb(ab)) ab = b; }
       return Object.assign({ uid: f.nextUid = (f.nextUid || 0) + 1, cls, name: Gd.name(f), lv, xp: 0, feat: G.Feat.roll(), pers: G.Persona.roll(), ab, abCls: cls, skills: Gd.roll(cls, extra.lv || 1), look: U.rand(LOOKS), inj: 0, downs: 0 }, extra);
     },
     price(f, m) {
@@ -294,7 +266,7 @@ G.Guild = (() => {
       // 다가오는 임무의 적성 (DESIGN.md 66): 맞는 사람 하나에 +2
       const ahead = G.Mission ? G.Mission.ahead(f, f.start || 1, 4).map(x => x.k) : [];
       const fit = ms => ms.reduce((a, m) => a + ahead.filter(k => D.APT[k].cls.includes(m.cls)).length * 2, 0);
-      const score = ids => { const ms = ids.map(u => Gd.get(f, u)); return fit(ms) + 10 * G.Combo.possible(ms).filter(c => c.open).length + G.Bond.pairs(f, ms).reduce((a, p) => a + (p.r === 'friend' ? 3 : -8), 0) + ms.reduce((a, m) => a + m.lv * 0.1 + (m.cls === 'cleric' ? 100 : 0), 0); };
+      const score = ids => { const ms = ids.map(u => Gd.get(f, u)); return fit(ms) + G.Bond.pairs(f, ms).reduce((a, p) => a + (p.r === 'friend' ? 3 : -8), 0) + ms.reduce((a, m) => a + m.lv * 0.1 + (m.cls === 'cleric' ? 100 : 0), 0); };
       for (let pass = 0; pass < 2; pass++) for (let i = 0; i < out.length; i++) for (const m of ok) {
         if (out.includes(m.uid)) continue;
         const t = out.slice(); t[i] = m.uid;
@@ -304,11 +276,12 @@ G.Guild = (() => {
     },
 
     // ── 던전에서 일어나는 일 ──
-    // 처치: 살아 있는 출전 용병 모두 경험치 (보스 10)
+    // 처치: 그 몬스터의 경험치(SRD CR 표)를 살아 있는 출전 용병이 나눈다
     onKill(f, rt, mo) {
-      const base = (mo.boss ? 10 : 1) * (mo.xpK || 1) * (1 + 0.2 * Gd.fac(f, 'train'));
+      if (mo.boss && !rt.tutorial) Gd.earnFame(f, Math.max(5, Math.round((mo.stat?.cr || 1) * 2 + 5)), `${mo.n} 처치`);
+      const alive = Math.max(1, (rt.party || rt.allies).filter(a => a.merc && !a.dead).length), base = (G.Region.XP[mo.stat?.cr] || 10) / alive * (mo.xpK || 1) * (1 + 0.2 * Gd.fac(f, 'train'));
       // 훈련장: 출전하지 않은 사람(부상 제외)도 경험치 일부
-      const tr = TRAIN_K * Gd.fac(f, 'train') + 0.1 * Gd.jobPow(f, 'coach');
+      const tr = TRAIN_K * Gd.fac(f, 'train');
       const body = rt.party || rt.allies;
       if (tr) { const on = new Set(body.map(a => a.merc && a.merc.uid)); for (const m of f.mercs) if (!on.has(m.uid) && !(m.inj > 0)) Gd.addXp(m, base * tr * Gd.mult(m, 'xp')); }
       // 단장도 같이 (rt.party[0] = 단장)
@@ -323,6 +296,7 @@ G.Guild = (() => {
           a.max = a.kind === 'hero' ? F().heroHP(f) : F().allyHP(f, a);
           G.fx(rt, { k: 'text', x: a.x, y: a.y - 1.2, s: Gd.lvText(m), col: m.bt ? '#ffd27a' : '#9fe79f', t: 1.2, sz: 1.1, pop: true });
           G.Banter.line(rt, 'levelup', a);
+          G.log(`${m.name || '단장'} ${m.lv}레벨`, 'fantasy', 'good');
         }
       }
     },
@@ -331,13 +305,12 @@ G.Guild = (() => {
       m.xp += x;
       while (m.xp >= Gd.needOf(m)) { m.xp -= Gd.needOf(m); if (m.lv < LV_MAX) { m.lv++; Gd.grow(m); } else m.bt = (m.bt || 0) + 1; Gd.giveBoons(m); }
     },
-    // 쓰러짐: 한 층에서 DOWNS_TO_INJURY번이면 부상 — 출전에서 빠지고 대기 중에 낫는다
+    // 쓰러짐: 한 번 쓰러지면 부상 (DESIGN.md 155) — 출전에서 빠지고 대기 중에 낫는다. 단장도 같다
+    // 단장은 지도 위에서 일행을 이끄는 몸이라 원정 중엔 빠지지 않고, 다 나을 때까지 다음 출발을 못 한다 (G.Exp.depart)
     onDown(f, rt, a) {
       const m = a.merc;
-      // 단장은 다치지 않는다 (늘 이끈다)
-      if (m && m.lead) return;
       if (!m || ++m.downs < DOWNS_TO_INJURY) return;
-      m.inj = INJURY_T * Gd.mult(m, 'revive') * (1 - TEMPLE_K * Gd.fac(f, 'temple')) * (1 - 0.12 * Gd.jobPow(f, 'priest'));
+      m.inj = INJURY_T * Gd.mult(m, 'revive') * (1 - TEMPLE_K * Gd.fac(f, 'temple'));
       G.fx(rt, { k: 'text', x: a.x, y: a.y - 1.2, s: '부상!', col: '#ff8a8a', t: 1.4, sz: 1.2, pop: true });
       G.log(`부상 · ${m.name}`, 'fantasy', 'bad');
       rt.resync = true;
@@ -350,61 +323,22 @@ G.Guild = (() => {
         if (!f.mercs.length) { f.mercs.push(Gd.make(f, 'archer', { lv: 1 })); rt.resync = true; }
         Gd.refresh(f);
       }
-      for (const m of f.mercs) if (m.inj > 0 && (m.inj -= dt) <= 0) { m.inj = 0; rt.resync = true; }
+      for (const m of Gd.crew(f)) if (m.inj > 0 && (m.inj -= dt) <= 0) { m.inj = 0; rt.resync = true; }
       const T = Gd.tavern(f);
       if ((T.t -= dt) <= 0) Gd.refresh(f);
     },
-    // 라이벌을 이겼다: 가끔 그 파티 출신이 입단을 원한다 (긍정 기벽 하나)
-    defector(f, d) {
-      if (!U.chance(0.35 + ta('t_recruit'))) return;
-      const cls = U.pick([d.lead, ...d.crew]);
-      const m = Gd.make(f, cls, { from: d.id });
-      m.lv += 1;
-      const T = Gd.tavern(f);
-      T.offers.unshift({ m, price: Gd.price(f, m) });
-      if (T.offers.length > Gd.offersN() + 1) T.offers.pop();
-      G.Rivals.say(`입단 희망 · ${m.name} (전 ${d.n} ${D.F.allies[cls].n})`, d.col);
-    },
-    // 동료 노드만 있던 옛 저장: 면허가 있는 직업마다 한 명씩 들인다
+    // 불러온 저장의 빈칸만 채운다 (옛 방치형 저장의 이전 · 환불 코드는 지웠다)
     migrate(f) {
       if (!f.mercs) f.mercs = [];
-      // 스킬 일곱 중 넷(DESIGN.md 43) 전의 용병: 풀에 남은 것은 두고 나머지를 풀에서 채운다
       for (const m of f.mercs.concat((f.tavern?.offers || []).map(o => o.m), f.leader ? [f.leader] : [])) {
-        const pool = Gd.pickable(m.cls), keep = (m.skills || []).filter(k => pool.includes(k));
-        m.skills = keep.concat(Gd.roll(m.cls, m.lv).filter(k => !keep.includes(k))).slice(0, SKILL_N); // 자동 기술로 옮겨 간 칸은 새로 채운다
         if (m.look == null) m.look = U.rand(LOOKS);
-        // 기벽 · 요양소를 뺐다 (DESIGN.md 61): 옛 기벽은 지우고 출신 재주를 굴린다
         if (!m.feat) m.feat = G.Feat.roll();
-        // 옛 전직 → SRD 서브클래스 (DESIGN.md 56)
-        if (m.adv && !D.ADV[m.adv]) m.adv = D.ADV_OLD[m.adv] && D.ADV[D.ADV_OLD[m.adv]].base === m.cls ? D.ADV_OLD[m.adv] : null;
+        if (!m.pers) m.pers = G.Persona.roll();
+        if (m.skills) { const pool = Gd.pickable(m.cls), keep = m.skills.filter(k => pool.includes(k) || D.MSKILLS[k]); if (keep.length < m.skills.length) m.skills = keep.concat(Gd.roll(m.cls, m.lv).filter(k => !keep.includes(k))).slice(0, Math.max(SKILL_N, keep.length)); } // 없어진 기술은 풀에서 채운다
+        delete m.gear; delete m.job; delete m.traits; delete m.qlock;
         Gd.capLv(m);
       }
-      // 성격이 생기기 전 용병 (DESIGN.md 42): 옛 특성 겁쟁이 · 탐욕은 성격으로 옮기고, 나머지는 성격을 굴린다
-      for (const m of f.mercs.concat((f.tavern?.offers || []).map(o => o.m))) {
-        if (m.pers) continue;
-        const old = { coward: 'coward', greedy: 'greedy' }, moved = (m.traits || []).filter(t => old[t]).map(t => old[t]);
-        m.pers = moved.length ? moved : G.Persona.roll();
-      }
-      for (const m of f.mercs.concat((f.tavern?.offers || []).map(o => o.m))) { delete m.traits; delete m.qlock; }
-      delete f.qlog;
-      // 출전 칸 업그레이드가 사라졌다 (DESIGN.md 67): 쓴 값을 돌려준다
-      if (f.fac?.elite) { f.fame = (f.fame || 0) + 40; delete f.fac.elite; }
-      if (f.tree?.slot) { f.gold = (f.gold || 0) + 1.5e7; delete f.tree.slot; }
-      // 명성 트리 → 길드 시설 (DESIGN.md 60): 같은 노드는 그 레벨 그대로, 이름값(fm_power)에 쓴 명성은 돌려준다
-      if (f.fameTree) {
-        const T = f.fameTree, map = { fm_roster: 'hall', fm_tavern: 'tavern', fm_xp: 'train', fm_start: 'vault', fm_keep: 'archive', fm_gold: 'trade' };
-        f.fac = f.fac || {};
-        for (const k in map) if (T[k] > 0) f.fac[map[k]] = Math.max(f.fac[map[k]] || 0, Math.min(D.FAC[map[k]].max, T[k]));
-        let back = 0;
-        for (let i = 0; i < (T.fm_power || 0); i++) back += 2 * Math.pow(1.455, i);
-        f.fame = (f.fame || 0) + Math.round(back);
-        if (f.fameAll == null) f.fameAll = f.fame;
-        delete f.fameTree;
-      }
       if (f.fameAll == null) f.fameAll = f.fame || 0;
-      if (f.mercs.length) return;
-      for (const cls of Object.keys(D.F.allies).filter(id => ta('ally_' + id))) f.mercs.push(Gd.make(f, cls));
-      f.lineup = [];
     },
   };
   return Gd;

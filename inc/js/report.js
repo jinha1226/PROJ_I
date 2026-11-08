@@ -12,13 +12,11 @@ G.Report = (() => {
   const R = {
     // 출발 (G.Exp.depart)
     snap(f, rt) {
-      const st = G.Rivals.st(f);
       f.run = {
         from: f.floor, kills: f.kills || 0,
         mercs: rt.allies.filter(a => a.merc).map(a => ({ uid: a.merc.uid, lv: a.merc.lv + (a.merc.bt || 0) })),
         tk: G.Trinket.all(f).map(t => ({ id: t.id, n: G.Trinket.name(t), ic: G.Trinket.def(t).ic, r: G.Trinket.rarity(t) })),
         friends: [...friendKeys(f)],
-        riv: Object.fromEntries(D.RIVALS.map(d => [d.id, { w: st[d.id].wins, l: st[d.id].losses }])),
       };
     },
     // 귀환 (G.Exp.home): 기벽 · 장신구 정리가 끝난 뒤에 부른다
@@ -35,11 +33,7 @@ G.Report = (() => {
       const tkGain = now.filter(t => !was.has(t.id)).map(t => ({ id: t.id, n: G.Trinket.name(t), ic: G.Trinket.def(t).ic, r: G.Trinket.rarity(t), tip: G.Trinket.tip(t) }));
       const tkLost = r.tk.filter(t => !now.some(q => q.id === t.id));
       const before = new Set(r.friends), friends = [...friendKeys(f)].filter(k => !before.has(k)).map(k => k.split('-').map(u => G.Guild.get(f, +u)?.name).filter(Boolean));
-      const st = G.Rivals.st(f), rivals = [];
-      for (const d of D.RIVALS) {
-        const o = r.riv[d.id] || { w: 0, l: 0 }, beat = st[d.id].losses - o.l, lostTo = st[d.id].wins - o.w;
-        if (beat > 0 || lostTo > 0) rivals.push({ n: d.n, col: d.col, beat, lostTo });
-      }
+      const rivals = [];
       f.report = { from: r.from, to: f.floor, why, got, lost, kills: (f.kills || 0) - r.kills, mercs, tkGain, tkLost, friends, rivals, legacy: r.legacy || 0, legend: r.legend || 0, dead: r.dead || [], broke: r.broke || [], avenged: r.avenged || [], seen: false, at: G.S.runTime };
       f.run = null;
     },

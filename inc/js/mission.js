@@ -31,8 +31,9 @@ G.Mission = (() => {
       const ms = rt.party.filter(p => p.merc && !p.dead), b = G.Dnd.best(ms.map(p => p.merc), sk);
       if (!b.m) return null;
       // 가장 잘하는 사람과 2 이내면 누구든 나선다 (늘 같은 사람만 말하지 않게)
-      const val = p => G.Dnd.best([p.merc], sk).v, who = by && !by.dead ? by : U.pick(ms.filter(p => val(p) >= b.v - 2)), nat = G.Dnd.d20(0), mod = val(who), dc = fixDC ?? DC(f.floor) + extra + (G.CHECK_DC || 0);
+      const val = p => G.Dnd.best([p.merc], sk).v, who = by && !by.dead ? by : U.pick(ms.filter(p => val(p) >= b.v - 2)), B = G.Items.bag(f), climb = sk === 'athletics' && B['Potion of Climbing'] > 0 && (B['Potion of Climbing']--, true), adv = climb || G.Trinket.props(who.merc, 'skAdv').some(q => q[1] === sk), nat0 = G.Dnd.d20(adv ? 1 : 0), nat = G.Dnd.reliable(who.merc) && G.Dnd.profs(who.merc).includes(sk) ? Math.max(10, nat0) : nat0, mod = (sk === 'athletics' && who.merc.adv === 'thief' && who.merc.lv >= 3 ? Math.max(G.Dnd.skill(who.merc, sk), G.Dnd.skill(who.merc, 'acrobatics')) : G.Dnd.skill(who.merc, sk)) /* 2층 작업 (SRD 도둑) */ - 2 * (who.merc.exh || 0) - (who.merc.raisePen || 0), /* 사자 소생 (SRD): d20 −4, 긴 휴식마다 1씩 */ /* 믿음직한 재능 (SRD): 숙련 판정은 9 이하를 10으로 · 등반의 물약 · 엘프의 장화 같은 이점 · 탈진 */ dc = fixDC ?? DC(f.floor) + extra + (G.CHECK_DC || 0);
       let tot = nat + mod;
+      if (tot < dc) { const h = G.Util?.help(rt, sk, who); if (h?.adv) tot = Math.max(tot, G.Dnd.d20(0) + mod); else if (h?.b) tot += h.b; } // 전투 밖 주문 (G.Util): 유도 +1d4 · 그 판정에 맞는 주문은 이점
       if (tot < dc && G.Guild.skill(who.merc, 'x_tmind') && G.Res.can(who.merc, 'sr_second', G.Skill.SK.sr_second.res)) { tot += 1 + U.rand(10); if (tot >= dc) { G.Res.pay(who.merc, 'sr_second', G.Skill.SK.sr_second.res); G.Pool.used(who, 'x_tmind'); } } // 전술적 사고 (SRD): 실패에 d10. 그래도 실패면 소모 안 함
       return { who, nat, mod: tot - nat, dc, ok: tot >= dc };
     },
@@ -151,7 +152,7 @@ G.Mission = (() => {
     win(f, rt) {
       const ms = rt.mission, h = rt.hero;
       ms.done = true;
-      let g = F().monGold(f.floor) * REWARD_K * F().goldMult(f);
+      let g = F().monGold(f.floor) * REWARD_K;
       // 적성: 토벌 · 호위는 보상 +25%씩. 호위는 설득 판정에 성공하면 상인 사례 ×1.5
       if (ms.k === 'hunt' || ms.k === 'escort') g *= 1 + 0.25 * (ms.apt || 0);
       if (ms.k === 'escort') { const p = M.check(f, rt, 'persuasion'); if (p) { g *= 1.5; G.Dnd.flip(p, '설득 · 사례 ×1.5'); } }
@@ -159,7 +160,7 @@ G.Mission = (() => {
       if (U.chance(0.4)) G.Trinket.gain(f, rt, h.x, h.y);
       // 끝난 수비 대상 · 상인은 물러난다
       if (ms.obj) { ms.obj.dead = true; F().refreshEnts(rt); }
-      G.fx(rt, { k: 'text', x: h.x, y: h.y - 1.8, s: `${DEF[ms.k].n} 성공 · +${U.fmt(g)}`, col: '#9fe79f', t: 2.2, sz: 1.3, pop: true });
+      G.fx(rt, { k: 'text', x: h.x, y: h.y - 1.8, s: `${DEF[ms.k].n} 성공 · +${U.coin(g)}`, col: '#9fe79f', t: 2.2, sz: 1.3, pop: true });
       G.J.sfx('fantasy', 'finish');
       G.log(`${f.floor}층 임무 성공 · ${DEF[ms.k].n}`, 'fantasy', 'good');
       f.missions = (f.missions || 0) + 1;
