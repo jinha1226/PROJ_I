@@ -73,3 +73,7 @@ body.logopen #log { display:block; position:fixed; left:0; right:0; top:44px; bo
   #logt { display:none; }
   #sheet { left:auto; right:12px; bottom:12px; width:380px; max-height:calc(100vh - 80px); border:1px solid var(--line); border-radius:14px; }
 }
+/* 사건: 직업 선택지 · 빠진 직업의 잠긴 선택지 */
+.act.cl { border-left:3px solid #b5883a; }
+.act.cl .l { color:#f1dfb4; }
+.act.lock { border-style:dashed; font-style:italic; }

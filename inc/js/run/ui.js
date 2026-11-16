@@ -18,7 +18,9 @@
   }
   $('#go').onclick = () => { if (picks.length !== 3) return; st = RUN.newRun(seed, picks);
     // ?reveal=1: 지도 전체를 보는 개발용 미리보기
-    if (qs.has('reveal')) { for (const n of st.map.nodes) { n.info = 2; n.seenMap = true; } for (const e of st.map.edges) { e.seen.hidden = e.seen.lock = e.seen.trap = e.seen.dark = true; } st.revealAll = true; if (qs.get('reveal') === 'ink') { for (const n of st.map.nodes) n.visited = true; for (const e of st.map.edges) e.walked = true; } } $('#start').classList.add('hidden'); $('#app').classList.remove('dim'); draw({}); };
+    if (qs.has('reveal')) { for (const n of st.map.nodes) { n.info = 2; n.seenMap = true; } for (const e of st.map.edges) { e.seen.hidden = e.seen.lock = e.seen.trap = e.seen.dark = true; } st.revealAll = true; if (qs.get('reveal') === 'ink') { for (const n of st.map.nodes) n.visited = true; for (const e of st.map.edges) e.walked = true; } } // ?ev=toll: 사건 하나를 바로 여는 개발용 미리보기
+    if (qs.has('ev')) { const ev = RUN.EVENTS.find(x => x.id === qs.get('ev')); if (ev) st.scene = { kind: 'event', title: ev.t, text: ev.d, choices: RUN.eventScene(st, st.map.nodes[0], ev.id) }; }
+    $('#start').classList.add('hidden'); $('#app').classList.remove('dim'); draw({}); };
   $('#reseed').onclick = () => { seed = Math.floor(Math.random() * 100000); start(); };
 
   // ── 그리기 ──
@@ -53,7 +55,7 @@
   const btn = (a, i) => {
     const chance = a.check ? RUN.fmtCheck(a.check, a.p) : '';
     const off = a.off && a.off();
-    return `<button class="act${off ? ' off' : ''}" data-i="${i}"><span class="k">${i + 1}</span><span class="l">${esc(a.label || a.n)}${a.who ? `<small>${esc(a.who)}</small>` : ''}</span><span class="r">${esc(chance)}${a.cost ? `<em>${esc(a.cost)}</em>` : ''}</span>${a.note || a.sub ? `<span class="nt">${esc(a.note || a.sub)}</span>` : ''}</button>`;
+    return `<button class="act${off ? ' off' : ''}${a.lock ? ' lock' : ''}${a.cls ? ' cl' : ''}" data-i="${i}"><span class="k">${i + 1}</span><span class="l">${esc(a.label || a.n)}${a.who ? `<small>${esc(a.who)}</small>` : ''}</span><span class="r">${esc(chance)}${a.cost ? `<em>${esc(a.cost)}</em>` : ''}</span>${a.note || a.sub ? `<span class="nt">${esc(a.note || a.sub)}</span>` : ''}</button>`;
   };
   let sheetActs = [], sheetMode = null;
   function openSheet(html, acts, mode) {

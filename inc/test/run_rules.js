@@ -47,6 +47,25 @@ for (let s = 1; s <= N; s++) {
   t('방이 판 안에 있다', !out, tag); t('방끼리 겹치지 않는다', !overlap, tag); t('복도가 방을 뚫지 않는다', !through, tag);
 }
 
+// ── 사건: 직업 선택지 ──
+{
+  const ALL = R.CLS_ORDER; let lockSeen = 0, mineSeen = 0;
+  const trios = []; for (let a = 0; a < 5; a++) for (let b = a + 1; b < 5; b++) for (let c = b + 1; c < 5; c++) trios.push([ALL[a], ALL[b], ALL[c]]);
+  for (const ev of R.EVENTS) for (const pk of trios) {
+    const st = R.newRun(7, pk), n = st.map.nodes[1], ch = R.eventScene(st, n, ev.id), tag = `${ev.id} ${pk.join('+')}`;
+    const mine = ch.filter(c => c.cls), locks = ch.filter(c => c.lock);
+    t('직업 선택지는 파티에 있는 직업만', mine.every(c => pk.includes(c.cls)), tag);
+    t('직업 선택지는 2개까지', mine.length <= 2, tag);
+    t('잠긴 선택지는 1개까지, 못 고른다', locks.length <= 1 && locks.every(c => c.off()), tag);
+    t('공통 선택지는 모두 나온다', ev.opts.filter(o => !o.cls).every(o => ch.some(c => c.n === o.n)), tag);
+    t('고를 수 있는 길이 남아 있다', ch.some(c => !(c.off && c.off())), tag);
+    lockSeen += locks.length; mineSeen += mine.length;
+    // 모든 선택지를 실제로 골라 봐도 깨지지 않는다
+    ch.forEach((c, i) => { if (c.off && c.off()) return; const s2 = R.newRun(11 + i, pk); s2.scene = { kind: 'event', choices: R.eventScene(s2, s2.map.nodes[1], ev.id) }; try { R.choose(s2, i); t('선택지 실행', true); } catch (err) { t('선택지 실행', false, `${tag} ${c.n} ${err.message}`); } });
+  }
+  console.log(`  사건 ${R.EVENTS.length}개 × 파티 ${trios.length}조합: 직업 선택지 평균 ${(mineSeen / R.EVENTS.length / trios.length).toFixed(1)} · 잠긴 선택지 평균 ${(lockSeen / R.EVENTS.length / trios.length).toFixed(1)}`);
+}
+
 // ── 봇 ──
 const PARTIES = [['fighter', 'rogue', 'wizard'], ['fighter', 'cleric', 'ranger'], ['rogue', 'wizard', 'cleric'], ['fighter', 'ranger', 'wizard']];
 function play(seed, picks, scout) {

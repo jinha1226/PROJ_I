@@ -171,6 +171,7 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
   // ── 방에 들어서면 ───────────────────────────────────────────────
   function arrive(st, n) {
     n.visited = true; const wasScouted = n.scouted, pre = n.info; reveal(st, n, 3);
+    if (n.hostile && n.type !== 'boss' && st.flags.warn > 0 && !n.alert) { st.flags.warn--; n.alert = true; note(n, '소문이 앞섰다', 'red'); say(st, '도망친 놈들이 먼저 알렸다. 안쪽이 무기를 들고 기다린다.', 'bad'); }
     if (n.hostile) {
       // 아무것도 모르고 들어서면 적이 먼저 덮칠 수 있다 (SRD 기습: 기척만 들었으면 덜하다)
       const surprised = !n.alert && n.type !== 'boss' && st.rng() < (pre >= 2 ? 0 : pre >= 1 ? 0.2 : 0.45);
@@ -190,7 +191,7 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
       st.scene = { kind: 'fight', title: RUN.TYPE[n.type], text: intro, choices: ch };
     } else if (n.type === 'event') {
       const ev = RUN.EVENTS.find(x => x.id === n.ev);
-      st.scene = { kind: 'event', title: ev.t, text: ev.d, choices: ev.opts.map(o => eventChoice(st, n, o)).filter(Boolean) };
+      st.scene = { kind: 'event', title: ev.t, text: ev.d, choices: eventChoices(st, n, ev) };
     } else if (n.type === 'camp') {
       st.scene = { kind: 'camp', title: '야영', text: '바람이 들지 않는 구석. 여기서 긴 휴식을 할 수 있다.', choices: [
         { n: '긴 휴식', sub: '체력 · 주문 슬롯을 모두 되찾는다', run: () => { for (const m of alive(st)) { m.hp = m.max; m.sl = { ...(C[m.cls].slots || {}) }; } note(n, '야영', 'ink'); say(st, '불을 피우고 긴 휴식을 했다. 모두 기운을 되찾았다.', 'good'); } },
@@ -215,15 +216,42 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
     return { kind: 'shop', title: '떠돌이 상인', text: '등불 아래 상인이 짐을 풀어 놓았다.', choices: ch };
   }
 
+  // 받침이 있으면 '이', 없으면 '가'
+  const iga = w => { const c = w.charCodeAt(w.length - 1) - 0xac00; return c >= 0 && c < 11172 && c % 28 ? '이' : '가'; };
+  const member = (st, cls) => alive(st).find(m => m.cls === cls);
+  // 직업 선택지는 파티에 그 직업이 있을 때만, 최대 2개를 앞에 세운다. 빠진 직업 하나는 '???'로 잠가 다음 판에 데려올 이유를 남긴다.
+  function eventChoices(st, n, ev) {
+    const usable = o => o.cls && member(st, o.cls) && (!o.item || st.items[o.item]);
+    const mine = ev.opts.filter(usable).slice(0, 2);
+    const lack = ev.opts.filter(o => o.cls && !member(st, o.cls));
+    const out = [...mine, ...ev.opts.filter(o => !o.cls)].map(o => eventChoice(st, n, o)).filter(Boolean);
+    if (lack.length) {
+      const o = lack[Math.floor(st.rng() * lack.length)], nm = C[o.cls].n;
+      out.splice(mine.length, 0, { n: `[${nm}] ???`, sub: `${nm}${iga(nm)} 있었다면…`, lock: true, off: () => true, run: () => {} });
+    }
+    return out;
+  }
+
   function eventChoice(st, n, o) {
     if (o.cost && st.gold < o.cost) return { n: o.n, sub: `금화 ${o.cost} — 모자란다`, off: () => true, run: () => {} };
-    let c = null, who = null;
-    if (o.sk) { who = best(st, o.sk); if (!who) return null; c = mkCheck(st, o.sk, o.dc, who); }
-    return { n: o.n, who: who?.m.n, check: c, p: c ? pOf(c) : 1, sub: o.cost ? `금화 ${o.cost}` : null, run: () => {
+    let c = null, who = null; const by = o.cls ? member(st, o.cls) : null;
+    const label = by ? `[${C[o.cls].n}] ${o.n}` : o.n;
+    if (by && o.slot && !(by.sl[o.slot] > 0)) return { n: label, who: by.n, sub: `${o.slot}레벨 주문 슬롯이 없다`, off: () => true, run: () => {} };
+    if (o.sk) { who = by ? { m: by, bonus: C[by.cls].sk[o.sk] } : best(st, o.sk); if (!who) return null; c = mkCheck(st, o.sk, o.dc, who); }
+    const sub = o.cost ? `금화 ${o.cost}` : o.slot ? `${o.slot}레벨 슬롯` : o.item ? `${RUN.ITEMS[o.item].n} 1` : null;
+    return { n: label, who: by ? null : who?.m.n, check: c, p: c ? pOf(c) : 1, sub, cls: o.cls, run: () => {
       if (o.cost) st.gold -= o.cost;
+      if (by && o.slot) by.sl[o.slot]--;
       let res = o.ok;
       if (c) { const r = roll(st, c, who.m.n, o.sk); res = r.ok ? o.ok : o.no; }
-      say(st, res.msg, res.fight || res.alert ? 'bad' : 'info'); note(n, c ? `${o.n.replace(/한다$/, '')} ${res === o.ok ? '성공' : '실패'}` : o.n.replace(/를 낸다$/, ' 냄').replace(/한다$/, '함'), 'ink');
+      say(st, res.msg, res.fight || res.alert || res.warn || res.curse || res.hurt ? 'bad' : 'info');
+      const base = o.tag || o.n;
+      note(n, c ? `${base.replace(/한다$/, '')} ${res === o.ok ? '성공' : '실패'}` : o.tag || o.n.replace(/를 낸다$/, ' 냄').replace(/한다$/, '함'), 'ink');
+      if (res.hurt) hurt(st, (who?.m || by), res.hurt);
+      if (res.healAll) for (const m of alive(st)) m.hp = Math.min(m.max, m.hp + res.healAll);
+      if (res.warn) st.flags.warn = (st.flags.warn || 0) + 1;
+      if (res.curse) st.flags.curse = true;
+      if (res.scoutAhead) { const ahead = RUN.shuffle(st.rng, st.map.nodes.filter(x => x.row > n.row && x.hostile && !x.visited && x.info < 2)).slice(0, 2); ahead.forEach(x => { reveal(st, x, 2); note(x, '흔적', 'pencil'); }); if (ahead.length) say(st, `앞쪽 적 방 ${ahead.length}곳이 지도에 표시됐다.`, 'good'); }
       if (res.gold) { st.gold += res.gold; say(st, `금화 ${res.gold}.`, 'good'); }
       if (res.item) st.items[res.item] = (st.items[res.item] || 0) + 1;
       if (res.bless) st.flags.bless = true;
@@ -254,6 +282,7 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
     if (n.alert || mod.alert) { mul *= 1.25; why.push('들킴'); }
     if (mod.dark) { mul *= 1.2; why.push('어둠'); }
     if (st.flags.bless) { mul *= 0.75; why.push('축복'); st.flags.bless = false; }
+    if (st.flags.curse) { mul *= 1.25; why.push('저주'); st.flags.curse = false; }
     if (small && alive(st).some(m => C[m.cls].ranged)) why.push('좁은 방');
     const total = Math.max(0, Math.round(RUN.K * D * Math.min(2, D / P) * mul));
     const ws = alive(st).map(m => C[m.cls].w * (0.6 + st.rng() * 0.8)), sw = ws.reduce((a, b) => a + b, 0);
@@ -275,10 +304,12 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
   }
 
   RUN.doAct = (st, a) => { if (st.done || st.scene) return {}; const r = a.run() || {}; return r; };
+  RUN.eventScene = (st, n, id) => eventChoices(st, n, RUN.EVENTS.find(x => x.id === id)); // 시험용
   RUN.choose = (st, i) => {
     const s = st.scene; if (!s || st.done) return;
     const c = s.choices[i]; if (!c || (c.off && c.off())) return;
     c.run();
+    if (!st.done && !alive(st).length) { st.done = 'lose'; say(st, '탐사대가 전멸했다.', 'bad'); }
     if (st.done) { st.scene = null; return; }
     if (c.stay) { st.scene = shopScene(st, node(st, st.at)); return; }
     after(st);
