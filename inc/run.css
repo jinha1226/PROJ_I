@@ -1,4 +1,4 @@
-:root { --bg:#1d1a17; --card:#2a2520; --line:#4a4138; --ink:#efe6d3; --dim:#a99c88; --red:#e0735f; --good:#9fd28a; --paper:#f1e7d0; }
+:root { --bg:#1c140e; --card:#2b2017; --line:#57412d; --ink:#efe6d3; --dim:#a99c88; --red:#e0735f; --good:#9fd28a; --paper:#f1e7d0; }
 * { box-sizing:border-box; }
 html,body { height:100%; margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 "Noto Sans KR","Malgun Gothic",sans-serif; overflow:hidden; }
 button { font:inherit; color:inherit; }
@@ -11,7 +11,7 @@ button { font:inherit; color:inherit; }
 #info { flex:1; display:flex; gap:10px; flex-wrap:wrap; align-items:baseline; min-width:0; }
 #info .it { color:var(--dim); font-size:12px; }
 #bar button { background:none; border:1px solid var(--line); padding:3px 9px; border-radius:6px; font-size:12px; cursor:pointer; }
-#mapwrap { grid-area:map; overflow-y:auto; overflow-x:hidden; background:#15120f; min-height:0; }
+#mapwrap { grid-area:map; overflow-y:auto; overflow-x:hidden; background:#24180f radial-gradient(circle at 50% 40%, #33241a, #160e09); min-height:0; padding:6px 0; }
 #map { width:100%; max-width:520px; height:auto; display:block; margin:0 auto; }
 #party { grid-area:party; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; padding:8px; border-top:1px solid var(--line); }
 #log { display:none; }
@@ -28,11 +28,14 @@ body.logopen #log { display:block; position:fixed; left:0; right:0; top:44px; bo
 
 /* 지도 글씨 */
 #map .note { font:13px "Nanum Pen Script",cursive; }
-#map .sym { font:700 15px "Noto Sans KR",sans-serif; }
+#map .sym { font:700 14px "Noto Sans KR",sans-serif; }
 #map .stampt { font:28px "Nanum Pen Script",cursive; } #map .stampt2 { font:20px "Nanum Pen Script",cursive; }
 #map .room { cursor:default; } #map .room.next, #map .room.here { cursor:pointer; }
 #map .room.next .halo-r { animation:halo 1.6s ease-in-out infinite; }
-#map .halo { paint-order:stroke; stroke:#f3ead6; stroke-width:3px; stroke-linejoin:round; }
+#map .halo { paint-order:stroke; stroke:#f3e4c3; stroke-width:3px; stroke-linejoin:round; }
+#map .qm { font:700 22px "Nanum Pen Script",cursive; }
+#map .title { font:17px "Nanum Pen Script",cursive; }
+#map { filter:drop-shadow(0 4px 14px rgba(0,0,0,.55)); }
 @keyframes halo { 50% { opacity:.25; } }
 #map .room.inked { animation:ink .8s ease-out; } @keyframes ink { from { opacity:.2; } }
 #map .stamp { animation:stamp .5s cubic-bezier(.2,1.6,.4,1); transform-box:fill-box; } @keyframes stamp { from { opacity:0; } }

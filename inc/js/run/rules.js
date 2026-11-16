@@ -29,7 +29,7 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
       if (n.hostile) { const c = n.g.count; note(n, `적 ${Math.max(1, c - 1)}~${c + 1}?`); if (n.type === 'elite') note(n, '큰 놈이 있다?'); }
       else if (RUN.HINT2[n.type]) note(n, RUN.HINT2[n.type]);
     }
-    if (lv === 3) { n.notes = n.notes.filter(x => x.ink !== 'pencil' || x.keep); note(n, n.hostile ? n.g.label : RUN.TYPE[n.type], 'ink'); }
+    if (lv === 3) { n.notes = n.notes.filter(x => x.ink !== 'pencil' || x.keep); if (n.hostile) note(n, n.g.label, 'ink'); else if (!n.visited) note(n, RUN.TYPE[n.type], 'ink'); } // 들어간 방은 아이콘이 종류를 말한다
   }
   // 도착하면 수동 지각으로 다음 방의 기척을 듣고, 길의 잠김 · 어둠이 보인다 (4-4: 지각 숙련자 자동)
   function look(st) {
