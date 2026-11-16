@@ -33,6 +33,17 @@ RUN.draw = (() => {
     stairs: (x, y, o, ink) => `<g stroke="${ink ? INK : PEN}" stroke-width="1.2" fill="none">${[0, 1, 2, 3, 4].map(i => `<line x1="${f(x - 6 + i * 3)}" y1="${f(y - 6)}" x2="${f(x - 6 + i * 3)}" y2="${f(y + 6)}"/>`).join('')}<rect x="${f(x - 7)}" y="${f(y - 7)}" width="15" height="14" fill="none"/></g>`,
     altar: (x, y, o, ink) => `<rect x="${f(x - 6)}" y="${f(y - 3.5)}" width="12" height="7" rx="1" fill="${ink ? '#c9b8a0' : '#e4d8c2'}" stroke="${ink ? INK : PEN}" stroke-width="${ink ? 1.8 : 1}"/>`,
     chest: () => '',
+    crate: (x, y, o, ink) => { const c = ink ? INK : PEN, w = ink ? 1.4 : 0.9; return `<g stroke="${c}" stroke-width="${w}" fill="${ink ? '#c99a5b' : '#e8d6b4'}" transform="rotate(${(o.r || 0) * 20 - 10} ${f(x)} ${f(y)})"><rect x="${f(x - 4)}" y="${f(y - 4)}" width="8" height="8"/><path d="M${f(x - 4)},${f(y - 4)} L${f(x + 4)},${f(y + 4)} M${f(x + 4)},${f(y - 4)} L${f(x - 4)},${f(y + 4)}" fill="none"/></g>`; },
+    barrel: (x, y, o, ink) => `<g stroke="${ink ? INK : PEN}" stroke-width="${ink ? 1.4 : 0.9}" fill="${ink ? '#b5824e' : '#e8d6b4'}"><circle cx="${f(x)}" cy="${f(y)}" r="3.8"/><circle cx="${f(x)}" cy="${f(y)}" r="1.7" fill="none"/></g>`,
+    bones: (x, y, o, ink) => `<g stroke="${ink ? INK : PEN}" stroke-width="${ink ? 1.3 : 0.8}" fill="#f2ead8"><path d="M${f(x - 4)},${f(y - 3)} L${f(x + 4)},${f(y + 3)} M${f(x + 4)},${f(y - 3)} L${f(x - 4)},${f(y + 3)}"/>${[[-4, -3], [4, 3], [4, -3], [-4, 3]].map(([a, b]) => `<circle cx="${f(x + a)}" cy="${f(y + b)}" r="1.2"/>`).join('')}</g>`,
+    table: (x, y, o, ink) => `<g stroke="${ink ? INK : PEN}" stroke-width="${ink ? 1.4 : 0.9}" fill="${ink ? '#a8743f' : '#e8d6b4'}"><rect x="${f(x - 6)}" y="${f(y - 3.5)}" width="12" height="7" rx="1"/><circle cx="${f(x - 3)}" cy="${f(y - 6)}" r="1.6"/><circle cx="${f(x + 3)}" cy="${f(y + 6)}" r="1.6"/></g>`,
+    statue: (x, y, o, ink) => `<g stroke="${ink ? INK : PEN}" stroke-width="${ink ? 1.5 : 0.9}"><rect x="${f(x - 5)}" y="${f(y - 5)}" width="10" height="10" fill="${ink ? '#cfc4b2' : '#ece2d0'}"/><circle cx="${f(x)}" cy="${f(y)}" r="3" fill="${ink ? '#a59a88' : '#ddd2c0'}"/></g>`,
+    rug: (x, y, o, ink) => `<g stroke="${ink ? INK : PEN}" stroke-width="${ink ? 1.2 : 0.8}"><rect x="${f(x - 9)}" y="${f(y - 5)}" width="18" height="10" rx="1.5" fill="#b65f4a" fill-opacity="${ink ? 0.6 : 0.25}"/><rect x="${f(x - 6.5)}" y="${f(y - 2.5)}" width="13" height="5" fill="none" opacity="0.7"/></g>`,
+    urn: (x, y, o, ink) => `<path d="M${f(x - 2)},${f(y - 4)} h4 l-1,1.5 c3,1 3,6 0,6.5 h-2 c-3,-0.5 -3,-5.5 0,-6.5 Z" fill="${ink ? '#c98f5a' : '#ecdcc0'}" stroke="${ink ? INK : PEN}" stroke-width="${ink ? 1.3 : 0.8}"/>`,
+    bedroll: (x, y, o, ink) => `<rect x="${f(x - 3)}" y="${f(y - 6)}" width="6" height="12" rx="2.5" fill="${ink ? '#8aa06a' : '#e2e6cf'}" stroke="${ink ? INK : PEN}" stroke-width="${ink ? 1.3 : 0.8}"/>`,
+    brokenpillar: (x, y, o, ink) => `<g stroke="${ink ? INK : PEN}" stroke-width="${ink ? 1.5 : 0.9}" fill="${ink ? '#6b5440' : '#b9a68a'}"><circle cx="${f(x - 1)}" cy="${f(y)}" r="3.4"/><circle cx="${f(x + 4)}" cy="${f(y + 3)}" r="1.4"/><circle cx="${f(x + 2)}" cy="${f(y - 4)}" r="1"/></g>`,
+    web: (x, y, o, ink) => { const c = ink ? '#5a4634' : PEN, x0 = x - 6.5, y0 = y - 6.5; return `<g stroke="${c}" stroke-width="0.6" fill="none" opacity="0.8"><path d="M${f(x0)},${f(y0)} l11,3 M${f(x0)},${f(y0)} l8,8 M${f(x0)},${f(y0)} l3,11"/><path d="M${f(x0 + 4)},${f(y0 + 1)} q1,2 -3,3 M${f(x0 + 8)},${f(y0 + 2)} q0,4 -6,6"/></g>`; },
+    debris: (x, y, o, ink) => `<g fill="${ink ? '#8b735a' : '#c4b294'}" stroke="${ink ? INK : PEN}" stroke-width="0.7"><circle cx="${f(x - 3)}" cy="${f(y)}" r="1.5"/><circle cx="${f(x + 1)}" cy="${f(y - 2)}" r="1.1"/><circle cx="${f(x + 3)}" cy="${f(y + 2)}" r="1.7"/><circle cx="${f(x - 1)}" cy="${f(y + 3)}" r="0.9"/></g>`,
   };
 
   function render(svg, st, anim = {}) {
@@ -70,7 +81,7 @@ RUN.draw = (() => {
     // 둥근 방은 칸 계단 대신 진짜 원으로 그린다 (One Page Dungeon식)
     const roundReg = new Set(N.filter(n => shown(n) && !boxOf(n).fog && L.room[n.id].kind === 'round').map(n => 'r' + n.id));
     // 벽 선분 모으기: 바닥이 아닌 칸이나 다른 구역과 맞닿은 변 (문은 열어 둔다). 진한 쪽이 그린다
-    const walls = { ink: [], pen: [], fog: [] };
+    const walls = { ink: [], pen: [], fog: [] }, shadow = [];
     for (const c of cells.values()) for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
       const o = cells.get(key(c.x + dx, c.y + dy));
       if (o && o.reg === c.reg) continue;
@@ -79,6 +90,22 @@ RUN.draw = (() => {
       if (o && (RANK[o.s] > RANK[c.s] || (RANK[o.s] === RANK[c.s] && (o.x < c.x || o.y < c.y)))) continue;
       const x0 = dx === 1 ? c.x + 1 : c.x, y0 = dy === 1 ? c.y + 1 : c.y, x1 = dy ? x0 + 1 : x0, y1 = dx ? y0 + 1 : y0;
       walls[c.s].push(`M${P(x0, y0)} L${P(x1, y1)}`);
+      // 벽 안쪽 그림자 (바닥 쪽으로 조금 들어간 연한 띠)
+      if (c.s === 'ink') { const ox = -dx * 2.6, oy = -dy * 2.6; shadow.push(`M${f(M + x0 * T + ox)},${f(M + y0 * T + oy)} L${f(M + x1 * T + ox)},${f(M + y1 * T + oy)}`); }
+    }
+    // 벽 바깥 빗금 묶음 (One Page Dungeon식): 벽에서 두 칸 안의 바위 칸마다 짧은 평행선 3~4개, 방향은 칸마다 다르게
+    const rand = (x, y, k) => { let h = (x * 73856093 ^ y * 19349663 ^ k * 83492791 ^ map.seed) >>> 0; h = Math.imul(h ^ (h >>> 15), 2246822519) >>> 0; h = Math.imul(h ^ (h >>> 13), 3266489917) >>> 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+    const near = new Map();
+    for (const c of cells.values()) { if (c.s === 'fog') continue; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const x = c.x + dx, y = c.y + dy, k = key(x, y); if (cells.has(k)) continue; const dd = Math.max(Math.abs(dx), Math.abs(dy)), r = RANK[c.s], cur = near.get(k);
+      if (!cur || dd < cur.d || (dd === cur.d && r > cur.r)) near.set(k, { x, y, d: dd, r: Math.max(r, cur ? cur.r : 0) }); } }
+    const hatch = { 3: [], 2: [] };
+    for (const h of near.values()) {
+      if (h.d === 2 && rand(h.x, h.y, 1) < 0.45) continue;
+      const ang = rand(h.x, h.y, 2) * Math.PI, ux = Math.cos(ang), uy = Math.sin(ang), n = 3 + (rand(h.x, h.y, 3) < 0.5 ? 1 : 0), len = h.d === 1 ? 10 : 7;
+      const cx = M + (h.x + 0.5) * T + (rand(h.x, h.y, 4) - 0.5) * 4, cy = M + (h.y + 0.5) * T + (rand(h.x, h.y, 5) - 0.5) * 4;
+      for (let i = 0; i < n; i++) { const off = (i - (n - 1) / 2) * 2.3, l = len * (0.75 + rand(h.x, h.y, 10 + i) * 0.4) / 2, px = cx - uy * off, py = cy + ux * off;
+        hatch[h.r === 3 ? 3 : 2].push(`M${f(px - ux * l)},${f(py - uy * l)} L${f(px + ux * l)},${f(py + uy * l)}`); }
     }
     // ── 그리기 ──
     const out = [];
@@ -90,9 +117,8 @@ RUN.draw = (() => {
       <pattern id="dots" width="${T}" height="${T}" patternUnits="userSpaceOnUse" x="${M}" y="${M}"><circle cx="0" cy="0" r="0.75" fill="#9a7b58" opacity="0.6"/></pattern>
       <pattern id="fog" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><line x1="0" y1="0" x2="0" y2="5" stroke="${PEN}" stroke-width="0.7" opacity="0.55"/></pattern></defs>`);
     out.push(`<rect width="${f(W)}" height="${f(H)}" fill="url(#parch)"/><rect width="${f(W)}" height="${f(H)}" filter="url(#stain)" opacity="0.35"/><rect width="${f(W)}" height="${f(H)}" filter="url(#fiber)"/>`);
-    // 벽 바깥 펜 빗금 (바닥이 안쪽 절반을 덮는다)
-    out.push(`<path d="${walls.pen.join(' ')}" fill="none" stroke="url(#hatch)" stroke-width="9" stroke-linecap="round" opacity="0.45"/>`);
-    out.push(`<path d="${walls.ink.join(' ')}" fill="none" stroke="url(#hatch)" stroke-width="13" stroke-linecap="round" opacity="0.85"/>`);
+    out.push(`<path d="${hatch[2].join(' ')}" fill="none" stroke="#4a3526" stroke-width="0.8" stroke-linecap="round" opacity="0.32"/>`);
+    out.push(`<path d="${hatch[3].join(' ')}" fill="none" stroke="#3b2a1c" stroke-width="0.95" stroke-linecap="round" opacity="0.82"/>`);
     // 바닥
     for (const c of cells.values()) {
       if (roundReg.has(c.reg)) continue;
@@ -102,8 +128,15 @@ RUN.draw = (() => {
     }
     // 둥근 방: 바닥 원 + 굵은 원 벽
     for (const n of N) { if (!roundReg.has('r' + n.id)) continue; const r = L.room[n.id], cx = M + (r.x + r.w / 2) * T, cy = M + (r.y + r.h / 2) * T, rad = r.w / 2 * T, ink = n.visited;
-      out.push(`<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(rad + (ink ? 6 : 4))}" fill="none" stroke="url(#hatch)" stroke-width="${ink ? 12 : 8}" opacity="${ink ? 0.85 : 0.45}"/><circle cx="${f(cx)}" cy="${f(cy)}" r="${f(rad)}" fill="${FLOOR}"/><circle cx="${f(cx)}" cy="${f(cy)}" r="${f(rad)}" fill="url(#dots)"/>`);
+      out.push(`<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(rad)}" fill="${FLOOR}"/><circle cx="${f(cx)}" cy="${f(cy)}" r="${f(rad)}" fill="url(#dots)"/>`);
+      if (ink) out.push(`<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(rad - 2.6)}" fill="none" stroke="#b99b72" stroke-width="4" opacity="0.45"/>`);
       n._ring = `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(rad)}" fill="none" stroke="${ink ? INK : PEN}" stroke-width="${ink ? 3.4 : 1.7}"/>`; }
+    // 바닥 금 · 얼룩 (칸마다 정해진 우연)
+    const cracks = [];
+    for (const c of cells.values()) { if (c.s === 'fog' || roundReg.has(c.reg)) continue; if (rand(c.x, c.y, 20) < 0.07) { const x = M + c.x * T, y = M + c.y * T, a = rand(c.x, c.y, 21);
+      cracks.push(`M${f(x + 2 + a * 4)},${f(y + 2)} l${f(2 + a * 2)},${f(3)} l${f(-1.5)},${f(2.5)} l${f(2.5)},${f(3)}`); } }
+    out.push(`<path d="${cracks.join(' ')}" fill="none" stroke="#8a6d4d" stroke-width="0.8" opacity="0.7"/>`);
+    out.push(`<path d="${shadow.join(' ')}" fill="none" stroke="#b99b72" stroke-width="4" opacity="0.45"/>`);
     // 벽 선
     out.push(`<path d="${walls.fog.join(' ')}" fill="none" stroke="${PEN}" stroke-width="1.2" stroke-dasharray="2 2.5" stroke-linecap="round"/>`);
     out.push(`<path d="${walls.pen.join(' ')}" fill="none" stroke="${PEN}" stroke-width="1.7" stroke-linecap="round"/>`);
@@ -126,6 +159,8 @@ RUN.draw = (() => {
       const d = 'M' + pts.map(([x, y]) => `${f(M + x * T)},${f(M + y * T)}`).join(' L');
       out.push(`<path d="${d}" fill="none" stroke="${RUST}" stroke-width="2.6" stroke-dasharray="0.1 5" stroke-linecap="round" opacity="0.85"${anim.moved === e.id ? ' class="pen"' : ''}/>`);
     }
+    // 복도 잔해
+    for (const e of map.edges) { const c = L.cor[e.id]; for (const o of c.decor || []) { const cl = cells.get(key(o.x, o.y)); if (cl && cl.s !== 'fog') out.push(DECOR.debris(M + (o.x + 0.5) * T, M + (o.y + 0.5) * T, o, cl.s === 'ink')); } }
     // 방: 눌러 고르는 자리 · 아이콘 · 메모
     for (const n of N) {
       if (!shown(n)) continue;

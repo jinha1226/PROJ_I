@@ -18,7 +18,7 @@
   }
   $('#go').onclick = () => { if (picks.length !== 3) return; st = RUN.newRun(seed, picks);
     // ?reveal=1: 지도 전체를 보는 개발용 미리보기
-    if (qs.has('reveal')) { for (const n of st.map.nodes) { n.info = 2; n.seenMap = true; } for (const e of st.map.edges) { e.seen.hidden = e.seen.lock = e.seen.trap = e.seen.dark = true; } st.revealAll = true; } $('#start').classList.add('hidden'); $('#app').classList.remove('dim'); draw({}); };
+    if (qs.has('reveal')) { for (const n of st.map.nodes) { n.info = 2; n.seenMap = true; } for (const e of st.map.edges) { e.seen.hidden = e.seen.lock = e.seen.trap = e.seen.dark = true; } st.revealAll = true; if (qs.get('reveal') === 'ink') { for (const n of st.map.nodes) n.visited = true; for (const e of st.map.edges) e.walked = true; } } $('#start').classList.add('hidden'); $('#app').classList.remove('dim'); draw({}); };
   $('#reseed').onclick = () => { seed = Math.floor(Math.random() * 100000); start(); };
 
   // ── 그리기 ──

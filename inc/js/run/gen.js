@@ -215,6 +215,18 @@ RUN.gen = (() => {
     rm(0).decor.push({ k: 'stairs', x: rm(0).x + 1, y: rm(0).y + 1 });
     rm(bossN.id).decor.push({ k: 'stairs', x: rm(bossN.id).x + Math.floor(rm(bossN.id).w / 2) - 1, y: rm(bossN.id).y + 1 });
     for (const n of N) { const r = rm(n.id), c = r.cells[Math.floor(r.cells.length / 2)]; if (n.type === 'event' && rng() < 0.7) r.decor.push({ k: 'altar', x: c[0], y: c[1] }); if (n.type === 'treasure') r.decor.push({ k: 'chest', x: c[0], y: c[1] }); }
+    // 소품 (잔해 · 상자 · 통 · 뼈 · 석상 · 깔개 …): 문 곁은 비우고 안쪽 칸에 흩어 놓는다
+    const FURN = { fight: ['bones', 'crate', 'barrel', 'debris', 'web'], elite: ['bones', 'bones', 'debris', 'web', 'brokenpillar'], event: ['statue', 'rug', 'urn', 'web'],
+      camp: ['bedroll', 'bedroll', 'barrel', 'crate'], shop: ['table', 'crate', 'barrel', 'rug'], treasure: ['urn', 'urn', 'crate'], boss: ['bones', 'brokenpillar', 'web', 'debris', 'bones'], start: ['crate', 'barrel', 'web'] };
+    const doorCells = new Set(); for (const e of edges) { const c = cor[e.id]; doorCells.add(c.doorA.join(',')); doorCells.add(c.doorB.join(',')); }
+    for (const n of N) {
+      const r = room[n.id], set = new Set(r.cells.map(c => c.join(','))), taken = new Set(r.decor.map(o => o.x + ',' + o.y));
+      const nearDoor = (x, y) => D8.some(([dx, dy]) => doorCells.has((x + dx) + ',' + (y + dy))) || doorCells.has(x + ',' + y);
+      const inner = RUN.shuffle(rng, r.cells.filter(([x, y]) => D4.every(([dx, dy]) => set.has((x + dx) + ',' + (y + dy))) && !taken.has(x + ',' + y) && !nearDoor(x, y) && !D8.some(([dx, dy]) => taken.has((x + dx) + ',' + (y + dy)))));
+      const k = inner.length >= 15 ? 3 + Math.floor(rng() * 3) : inner.length >= 4 ? 1 + Math.floor(rng() * 2) : 0, pool = FURN[n.type] || FURN.fight;
+      for (let i = 0; i < k && i < inner.length; i++) { const [x, y] = inner[i]; if (D8.some(([dx, dy]) => taken.has((x + dx) + ',' + (y + dy)))) continue; r.decor.push({ k: RUN.pick(rng, pool), x, y, r: rng() }); taken.add(x + ',' + y); }
+    }
+    for (const e of edges) { const c = cor[e.id]; c.decor = []; if (c.cells.length >= 5 && rng() < 0.3) { const cl = c.cells[1 + Math.floor(rng() * (c.cells.length - 2))]; c.decor.push({ k: 'debris', x: cl[0], y: cl[1] }); } }
     if (N.some(n => n.type !== 'boss' && !outs(m, n.id).some(keyless))) return null;
     if (!path(m) || !path(m, n => n.type === 'elite')) return null;
     for (const e of edges) { e.seen = {}; e.opened = false; e.walked = false; }
