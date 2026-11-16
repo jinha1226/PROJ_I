@@ -71,7 +71,7 @@ function play(seed, picks, scout) {
     const all = R.nexts(st);
     const score = ({ e, n }) => {
       let s = 0;
-      if (scout) { if (n.augury === 'woe') s -= 3; if (n.notes.some(x => x.t.includes('큰 놈'))) s -= 2; if (n.notes.some(x => /쉴 만한|불빛|반짝|마법의/.test(x.t))) s += 2; if (n.alert) s -= 1; }
+      if (scout) { if (n.augury === 'woe') s -= 3; if (n.notes.some(x => x.t.includes('큰 놈'))) s -= 2; if (n.notes.some(x => /적 \d+~(\d+)/.test(x.t) && +x.t.match(/~(\d+)/)[1] >= 7)) s -= 2; if (n.notes.some(x => /쉴 만한|불빛|반짝|마법의/.test(x.t))) s += 2; if (n.alert) s -= 1; }
       if (e.kind === 'locked' && !e.opened) s += scout && n.notes.some(x => x.t === '마법의 기운') ? 1 : -5;
       if (e.kind === 'hidden') s += 2;
       return s + st.rng() * 0.5;

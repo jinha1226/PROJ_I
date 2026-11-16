@@ -64,7 +64,7 @@ RUN.gen = (() => {
     // 입구
     const start = mkRoom('rect', 5, 3, Math.floor(COLS / 2) - 2, ROWS - 6); start.id = 0; start.parent = -1; rooms.push(start); mark(start.cells, 1, 0);
     start.tried = {};
-    for (let guard = 0; guard < 500 && rooms.length < 19; guard++) {
+    for (let guard = 0; guard < 500 && rooms.length < 23; guard++) {
       // 위쪽(앞으로) 방을 더 자주 고른다
       const open = rooms.filter(r => !r.tried || Object.keys(r.tried).length < 3);
       if (!open.length) break;
@@ -125,7 +125,7 @@ RUN.gen = (() => {
     for (let i = 0; i < rooms.length; i++) for (let j = i + 1; j < rooms.length; j++) if (!linked(i, j) && near(rooms[i], rooms[j]) < 20) pairs.push([i, j]);
     let loops = 0;
     for (const [i, j] of RUN.shuffle(rng, pairs)) {
-      if (loops >= 4) break;
+      if (loops >= 8) break;
       const r = route(rooms[i], rooms[j]); if (!r) continue;
       mark(r.cells, 2, -1); links.push({ a: i, b: j, ...r, tree: false }); loops++;
     }
@@ -159,12 +159,14 @@ RUN.gen = (() => {
     while (q.length) { const id = q.shift(); if (id === goal) return true; for (const e of outs(m, id)) if (keyless(e) && !seen.has(e.b) && !avoid(m.nodes[e.b])) { seen.add(e.b); q.push(e.b); } }
     return false;
   }
-  function group(rng, type) {
+  function group(rng, type, tier) {
     const famKey = RUN.pick(rng, Object.keys(RUN.FAMS)), fam = RUN.FAMS[famKey];
     if (type === 'boss') return { fam: RUN.BOSS.fam, name: RUN.BOSS.n, count: 1, d: RUN.BOSS.d, label: RUN.BOSS.n };
     if (type === 'elite') { const [n, per, c, ex] = fam.elite, xc = ex[2] + Math.floor(rng() * 2); return { fam: famKey, name: n, count: c + xc, d: per * c + ex[1] * xc, label: `${n}${c > 1 ? ` ${c}` : ''} · ${ex[0]} ${xc}` }; }
-    const [n, per, [lo, hi]] = RUN.pick(rng, fam.fight), c = lo + Math.floor(rng() * (hi - lo + 1));
-    return { fam: famKey, name: n, count: c, d: per * c, label: `${n} ${c}` };
+    // 대규모 무리(heavy)는 위험하고 전리품이 많다, 소규모(light)는 수월하다 — 갈림길 대비용
+    const [n, per, [lo, hi]] = RUN.pick(rng, fam.fight);
+    const c = tier === 'heavy' ? hi + 2 + Math.floor(rng() * 2) : tier === 'light' ? Math.max(2, lo - 1) : lo + Math.floor(rng() * (hi - lo + 1));
+    return { fam: famKey, name: n, count: c, d: per * c, label: `${n} ${c}`, tier };
   }
 
   function build(seed) {
@@ -198,6 +200,16 @@ RUN.gen = (() => {
     for (const n of RUN.shuffle(rng, mid.filter(n => n.row >= 2 && n.type !== 'shop' && n.type !== 'elite'))) if (ins(m, n.id).every(e => outs(m, e.a).some(o => o.b !== n.id))) { treasure = n; break; }
     if (!treasure) return null;
     treasure.type = 'treasure'; ins(m, treasure.id).forEach(e => { e.kind = 'locked'; });
+    // 갈림길 대비 (DESIGN.md 178): 갈림길마다 한쪽은 위험하지만 얻는 게 많고(정예 · 대규모 무리), 다른 쪽은 수월하게(사건 · 소규모 무리).
+    // 그래야 정찰 · 점술로 얻은 정보가 고르는 길을 바꾼다
+    const free = n => n.type === 'fight' || n.type === 'event' || n.type === 'elite';
+    for (const n of RUN.shuffle(rng, N)) {
+      const ts = [...new Set(outs(m, n.id).map(e => e.b))].map(id => N[id]).filter(free);
+      if (ts.length < 2) continue;
+      const [a, b] = RUN.shuffle(rng, ts);
+      if (a.row >= 3) { a.type = 'elite'; a.tier = null; } else { a.type = 'fight'; a.tier = 'heavy'; }
+      if (rng() < 0.5) { b.type = 'event'; b.tier = null; } else { b.type = 'fight'; b.tier = 'light'; }
+    }
     // 숨은 통로: 고리 복도 하나 (나가는 길이 따로 있고, 들어가는 방은 다른 길로도 갈 수 있을 때)
     const hid = RUN.shuffle(rng, edges.filter(e => e.kind === 'open' && N[e.b] !== treasure && outs(m, e.a).filter(o => o !== e && keyless(o)).length && ins(m, e.b).length > 1)).sort((a, b) => b.loop - a.loop)[0];
     if (!hid) return null; hid.kind = 'hidden';
@@ -207,7 +219,7 @@ RUN.gen = (() => {
     for (const e of opens()) if (outs(m, e.a).filter(o => o !== e && keyless(o)).length) { e.kind = 'locked'; break; }
     const evs = RUN.shuffle(rng, RUN.EVENTS.map(e => e.id)); let ei = 0;
     for (const n of N) {
-      if (n.type === 'fight' || n.type === 'elite' || n.type === 'boss') { n.g = group(rng, n.type); n.hostile = true; n.dc = n.type === 'fight' ? 12 : n.type === 'elite' ? 14 : 15; }
+      if (n.type === 'fight' || n.type === 'elite' || n.type === 'boss') { n.g = group(rng, n.type, n.tier); n.hostile = true; n.dc = n.type === 'fight' ? 12 : n.type === 'elite' ? 14 : 15; }
       else { n.hostile = false; if (n.type === 'event') n.ev = evs[ei++ % evs.length]; }
     }
     // 방 장식: 종류에 맞춰

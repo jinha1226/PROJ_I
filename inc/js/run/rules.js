@@ -170,9 +170,12 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
 
   // ── 방에 들어서면 ───────────────────────────────────────────────
   function arrive(st, n) {
-    n.visited = true; const wasScouted = n.scouted; reveal(st, n, 3);
+    n.visited = true; const wasScouted = n.scouted, pre = n.info; reveal(st, n, 3);
     if (n.hostile) {
-      const ch = [{ n: '싸운다', run: () => fight(st, n, n.g, { dark: st.dark }) }];
+      // 아무것도 모르고 들어서면 적이 먼저 덮칠 수 있다 (SRD 기습: 기척만 들었으면 덜하다)
+      const surprised = !n.alert && n.type !== 'boss' && st.rng() < (pre >= 2 ? 0 : pre >= 1 ? 0.2 : 0.45);
+      if (surprised) { note(n, '기습당함', 'red'); say(st, '어둠 속에서 적이 먼저 덮쳐 왔다!', 'bad'); }
+      const ch = [{ n: '싸운다', run: () => fight(st, n, n.g, { dark: st.dark, surprised }) }];
       const sc = alive(st).some(m => C[m.cls].scout);
       if (wasScouted && !n.alert && sc) ch.unshift({ n: '기습한다', sub: '먼저 덮쳐 피해가 준다', run: () => fight(st, n, n.g, { ambush: true, dark: st.dark }) });
       if (wasScouted && !n.alert && n.type !== 'boss') {
@@ -247,6 +250,7 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
     let mul = (0.75 + st.rng() * 0.5);
     const why = [];
     if (mod.ambush) { mul *= 0.65; why.push('기습'); }
+    if (mod.surprised) { mul *= 1.35; why.push('기습당함'); }
     if (n.alert || mod.alert) { mul *= 1.25; why.push('들킴'); }
     if (mod.dark) { mul *= 1.2; why.push('어둠'); }
     if (st.flags.bless) { mul *= 0.75; why.push('축복'); st.flags.bless = false; }
@@ -264,9 +268,9 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
       healer.sl[1]--; const h = RUN.roll(st.rng, '1d8+3'); low.hp = Math.min(low.max, low.hp + h); say(st, `${healer.n}이 ${low.n}의 상처를 치료한다 (+${h}).`, 'good');
     }
     if (n.type === 'boss') { st.done = 'win'; note(n, `${g.name} 쓰러뜨림`, 'ink'); say(st, `${g.name}가 쓰러졌다. 이 층의 지도가 완성됐다.`, 'good'); return; }
-    const gold = n.type === 'elite' ? 35 + RUN.d(st.rng, 15) : 6 + g.count * 2; st.gold += gold;
+    const gold = n.type === 'elite' ? 35 + RUN.d(st.rng, 15) : 6 + g.count * 2 + (g.tier === 'heavy' ? 15 : 0); st.gold += gold;
     let loot = `금화 ${gold}`;
-    if (n.type === 'elite') { const it = RUN.pick(st.rng, ['potion', 'knockScroll', 'seeScroll']); st.items[it] = (st.items[it] || 0) + 1; loot += ` · ${RUN.ITEMS[it].n}`; }
+    if (n.type === 'elite' || g.tier === 'heavy') { const it = RUN.pick(st.rng, ['potion', 'knockScroll', 'seeScroll']); st.items[it] = (st.items[it] || 0) + 1; loot += ` · ${RUN.ITEMS[it].n}`; }
     say(st, `전리품: ${loot}.`, 'good');
   }
 
