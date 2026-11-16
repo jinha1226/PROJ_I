@@ -2,17 +2,17 @@
 // 탐사 시제품 수치 표. SRD 5.2.1 3레벨 캐릭터 · SRD 몬스터를 손으로 옮긴 시험값이다
 // (본 게임은 srd_gen.js에서 읽는다 — 시제품이 자리 잡으면 그쪽으로 잇는다).
 RUN.CLS = {
-  fighter: { n: '파이터', sp: '드워프', hp: 31, dv: true, pow: 3.2, w: 1.5, ranged: false, dex: 1,
+  fighter: { n: '파이터', sp: '드워프', hp: 31, dv: true, cb: { ac: 18, atk: 5, dmg: '1d8+3', what: '장검' }, pow: 3.2, w: 1.5, ranged: false, dex: 1,
     sk: { 운동: 5, 지각: 3, 위협: 2, 은신: -1, 조사: 0, 생존: 1, 설득: 0, 종교: 0, 비전: 0, 의학: 1, 역사: 0 } },
-  rogue: { n: '로그', sp: '하플링', hp: 21, dv: false, pow: 2.6, w: 0.9, ranged: false, dex: 5, tools: 7, scout: true,
+  rogue: { n: '로그', sp: '하플링', hp: 21, dv: false, cb: { ac: 14, atk: 5, dmg: '1d6+3', what: '단검' }, pow: 2.6, w: 0.9, ranged: false, dex: 5, tools: 7, scout: true,
     sk: { 운동: -1, 지각: 5, 위협: 1, 은신: 9, 조사: 4, 생존: 1, 설득: 4, 종교: 0, 비전: 0, 의학: 1, 역사: 0 } },
-  wizard: { n: '위저드', sp: '엘프', hp: 17, dv: true, pow: 2.2, w: 0.7, ranged: true, dex: 2, caster: true, slots: { 1: 4, 2: 2 },
+  wizard: { n: '위저드', sp: '엘프', hp: 17, dv: true, cb: { ac: 12, atk: 5, dmg: '1d10', what: '불꽃 화살' }, pow: 2.2, w: 0.7, ranged: true, dex: 2, caster: true, slots: { 1: 4, 2: 2 },
     spells: ['knock', 'detect', 'light'],
     sk: { 운동: -1, 지각: 3, 위협: 0, 은신: 2, 조사: 5, 생존: 1, 설득: 0, 종교: 3, 비전: 5, 의학: 1, 역사: 5 } },
-  cleric: { n: '클레릭', sp: '인간', hp: 24, dv: false, pow: 2.4, w: 1.1, ranged: false, dex: 0, caster: true, slots: { 1: 4, 2: 2 },
+  cleric: { n: '클레릭', sp: '인간', hp: 24, dv: false, cb: { ac: 18, atk: 4, dmg: '1d6+2', what: '철퇴' }, pow: 2.4, w: 1.1, ranged: false, dex: 0, caster: true, slots: { 1: 4, 2: 2 },
     spells: ['augury', 'guidance', 'cure'],
     sk: { 운동: 1, 지각: 3, 위협: 1, 은신: -1, 조사: 0, 생존: 3, 설득: 4, 종교: 4, 비전: 0, 의학: 5, 역사: 2 } },
-  ranger: { n: '레인저', sp: '엘프', hp: 28, dv: true, pow: 3.0, w: 1.2, ranged: true, dex: 3, scout: true,
+  ranger: { n: '레인저', sp: '엘프', hp: 28, dv: true, cb: { ac: 15, atk: 7, dmg: '1d8+3', what: '장궁' }, pow: 3.0, w: 1.2, ranged: true, dex: 3, scout: true, slots: { 1: 3 },
     sk: { 운동: 2, 지각: 5, 위협: 0, 은신: 5, 조사: 1, 생존: 5, 설득: 0, 종교: 0, 비전: 0, 의학: 2, 역사: 0 } },
 };
 RUN.CLS_ORDER = ['fighter', 'rogue', 'wizard', 'cleric', 'ranger'];
@@ -25,13 +25,27 @@ RUN.CLS_LINE = {
   ranger: '정찰 · 추적 · 활 · 암시야',
 };
 
+// 무리 수는 SRD 기준(4~5인 파티)보다 하나 적게 — 파티가 셋이다.
 // 위험도 = SRD 경험치 / 50 (고블린 · 해골 · 늑대 1, 홉고블린 2, 구울 4, 오우거 9, 미노타우로스 14)
 RUN.FAMS = {
-  humanoid: { n: '인간형', fight: [['고블린', 1, [3, 5]], ['홉고블린', 2, [2, 3]]], elite: ['오우거', 9, 1, ['고블린', 1, 2]] },
-  undead: { n: '언데드', fight: [['해골', 1, [3, 5]], ['좀비', 1, [3, 4]]], elite: ['구울 무리', 4, 2, ['해골', 1, 2]] },
-  beast: { n: '짐승', fight: [['늑대', 1, [3, 5]], ['거대 쥐', 0.5, [5, 8]]], elite: ['거대 거미', 4, 2, ['늑대', 1, 1]] },
+  humanoid: { n: '인간형', fight: [['고블린', 1, [2, 4]], ['홉고블린', 2, [2, 3]]], elite: ['오우거', 9, 1, ['고블린', 1, 2]] },
+  undead: { n: '언데드', fight: [['해골', 1, [2, 4]], ['좀비', 1, [2, 4]]], elite: ['구울', 4, 2, ['해골', 1, 2]] },
+  beast: { n: '짐승', fight: [['늑대', 1, [2, 4]], ['거대 쥐', 0.5, [4, 6]]], elite: ['거대 거미', 4, 2, ['늑대', 1, 1]] },
 };
 RUN.BOSS = { n: '미노타우로스', fam: 'beast', d: 14 };
+// 몬스터 전투 수치 (SRD 5.2.1 몬스터 블록을 줄인 것: AC · 체력 · 명중 · 피해). pack = 무리 전술(동료가 있으면 이점)
+RUN.MON = {
+  고블린: { ac: 15, hp: 10, atk: 4, dmg: '1d6+2', what: '단검' },
+  홉고블린: { ac: 18, hp: 11, atk: 3, dmg: '1d8+1', what: '장검' },
+  해골: { ac: 14, hp: 13, atk: 5, dmg: '1d6+3', what: '짧은 활' },
+  좀비: { ac: 8, hp: 15, atk: 3, dmg: '1d8+1', what: '주먹' },
+  늑대: { ac: 12, hp: 11, atk: 4, dmg: '1d6+2', what: '물기', pack: true },
+  '거대 쥐': { ac: 12, hp: 7, atk: 4, dmg: '1d4+2', what: '물기', pack: true },
+  오우거: { ac: 11, hp: 68, atk: 6, dmg: '2d8+4', what: '몽둥이' },
+  구울: { ac: 12, hp: 22, atk: 4, dmg: '2d4+2', what: '발톱' },
+  '거대 거미': { ac: 14, hp: 26, atk: 5, dmg: '1d8+3', what: '독니' },
+  미노타우로스: { ac: 14, hp: 85, atk: 6, dmg: '2d12+4', what: '큰 도끼' },
+};
 
 RUN.ITEMS = {
   potion: { n: '치유 물약', cost: 25, line: '한 명 2d4+2 회복' },

@@ -178,12 +178,12 @@ RUN.gen = (() => {
   }
   function group(rng, type, tier) {
     const famKey = RUN.pick(rng, Object.keys(RUN.FAMS)), fam = RUN.FAMS[famKey];
-    if (type === 'boss') return { fam: RUN.BOSS.fam, name: RUN.BOSS.n, count: 1, d: RUN.BOSS.d, label: RUN.BOSS.n };
-    if (type === 'elite') { const [n, per, c, ex] = fam.elite, xc = ex[2] + Math.floor(rng() * 2); return { fam: famKey, name: n, count: c + xc, d: per * c + ex[1] * xc, label: `${n}${c > 1 ? ` ${c}` : ''} · ${ex[0]} ${xc}` }; }
+    if (type === 'boss') return { fam: RUN.BOSS.fam, name: RUN.BOSS.n, count: 1, d: RUN.BOSS.d, label: RUN.BOSS.n, units: [[RUN.BOSS.n, 1]] };
+    if (type === 'elite') { const [n, per, c, ex] = fam.elite, xc = ex[2] + Math.floor(rng() * 2); return { fam: famKey, name: n, count: c + xc, d: per * c + ex[1] * xc, label: `${n}${c > 1 ? ` ${c}` : ''} · ${ex[0]} ${xc}`, units: [[n, c], [ex[0], xc]].filter(u => u[1] > 0) }; }
     // 대규모 무리(heavy)는 위험하고 전리품이 많다, 소규모(light)는 수월하다 — 갈림길 대비용
     const [n, per, [lo, hi]] = RUN.pick(rng, fam.fight);
-    const c = tier === 'heavy' ? hi + 1 + Math.floor(rng() * 2) : tier === 'light' ? Math.max(2, lo - 1) : lo + Math.floor(rng() * (hi - lo + 1));
-    return { fam: famKey, name: n, count: c, d: per * c, label: `${n} ${c}`, tier };
+    const c = tier === 'heavy' ? hi + 1 : tier === 'light' ? Math.max(2, lo - 1) : lo + Math.floor(rng() * (hi - lo + 1));
+    return { fam: famKey, name: n, count: c, d: per * c, label: `${n} ${c}`, tier, units: [[n, c]] };
   }
 
   function build(seed, F) {

@@ -5,7 +5,7 @@ button { font:inherit; color:inherit; }
 .hidden { display:none !important; }
 
 /* 모바일 (세로): 위 막대 → 지도 → 파티. 기록은 막대의 버튼으로 연다 */
-#app { height:100%; display:grid; grid-template-rows:auto 1fr auto; grid-template-areas:"bar" "map" "party"; }
+#app { height:100%; display:grid; grid-template-rows:auto 1fr auto auto; grid-template-areas:"bar" "map" "tick" "party"; }
 #app.dim { filter:blur(2px) brightness(.6); }
 #bar { grid-area:bar; display:flex; align-items:center; gap:8px; padding:8px 10px; border-bottom:1px solid var(--line); }
 #info { flex:1; display:flex; gap:10px; flex-wrap:wrap; align-items:baseline; min-width:0; }
@@ -77,3 +77,27 @@ body.logopen #log { display:block; position:fixed; left:0; right:0; top:44px; bo
 .act.cl { border-left:3px solid #b5883a; }
 .act.cl .l { color:#f1dfb4; }
 .act.lock { border-style:dashed; font-style:italic; }
+
+/* 모바일: 지도 아래 최근 기록 두 줄 (누르면 전체) */
+#tick { grid-area:tick; padding:6px 12px; border-top:1px solid var(--line); background:#1a130d; cursor:pointer; min-height:44px; }
+#tick p { margin:0; font-size:12.5px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#tick p.last { color:var(--ink); } #tick p.good { color:var(--good); } #tick p.bad { color:var(--red); } #tick p.fight { color:#f0c070; }
+@media (min-width:900px) { #tick { display:none; } }
+
+/* 전투 시트 */
+#sheet .tags { margin:6px 0; display:flex; gap:5px; flex-wrap:wrap; } #sheet .tags span { font-size:11px; border:1px solid var(--line); border-radius:10px; padding:1px 8px; color:#f0c070; }
+#sheet .side { display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:5px; margin:6px 0; }
+.chip { background:var(--card); border:1px solid var(--line); border-radius:7px; padding:4px 6px; font-size:12px; transition:opacity .3s; }
+.chip.e { border-color:#6b3a2e; } .chip b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.chip .hp { height:4px; background:#3a332b; border-radius:2px; margin:3px 0 1px; overflow:hidden; } .chip .hp span { display:block; height:100%; background:#7fbf6a; transition:width .35s; } .chip.e .hp span { background:#d0644f; }
+.chip small { color:var(--dim); font-size:10.5px; } .chip.down { opacity:.35; } .chip.down b { text-decoration:line-through; }
+.chip.flash { animation:flash .45s; } @keyframes flash { 0% { background:#7a2b20; } 100% { background:var(--card); } }
+#clog { max-height:34vh; overflow:auto; border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:4px 2px; margin:4px 0; }
+#clog h5 { margin:8px 0 3px; font-size:11px; color:var(--dim); font-weight:400; letter-spacing:1px; }
+.cl { margin:0 0 4px; font-size:13px; animation:clin .25s ease-out; } @keyframes clin { from { opacity:0; transform:translateY(4px); } }
+.cl i { font-style:normal; color:var(--dim); font-size:11.5px; } .cl .dice { color:#c9b994; font-size:11.5px; margin-left:4px; }
+.cl .r { margin-left:4px; } .cl .r em { font-style:normal; color:#f0c070; font-weight:700; } .cl .miss { color:var(--dim); }
+.cl.p b { color:#cfe3b8; } .cl.e b { color:#f0a08c; } .cl.e.hit .r { color:var(--red); } .cl.heal .r { color:var(--good); } .cl.spell .r { color:#9fc8ff; }
+.cl small { display:block; color:var(--dim); font-size:11.5px; padding-left:10px; } .cl.info { color:#f0c070; font-style:italic; }
+#cres { margin:8px 0; font-weight:700; } #cres.good { color:var(--good); } #cres.bad { color:var(--red); }
+#sheet:has(#clog) { max-height:88vh; }

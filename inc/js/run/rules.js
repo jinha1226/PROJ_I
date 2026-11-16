@@ -1,7 +1,6 @@
 'use strict';
 // 탐사 규칙 (ROGUELIKE_PLAN 4-3 · 4-4 · 5절): 정보 단계 · 정찰 · 열쇠 · 길 · 방 · 사건.
 // 전투는 임시 계산이다 (6절의 전투 구조가 정해지면 바꾼다). 화면과 무관해서 봇 · 시험이 그대로 쓴다.
-RUN.K = 4.0; // 임시 전투의 피해 계수 (시험값)
 RUN.TYPE = { start: '입구', fight: '전투', elite: '정예', event: '사건', camp: '야영', shop: '상인', treasure: '보물', boss: '우두머리' };
 RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · 사람 소리', treasure: '반짝임', start: '' };
 
@@ -266,35 +265,29 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
   // ── 전투 (임시 계산) ───────────────────────────────────────────
   // 위험도 D와 파티 힘 P의 비로 받는 피해를 정한다. 주문 슬롯을 쓰면 힘이 오른다. 6절이 정해지면 바꾼다.
   function fight(st, n, g, mod = {}) {
-    let D = g.d; if (n.type === 'boss' && st.flags.bossHint) D -= 3;
     const small = n.size === 'small';
-    let P = 0; for (const m of alive(st)) P += C[m.cls].pow * (small && C[m.cls].ranged ? 0.85 : 1);
-    // 슬롯 쓰기: 일반 전투는 아끼고, 정예 · 우두머리는 쓴다. 클레릭의 1레벨은 치유용으로 남긴다
-    let spent = 0; const wz = has(st, 'wizard'), cl = has(st, 'cleric');
-    const use = (m, lv, k) => { const u = Math.min(k, m.sl[lv] || 0); m.sl[lv] -= u; spent += u * lv; };
-    if (wz) { if (n.type === 'boss') { use(wz, 2, 9); use(wz, 1, 9); } else if (n.type === 'elite') { use(wz, 2, 1); use(wz, 1, 1); } else if (D / P > 0.6) use(wz, 1, 1); }
-    if (cl) { if (n.type === 'boss') use(cl, 2, 9); else if (n.type === 'elite') use(cl, 2, 1); }
-    P += spent * 0.5;
-    let mul = (0.75 + st.rng() * 0.5);
     const why = [];
-    if (mod.ambush) { mul *= 0.65; why.push('기습'); }
-    if (mod.surprised) { mul *= 1.35; why.push('기습당함'); }
-    if (n.alert || mod.alert) { mul *= 1.25; why.push('들킴'); }
-    if (mod.dark) { mul *= 1.2; why.push('어둠'); }
-    if (st.flags.bless) { mul *= 0.75; why.push('축복'); st.flags.bless = false; }
-    if (st.flags.curse) { mul *= 1.25; why.push('저주'); st.flags.curse = false; }
+    if (mod.ambush) why.push('기습');
+    if (mod.surprised) why.push('기습당함');
+    if (n.alert || mod.alert) why.push('들킴');
+    if (mod.dark) why.push('어둠');
+    if (st.flags.bless) why.push('축복');
+    if (st.flags.curse) why.push('저주');
     if (small && alive(st).some(m => C[m.cls].ranged)) why.push('좁은 방');
-    const total = Math.max(0, Math.round(RUN.K * D * Math.min(2, D / P) * mul));
-    const ws = alive(st).map(m => C[m.cls].w * (0.6 + st.rng() * 0.8)), sw = ws.reduce((a, b) => a + b, 0);
-    say(st, `전투 — ${g.label}${why.length ? ` (${why.join(' · ')})` : ''}${spent ? ` · 주문 슬롯 ${spent}레벨어치 사용` : ''}. 파티가 받은 피해 ${total}.`, 'fight');
-    alive(st).forEach((m, i) => hurt(st, m, Math.round(total * ws[i] / sw)));
+    if (n.type === 'boss' && st.flags.bossHint) why.push('약점을 앎');
+    const units = g.units || [[g.name, g.count]];
+    const r = RUN.combat(st, units, { ambush: mod.ambush, surprised: mod.surprised, alert: n.alert || mod.alert, dark: mod.dark, small, boss: n.type === 'boss', elite: n.type === 'elite', bossHint: st.flags.bossHint });
+    const total = r.loss.reduce((a, x) => a + Math.max(0, x.d), 0);
+    st.combat = { title: g.label, why, ...r };
+    say(st, `전투 — ${g.label}${why.length ? ` (${why.join(' · ')})` : ''} · ${r.rounds.length}라운드. ${r.loss.filter(x => x.d > 0).map(x => `${x.n} -${x.d}`).join(', ') || '피해 없음'}.`, 'fight');
+    for (const x of r.loss) if (x.dead) { say(st, `${x.n} 쓰러짐.`, 'bad'); note(n, `${x.n} 쓰러짐`, 'red'); }
     note(n, `싸움: ${g.name} (-${total})`, 'red');
     if (!alive(st).length) { st.done = 'lose'; say(st, '탐사대가 전멸했다.', 'bad'); return; }
     // 싸움 뒤 치유: 클레릭이 1레벨 슬롯으로 상처 치료 (1d8+3), 두 번까지
     const healer = has(st, 'cleric');
     for (let k = 0; healer && k < 2 && healer.sl[1] > 0; k++) {
       const low = alive(st).filter(m => m.hp < m.max * 0.5).sort((a, b) => a.hp / a.max - b.hp / b.max)[0]; if (!low) break;
-      healer.sl[1]--; const h = RUN.roll(st.rng, '1d8+3'); low.hp = Math.min(low.max, low.hp + h); say(st, `${healer.n}이 ${low.n}의 상처를 치료한다 (+${h}).`, 'good');
+      healer.sl[1]--; const h = RUN.roll(st.rng, '1d8+3'); low.hp = Math.min(low.max, low.hp + h); say(st, `${healer.n}이 ${low === healer ? '자기' : `${low.n}의`} 상처를 치료한다 (+${h}).`, 'good');
     }
     if (n.type === 'boss') { st.done = 'win'; note(n, `${g.name} 쓰러뜨림`, 'ink'); say(st, `${g.name}가 쓰러졌다. 이 층의 지도가 완성됐다.`, 'good'); return; }
     const gold = n.type === 'elite' ? 35 + RUN.d(st.rng, 15) : 6 + g.count * 2 + (g.tier === 'heavy' ? 15 : 0); st.gold += gold;

@@ -14,6 +14,7 @@
   <header id="bar"><div id="info"></div><button id="mode">표기: 숫자</button><button id="logt">기록</button></header>
   <aside id="party"></aside>
   <main id="mapwrap"><svg id="map" xmlns="http://www.w3.org/2000/svg"></svg></main>
+  <div id="tick" title="눌러서 기록 전체 보기"></div>
   <aside id="log"></aside>
 </div>
 <div id="sheet" class="hidden"></div>
@@ -28,7 +29,7 @@
 </div>
 <script>
   const VER = Date.now();
-  for (const n of ['core', 'data', 'gen', 'rules', 'layout', 'draw', 'ui']) document.write(`<script src="js/run/${n}.js?v=${VER}"><\/script>`);
+  for (const n of ['core', 'data', 'combat', 'gen', 'rules', 'layout', 'draw', 'ui']) document.write(`<script src="js/run/${n}.js?v=${VER}"><\/script>`);
 </script>
 </body>
 </html>

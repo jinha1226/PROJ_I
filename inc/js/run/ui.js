@@ -31,6 +31,7 @@
     svg.style.width = `${sc}px`; svg.style.maxWidth = 'none';
     requestAnimationFrame(() => { wrap.scrollTo({ left: Math.max(0, p.fx * svg.clientWidth - wrap.clientWidth / 2), top: Math.max(0, p.fy * svg.clientHeight - wrap.clientHeight * 0.55), behavior: anim.moved != null ? 'smooth' : 'auto' }); });
     bar(); party(); log();
+    if (st.combat) return combat();
     if (st.scene) scene(); else if (!st.done) closeSheet();
     if (st.done) end();
   }
@@ -48,6 +49,7 @@
   }
   function log() {
     const rows = st.log.slice(-60).reverse();
+    $('#tick').innerHTML = st.log.slice(-2).map((l, i, a) => `<p class="${l.k}${i === a.length - 1 ? ' last' : ''}">${esc(l.t)}</p>`).join('') || '<p>기록이 여기에 쌓인다.</p>';
     $('#log').innerHTML = rows.map((l, i) => `<p class="${l.k}${i === 0 ? ' last' : ''}">${esc(l.t)}</p>`).join('');
   }
 
@@ -101,6 +103,53 @@
     const acts = s.choices.map(c => ({ ...c, label: c.n }));
     openSheet(`<div class="hd"><h3>${esc(s.title)}</h3></div><p class="dm">${esc(s.text)}</p>${acts.map(btn).join('')}`, acts, 'scene');
   }
+  // ── 전투: 라운드별로 한 줄씩 보여 준다 ──
+  let combatTimer = null;
+  function combat() {
+    const c = st.combat, dnd = RUN.view.mode === 'dnd';
+    const hp = new Map([...c.start.map(f => [f.n, { ...f, side: 'e' }]), ...c.pstart.map(m => [m.n, { ...m, side: 'p' }])]);
+    const chips = side => [...hp.values()].filter(x => x.side === side).map(x => `<div class="chip ${side}" data-n="${esc(x.n)}"><b>${esc(x.n)}</b><div class="hp"><span style="width:${Math.round(x.hp / x.max * 100)}%"></span></div><small>${x.hp}/${x.max}</small></div>`).join('');
+    const roll = l => dnd ? `d20${l.b >= 0 ? '+' : ''}${l.b}${l.adv ? (l.adv > 0 ? ' 이점' : ' 불리') : ''} = ${l.d20 + l.b} vs AC ${l.ac}` : `${l.d20 + l.b} vs ${l.ac}`;
+    const dmg = l => dnd && l.expr ? `${l.expr} = ${l.dmg}` : `${l.dmg}`;
+    const line = l => {
+      if (l.kind === 'info') return `<p class="cl info">${esc(l.txt)}</p>`;
+      const who = `<b>${esc(l.a)}</b>${l.what ? ` <i>${esc(l.what)}</i>` : ''}`;
+      if (l.kind === 'heal') return `<p class="cl ${l.side} heal">${who} → ${esc(l.t)} <span class="r">+${dmg(l)} 회복</span></p>`;
+      if (l.kind === 'spell') return `<p class="cl ${l.side} spell">${who}${l.t ? ` → ${esc(l.t)}` : ''} <span class="r">${l.dmg != null ? `${dmg(l)} 피해` : ''}${l.down ? ' · 쓰러짐' : ''}</span>${l.txt ? `<small>${esc(l.txt)}</small>` : ''}</p>`;
+      const res = !l.hit ? '<span class="r miss">빗나감</span>' : `<span class="r">${l.crit ? '<em>치명타!</em> ' : ''}${dmg(l)} 피해${l.down ? ' · <em>쓰러짐</em>' : ''}</span>`;
+      return `<p class="cl ${l.side}${l.hit ? ' hit' : ' miss'}">${who} → ${esc(l.t)} <span class="dice">${roll(l)}</span> ${res}</p>`;
+    };
+    const all = []; c.rounds.forEach((r, i) => { all.push({ head: `${i + 1}라운드` }); r.forEach(l => all.push(l)); });
+    const won = c.win;
+    openSheet(`<div class="hd"><h3>전투 — ${esc(c.title)}</h3></div>${c.why.length ? `<p class="tags">${c.why.map(w => `<span>${esc(w)}</span>`).join('')}</p>` : ''}
+      <div class="side e">${chips('e')}</div><div id="clog"></div><div class="side p">${chips('p')}</div>
+      <p id="cres" class="hidden"></p>
+      <button class="act" id="cskip"><span class="l">건너뛰기</span></button>`, [], 'combat');
+    const box = $('#clog'); let i = 0;
+    const upd = l => {
+      const list = l.hits || (l.t && l.dmg != null ? [{ t: l.t, dmg: l.kind === 'heal' ? -l.dmg : l.dmg }] : []);
+      for (const h of list) {
+        const x = hp.get(h.t); if (!x) continue; x.hp = Math.max(0, Math.min(x.max, x.hp - h.dmg));
+        const el = $(`#sheet .chip[data-n="${CSS.escape(h.t)}"]`); if (!el) continue;
+        el.querySelector('.hp span').style.width = `${Math.round(x.hp / x.max * 100)}%`; el.querySelector('small').textContent = x.hp ? `${x.hp}/${x.max}` : '쓰러짐';
+        el.classList.toggle('down', !x.hp); if (h.dmg > 0) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+      }
+    };
+    function step(fast) {
+      const l = all[i++]; if (!l) return;
+      box.insertAdjacentHTML('beforeend', l.head ? `<h5>${l.head}</h5>` : line(l)); if (!l.head) upd(l);
+      box.scrollTop = box.scrollHeight;
+      if (!fast) { if (i < all.length) combatTimer = setTimeout(() => step(false), l.head ? 250 : 520); else finish(); }
+    }
+    function finish() {
+      clearTimeout(combatTimer); while (i < all.length) step(true);
+      const r = $('#cres'); r.className = won ? 'good' : 'bad';
+      r.textContent = won ? `이겼다. ${c.loss.filter(x => x.d > 0).map(x => `${x.n} -${x.d}`).join(' · ') || '다친 사람 없음'}` : '탐사대가 쓰러졌다.';
+      const b = $('#cskip'); b.querySelector('.l').textContent = '계속'; b.onclick = () => { st.combat = null; draw({}); };
+    }
+    $('#cskip').onclick = finish;
+    step(false);
+  }
   function end() {
     const win = st.done === 'win', lost = st.party.filter(m => m.dead).map(m => m.n);
     openSheet(`<div class="hd"><h3>${win ? '1층 지도 완성' : '탐사대 전멸'}</h3></div>
@@ -113,7 +162,7 @@
 
   // ── 입력 ──
   $('#map').addEventListener('click', ev => {
-    if (!st || st.scene || st.done) return;
+    if (!st || st.scene || st.done || st.combat) return;
     const g = ev.target.closest('.room'); if (!g) return;
     const id = +g.dataset.id;
     if (id === st.at) roomSheet(); else if (g.classList.contains('next')) target(id);
@@ -121,8 +170,11 @@
   });
   $('#mode').onclick = () => { RUN.view.mode = RUN.view.mode === 'dnd' ? 'num' : 'dnd'; if (st) { draw({}); if (sheetMode && sheetMode !== 'scene') reopen(); } };
   $('#logt').onclick = () => document.body.classList.toggle('logopen');
+  $('#tick').onclick = () => document.body.classList.add('logopen');
+  $('#log').onclick = () => document.body.classList.remove('logopen');
   document.addEventListener('keydown', ev => {
     if (ev.key === 'Escape' && sheetMode !== 'scene') closeSheet();
+    if (sheetMode === 'combat') { if (ev.key === ' ' || ev.key === 'Enter' || ev.key === '1') { ev.preventDefault(); $('#cskip')?.click(); } return; }
     const k = +ev.key; if (k >= 1 && k <= 9 && sheetActs[k - 1]) fire(k - 1);
     if (ev.key === 'r' && st && !st.scene && !st.done) roomSheet();
   });
