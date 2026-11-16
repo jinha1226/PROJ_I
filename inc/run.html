@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>탐사 시제품 — 지도 한 막</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="run.css">
+</head>
+<body>
+<!-- ROGUELIKE_PLAN 10절 1번: 지도 한 막 시제품. 본 게임(index.html)과 따로 돈다. ?seed=숫자 로 같은 지도 -->
+<div id="app">
+  <header id="bar"><div id="info"></div><button id="mode">표기: 숫자</button><button id="logt">기록</button></header>
+  <aside id="party"></aside>
+  <main id="mapwrap"><svg id="map" xmlns="http://www.w3.org/2000/svg"></svg></main>
+  <aside id="log"></aside>
+</div>
+<div id="sheet" class="hidden"></div>
+<div id="start" class="hidden">
+  <div class="card">
+    <h2>심연 탐사대</h2>
+    <p>다섯 중 셋을 데려간다. 누구를 데려가느냐가 이 층에서 열 수 있는 길을 정한다.</p>
+    <div id="cands"></div>
+    <button id="go" disabled>0/3 고르기</button>
+    <p class="seed">시드 <b id="seedv"></b> <button id="reseed">다른 지도</button></p>
+  </div>
+</div>
+<script>
+  const VER = Date.now();
+  for (const n of ['core', 'data', 'gen', 'rules', 'draw', 'ui']) document.write(`<script src="js/run/${n}.js?v=${VER}"><\/script>`);
+</script>
+</body>
+</html>
