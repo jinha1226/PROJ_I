@@ -28,7 +28,7 @@ for (let s = 1; s <= N; s++) {
   t('봉인된 보물 방 하나, 들어오는 길은 모두 잠김', tr.length === 1 && ins(tr[0].id).every(e => e.kind === 'locked'), tag);
   t('숨은 통로 하나, 들어가는 방은 다른 길로도 간다', m.edges.filter(e => e.kind === 'hidden').length === 1 && m.edges.filter(e => e.kind === 'hidden').every(e => ins(e.b).length > 1), tag);
   t('우두머리 말고는 막다른 방이 없다', m.nodes.every(n => n.type === 'boss' || outs(n.id).length > 0), tag);
-  t('방향은 깊어지는 쪽', m.edges.every(e => m.nodes[e.b].row > m.nodes[e.a].row), tag);
+  t('방향은 순서가 오르는 쪽 (되돌아가기 · 고리 없음)', m.edges.every(e => e.b > e.a), tag);
   t('정예 하나 이상', m.nodes.some(n => n.type === 'elite'), tag);
   t('같은 시드는 같은 지도', JSON.stringify(GEN.make(s).edges.map(e => e.kind)) === JSON.stringify(m.edges.map(e => e.kind)), tag);
 }

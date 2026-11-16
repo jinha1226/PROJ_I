@@ -132,14 +132,17 @@ RUN.gen = (() => {
     // 깊이 (입구에서 몇 방) 와 막다른 방 고치기: 더 깊은 이웃이 없는 방은 더 깊은 방으로 잇고, 안 되면 지운다
     const alive = new Set(rooms.map(r => r.id));
     const depthOf = () => { const d = new Map([[0, 0]]), q = [0]; while (q.length) { const v = q.shift(); for (const l of links) { if (!alive.has(l.a) || !alive.has(l.b)) continue; const w = l.a === v ? l.b : l.b === v ? l.a : -1; if (w >= 0 && !d.has(w)) { d.set(w, d.get(v) + 1); q.push(w); } } } return d; };
+    // 순서(rank): 깊이 → 지도에서 더 위 → 번호. 길은 순서가 오르는 쪽으로만 간다 (되돌아가기 없음, 고리 없음).
+    // 같은 깊이끼리의 고리도 위쪽으로 가는 길로 살린다 — 갈림길이 는다 (DESIGN.md 179)
+    const rankOf = (d, id) => id === boss.id ? 1e9 : d.get(id) * 1e5 + (ROWS - (rooms[id].y + rooms[id].h / 2)) * 100 + id;
     for (let pass = 0; pass < 6; pass++) {
       const d = depthOf(); let changed = false;
       for (const id of [...alive]) if (!d.has(id)) { alive.delete(id); changed = true; }
       for (const id of [...alive]) {
         if (id === boss.id) continue;
-        const deeper = links.some(l => alive.has(l.a) && alive.has(l.b) && ((l.a === id && d.get(l.b) > d.get(id)) || (l.b === id && d.get(l.a) > d.get(id))));
+        const deeper = links.some(l => alive.has(l.a) && alive.has(l.b) && ((l.a === id && rankOf(d, l.b) > rankOf(d, id)) || (l.b === id && rankOf(d, l.a) > rankOf(d, id))));
         if (deeper) continue;
-        const cands = [...alive].filter(o => d.get(o) > d.get(id) && !linked(id, o)).sort((a, b) => near(rooms[id], rooms[a]) - near(rooms[id], rooms[b]));
+        const cands = [...alive].filter(o => rankOf(d, o) > rankOf(d, id) && !linked(id, o)).sort((a, b) => near(rooms[id], rooms[a]) - near(rooms[id], rooms[b]));
         let ok = false;
         for (const o of cands.slice(0, 4)) { const r = route(rooms[id], rooms[o]); if (r) { mark(r.cells, 2, -1); links.push({ a: id, b: o, ...r, tree: false }); ok = true; break; } }
         if (!ok) { alive.delete(id); } changed = true;
@@ -149,7 +152,8 @@ RUN.gen = (() => {
     const d = depthOf();
     if (!d.has(boss.id)) return null;
     for (const id of [...alive]) if (!d.has(id)) alive.delete(id);
-    return { rooms: rooms.filter(r => alive.has(r.id)), links: links.filter(l => alive.has(l.a) && alive.has(l.b) && d.get(l.a) !== d.get(l.b)), depth: d, boss: boss.id };
+    const rank = new Map([...alive].map(id => [id, rankOf(d, id)]));
+    return { rooms: rooms.filter(r => alive.has(r.id)), links: links.filter(l => alive.has(l.a) && alive.has(l.b)), depth: d, rank, boss: boss.id };
   }
 
   const outs = (m, id) => m.edges.filter(e => e.a === id);
@@ -165,7 +169,7 @@ RUN.gen = (() => {
     if (type === 'elite') { const [n, per, c, ex] = fam.elite, xc = ex[2] + Math.floor(rng() * 2); return { fam: famKey, name: n, count: c + xc, d: per * c + ex[1] * xc, label: `${n}${c > 1 ? ` ${c}` : ''} · ${ex[0]} ${xc}` }; }
     // 대규모 무리(heavy)는 위험하고 전리품이 많다, 소규모(light)는 수월하다 — 갈림길 대비용
     const [n, per, [lo, hi]] = RUN.pick(rng, fam.fight);
-    const c = tier === 'heavy' ? hi + 2 + Math.floor(rng() * 2) : tier === 'light' ? Math.max(2, lo - 1) : lo + Math.floor(rng() * (hi - lo + 1));
+    const c = tier === 'heavy' ? hi + 1 + Math.floor(rng() * 2) : tier === 'light' ? Math.max(2, lo - 1) : lo + Math.floor(rng() * (hi - lo + 1));
     return { fam: famKey, name: n, count: c, d: per * c, label: `${n} ${c}`, tier };
   }
 
@@ -173,14 +177,14 @@ RUN.gen = (() => {
     const g = grow(seed); if (!g) return null;
     const rng = RUN.rng(seed * 13 + 5);
     // 방 번호를 다시 매긴다 (입구 0, 깊이 순)
-    const order = g.rooms.slice().sort((a, b) => g.depth.get(a.id) - g.depth.get(b.id) || b.y - a.y || a.x - b.x), idx = new Map(order.map((r, i) => [r.id, i]));
+    const order = g.rooms.slice().sort((a, b) => g.rank.get(a.id) - g.rank.get(b.id)), idx = new Map(order.map((r, i) => [r.id, i]));
     const maxD = Math.max(...order.map(r => g.depth.get(r.id)));
     const nodes = order.map((r, i) => ({ id: i, row: g.depth.get(r.id), x: (r.x + r.w / 2) / COLS, type: 'fight', size: r.cells.length >= 30 ? 'large' : 'small', info: 0, notes: [] }));
     const edges = [], cor = {}, room = {};
     for (const r of order) room[idx.get(r.id)] = { x: r.x, y: r.y, w: r.w, h: r.h, cells: r.cells, decor: r.decor.map(o => ({ ...o, x: r.x + o.x, y: r.y + o.y })), kind: r.kind };
     for (const l of g.links) {
       let a = idx.get(l.a), b = idx.get(l.b), cells = l.cells, dA = l.doorA, dB = l.doorB;
-      if (nodes[a].row > nodes[b].row) { [a, b] = [b, a]; cells = cells.slice().reverse(); [dA, dB] = [dB, dA]; }
+      if (a > b) { [a, b] = [b, a]; cells = cells.slice().reverse(); [dA, dB] = [dB, dA]; }
       const e = { id: edges.length, a, b, kind: 'open', loop: !l.tree }; edges.push(e);
       cor[e.id] = { cells, doorA: dA, doorB: dB, doorAout: cells[0], doorBout: cells[cells.length - 1] };
     }
@@ -207,7 +211,9 @@ RUN.gen = (() => {
       const ts = [...new Set(outs(m, n.id).map(e => e.b))].map(id => N[id]).filter(free);
       if (ts.length < 2) continue;
       const [a, b] = RUN.shuffle(rng, ts);
-      if (a.row >= 3) { a.type = 'elite'; a.tier = null; } else { a.type = 'fight'; a.tier = 'heavy'; }
+      if (ts.some(t => t.type === 'elite')) continue;              // 이미 위험한 쪽이 있다
+      const elites = N.filter(x => x.type === 'elite').length;
+      if (a.row >= 3 && elites < 2 && rng() < 0.4) { a.type = 'elite'; a.tier = null; } else { a.type = 'fight'; a.tier = 'heavy'; }
       if (rng() < 0.5) { b.type = 'event'; b.tier = null; } else { b.type = 'fight'; b.tier = 'light'; }
     }
     // 숨은 통로: 고리 복도 하나 (나가는 길이 따로 있고, 들어가는 방은 다른 길로도 갈 수 있을 때)
