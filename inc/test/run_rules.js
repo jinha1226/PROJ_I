@@ -26,7 +26,9 @@ for (let s = 1; s <= N; s++) {
   t('정예를 피해서도 끝까지', GEN.path(m, n => n.type === 'elite'), tag);
   const tr = m.nodes.filter(n => n.type === 'treasure');
   t('봉인된 보물 방 하나, 들어오는 길은 모두 잠김', tr.length === 1 && ins(tr[0].id).every(e => e.kind === 'locked'), tag);
-  t('숨은 지름길 하나 (한 줄 건너뜀)', m.edges.filter(e => e.kind === 'hidden').length === 1 && m.edges.filter(e => e.kind === 'hidden').every(e => m.nodes[e.b].row === m.nodes[e.a].row + 2), tag);
+  t('숨은 통로 하나, 들어가는 방은 다른 길로도 간다', m.edges.filter(e => e.kind === 'hidden').length === 1 && m.edges.filter(e => e.kind === 'hidden').every(e => ins(e.b).length > 1), tag);
+  t('우두머리 말고는 막다른 방이 없다', m.nodes.every(n => n.type === 'boss' || outs(n.id).length > 0), tag);
+  t('방향은 깊어지는 쪽', m.edges.every(e => m.nodes[e.b].row > m.nodes[e.a].row), tag);
   t('정예 하나 이상', m.nodes.some(n => n.type === 'elite'), tag);
   t('같은 시드는 같은 지도', JSON.stringify(GEN.make(s).edges.map(e => e.kind)) === JSON.stringify(m.edges.map(e => e.kind)), tag);
 }
@@ -35,9 +37,13 @@ for (let s = 1; s <= N; s++) {
 for (let s = 1; s <= N; s++) {
   const m = GEN.make(s), L = R.layout.make(m), occ = new Map(), tag = `시드 ${s}`;
   let overlap = false, through = false, out = false;
-  for (const n of m.nodes) { const b = L.room[n.id]; if (b.x < 0 || b.x + b.w > L.COLS || b.y < 0 || b.y + b.h > L.ROWS) out = true;
-    for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) { if (occ.has(x + ',' + y)) overlap = true; occ.set(x + ',' + y, n.id); } }
-  for (const e of m.edges) { const c = L.cor[e.id]; if (c.hidden) continue; for (const [x, y] of c.cells) if (occ.has(x + ',' + y)) through = true; }
+  for (const n of m.nodes) for (const [x, y] of L.room[n.id].cells) { if (x < 0 || y < 0 || x >= L.COLS || y >= L.ROWS) out = true; if (occ.has(x + ',' + y)) overlap = true; occ.set(x + ',' + y, n.id); }
+  let doorsOk = true;
+  for (const e of m.edges) { const c = L.cor[e.id]; for (const [x, y] of c.cells) if (occ.has(x + ',' + y)) through = true;
+    const adj = (p, q) => Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) === 1;
+    if (occ.get(c.doorA.join(',')) !== e.a || occ.get(c.doorB.join(',')) !== e.b || !adj(c.doorA, c.doorAout) || !adj(c.doorB, c.doorBout)) doorsOk = false;
+    for (let i = 1; i < c.cells.length; i++) if (!adj(c.cells[i - 1], c.cells[i])) doorsOk = false; }
+  t('문은 제 방에 있고 복도는 이어져 있다', doorsOk, tag);
   t('방이 판 안에 있다', !out, tag); t('방끼리 겹치지 않는다', !overlap, tag); t('복도가 방을 뚫지 않는다', !through, tag);
 }
 

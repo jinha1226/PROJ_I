@@ -16,7 +16,9 @@
     $('#go').disabled = picks.length !== 3; $('#go').textContent = picks.length === 3 ? '탐사 시작' : `${picks.length}/3 고르기`;
     $('#seedv').textContent = seed;
   }
-  $('#go').onclick = () => { if (picks.length !== 3) return; st = RUN.newRun(seed, picks); $('#start').classList.add('hidden'); $('#app').classList.remove('dim'); draw({}); };
+  $('#go').onclick = () => { if (picks.length !== 3) return; st = RUN.newRun(seed, picks);
+    // ?reveal=1: 지도 전체를 보는 개발용 미리보기
+    if (qs.has('reveal')) { for (const n of st.map.nodes) { n.info = 2; n.seenMap = true; } for (const e of st.map.edges) { e.seen.hidden = e.seen.lock = e.seen.trap = e.seen.dark = true; } st.revealAll = true; } $('#start').classList.add('hidden'); $('#app').classList.remove('dim'); draw({}); };
   $('#reseed').onclick = () => { seed = Math.floor(Math.random() * 100000); start(); };
 
   // ── 그리기 ──
