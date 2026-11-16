@@ -220,7 +220,7 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
       if (o.cost) st.gold -= o.cost;
       let res = o.ok;
       if (c) { const r = roll(st, c, who.m.n, o.sk); res = r.ok ? o.ok : o.no; }
-      say(st, res.msg, res.fight || res.alert ? 'bad' : 'info'); note(n, `${o.n}${c ? (res === o.ok ? ' — 성공' : ' — 실패') : ''}`, 'ink');
+      say(st, res.msg, res.fight || res.alert ? 'bad' : 'info'); note(n, c ? `${o.n.replace(/한다$/, '')} ${res === o.ok ? '성공' : '실패'}` : o.n.replace(/를 낸다$/, ' 냄').replace(/한다$/, '함'), 'ink');
       if (res.gold) { st.gold += res.gold; say(st, `금화 ${res.gold}.`, 'good'); }
       if (res.item) st.items[res.item] = (st.items[res.item] || 0) + 1;
       if (res.bless) st.flags.bless = true;

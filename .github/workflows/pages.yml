@@ -52,6 +52,9 @@ jobs:
       - name: Infinite rift incremental — headless balance bot smoke
         working-directory: inc
         run: node test/sim.js 10
+      - name: Dungeon expedition map prototype — rules, map invariants, bots
+        working-directory: inc
+        run: node test/run_rules.js 200
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -92,7 +95,7 @@ jobs:
       - name: Copy infinite rift incremental into dist/inc
         run: |
           mkdir -p dist/inc
-          cp -r inc/index.html inc/style.css inc/js inc/assets dist/inc/
+          cp -r inc/index.html inc/style.css inc/run.html inc/run.css inc/js inc/assets dist/inc/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -3,7 +3,7 @@
 // 지도 생성 불변식 + 성격이 다른 봇 둘(정찰하는 봇 · 눈 감고 가는 봇)로 판 전체를 돌려 본다.
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const ctx = { console, Math, JSON }; vm.createContext(ctx);
-for (const n of ['core', 'data', 'gen', 'rules']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', 'run', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of ['core', 'data', 'gen', 'rules', 'layout']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', 'run', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
 const R = ctx.RUN, GEN = R.gen;
 let ok = 0, bad = 0; const t = (name, v, extra = '') => { if (v) ok++; else { bad++; console.log('  실패:', name, extra); } };
 
@@ -29,6 +29,16 @@ for (let s = 1; s <= N; s++) {
   t('숨은 지름길 하나 (한 줄 건너뜀)', m.edges.filter(e => e.kind === 'hidden').length === 1 && m.edges.filter(e => e.kind === 'hidden').every(e => m.nodes[e.b].row === m.nodes[e.a].row + 2), tag);
   t('정예 하나 이상', m.nodes.some(n => n.type === 'elite'), tag);
   t('같은 시드는 같은 지도', JSON.stringify(GEN.make(s).edges.map(e => e.kind)) === JSON.stringify(m.edges.map(e => e.kind)), tag);
+}
+
+// ── 칸 지도 ──
+for (let s = 1; s <= N; s++) {
+  const m = GEN.make(s), L = R.layout.make(m), occ = new Map(), tag = `시드 ${s}`;
+  let overlap = false, through = false, out = false;
+  for (const n of m.nodes) { const b = L.room[n.id]; if (b.x < 0 || b.x + b.w > L.COLS || b.y < 0 || b.y + b.h > L.ROWS) out = true;
+    for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) { if (occ.has(x + ',' + y)) overlap = true; occ.set(x + ',' + y, n.id); } }
+  for (const e of m.edges) { const c = L.cor[e.id]; if (c.hidden) continue; for (const [x, y] of c.cells) if (occ.has(x + ',' + y)) through = true; }
+  t('방이 판 안에 있다', !out, tag); t('방끼리 겹치지 않는다', !overlap, tag); t('복도가 방을 뚫지 않는다', !through, tag);
 }
 
 // ── 봇 ──

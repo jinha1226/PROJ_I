@@ -27,11 +27,12 @@ body.logopen #log { display:block; position:fixed; left:0; right:0; top:44px; bo
 #log p.good { color:var(--good); } #log p.bad { color:var(--red); } #log p.fight { color:#f0c070; } #log p.roll { font-size:12px; }
 
 /* 지도 글씨 */
-#map .note { font:14px "Nanum Pen Script",cursive; }
+#map .note { font:13px "Nanum Pen Script",cursive; }
 #map .sym { font:700 15px "Noto Sans KR",sans-serif; }
 #map .stampt { font:28px "Nanum Pen Script",cursive; } #map .stampt2 { font:20px "Nanum Pen Script",cursive; }
 #map .room { cursor:default; } #map .room.next, #map .room.here { cursor:pointer; }
-#map .room.next .halo { animation:halo 1.6s ease-in-out infinite; }
+#map .room.next .halo-r { animation:halo 1.6s ease-in-out infinite; }
+#map .halo { paint-order:stroke; stroke:#f3ead6; stroke-width:3px; stroke-linejoin:round; }
 @keyframes halo { 50% { opacity:.25; } }
 #map .room.inked { animation:ink .8s ease-out; } @keyframes ink { from { opacity:.2; } }
 #map .stamp { animation:stamp .5s cubic-bezier(.2,1.6,.4,1); transform-box:fill-box; } @keyframes stamp { from { opacity:0; } }
