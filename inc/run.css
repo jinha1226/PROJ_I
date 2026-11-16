@@ -11,8 +11,8 @@ button { font:inherit; color:inherit; }
 #info { flex:1; display:flex; gap:10px; flex-wrap:wrap; align-items:baseline; min-width:0; }
 #info .it { color:var(--dim); font-size:12px; }
 #bar button { background:none; border:1px solid var(--line); padding:3px 9px; border-radius:6px; font-size:12px; cursor:pointer; }
-#mapwrap { grid-area:map; overflow-y:auto; overflow-x:hidden; background:#24180f radial-gradient(circle at 50% 40%, #33241a, #160e09); min-height:0; padding:6px 0; }
-#map { width:100%; max-width:520px; height:auto; display:block; margin:0 auto; }
+#mapwrap { grid-area:map; overflow:auto; background:#24180f radial-gradient(circle at 50% 40%, #33241a, #160e09); min-height:0; padding:6px 0; }
+#map { height:auto; display:block; margin:0 auto; }
 #party { grid-area:party; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; padding:8px; border-top:1px solid var(--line); }
 #log { display:none; }
 body.logopen #log { display:block; position:fixed; left:0; right:0; top:44px; bottom:0; z-index:30; overflow:auto; background:rgba(20,17,14,.97); padding:12px 14px; }
@@ -72,5 +72,4 @@ body.logopen #log { display:block; position:fixed; left:0; right:0; top:44px; bo
   #log { display:block; overflow:auto; padding:12px 14px; border-left:1px solid var(--line); }
   #logt { display:none; }
   #sheet { left:auto; right:12px; bottom:12px; width:380px; max-height:calc(100vh - 80px); border:1px solid var(--line); border-radius:14px; }
-  #map { max-width:560px; }
 }

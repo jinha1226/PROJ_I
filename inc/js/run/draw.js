@@ -178,18 +178,18 @@ RUN.draw = (() => {
       out.push('</g>');
     }
     // 장식: 제목 띠 · 나침반
-    out.push(`<g ${O}><path d="M${f(W / 2 - 62)},10 h124 l-8,8 l8,8 h-124 l8,-8 Z" fill="#c9a46a" stroke-width="1.8"/><text x="${f(W / 2)}" y="23" text-anchor="middle" class="title" fill="${INK}" stroke="none">심연 · 1층</text></g>`);
+    out.push(`<g ${O}><path d="M${f(W / 2 - 78)},10 h156 l-8,8 l8,8 h-156 l8,-8 Z" fill="#c9a46a" stroke-width="1.8"/><text x="${f(W / 2)}" y="23" text-anchor="middle" class="title" fill="${INK}" stroke="none">심연 · 1층 (${L.frame || ''})</text></g>`);
     const kx = W - 26, ky = H - 26;
     out.push(`<g ${O} stroke-width="1.6"><circle cx="${kx}" cy="${ky}" r="13" fill="none" opacity="0.7"/><path d="M${kx},${ky - 17} l4,13 l-4,4 l-4,-4 Z" fill="${RUST}"/><path d="M${kx},${ky + 17} l4,-13 l-4,-4 l-4,4 Z" fill="#efe6d6"/><path d="M${kx - 17},${ky} l13,-4 l4,4 l-4,4 Z M${kx + 17},${ky} l-13,-4 l-4,4 l4,4 Z" fill="#efe6d6"/></g><text x="${kx}" y="${ky - 20}" text-anchor="middle" class="note halo" fill="${INK}">북</text>`);
     const boss = N.find(n => n.type === 'boss');
-    if (!shown(boss)) out.push(`<text x="${f(W / 2)}" y="${f(M + 5 * T)}" class="note halo" fill="${PEN}" text-anchor="middle">계단은 저 위 어딘가…</text>`);
+    if (!shown(boss)) out.push(`<text x="${f(W / 2)}" y="${f(M + 5 * T)}" class="note halo" fill="${PEN}" text-anchor="middle">계단은 어딘가 깊은 곳에…</text>`);
     out.push(`<rect x="2" y="2" width="${f(W - 4)}" height="${f(H - 4)}" rx="6" fill="none" stroke="#7a5532" stroke-width="2" opacity="0.6"/>`);
     if (st.done === 'win') out.push(`<g class="stamp" transform="translate(${f(W / 2)},${f(M + 16 * T)}) rotate(-12)"><circle r="44" fill="${HALO}" fill-opacity="0.6" stroke="${RUST}" stroke-width="3.5"/><circle r="38" fill="none" stroke="${RUST}" stroke-width="1.2"/><text y="-2" text-anchor="middle" class="stampt" fill="${RUST}">1층</text><text y="20" text-anchor="middle" class="stampt2" fill="${RUST}">지도 완성</text></g>`);
     if (st.done === 'lose') out.push(`<text x="${f(W / 2)}" y="${f(M + 12 * T)}" text-anchor="middle" class="stampt halo" fill="${RUST}" transform="rotate(-6 ${f(W / 2)} ${f(M + 12 * T)})">탐사대 전멸</text>`);
     svg.setAttribute('viewBox', `0 0 ${f(W)} ${f(H)}`);
     svg.innerHTML = out.join('');
     for (const el of svg.querySelectorAll('.pen')) { const len = el.getTotalLength ? el.getTotalLength() : 200; el.style.strokeDasharray = `${len}`; el.style.strokeDashoffset = `${len}`; el.getBoundingClientRect(); el.style.transition = 'stroke-dashoffset 1s ease-out'; el.style.strokeDashoffset = '0'; setTimeout(() => { el.style.strokeDasharray = '0.1 5'; el.style.transition = 'none'; }, 1100); }
-    const r = L.room[here]; return (M + (r.y + r.h / 2) * T) / H;
+    const r = L.room[here]; return { fx: (M + (r.x + r.w / 2) * T) / W, fy: (M + (r.y + r.h / 2) * T) / H, W, H };
   }
   return { render };
 })();

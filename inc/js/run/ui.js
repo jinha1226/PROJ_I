@@ -23,8 +23,11 @@
 
   // ── 그리기 ──
   function draw(anim) {
-    const yf = RUN.draw.render($('#map'), st, anim);
-    const wrap = $('#mapwrap'); requestAnimationFrame(() => { wrap.scrollTo({ top: Math.max(0, yf * wrap.scrollHeight - wrap.clientHeight * 0.62), behavior: anim.moved != null ? 'smooth' : 'auto' }); });
+    const svg = $('#map'), wrap = $('#mapwrap'), p = RUN.draw.render(svg, st, anim);
+    // 윤곽에 따라 크기: 폭을 다 쓰되, 가로로 긴 지도는 너무 작아지지 않게(원래 크기의 75% 아래로는 줄이지 않고 옆으로 스크롤)
+    const fit = wrap.clientWidth - 4, px = Math.max(fit, Math.min(p.W * 0.75, p.W)), sc = Math.min(px, p.W * 1.6);
+    svg.style.width = `${sc}px`; svg.style.maxWidth = 'none';
+    requestAnimationFrame(() => { wrap.scrollTo({ left: Math.max(0, p.fx * svg.clientWidth - wrap.clientWidth / 2), top: Math.max(0, p.fy * svg.clientHeight - wrap.clientHeight * 0.55), behavior: anim.moved != null ? 'smooth' : 'auto' }); });
     bar(); party(); log();
     if (st.scene) scene(); else if (!st.done) closeSheet();
     if (st.done) end();

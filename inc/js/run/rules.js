@@ -1,7 +1,7 @@
 'use strict';
 // 탐사 규칙 (ROGUELIKE_PLAN 4-3 · 4-4 · 5절): 정보 단계 · 정찰 · 열쇠 · 길 · 방 · 사건.
 // 전투는 임시 계산이다 (6절의 전투 구조가 정해지면 바꾼다). 화면과 무관해서 봇 · 시험이 그대로 쓴다.
-RUN.K = 3.6; // 임시 전투의 피해 계수 (시험값)
+RUN.K = 4.0; // 임시 전투의 피해 계수 (시험값)
 RUN.TYPE = { start: '입구', fight: '전투', elite: '정예', event: '사건', camp: '야영', shop: '상인', treasure: '보물', boss: '우두머리' };
 RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · 사람 소리', treasure: '반짝임', start: '' };
 

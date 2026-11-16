@@ -4,7 +4,19 @@
 // 이웃한 방을 이어 고리를 더한다) ② 입구에서의 깊이로 방향을 정해 갈림길 그래프를 뽑는다 (더 깊은 방으로만 간다)
 // ③ 방 종류 · 길 종류를 매기고, 층마다 꼭 들어갈 구조와 "열쇠 없이 갈 길"을 검사한다.
 RUN.gen = (() => {
-  const COLS = 34, ROWS = 72, ROWS_GRAPH = 8;
+  const ROWS_GRAPH = 8;
+  // 층의 윤곽 (DESIGN.md 180): 같은 규칙으로 키워도 윤곽이 다르면 전체 모습이 달라진다.
+  // 캔버스 기준(앞 = 위)에서 키운 뒤 rot(돌리기) · flip(뒤집기)으로 실제 지도에 옮긴다.
+  const FRAMES = {
+    tall: rng => ({ n: '세로형', cw: 32, ch: 74, sx: 0.5, up: 0.55, rot: 0, region: () => true }),
+    wide: rng => ({ n: '가로형', cw: 30, ch: 68, sx: 0.5, up: 0.55, rot: 1, region: () => true }),
+    square: rng => ({ n: '정사각형', cw: 48, ch: 48, sx: 0.3 + rng() * 0.4, up: 0.3, rot: 0, region: () => true }),
+    blob: rng => { const cw = 46, ch = 54, rx = cw / 2 - 1, ry = ch / 2 - 1, cx = cw / 2, cy = ch / 2, ph = rng() * 6;
+      return { n: '덩어리형', cw, ch, sx: 0.5, up: 0.4, rot: rng() < 0.5 ? 0 : 1, region: (x, y) => { const a = Math.atan2(y - cy, x - cx), w = 1 + 0.16 * Math.sin(a * 3 + ph) + 0.1 * Math.sin(a * 5 + ph * 2); return ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= w * w; } }; },
+    ell: rng => ({ n: 'L자형', cw: 50, ch: 54, sx: 0.2, up: 0.5, rot: 0, region: (x, y) => x < 22 || y < 24 }),
+    diag: rng => ({ n: '대각선형', cw: 52, ch: 60, sx: 0.12, up: 0.55, rot: 0, region: (x, y) => { const t = (x / 52) - (1 - y / 60); return Math.abs(t) < 0.34; } }),
+  };
+  const frameOf = seed => { const r = RUN.rng(seed * 101 + 17), keys = Object.keys(FRAMES), F = FRAMES[keys[Math.floor(r() * keys.length)]](r); F.flip = r() < 0.5; return F; };
   const KEYLESS = { open: 1, trap: 1, dark: 1 };
   const keyless = e => !!KEYLESS[e.kind];
   const D4 = [[0, -1], [1, 0], [0, 1], [-1, 0]];
@@ -35,13 +47,14 @@ RUN.gen = (() => {
     return ['cross', 7, 7];
   }
 
-  function grow(seed) {
-    const rng = RUN.rng(seed), occ = new Int8Array(COLS * ROWS), own = new Int16Array(COLS * ROWS).fill(-1);
-    const at = (x, y) => x < 0 || y < 0 || x >= COLS || y >= ROWS ? 9 : occ[y * COLS + x];
-    const ownAt = (x, y) => x < 0 || y < 0 || x >= COLS || y >= ROWS ? -1 : own[y * COLS + x];
-    const inB = (x, y) => x >= 1 && y >= 1 && x < COLS - 1 && y < ROWS - 1;
+  function grow(seed, F) {
+    const CW = F.cw, CH = F.ch;
+    const rng = RUN.rng(seed), occ = new Int8Array(CW * CH), own = new Int16Array(CW * CH).fill(-1);
+    const at = (x, y) => x < 0 || y < 0 || x >= CW || y >= CH ? 9 : occ[y * CW + x];
+    const ownAt = (x, y) => x < 0 || y < 0 || x >= CW || y >= CH ? -1 : own[y * CW + x];
+    const inB = (x, y) => x >= 1 && y >= 1 && x < CW - 1 && y < CH - 1 && F.region(x, y);
     const rooms = [], links = [];
-    const mark = (cells, v, id) => { for (const [x, y] of cells) { occ[y * COLS + x] = v; own[y * COLS + x] = id; } };
+    const mark = (cells, v, id) => { for (const [x, y] of cells) { occ[y * CW + x] = v; own[y * CW + x] = id; } };
     const mkRoom = (kind, w, h, x0, y0) => { if (kind === 'round') h = w; const s = shapeOf(rng, kind, w, h); return { kind, w, h, x: x0, y: y0, rel: s.cells, decor: s.decor, cells: s.cells.map(([a, b]) => [x0 + a, y0 + b]) }; };
     const fits = (r, allowOwn = -1) => r.cells.every(([x, y]) => inB(x, y) && at(x, y) === 0 && D8.every(([dx, dy]) => at(x + dx, y + dy) === 0));
     const corOk = (cells, parent) => cells.every(([x, y], i) => inB(x, y) && at(x, y) === 0 && D8.every(([dx, dy]) => { const v = at(x + dx, y + dy); return v === 0 || (v === 1 && ownAt(x + dx, y + dy) === parent && i === 0); }));
@@ -62,14 +75,14 @@ RUN.gen = (() => {
       return pl.r;
     }
     // 입구
-    const start = mkRoom('rect', 5, 3, Math.floor(COLS / 2) - 2, ROWS - 6); start.id = 0; start.parent = -1; rooms.push(start); mark(start.cells, 1, 0);
+    const start = mkRoom('rect', 5, 3, Math.max(2, Math.min(CW - 7, Math.round(F.sx * CW) - 2)), CH - 6); start.id = 0; start.parent = -1; rooms.push(start); mark(start.cells, 1, 0);
     start.tried = {};
     for (let guard = 0; guard < 500 && rooms.length < 23; guard++) {
       // 위쪽(앞으로) 방을 더 자주 고른다
       const open = rooms.filter(r => !r.tried || Object.keys(r.tried).length < 3);
       if (!open.length) break;
       open.sort((a, b) => a.y - b.y);
-      const p = rng() < 0.55 ? open[Math.floor(rng() * Math.min(3, open.length))] : open[Math.floor(rng() * open.length)];
+      const p = rng() < F.up ? open[Math.floor(rng() * Math.min(3, open.length))] : open[Math.floor(rng() * open.length)];
       p.tried = p.tried || {};
       const [kind, w, h] = pickRoom(rng, false), L = 2 + Math.floor(rng() * 3), u = rng();
       if (u < 0.45 && !p.tried.pair) {
@@ -134,7 +147,7 @@ RUN.gen = (() => {
     const depthOf = () => { const d = new Map([[0, 0]]), q = [0]; while (q.length) { const v = q.shift(); for (const l of links) { if (!alive.has(l.a) || !alive.has(l.b)) continue; const w = l.a === v ? l.b : l.b === v ? l.a : -1; if (w >= 0 && !d.has(w)) { d.set(w, d.get(v) + 1); q.push(w); } } } return d; };
     // 순서(rank): 깊이 → 지도에서 더 위 → 번호. 길은 순서가 오르는 쪽으로만 간다 (되돌아가기 없음, 고리 없음).
     // 같은 깊이끼리의 고리도 위쪽으로 가는 길로 살린다 — 갈림길이 는다 (DESIGN.md 179)
-    const rankOf = (d, id) => id === boss.id ? 1e9 : d.get(id) * 1e5 + (ROWS - (rooms[id].y + rooms[id].h / 2)) * 100 + id;
+    const rankOf = (d, id) => id === boss.id ? 1e9 : d.get(id) * 1e5 + (CH - (rooms[id].y + rooms[id].h / 2)) * 100 + id;
     for (let pass = 0; pass < 6; pass++) {
       const d = depthOf(); let changed = false;
       for (const id of [...alive]) if (!d.has(id)) { alive.delete(id); changed = true; }
@@ -173,13 +186,13 @@ RUN.gen = (() => {
     return { fam: famKey, name: n, count: c, d: per * c, label: `${n} ${c}`, tier };
   }
 
-  function build(seed) {
-    const g = grow(seed); if (!g) return null;
+  function build(seed, F) {
+    const g = grow(seed, F); if (!g) return null;
     const rng = RUN.rng(seed * 13 + 5);
     // 방 번호를 다시 매긴다 (입구 0, 깊이 순)
     const order = g.rooms.slice().sort((a, b) => g.rank.get(a.id) - g.rank.get(b.id)), idx = new Map(order.map((r, i) => [r.id, i]));
     const maxD = Math.max(...order.map(r => g.depth.get(r.id)));
-    const nodes = order.map((r, i) => ({ id: i, row: g.depth.get(r.id), x: (r.x + r.w / 2) / COLS, type: 'fight', size: r.cells.length >= 30 ? 'large' : 'small', info: 0, notes: [] }));
+    const nodes = order.map((r, i) => ({ id: i, row: g.depth.get(r.id), x: (r.x + r.w / 2) / F.cw, type: 'fight', size: r.cells.length >= 30 ? 'large' : 'small', info: 0, notes: [] }));
     const edges = [], cor = {}, room = {};
     for (const r of order) room[idx.get(r.id)] = { x: r.x, y: r.y, w: r.w, h: r.h, cells: r.cells, decor: r.decor.map(o => ({ ...o, x: r.x + o.x, y: r.y + o.y })), kind: r.kind };
     for (const l of g.links) {
@@ -248,10 +261,29 @@ RUN.gen = (() => {
     if (N.some(n => n.type !== 'boss' && !outs(m, n.id).some(keyless))) return null;
     if (!path(m) || !path(m, n => n.type === 'elite')) return null;
     for (const e of edges) { e.seen = {}; e.opened = false; e.walked = false; }
-    m._lay = { COLS, ROWS, room, cor };
+    // 캔버스 → 실제 지도: 돌리기(앞 = 오른쪽) · 뒤집기
+    const W = F.rot ? F.ch : F.cw, H = F.rot ? F.cw : F.ch;
+    const tf = ([x, y]) => { let X = F.rot ? F.ch - 1 - y : x, Y = F.rot ? x : y; if (F.flip) X = W - 1 - X; return [X, Y]; };
+    const tp = o => { const [X, Y] = tf([o.x, o.y]); return { ...o, x: X, y: Y }; };
+    for (const id in room) { const r = room[id], cells = r.cells.map(tf), xs = cells.map(c => c[0]), ys = cells.map(c => c[1]);
+      const x = Math.min(...xs), y = Math.min(...ys); room[id] = { ...r, cells, x, y, w: Math.max(...xs) - x + 1, h: Math.max(...ys) - y + 1, decor: r.decor.map(tp) }; }
+    for (const id in cor) { const c = cor[id]; cor[id] = { cells: c.cells.map(tf), doorA: tf(c.doorA), doorB: tf(c.doorB), doorAout: tf(c.doorAout), doorBout: tf(c.doorBout), decor: (c.decor || []).map(tp) }; }
+    // 양피지를 던전이 있는 곳에 맞춰 자른다 (가장자리 4칸, 위는 제목 띠 자리로 2칸 더)
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    const grow1 = ([x, y]) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
+    for (const id in room) room[id].cells.forEach(grow1); for (const id in cor) cor[id].cells.forEach(grow1);
+    const ox = x0 - 4, oy = y0 - 6, sh = ([x, y]) => [x - ox, y - oy], shp = o => ({ ...o, x: o.x - ox, y: o.y - oy });
+    for (const id in room) { const r = room[id]; room[id] = { ...r, cells: r.cells.map(sh), x: r.x - ox, y: r.y - oy, decor: r.decor.map(shp) }; }
+    for (const id in cor) { const c = cor[id]; cor[id] = { cells: c.cells.map(sh), doorA: sh(c.doorA), doorB: sh(c.doorB), doorAout: sh(c.doorAout), doorBout: sh(c.doorBout), decor: c.decor.map(shp) }; }
+    m._lay = { COLS: x1 - ox + 5, ROWS: y1 - oy + 5, room, cor, frame: F.n };
     return m;
   }
 
-  const make = seed => { for (let k = 0; k < 400; k++) { const m = build(seed * 7919 + k); if (m) return m; } throw new Error('지도를 만들지 못했다'); };
-  return { make, outs, ins, keyless, path, ROWS: ROWS_GRAPH };
+  const make = seed => {
+    const F = frameOf(seed);
+    for (let k = 0; k < 300; k++) { const m = build(seed * 7919 + k, F); if (m) return m; }
+    for (let k = 0; k < 300; k++) { const m = build(seed * 7919 + k, FRAMES.tall(RUN.rng(seed))); if (m) return m; }  // 윤곽이 너무 좁으면 세로형으로
+    throw new Error('지도를 만들지 못했다');
+  };
+  return { make, outs, ins, keyless, path, ROWS: ROWS_GRAPH, FRAMES };
 })();
