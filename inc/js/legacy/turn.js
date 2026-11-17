@@ -39,6 +39,9 @@ G.Turn = (() => {
 
   const T = {
     rec: null,
+    // 흐르는 턴제 (새 게임, 2026-11-18): 판정은 SRD 차례 그대로, 보이는 것만 실시간처럼 — 범위 칠하기 · 큰 주사위 창 · 차례 사이 쉼을 없애고,
+    // 걸음은 논리상 바로 옮겨 그림이 따라 걷게 한다(그림이 도착하면 친다). 다음 사람의 걸음이 앞사람의 공격 동작과 겹쳐 보인다
+    smooth: false,
     // 먼저 굴린 주사위 눈: 행동보다 앞서 보여 주고, 그 눈으로 판정한다
     pre: null,
     rolls: { all: 0, shown: 0 },
@@ -191,13 +194,14 @@ G.Turn = (() => {
     if (st.ph === 'show') { G.Tactics.snap(rt, st.cur); if ((st.t -= dt) <= 0) { st.ph = 'move'; st.t = 0; } return; }
     if (st.ph === 'pre') {
       if ((st.t -= dt) > 0) return;
+      if (T.smooth && st.t > -1.5 && st.cur && st.cur._dx != null && Math.hypot(st.cur._dx - st.cur.x, st.cur._dy - st.cur.y) > 0.4) return; // 그림이 다 걸어올 때까지 (1.5초까지)
       const e = st.cur, tg = st.tg;
       if (gone(rt, e) || !tg || (tg.kind === 'mon' ? gone(rt, tg) : tg.dead)) { T.pre = null; pause(st, SKIP); return; }
       act(f, rt, st, e, tg); T.pre = null;
       return;
     }
     if (st.ph === 'back') { // 치고 빠지기: 걸어서 물러난 뒤 차례가 끝난다
-      { const e = st.cur, px = e.x, py = e.y, done = gone(rt, e) || !st.path.length || G.Tactics.walk(e, st.path, MOVE_V, st.fast ? 99 : dt); if (!gone(rt, e)) { F().fieldMove(f, rt, e, px, py); opportunity(f, rt, st, e, px, py); } if (gone(rt, e) || rt.phase === 'dead') { pause(st, SKIP); return; } if (!done) return; } // 물러나기 · 재빠른 도주가 아니면 기회 공격 (SRD)
+      { const e = st.cur, px = e.x, py = e.y, done = gone(rt, e) || !st.path.length || G.Tactics.walk(e, st.path, MOVE_V, st.fast || T.smooth ? 99 : dt); if (!gone(rt, e)) { F().fieldMove(f, rt, e, px, py); opportunity(f, rt, st, e, px, py); } if (gone(rt, e) || rt.phase === 'dead') { pause(st, SKIP); return; } if (!done) return; } // 물러나기 · 재빠른 도주가 아니면 기회 공격 (SRD)
       pause(st, SKIP); return;
     }
     if (st.ph === 'move') {
@@ -206,7 +210,7 @@ G.Turn = (() => {
       G.Tactics.snap(rt, e); // 그사이 일어난 사람 등이 겹치지 않게
       // 칸을 따라 걷고, 다 걸었을 때 칠 수 있으면 친다. 아니면 그 자리에서 차례가 끝난다
       G.Tactics.blocked(rt, e, st.path); // 그사이 누가 길을 막았으면 거기서 멈춘다
-      const px = e.x, py = e.y, done = !st.path.length || G.Tactics.walk(e, st.path, MOVE_V, st.fast ? 99 : dt);
+      const px = e.x, py = e.y, done = !st.path.length || G.Tactics.walk(e, st.path, MOVE_V, st.fast || T.smooth ? 99 : dt);
       F().fieldMove(f, rt, e, px, py);
       opportunity(f, rt, st, e, px, py);
       if (gone(rt, e) || rt.phase === 'dead') { pause(st, SKIP); return; }
@@ -258,7 +262,7 @@ G.Turn = (() => {
     }
   }
   // 그 칸에서 표적을 칠 수 있나: 사거리 안 + 시야
-  const canHit = (m, e, x, y, tg) => G.Line.dist({ x, y }, tg) <= reach(e, tg) && F().sees(m, { x, y }, tg);
+  const canHit = (m, e, x, y, tg) => Math.hypot(x - tg.x, y - tg.y) <= reach(e, tg) && F().sees(m, { x, y }, tg);
   function strike(f, rt, st, e, tg) {
     // 명중 굴림이 있는 공격은 주사위부터 (광역 · 내성 공격은 굴리는 쪽이 상대라 바로)
         if (!G.quiet && (e.kind === 'mon' || e.kind === 'sum' || !(e.def.splash || e.def.chain || e.def.saveAtk))) {
@@ -266,22 +270,22 @@ G.Turn = (() => {
           const why = stakeOf(e, tg, T.pre);
           T.rolls.all++;
           // 판이 갈리는 굴림만 크게 보여 준다. 나머지는 바로 치고 숫자만 뜬다
-          if (why !== null || G.DICE_ALL) {
+          if (!T.smooth && (why !== null || G.DICE_ALL)) {
             T.rolls.shown++;
             rt.roll = { id: (rt.roll ? rt.roll.id : 0) + 1, who: nameOf(e), foe: e.kind === 'mon', what: '공격', why, tg: nameOf(tg), nat: T.pre, need: DN().ac(tg) + G.Foe.cover(rt, e, tg) - Math.round(DN().hit(e) + DN().bsum(e, 'hit')), pre: true, ok: true };
             st.ph = 'pre'; st.t = st.fast ? 0 : why !== null ? PRE_T : PRE_ALL;
             return;
           }
           // 주사위가 없어도 그림이 도착한 뒤에 친다
-          st.ph = 'pre'; st.t = st.fast ? 0 : CLOSE_T;
+          st.ph = 'pre'; st.t = st.fast ? 0 : T.smooth ? 0.05 : CLOSE_T;
           return;
         }
-        if (!G.quiet) { st.ph = 'pre'; st.t = st.fast ? 0 : CLOSE_T; return; } // 범위 공격도 그림이 도착한 뒤에
+        if (!G.quiet) { st.ph = 'pre'; st.t = st.fast ? 0 : T.smooth ? 0.05 : CLOSE_T; return; } // 범위 공격도 그림이 도착한 뒤에
         act(f, rt, st, e, tg);
         return;
   }
   const sameNext = st => { const a = st.order[st.i], b = st.order[st.i + 1]; return !!(a && b && a.init === b.init); }; // 같은 선제권 무리 (SRD: 같은 몬스터 무리는 한 번 굴린다)
-  const pause = (st, t) => { st.ph = 'wait'; st.t = st.fast && sameNext(st) ? 0 : t; st.ov = null; };
+  const pause = (st, t) => { st.ph = 'wait'; st.t = st.fast && sameNext(st) ? 0 : T.smooth ? Math.min(t * 0.3, 0.25) : t; st.ov = null; };
   // 굴림을 크게 보여 줄 때: 동료가 쓰러질 수 있을 때 · 우두머리를 끝낼 수 있을 때 · 20과 1
   function stakeOf(e, tg, nat) {
     if (e.kind === 'mon' && tg.merc && tg.hp / (tg.max || 1) < STAKE_HP) return '쓰러질 위기';
@@ -374,7 +378,7 @@ G.Turn = (() => {
     { const end = st.path.length ? st.path[st.path.length - 1] : e, L = e.kind === 'mon' ? G.Foe.reachL(e) : G.Dnd.rngL(e); if (L && !st.tg.down && !can(end.x, end.y)) { e.longNow = true; if (!can(end.x, end.y)) e.longNow = false; } }
     // 무엇을 할지 먼저 보여 준다: 갈 수 있는 칸 · 칠 수 있는 칸 (그리는 쪽: drawRange)
     e.walked = st.path.length; // 돌진 판정 (G.Foe)
-    if (!G.quiet && !st.fast) { st.ov = G.Tactics.overlay(rt, e, held ? 0 : moveOf(e), reach(e, st.tg), st.path); st.ph = 'show'; st.t = SHOW_T; return; }
+    if (!G.quiet && !st.fast && !T.smooth) { st.ov = G.Tactics.overlay(rt, e, held ? 0 : moveOf(e), reach(e, st.tg), st.path); st.ph = 'show'; st.t = SHOW_T; return; }
     st.ph = 'move'; st.t = 0;
   }
   function act(f, rt, st, e, tg) {

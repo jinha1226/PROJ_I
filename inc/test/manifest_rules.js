@@ -9,7 +9,7 @@ const base = p => p.split('/').pop();
 const throws = f => { try { f(); return false; } catch (e) { return true; } };
 
 // 정리 전 index.html · run.html에서 뽑아 굳힌 목록
-const OLD_GAME = ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'old_stubs', 'fantasy', 'guild', 'create', 'dnd', 'fate', 'feats', 'trinkets', 'skills', 'srd', 'srd_spells', 'srd_upcast', 'spells', 'traits', 'options', 'pools', 'utilspell', 'srd_species', 'multiclass', 'srd_range', 'srd_items', 'items', 'skill_ai', 'team', 'camp', 'skill_fx', 'events', 'skill_nums', 'check', 'explore', 'sight', 'tactics', 'line', 'foe', 'summon', 'light', 'monact', 'actions', 'lore', 'region', 'mons_extra', 'res', 'turn', 'flow', 'story', 'state']; // 2026-11-17 2단계: 옛 흐름 13개를 old로, check · old_stubs · mons_extra를 그 자리에
+const OLD_GAME = ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'old_stubs', 'fantasy', 'guild', 'create', 'dnd', 'fate', 'feats', 'trinkets', 'skills', 'srd', 'srd_spells', 'srd_upcast', 'spells', 'traits', 'options', 'pools', 'utilspell', 'srd_species', 'multiclass', 'srd_range', 'srd_items', 'items', 'skill_ai', 'team', 'camp', 'skill_fx', 'events', 'skill_nums', 'check', 'explore', 'sight', 'tactics', 'foe', 'summon', 'light', 'monact', 'actions', 'lore', 'region', 'mons_extra', 'res', 'turn', 'flow', 'story', 'state']; // 2026-11-17 2단계: 옛 흐름 13개를 old로, check · old_stubs · mons_extra를 그 자리에
 const OLD_ISO = ['core', 'models', 'bake', 'sprites', 'minidoll', 'crawl', 'boot', 'fxlayer', 'pfx', 'vfx', 'hdbg', 'dice', 'actors', 'props', 'main']; // 2026-11-17 2단계: 옛 화면(legacy/iso)을 빼고 game 자리에 app/crawl · app/boot, 끝에 app/main
 const OLD_RUN = ['core', 'data', 'combat', 'gen', 'rules', 'layout', 'draw', 'ui'];
 

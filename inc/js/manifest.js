@@ -11,7 +11,7 @@
     'js/rules/dnd', 'js/rules/fate', 'js/rules/feats', 'js/rules/trinkets', 'js/rules/skills',
     'js/srd/srd', 'js/srd/srd_spells', 'js/srd/srd_upcast', 'js/rules/spells', 'js/rules/traits', 'js/rules/options',
     'js/rules/pools', 'js/rules/utilspell', 'js/srd/srd_species', 'js/rules/multiclass', 'js/srd/srd_range', 'js/srd/srd_items',
-    'js/rules/items', 'js/ai/skill_ai', 'js/rules/team', 'js/rules/camp', 'js/rules/skill_fx', 'js/rules/events', 'js/rules/skill_nums', 'js/rules/check', 'js/legacy/explore', 'js/rules/sight', 'js/legacy/tactics', 'js/rules/line', 'js/rules/foe',
+    'js/rules/items', 'js/ai/skill_ai', 'js/rules/team', 'js/rules/camp', 'js/rules/skill_fx', 'js/rules/events', 'js/rules/skill_nums', 'js/rules/check', 'js/legacy/explore', 'js/rules/sight', 'js/legacy/tactics', 'js/rules/foe',
     'js/rules/summon', 'js/rules/light', 'js/rules/monact', 'js/rules/actions', 'js/rules/lore', 'js/legacy/region', 'js/rules/mons_extra', 'js/rules/res', 'js/legacy/turn', 'js/legacy/flow', 'js/legacy/story',
     'js/legacy/state',
   ],

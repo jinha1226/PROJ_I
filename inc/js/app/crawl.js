@@ -218,14 +218,13 @@ const CRAWL = (() => {
     const units = n.g.units || [[n.g.name, n.g.count]]; let k = 0;
     for (const [name, cnt] of units) for (let i = 0; i < cnt; i++) { const [x, y] = cells[(k++ * 3) % Math.max(1, cells.length)] || [L.x + 3, L.y]; const nm = monName(name); G.Fantasy.spawnMon(R, 1, { n: nm, ...G.D.F.mon[nm] }, x, y, false, { aggro: true, spotted: true, major: true, boss: n.type === 'boss' } /* major: 옛 G.Flow가 층 시작에 major 아닌 몬스터를 치운다 */); }
     R.turn = null; R.phase = 'explore'; G.S.w.fantasy.town = false; G.Fantasy.refreshEnts(R); if (G.Sight?.update) G.Sight.update(R);
-    const to = formUp(iso.rooms[n.id]); // 진형: 그 방 가운데를 무대로 앞줄 · 뒷줄 (방 크기는 그대로)
     G.Dice.party = () => R.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => R.turn?.cur || null; G.Dice.end();
-    fighting = { n, mod, acc: 0, round: 0, cur: null, t: 0, intro: { t: 0, to } };
+    fighting = { n, mod, acc: 0, round: 0, cur: null, t: 0 };
     st.log.push({ t: `${n.g.label} — 전투가 시작된다.` }); say();
   }
   function fightFrame(dt) {
     const F = fighting, T = R.turn; F.t += dt;
-    // 진형으로 걸어간다 (그동안 전투 시계는 멈춘다)
+    // 시험 장면: 복도에서 방으로 걸어 들어온다 (그동안 전투 시계는 멈춘다)
     if (F.intro) {
       F.intro.t += dt; let left = 0;
       for (const [e, q] of F.intro.to) { const path = [q]; G.Tactics.walk(e, path, 3.2, dt); if (path.length) left++; }
@@ -233,8 +232,10 @@ const CRAWL = (() => {
       G.Tactics.snap(R); F.intro = null;
     }
     // 새 라운드: (죽음의 주사위가 있으면 맡을 사람부터) 주사위를 굴리고 트레이에서 기다린다
-    if (T && T.round !== F.round) { F.round = T.round; if (G.Dice.loadout.includes('doom')) bearerPick(); else { G.Dice.newRound(T.round); if (F.quiet) G.Dice.st.ready = true; else tray(); } }
-    if ($('dicebear') || (G.Dice.st && !G.Dice.st.ready)) return; // 플레이어를 기다린다
+    // 첫 라운드에 운명판을 한 번 굴린다 (죽음의 주사위가 있으면 맡을 사람부터). 라운드마다 판의 그 열을 쓴다
+    if (T && T.round !== F.round) { F.round = T.round; if (!G.Dice.board && !$('dicebear')) { if (G.Dice.loadout.includes('doom') && !F.quiet) bearerPick(); else { G.Dice.newBoard(); if (F.quiet) G.Dice.board.ready = true; else boardTray(); } } }
+    if ($('dicebear') || (G.Dice.board && !G.Dice.board.ready)) return; // 플레이어를 기다린다
+    if (T && G.Dice.board && G.Dice.st?.round !== T.round) { G.Dice.useRound(T.round); const c = G.Dice.fire(); if (c && st) { st.log.push({ t: `${T.round}라운드 — ${comboTxt(c)}: ${G.Dice.SYM[c.s].txt(c.n)}` }); say(); } }
     // 차례가 바뀌었다: 앞 사람의 내성 뒤집기를 끝내고, 즉사 면을 받은 사람이면 쓰러진다
     if (T && T.cur !== F.cur) { if (F.cur) G.Dice.turnEnd(F.cur); F.cur = T.cur; const r = T.cur && G.Dice.dieOf(T.cur); if (r && r.special === 'death' && !T.cur.dead) { T.cur.hp = 0; T.cur.dead = true; T.cur.dying = false; st.log.push({ t: `죽음의 주사위가 ${T.cur.merc?.name || '동료'}를 데려갔다.` }); say(); G.Fantasy.refreshEnts(R); } }
     F.acc += dt; let n = 0; while (F.acc >= 0.1 && n++ < 4) { G.tick(0.1); F.acc -= 0.1; }
@@ -244,7 +245,7 @@ const CRAWL = (() => {
     if (!foes.length || F.t > 600) return endFight(true);
   }
   function endFight(win) {
-    const F = fighting, n = F.n; fighting = null; G.Dice.end(); closeTray(); R.turn = null; G.Line.off(); rowsOff(); turnBar(); // 조합 효과 · 진형도 여기서 끝
+    const F = fighting, n = F.n; fighting = null; G.Dice.end(); closeTray(); R.turn = null; // 조합 효과도 여기서 끝
     document.body.dataset.fights = (+(document.body.dataset.fights || 0) + 1) + (win ? 'w' : 'l'); delete document.body.dataset.fight;
     syncToRUN(); n.hostile = false;
     if (!st) { const d = document.createElement('div'); d.className = 'record-stub'; d.innerHTML = `${win ? `시험 전투: 이겼다 (${F.round}라운드)` : '시험 전투: 졌다'} <button onclick="location.reload()">다시 보기</button>`; $('stage').append(d); return; }
@@ -255,70 +256,47 @@ const CRAWL = (() => {
     const L = lead(); trail.length = 0; trail.push([L.x, L.y]);
     refreshSeen(); doorTiles = doorsOf(); drawMap(); showMarks();
   }
-  // 진형 잡기: 그 방 가운데를 무대로, 아군 → 적 방향. 돌려주는 것: 사람 → 설 자리 (걸어가는 건 fightFrame)
-  function formUp(room) {
-    const avg = l => ({ x: l.reduce((a, e) => a + e.x, 0) / l.length, y: l.reduce((a, e) => a + e.y, 0) / l.length });
-    return G.Line.set(R, R.map, { x: room.cx, y: room.cy }, avg(R.party.filter(p => !p.dead)), avg(R.mons.filter(m => m.hp > 0)));
-  }
-  // 줄 표시: 양쪽 앞줄 · 뒷줄 밑에 짧은 선 (쿼터뷰 좌표로 꺾어 그린다)
-  function drawRows() {
-    const Ln = G.Line; let svg = $('rows');
-    if (!svg) { svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.id = 'rows'; $('stage').append(svg); }
-    const rc = canvas.getBoundingClientRect(), sb = $('stage').getBoundingClientRect(), P = (x, y) => { const a = project(wx(x), wy(y), 0); return [rc.left - sb.left + a.sx / W * rc.width, rc.top - sb.top + a.sy / H * rc.height]; };
-    let out = '';
-    const live = R.party.filter(p => !p.dead).concat(R.mons.filter(m => m.hp > 0));
-    for (const s of [0, 1]) for (const r of [0, 1]) {
-      const ls = live.filter(e => Ln.sideOf(e) === s && Ln.rowOf(e) === r).map(e => Ln.laneOf(e)); if (!ls.length) continue; // 선 사람이 있는 줄만, 그 사람들 밑에만
-      const a = (s ? 1 : -1) * Ln.D[r], l0 = (Math.min(...ls) - 0.6) * Ln.LANE, l1 = (Math.max(...ls) + 0.6) * Ln.LANE, cx = Ln.c.x + Ln.d.x * a, cy = Ln.c.y + Ln.d.y * a;
-      const A = P(cx + Ln.p.x * l0, cy + Ln.p.y * l0), B = P(cx + Ln.p.x * l1, cy + Ln.p.y * l1), [lx, ly] = A[0] < B[0] ? A : B;
-      out += `<path class="${s ? 'foe' : 'me'}" d="M${A[0].toFixed(1)},${A[1].toFixed(1)}L${B[0].toFixed(1)},${B[1].toFixed(1)}"/><text class="${s ? 'foe' : 'me'}" x="${(lx - 6).toFixed(1)}" y="${(ly + 4).toFixed(1)}">${r ? '뒷줄' : '앞줄'}</text>`;
-    }
-    svg.innerHTML = out;
-  }
-  function rowsOff() { const z = $('rows'); if (z) z.remove(); }
-  // 차례 막대: 선제권 순서대로, 지금 차례는 크게
-  function turnBar() {
-    const T = R && R.turn; let bar = $('turnbar');
-    if (!T || !fighting) { if (bar) bar.remove(); return; }
-    if (!bar) { bar = document.createElement('div'); bar.id = 'turnbar'; $('stage').append(bar); }
-    const on = T.order.filter(o => o.e.hp > 0 && !o.e.dead), k = T.round + '|' + on.map(o => (o.e === T.cur ? '*' : '') + Math.round(10 * o.e.hp / (o.e.max || 1))).join();
-    if (bar.dataset.k === k) return; bar.dataset.k = k;
-    bar.innerHTML = `<b>${T.round || 1}라운드</b>` + on.map(o => { const e = o.e, foe = e.kind === 'mon', row = G.Line.on ? (G.Line.rowOf(e) ? '뒤' : '앞') : ''; return `<span class="${foe ? 'foe' : 'me'}${e === T.cur ? ' cur' : ''}"><small>${row}</small>${esc(foe ? e.n || '적' : e.merc?.name || '동료')}<i style="width:${Math.round(100 * Math.max(0, e.hp) / (e.max || 1))}%"></i></span>`; }).join('');
-  }
   // 죽음의 주사위를 맡을 사람 (굴리기 전에)
   function bearerPick() {
     const ps = G.Dice.party(), sug = G.Dice.suggestBearer(), box = document.createElement('div'); box.id = 'dicebear';
     box.innerHTML = '<h4>죽음의 주사위를 누가 맡나</h4><p>20 · 20 · 20 · 20 · 즉사 — 즉사가 나오면 맡은 사람이 쓰러진다.</p>' + ps.map((p, i) => `<button data-i="${i}" class="${p === sug ? 'sug' : ''}">${esc(p.merc?.name || '동료')}${p === sug ? ' <small>추천</small>' : ''}</button>`).join('');
-    box.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; G.Dice.bearer = ps[+b.dataset.i]; box.remove(); G.Dice.newRound(R.turn.round); tray(); };
+    box.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; G.Dice.bearer = ps[+b.dataset.i]; box.remove(); G.Dice.newBoard(); boardTray(); };
     $('stage').append(box);
   }
-  // 주사위 트레이: 다시 굴릴 주사위 고르기(라운드당 한 번) · 사람끼리(또는 예비와) 맞바꾸기 · 진행
-  let pickSw = null;
+  // 운명판 (전투 시작에 한 번): 칸을 골라 다시 굴리기(한 번) · 열 이름 둘을 눌러 순서 바꾸기 · 시작. 3라운드마다 처음 열부터 되풀이
+  let pickCol = null;
+  const dieFace = r => (r.special === 'death' ? '☠' : r.value) + (r.sym ? `<i class="sy s-${r.sym}">${G.Dice.SYM[r.sym].n}</i>` : '');
+  const comboTxt = c => { const Y = G.Dice.SYM[c.s]; return `${Y.n}×${c.n} ${Y.fx}`; };
   function closeTray() { const t = $('dicetray'); if (t) t.remove(); }
-  function tray() {
-    closeTray(); const S = G.Dice.st, ps = G.Dice.party(), sel = new Set(), box = document.createElement('div'); box.id = 'dicetray'; pickSw = null;
-    const face = r => (r.special === 'death' ? '☠' : r.value) + (r.sym ? `<i class="sy s-${r.sym}">${G.Dice.SYM[r.sym].n}</i>` : '');
-    const Y = G.Dice.SYM, one = () => (sel.size === 1 ? [...sel][0] : null), ringSel = () => { const i = one(); return i != null && G.Dice.KINDS[S.kinds[i]].sym ? i : null; };
+  function boardTray() {
+    closeTray(); const B = G.Dice.board, sel = new Set(), box = document.createElement('div'); box.id = 'dicetray'; box.className = 'board'; pickCol = null;
     const draw = () => {
-      const row = (p, who) => { const i = who === 'spare' ? S.spare : S.alloc.get(p), r = i == null ? null : S.dice[i]; return `<button class="dp${pickSw === who ? ' on' : ''}${r && r.kind === 'doom' ? ' doom' : ''}" data-w="${who}"><span>${esc(who === 'spare' ? '예비' : p.merc?.name || '동료')}</span><b class="die k-${r ? r.kind : ''}">${r ? face(r) : '–'}</b></button>`; };
-      const cs = G.Dice.combos(), ri = ringSel(), nd = dir => (ri != null && G.Dice.canNudge(ri, dir) ? '' : ' disabled');
-      box.innerHTML = `<div class="hd">${S.round}라운드 주사위 <small>주사위를 눌러 고르기 → 다시 굴리기 · 비틀기 ±1 · 이름 둘을 눌러 맞바꾸기</small></div>` +
-        `<div class="dice">${S.dice.map((r, i) => `<b class="die k-${r.kind}${sel.has(i) ? ' sel' : ''}" data-d="${i}" title="${esc(G.Dice.KINDS[r.kind].n)}">${face(r)}</b>`).join('')}</div>` +
-        `<div class="who">${ps.map((p, i) => row(p, String(i))).join('')}${S.spare != null ? row(null, 'spare') : ''}</div>` +
-        `<div class="combo">${cs.length ? cs.map(c => `<button data-c="${c.s}" class="${S.combo === c.s ? 'on' : ''}"><i class="sy s-${c.s}">${Y[c.s].n}</i>×${c.n} ${Y[c.s].fx}<small>${Y[c.s].txt(c.n)}</small></button>`).join('') : '<span class="none">조합 없음 — 같은 기호 둘(★는 아무 기호)</span>'}</div>` +
-        `<div class="bar"><button class="rr"${S.rerolled || !sel.size ? ' disabled' : ''}>다시 굴리기</button><button class="nd" data-n="-1"${nd(-1)}>◀ −1</button><button class="nd" data-n="1"${nd(1)}>+1 ▶</button><button class="go">진행</button></div>`;
+      const cols = [0, 1, 2], pick = c => { const cs = G.Dice.combos(G.Dice.colDice(c)), s = G.Dice.pickCombo(cs); return s ? comboTxt(cs.find(x => x.s === s)) : '—'; };
+      box.innerHTML = `<div class="hd">운명판 <small>칸을 눌러 고르기 → 다시 굴리기(한 번) · 라운드 이름 둘을 눌러 순서 바꾸기 · 4라운드부터 처음 열부터 되풀이</small></div>` +
+        `<table><tr><th></th>${cols.map(c => `<th><button class="col${pickCol === c ? ' on' : ''}" data-c="${c}">${c + 1}라운드</button></th>`).join('')}</tr>` +
+        B.rows.map((p, r) => `<tr><th>${esc(p.merc?.name || '동료')}</th>${cols.map(c => { const d = B.cells[r][c]; return `<td><b class="die k-${d.kind}${sel.has(r + ',' + c) ? ' sel' : ''}" data-rc="${r},${c}" title="${esc(G.Dice.KINDS[d.kind].n)}">${dieFace(d)}</b></td>`; }).join('')}</tr>`).join('') +
+        `<tr class="cb"><th>조합</th>${cols.map(c => `<td>${pick(c)}</td>`).join('')}</tr></table>` +
+        `<div class="bar"><button class="rr"${B.rerolled || !sel.size ? ' disabled' : ''}>다시 굴리기</button><button class="go">시작</button></div>`;
     };
     box.onclick = ev => {
-      const t = ev.target.closest('[data-d],[data-w],[data-c],.rr,.nd,.go'); if (!t) return;
-      if (t.dataset.d != null) { if (S.rerolled && S.nudged) return; const i = +t.dataset.d; sel.has(i) ? sel.delete(i) : sel.add(i); }
-      else if (t.dataset.c != null) G.Dice.setCombo(t.dataset.c);
-      else if (t.classList.contains('nd')) { const i = ringSel(); if (i != null) G.Dice.nudge(i, +t.dataset.n); sel.clear(); }
-      else if (t.dataset.w != null) { const w = t.dataset.w; if (pickSw == null) pickSw = w; else { if (pickSw !== w) G.Dice.swap(pickSw === 'spare' ? 'spare' : ps[+pickSw], w === 'spare' ? 'spare' : ps[+w]); pickSw = null; } }
-      else if (t.classList.contains('rr')) { G.Dice.reroll([...sel]); sel.clear(); }
-      else if (t.classList.contains('go')) { S.ready = true; box.remove(); const c = G.Dice.fire(); if (c) { st && st.log.push({ t: `${Y[c.s].fx}(${Y[c.s].n}×${c.n}) — ${Y[c.s].txt(c.n)}` }); st && say(); } return; }
+      const t = ev.target.closest('[data-rc],[data-c],.rr,.go'); if (!t) return;
+      if (t.dataset.rc != null) { if (B.rerolled) return; const k = t.dataset.rc; sel.has(k) ? sel.delete(k) : sel.add(k); }
+      else if (t.dataset.c != null) { const c = +t.dataset.c; if (pickCol == null) pickCol = c; else { G.Dice.swapCols(pickCol, c); pickCol = null; } }
+      else if (t.classList.contains('rr')) { G.Dice.rerollCells([...sel].map(k => k.split(',').map(Number))); sel.clear(); }
+      else if (t.classList.contains('go')) { B.ready = true; box.remove(); return; }
       draw();
     };
     draw(); $('stage').append(box);
+  }
+  // 싸우는 동안 작은 운명판: 이번 라운드 열을 밝히고, 쓴 칸은 흐리게
+  function boardHud() {
+    const B = G.Dice.board, S = G.Dice.st; let el = $('fatehud');
+    if (!B || !B.ready || !fighting) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement('div'); el.id = 'fatehud'; $('stage').append(el); }
+    const col = S ? S.col : -1, cs = S ? G.Dice.combos().find(x => x.s === S.combo) : null, k = `${col}|${S ? [...S.used].length : 0}|${S?.combo}|${B.rows.filter(p => p.dead).length}`;
+    if (el.dataset.k === k) return; el.dataset.k = k;
+    el.innerHTML = `<table>${B.rows.map((p, r) => `<tr class="${p.dead ? 'dead' : ''}"><th>${esc(p.merc?.name || '동료')}</th>${B.cells[r].map((d, c) => `<td class="${c === col ? 'now' : ''}${c === col && S.used.has(p) ? ' used' : ''}"><b class="die k-${d.kind}">${dieFace(d)}</b></td>`).join('')}</tr>`).join('')}</table>` +
+      `<div class="cb">${S ? `${S.round}라운드 · ${col + 1}열` : ''}${cs ? ` · ${comboTxt(cs)}` : ''}</div>`;
   }
   // 원정 전: 특수 주사위 고르기 (2개까지). ?dice=gamble,doom 이면 그대로, ?auto면 건너뛴다
   function dicePick() {
@@ -326,7 +304,7 @@ const CRAWL = (() => {
     if (q.get('auto')) return;
     const box = document.createElement('div'), sel = []; box.id = 'dicepick';
     const SP = G.Dice.SPECIAL, faces = k => (G.Dice.KINDS[k].faces ? G.Dice.KINDS[k].faces.map(f => (f === 'death' ? '☠' : f)).join(' · ') : k === 'twin' ? 'd20 두 번 중 높은 쪽' : '');
-    const draw = () => { box.innerHTML = `<h3>특수 주사위</h3><p>둘까지 골라 간다. 라운드 주사위에 섞인다.</p>${SP.map(k => `<button data-k="${k}" class="${sel.includes(k) ? 'on' : ''}"><b class="die k-${k}">${k === 'doom' ? '☠' : k === 'gamble' ? '20' : k === 'steady' ? '10' : '↑'}</b><span>${esc(G.Dice.KINDS[k].n)}<small>${esc(faces(k))}</small></span></button>`).join('')}<button class="go">출발${sel.length ? ` (${sel.length})` : ' (보통 주사위만)'}</button>`; };
+    const draw = () => { box.innerHTML = `<h3>특수 주사위</h3><p>둘까지 골라 간다. 전투마다 운명판의 칸 하나씩에 들어간다.</p>${SP.map(k => `<button data-k="${k}" class="${sel.includes(k) ? 'on' : ''}"><b class="die k-${k}">${k === 'doom' ? '☠' : k === 'gamble' ? '20' : k === 'steady' ? '10' : '↑'}</b><span>${esc(G.Dice.KINDS[k].n)}<small>${esc(faces(k))}</small></span></button>`).join('')}<button class="go">출발${sel.length ? ` (${sel.length})` : ' (보통 주사위만)'}</button>`; };
     box.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; if (b.classList.contains('go')) { G.Dice.loadout = sel.slice(); box.remove(); return; } const k = b.dataset.k, i = sel.indexOf(k); if (i >= 0) sel.splice(i, 1); else if (sel.length < 2) sel.push(k); draw(); };
     draw(); $('stage').append(box);
   }
@@ -363,17 +341,18 @@ const CRAWL = (() => {
       // 시험용 ?tap=x,y: 그 타일을 화면 좌표로 바꿔 누른 것처럼 (화면 ↔ 타일 변환 확인)
       if (q.get('tap')) setTimeout(() => { const [tx, ty] = q.get('tap').split(',').map(Number), a = project(wx(tx), wy(ty), 0), rc = canvas.getBoundingClientRect(); const cx = rc.left + a.sx / canvas.width * rc.width, cy = rc.top + a.sy / canvas.height * rc.height, back = tileAtScreen(cx, cy); document.body.dataset.tap = back.map(v => v.toFixed(2)).join(','); }, 1500);
     },
-    frame(dt) { frame(dt); autoStep(dt); for (const m of marks) place(m.el, m.x, m.y, 2.2); if (G.Line.on && fighting) drawRows(); turnBar(); }, // 줄 표시는 카메라를 따라 매 프레임
-    // 시험 전투 (?fight=test): 복도로 들어와 적과 맞닥뜨리고 진형을 잡아 싸운다 (탐사 규칙 없이)
+    frame(dt) { frame(dt); autoStep(dt); for (const m of marks) place(m.el, m.x, m.y, 2.2); boardHud(); },
+    // 시험 전투 (?fight=test): 복도로 들어와 방에서 적과 맞닥뜨려 싸운다 (탐사 규칙 없이)
     fightTest(r) {
       const pm = $('pmapbox'); if (pm) pm.style.display = 'none';
       R = r; const room = r.map.rooms.find(x => x.id === 'A') || r.map.rooms[0], n = { id: -1, type: 'fight', g: { label: '시험 전투', name: '적', count: r.mons.length, units: [] } };
       R.turn = null; R.phase = 'explore'; G.S.w.fantasy.town = false;
-      const to = formUp(room);
+      // 걸어 들어올 자리: 단장은 방 입구 안쪽, 나머지는 그 뒤로 (진형을 맞추지 않는다)
+      const to = new Map(r.party.map((p, i) => [p, { x: room.x + 2 - (i ? 1.2 : 0), y: room.cy + (i === 1 ? -1.2 : i === 2 ? 1.2 : 0) }]));
       G.Dice.party = () => R.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => R.turn?.cur || null; G.Dice.end();
-      const tray0 = q.get('tray') || q.get('dice') != null; // 주사위 트레이는 ?tray · ?dice일 때만 (예시 장면은 전투만 보여 준다)
+      const tray0 = q.get('tray') || q.get('dice') != null; // 운명판 창은 ?tray · ?dice일 때만 (예시 장면은 판을 알아서 굴리고 작은 판만 띄운다)
       fighting = { n, mod: {}, acc: 0, round: 0, cur: null, t: 0, intro: { t: 0, to }, quiet: !tray0 };
-      if (tray0) dicePick(); if (q.get('auto')) autoN = 99;
+      if (q.get('dice') != null) dicePick(); if (q.get('auto')) autoN = 99; // ?dice=는 고르는 창 없이 그대로 넣는다
     },
     get st() { return st; },
   };

@@ -11,9 +11,9 @@ function drawEnt(e, r, t) {
   else if (sp <= .002) { const pool = e.kind === 'mon' ? r.party.filter(p => !p.dead) : r.mons.filter(o => o.aggro); let b = null, bd = 1e9; for (const o of pool) { const d = Math.hypot(o.x - e.x, o.y - e.y); if (d < bd) { bd = d; b = o; } } if (b && bd < 8) e._yaw = Math.atan2(b.y - e.y, b.x - e.x); }
   if (e._yaw == null) e._yaw = .8;
   let x = wx(e._rx + (e._ox || 0)), y = wy(e._ry + (e._oy || 0));
-  const n = now(), lq = e._lu ? (n - e._lu) / (e._ll ? 300 + 70 * e._ll : 300) : 1, hq = e._hit ? (n - e._hit) / 220 : 1, flash = hq < .4;
+  const n = now(), lq = e._lu ? (n - e._lu) / 300 : 1, hq = e._hit ? (n - e._hit) / 220 : 1, flash = hq < .4;
   let arm = .35, up = .9, lean = 0;
-  if (lq < 1) { const k = Math.sin(Math.PI * lq); const lk = e._ll ? e._ll * T : .8; x += (e._lx || 0) * k * lk; y += (e._ly || 0) * k * lk; arm = lerp(-1.4, 1.5, lq); up = lerp(1.6, -.3, lq); lean = k * .3; }
+  if (lq < 1) { const k = Math.sin(Math.PI * lq); x += (e._lx || 0) * k * .8; y += (e._ly || 0) * k * .8; arm = lerp(-1.4, 1.5, lq); up = lerp(1.6, -.3, lq); lean = k * .3; }
   if (hq < 1) { const kb = (1 - hq) * (1 - hq) * .55; x += (e._kx || 0) * kb; y += (e._ky || 0) * kb; lean -= (1 - hq) * .25; }
   const step = sp > .002 ? Math.sin(t * 14 + e.x) : 0;
   const m = e._model || (e._model = e.kind === 'mon' ? monModel(e) : Object.assign({}, CLS[(e.merc || f.leader).cls] || CLS.dragoon));
@@ -81,11 +81,10 @@ function prep(e, r, t, dt) {
   const base = project(wxp, wyp, 0), n = now();
   let ox = 0, oy = 0, flash = false, ang = 0;
   // 공격: 뒤로 살짝 모았다가 → 튀어나가 → 돌아온다
-  const lq = e._lu ? (n - e._lu) / (e._ll ? 300 + 70 * e._ll : 300) : 1; // 진형 전투의 근접은 멀리 달려드니 조금 길게
+  const lq = e._lu ? (n - e._lu) / 300 : 1;
   if (lq < 1) {
     const sx = ((e._lx || 0) - (e._ly || 0)) / R2, sy = ((e._lx || 0) + (e._ly || 0)) / R2 * SIN, l = Math.hypot(sx, sy) || 1;
-    const p1 = e._ll ? project(wxp + (e._lx || 0) * T, wyp + (e._ly || 0) * T, 0) : null, PK = p1 ? Math.max(11, e._ll * Math.hypot(p1.sx - base.sx, p1.sy - base.sy)) : 11;
-    const far = isRanged(e), k = far ? -RECOIL * Math.sin(Math.PI * Math.min(1, lq / .6)) : lq < .22 ? -2.5 * (lq / .22) : lq < .42 ? lerp(-2.5, PK, ease((lq - .22) / .2)) : lerp(PK, 0, ease((lq - .42) / .58));
+    const far = isRanged(e), k = far ? -RECOIL * Math.sin(Math.PI * Math.min(1, lq / .6)) : lq < .22 ? -2.5 * (lq / .22) : lq < .42 ? lerp(-2.5, 11, ease((lq - .22) / .2)) : lerp(11, 0, ease((lq - .42) / .58));
     ox += sx / l * k; oy += sy / l * k; if (!far && lq > .22 && lq < .5) oy -= 2;
   }
   const hq = e._hit ? (n - e._hit) / 260 : 1;

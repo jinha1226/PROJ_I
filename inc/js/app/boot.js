@@ -29,12 +29,10 @@ J.hit = (id, e, power = 0, from, dmg = 0) => { e._hit = now(); e._hitP = power;
   if (win.map && inWin(e.x, e.y)) { const flip = !!from && (from.x - from.y) > (e.x - e.y), ex = wx(e._dx == null ? e.x : e._dx), ey = wy(e._dy == null ? e.y : e._dy); pfx(power >= .25 ? 'impacts/crit-hit' : e.kind === 'mon' ? 'impacts/hit-spark' : 'impacts/blunt-hit', ex, ey, Z_CHEST, { flip, k: 1.3 }); } if (win.map && inWin(e.x, e.y)) { const p = project(wx(e._dx == null ? e.x : e._dx), wy(e._dy == null ? e.y : e._dy), 1.4); spark(p.sx, p.sy, 8 + power * 14 | 0, e.kind === 'mon' ? [rgb(255, 250, 220), rgb(255, 210, 90), rgb(240, 130, 60)] : [rgb(190, 40, 44), rgb(236, 90, 70), rgb(255, 220, 200)]); } if (from) { const dx = e.x - from.x, dy = e.y - from.y, l = Math.hypot(dx, dy) || 1; e._kx = dx / l; e._ky = dy / l; } };
 J.lunge = (id, a, tg) => {
   const dx = tg.x - a.x, dy = tg.y - a.y, l = Math.hypot(dx, dy) || 1; a._lu = now(); a._lx = dx / l; a._ly = dy / l;
-  const ranged0 = a.kind === 'mon' ? G.Foe.ranged(a) : a.def && a.def.range >= 2;
-  a._ll = G.Line?.on && !ranged0 && (a.kind === 'mon') !== (tg.kind === 'mon') ? Math.max(0, l - 1.1) : 0; // 진형 전투: 근접은 상대 앞까지 달려들었다 돌아온다
   // 근접 공격의 궤적. 같은 편에게 쓰는 치유 · 원거리는 그리지 않는다
   if (!win.map || a.kind !== 'mon' && tg.kind !== 'mon') return;
-  if (ranged0 || (a._ll ? 0 : l) > 3.5) return;
-  const flip = (tg.x - tg.y) < (a.x - a.y), ax = wx((a._dx == null ? a.x : a._dx) + a._lx * a._ll), ay = wy((a._dy == null ? a.y : a._dy) + a._ly * a._ll);
+  const ranged = a.kind === 'mon' ? G.Foe.ranged(a) : a.def && a.def.range >= 2; if (ranged || l > 3.5) return;
+  const flip = (tg.x - tg.y) < (a.x - a.y), ax = wx(a._dx == null ? a.x : a._dx), ay = wy(a._dy == null ? a.y : a._dy);
   if (a.kind === 'mon') { const beast = STYLE(a.n || '') === 'quad'; pfx(beast ? 'melee/claw-swipe' : 'melee/sword-slash', ax, ay, 0, { flip, k: 1.5, palette: FOE_SLASH }); }
   else { const id2 = SWING[(a.merc || f.leader).cls] || 'melee/sword-slash'; pfx(id2, ax, ay, 0, { flip, k: id2 === 'melee/heavy-cleave' ? 2.2 : 1.4 }); }
 };
@@ -84,6 +82,7 @@ const TestFloor = (() => {
 })();
 // 탐사 층 (3단계): 지도 시제품의 생성기 · 규칙으로 한 층 (CRAWL). ?fight=test는 시험 전투 방, ?seed=숫자로 같은 층
 const FIGHT = !!q.get('fight');
+G.Turn.smooth = !q.get('steps'); // 흐르는 턴제 (?steps=1이면 옛 방식: 범위 칠하기 · 차례마다 쉼)
 const W0 = FIGHT ? TestFloor.world('fight') : TestFloor.world('crawl', CRAWL.start(+q.get('seed') || ((Math.random() * 1e6) | 0)));
 if (!FIGHT) CRAWL.attach(W0.r); else CRAWL.fightTest(W0.r);
 const f = W0.f, rt = () => W0.r;

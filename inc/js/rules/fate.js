@@ -1,14 +1,13 @@
 'use strict';
-// 주사위를 다루는 탐사대 (설계 5-9): 라운드마다 파티 주사위를 굴리고, 한 번 다시 굴리고, AI가 배분한 것을 맞바꾼다.
-// - 라운드 주사위: 살아 있는 아군 + 1개 (남는 하나는 예비). 파티원 한 명 = 직업 주사위 하나(5-9-1), 남는 하나는 보통 d20.
-//   원정 전에 고른 특수 주사위(2개까지)는 예비 자리부터, 그다음 뒷사람의 직업 주사위 자리에 들어간다.
+// 주사위를 다루는 탐사대 (설계 5-9 · 5-9-1): 전투가 시작되면 운명판(3명 × 3라운드)을 한 번 굴리고, 전투가 끝날 때까지 그 판을 되풀이한다.
+// - 운명판: 줄 = 파티원(그 사람의 직업 주사위), 열 = 라운드. N라운드는 (N − 1) % 3번째 열 — 새로 굴리지 않는다 (사용자 2026-11-18: 「새로굴리지말고 정해진 운명판을 반복하라고」).
+// - 판단(전투 전에 한 번): 칸을 골라 다시 굴리기(한 번) · 열 순서 바꾸기. 원정 전에 고른 특수 주사위(2개까지)는 칸 하나씩 들어간다.
 // - 직업 주사위 = SRD 그대로의 d20(1~20 고르게)에 면마다 기호를 새긴 것. 자연 20 치명타 · 자연 1 빗나감이 그대로 살아 있다.
-// - 비틀기(라운드당 한 번): 직업 주사위 하나를 ±1 (옆 면). 자연 20 · 자연 1은 굴려서만 나온다 — 비틀어 만들 수 없다.
-// - 조합: 같은 기호 둘 이상이면 효과 하나를 골라 켠다(★는 아무 기호). 효과는 그 라운드 동안 — 새 라운드 · 전투 끝에 지운다.
-// - 공격: 배분된 주사위 값이 그 사람의 그 차례 첫 공격 d20 (이점이면 보통 d20과 큰 쪽, 불리면 작은 쪽 — SRD 대가는 살아 있다).
-// - 내성 주문: 그 사람의 차례 동안 대상들의 내성 d20 = 21 − 주사위 값.
-// - 죽음의 주사위: 굴리기 전에 맡을 사람을 정하고, 즉사가 나오면 그 사람이 차례 시작에 쓰러진다 (예비로 못 보낸다).
-// - 적은 보통 d20. 이니셔티브에도 쓰지 않는다.
+// - 조합: 그 라운드 열에 같은 기호 둘 이상이면 효과 하나(★는 아무 기호). AI가 고르고 플레이어가 바꿀 수 있다. 효과는 그 라운드 동안.
+// - 공격: 그 라운드 열의 내 칸 값이 그 사람의 그 차례 첫 공격 d20 (이점이면 보통 d20과 큰 쪽, 불리면 작은 쪽 — SRD 대가는 살아 있다).
+// - 내성 주문: 그 사람의 차례 동안 대상들의 내성 d20 = 21 − 칸 값.
+// - 죽음의 주사위: 판을 굴리기 전에 맡을 사람을 정하고, 그 칸이 즉사면 그 라운드 그 사람이 차례 시작에 쓰러진다.
+// - 적은 보통 d20. 이니셔티브에도 쓰지 않는다. 전투는 옛 턴제 오토배틀 그대로 — 공격 굴림만 판의 값이다.
 // G.Dnd.attack · save · d20을 감싸서 끼운다 (원래 함수는 그대로 부른다).
 G.Dice = (() => {
   const d = (rng, n) => 1 + Math.floor(rng() * n);
@@ -43,43 +42,61 @@ G.Dice = (() => {
   };
   // 직업 → 주사위 · 배분 우선은 SRD 직업으로 (게임 직업 id → G.SRD.RAW_CLS)
   const DIE = { fighter: 'c_war', barbarian: 'c_war', paladin: 'c_war', monk: 'c_war', rogue: 'c_skl', ranger: 'c_skl', sorcerer: 'c_arc', wizard: 'c_arc', warlock: 'c_arc', cleric: 'c_div', druid: 'c_div', bard: 'c_div' };
-  // 배분 우선: 무기를 휘두르는 사람 → 주문으로 공격하는 사람 → 치유하는 사람 (높은 주사위를 먼저)
+  // 특수 주사위를 넣을 줄: 무기를 휘두르는 사람 → 주문으로 공격하는 사람 → 치유하는 사람
   const WANT = { fighter: 3, barbarian: 3, paladin: 3, monk: 3, rogue: 3, ranger: 3, sorcerer: 2, wizard: 2, warlock: 2, druid: 2, bard: 1, cleric: 1 };
   const srd = p => G.SRD?.RAW_CLS?.[p.merc?.cls];
   const want = p => WANT[srd(p)] ?? 2;
-  const ROUND_T = 1e6; // 조합 효과의 끝은 시계가 아니라 라운드 (newRound · end가 지운다)
+  const ROUND_T = 1e6; // 조합 효과의 끝은 시계가 아니라 라운드 (useRound · end가 지운다)
 
   const D = {
-    K: { SLOTS: 2 }, KINDS, SPECIAL, SYM, roll, face,
+    K: { SLOTS: 2, COLS: 3 }, KINDS, SPECIAL, SYM, roll, face,
     dieFor: p => DIE[srd(p)] || 'd20',
     loadout: [],        // 원정 전에 고른 특수 주사위 id
-    bearer: null,       // 죽음의 주사위를 맡은 사람 (라운드마다 굴리기 전에)
-    st: null,           // 이번 라운드: { round, kinds, dice, alloc: Map<actor, idx>, spare, rerolled, nudged, swapped, combo, comboUser, used: Set, saveBy, ready }
+    bearer: null,       // 죽음의 주사위를 맡은 사람 (판을 굴리기 전에)
+    board: null,        // 이번 전투의 운명판: { rows: [actor], cells: [[Roll × 3]], rerolled, ready }
+    st: null,           // 이번 라운드(판의 한 열): { round, col, dice, alloc: Map<actor, row>, combo, comboUser, used: Set, saveBy, ready }
     ctx: null,          // 지금 굴리는 것: { kind: 'attack', actor } | { kind: 'save', target }
     fated: [],          // 이번 라운드 조합 효과를 받은 사람
     party: () => [],    // 앱이 채운다: 살아 있는 아군 목록
     cur: () => null,    // 앱이 채운다: 지금 차례인 인물
-    // 라운드 시작: 앞 라운드의 조합 효과를 지우고, 주사위를 굴려 AI가 배분한다 (죽음의 주사위는 맡은 사람에게 고정)
-    newRound(round, rng = Math.random) {
+    // 전투 시작: 파티원마다 직업 주사위로 3라운드 치를 굴린다 (줄 = 사람, 열 = 라운드).
+    // 특수 주사위는 칸 하나씩 — 죽음의 주사위는 맡은 사람 줄, 나머지는 높은 값을 원하는 사람 줄 앞쪽부터
+    newBoard(rng = Math.random) {
+      D.end();
+      const ps = D.party(), cells = ps.map(p => Array.from({ length: D.K.COLS }, () => roll(D.dieFor(p), rng)));
+      const sp = [...new Set(D.loadout)].filter(k => SPECIAL.includes(k)).slice(0, D.K.SLOTS);
+      if (sp.includes('doom') && (!D.bearer || !ps.includes(D.bearer))) D.bearer = D.suggestBearer();
+      const top = ps.slice().sort((a, b) => want(b) - want(a))[0];
+      for (const k of sp) { const r = ps.indexOf(k === 'doom' ? D.bearer : top), c = r < 0 ? -1 : cells[r].findIndex(x => !SPECIAL.includes(x.kind)); if (c >= 0) cells[r][c] = roll(k, rng); }
+      D.board = { rows: ps, cells, rerolled: false, ready: false };
+      return D.board;
+    },
+    // 다시 굴리기(한 번): 고른 칸들 [[줄, 열], …]
+    rerollCells(list, rng = Math.random) {
+      const B = D.board; if (!B || B.rerolled || !list.length) return false;
+      for (const [r, c] of list) B.cells[r][c] = roll(B.cells[r][c].kind, rng);
+      B.rerolled = true; return true;
+    },
+    // 열 순서 바꾸기 (공짜): 센 열을 앞에 몰지, 뒤로 아낄지
+    swapCols(a, b) { const B = D.board; if (!B || a === b) return false; for (const row of B.cells) [row[a], row[b]] = [row[b], row[a]]; return true; },
+    colOf: round => (Math.max(1, round) - 1) % D.K.COLS,
+    // 한 열의 주사위 (쓰러진 사람 칸은 빠진다)
+    colDice(c) { const B = D.board, alive = new Set(D.party()); return B.rows.map((p, r) => (alive.has(p) ? B.cells[r][c] : null)); },
+    // 라운드 시작: 판의 그 열을 이번 라운드 주사위로 (3라운드마다 처음 열부터 다시). 앞 라운드 조합 효과는 지운다
+    useRound(round) {
       D.clearFate();
-      const ps = D.party(), n = ps.length + 1, kinds = [];
-      for (const k of D.loadout) if (kinds.length < Math.min(D.K.SLOTS, n) && !kinds.includes(k)) kinds.push(k);
-      kinds.push(...ps.slice(0, n - kinds.length).map(D.dieFor)); while (kinds.length < n) kinds.push('d20');
-      if (kinds.includes('doom') && (!D.bearer || !ps.includes(D.bearer))) D.bearer = D.suggestBearer();
-      D.st = { round, kinds, dice: kinds.map(k => roll(k, rng)), alloc: new Map(), rerolled: false, nudged: false, swapped: false, combo: null, comboUser: false, used: new Set(), saveBy: null, ready: false };
-      D.allocate();
+      const B = D.board, col = D.colOf(round), dice = D.colDice(col).map(r => r || { kind: 'd20', face: 0, value: null, sym: null, special: 'gone' });
+      D.st = { round, col, dice, alloc: new Map(B.rows.map((p, r) => [p, r])), combo: null, comboUser: false, used: new Set(), saveBy: null, ready: true };
+      D.recombo();
       return D.st;
     },
-    // 전투 끝: 조합 효과와 라운드를 치운다
-    end() { D.clearFate(); D.st = null; D.ctx = null; },
+    // 전투 끝: 판 · 라운드 · 조합 효과를 치운다
+    end() { D.clearFate(); D.board = null; D.st = null; D.ctx = null; },
     clearFate() { for (const p of D.fated) if (p.bf) delete p.bf.fate; D.fated = []; },
-    // 비틀기: 직업 주사위 하나를 ±1 (라운드당 한 번). 주사위는 가진 사람에게 그대로 남는다
-    canNudge(i, dir) { const S = D.st, r = S && S.dice[i], v = r && r.value + (dir < 0 ? -1 : 1); return !!(S && !S.nudged && KINDS[S.kinds[i]]?.sym && v >= 2 && v <= 19); },
-    nudge(i, dir) { if (!D.canNudge(i, dir)) return false; const S = D.st; S.dice[i] = face(S.kinds[i], S.dice[i].value + (dir < 0 ? -1 : 1)); S.nudged = true; D.recombo(); return true; },
     // 조합: 같은 기호 둘 이상 (★는 아무 기호 — 진짜 기호가 하나는 있어야). n은 3에서 멈춘다
-    combos() {
-      const S = D.st, c = {}; let w = 0; if (!S) return [];
-      for (const r of S.dice) if (r.sym === 'wild') w++; else if (r.sym) c[r.sym] = (c[r.sym] || 0) + 1;
+    combos(dice = D.st ? D.st.dice : []) {
+      const c = {}; let w = 0;
+      for (const r of dice) if (!r) continue; else if (r.sym === 'wild') w++; else if (r.sym) c[r.sym] = (c[r.sym] || 0) + 1;
       return ['atk', 'def', 'arc', 'holy'].filter(s => c[s] && c[s] + w >= 2).map(s => ({ s, n: Math.min(3, c[s] + w) }));
     },
     // AI 추천: 다친 사람(체력 절반 아래)이 있으면 기도, 아니면 가장 큰 조합 (같으면 검 → 방 → 주 → 빛)
@@ -88,15 +105,15 @@ G.Dice = (() => {
       const hurt = D.party().some(p => p.hp < p.max * 0.5), h = cs.find(c => c.s === 'holy');
       return hurt && h ? 'holy' : cs.slice().sort((a, b) => b.n - a.n)[0].s;
     },
-    // 플레이어가 조합을 고르거나 끈다 (같은 것을 다시 누르면 끔)
+    // 플레이어가 이번 라운드 조합을 고르거나 끈다 (같은 것을 다시 누르면 끔)
     setCombo(s) { const S = D.st; S.combo = S.combo === s ? null : s; S.comboUser = true; },
-    // 굴림이 바뀌면: 플레이어가 고른 것(끈 것 포함)은 그대로, 고른 조합이 사라졌을 때만 추천으로
+    // 플레이어가 고른 것(끈 것 포함)은 그대로, 고른 조합이 사라졌을 때만 추천으로
     recombo() {
       const S = D.st, cs = D.combos();
       if (S.comboUser && (S.combo === null || cs.some(c => c.s === S.combo))) return;
       S.comboUser = false; S.combo = D.pickCombo(cs);
     },
-    // 진행을 누르면: 고른 조합을 켠다 (이번 라운드 동안)
+    // 라운드 조합을 켠다 (이번 라운드 동안)
     fire() {
       const S = D.st; if (!S) return null; const c = D.combos().find(x => x.s === S.combo); if (!c) return null;
       const N = G.Dnd, ps = D.party(), Y = SYM[c.s], big = +(c.n >= 3);
@@ -108,34 +125,6 @@ G.Dice = (() => {
       return c;
     },
     suggestBearer() { const ps = D.party(); return ps.slice().sort((a, b) => b.hp / b.max - a.hp / a.max)[0] || null; },
-    // AI 배분: 죽음의 주사위는 맡은 사람, 나머지는 높은 값을 원하는 사람부터 (즉사 면은 예비로)
-    allocate() {
-      const S = D.st, ps = D.party(); S.alloc = new Map();
-      const doomI = S.kinds.indexOf('doom'), free = S.dice.map((_, i) => i).filter(i => i !== doomI);
-      if (doomI >= 0 && D.bearer && ps.includes(D.bearer)) S.alloc.set(D.bearer, doomI);
-      const val = i => (S.dice[i].special === 'death' ? -1 : S.dice[i].value);
-      free.sort((a, b) => val(b) - val(a));
-      const order = ps.filter(p => !S.alloc.has(p)).sort((a, b) => want(b) - want(a));
-      for (const p of order) { const i = free.shift(); if (i != null) S.alloc.set(p, i); }
-      S.spare = free[0] ?? null;
-      D.recombo();
-    },
-    // 다시 굴리기(한 번): 플레이어가 맞바꾼 적이 있으면 배분은 그대로 두고 값만 바뀐다
-    reroll(idxs, rng = Math.random) {
-      const S = D.st; if (!S || S.rerolled || !idxs.length) return false;
-      for (const i of idxs) S.dice[i] = roll(S.kinds[i], rng); S.rerolled = true;
-      if (S.swapped) D.recombo(); else D.allocate();
-      return true;
-    },
-    // 맞바꾸기: 두 사람(또는 사람과 예비 'spare'). 죽음의 주사위는 못 옮긴다
-    swap(a, b) {
-      const S = D.st, doomI = S.kinds.indexOf('doom'), ia = a === 'spare' ? S.spare : S.alloc.get(a), ib = b === 'spare' ? S.spare : S.alloc.get(b);
-      if (ia == null || ib == null || ia === doomI || ib === doomI) return false;
-      if (a === 'spare') S.spare = ib; else S.alloc.set(a, ib);
-      if (b === 'spare') S.spare = ia; else S.alloc.set(b, ia);
-      S.swapped = true;
-      return true;
-    },
     dieOf(p) { const S = D.st; if (!S) return null; const i = S.alloc.get(p); return i == null ? null : S.dice[i]; },
     // 차례가 바뀌면: 앞 사람의 내성 뒤집기를 끝낸다
     turnEnd(p) { const S = D.st; if (S && S.saveBy === p) { S.used.add(p); S.saveBy = null; } },
