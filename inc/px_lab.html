@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>픽셀화 시험판</title>
+<!-- 버리는 시험판: LAYERLAB 인형을 몇 가지 픽셀 키로 줄여 원본과 나란히 본다. 본 게임과 무관 -->
+<style>
+  body { margin: 0; background: #17151c; color: #ece4d4; font: 14px sans-serif; }
+  #bar { position: sticky; top: 0; background: #221f29; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; z-index: 2; border-bottom: 1px solid #3a3544; }
+  #bar label { display: flex; gap: 6px; align-items: center; }
+  table { border-collapse: collapse; margin: 12px; }
+  th { font-weight: normal; color: #b8ad98; padding: 4px 10px; text-align: center; }
+  td { padding: 6px 10px; text-align: center; vertical-align: bottom; }
+  canvas { image-rendering: pixelated; display: block; margin: 0 auto; }
+  body.light { background: #efe7d6; color: #2a2420; }
+  body.light #bar { background: #e2d8c4; border-color: #c8bca4; }
+  body.light th { color: #6a5e4a; }
+  .note { margin: 4px 12px; color: #8a8070; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <label>동작 <select id="anim"></select></label>
+  <label>줄이기 <select id="samp"><option value="smooth">부드럽게 (평균)</option><option value="near">가장 가까운 점</option></select></label>
+  <label>색 단계 <select id="post"><option value="0">원본 색</option><option value="6">6단계</option><option value="4" selected>4단계</option><option value="3">3단계</option></select></label>
+  <label><input type="checkbox" id="outl" checked> 1px 외곽선</label>
+  <label>확대 <select id="zoom"><option>2</option><option selected>3</option><option>4</option></select></label>
+  <label><input type="checkbox" id="light"> 밝은 바탕</label>
+  <button id="reroll">다른 인물</button>
+</div>
+<p class="note">왼쪽은 지금 게임처럼 원본 그대로, 오른쪽은 픽셀 키(인물 높이 px)별로 줄인 뒤 확대해서 보인다. 쿼터뷰 화면의 픽셀 배율과 같은 방식(정수 확대, 번짐 없음).</p>
+<div style="overflow-x:auto"><table id="grid"></table></div>
+<script src="js/paperdoll.js"></script>
+<script>
+'use strict';
+const HEIGHTS = [24, 32, 40, 48];
+const N = 6;
+const $ = id => document.getElementById(id);
+let dolls = [], natH = 1, seed = 1;
+
+const mulberry = s => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+
+// 인형의 실제 높이(scale 1)를 한 번 잰다: 큰 캔버스에 그려 불투명 픽셀의 위아래를 찾는다
+function measure() {
+  const c = document.createElement('canvas'); c.width = 600; c.height = 600;
+  const x = c.getContext('2d'), d = PaperDoll.create(PaperDoll.random(mulberry(7)));
+  d.draw(x, 300, 450, { scale: 1 });
+  const a = x.getImageData(0, 0, 600, 600).data; let top = 600, bot = 0;
+  for (let y = 0; y < 600; y++) for (let i = 0; i < 600; i++) if (a[(y * 600 + i) * 4 + 3] > 40) { if (y < top) top = y; if (y > bot) bot = y; }
+  return Math.max(1, bot - top);
+}
+
+// 픽셀화: 고해상도로 그린 뒤 목표 크기로 줄이고, 알파를 0/1로, 색을 단계로, 바깥 1px 외곽선
+const hi = document.createElement('canvas'), hx = hi.getContext('2d');
+function pixelate(d, H, out) {
+  const opt = { samp: $('samp').value, post: +$('post').value, outl: $('outl').checked, zoom: +$('zoom').value };
+  const W = Math.round(H * 1.4), SS = 8; // 무기가 옆으로 삐져나오므로 폭을 넉넉히
+  hi.width = W * SS; hi.height = (H + 6) * SS; hx.clearRect(0, 0, hi.width, hi.height);
+  d.draw(hx, hi.width / 2, (H + 3) * SS, { scale: H * SS / natH });
+  const sm = document.createElement('canvas'); sm.width = W; sm.height = H + 6;
+  const sx = sm.getContext('2d');
+  if (opt.samp === 'smooth') {
+    // 반씩 줄여 가며 평균 (한 번에 줄이면 브라우저가 점을 건너뛴다)
+    let src = hi, w = hi.width, h = hi.height;
+    while (w / 2 >= W) { const t = document.createElement('canvas'); t.width = w / 2; t.height = h / 2; const tx = t.getContext('2d'); tx.imageSmoothingQuality = 'high'; tx.drawImage(src, 0, 0, t.width, t.height); src = t; w = t.width; h = t.height; }
+    sx.imageSmoothingEnabled = true; sx.drawImage(src, 0, 0, W, H + 6);
+  } else { sx.imageSmoothingEnabled = false; sx.drawImage(hi, 0, 0, W, H + 6); }
+  const img = sx.getImageData(0, 0, W, H + 6), p = img.data, w = W, h = H + 6;
+  const solid = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    const a = p[i * 4 + 3];
+    if (a < 110) { p[i * 4 + 3] = 0; continue; }
+    solid[i] = 1;
+    // 반투명 가장자리는 미리 곱해진 색이라 어둡다 → 알파로 나눠 되살린다
+    for (let k = 0; k < 3; k++) { let v = Math.min(255, p[i * 4 + k] * 255 / a); if (opt.post) { const s = 255 / (opt.post - 1); v = Math.round(v / s) * s; } p[i * 4 + k] = v; }
+    p[i * 4 + 3] = 255;
+  }
+  if (opt.outl) {
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x; if (solid[i]) continue;
+      const nb = (x > 0 && solid[i - 1]) || (x < w - 1 && solid[i + 1]) || (y > 0 && solid[i - w]) || (y < h - 1 && solid[i + w]);
+      if (nb) { p[i * 4] = 20; p[i * 4 + 1] = 16; p[i * 4 + 2] = 22; p[i * 4 + 3] = 255; }
+    }
+  }
+  sx.putImageData(img, 0, 0);
+  out.width = w * opt.zoom; out.height = h * opt.zoom;
+  const ox = out.getContext('2d'); ox.imageSmoothingEnabled = false; ox.clearRect(0, 0, out.width, out.height);
+  ox.drawImage(sm, 0, 0, out.width, out.height);
+}
+
+function build() {
+  const rng = mulberry(seed);
+  dolls = Array.from({ length: N }, () => PaperDoll.create(PaperDoll.random(rng)));
+  const g = $('grid'); g.innerHTML = '';
+  const hr = g.insertRow(); hr.insertCell().outerHTML = '<th>원본 (지금 게임)</th>';
+  for (const H of HEIGHTS) hr.insertCell().outerHTML = `<th>${H}px</th>`;
+  dolls.forEach((d, r) => {
+    const row = g.insertRow();
+    const c0 = document.createElement('canvas'); c0.width = 140; c0.height = 150; c0.style.imageRendering = 'auto'; row.insertCell().appendChild(c0);
+    d._cells = [c0];
+    for (const H of HEIGHTS) { const c = document.createElement('canvas'); row.insertCell().appendChild(c); d._cells.push(c); }
+    d.play($('anim').value);
+    d.update(r * 0.13); // 줄마다 조금씩 어긋나게
+  });
+}
+
+let last = performance.now();
+function frame(t) {
+  const dt = Math.min(0.1, (t - last) / 1000); last = t;
+  for (const d of dolls) {
+    d.update(dt);
+    const c0 = d._cells[0], x0 = c0.getContext('2d'); x0.clearRect(0, 0, c0.width, c0.height);
+    d.draw(x0, 70, 135, { scale: 110 / natH });
+    HEIGHTS.forEach((H, i) => pixelate(d, H, d._cells[i + 1]));
+  }
+  requestAnimationFrame(frame);
+}
+
+PaperDoll.load('assets/chars/').then(() => {
+  for (const a of Object.keys(PaperDoll.anims)) $('anim').add(new Option(a, a, a === 'Idle', a === 'Idle'));
+  natH = measure();
+  build();
+  $('anim').onchange = () => dolls.forEach(d => d.play($('anim').value));
+  $('reroll').onclick = () => { seed++; build(); };
+  $('light').onchange = e => document.body.classList.toggle('light', e.target.checked);
+  requestAnimationFrame(frame);
+}).catch(e => { document.body.insertAdjacentHTML('beforeend', `<p style="color:#e66">불러오기 실패: ${e.message} — inc 폴더에서 http 서버로 열어 주세요</p>`); });
+</script>
+</body>
+</html>
