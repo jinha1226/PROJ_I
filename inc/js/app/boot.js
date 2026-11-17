@@ -58,7 +58,7 @@ const TestFloor = (() => {
     if (kind === 'floor') c[ix(end.cx, end.cy)] = '>';
     return { w: W, h: H, c, kindAt: new Uint8Array(W * H), poi: {}, passChars: '.>,', ver: 1, dist: {}, rooms, start, end, fixed: true, title: kind === 'fight' ? '시험 전투' : '시험 층' };
   }
-  // 파티: 단장(파이터) + 위저드 · 클레릭, 3레벨 (3단계에서 G.Char로 바꾼다). 적: fight일 때 셋
+  // 파티: 파이터 + 소서러 · 클레릭, 3레벨 (3단계에서 G.Char로 바꾼다). 적: fight일 때 셋
   function world(kind = 'floor', map0 = null) {
     G.newState();
     const f = G.S.w.fantasy, L = G.Guild.leader(f);

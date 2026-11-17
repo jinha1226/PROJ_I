@@ -207,7 +207,7 @@ const CRAWL = (() => {
 
 
   // ── 쿼터뷰 전투: 옛 본 게임의 SRD 턴제 전투(G.Turn · G.Flow)를 그 방에서 돌린다 + 라운드 주사위 ──
-  // 파티 체력은 탐사 규칙(RUN)의 파티와 쿼터뷰 인물을 차례로 맞춘다 (파이터 ↔ 단장, 위저드 ↔ 위저드, 클레릭 ↔ 클레릭)
+  // 파티 체력은 탐사 규칙(RUN)의 파티와 쿼터뷰 인물을 차례로 맞춘다 (파이터 ↔ 파이터, 위저드 ↔ 위저드, 클레릭 ↔ 클레릭)
   const pair = () => R.party.map((p, i) => [p, st.party[i]]).filter(([p, m]) => p && m);
   function syncToG() { if (!st) return; for (const [p, m] of pair()) { if (m.dead) { p.hp = 0; p.dead = true; } else p.hp = Math.max(1, Math.round(p.max * m.hp / m.max)); } }
   function syncToRUN() { if (!st) return; for (const [p, m] of pair()) { const hp = Math.max(0, p.hp); m.hp = Math.round(m.max * hp / p.max); if (p.dead || hp <= 0) { m.hp = 0; m.dead = true; } } }
@@ -347,7 +347,7 @@ const CRAWL = (() => {
       const pm = $('pmapbox'); if (pm) pm.style.display = 'none';
       R = r; const room = r.map.rooms.find(x => x.id === 'A') || r.map.rooms[0], n = { id: -1, type: 'fight', g: { label: '시험 전투', name: '적', count: r.mons.length, units: [] } };
       R.turn = null; R.phase = 'explore'; G.S.w.fantasy.town = false;
-      // 걸어 들어올 자리: 단장은 방 입구 안쪽, 나머지는 그 뒤로 (진형을 맞추지 않는다)
+      // 걸어 들어올 자리: 첫 사람은 방 입구 안쪽, 나머지는 그 뒤로 (진형을 맞추지 않는다)
       const to = new Map(r.party.map((p, i) => [p, { x: room.x + 2 - (i ? 1.2 : 0), y: room.cy + (i === 1 ? -1.2 : i === 2 ? 1.2 : 0) }]));
       G.Dice.party = () => R.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => R.turn?.cur || null; G.Dice.end();
       const tray0 = q.get('tray') || q.get('dice') != null; // 운명판 창은 ?tray · ?dice일 때만 (예시 장면은 판을 알아서 굴리고 작은 판만 띄운다)
