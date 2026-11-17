@@ -22,14 +22,17 @@
 <body>
 <div id="bar">
   <label>동작 <select id="anim"></select></label>
-  <label>줄이기 <select id="samp"><option value="smooth">부드럽게 (평균)</option><option value="near">가장 가까운 점</option></select></label>
+  <label>줄이기 <select id="samp"><option value="dark" selected>외곽선 우선</option><option value="smooth">부드럽게 (평균)</option><option value="near">가장 가까운 점</option></select></label>
   <label>색 단계 <select id="post"><option value="0" selected>원본 색</option><option value="6">6단계</option><option value="4">4단계</option><option value="3">3단계</option></select></label>
   <label><input type="checkbox" id="outl" checked> 1px 외곽선</label>
+  <label>동작 끊기 <select id="fps"><option value="0">끊지 않음 (매 화면 다시 그림)</option><option value="30">30장/초 (굽기)</option><option value="24" selected>24장/초 (굽기)</option><option value="15">15장/초 (굽기)</option><option value="12">12장/초 (굽기)</option><option value="8">8장/초 (굽기)</option></select></label>
+  <label><input type="checkbox" id="snap" checked> 픽셀 맞춤 (움직임을 1px 계단으로)</label>
+  <label><input type="checkbox" id="clean" checked> 깜빡임 청소</label>
   <label>확대 <select id="zoom"><option>2</option><option selected>3</option><option>4</option></select></label>
   <label><input type="checkbox" id="light"> 밝은 바탕</label>
   <button id="reroll">다른 인물</button>
 </div>
-<p class="note">왼쪽은 지금 게임처럼 원본 그대로, 오른쪽은 픽셀 키(인물 높이 px)별로 줄인 뒤 확대해서 보인다. 쿼터뷰 화면의 픽셀 배율과 같은 방식(정수 확대, 번짐 없음).</p>
+<p class="note">왼쪽은 지금 게임처럼 원본 그대로, 오른쪽은 픽셀 키(인물 높이 px)별로 줄인 뒤 확대해서 보인다. 쿼터뷰 화면의 픽셀 배율과 같은 방식(정수 확대, 번짐 없음). 떨림 잡기: 동작을 정해진 장 수로 끊어 미리 구워 두고 되풀이 + 픽셀 맞춤(1px 미만 움직임은 버림) + 깜빡임 청소(한 장만 튀는 외톨이 픽셀). '외곽선 우선'은 그림의 검은 선이 1px 남짓으로 가늘어져도 끊기지 않게 줄인다. 예전 방식은 부드럽게 · 끊지 않음 · 맞춤 끔.</p>
 <div style="overflow-x:auto"><table id="grid"></table></div>
 <script src="js/render/paperdoll.js"></script>
 <script>
@@ -51,23 +54,74 @@ function measure() {
   return Math.max(1, bot - top);
 }
 
-// 픽셀화: 고해상도로 그린 뒤 목표 크기로 줄이고, 알파를 0/1로, 색을 단계로, 바깥 1px 외곽선
-const hi = document.createElement('canvas'), hx = hi.getContext('2d');
-function pixelate(d, H, out) {
-  const opt = { samp: $('samp').value, post: +$('post').value, outl: $('outl').checked, zoom: +$('zoom').value };
-  const W = Math.round(H * 1.4), SS = 8; // 무기가 옆으로 삐져나오므로 폭을 넉넉히
-  hi.width = W * SS; hi.height = (H + 6) * SS; hx.clearRect(0, 0, hi.width, hi.height);
-  d.draw(hx, hi.width / 2, (H + 3) * SS, { scale: H * SS / natH });
-  const sm = document.createElement('canvas'); sm.width = W; sm.height = H + 6;
-  const sx = sm.getContext('2d');
-  if (opt.samp === 'smooth') {
-    // 반씩 줄여 가며 평균 (한 번에 줄이면 브라우저가 점을 건너뛴다)
-    let src = hi, w = hi.width, h = hi.height;
-    while (w / 2 >= W) { const t = document.createElement('canvas'); t.width = w / 2; t.height = h / 2; const tx = t.getContext('2d'); tx.imageSmoothingQuality = 'high'; tx.drawImage(src, 0, 0, t.width, t.height); src = t; w = t.width; h = t.height; }
-    sx.imageSmoothingEnabled = true; sx.drawImage(src, 0, 0, W, H + 6);
-  } else { sx.imageSmoothingEnabled = false; sx.drawImage(hi, 0, 0, W, H + 6); }
-  const img = sx.getImageData(0, 0, W, H + 6), p = img.data, w = W, h = H + 6;
-  const solid = new Uint8Array(w * h);
+// 떨림과 외곽선 (2026-11-17 측정·비교)
+// · 떨림: 숨쉬기 동작은 32px 인물에서 0.5~1px밖에 안 움직이는데(2° 기울기, 6% 늘어남, 몸 0.4px 오르내림) 매 화면 반 픽셀씩
+//   다른 자리에서 다시 줄이니 평균 색이 프레임마다 바뀌어 인물 속이 통째로 일렁였다(32px에서 초당 약 16000픽셀이 바뀜).
+//   → 동작 끊기 + 미리 굽기(정해진 장만 한 번 그려 두고 되풀이) + 픽셀 맞춤(쉬는 자세 대비 움직임을 1px 계단으로) + 깜빡임 청소.
+// · 외곽선: 부위 그림의 검은 선은 원본에서 약 5px — 32px 인물이면 1.3px라, 칸 경계에 걸리면 두 칸에 반씩 나뉘어 회색으로 흐려진다.
+//   → '외곽선 우선' 줄이기: 칸 안에 어두운 표본이 DARK_COVER 이상이면 그 칸은 외곽선 색, 아니면 어둡지 않은 표본만 평균.
+// · 첫 시도처럼 부위마다 그리는 자리를 따로 반올림하면 부위끼리 반 픽셀씩 어긋나 어설퍼진다 — 움직인 양만 계층째 끊는다.
+const SS = 8, DARK_LUM = 70, DARK_COVER = 0.4;
+const hi = document.createElement('canvas'), hx = hi.getContext('2d', { willReadFrequently: true });
+
+// 픽셀 맞춤: 쉬는 자세 대비 움직임(이동·회전·크기)을 키 H에서 약 1px씩의 계단으로 끊는다.
+// 쉬는 자세의 부위 배치는 그대로 두므로 부위끼리 어긋나지 않는다. 이동 1px = natH/(100H) 단위 (scale 1에서 1단위 = 100px)
+function quantize(d, H) {
+  const ts = natH / (100 * H), rs = 180 / Math.PI / H, ss = 2 / H;
+  for (const n of d.nodes) {
+    const f = n.def;
+    if (n.parent) { n.x = f.x + Math.round((n.x - f.x) / ts) * ts; n.y = f.y + Math.round((n.y - f.y) / ts) * ts; }
+    n.rot = f.rot + Math.round((n.rot - f.rot) / rs) * rs;
+    if (f.sx) n.sx = f.sx * (1 + Math.round((n.sx / f.sx - 1) / ss) * ss);
+    if (f.sy) n.sy = f.sy * (1 + Math.round((n.sy / f.sy - 1) / ss) * ss);
+  }
+}
+
+// 외곽선 우선 줄이기: hi(SS배)의 SS×SS 표본마다 — 덮인 표본이 43% 미만이면 빈 칸, 어두운 표본이 DARK_COVER 이상이면 그 평균(외곽선),
+// 아니면 어둡지 않은 표본만 평균 (외곽선이 옆 칸 색을 탁하게 물들이지 않게)
+function sampleDark(w, h) {
+  const src = hx.getImageData(0, 0, hi.width, hi.height).data, HW = hi.width, N = SS * SS;
+  const img = new ImageData(w, h), p = img.data;
+  for (let cy = 0; cy < h; cy++) for (let cx = 0; cx < w; cx++) {
+    let cov = 0, dk = 0, dr = 0, dg = 0, db = 0, fa = 0, fr = 0, fg = 0, fb = 0;
+    for (let yy = 0; yy < SS; yy++) {
+      let j = ((cy * SS + yy) * HW + cx * SS) * 4;
+      for (let xx = 0; xx < SS; xx++, j += 4) {
+        if (src[j + 3] < 128) continue;
+        cov++;
+        const r = src[j], g = src[j + 1], b = src[j + 2];
+        if (0.3 * r + 0.59 * g + 0.11 * b < DARK_LUM) { dk++; dr += r; dg += g; db += b; } else { fa++; fr += r; fg += g; fb += b; }
+      }
+    }
+    if (cov < N * 0.43) continue;
+    const o = (cy * w + cx) * 4;
+    if (dk >= N * DARK_COVER || !fa) { p[o] = dr / dk; p[o + 1] = dg / dk; p[o + 2] = db / dk; }
+    else { p[o] = fr / fa; p[o + 1] = fg / fa; p[o + 2] = fb / fa; }
+    p[o + 3] = 255;
+  }
+  return img;
+}
+
+// 한 장: 고해상도로 그린 뒤 목표 크기로 줄이고, 알파를 0/1로, 색을 단계로, 바깥 1px 외곽선 → 작은 ImageData
+function render(d, H, opt) {
+  const W = Math.round(H * 1.4), w = W, h = H + 6; // 무기가 옆으로 삐져나오므로 폭을 넉넉히
+  hi.width = W * SS; hi.height = h * SS; hx.clearRect(0, 0, hi.width, hi.height);
+  // 발 위치도 픽셀 칸에 맞춘다 (W가 홀수면 가운데가 반 칸에 걸린다)
+  d.draw(hx, opt.snap ? Math.floor(W / 2) * SS : hi.width / 2, (H + 3) * SS, { scale: H * SS / natH });
+  let img;
+  if (opt.samp === 'dark') img = sampleDark(w, h);
+  else {
+    const sm = document.createElement('canvas'); sm.width = w; sm.height = h;
+    const sx = sm.getContext('2d');
+    if (opt.samp === 'smooth') {
+      // 반씩 줄여 가며 평균 (한 번에 줄이면 브라우저가 점을 건너뛴다)
+      let src = hi, ww = hi.width, hh = hi.height;
+      while (ww / 2 >= W) { const t = document.createElement('canvas'); t.width = ww / 2; t.height = hh / 2; const tx = t.getContext('2d'); tx.imageSmoothingQuality = 'high'; tx.drawImage(src, 0, 0, t.width, t.height); src = t; ww = t.width; hh = t.height; }
+      sx.imageSmoothingEnabled = true; sx.drawImage(src, 0, 0, w, h);
+    } else { sx.imageSmoothingEnabled = false; sx.drawImage(hi, 0, 0, w, h); }
+    img = sx.getImageData(0, 0, w, h);
+  }
+  const p = img.data, solid = new Uint8Array(w * h);
   for (let i = 0; i < w * h; i++) {
     const a = p[i * 4 + 3];
     if (a < 110) { p[i * 4 + 3] = 0; continue; }
@@ -83,10 +137,62 @@ function pixelate(d, H, out) {
       if (nb) { p[i * 4] = 20; p[i * 4 + 1] = 16; p[i * 4 + 2] = 22; p[i * 4 + 3] = 255; }
     }
   }
-  sx.putImageData(img, 0, 0);
-  out.width = w * opt.zoom; out.height = h * opt.zoom;
-  const ox = out.getContext('2d'); ox.imageSmoothingEnabled = false; ox.clearRect(0, 0, out.width, out.height);
-  ox.drawImage(sm, 0, 0, out.width, out.height);
+  return img;
+}
+
+// 칸에 보이기. 확대는 기기 픽셀의 정수배로: 화면 배율 125%·150%에서 CSS 3px는 3.75·4.5 기기 픽셀이라 픽셀 폭이 들쭉날쭉하고,
+// 인물이 1px 움직일 때마다 넓은 줄·좁은 줄이 옮겨 다니며 일렁인다. 캔버스 크기 = 기기 픽셀, CSS 크기 = 그것 ÷ 배율
+const tmp = document.createElement('canvas'), tmx = tmp.getContext('2d');
+function show(out, img, zoom) {
+  const dpr = window.devicePixelRatio || 1, dz = Math.max(1, Math.round(zoom * dpr));
+  out.width = img.width * dz; out.height = img.height * dz;
+  out.style.width = out.width / dpr + 'px'; out.style.height = out.height / dpr + 'px';
+  tmp.width = img.width; tmp.height = img.height; tmx.putImageData(img, 0, 0);
+  const ox = out.getContext('2d'); ox.imageSmoothingEnabled = false;
+  ox.drawImage(tmp, 0, 0, out.width, out.height);
+}
+
+// 미리 굽기: 지금 동작을 opt.fps 장/초로 끊어 모든 장을 한 번만 그려 둔다. 재생 중엔 인형 시간에 맞는 장을 꺼내 보인다
+// (동작 이벤트·시간은 인형이 그대로 갖고 있고, 그림만 구운 것을 쓴다). 한 번만 도는 동작(죽음)은 끝 장이 끝 자세.
+// 24장/초면 숨쉬기 한 묶음이 45장(48px에서 약 160ms)이라, 한꺼번에 구우면 멈칫한다 — 화면마다 BAKE_MS 안에서 몇 장씩 굽고,
+// 다 구워진 묶음부터 보인다.
+// 원본 동작은 1/60초 간격 키로 만든 곡선. 굽는 장 수 비교(2026-11-17, 픽셀 맞춤 켬): 숨쉬기는 몇 장이든 1px 넘게 움직일 때만
+// 바뀌어 거의 같고, 걷기·공격은 24~30장까지 깜빡임이 8장과 비슷하다가 60장에서 몇 배로 는다(부위마다 계단을 넘는 때가 엇갈림)
+const BAKE_MS = 8;
+function bakeStep(d, H, opt, job, until) {
+  const len = d.clip.len, t0 = d.time;
+  while (job.F.length < job.nf && performance.now() < until) {
+    d.time = Math.min(len, job.F.length / opt.fps); d._pose();
+    if (opt.snap) quantize(d, H);
+    job.F.push(render(d, H, opt));
+  }
+  d.time = t0; d._pose();
+  if (job.F.length === job.nf) {
+    if (opt.clean && job.nf >= 3) declick(job.F, !d.once);
+    job.done = true;
+  }
+}
+
+// 깜빡임 청소: 앞뒤 장이 같은데 이 장만 다른 픽셀 가운데 '외톨이'(주변 8칸에 같은 처지가 1개 이하)만 앞 장 색으로 되돌린다.
+// 덩어리나 선으로 바뀐 곳(휘두르는 칼 등)은 진짜 움직임이라 그대로 둔다. 되풀이 동작은 끝 장과 첫 장이 이웃
+function declick(F, loop) {
+  const nf = F.length, w = F[0].width, h = F[0].height, M = new Uint8Array(w * h);
+  const U = F.map(f => new Uint32Array(f.data.buffer.slice(0)));
+  for (let j = 0; j < nf; j++) {
+    if (!loop && (j === 0 || j === nf - 1)) continue;
+    const a = U[(j - 1 + nf) % nf], b = U[j], c = U[(j + 1) % nf], out = new Uint32Array(F[j].data.buffer);
+    for (let q = 0; q < M.length; q++) M[q] = a[q] === c[q] && b[q] !== a[q] ? 1 : 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const q = y * w + x;
+      if (!M[q]) continue;
+      let nb = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const X = x + dx, Y = y + dy;
+        if ((dx || dy) && X >= 0 && Y >= 0 && X < w && Y < h && M[Y * w + X]) nb++;
+      }
+      if (nb <= 1) out[q] = a[q];
+    }
+  }
 }
 
 function build() {
@@ -108,11 +214,33 @@ function build() {
 let last = performance.now();
 function frame(t) {
   const dt = Math.min(0.1, (t - last) / 1000); last = t;
+  const opt = { samp: $('samp').value, post: +$('post').value, outl: $('outl').checked,
+                fps: +$('fps').value, snap: $('snap').checked, clean: $('clean').checked };
+  const zoom = +$('zoom').value, bakeKey = JSON.stringify(opt), viewKey = bakeKey + '|' + zoom + '|' + devicePixelRatio;
+  const until = performance.now() + BAKE_MS; // 이 화면에서 굽기에 쓸 시간
   for (const d of dolls) {
     d.update(dt);
     const c0 = d._cells[0], x0 = c0.getContext('2d'); x0.clearRect(0, 0, c0.width, c0.height);
     d.draw(x0, 70, 135, { scale: 110 / natH });
-    HEIGHTS.forEach((H, i) => pixelate(d, H, d._cells[i + 1]));
+    if (!opt.fps) { // 끊지 않음: 예전처럼 매 화면 다시 그린다 (장 수가 끝없어 구울 수 없다)
+      HEIGHTS.forEach((H, i) => {
+        d._pose();
+        if (opt.snap) quantize(d, H); // 키마다 계단 크기가 다르니 키마다 자세를 다시 잡는다
+        const c = d._cells[i + 1]; c._key = null;
+        show(c, render(d, H, opt), zoom);
+      });
+      d._pose();
+      continue;
+    }
+    if (d._bakeKey !== bakeKey) { d._bake = new Map(); d._bakeKey = bakeKey; } // 선택지가 바뀌면 다시 굽는다
+    HEIGHTS.forEach((H, i) => {
+      const c = d._cells[i + 1], k = d.clipName + '|' + H;
+      let job = d._bake.get(k);
+      if (!job) { job = { F: [], nf: Math.floor(d.clip.len * opt.fps + 1e-6) + 1, done: false }; d._bake.set(k, job); }
+      if (!job.done) { bakeStep(d, H, opt, job, until); if (!job.done) return; }
+      const idx = Math.min(job.nf - 1, Math.floor(d.time * opt.fps + 1e-6)), key = `${viewKey}|${k}|${idx}`;
+      if (c._key !== key) { c._key = key; show(c, job.F[idx], zoom); }
+    });
   }
   requestAnimationFrame(frame);
 }
