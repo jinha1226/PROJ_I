@@ -40,14 +40,26 @@ const PAGES = {
   ].filter(Boolean),
 };
 
+// 요청 검사 (로컬 서버일 때만): 목록 파일은 ?v=로 매번 새로 받고(바뀌면 옛 경로로 404가 나지 않게),
+// 큰 정적 파일 넷(artset · DCSS 지도 · pixelfx 묶음 · paperdoll)은 정리 전처럼 ?v 없이 받아 캐시를 쓴다.
+const NOCACHE = ['/js/render/artset.js', '/assets/dcss/map.js', '/js/render/pixelfx/pixelfx.bundle.js', '/js/render/paperdoll.js'];
+const REQS = {
+  'index.html': urls => [
+    !urls.some(u => /^\/js\/manifest\.js\?v=/.test(u)) && '목록 파일(js/manifest.js)을 ?v= 없이 받는다',
+    ...NOCACHE.filter(f => !urls.includes(f)).map(f => `${f}를 ?v 없이 받지 않는다`),
+  ].filter(Boolean),
+  'run.html': urls => [!urls.some(u => /^\/js\/manifest\.js\?v=/.test(u)) && '목록 파일(js/manifest.js)을 ?v= 없이 받는다'].filter(Boolean),
+};
+
 function serve() {
-  const miss = [];
+  const miss = [], seen = [];
   const srv = http.createServer((req, res) => {
+    seen.push(req.url);
     const u = decodeURIComponent(req.url.split('?')[0]), p = path.join(ROOT, u === '/' ? 'index.html' : u);
     if (!p.startsWith(ROOT) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { if (u.endsWith('.js')) miss.push(u); res.writeHead(404); return res.end(); }
     res.writeHead(200, { 'content-type': TYPES[path.extname(p)] || 'application/octet-stream' }); fs.createReadStream(p).pipe(res);
   });
-  return new Promise(ok => srv.listen(0, '127.0.0.1', () => ok({ srv, miss, url: `http://127.0.0.1:${srv.address().port}` })));
+  return new Promise(ok => srv.listen(0, '127.0.0.1', () => ok({ srv, miss, seen, url: `http://127.0.0.1:${srv.address().port}` })));
 }
 // 매 프레임 그리는 페이지(px_lab)에서 헤드리스 크롬이 가끔 가상 시간을 못 끝내고 멈춘다 — 45초에 끊고, 빈 DOM이면 한 번 더.
 const dump1 = (chrome, url) => new Promise(ok => execFile(chrome, ['--no-sandbox', '--headless', '--disable-gpu', '--hide-scrollbars', '--window-size=1100,900', '--virtual-time-budget=8000', '--dump-dom', url],
@@ -58,15 +70,16 @@ const dump = async (chrome, url) => (await dump1(chrome, url)) || dump1(chrome, 
   const chrome = findChrome();
   if (!chrome) { console.log('page_smoke: 크롬을 못 찾아 건너뜀'); return; }
   const one = process.argv.includes('--dump') ? process.argv[process.argv.indexOf('--dump') + 1] : null;
-  const s = BASE ? { url: BASE.replace(/\/$/, ''), miss: [], srv: null } : await serve();
+  const s = BASE ? { url: BASE.replace(/\/$/, ''), miss: [], seen: [], srv: null } : await serve();
   let bad = 0;
   try {
     for (const page of one ? [one] : Object.keys(PAGES)) {
-      const before = s.miss.length, d = await dump(chrome, `${s.url}/${page}`);
+      const before = s.miss.length, seen0 = s.seen.length, d = await dump(chrome, `${s.url}/${page}`);
       if (one) { console.log(d); continue; }
       const why = PAGES[page](strip(d)), miss = s.miss.slice(before);
       if (miss.length) why.push(`404: ${miss.slice(0, 5).join(', ')}${miss.length > 5 ? ` 외 ${miss.length - 5}` : ''}`);
       if (!d) why.push('DOM을 받지 못했다');
+      if (!BASE && REQS[page]) why.push(...REQS[page](s.seen.slice(seen0)));
       if (why.length) bad++;
       console.log(`${page.padEnd(12)} ${why.length ? '실패 — ' + why.join(' · ') : '통과'}`);
     }

@@ -31,6 +31,8 @@
     'js/explore/core', 'js/explore/data', 'js/explore/combat', 'js/explore/gen', 'js/explore/rules', 'js/explore/layout',
     'js/explore/draw', 'js/explore/ui',
   ],
+  // ?v= 캐시 깨기 없이 불러오는 큰 정적 파일 (정리 전 index.html이 그렇게 불렀다 — pixelfx 묶음은 884KB)
+  fixed: ['js/render/artset', 'assets/dcss/map', 'js/render/pixelfx/pixelfx.bundle', 'js/render/paperdoll'],
   // 어디서도 불리지 않는 파일 (목록에만 적어 둔다)
   unused: ['js/core/sfx'],
   };

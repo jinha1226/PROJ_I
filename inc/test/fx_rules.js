@@ -7,13 +7,13 @@ const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
 for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, GD = G.Guild, F = G.Fantasy, SK = G.Skill.SK, X = G.SkillFx, TB = X.TABLE;
 let ok = 0, bad = 0; const t = (name, v, extra = '') => { if (v) ok++; else { bad++; console.log('  실패:', name, extra); } };
-const entry = fs.readFileSync(path.join(path.dirname(LOAD.jsPath('iso/pixelfx.bundle')), 'entry.js'), 'utf8'), bundled = new Set([...entry.matchAll(/"([a-z]+\/[a-z-]+)": m\d+/g)].map(m => m[1]));
+const entry = fs.readFileSync(path.join(path.dirname(LOAD.jsPath('pixelfx/pixelfx.bundle')), 'entry.js'), 'utf8'), bundled = new Set([...entry.matchAll(/"([a-z]+\/[a-z-]+)": m\d+/g)].map(m => m[1]));
 const usable = Object.keys(SK).filter(k => SK[k].run || SK[k].rider);
 // 빠짐없이
 { const miss = usable.filter(k => !TB[k]); t('쓰는 기술은 모두 표에 있다', !miss.length, miss.join(' ')); }
 { const ghost = Object.keys(TB).filter(k => !SK[k]); t('표에 없는 기술 이름이 없다', !ghost.length, ghost.join(' ')); }
 for (const k in TB) { const e = TB[k]; if (!bundled.has(e.id)) t(`${k}: 이펙트 ${e.id} 묶음에 있음`, false); else ok++; if (e.mode === 'fly') t(`${k}: 터지는 이펙트 있음`, bundled.has(e.hit), e.hit); t(`${k}: 모양`, ['to', 'all', 'me', 'fly', 'dir'].includes(e.mode), e.mode); }
-{ const s = fs.readFileSync(LOAD.jsPath('iso/pixelfx.bundle'), 'utf8'); for (const id of new Set(Object.values(TB).map(e => e.id))) if (!s.includes(`"${id}"`)) t(`묶음 빌드에 ${id}`, false); ok++; }
+{ const s = fs.readFileSync(LOAD.jsPath('pixelfx/pixelfx.bundle'), 'utf8'); for (const id of new Set(Object.values(TB).map(e => e.id))) if (!s.includes(`"${id}"`)) t(`묶음 빌드에 ${id}`, false); ok++; }
 function setup() {
   G.newState(); G.quiet = false; const f = G.S.w.fantasy, L = GD.leader(f); f.leaderNew = false; f.autoTr = false; f.autoParty = false; L.lv = 9;
   const m = GD.make(f, 'archmage', { lv: 9 }); f.mercs.push(m); f.lineup = [m.uid]; F.syncAllies(f); f.floor = f.maxFloor = 5; f.checkpoint = f.start = 5; f.town = true; f.townT = 99; G.Exp.depart(f, F.rt(f));

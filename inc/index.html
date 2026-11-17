@@ -25,9 +25,10 @@
   const VER = Date.now();
   // 파일을 직접 열면 브라우저가 그림 읽기를 막아 화면이 나오지 않는다
   if (location.protocol === 'file:') document.write('<div style="position:fixed;inset:0;z-index:99;background:#17151c;color:#ece4d4;display:flex;align-items:center;justify-content:center;font:18px sans-serif">http://localhost:8765/ 로 열어 주세요</div>');
+  // 불러오기 목록: js/manifest.js (game → render). 목록 파일도 매번 새로 받는다 — 옛 목록이 캐시에 남으면 옮긴 파일을 옛 경로로 찾는다
+  document.write(`<script src="js/manifest.js?v=${VER}"><\/script>`);
 </script>
-<!-- 불러오기 목록: js/manifest.js (game → render). 파일 사이에서 최상위 이름을 공유한다: 순서가 곧 의존 순서 -->
-<script src="js/manifest.js"></script>
-<script>for (const p of [...MANIFEST.game, ...MANIFEST.render]) document.write(`<script src="${p}.js?v=${VER}"><\/script>`);</script>
+<!-- 파일 사이에서 최상위 이름을 공유한다: 순서가 곧 의존 순서. MANIFEST.fixed의 큰 정적 파일은 캐시를 쓴다 -->
+<script>for (const p of [...MANIFEST.game, ...MANIFEST.render]) document.write(`<script src="${p}.js${MANIFEST.fixed.includes(p) ? '' : `?v=${VER}`}"><\/script>`);</script>
 </body>
 </html>

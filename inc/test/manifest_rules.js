@@ -19,6 +19,7 @@ t('game 순서가 옛 index.html과 같다', eq(M.game.map(base), OLD_GAME), JSO
 t('render 앞 넷은 artset · dcss map · pixelfx · paperdoll', eq(M.render.slice(0, 4).map(base), ['artset', 'map', 'pixelfx.bundle', 'paperdoll']));
 t('render 나머지 순서가 옛 iso 목록과 같다', eq(M.render.slice(4).map(base), OLD_ISO));
 t('explore 순서가 옛 run.html과 같다', eq(M.explore.map(base), OLD_RUN));
+t('fixed는 render 앞 넷 (캐시를 쓰는 큰 정적 파일)', eq(M.fixed, M.render.slice(0, 4)));
 t('unused는 sfx 하나', eq(M.unused.map(base), ['sfx']));
 
 // 대소문자까지: 경로 조각마다 실제 디렉터리 항목과 맞춰 본다 (Pages는 대소문자를 가린다)
@@ -34,6 +35,11 @@ t('jsPath("core")는 game의 core (iso · run의 core가 아님)', L.jsPath('cor
 t('jsPath("iso/core")는 render의 core', L.jsPath('iso/core') === path.join(ROOT, M.render.find(p => p.endsWith('/core')) + '.js'));
 t('jsPath("run/gen")은 explore의 gen', L.jsPath('run/gen') === path.join(ROOT, M.explore.find(p => p.endsWith('/gen')) + '.js'));
 t('jsPath("sfx")는 unused의 sfx', L.jsPath('sfx') === path.join(ROOT, M.unused[0] + '.js'));
+t('jsPath("legacy/create")는 legacy의 create (legacy/iso/create가 아님)', L.jsPath('legacy/create') === path.join(ROOT, 'js/legacy/create.js'), L.jsPath('legacy/create'));
+t('jsPath("legacy/iso/create")는 legacy/iso의 create', L.jsPath('legacy/iso/create') === path.join(ROOT, 'js/legacy/iso/create.js'));
+t('jsPath("pixelfx/pixelfx.bundle")은 render의 묶음', L.jsPath('pixelfx/pixelfx.bundle') === path.join(ROOT, 'js/render/pixelfx/pixelfx.bundle.js'));
+t('jsPath("core/sfx")는 unused의 sfx', (() => { try { return L.jsPath('core/sfx') === path.join(ROOT, 'js/core/sfx.js'); } catch (e) { return false; } })());
+t('jsPath("render/core")는 render의 core', L.jsPath('render/core') === path.join(ROOT, 'js/render/core.js'));
 t('jsPath 모르는 이름은 던진다', throws(() => L.jsPath('없는파일')));
 t('NAMES.game은 옛 목록과 같다', eq(L.NAMES.game, OLD_GAME));
 
