@@ -1,4 +1,4 @@
-# 주문의 높은 슬롯 규칙 → js/srd_upcast.js. 입력: data/srd521/clean.json의 higher_level과 설명의 「Using a Higher-Level Spell Slot」
+# 주문의 높은 슬롯 규칙 → js/srd/srd_upcast.js. 입력: data/srd521/clean.json의 higher_level과 설명의 「Using a Higher-Level Spell Slot」
 # { 주문 id: d 주사위 · n 대상 · flat 고정값 · thp 임시 체력 · area 반경(칸) · dot 지속 주사위 · splash 튀는 주사위 · steps [슬롯, 값] }
 # 전투 시간이 짧아 지속 시간만 늘어나는 주문, 전투 밖 주문은 넣지 않는다 (DESIGN.md 125)
 import json, re, sys
@@ -31,5 +31,5 @@ for s in d:
     if re.search(r'(target|affect) one additional', t): out[i] = dict(n=1); continue
     skip.append(i)
 body = json.dumps(out, ensure_ascii=False, separators=(',', ':'))
-open('js/srd_upcast.js', 'w', encoding='utf-8').write("'use strict';\n// tools/srd_upcast.py가 만든다. 손으로 고치지 않는다. 슬롯 한 레벨 위마다 늘어나는 양 (SRD 5.2.1)\nG.SRD_UP = " + body + ";\n")
+open('js/srd/srd_upcast.js', 'w', encoding='utf-8').write("'use strict';\n// tools/srd_upcast.py가 만든다. 손으로 고치지 않는다. 슬롯 한 레벨 위마다 늘어나는 양 (SRD 5.2.1)\nG.SRD_UP = " + body + ";\n")
 print(len(out), 'entries; skipped', skip)

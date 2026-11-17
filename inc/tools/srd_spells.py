@@ -1,4 +1,4 @@
-# SRD 5.2.1 주문 339개 → js/srd_spells.js. 입력: dnd5eapi.co /api/2024/spells JSON 폴더 (CC-BY-4.0)
+# SRD 5.2.1 주문 339개 → js/srd/srd_spells.js. 입력: dnd5eapi.co /api/2024/spells JSON 폴더 (CC-BY-4.0)
 # 수치는 원문에서 읽고, 원문만으로 정할 수 없는 게임 효과는 tools/srd_spell_rules.json에 적는다
 import json, glob, os, re, sys
 AB = dict(strength='str', dexterity='dex', constitution='con', intelligence='int', wisdom='wis', charisma='cha')

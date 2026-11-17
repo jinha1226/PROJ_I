@@ -45,14 +45,14 @@ canvas { display:block; image-rendering:pixelated; border:1px solid var(--line);
   </main>
 </div>
 <script>
-// 게임과 같은 코드(js/skill_fx.js 표 · pixelfx 묶음)로 같은 시간에 재생한다. 재생 값은 js/iso/pfx.js의 playCast와 맞춘다
+// 게임과 같은 코드(js/rules/skill_fx.js 표 · pixelfx 묶음)로 같은 시간에 재생한다. 재생 값은 js/render/pfx.js의 playCast와 맞춘다
 var G = window.G || {};
 const load = src => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error(src)); document.head.append(s); });
 const CAST_T = 1.4, LOOP_T = 1.1, FLY_T = .28, MISSILE_HIT = .82, FX_LIGHT = .62, FX_MAX = 48;
 const W = 480, H = 250, CHEST = 18;
 const $ = id => document.getElementById(id), lerp = (a, b, u) => a + (b - a) * u, rgb = (r, g, b) => (255 << 24 | Math.min(255, b | 0) << 16 | Math.min(255, g | 0) << 8 | Math.min(255, r | 0)) >>> 0;
 const COOL = [28, 22, 62], WARM = [255, 232, 180];
-function tone(c) { // js/iso/sprites.js tone
+function tone(c) { // js/render/sprites.js tone
   let r = c & 255, g = c >> 8 & 255, b = c >> 16 & 255; const l = r * .3 + g * .59 + b * .11, sat = .74;
   r = lerp(l, r, sat); g = lerp(l, g, sat); b = lerp(l, b, sat);
   const k = (1 - l / 255) * .3, w = (l / 255) * .12;

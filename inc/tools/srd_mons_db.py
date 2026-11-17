@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""SRD 5.2.1 몬스터 330종 → js/srd_mons.js. 입력은 data/srd521/db/monster.json의 능력치표 원문(text) — PDF가 기준 (DESIGN.md 156).
+"""SRD 5.2.1 몬스터 330종 → js/srd/srd_mons.js. 입력은 data/srd521/db/monster.json의 능력치표 원문(text) — PDF가 기준 (DESIGN.md 156).
 옛 생성기(tools/srd_mons.py)는 외부 API JSON 64종만 썼고 내성 DC를 짐작했다. 이것은 원문의 모든 칸 · 행동을 그대로 읽는다.
-실행: python3 tools/srd_mons_db.py   (손으로 js/srd_mons.js를 고치지 않는다)"""
+실행: python3 tools/srd_mons_db.py   (손으로 js/srd/srd_mons.js를 고치지 않는다)"""
 import json, re, sys
-SRC = 'data/srd521/db/monster.json'; OUT = sys.argv[1] if len(sys.argv) > 1 else 'js/srd_mons.js'
+SRC = 'data/srd521/db/monster.json'; OUT = sys.argv[1] if len(sys.argv) > 1 else 'js/srd/srd_mons.js'
 AB = ['str', 'dex', 'con', 'int', 'wis', 'cha']; ABN = dict(Strength='str', Dexterity='dex', Constitution='con', Intelligence='int', Wisdom='wis', Charisma='cha')
 DT = ['acid', 'bludgeoning', 'cold', 'fire', 'force', 'lightning', 'necrotic', 'piercing', 'poison', 'psychic', 'radiant', 'slashing', 'thunder']
 CONDS = ['blinded', 'charmed', 'deafened', 'exhaustion', 'frightened', 'grappled', 'incapacitated', 'invisible', 'paralyzed', 'petrified', 'poisoned', 'prone', 'restrained', 'stunned', 'unconscious']

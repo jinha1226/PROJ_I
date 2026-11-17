@@ -1,6 +1,6 @@
 // 0x72 DungeonTileset II(CC0)로 게임 그림 만들기: node tools/art72.js
 // SPEC의 키마다 원본 프레임(assets/src/0x72/frames)을 골라 편집(색 바꾸기·뒤집기·겹치기)하고
-// assets/art/<키>[_n].png로 저장한 뒤 js/artset.js(키 → 프레임 수)를 만든다. 같은 키의 DCSS 타일보다 우선한다.
+// assets/art/<키>[_n].png로 저장한 뒤 js/render/artset.js(키 → 프레임 수)를 만든다. 같은 키의 DCSS 타일보다 우선한다.
 // 프레임이 여럿이면 캐릭터는 애니메이션으로 돌고, 지형은 칸마다 다른 변형이 된다. <키>_run이 있으면 걸을 때 쓴다.
 const fs = require('fs'), path = require('path'), PNG = require('./png'), PIX = require('./pix');
 // 원본: 0x72 팩 + 같은 그림체의 보충 팩(Superdark, sd_ 접두어). 보충 팩은 32×32 캔버스 가운데에 그려져 있어 여백을 잘라 쓴다.
@@ -387,7 +387,7 @@ for (const [key, s] of Object.entries(SPEC)) {
   if (run.length) save(key + '_run', run, s.ed, box);
   if (hit.length) save(key + '_hit', hit, s.ed, box);
 }
-fs.writeFileSync(path.join(ROOT, 'js', 'artset.js'),
+fs.writeFileSync(path.join(ROOT, 'js', 'render', 'artset.js'),
   "'use strict';\n// 자동 생성 (tools/art72.js). assets/art/의 그림(0x72 DungeonTileset II, CC0 기반): 키 → 프레임·변형 수.\n" +
   'G.ARTSET = ' + JSON.stringify(set) + ';\n');
 console.log(`그림 ${Object.keys(set).length}종, 파일 ${Object.values(set).reduce((a, b) => a + b, 0)}개`);

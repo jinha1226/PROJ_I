@@ -20,7 +20,7 @@
   - `src`: 원본 이름. `_anim`이면 f0~f3 프레임이 애니메이션이 된다. 목록이면 지형 변형
   - `run` 걷기, `hit` 맞을 때 한 장 → `<키>_run`, `<키>_hit`
   - `ed`: 편집 목록. `hue`(색상 회전, `only`로 특정 색만), `map`(색 → 색), `tint`(덧칠), `fill`(투명한 곳 채우기), `flip`, `over`(다른 프레임 얹기)
-- 만들기: `node tools/art72.js` → `assets/art/<키>[_n].png` + `js/artset.js`
+- 만들기: `node tools/art72.js` → `assets/art/<키>[_n].png` + `js/render/artset.js`
 - 엔진: 같은 키의 DCSS 타일보다 우선한다. 원본 1px = 칸/16로 키우고, 세로로 긴 캐릭터는 발을 칸 아래쪽에 맞춘다. 걸을 때 `_run`, 맞을 때 `_hit`(`js/render.js`)
 - PNG 읽기·쓰기는 `tools/png.js` (외부 라이브러리 없음)
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""SRD 5.2.1 주문 339개: data/srd521/db/spell.json 원문 → js/srd_spells.js의 각 주문에 `srd` 칸(원문 그대로)을 붙이고,
+"""SRD 5.2.1 주문 339개: data/srd521/db/spell.json 원문 → js/srd/srd_spells.js의 각 주문에 `srd` 칸(원문 그대로)을 붙이고,
 게임 칸(lv · conc · save · atk · half · dice · dt · area · 상태)이 원문과 다른 곳을 data/srd521/spell_check.json에 적는다 (DESIGN.md 156).
-실행: python3 tools/srd_spells_db.py   — 게임 칸은 고치지 않는다(차이는 목록으로). 손으로 js/srd_spells.js를 고치지 않는다"""
+실행: python3 tools/srd_spells_db.py   — 게임 칸은 고치지 않는다(차이는 목록으로). 손으로 js/srd/srd_spells.js를 고치지 않는다"""
 import json, re
-DB = 'data/srd521/db/spell.json'; JS = 'js/srd_spells.js'; CHECK = 'data/srd521/spell_check.json'
+DB = 'data/srd521/db/spell.json'; JS = 'js/srd/srd_spells.js'; CHECK = 'data/srd521/spell_check.json'
 AB = dict(Strength='str', Dexterity='dex', Constitution='con', Intelligence='int', Wisdom='wis', Charisma='cha')
 CONDS = ['Blinded', 'Charmed', 'Deafened', 'Exhaustion', 'Frightened', 'Grappled', 'Incapacitated', 'Invisible', 'Paralyzed', 'Petrified', 'Poisoned', 'Prone', 'Restrained', 'Stunned', 'Unconscious']
 DT = ['acid', 'bludgeoning', 'cold', 'fire', 'force', 'lightning', 'necrotic', 'piercing', 'poison', 'psychic', 'radiant', 'slashing', 'thunder']
@@ -53,7 +53,7 @@ def main():
         gd = g.get('dice'); sd = s['dice']
         if (gd and sd and gd[:2] != sd[:2]) or (bool(gd and gd[0]) != bool(sd)): d.append(f"피해 {gd} ≠ {sd}")
         if s['dt'] and g.get('dt') != s['dt']: d.append(f"피해 종류 {g.get('dt')} ≠ {s['dt']}")
-        # 범위는 이제 G.SRD_SP[id].srd.area(원문 모양 · 크기)를 js/spells.js가 직접 쓴다. 옛 칸(area)과 다르면 알리기만 한다
+        # 범위는 이제 G.SRD_SP[id].srd.area(원문 모양 · 크기)를 js/rules/spells.js가 직접 쓴다. 옛 칸(area)과 다르면 알리기만 한다
         # 게임 상태가 원문에 없으면 원문의 상태로 (옛 변환은 행동 불능 · 매혹 · 의식 없음을 마비로 뭉뚱그렸다)
         PRI = ['paralyzed', 'petrified', 'unconscious', 'stunned', 'incapacitated', 'restrained', 'charmed', 'frightened', 'blinded', 'poisoned', 'prone', 'grappled', 'deafened', 'invisible']
         # 원문 낱말과 상태가 다른 것: 역장 우리 · 역장의 벽의 'invisible'은 보이지 않는 벽(갇힘 → 속박), 안개 구름은 짙게 가려짐(용어집: 실명), 공중 부양은 이동만 막힌다(속박)

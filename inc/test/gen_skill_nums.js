@@ -1,5 +1,5 @@
 'use strict';
-// 기술 수치표 만들기: node test/gen_skill_nums.js → js/skill_nums.js
+// 기술 수치표 만들기: node test/gen_skill_nums.js → js/rules/skill_nums.js
 // 설명을 손으로 옮기지 않는다. 실제 기술 코드를 돌려 굴린 주사위 · 내성 · 상태를 기록하므로, 코드를 고치면 다시 돌리면 된다.
 const fs = require('fs'), vm = require('vm'), path = require('path'); const ROOT = path.join(__dirname, '..');
 const LOAD = require('./_load.js');

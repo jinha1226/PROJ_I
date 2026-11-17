@@ -1,4 +1,4 @@
-# SRD 5.2.1 몬스터 능력치 → js/srd_mons.js. 입력: dnd5eapi.co /api/2024/monsters의 JSON 폴더 (SRD 5.2.1 CC-BY-4.0)
+# SRD 5.2.1 몬스터 능력치 → js/srd/srd_mons.js. 입력: dnd5eapi.co /api/2024/monsters의 JSON 폴더 (SRD 5.2.1 CC-BY-4.0)
 import json, sys, glob, re, os
 out = {}
 for fn in sorted(glob.glob(os.path.join(sys.argv[1], '*.json'))):

@@ -2246,3 +2246,11 @@ SRD 조건을 지킨다 (`G.SRD.styleOn`): 대형 무기는 양손 · 양용 근
 - 넓은 지도는 옆으로 스크롤, 화면은 지금 방을 가운데로.
 - `RUN.K` 4.0 — 정찰 82% 대 눈 감음 51%.
 
+## 181. 파일 위치 정리 — 기능별 폴더와 불러오기 목록 하나 (2026-11-17, 사용자: 「코드는 이참에 리팩토링 진행하면서 기능별 모듈화 작업을 같이 진행하자」 · 「새 게임 기준으로 정리해. 다 old로 보내도 돼」)
+
+- 탐사 지도를 쿼터뷰에 합치는 작업(설계: `docs/superpowers/specs/2026-11-17-map-quarterview-merge-design.md`)의 1단계. 동작은 그대로다.
+- `js/`를 `core/` · `srd/` · `rules/` · `ai/` · `explore/`(옛 `run/`) · `render/`(옛 `iso/`의 그리기) · `legacy/`(옛 본 게임 흐름 — 아직 불림)로 나눴다. 옛 경로 → 새 경로 표는 `js/README.md`. 정리 전 상태는 git 태그 `pre-crawl`.
+- 불러오는 순서는 `js/manifest.js` 하나에만 있다. `index.html` · `run.html` · `vfx.html` · 시험(`test/_load.js`)이 같이 쓴다. 이 문서 앞 절들의 파일 경로는 그때의 경로다.
+- 시험: `node test/run_all.js [--quick]`(규칙 시험 전부, 난수를 고정하지 않는 옛 시험은 한 번 더 돌려 '흔들림'으로) · `node test/page_smoke.js`(페이지를 헤드리스 크롬으로 띄워 스크립트 404 · 화면 표지 확인) · `node test/manifest_rules.js`(목록 순서가 옛 순서와 같은지 · 대소문자) · `node test/path_rules.js`(옛 경로가 남지 않았는지).
+- `legacy/`는 새 게임이 대신하게 되는 대로 단계마다 `old/`로 간다 — 남길 규칙 엔진이 `G.Guild`(캐릭터 계산) · `G.Fantasy` · `G.Turn` · 저장 상태를 330곳 넘게 직접 부르기 때문에 한 번에 뺄 수 없다.
+

@@ -1,5 +1,5 @@
 'use strict';
-// SRD 원본 데이터 → 게임이 읽는 js/srd_gen.js : node test/gen_srd_clean.js 뒤에 node test/gen_srd_base.js (DESIGN.md 108)
+// SRD 원본 데이터 → 게임이 읽는 js/srd/srd_gen.js : node test/gen_srd_clean.js 뒤에 node test/gen_srd_base.js (DESIGN.md 108)
 // 손으로 고치지 않는다. 틀리면 data/srd521/PATCHES.json을 PDF 기준으로 고친다.
 const fs = require('fs'), path = require('path'), C = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'srd521', 'clean.json'), 'utf8'));
 const LOAD = require('./_load.js');

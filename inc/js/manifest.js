@@ -6,33 +6,33 @@
   const M = {
   // 게임 규칙 · 상태 (옛 index.html 첫 목록 순서)
   game: [
-    'js/core', 'js/data', 'js/srd_gen', 'js/srd_base', 'js/srd_mons', 'js/grid',
-    'js/juice', 'js/season', 'js/fantasy', 'js/guild', 'js/create', 'js/persona',
-    'js/dnd', 'js/feats', 'js/trinkets', 'js/bonds', 'js/report', 'js/skills',
-    'js/srd', 'js/srd_spells', 'js/srd_upcast', 'js/spells', 'js/traits', 'js/options',
-    'js/pools', 'js/utilspell', 'js/srd_species', 'js/multiclass', 'js/srd_range', 'js/srd_items',
-    'js/items', 'js/skill_ai', 'js/team', 'js/camp', 'js/skill_fx', 'js/events',
-    'js/npc', 'js/tutorial', 'js/skill_nums', 'js/command', 'js/expedition', 'js/mission',
-    'js/explore', 'js/banter', 'js/lines_danger', 'js/sight', 'js/tactics', 'js/foe',
-    'js/summon', 'js/light', 'js/monact', 'js/actions', 'js/lore', 'js/region',
-    'js/scn_astral', 'js/tut_map', 'js/res', 'js/turn', 'js/flow', 'js/story',
-    'js/state',
+    'js/core/core', 'js/rules/data', 'js/srd/srd_gen', 'js/srd/srd_base', 'js/srd/srd_mons', 'js/core/grid',
+    'js/core/juice', 'js/legacy/season', 'js/legacy/fantasy', 'js/legacy/guild', 'js/legacy/create', 'js/legacy/persona',
+    'js/rules/dnd', 'js/rules/feats', 'js/rules/trinkets', 'js/legacy/bonds', 'js/legacy/report', 'js/rules/skills',
+    'js/srd/srd', 'js/srd/srd_spells', 'js/srd/srd_upcast', 'js/rules/spells', 'js/rules/traits', 'js/rules/options',
+    'js/rules/pools', 'js/rules/utilspell', 'js/srd/srd_species', 'js/rules/multiclass', 'js/srd/srd_range', 'js/srd/srd_items',
+    'js/rules/items', 'js/ai/skill_ai', 'js/rules/team', 'js/rules/camp', 'js/rules/skill_fx', 'js/rules/events',
+    'js/legacy/npc', 'js/legacy/tutorial', 'js/rules/skill_nums', 'js/legacy/command', 'js/legacy/expedition', 'js/legacy/mission',
+    'js/legacy/explore', 'js/legacy/banter', 'js/legacy/lines_danger', 'js/rules/sight', 'js/legacy/tactics', 'js/rules/foe',
+    'js/rules/summon', 'js/rules/light', 'js/rules/monact', 'js/rules/actions', 'js/rules/lore', 'js/legacy/region',
+    'js/legacy/scn_astral', 'js/legacy/tut_map', 'js/rules/res', 'js/legacy/turn', 'js/legacy/flow', 'js/legacy/story',
+    'js/legacy/state',
   ],
   // 쿼터뷰 화면: 그림 표 · DCSS 타일 지도 · pixelfx · LAYERLAB 인형, 그다음 화면 코드 (옛 index.html 나머지 순서)
   render: [
-    'js/artset', 'assets/dcss/map', 'js/iso/pixelfx/pixelfx.bundle', 'js/paperdoll', 'js/iso/core', 'js/iso/models',
-    'js/iso/bake', 'js/iso/sprites', 'js/iso/minidoll', 'js/iso/game', 'js/iso/fxlayer', 'js/iso/pfx',
-    'js/iso/vfx', 'js/iso/hdbg', 'js/iso/dice', 'js/iso/actors', 'js/iso/props', 'js/iso/sheet',
-    'js/iso/town', 'js/iso/hud', 'js/iso/cmdui', 'js/iso/codex', 'js/iso/war', 'js/iso/create',
-    'js/iso/main',
+    'js/render/artset', 'assets/dcss/map', 'js/render/pixelfx/pixelfx.bundle', 'js/render/paperdoll', 'js/render/core', 'js/render/models',
+    'js/render/bake', 'js/render/sprites', 'js/render/minidoll', 'js/legacy/iso/game', 'js/render/fxlayer', 'js/render/pfx',
+    'js/render/vfx', 'js/render/hdbg', 'js/render/dice', 'js/render/actors', 'js/render/props', 'js/legacy/iso/sheet',
+    'js/legacy/iso/town', 'js/legacy/iso/hud', 'js/legacy/iso/cmdui', 'js/legacy/iso/codex', 'js/legacy/iso/war', 'js/legacy/iso/create',
+    'js/legacy/iso/main',
   ],
   // 탐사 지도 시제품 (run.html 순서)
   explore: [
-    'js/run/core', 'js/run/data', 'js/run/combat', 'js/run/gen', 'js/run/rules', 'js/run/layout',
-    'js/run/draw', 'js/run/ui',
+    'js/explore/core', 'js/explore/data', 'js/explore/combat', 'js/explore/gen', 'js/explore/rules', 'js/explore/layout',
+    'js/explore/draw', 'js/explore/ui',
   ],
   // 어디서도 불리지 않는 파일 (목록에만 적어 둔다)
-  unused: ['js/sfx'],
+  unused: ['js/core/sfx'],
   };
   if (typeof module === 'object' && module.exports) module.exports = M; else root.MANIFEST = M;
 })(this);

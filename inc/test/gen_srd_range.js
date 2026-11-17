@@ -1,5 +1,6 @@
-// js/srd_range.js 생성: 표는 PDF에서 뽑은 db의 값 그대로 (1칸 = 5피트). 게임 칸은 cells()가 K배로 줄인다
+// js/srd/srd_range.js 생성: 표는 PDF에서 뽑은 db의 값 그대로 (1칸 = 5피트). 게임 칸은 cells()가 K배로 줄인다
 const fs = require('fs'), path = require('path'), vm = require('vm'), ROOT = path.join(__dirname, '..');
+const LOAD = require('./_load.js');
 const db = f => { const d = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/srd521/db', f + '.json'), 'utf8')); return Array.isArray(d) ? d : Object.values(d); };
 const norm = s => s.toLowerCase().replace(/’/g, "'");
 const spell = {}, selfOnly = [];
@@ -13,7 +14,7 @@ for (const s of db('spell')) {
 spell['gust of wind'] = 12; // 원문이 「60 feet long」 선
 spell['produce flame'] = 12; // 던지는 거리 60피트
 spell['flame blade'] = 1.5; // 근접 주문 공격
-const ctx = { console }; ctx.G = {}; vm.createContext(ctx); vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/srd_mons.js'), 'utf8'), ctx);
+const ctx = { console }; ctx.G = {}; vm.createContext(ctx); vm.runInContext(fs.readFileSync(LOAD.jsPath('srd_mons'), 'utf8'), ctx);
 const MDB = {}; for (const m of db('monster')) MDB[norm(m.name).replace(/[^a-z]/g, '')] = m;
 const mon = {};
 for (const id in ctx.G.SRD_MON) {
@@ -37,6 +38,6 @@ const code = `// 생성: test/gen_srd_range.js — 손으로 고치지 말 것. 
   for (const k in G.D.MSKILLS) { const en = norm(G.D.MSKILLS[k].en || ''), r = T.spell[en] ?? T.feature[en]; if (r != null) G.D.SK_RANGE[k] = T.cells(r); }
 })();
 `;
-fs.writeFileSync(path.join(ROOT, 'js/srd_range.js'), code);
+fs.writeFileSync(LOAD.jsPath('srd_range'), code);
 console.log('주문', Object.keys(spell).length, '자신만', selfOnly.length, '몬스터', Object.keys(mon).length, 'far 없음', Object.entries(mon).filter(([i, o]) => (ctx.G.SRD_MON[i].far || ctx.G.SRD_MON[i].spell) && !o.far).map(e => e[0]).join());
 console.log(selfOnly.join(', '));
