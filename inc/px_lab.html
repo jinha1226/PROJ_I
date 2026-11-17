@@ -24,15 +24,16 @@
   <label>동작 <select id="anim"></select></label>
   <label>줄이기 <select id="samp"><option value="dark" selected>외곽선 우선</option><option value="smooth">부드럽게 (평균)</option><option value="near">가장 가까운 점</option></select></label>
   <label>색 단계 <select id="post"><option value="0" selected>원본 색</option><option value="6">6단계</option><option value="4">4단계</option><option value="3">3단계</option></select></label>
+  <label><input type="checkbox" id="eye" checked> 눈 살리기 (외곽선 우선일 때)</label>
   <label><input type="checkbox" id="outl" checked> 1px 외곽선</label>
-  <label>동작 끊기 <select id="fps"><option value="0">끊지 않음 (매 화면 다시 그림)</option><option value="30">30장/초 (굽기)</option><option value="24" selected>24장/초 (굽기)</option><option value="15">15장/초 (굽기)</option><option value="12">12장/초 (굽기)</option><option value="8">8장/초 (굽기)</option></select></label>
+  <label>동작 끊기 <select id="fps"><option value="0">끊지 않음 (매 화면 다시 그림)</option><option value="30" selected>30장/초 (굽기)</option><option value="24">24장/초 (굽기)</option><option value="15">15장/초 (굽기)</option><option value="12">12장/초 (굽기)</option><option value="8">8장/초 (굽기)</option></select></label>
   <label><input type="checkbox" id="snap" checked> 픽셀 맞춤 (움직임을 1px 계단으로)</label>
   <label><input type="checkbox" id="clean" checked> 깜빡임 청소</label>
   <label>확대 <select id="zoom"><option>2</option><option selected>3</option><option>4</option></select></label>
   <label><input type="checkbox" id="light"> 밝은 바탕</label>
   <button id="reroll">다른 인물</button>
 </div>
-<p class="note">왼쪽은 지금 게임처럼 원본 그대로, 오른쪽은 픽셀 키(인물 높이 px)별로 줄인 뒤 확대해서 보인다. 쿼터뷰 화면의 픽셀 배율과 같은 방식(정수 확대, 번짐 없음). 떨림 잡기: 동작을 정해진 장 수로 끊어 미리 구워 두고 되풀이 + 픽셀 맞춤(1px 미만 움직임은 버림) + 깜빡임 청소(한 장만 튀는 외톨이 픽셀). '외곽선 우선'은 그림의 검은 선이 1px 남짓으로 가늘어져도 끊기지 않게 줄인다. 예전 방식은 부드럽게 · 끊지 않음 · 맞춤 끔.</p>
+<p class="note">왼쪽은 지금 게임처럼 원본 그대로, 오른쪽은 픽셀 키(인물 높이 px)별로 줄인 뒤 확대해서 보인다. 쿼터뷰 화면의 픽셀 배율과 같은 방식(정수 확대, 번짐 없음). 떨림 잡기: 동작을 정해진 장 수로 끊어 미리 구워 두고 되풀이 + 픽셀 맞춤(1px 미만 움직임은 버림) + 깜빡임 청소(한 장만 튀는 외톨이 픽셀). '외곽선 우선'은 그림의 검은 선이 1px 남짓으로 가늘어져도 끊기지 않게 줄이고, '눈 살리기'는 그때 눈 칸만 흰자·반짝임을 먼저 남긴다. 예전 방식은 부드럽게 · 끊지 않음 · 맞춤 끔.</p>
 <div style="overflow-x:auto"><table id="grid"></table></div>
 <script src="js/render/paperdoll.js"></script>
 <script>
@@ -60,8 +61,11 @@ function measure() {
 //   → 동작 끊기 + 미리 굽기(정해진 장만 한 번 그려 두고 되풀이) + 픽셀 맞춤(쉬는 자세 대비 움직임을 1px 계단으로) + 깜빡임 청소.
 // · 외곽선: 부위 그림의 검은 선은 원본에서 약 5px — 32px 인물이면 1.3px라, 칸 경계에 걸리면 두 칸에 반씩 나뉘어 회색으로 흐려진다.
 //   → '외곽선 우선' 줄이기: 칸 안에 어두운 표본이 DARK_COVER 이상이면 그 칸은 외곽선 색, 아니면 어둡지 않은 표본만 평균.
+// · 눈: 32px에서 눈 하나가 3~5칸, 그 안 흰자·반짝임은 1칸 남짓이라 검은 테두리에 둘러싸여 '외곽선 우선'에 통째로 먹혔다(24px는 거의 다).
+//   → '눈 살리기': 눈을 빼고 한 번 더 그려 달라진 표본 = 보이는 눈(머리카락·투구에 가린 곳은 빠진다). 그런 표본이 EYE_COVER 이상인 칸은
+//   밝은 표본(흰자·반짝임)이 EYE_LIGHT 이상이면 그 색, 눈동자 색이 30% 이상이면 그 색, 아니면 원래대로. 20%로 하면 흰자가 동공까지 덮었다.
 // · 첫 시도처럼 부위마다 그리는 자리를 따로 반올림하면 부위끼리 반 픽셀씩 어긋나 어설퍼진다 — 움직인 양만 계층째 끊는다.
-const SS = 8, DARK_LUM = 70, DARK_COVER = 0.4;
+const SS = 8, DARK_LUM = 70, DARK_COVER = 0.4, EYE_COVER = 0.25, EYE_LIGHT = 0.35, LIGHT_LUM = 150;
 const hi = document.createElement('canvas'), hx = hi.getContext('2d', { willReadFrequently: true });
 
 // 픽셀 맞춤: 쉬는 자세 대비 움직임(이동·회전·크기)을 키 H에서 약 1px씩의 계단으로 끊는다.
@@ -78,38 +82,75 @@ function quantize(d, H) {
 }
 
 // 외곽선 우선 줄이기: hi(SS배)의 SS×SS 표본마다 — 덮인 표본이 43% 미만이면 빈 칸, 어두운 표본이 DARK_COVER 이상이면 그 평균(외곽선),
-// 아니면 어둡지 않은 표본만 평균 (외곽선이 옆 칸 색을 탁하게 물들이지 않게)
-function sampleDark(w, h) {
-  const src = hx.getImageData(0, 0, hi.width, hi.height).data, HW = hi.width, N = SS * SS;
+// 아니면 어둡지 않은 표본만 평균 (외곽선이 옆 칸 색을 탁하게 물들이지 않게).
+// eye = { d: 눈을 빼고 그린 표본, x, y, w, h: 그 상자(칸 단위) } 가 있으면 상자 안 눈 칸은 밝은 점 우선
+function sampleDark(src, w, h, eye) {
+  const HW = hi.width, N = SS * SS;
   const img = new ImageData(w, h), p = img.data;
   for (let cy = 0; cy < h; cy++) for (let cx = 0; cx < w; cx++) {
     let cov = 0, dk = 0, dr = 0, dg = 0, db = 0, fa = 0, fr = 0, fg = 0, fb = 0;
+    let ec = 0, la = 0, lr = 0, lg = 0, lb = 0, ma = 0, mr = 0, mg = 0, mb = 0;
+    const noEye = eye && cx >= eye.x && cx < eye.x + eye.w && cy >= eye.y && cy < eye.y + eye.h ? eye.d : null, EW = eye ? eye.w * SS : 0;
     for (let yy = 0; yy < SS; yy++) {
-      let j = ((cy * SS + yy) * HW + cx * SS) * 4;
-      for (let xx = 0; xx < SS; xx++, j += 4) {
+      let j = ((cy * SS + yy) * HW + cx * SS) * 4, k = noEye ? (((cy - eye.y) * SS + yy) * EW + (cx - eye.x) * SS) * 4 : 0;
+      for (let xx = 0; xx < SS; xx++, j += 4, k += 4) {
         if (src[j + 3] < 128) continue;
         cov++;
-        const r = src[j], g = src[j + 1], b = src[j + 2];
-        if (0.3 * r + 0.59 * g + 0.11 * b < DARK_LUM) { dk++; dr += r; dg += g; db += b; } else { fa++; fr += r; fg += g; fb += b; }
+        const r = src[j], g = src[j + 1], b = src[j + 2], L = 0.3 * r + 0.59 * g + 0.11 * b;
+        if (L < DARK_LUM) { dk++; dr += r; dg += g; db += b; } else { fa++; fr += r; fg += g; fb += b; }
+        if (noEye && Math.abs(r - noEye[k]) + Math.abs(g - noEye[k + 1]) + Math.abs(b - noEye[k + 2]) + Math.abs(src[j + 3] - noEye[k + 3]) > 24) {
+          ec++;
+          if (L >= LIGHT_LUM) { la++; lr += r; lg += g; lb += b; } else if (L >= DARK_LUM) { ma++; mr += r; mg += g; mb += b; }
+        }
       }
     }
     if (cov < N * 0.43) continue;
     const o = (cy * w + cx) * 4;
+    p[o + 3] = 255;
+    if (ec >= N * EYE_COVER) {
+      if (la >= N * EYE_LIGHT) { p[o] = lr / la; p[o + 1] = lg / la; p[o + 2] = lb / la; continue; }
+      if (ma >= N * 0.3) { p[o] = mr / ma; p[o + 1] = mg / ma; p[o + 2] = mb / ma; continue; }
+    }
     if (dk >= N * DARK_COVER || !fa) { p[o] = dr / dk; p[o + 1] = dg / dk; p[o + 2] = db / dk; }
     else { p[o] = fr / fa; p[o + 1] = fg / fa; p[o + 2] = fb / fa; }
-    p[o + 3] = 255;
   }
   return img;
+}
+
+// 눈 부위 (평소 눈 + 쓰러짐·기절 눈)
+const eyeNodes = d => d._eyes || (d._eyes = d.nodes.filter(n => n.def.path === 'Body/Head/Eye' || n.def.path === 'Body/Head/Ani_Eye'));
+// 눈을 빼고 그리기는 눈 자리 상자 안만 (잘라 그리기) — 인물 전체를 한 번 더 그리면 한 장 굽는 시간이 거의 두 배가 된다.
+// 상자는 눈 그림만 목표 크기로 작게 그려 찾고 1칸 넉넉히
+const eyeCv = document.createElement('canvas'), ecx = eyeCv.getContext('2d', { willReadFrequently: true });
+function eyeSample(d, w, h, drawAt) {
+  const en = eyeNodes(d), keep = new Set(en), sp = d.nodes.map(n => n.sprite);
+  d.nodes.forEach(n => { if (!keep.has(n)) n.sprite = null; });
+  eyeCv.width = w; eyeCv.height = h; drawAt(ecx, 1 / SS);
+  d.nodes.forEach((n, i) => n.sprite = sp[i]);
+  const a = ecx.getImageData(0, 0, w, h).data; let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (a[(y * w + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return null;
+  x0 = Math.max(0, x0 - 1); y0 = Math.max(0, y0 - 1); x1 = Math.min(w - 1, x1 + 1); y1 = Math.min(h - 1, y1 + 1);
+  const bw = x1 - x0 + 1, bh = y1 - y0 + 1, sv = en.map(n => n.show); en.forEach(n => n.show = false);
+  hx.save(); hx.beginPath(); hx.rect(x0 * SS, y0 * SS, bw * SS, bh * SS); hx.clip(); // 상자 밖은 그리지도 않게
+  hx.clearRect(x0 * SS, y0 * SS, bw * SS, bh * SS); drawAt(hx, 1); hx.restore();
+  en.forEach((n, i) => n.show = sv[i]);
+  return { d: hx.getImageData(x0 * SS, y0 * SS, bw * SS, bh * SS).data, x: x0, y: y0, w: bw, h: bh };
 }
 
 // 한 장: 고해상도로 그린 뒤 목표 크기로 줄이고, 알파를 0/1로, 색을 단계로, 바깥 1px 외곽선 → 작은 ImageData
 function render(d, H, opt) {
   const W = Math.round(H * 1.4), w = W, h = H + 6; // 무기가 옆으로 삐져나오므로 폭을 넉넉히
-  hi.width = W * SS; hi.height = h * SS; hx.clearRect(0, 0, hi.width, hi.height);
+  hi.width = W * SS; hi.height = h * SS;
   // 발 위치도 픽셀 칸에 맞춘다 (W가 홀수면 가운데가 반 칸에 걸린다)
-  d.draw(hx, opt.snap ? Math.floor(W / 2) * SS : hi.width / 2, (H + 3) * SS, { scale: H * SS / natH });
+  // k = 1: hi(SS배), k = 1/SS: 목표 크기
+  const drawAt = (ctx, k) => d.draw(ctx, (opt.snap ? Math.floor(W / 2) * SS : hi.width / 2) * k, (H + 3) * SS * k, { scale: H * SS * k / natH });
+  hx.clearRect(0, 0, hi.width, hi.height); drawAt(hx, 1);
   let img;
-  if (opt.samp === 'dark') img = sampleDark(w, h);
+  if (opt.samp === 'dark') {
+    const src = hx.getImageData(0, 0, hi.width, hi.height).data;
+    img = sampleDark(src, w, h, opt.eye ? eyeSample(d, w, h, drawAt) : null);
+  }
   else {
     const sm = document.createElement('canvas'); sm.width = w; sm.height = h;
     const sx = sm.getContext('2d');
@@ -214,7 +255,7 @@ function build() {
 let last = performance.now();
 function frame(t) {
   const dt = Math.min(0.1, (t - last) / 1000); last = t;
-  const opt = { samp: $('samp').value, post: +$('post').value, outl: $('outl').checked,
+  const opt = { samp: $('samp').value, eye: $('samp').value === 'dark' && $('eye').checked, post: +$('post').value, outl: $('outl').checked,
                 fps: +$('fps').value, snap: $('snap').checked, clean: $('clean').checked };
   const zoom = +$('zoom').value, bakeKey = JSON.stringify(opt), viewKey = bakeKey + '|' + zoom + '|' + devicePixelRatio;
   const until = performance.now() + BAKE_MS; // 이 화면에서 굽기에 쓸 시간
