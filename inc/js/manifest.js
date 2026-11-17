@@ -8,7 +8,7 @@
   game: [
     'js/core/core', 'js/rules/data', 'js/srd/srd_gen', 'js/srd/srd_base', 'js/srd/srd_mons', 'js/core/grid',
     'js/core/juice', 'js/rules/old_stubs', 'js/legacy/fantasy', 'js/legacy/guild', 'js/legacy/create',
-    'js/rules/dnd', 'js/rules/feats', 'js/rules/trinkets', 'js/rules/skills',
+    'js/rules/dnd', 'js/rules/fate', 'js/rules/feats', 'js/rules/trinkets', 'js/rules/skills',
     'js/srd/srd', 'js/srd/srd_spells', 'js/srd/srd_upcast', 'js/rules/spells', 'js/rules/traits', 'js/rules/options',
     'js/rules/pools', 'js/rules/utilspell', 'js/srd/srd_species', 'js/rules/multiclass', 'js/srd/srd_range', 'js/srd/srd_items',
     'js/rules/items', 'js/ai/skill_ai', 'js/rules/team', 'js/rules/camp', 'js/rules/skill_fx', 'js/rules/events', 'js/rules/skill_nums', 'js/rules/check', 'js/legacy/explore', 'js/rules/sight', 'js/legacy/tactics', 'js/rules/foe',
