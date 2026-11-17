@@ -84,5 +84,39 @@ for (const seed of [6, 7]) {
   t('모 아니면 도: 1이 2/3쯤', one / n > 0.62 && one / n < 0.71, one / n);
   t('죽음의 주사위: 즉사가 1/5쯤', death / n > 0.17 && death / n < 0.23, death / n);
 }
+// 4) 직업 주사위 · 비틀기 · 조합 (5-9-1)
+{
+  const { G } = boot(10), D = G.Dice;
+  const ps = [{ hp: 10, max: 10, merc: { cls: 'dragoon' } }, { hp: 4, max: 10, merc: { cls: 'mage' } }, { hp: 8, max: 10, merc: { cls: 'cleric' } }];
+  D.party = () => ps; D.loadout = []; D.newRound(1, () => 0);
+  t('특수 주사위가 없으면 파티원마다 직업 주사위 + 보통 하나', ['c_war', 'c_arc', 'c_div', 'd20'].every((k, i) => D.st.kinds[i] === k), D.st.kinds.join());
+  t('직업 주사위 면에는 값과 기호가 있다', D.st.dice[0].value === 17 && D.st.dice[0].sym === 'atk');
+  D.loadout = ['steady']; D.newRound(2, () => 0);
+  t('특수 주사위는 예비 자리부터', D.st.kinds.join() === 'steady,c_war,c_arc,c_div', D.st.kinds.join());
+  D.loadout = [];
+  // 조합: 검 + 검 → 합동 공격, ★는 아무 기호
+  D.newRound(3, () => 0); const S = D.st;
+  S.dice[0] = { kind: 'c_war', face: 0, value: 17, sym: 'atk' }; S.dice[1] = { kind: 'c_arc', face: 1, value: 10, sym: 'def' }; S.dice[2] = { kind: 'c_div', face: 5, value: 13, sym: 'wild' };
+  const cs = D.combos();
+  t('★는 아무 기호를 채운다 (검×2 · 방×2)', cs.length === 2 && cs.every(c => c.n === 2), JSON.stringify(cs));
+  S.dice[2] = { kind: 'c_div', face: 3, value: 5, sym: null };
+  t('같은 기호가 하나뿐이면 조합 없음', D.combos().length === 0);
+  // 비틀기: 옆 면으로, 라운드당 한 번, 보통 주사위는 못 비튼다
+  D.newRound(4, () => 0);
+  t('보통 주사위는 비틀 수 없다', D.nudge(3, 1) === false);
+  t('비틀면 옆 면으로', D.nudge(0, 1) === true && D.st.dice[0].face === 1 && D.st.dice[0].sym === 'def');
+  t('비틀기는 라운드당 한 번', D.nudge(0, 1) === false);
+  t('거꾸로 비틀면 고리를 돈다', (D.newRound(5, () => 0), D.nudge(0, -1)) && D.st.dice[0].face === 5);
+  // 효과: 방진은 AC +2, 기도는 가장 다친 사람을 회복
+  const { G: G2 } = boot(11), D2 = G2.Dice, r2 = G2.Fantasy.rt(G2.S.w.fantasy), team = r2.party.filter(p => p.hp > 0);
+  D2.party = () => team; D2.loadout = []; D2.newRound(1, () => 0); const S2 = D2.st;
+  S2.dice = team.map(() => ({ kind: 'c_war', face: 1, value: 11, sym: 'def' })).concat([{ kind: 'd20', value: 10, sym: null }]);
+  const ac0 = G2.Dnd.ac(team[0]); S2.combo = 'def'; D2.fire();
+  t('방진: 아군 AC가 오른다', G2.Dnd.ac(team[0]) === ac0 + (team.length >= 3 ? 3 : 2), [ac0, G2.Dnd.ac(team[0])]);
+  team[1].hp = 1; S2.dice = team.map(() => ({ kind: 'c_div', face: 0, value: 15, sym: 'holy' })).slice(0, 2).concat(team.slice(2).map(() => ({ kind: 'd20', value: 3, sym: null })));
+  S2.combo = 'holy'; D2.fire();
+  t('기도: 가장 다친 사람이 회복', team[1].hp >= 5, team[1].hp);
+  t('AI 추천: 다친 사람이 있으면 기도', D2.pickCombo() === 'holy');
+}
 console.log(`crawl_fight_rules: 통과 ${ok} · 실패 ${bad}`);
 process.exit(bad ? 1 : 0);
