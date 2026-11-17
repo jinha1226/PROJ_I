@@ -56,6 +56,20 @@ for (const seed of [4, 5]) {
   t(`씨앗 ${seed}: 라운드마다 주사위를 굴렸다`, res.maxRound >= 1);
   t(`씨앗 ${seed}: 배분된 주사위가 공격 굴림에 쓰였다`, res.used >= 1, JSON.stringify(res));
 }
+// 2-1) 4×4 구역 전투: 판을 켜면 모두 구역 자리에(구역마다 3명까지), 전투가 끝나고, 근접은 같은 구역에서만 닿는다
+for (const seed of [6, 7]) {
+  const { G, r } = boot(seed); spawn(G, r, ['고블린 졸개', '고블린 졸개', '홉고블린 전사']);
+  G.Zone.set(r.map.rooms[0], r.map); G.Tactics.snap(r);
+  const all = r.party.concat(r.mons), per = new Map(); for (const e of all) { const k = G.Zone.zoneOf(e).join(','); per.set(k, (per.get(k) || 0) + 1); }
+  t(`씨앗 ${seed}: 구역마다 3명까지`, [...per.values()].every(v => v <= 3), JSON.stringify([...per]));
+  t(`씨앗 ${seed}: 같은 구역 거리 0 · 이웃 구역 2칸 · 두 구역 6칸`, G.Zone.dist({ x: 3, y: 3 }, { x: 4, y: 3.5 }) === 0 && G.Zone.dist({ x: 3, y: 3 }, { x: 6, y: 3 }) === 2 && G.Zone.dist({ x: 3, y: 3 }, { x: 9, y: 3 }) === 6, [G.Zone.dist({ x: 3, y: 3 }, { x: 6, y: 3 }), G.Zone.dist({ x: 3, y: 3 }, { x: 9, y: 3 })]);
+  const res = run(G, r, { dice: ['twin'] });
+  t(`씨앗 ${seed}: 구역 전투가 끝난다`, !res.timeout, JSON.stringify(res));
+  const moved = r.party.concat(r.mons.filter(m => m.hp > 0)).every(e => { const [zx, zy] = G.Zone.zoneOf(e); return zx >= 0 && zx < 4 && zy >= 0 && zy < 4; });
+  t(`씨앗 ${seed}: 모두 판 안에 있다`, moved);
+  G.Zone.off();
+  t(`씨앗 ${seed}: 판을 끄면 보통 거리`, G.Zone.dist({ x: 0, y: 0 }, { x: 3, y: 4 }) === 5);
+}
 // 3) 주사위 규칙
 {
   const { G } = boot(9), D = G.Dice;

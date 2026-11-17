@@ -22,7 +22,7 @@ const CRAWL = (() => {
   // 시험용 ?auto=N: 아직 안 지나간 첫 출구로 걸어가 첫 선택지 · 첫 장면 선택을 N번 (연기 시험 · 캡처용). 화면 루프로 돈다
   let autoN = 0, autoT = 0;
   function autoStep(dt) {
-    if (!autoN || st.done) return; autoT += dt; if (autoT < 0.4) return; autoT = 0;
+    if (!autoN || (st && st.done)) return; autoT += dt; if (autoT < 0.4) return; autoT = 0;
     if (fighting) { const bb = $('dicebear')?.querySelector('button'); if (bb) return bb.click(); if ($('dicetray') && !q.get('hold')) $('dicetray').querySelector('.go').click(); return; }
     const b = $('crawlscene')?.querySelector('button:not([disabled])') || $('exitsign')?.querySelector('button[data-i="0"]');
     if (b) { if ($('exitsign')) autoN--; b.click(); return; }
@@ -31,7 +31,7 @@ const CRAWL = (() => {
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const tile = ([x, y]) => [x * K + 0.5, y * K + 0.5];
-  const TI = (x, y) => Math.floor(y) * iso.w + Math.floor(x);
+  const TI = (x, y) => Math.round(y) * iso.w + Math.round(x); // 칸 i는 좌표 i 가운데 (그리는 쪽과 같게)
   const centerOf = id => { const b = st.map._lay.room[id], mx = b.x + b.w / 2 - 0.5, my = b.y + b.h / 2 - 0.5; let best = b.cells[0], bd = 1e9; for (const c of b.cells) { const d = (c[0] - mx) ** 2 + (c[1] - my) ** 2; if (d < bd) { bd = d; best = c; } } return tile(best); };
   const lead = () => R.party.find(p => !p.dead) || R.party[0];
 
@@ -89,7 +89,7 @@ const CRAWL = (() => {
       }
     }
     if (prev[g] < 0) return null;
-    const pts = []; for (let k = g; k !== s; k = prev[k]) pts.unshift([k % W + 0.5, ((k / W) | 0) + 0.5]);
+    const pts = []; for (let k = g; k !== s; k = prev[k]) pts.unshift([k % W, (k / W) | 0]);
     return pts;
   }
   // 누른 곳 → 바닥 타일 (못 가는 곳이면 가까운 걸을 수 있는 칸으로)
@@ -98,7 +98,7 @@ const CRAWL = (() => {
     const g = unproject(sx, sy); return [g.x / T + win.cx, g.y / T + win.cy];
   }
   function moveTo(tx, ty) {
-    if (!walkable(TI(tx, ty))) { let best = null, bd = 10; for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const X = tx + dx, Y = ty + dy; if (X < 0 || Y < 0 || X >= iso.w || Y >= iso.h) continue; if (walkable(TI(X, Y))) { const d = dx * dx + dy * dy; if (d < bd) { bd = d; best = [Math.floor(X) + 0.5, Math.floor(Y) + 0.5]; } } } if (!best) return false; [tx, ty] = best; }
+    if (!walkable(TI(tx, ty))) { let best = null, bd = 10; for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const X = tx + dx, Y = ty + dy; if (X < 0 || Y < 0 || X >= iso.w || Y >= iso.h) continue; if (walkable(TI(X, Y))) { const d = dx * dx + dy * dy; if (d < bd) { bd = d; best = [Math.round(X), Math.round(Y)]; } } } if (!best) return false; [tx, ty] = best; }
     const L = lead(), pts = findPath(L.x, L.y, tx, ty); if (!pts) return false;
     nearKey = null; closeSign(); go(pts.length ? pts : [[tx, ty]], null); return true;
   }
@@ -208,8 +208,8 @@ const CRAWL = (() => {
   // ── 쿼터뷰 전투: 옛 본 게임의 SRD 턴제 전투(G.Turn · G.Flow)를 그 방에서 돌린다 + 라운드 주사위 ──
   // 파티 체력은 탐사 규칙(RUN)의 파티와 쿼터뷰 인물을 차례로 맞춘다 (파이터 ↔ 단장, 위저드 ↔ 위저드, 클레릭 ↔ 클레릭)
   const pair = () => R.party.map((p, i) => [p, st.party[i]]).filter(([p, m]) => p && m);
-  function syncToG() { for (const [p, m] of pair()) { if (m.dead) { p.hp = 0; p.dead = true; } else p.hp = Math.max(1, Math.round(p.max * m.hp / m.max)); } }
-  function syncToRUN() { for (const [p, m] of pair()) { const hp = Math.max(0, p.hp); m.hp = Math.round(m.max * hp / p.max); if (p.dead || hp <= 0) { m.hp = 0; m.dead = true; } } }
+  function syncToG() { if (!st) return; for (const [p, m] of pair()) { if (m.dead) { p.hp = 0; p.dead = true; } else p.hp = Math.max(1, Math.round(p.max * m.hp / m.max)); } }
+  function syncToRUN() { if (!st) return; for (const [p, m] of pair()) { const hp = Math.max(0, p.hp); m.hp = Math.round(m.max * hp / p.max); if (p.dead || hp <= 0) { m.hp = 0; m.dead = true; } } }
   const monName = n => (G.D.F.mon[n] ? n : Object.keys(G.D.F.mon).find(k => k.includes(n)) || Object.keys(G.D.F.mon).find(k => k.includes(n.slice(0, 2))) || '고블린 졸개');
   function startFight(n, mod) {
     clearMarks(); closeSign(); syncToG();
@@ -217,6 +217,7 @@ const CRAWL = (() => {
     const units = n.g.units || [[n.g.name, n.g.count]]; let k = 0;
     for (const [name, cnt] of units) for (let i = 0; i < cnt; i++) { const [x, y] = cells[(k++ * 3) % Math.max(1, cells.length)] || [L.x + 3, L.y]; const nm = monName(name); G.Fantasy.spawnMon(R, 1, { n: nm, ...G.D.F.mon[nm] }, x, y, false, { aggro: true, spotted: true, major: true, boss: n.type === 'boss' } /* major: 옛 G.Flow가 층 시작에 major 아닌 몬스터를 치운다 */); }
     R.turn = null; R.phase = 'explore'; G.S.w.fantasy.town = false; G.Fantasy.refreshEnts(R); if (G.Sight?.update) G.Sight.update(R);
+    G.Zone.set(iso.rooms[n.id], iso); G.Tactics.snap(R); // 4×4 구역 판: 그 방 바닥을 넷씩 나눈다 (방 크기는 그대로)
     G.Dice.party = () => R.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => R.turn?.cur || null; G.Dice.st = null;
     fighting = { n, mod, acc: 0, round: 0, cur: null, t: 0 };
     st.log.push({ t: `${n.g.label} — 전투가 시작된다.` }); say();
@@ -235,9 +236,10 @@ const CRAWL = (() => {
     if (!foes.length || F.t > 600) return endFight(true);
   }
   function endFight(win) {
-    const F = fighting, n = F.n; fighting = null; G.Dice.st = null; closeTray(); R.turn = null;
+    const F = fighting, n = F.n; fighting = null; G.Dice.st = null; closeTray(); R.turn = null; G.Zone.off(); zonesOff();
     document.body.dataset.fights = (+(document.body.dataset.fights || 0) + 1) + (win ? 'w' : 'l'); delete document.body.dataset.fight;
     syncToRUN(); n.hostile = false;
+    if (!st) { const d = document.createElement('div'); d.className = 'record-stub'; d.textContent = win ? `시험 전투: 이겼다 (${F.round}라운드)` : '시험 전투: 졌다'; $('stage').append(d); return; }
     if (!win || !st.party.some(m => !m.dead)) { st.done = 'lose'; st.log.push({ t: '탐사대가 전멸했다.' }); say(); return end(); }
     if (n.type === 'boss') { st.done = 'win'; st.log.push({ t: `${n.g.name}가 쓰러졌다. 이 층의 지도가 완성됐다.` }); say(); drawMap(); return end(); }
     const gold = n.type === 'elite' ? 35 + RUN.d(st.rng, 15) : 6 + n.g.count * 2 + (n.g.tier === 'heavy' ? 15 : 0); st.gold += gold;
@@ -245,6 +247,15 @@ const CRAWL = (() => {
     const L = lead(); trail.length = 0; trail.push([L.x, L.y]);
     refreshSeen(); doorTiles = doorsOf(); drawMap(); showMarks();
   }
+  // 구역 선: 그 방 바닥 위에 4×4 (쿼터뷰 좌표로 꺾어 그린다)
+  function drawZones() {
+    const b = G.Zone.b; if (!b) return; let svg = $('zones');
+    if (!svg) { svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.id = 'zones'; $('stage').append(svg); }
+    const rc = canvas.getBoundingClientRect(), sb = $('stage').getBoundingClientRect(), P = (x, y) => { const a = project(wx(x), wy(y), 0); return `${(rc.left - sb.left + a.sx / W * rc.width).toFixed(1)},${(rc.top - sb.top + a.sy / H * rc.height).toFixed(1)}`; };
+    const L = []; for (let i = 0; i <= 4; i++) { const x = b.x + i * b.zw, y = b.y + i * b.zh; L.push(`M${P(x, b.y)}L${P(x, b.y + b.h)}`, `M${P(b.x, y)}L${P(b.x + b.w, y)}`); }
+    svg.innerHTML = `<path d="${L.join('')}"/>`;
+  }
+  function zonesOff() { const z = $('zones'); if (z) z.remove(); }
   // 죽음의 주사위를 맡을 사람 (굴리기 전에)
   function bearerPick() {
     const ps = G.Dice.party(), sug = G.Dice.suggestBearer(), box = document.createElement('div'); box.id = 'dicebear';
@@ -318,7 +329,17 @@ const CRAWL = (() => {
       // 시험용 ?tap=x,y: 그 타일을 화면 좌표로 바꿔 누른 것처럼 (화면 ↔ 타일 변환 확인)
       if (q.get('tap')) setTimeout(() => { const [tx, ty] = q.get('tap').split(',').map(Number), a = project(wx(tx), wy(ty), 0), rc = canvas.getBoundingClientRect(); const cx = rc.left + a.sx / canvas.width * rc.width, cy = rc.top + a.sy / canvas.height * rc.height, back = tileAtScreen(cx, cy); document.body.dataset.tap = back.map(v => v.toFixed(2)).join(','); }, 1500);
     },
-    frame(dt) { frame(dt); autoStep(dt); for (const m of marks) place(m.el, m.x, m.y, 2.2); },
+    frame(dt) { frame(dt); autoStep(dt); for (const m of marks) place(m.el, m.x, m.y, 2.2); if (G.Zone.on) drawZones(); }, // 구역 선은 카메라를 따라 매 프레임
+    // 시험 전투 (?fight=test): 이미 세운 적과 4×4 구역 전투 + 라운드 주사위 (탐사 규칙 없이)
+    fightTest(r) {
+      const pm = $('pmapbox'); if (pm) pm.style.display = 'none';
+      R = r; const room = r.map.rooms[0], n = { id: -1, type: 'fight', g: { label: '시험 전투', name: '적', count: r.mons.length, units: [] } };
+      R.turn = null; R.phase = 'explore'; G.S.w.fantasy.town = false;
+      G.Zone.set(room, r.map); G.Tactics.snap(R);
+      G.Dice.party = () => R.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => R.turn?.cur || null; G.Dice.st = null;
+      fighting = { n, mod: {}, acc: 0, round: 0, cur: null, t: 0 };
+      dicePick(); if (q.get('auto')) autoN = 99;
+    },
     get st() { return st; },
   };
 })();

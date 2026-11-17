@@ -71,7 +71,7 @@ G.Skill = (() => {
         // 사거리는 여기서만 건다: 그 기술이 볼 수 있는 적 · 동료를 사거리 안으로 좁힌다
         const reach = D.SK_RANGE[k] != null && k === 'sr_eb' && G.Opt.has(a, 'iv_spear') ? G.SRD_RANGE.cells(G.SRD_RANGE.basic.warlock + 6 * a.merc.lv) : D.SK_RANGE[k], x = { f, rt, c: a, reach, base: S.base, seen: reach == null ? seen : seen.filter(o => G.Opt.inReach(a, rt, o, reach)) };
         let one = quick ? 'sr_quicken' : null; // 메타매직은 주문에 하나 (강화 · 추적만 겹친다)
-        if (!x.seen.length && reach > 1.5 && !S.heal && S.res?.slot && G.Opt.can(a, 'mm_distant')) { const far = seen.filter(o => Math.hypot(o.x - a.x, o.y - a.y) <= reach * 2); if (far.length) { x.seen = far; x.reach = reach * 2; one = 'mm_distant'; } } // 먼 주문
+        if (!x.seen.length && reach > 1.5 && !S.heal && S.res?.slot && G.Opt.can(a, 'mm_distant')) { const far = seen.filter(o => G.Zone.dist(o, a) <= reach * 2); if (far.length) { x.seen = far; x.reach = reach * 2; one = 'mm_distant'; } } // 먼 주문
         let ty = spellType(k), over = null; // 종류가 분명한 공격 주문만 거른다 (버프 · 제어 · 무기 기술은 그대로)
         if (ty && !S.heal && x.seen.length) { if (!one) { over = G.Opt.transmute(a, x.seen, ty); if (over) { ty = over; one = 'mm_trans'; } } const fit = x.seen.filter(o => G.Foe.dealK(a, o, ty) >= 0.5); if (!fit.length) continue; x.seen = fit; } // 안 듣는 적에게 쓰지 않는다
         const m0 = a.merc; if (G.MC?.on(m0)) a.merc = G.MC.viewFor(m0, k); // 다중 직업: 그 기술의 직업 · 레벨로 판단하고 쓴다

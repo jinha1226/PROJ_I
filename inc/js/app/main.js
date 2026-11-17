@@ -5,7 +5,7 @@ function frame(tt) {
   const n = now(); let dt = Math.min(.25, (n - last) / 1000); last = n; acc += dt;
   if (JU.frozen()) acc = 0; // 타격 경직: 그동안 게임 시간은 흐르지 않는다
   const t = n / 1000, r = rt();
-  if (!FIGHT) CRAWL.frame(dt);
+  CRAWL.frame(dt);
   if (!r.map || !r.party) { requestAnimationFrame(frame); return; }
   const c0 = now();
   const ref = r.party.find(p => !p.dead) || r.hero;

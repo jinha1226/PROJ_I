@@ -3,7 +3,7 @@
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
-for (const n of ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'old_stubs', 'fantasy', 'guild', 'create', 'dnd', 'feats', 'trinkets', 'skills', 'srd', 'srd_spells', 'srd_upcast', 'spells', 'traits', 'options', 'pools', 'utilspell', 'srd_species', 'multiclass', 'srd_range', 'srd_items', 'items', 'skill_ai', 'team', 'camp', 'skill_fx', 'events', 'skill_nums', 'check', 'explore', 'sight', 'tactics', 'foe', 'summon', 'light','monact', 'actions', 'lore', 'region', 'mons_extra', 'res', 'turn', 'flow', 'story', 'state'])
+for (const n of ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'old_stubs', 'fantasy', 'guild', 'create', 'dnd', 'feats', 'trinkets', 'skills', 'srd', 'srd_spells', 'srd_upcast', 'spells', 'traits', 'options', 'pools', 'utilspell', 'srd_species', 'multiclass', 'srd_range', 'srd_items', 'items', 'skill_ai', 'team', 'camp', 'skill_fx', 'events', 'skill_nums', 'check', 'explore', 'sight', 'tactics', 'zone', 'foe', 'summon', 'light','monact', 'actions', 'lore', 'region', 'mons_extra', 'res', 'turn', 'flow', 'story', 'state'])
   vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, FO = () => G.Foe; G.newState(); G.quiet = true; G.Lore.all = true; // 공략을 아는 AI를 본다
 const f = G.S.w.fantasy, GD = G.Guild; GD.leader(f); f.leaderNew = false; f.lineup = ['archer', 'cleric', 'paladin'].map(c => { const m = GD.make(f, c, { lv: 7 }); f.mercs.push(m); return m.uid; }); G.Fantasy.syncAllies(f); f.floor = f.maxFloor = 8; f.checkpoint = f.start = 8; f.town = true; f.townT = 99;
