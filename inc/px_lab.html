@@ -23,7 +23,7 @@
 <div id="bar">
   <label>동작 <select id="anim"></select></label>
   <label>줄이기 <select id="samp"><option value="smooth">부드럽게 (평균)</option><option value="near">가장 가까운 점</option></select></label>
-  <label>색 단계 <select id="post"><option value="0">원본 색</option><option value="6">6단계</option><option value="4" selected>4단계</option><option value="3">3단계</option></select></label>
+  <label>색 단계 <select id="post"><option value="0" selected>원본 색</option><option value="6">6단계</option><option value="4">4단계</option><option value="3">3단계</option></select></label>
   <label><input type="checkbox" id="outl" checked> 1px 외곽선</label>
   <label>확대 <select id="zoom"><option>2</option><option selected>3</option><option>4</option></select></label>
   <label><input type="checkbox" id="light"> 밝은 바탕</label>
@@ -72,8 +72,8 @@ function pixelate(d, H, out) {
     const a = p[i * 4 + 3];
     if (a < 110) { p[i * 4 + 3] = 0; continue; }
     solid[i] = 1;
-    // 반투명 가장자리는 미리 곱해진 색이라 어둡다 → 알파로 나눠 되살린다
-    for (let k = 0; k < 3; k++) { let v = Math.min(255, p[i * 4 + k] * 255 / a); if (opt.post) { const s = 255 / (opt.post - 1); v = Math.round(v / s) * s; } p[i * 4 + k] = v; }
+    // getImageData는 이미 곱해지지 않은 색을 돌려준다 — 알파로 다시 나누면 가장자리가 튀는 얼룩이 된다
+    if (opt.post) for (let k = 0; k < 3; k++) { const s = 255 / (opt.post - 1); p[i * 4 + k] = Math.round(p[i * 4 + k] / s) * s; }
     p[i * 4 + 3] = 255;
   }
   if (opt.outl) {
