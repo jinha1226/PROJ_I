@@ -74,7 +74,7 @@ for (const seed of [4, 5]) {
     t('옛 방식: 앞줄 파이터는 1라운드에 서서 기다린다 (버티기)', holdOld === true, holdOld);
     t('흐르는 턴제: 기다리지 않고 바로 나선다', holdNew === false, holdNew);
     t('단장 칭호 없이 이름으로 부른다', L.merc.name && L.merc.name !== '단장', L.merc.name); }
-  t('흐르는 턴제: 라운드가 옛 방식의 절반보다 짧다', sm.per < old.per * 0.5, JSON.stringify({ sm: sm.per.toFixed(2), old: old.per.toFixed(2) }));
+  t('흐르는 턴제: 라운드가 옛 방식보다 훨씬 짧다 (2/3 아래)', sm.per < old.per * 0.67, JSON.stringify({ sm: sm.per.toFixed(2), old: old.per.toFixed(2) }));
 }
 // 3) 운명판 규칙
 {

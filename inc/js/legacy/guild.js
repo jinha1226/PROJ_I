@@ -41,7 +41,7 @@ G.Guild = (() => {
     leader(f) {
       if (!f.leader) {
         const top = f.mercs.reduce((a, m) => Math.max(a, m.lv), 1);
-        f.leader = Gd.make(f, 'dragoon', { lv: Math.max(1, top), lead: true, name: Gd.name(f), look: 0, pers: [] }); // 새 게임엔 단장 칭호가 없다 — 다른 동료처럼 이름으로 (2026-11-18)
+        f.leader = Gd.make(f, 'dragoon', { lv: Math.max(1, top), lead: true, name: '단장', look: 0, pers: [] });
         f.leader.lv = Math.max(1, top);
         f.leaderNew = true;
       }

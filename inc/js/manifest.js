@@ -8,17 +8,19 @@
   game: [
     'js/core/core', 'js/rules/data', 'js/srd/srd_gen', 'js/srd/srd_base', 'js/srd/srd_mons', 'js/core/grid',
     'js/core/juice', 'js/rules/old_stubs', 'js/legacy/fantasy', 'js/legacy/guild', 'js/legacy/create',
-    'js/rules/dnd', 'js/rules/fate', 'js/rules/feats', 'js/rules/trinkets', 'js/rules/skills',
+    'js/rules/dnd', 'js/game/fate', 'js/rules/feats', 'js/rules/trinkets', 'js/rules/skills',
     'js/srd/srd', 'js/srd/srd_spells', 'js/srd/srd_upcast', 'js/rules/spells', 'js/rules/traits', 'js/rules/options',
     'js/rules/pools', 'js/rules/utilspell', 'js/srd/srd_species', 'js/rules/multiclass', 'js/srd/srd_range', 'js/srd/srd_items',
     'js/rules/items', 'js/ai/skill_ai', 'js/rules/team', 'js/rules/camp', 'js/rules/skill_fx', 'js/rules/events', 'js/rules/skill_nums', 'js/rules/check', 'js/legacy/explore', 'js/rules/sight', 'js/legacy/tactics', 'js/rules/foe',
     'js/rules/summon', 'js/rules/light', 'js/rules/monact', 'js/rules/actions', 'js/rules/lore', 'js/legacy/region', 'js/rules/mons_extra', 'js/rules/res', 'js/legacy/turn', 'js/legacy/flow', 'js/legacy/story',
     'js/legacy/state',
+    // 새 게임 규칙 (화면 없이 — 고돗으로 옮길 부분): 층 변환 · 전투 세우기, 옛 엔진에 거는 고리는 맨 끝
+    'js/game/floor', 'js/game/encounter', 'js/game/bridge',
   ],
   // 쿼터뷰 화면: 그림 표 · DCSS 타일 지도 · pixelfx · LAYERLAB 인형 → 그리기 코드 → 새 게임 시작(app/boot — 그리기 파일 사이, 옛 game.js 자리) → 루프(app/main)
   render: [
     'js/render/artset', 'assets/dcss/map', 'js/render/pixelfx/pixelfx.bundle', 'js/render/paperdoll', 'js/render/core', 'js/render/models',
-    'js/render/bake', 'js/render/sprites', 'js/render/minidoll', 'js/app/crawl', 'js/app/boot', 'js/render/fxlayer', 'js/render/pfx',
+    'js/render/bake', 'js/render/sprites', 'js/render/minidoll', 'js/app/ui', 'js/app/pmap', 'js/app/fight', 'js/app/crawl', 'js/app/boot', 'js/render/fxlayer', 'js/render/pfx',
     'js/render/vfx', 'js/render/hdbg', 'js/render/dice', 'js/render/actors', 'js/render/props',
     'js/app/main',
   ],

@@ -82,7 +82,6 @@ G.Tactics = (() => {
     guardTarget(rt, e, list) { if (of(e).pos !== 'guard' || !list.length) return null; const w = ward(rt, e); return w ? list.reduce((a, b) => (dist(b, w) < dist(a, w) ? b : a)) : null; },
     // 버티기 · 동료 보호: 달려오는 적이 있을 때만 자리를 지키고 준비 행동을 한다. 접전이 시작되거나 적이 쏘기만 하면 나선다
     waits(rt, st, e) {
-      if (G.Turn?.smooth) return false; // 흐르는 턴제(새 게임): 모두 바로 맞붙는다 — 서서 기다리면 멈춘 것처럼 보인다 (2026-11-18)
       const pos = of(e).pos;
       if ((pos !== 'line' && pos !== 'guard') || st.round > HOLD_ROUNDS) return false;
       const foes = rt.mons.filter(o => o.hp > 0 && o.aggro), w = pos === 'guard' ? ward(rt, e) : null, fighting = rt.party.filter(p => !p.dead);

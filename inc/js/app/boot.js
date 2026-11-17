@@ -81,10 +81,10 @@ const TestFloor = (() => {
   return { build, world };
 })();
 // 탐사 층 (3단계): 지도 시제품의 생성기 · 규칙으로 한 층 (CRAWL). ?fight=test는 시험 전투 방, ?seed=숫자로 같은 층
-const FIGHT = !!q.get('fight');
+const TEST_FIGHT = !!q.get('fight'); // ?fight=test: 탐사 층 없이 시험 전투 방 하나
 G.Turn.smooth = !q.get('steps'); // 흐르는 턴제 (?steps=1이면 옛 방식: 범위 칠하기 · 차례마다 쉼)
-const W0 = FIGHT ? TestFloor.world('fight') : TestFloor.world('crawl', CRAWL.start(+q.get('seed') || ((Math.random() * 1e6) | 0)));
-if (!FIGHT) CRAWL.attach(W0.r); else CRAWL.fightTest(W0.r);
+const W0 = TEST_FIGHT ? TestFloor.world('fight') : TestFloor.world('crawl', CRAWL.start(+q.get('seed') || ((Math.random() * 1e6) | 0)));
+if (!TEST_FIGHT) CRAWL.attach(W0.r); else CRAWL.fightTest(W0.r);
 const f = W0.f, rt = () => W0.r;
 addEventListener('error', e => { document.body.dataset.err = String(e.message || e); });
 if (q.get('end')) document.addEventListener('DOMContentLoaded', () => { const d = document.createElement('div'); d.className = 'record-stub'; d.textContent = '층 끝 화면 자리 (7단계)'; document.body.append(d); });
