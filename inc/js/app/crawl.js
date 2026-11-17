@@ -218,7 +218,7 @@ const CRAWL = (() => {
     for (const [name, cnt] of units) for (let i = 0; i < cnt; i++) { const [x, y] = cells[(k++ * 3) % Math.max(1, cells.length)] || [L.x + 3, L.y]; const nm = monName(name); G.Fantasy.spawnMon(R, 1, { n: nm, ...G.D.F.mon[nm] }, x, y, false, { aggro: true, spotted: true, major: true, boss: n.type === 'boss' } /* major: 옛 G.Flow가 층 시작에 major 아닌 몬스터를 치운다 */); }
     R.turn = null; R.phase = 'explore'; G.S.w.fantasy.town = false; G.Fantasy.refreshEnts(R); if (G.Sight?.update) G.Sight.update(R);
     G.Zone.set(iso.rooms[n.id], iso); G.Tactics.snap(R); // 4×4 구역 판: 그 방 바닥을 넷씩 나눈다 (방 크기는 그대로)
-    G.Dice.party = () => R.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => R.turn?.cur || null; G.Dice.st = null;
+    G.Dice.party = () => R.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => R.turn?.cur || null; G.Dice.end();
     fighting = { n, mod, acc: 0, round: 0, cur: null, t: 0 };
     st.log.push({ t: `${n.g.label} — 전투가 시작된다.` }); say();
   }
@@ -236,7 +236,7 @@ const CRAWL = (() => {
     if (!foes.length || F.t > 600) return endFight(true);
   }
   function endFight(win) {
-    const F = fighting, n = F.n; fighting = null; G.Dice.st = null; closeTray(); R.turn = null; G.Zone.off(); zonesOff();
+    const F = fighting, n = F.n; fighting = null; G.Dice.end(); closeTray(); // 조합 효과도 여기서 끝 R.turn = null; G.Zone.off(); zonesOff();
     document.body.dataset.fights = (+(document.body.dataset.fights || 0) + 1) + (win ? 'w' : 'l'); delete document.body.dataset.fight;
     syncToRUN(); n.hostile = false;
     if (!st) { const d = document.createElement('div'); d.className = 'record-stub'; d.textContent = win ? `시험 전투: 이겼다 (${F.round}라운드)` : '시험 전투: 졌다'; $('stage').append(d); return; }
@@ -269,20 +269,20 @@ const CRAWL = (() => {
   function tray() {
     closeTray(); const S = G.Dice.st, ps = G.Dice.party(), sel = new Set(), box = document.createElement('div'); box.id = 'dicetray'; pickSw = null;
     const face = r => (r.special === 'death' ? '☠' : r.value) + (r.sym ? `<i class="sy s-${r.sym}">${G.Dice.SYM[r.sym].n}</i>` : '');
-    const Y = G.Dice.SYM, one = () => (sel.size === 1 ? [...sel][0] : null), ringSel = () => { const i = one(); return i != null && G.Dice.KINDS[S.kinds[i]].ring ? i : null; };
+    const Y = G.Dice.SYM, one = () => (sel.size === 1 ? [...sel][0] : null), ringSel = () => { const i = one(); return i != null && G.Dice.KINDS[S.kinds[i]].sym ? i : null; };
     const draw = () => {
       const row = (p, who) => { const i = who === 'spare' ? S.spare : S.alloc.get(p), r = i == null ? null : S.dice[i]; return `<button class="dp${pickSw === who ? ' on' : ''}${r && r.kind === 'doom' ? ' doom' : ''}" data-w="${who}"><span>${esc(who === 'spare' ? '예비' : p.merc?.name || '동료')}</span><b class="die k-${r ? r.kind : ''}">${r ? face(r) : '–'}</b></button>`; };
-      const cs = G.Dice.combos();
-      box.innerHTML = `<div class="hd">${S.round}라운드 주사위 <small>주사위를 눌러 고르기 → 다시 굴리기 · 비틀기(하나) · 이름 둘을 눌러 맞바꾸기</small></div>` +
+      const cs = G.Dice.combos(), ri = ringSel(), nd = dir => (ri != null && G.Dice.canNudge(ri, dir) ? '' : ' disabled');
+      box.innerHTML = `<div class="hd">${S.round}라운드 주사위 <small>주사위를 눌러 고르기 → 다시 굴리기 · 비틀기 ±1 · 이름 둘을 눌러 맞바꾸기</small></div>` +
         `<div class="dice">${S.dice.map((r, i) => `<b class="die k-${r.kind}${sel.has(i) ? ' sel' : ''}" data-d="${i}" title="${esc(G.Dice.KINDS[r.kind].n)}">${face(r)}</b>`).join('')}</div>` +
         `<div class="who">${ps.map((p, i) => row(p, String(i))).join('')}${S.spare != null ? row(null, 'spare') : ''}</div>` +
         `<div class="combo">${cs.length ? cs.map(c => `<button data-c="${c.s}" class="${S.combo === c.s ? 'on' : ''}"><i class="sy s-${c.s}">${Y[c.s].n}</i>×${c.n} ${Y[c.s].fx}<small>${Y[c.s].txt(c.n)}</small></button>`).join('') : '<span class="none">조합 없음 — 같은 기호 둘(★는 아무 기호)</span>'}</div>` +
-        `<div class="bar"><button class="rr"${S.rerolled || !sel.size ? ' disabled' : ''}>다시 굴리기</button><button class="nd" data-n="-1"${S.nudged || ringSel() == null ? ' disabled' : ''}>◀ 비틀기</button><button class="nd" data-n="1"${S.nudged || ringSel() == null ? ' disabled' : ''}>비틀기 ▶</button><button class="go">진행</button></div>`;
+        `<div class="bar"><button class="rr"${S.rerolled || !sel.size ? ' disabled' : ''}>다시 굴리기</button><button class="nd" data-n="-1"${nd(-1)}>◀ −1</button><button class="nd" data-n="1"${nd(1)}>+1 ▶</button><button class="go">진행</button></div>`;
     };
     box.onclick = ev => {
       const t = ev.target.closest('[data-d],[data-w],[data-c],.rr,.nd,.go'); if (!t) return;
       if (t.dataset.d != null) { if (S.rerolled && S.nudged) return; const i = +t.dataset.d; sel.has(i) ? sel.delete(i) : sel.add(i); }
-      else if (t.dataset.c != null) S.combo = S.combo === t.dataset.c ? null : t.dataset.c;
+      else if (t.dataset.c != null) G.Dice.setCombo(t.dataset.c);
       else if (t.classList.contains('nd')) { const i = ringSel(); if (i != null) G.Dice.nudge(i, +t.dataset.n); sel.clear(); }
       else if (t.dataset.w != null) { const w = t.dataset.w; if (pickSw == null) pickSw = w; else { if (pickSw !== w) G.Dice.swap(pickSw === 'spare' ? 'spare' : ps[+pickSw], w === 'spare' ? 'spare' : ps[+w]); pickSw = null; } }
       else if (t.classList.contains('rr')) { G.Dice.reroll([...sel]); sel.clear(); }
@@ -293,10 +293,10 @@ const CRAWL = (() => {
   }
   // 원정 전: 특수 주사위 고르기 (2개까지). ?dice=gamble,doom 이면 그대로, ?auto면 건너뛴다
   function dicePick() {
-    if (q.get('dice') != null) { G.Dice.loadout = q.get('dice').split(',').filter(k => G.Dice.KINDS[k] && k !== 'd20').slice(0, 2); return; }
+    if (q.get('dice') != null) { G.Dice.loadout = q.get('dice').split(',').filter(k => G.Dice.SPECIAL.includes(k)).slice(0, 2); return; }
     if (q.get('auto')) return;
     const box = document.createElement('div'), sel = []; box.id = 'dicepick';
-    const SP = ['gamble', 'doom', 'steady', 'twin'], faces = k => (G.Dice.KINDS[k].faces ? G.Dice.KINDS[k].faces.map(f => (f === 'death' ? '☠' : f)).join(' · ') : k === 'twin' ? 'd20 두 번 중 높은 쪽' : '');
+    const SP = G.Dice.SPECIAL, faces = k => (G.Dice.KINDS[k].faces ? G.Dice.KINDS[k].faces.map(f => (f === 'death' ? '☠' : f)).join(' · ') : k === 'twin' ? 'd20 두 번 중 높은 쪽' : '');
     const draw = () => { box.innerHTML = `<h3>특수 주사위</h3><p>둘까지 골라 간다. 라운드 주사위에 섞인다.</p>${SP.map(k => `<button data-k="${k}" class="${sel.includes(k) ? 'on' : ''}"><b class="die k-${k}">${k === 'doom' ? '☠' : k === 'gamble' ? '20' : k === 'steady' ? '10' : '↑'}</b><span>${esc(G.Dice.KINDS[k].n)}<small>${esc(faces(k))}</small></span></button>`).join('')}<button class="go">출발${sel.length ? ` (${sel.length})` : ' (보통 주사위만)'}</button>`; };
     box.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; if (b.classList.contains('go')) { G.Dice.loadout = sel.slice(); box.remove(); return; } const k = b.dataset.k, i = sel.indexOf(k); if (i >= 0) sel.splice(i, 1); else if (sel.length < 2) sel.push(k); draw(); };
     draw(); $('stage').append(box);
@@ -341,7 +341,7 @@ const CRAWL = (() => {
       R = r; const room = r.map.rooms[0], n = { id: -1, type: 'fight', g: { label: '시험 전투', name: '적', count: r.mons.length, units: [] } };
       R.turn = null; R.phase = 'explore'; G.S.w.fantasy.town = false;
       G.Zone.set(room, r.map); G.Tactics.snap(R);
-      G.Dice.party = () => R.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => R.turn?.cur || null; G.Dice.st = null;
+      G.Dice.party = () => R.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => R.turn?.cur || null; G.Dice.end();
       fighting = { n, mod: {}, acc: 0, round: 0, cur: null, t: 0 };
       dicePick(); if (q.get('auto')) autoN = 99;
     },

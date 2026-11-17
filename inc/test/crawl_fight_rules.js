@@ -84,39 +84,74 @@ for (const seed of [6, 7]) {
   t('모 아니면 도: 1이 2/3쯤', one / n > 0.62 && one / n < 0.71, one / n);
   t('죽음의 주사위: 즉사가 1/5쯤', death / n > 0.17 && death / n < 0.23, death / n);
 }
-// 4) 직업 주사위 · 비틀기 · 조합 (5-9-1)
+// 4) 직업 주사위 · 비틀기 · 조합 (5-9-1) — 직업 주사위는 SRD d20에 기호를 새긴 것
 {
   const { G } = boot(10), D = G.Dice;
   const ps = [{ hp: 10, max: 10, merc: { cls: 'dragoon' } }, { hp: 4, max: 10, merc: { cls: 'mage' } }, { hp: 8, max: 10, merc: { cls: 'cleric' } }];
   D.party = () => ps; D.loadout = []; D.newRound(1, () => 0);
   t('특수 주사위가 없으면 파티원마다 직업 주사위 + 보통 하나', ['c_war', 'c_arc', 'c_div', 'd20'].every((k, i) => D.st.kinds[i] === k), D.st.kinds.join());
-  t('직업 주사위 면에는 값과 기호가 있다', D.st.dice[0].value === 17 && D.st.dice[0].sym === 'atk');
+  t('직업은 SRD 직업으로: 정찰(드루이드) = 신성 · 궁수(레인저) = 재주꾼 · 워락 = 비전', D.dieFor({ merc: { cls: 'scout' } }) === 'c_div' && D.dieFor({ merc: { cls: 'archer' } }) === 'c_skl' && D.dieFor({ merc: { cls: 'warlock' } }) === 'c_arc');
   D.loadout = ['steady']; D.newRound(2, () => 0);
   t('특수 주사위는 예비 자리부터', D.st.kinds.join() === 'steady,c_war,c_arc,c_div', D.st.kinds.join());
   D.loadout = [];
+  // SRD d20: 1~20이 고르게, 20면은 ★ · 1면은 빈 면
+  for (const k of ['c_war', 'c_skl', 'c_arc', 'c_div']) {
+    const cnt = new Array(21).fill(0), n = 40000; for (let i = 0; i < n; i++) cnt[D.roll(k).value]++;
+    t(`${k}: 1~20이 고르게 (각 5%쯤)`, cnt.slice(1).every(c => c / n > 0.042 && c / n < 0.058) && cnt[0] === 0, cnt.slice(1).map(c => (c / n * 100).toFixed(1)).join(' '));
+    t(`${k}: 20면 ★ · 1면 빈 면`, D.face(k, 20).sym === 'wild' && D.face(k, 1).sym === null);
+  }
+  t('면에는 값과 기호가 있다 (전사 2면 = 검2)', D.roll('c_war', () => 0.05).value === 2 && D.roll('c_war', () => 0.05).sym === 'atk');
   // 조합: 검 + 검 → 합동 공격, ★는 아무 기호
   D.newRound(3, () => 0); const S = D.st;
-  S.dice[0] = { kind: 'c_war', face: 0, value: 17, sym: 'atk' }; S.dice[1] = { kind: 'c_arc', face: 1, value: 10, sym: 'def' }; S.dice[2] = { kind: 'c_div', face: 5, value: 13, sym: 'wild' };
+  S.dice[0] = D.face('c_war', 2); S.dice[1] = D.face('c_arc', 3); S.dice[2] = D.face('c_div', 20);
   const cs = D.combos();
   t('★는 아무 기호를 채운다 (검×2 · 방×2)', cs.length === 2 && cs.every(c => c.n === 2), JSON.stringify(cs));
-  S.dice[2] = { kind: 'c_div', face: 3, value: 5, sym: null };
+  S.dice[2] = D.face('c_div', 1);
   t('같은 기호가 하나뿐이면 조합 없음', D.combos().length === 0);
-  // 비틀기: 옆 면으로, 라운드당 한 번, 보통 주사위는 못 비튼다
-  D.newRound(4, () => 0);
+  // 비틀기: ±1, 라운드당 한 번, 자연 20 · 1은 못 만든다, 보통 주사위는 못 비튼다
+  D.newRound(4, () => 0.5); // 직업 주사위 모두 11
   t('보통 주사위는 비틀 수 없다', D.nudge(3, 1) === false);
-  t('비틀면 옆 면으로', D.nudge(0, 1) === true && D.st.dice[0].face === 1 && D.st.dice[0].sym === 'def');
+  t('비틀면 ±1, 기호는 그 면 것으로 (전사 11 → 12 검)', D.nudge(0, 1) === true && D.st.dice[0].value === 12 && D.st.dice[0].sym === 'atk');
   t('비틀기는 라운드당 한 번', D.nudge(0, 1) === false);
-  t('거꾸로 비틀면 고리를 돈다', (D.newRound(5, () => 0), D.nudge(0, -1)) && D.st.dice[0].face === 5);
-  // 효과: 방진은 AC +2, 기도는 가장 다친 사람을 회복
+  D.newRound(5, () => 0.5); D.st.dice[0] = D.face('c_war', 19); D.st.dice[1] = D.face('c_arc', 2);
+  t('비틀어 자연 20 · 자연 1을 만들 수 없다', D.nudge(0, 1) === false && D.nudge(1, -1) === false && !D.st.nudged);
+  t('20 · 1에서 비켜 나는 것은 된다', (D.st.dice[2] = D.face('c_div', 20), D.nudge(2, -1)) && D.st.dice[2].value === 19);
+  // 맞바꾼 배분은 비틀기 · 다시 굴리기에도 그대로
+  D.newRound(6, () => 0.5); D.swap(ps[0], ps[2]); const a0 = [...D.st.alloc.entries()].map(([p, i]) => ps.indexOf(p) + ':' + i).join();
+  D.nudge(1, 1); const a1 = [...D.st.alloc.entries()].map(([p, i]) => ps.indexOf(p) + ':' + i).join();
+  D.reroll([0, 1, 2]); const a2 = [...D.st.alloc.entries()].map(([p, i]) => ps.indexOf(p) + ':' + i).join();
+  t('맞바꾼 배분은 비틀어도 그대로', a0 === a1, [a0, a1]);
+  t('맞바꾼 배분은 다시 굴려도 그대로', a0 === a2, [a0, a2]);
+  // 끈 조합은 굴림이 바뀌어도 꺼진 채
+  D.newRound(7, () => 0); D.st.dice[0] = D.face('c_war', 2); D.st.dice[1] = D.face('c_arc', 3); D.st.dice[2] = D.face('c_div', 20); D.st.comboUser = false; D.recombo();
+  const on = D.st.combo; D.setCombo(on);
+  t('조합을 누르면 꺼진다', on && D.st.combo === null);
+  D.nudge(1, 1); D.reroll([3]);
+  t('끈 조합은 비틀고 다시 굴려도 꺼진 채', D.st.combo === null, D.st.combo);
+  // 효과: 방진은 AC를 그 라운드만 올린다 (새 라운드 · 전투 끝에 지워짐), 기도는 실제로 찬 만큼만
   const { G: G2 } = boot(11), D2 = G2.Dice, r2 = G2.Fantasy.rt(G2.S.w.fantasy), team = r2.party.filter(p => p.hp > 0);
   D2.party = () => team; D2.loadout = []; D2.newRound(1, () => 0); const S2 = D2.st;
-  S2.dice = team.map(() => ({ kind: 'c_war', face: 1, value: 11, sym: 'def' })).concat([{ kind: 'd20', value: 10, sym: null }]);
+  S2.dice = team.map(() => D2.face('c_war', 3)).concat([{ kind: 'd20', value: 10, sym: null }]);
   const ac0 = G2.Dnd.ac(team[0]); S2.combo = 'def'; D2.fire();
   t('방진: 아군 AC가 오른다', G2.Dnd.ac(team[0]) === ac0 + (team.length >= 3 ? 3 : 2), [ac0, G2.Dnd.ac(team[0])]);
-  team[1].hp = 1; S2.dice = team.map(() => ({ kind: 'c_div', face: 0, value: 15, sym: 'holy' })).slice(0, 2).concat(team.slice(2).map(() => ({ kind: 'd20', value: 3, sym: null })));
-  S2.combo = 'holy'; D2.fire();
-  t('기도: 가장 다친 사람이 회복', team[1].hp >= 5, team[1].hp);
-  t('AI 추천: 다친 사람이 있으면 기도', D2.pickCombo() === 'holy');
+  G2.S.runTime += 100; // 탐사 중 시계가 멈췄다 다시 가도 — 효과는 시계가 아니라 라운드로 끝난다
+  t('방진은 시계가 흘러도 그 라운드 동안 남는다', G2.Dnd.ac(team[0]) > ac0);
+  D2.newRound(2, () => 0);
+  t('새 라운드가 되면 방진이 지워진다', G2.Dnd.ac(team[0]) === ac0, [ac0, G2.Dnd.ac(team[0])]);
+  D2.st.dice = team.map(() => D2.face('c_war', 3)).concat([{ kind: 'd20', value: 10, sym: null }]); D2.st.combo = 'def'; D2.fire(); D2.end();
+  t('전투가 끝나면 방진이 지워진다 (다음 전투로 안 넘어간다)', G2.Dnd.ac(team[0]) === ac0 && D2.st === null);
+  D2.newRound(3, () => 0);
+  team.forEach(p => { p.hp = p.max; }); team[1].hp = 1; D2.st.dice = team.map((_, i) => (i < 2 ? D2.face('c_div', 2) : D2.face('c_war', 3))).concat([D2.face('c_war', 7)]);
+  t('AI 추천: 다친 사람이 있으면 기도 (방진도 있을 때)', D2.combos().length === 2 && D2.pickCombo() === 'holy', JSON.stringify(D2.combos()));
+  team[1].hp = team[1].max;
+  t('AI 추천: 다친 사람이 없으면 기도 말고 다른 조합', D2.pickCombo() === 'def', D2.pickCombo());
+  team[1].hp = team[1].max - 1; const hp0 = team.map(p => p.hp); D2.st.combo = 'holy'; D2.fire();
+  t('기도: 체력 최대를 넘지 않고, 가득 찬 사람은 그대로', team.every(p => p.hp <= p.max) && team[1].hp === team[1].max && team.every((p, i) => i === 1 || p.hp === hp0[i]), team.map(p => p.hp + '/' + p.max).join());
+  // 직업 주사위 20 = 자연 20 → 치명타 (SRD)
+  spawn(G2, r2, ['고블린 졸개']); const mon = r2.mons.find(m => m.hp > 0);
+  D2.newRound(4, () => 0); D2.st.dice[D2.st.alloc.get(team[0])] = D2.face(D2.st.kinds[D2.st.alloc.get(team[0])] === 'd20' ? 'c_war' : D2.st.kinds[D2.st.alloc.get(team[0])], 20); D2.st.ready = true;
+  G2.Dnd.adv = () => 0; const hit = G2.Dnd.attack(team[0], mon);
+  t('직업 주사위 20은 자연 20 — 치명타', hit.crit === true && hit.nat === 20, JSON.stringify({ crit: hit.crit, nat: hit.nat }));
 }
 console.log(`crawl_fight_rules: 통과 ${ok} · 실패 ${bad}`);
 process.exit(bad ? 1 : 0);
