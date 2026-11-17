@@ -36,16 +36,7 @@ t('바드 기본 공격 실패 효과는 약화', G.D.F.allies.bard.saveCond ===
 }
 // 자동 강화는 기본 꺼짐: 효과 없는 단계에 금화를 쓰지 않는다
 t('강화 단계는 없다 (SRD 마법 물건만)', !GD.autoForge && !GD.upgrade && !GD.gear);
-// 전우 연계기: 피해 배율 없음
-{
-  const m1 = GD.make(f, 'dragoon', { lv: 3 }), m2 = GD.make(f, 'cleric', { lv: 3 });
-  f.bonds = { [m1.uid < m2.uid ? `${m1.uid}-${m2.uid}` : `${m2.uid}-${m1.uid}`]: 999 };
-  m1.pers = []; m2.pers = [];
-  const rt = { allies: [], fx: [], chat: [] };
-  t('전우 판정', G.Bond.rel(f, m1, m2) === 'friend');
-  let k = null; try { k = G.Bond.linked(f, rt, { merc: m1, x: 0, y: 0 }, { merc: m2, x: 1, y: 0 }); } catch (e) { k = 'err ' + e.message; }
-  t('전우 연계기 피해 ×1', k === 1, k);
-}
+// (2026-11-17) 전우 연계기 검사는 옛 관계(bonds) 모듈과 함께 old로 갔다
 // 다혈질은 선제권에 수치를 더하지 않는다
 t('turn.js에 다혈질 +3 없음', !/Persona\.has\(e\.merc, 'hot'\) \? 3/.test(fs.readFileSync(LOAD.jsPath('turn'), 'utf8')));
 // 못 읽은 저장은 따로 남는다

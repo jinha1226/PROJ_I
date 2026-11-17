@@ -9,15 +9,15 @@ const base = p => p.split('/').pop();
 const throws = f => { try { f(); return false; } catch (e) { return true; } };
 
 // 정리 전 index.html · run.html에서 뽑아 굳힌 목록
-const OLD_GAME = ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'season', 'fantasy', 'guild', 'create', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'srd_spells', 'srd_upcast', 'spells', 'traits', 'options', 'pools', 'utilspell', 'srd_species', 'multiclass', 'srd_range', 'srd_items', 'items', 'skill_ai', 'team', 'camp', 'skill_fx', 'events', 'npc', 'tutorial', 'skill_nums', 'command', 'expedition', 'mission', 'explore', 'banter', 'lines_danger', 'sight', 'tactics', 'foe', 'summon', 'light', 'monact', 'actions', 'lore', 'region', 'scn_astral', 'tut_map', 'res', 'turn', 'flow', 'story', 'state'];
-const OLD_ISO = ['core', 'models', 'bake', 'sprites', 'minidoll', 'game', 'fxlayer', 'pfx', 'vfx', 'hdbg', 'dice', 'actors', 'props', 'sheet', 'town', 'hud', 'cmdui', 'codex', 'war', 'create', 'main'];
+const OLD_GAME = ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'old_stubs', 'fantasy', 'guild', 'create', 'dnd', 'feats', 'trinkets', 'skills', 'srd', 'srd_spells', 'srd_upcast', 'spells', 'traits', 'options', 'pools', 'utilspell', 'srd_species', 'multiclass', 'srd_range', 'srd_items', 'items', 'skill_ai', 'team', 'camp', 'skill_fx', 'events', 'skill_nums', 'check', 'explore', 'sight', 'tactics', 'foe', 'summon', 'light', 'monact', 'actions', 'lore', 'region', 'mons_extra', 'res', 'turn', 'flow', 'story', 'state']; // 2026-11-17 2단계: 옛 흐름 13개를 old로, check · old_stubs · mons_extra를 그 자리에
+const OLD_ISO = ['core', 'models', 'bake', 'sprites', 'minidoll', 'boot', 'fxlayer', 'pfx', 'vfx', 'hdbg', 'dice', 'actors', 'props', 'main']; // 2026-11-17 2단계: 옛 화면(legacy/iso)을 빼고 game 자리에 app/boot, 끝에 app/main
 const OLD_RUN = ['core', 'data', 'combat', 'gen', 'rules', 'layout', 'draw', 'ui'];
 
 const M = require('../js/manifest.js'), L = require('./_load.js');
 
 t('game 순서가 옛 index.html과 같다', eq(M.game.map(base), OLD_GAME), JSON.stringify(M.game.map(base)));
 t('render 앞 넷은 artset · dcss map · pixelfx · paperdoll', eq(M.render.slice(0, 4).map(base), ['artset', 'map', 'pixelfx.bundle', 'paperdoll']));
-t('render 나머지 순서가 옛 iso 목록과 같다', eq(M.render.slice(4).map(base), OLD_ISO));
+t('render 나머지 순서 (그리기 → app/boot → 그리기 → app/main)', eq(M.render.slice(4).map(base), OLD_ISO));
 t('explore 순서가 옛 run.html과 같다', eq(M.explore.map(base), OLD_RUN));
 t('fixed는 render 앞 넷 (캐시를 쓰는 큰 정적 파일)', eq(M.fixed, M.render.slice(0, 4)));
 t('unused는 sfx 하나', eq(M.unused.map(base), ['sfx']));
@@ -35,8 +35,7 @@ t('jsPath("core")는 game의 core (iso · run의 core가 아님)', L.jsPath('cor
 t('jsPath("iso/core")는 render의 core', L.jsPath('iso/core') === path.join(ROOT, M.render.find(p => p.endsWith('/core')) + '.js'));
 t('jsPath("run/gen")은 explore의 gen', L.jsPath('run/gen') === path.join(ROOT, M.explore.find(p => p.endsWith('/gen')) + '.js'));
 t('jsPath("sfx")는 unused의 sfx', L.jsPath('sfx') === path.join(ROOT, M.unused[0] + '.js'));
-t('jsPath("legacy/create")는 legacy의 create (legacy/iso/create가 아님)', L.jsPath('legacy/create') === path.join(ROOT, 'js/legacy/create.js'), L.jsPath('legacy/create'));
-t('jsPath("legacy/iso/create")는 legacy/iso의 create', L.jsPath('legacy/iso/create') === path.join(ROOT, 'js/legacy/iso/create.js'));
+t('jsPath("legacy/create")는 legacy의 create', L.jsPath('legacy/create') === path.join(ROOT, 'js/legacy/create.js'), L.jsPath('legacy/create'));
 t('jsPath("pixelfx/pixelfx.bundle")은 render의 묶음', L.jsPath('pixelfx/pixelfx.bundle') === path.join(ROOT, 'js/render/pixelfx/pixelfx.bundle.js'));
 t('jsPath("core/sfx")는 unused의 sfx', (() => { try { return L.jsPath('core/sfx') === path.join(ROOT, 'js/core/sfx.js'); } catch (e) { return false; } })());
 t('jsPath("render/core")는 render의 core', L.jsPath('render/core') === path.join(ROOT, 'js/render/core.js'));

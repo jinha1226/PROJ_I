@@ -10,7 +10,8 @@
 | `ai/` | 유틸리티 AI (기술 고르기) |
 | `explore/` | 탐사 지도 시제품 (`run.html`): 난수 · 수치표 · 던전 생성 · 탐사 규칙 · 임시 전투 · 종이 지도 그리기 · 화면 |
 | `render/` | 쿼터뷰 화면 그리기 · LAYERLAB 인형(`paperdoll.js`) · 그림 표(`artset.js`) · pixelfx 효과 |
-| `legacy/` | 옛 본 게임(용병단) 흐름 — 길드 · 마을 · 튜토리얼 · 원정 · 옛 턴 진행 · 저장 · 관계 · 성격 · 시즌 · 지역 · 옛 화면(`legacy/iso/`). **아직 불린다.** 새 게임이 대신하게 되는 대로 단계마다 `inc/old/`로 간다 (설계: `docs/superpowers/specs/2026-11-17-map-quarterview-merge-design.md` 8절) |
+| `legacy/` | 옛 본 게임(용병단) 중 아직 쓰는 것 — 지형 · 길드 · 단장 만들기 · 탐험 · 진형 · 지역 · 옛 턴 · 옛 진행 · 이야기 · 저장. 남길 규칙 시험과 그리기가 아직 기댄다. 3 · 4단계가 대신하면 `inc/old/`로. 2026-11-17에 옮긴 것은 `inc/old/2026-11-17/README.md` |
+| `app/` | 새 게임 시작(`boot.js` — 시험 층 · 파티, 옛 game.js에서 그리기에 필요한 부분만)과 그리기 루프(`main.js`) |
 
 새 파일을 더하면 `manifest.js`의 알맞은 자리에 넣고, `node test/manifest_rules.js`의 굳힌 목록은 고치지 않는다(옛 순서 비교용) — 대신 그 시험의 비교를 새 항목만큼 넓힌다.
 

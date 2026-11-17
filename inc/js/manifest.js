@@ -7,24 +7,20 @@
   // 게임 규칙 · 상태 (옛 index.html 첫 목록 순서)
   game: [
     'js/core/core', 'js/rules/data', 'js/srd/srd_gen', 'js/srd/srd_base', 'js/srd/srd_mons', 'js/core/grid',
-    'js/core/juice', 'js/legacy/season', 'js/legacy/fantasy', 'js/legacy/guild', 'js/legacy/create', 'js/legacy/persona',
-    'js/rules/dnd', 'js/rules/feats', 'js/rules/trinkets', 'js/legacy/bonds', 'js/legacy/report', 'js/rules/skills',
+    'js/core/juice', 'js/rules/old_stubs', 'js/legacy/fantasy', 'js/legacy/guild', 'js/legacy/create',
+    'js/rules/dnd', 'js/rules/feats', 'js/rules/trinkets', 'js/rules/skills',
     'js/srd/srd', 'js/srd/srd_spells', 'js/srd/srd_upcast', 'js/rules/spells', 'js/rules/traits', 'js/rules/options',
     'js/rules/pools', 'js/rules/utilspell', 'js/srd/srd_species', 'js/rules/multiclass', 'js/srd/srd_range', 'js/srd/srd_items',
-    'js/rules/items', 'js/ai/skill_ai', 'js/rules/team', 'js/rules/camp', 'js/rules/skill_fx', 'js/rules/events',
-    'js/legacy/npc', 'js/legacy/tutorial', 'js/rules/skill_nums', 'js/legacy/command', 'js/legacy/expedition', 'js/legacy/mission',
-    'js/legacy/explore', 'js/legacy/banter', 'js/legacy/lines_danger', 'js/rules/sight', 'js/legacy/tactics', 'js/rules/foe',
-    'js/rules/summon', 'js/rules/light', 'js/rules/monact', 'js/rules/actions', 'js/rules/lore', 'js/legacy/region',
-    'js/legacy/scn_astral', 'js/legacy/tut_map', 'js/rules/res', 'js/legacy/turn', 'js/legacy/flow', 'js/legacy/story',
+    'js/rules/items', 'js/ai/skill_ai', 'js/rules/team', 'js/rules/camp', 'js/rules/skill_fx', 'js/rules/events', 'js/rules/skill_nums', 'js/rules/check', 'js/legacy/explore', 'js/rules/sight', 'js/legacy/tactics', 'js/rules/foe',
+    'js/rules/summon', 'js/rules/light', 'js/rules/monact', 'js/rules/actions', 'js/rules/lore', 'js/legacy/region', 'js/rules/mons_extra', 'js/rules/res', 'js/legacy/turn', 'js/legacy/flow', 'js/legacy/story',
     'js/legacy/state',
   ],
-  // 쿼터뷰 화면: 그림 표 · DCSS 타일 지도 · pixelfx · LAYERLAB 인형, 그다음 화면 코드 (옛 index.html 나머지 순서)
+  // 쿼터뷰 화면: 그림 표 · DCSS 타일 지도 · pixelfx · LAYERLAB 인형 → 그리기 코드 → 새 게임 시작(app/boot — 그리기 파일 사이, 옛 game.js 자리) → 루프(app/main)
   render: [
     'js/render/artset', 'assets/dcss/map', 'js/render/pixelfx/pixelfx.bundle', 'js/render/paperdoll', 'js/render/core', 'js/render/models',
-    'js/render/bake', 'js/render/sprites', 'js/render/minidoll', 'js/legacy/iso/game', 'js/render/fxlayer', 'js/render/pfx',
-    'js/render/vfx', 'js/render/hdbg', 'js/render/dice', 'js/render/actors', 'js/render/props', 'js/legacy/iso/sheet',
-    'js/legacy/iso/town', 'js/legacy/iso/hud', 'js/legacy/iso/cmdui', 'js/legacy/iso/codex', 'js/legacy/iso/war', 'js/legacy/iso/create',
-    'js/legacy/iso/main',
+    'js/render/bake', 'js/render/sprites', 'js/render/minidoll', 'js/app/boot', 'js/render/fxlayer', 'js/render/pfx',
+    'js/render/vfx', 'js/render/hdbg', 'js/render/dice', 'js/render/actors', 'js/render/props',
+    'js/app/main',
   ],
   // 탐사 지도 시제품 (run.html 순서)
   explore: [

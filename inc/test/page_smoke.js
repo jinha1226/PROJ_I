@@ -22,12 +22,17 @@ function findChrome() {
 // 표지: dom 문자열(스크립트 본문은 뺀 것) → 실패 이유 목록 (빈 목록이면 통과). 표지는 2026-11-17 지금 상태의 dump에서 골랐다.
 const count = (s, re) => (s.match(re) || []).length;
 const strip = d => d.replace(/<script[^>]*>[\s\S]*?<\/script>/g, '');
+const game = (d, ents) => [
+  !/data-floor="ready"/.test(d) && '층을 다 굽지 못했다 (data-floor)',
+  !new RegExp(`data-ents="${ents}"`).test(d) && `인물 ${(d.match(/data-ents="(\d+)"/) || [])[1] ?? '?'}명 (${ents}명이어야)`,
+  /data-err="/.test(d) && `JS 오류: ${(d.match(/data-err="([^"]*)"/) || [])[1]}`,
+].filter(Boolean);
 const PAGES = {
-  'index.html': d => [
-    !/<canvas id="c" width="\d+"/.test(d) && 'canvas#c 크기가 안 잡혔다 (iso/core가 안 돌았다)',
-    !/<button id="spd"/.test(d) && '배속 버튼이 없다 (iso 화면 코드가 안 돌았다)',
-    /로 열어 주세요/.test(d) && 'file:// 안내가 떴다',
-  ].filter(Boolean),
+  // 새 게임 껍데기 (2026-11-17 2단계): 시험 층에 파티 셋 · ?fight=test는 적 셋 더 · 폰 크기 · DCSS 인형 모드
+  'index.html': d => game(d, 3),
+  'index.html?fight=test': d => game(d, 6),
+  'index.html?art=dcss': d => game(d, 3),
+  'index.html?phone=1': d => game(d, 3),
   'run.html': d => [
     count(d, /class="cand"/g) !== 5 && `후보 카드 ${count(d, /class="cand"/g)}장 (5장이어야)`,
   ].filter(Boolean),
@@ -45,6 +50,7 @@ const PAGES = {
 const NOCACHE = ['/js/render/artset.js', '/assets/dcss/map.js', '/js/render/pixelfx/pixelfx.bundle.js', '/js/render/paperdoll.js'];
 const REQS = {
   'index.html': urls => [
+    urls.some(u => u.startsWith('/js/legacy/iso/')) && '옛 화면 파일(legacy/iso)을 불러온다',
     !urls.some(u => /^\/js\/manifest\.js\?v=/.test(u)) && '목록 파일(js/manifest.js)을 ?v= 없이 받는다',
     ...NOCACHE.filter(f => !urls.includes(f)).map(f => `${f}를 ?v 없이 받지 않는다`),
   ].filter(Boolean),
@@ -62,7 +68,7 @@ function serve() {
   return new Promise(ok => srv.listen(0, '127.0.0.1', () => ok({ srv, miss, seen, url: `http://127.0.0.1:${srv.address().port}` })));
 }
 // 매 프레임 그리는 페이지(px_lab)에서 헤드리스 크롬이 가끔 가상 시간을 못 끝내고 멈춘다 — 45초에 끊고, 빈 DOM이면 한 번 더.
-const dump1 = (chrome, url) => new Promise(ok => execFile(chrome, ['--no-sandbox', '--headless', '--disable-gpu', '--hide-scrollbars', '--window-size=1100,900', '--virtual-time-budget=8000', '--dump-dom', url],
+const dump1 = (chrome, url) => new Promise(ok => execFile(chrome, ['--no-sandbox', '--headless', '--disable-gpu', '--hide-scrollbars', `--window-size=${/phone=1/.test(url) ? '412,900' : '1100,900'}`, '--virtual-time-budget=8000', '--dump-dom', url],
   { maxBuffer: 64 << 20, timeout: 45000 }, (e, out) => ok(out || '')));
 const dump = async (chrome, url) => (await dump1(chrome, url)) || dump1(chrome, url);
 
