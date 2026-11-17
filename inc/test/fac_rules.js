@@ -1,9 +1,10 @@
 'use strict';
 // 명성 · 건물: node test/fac_rules.js
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx);
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx);
 const G = ctx.G, GD = G.Guild, F = G.Fantasy; let ok = 0, bad = 0; const t = (n, c, x = '') => { if (c) ok++; else { bad++; console.log('  실패:', n, x); } };
 G.quiet = true; G.newState(); const f = G.S.w.fantasy; f.gold = 1e6; f.fameAll = 0; f.maxFloor = 40;
 t('처음은 무명', GD.rank(f).n === '무명');

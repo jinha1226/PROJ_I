@@ -2,6 +2,7 @@
 // SRD 원본 데이터 → 게임이 읽는 js/srd_gen.js : node test/gen_srd_clean.js 뒤에 node test/gen_srd_base.js (DESIGN.md 108)
 // 손으로 고치지 않는다. 틀리면 data/srd521/PATCHES.json을 PDF 기준으로 고친다.
 const fs = require('fs'), path = require('path'), C = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'srd521', 'clean.json'), 'utf8'));
+const LOAD = require('./_load.js');
 const ix = o => o?.index, cats = q => (q.equipment_categories || []).map(ix), GP = { gp: 1, sp: 0.1, cp: 0.01 }, gp = c => (c ? +(c.quantity * GP[c.unit]).toFixed(2) : 0), txt = d => (Array.isArray(d) ? d.join('\n') : d) || '';
 const PROP = { finesse: 'finesse', light: 'light', thrown: 'thrown', 'two-handed': 'two', versatile: 'versatile', ammunition: 'ammo', loading: 'loading', heavy: 'heavy', reach: 'reach' };
 const W = {}, A = {}, GEAR = {}; let SHIELD = null;
@@ -31,4 +32,4 @@ const out = {
 // 직업 레벨 표 (PDF에서 뽑은 DB)
 const CL = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'srd521', 'db', 'class_level.json'), 'utf8')); out.CLASS_LV = {}; for (const r of CL) (out.CLASS_LV[r.class.toLowerCase()] = out.CLASS_LV[r.class.toLowerCase()] || {})[r.level] = JSON.parse(r.columns);
 const s = `'use strict';\n// 자동 생성 (test/gen_srd_base.js) · SRD 5.2.1 · CC-BY-4.0 · 정리 데이터 5e-bits/5e-srd-api (MIT) · 손으로 고치지 말 것\nG.SRD_RAW = ${JSON.stringify(out)};\n`;
-fs.writeFileSync(path.join(__dirname, '..', 'js', 'srd_gen.js'), s); console.log('srd_gen.js', Math.round(s.length / 1024) + 'KB', Object.fromEntries(Object.entries(out).map(([k, v]) => [k, Object.keys(v).length])));
+fs.writeFileSync(LOAD.jsPath('srd_gen'), s); console.log('srd_gen.js', Math.round(s.length / 1024) + 'KB', Object.fromEntries(Object.entries(out).map(([k, v]) => [k, Object.keys(v).length])));

@@ -2,13 +2,14 @@
 // 지시에 따라 움직임이 달라지나: node test/move_lab.js <파티> <세팅번호 0|1|2> [시드] [분]  → 직업별 한 줄 JSON
 // 차례마다 옮긴 칸 · 차례 끝의 적과 거리 · 제자리 비율 · 첫 공격까지의 라운드 · 표적이 후열이었던 비율을 잰다.
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const crew = process.argv[2].split(','), preset = +process.argv[3] || 0, seed = +process.argv[4] || 1, MIN = +process.argv[5] || 12;
 const M = Object.create(Math); let s0 = seed * 7919 >>> 0;
 M.random = () => { s0 = (s0 + 0x6D2B79F5) >>> 0; let t = s0; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const ctx = { console, Math: M, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
-const list = JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'));
-for (const n of list) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+const list = LOAD.NAMES.game;
+for (const n of list) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G; G.newState();
 const f = G.S.w.fantasy, GD = G.Guild, L = GD.leader(f); f.leaderNew = false; f.autoTr = false; L.lv = 7; f.autoParty = false;
 f.lineup = crew.map(c => { const m = GD.make(f, c, { lv: 7 }); f.mercs.push(m); return m.uid; });

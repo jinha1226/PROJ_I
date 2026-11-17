@@ -1,9 +1,10 @@
 'use strict';
 // 사건 시스템 규칙 (EVENT_SYSTEM_DIRECTION.md 8절의 시험 시나리오): node test/event_rules.js
 const fs = require('fs'), vm = require('vm'), path = require('path'); const ROOT = path.join(__dirname, '..');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(ROOT + '/test/party_lab.js', 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(`${ROOT}/js/${n}.js`, 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, GD = G.Guild, F = G.Fantasy, E = G.Event, ST = G.Story; G.quiet = true; G.Foe.retreatOn = false;
 let ok = 0, bad = 0; const t = (n, c, x = '') => { if (c) ok++; else { bad++; console.log('실패:', n, x); } };
 function setup(cls, opt = {}) {
@@ -67,7 +68,7 @@ for (let i = 0; i < 40; i++) { const S = setup(crew, { pol: 'careful', seed: 100
 { G.quiet = false; const q = setup(crew); const r = q.rt.map.rooms[1]; r.ri = 1; q.f.askMeet = true; q.f.saga = []; ST.play(q.f, q.rt, null, r, 'event', E.BY.oldcamp); let n = 0; while (q.rt.scene && n++ < 200) ST.tick(q.f, q.rt, 0.5); G.quiet = true; const L = q.f.ev.log[q.f.ev.log.length - 1]; t('시간이 지나면 자동으로 기록', L.how === 'auto' && L.id === 'oldcamp', L.how); t('일지에 방침 표시', q.f.saga.some(x => x.s.includes('(방침)')), q.f.saga.map(x => x.s)); t('기본값이 남는다', !!L.def);
   G.quiet = false; const p = setup(crew); const r2 = p.rt.map.rooms[1]; r2.ri = 1; p.f.askMeet = true; p.f.saga = []; ST.play(p.f, p.rt, null, r2, 'event', E.BY.oldcamp); n = 0; while (p.rt.scene && n++ < 200) { if (p.rt.ask) ST.answer(p.rt, 2); ST.tick(p.f, p.rt, 0.5); } G.quiet = true; const L2 = p.f.ev.log[p.f.ev.log.length - 1]; t('직접 고르면 pick', L2.how === 'pick' && L2.opt === '지나간다'); t('직접 고른 건 표시 없음', !p.f.saga.some(x => x.s.includes('(방침)'))); }
 // ── 방 태그 ──
-{ const fsrc = fs.readFileSync(ROOT + '/js/iso/bake.js', 'utf8'); for (const k of Object.keys(E.NAMES)) { t(`${k}: 가구`, new RegExp(`\\b${k}\\(a, b, h\\)`).test(fsrc)); t(`${k}: 바닥색`, new RegExp(`\\b${k}: \\[`).test(fsrc)); }
+{ const fsrc = fs.readFileSync(LOAD.jsPath('iso/bake'), 'utf8'); for (const k of Object.keys(E.NAMES)) { t(`${k}: 가구`, new RegExp(`\\b${k}\\(a, b, h\\)`).test(fsrc)); t(`${k}: 바닥색`, new RegExp(`\\b${k}: \\[`).test(fsrc)); }
   const c = (rows) => ({ w: rows[0].length, h: rows.length, c: rows.join('').split('') }), R = { x: 2, y: 1, w: 3, h: 3 };
   t('입구 하나', E.exits(c(['#######', '##...##', '##...##', '##...##', '###.###', '###.###', '#######']), R) === 1, E.exits(c(['#######', '##...##', '##...##', '##...##', '###.###', '###.###', '#######']), R)); t('입구 둘', E.exits(c(['#######', '##...##', '##...##', '.....##', '###.###', '###.###', '#######']), R) === 2);
   const S = setup(crew, { seed: 3 }), rr = S.rt.map.rooms; t('모든 방에 태그', rr.every(r => r.tags && E.NAMES[r.tags[0]])); const p = S.rt.hero; p.x = rr[1].cx; p.y = rr[1].cy; t('서 있는 방 이름', E.nameAt(S.rt, p) === E.NAMES[rr[1].tags[0]]); t('복도에선 이름 없음', (() => { p.x = -5; p.y = -5; return E.nameAt(S.rt, p) === ''; })()); const W = setup(crew, { front: 'swamp' }); t('늪에 막다른 방 태그 없음', W.rt.map.rooms.every(r => !r.tags.includes('deadend'))); }

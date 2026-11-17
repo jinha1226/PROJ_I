@@ -1,9 +1,10 @@
 'use strict';
 // SRD 물건 연결: node test/item_rules.js
 const fs = require('fs'), vm = require('vm'), path = require('path'), ROOT = path.join(__dirname, '..');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', n + '.js'), 'utf8'), ctx);
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx);
 const G = ctx.G, F = G.Fantasy, GD = G.Guild, It = G.Items, D = G.D; let ok = 0, bad = 0; const t = (n, c, x = '') => { if (c) ok++; else { bad++; console.log('  실패:', n, x); } };
 const db = f => JSON.parse(fs.readFileSync(path.join(ROOT, 'data/srd521/db', f + '.json'), 'utf8'));
 const arts = new Set(Object.values(D.ARTS).map(a => a.en)), use = new Set(Object.keys(It.USE)), sell = new Set(It.SELL_DB.map(q => q.en)), VAR = ['Armor, +1, +2, or +3', 'Shield, +1, +2, or +3', 'Weapon, +1, +2, or +3', 'Wand of the War Mage, +1, +2, or +3', 'Potions of Healing', 'Spell Scroll', 'Dragon Orb', 'Stone of Good Luck (Luckstone)'];

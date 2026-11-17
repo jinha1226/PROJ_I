@@ -2,9 +2,10 @@
 // 사건 빈도 · 전투 길이 측정 (EVENT_SYSTEM_FOLLOWUPS.md 2.2 · 5.2): node test/event_freq.js [세력] [레벨] [시즌] [원정] [방침]
 // 시간은 ×1 게임 시간(초). 선택창은 측정 중 바로 넘어가므로 사건당 묻기 시간을 더해 비율을 낸다.
 const fs = require('fs'), vm = require('vm'), path = require('path'); const ROOT = path.join(__dirname, '..');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(ROOT + '/test/party_lab.js', 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(`${ROOT}/js/${n}.js`, 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, GD = G.Guild, F = G.Fantasy, E = G.Event; G.quiet = true; G.Foe.retreatOn = !process.env.NORET; if (process.env.HPK) F.MON_HP_K = +process.env.HPK;
 const [fr0, LV0, SN0, RN0, POL] = process.argv.slice(2), front = !fr0 || fr0 === 'def' ? Object.keys(G.D.F.factions).find(k => k !== 'swamp') : fr0, LV = +LV0 || 8, SN = +SN0 || 6, RN = +RN0 || 6, ASK_T = 4;
 const q = (a, p) => { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(s.length * p))]; };

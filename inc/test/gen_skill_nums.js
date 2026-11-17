@@ -2,9 +2,10 @@
 // 기술 수치표 만들기: node test/gen_skill_nums.js → js/skill_nums.js
 // 설명을 손으로 옮기지 않는다. 실제 기술 코드를 돌려 굴린 주사위 · 내성 · 상태를 기록하므로, 코드를 고치면 다시 돌리면 된다.
 const fs = require('fs'), vm = require('vm'), path = require('path'); const ROOT = path.join(__dirname, '..');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(ROOT + '/test/party_lab.js', 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) if (n !== 'skill_nums') vm.runInContext(fs.readFileSync(`${ROOT}/js/${n}.js`, 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) if (n !== 'skill_nums') vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, D = G.D, GD = G.Guild, F = G.Fantasy, DN = G.Dnd; G.quiet = true; G.Foe.retreatOn = false;
 const LEVELS = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 20];
 const classOf = k => { for (const c in D.MPOOL) if (D.MPOOL[c].includes(k)) return c; const L = D.MSKILLS[k]?.lv; if (L && typeof L === 'object') return Object.keys(L)[0]; for (const a in D.ADV) if (D.ADV[a].sig?.includes(k)) return D.ADV[a].base; return null; };
@@ -35,6 +36,6 @@ for (const k of Object.keys(G.Skill.SK)) {
   }
   const vals = Object.values(per); if (!vals.length) { none.push(k); continue; } n++; const same = vals.every(v => JSON.stringify(v) === JSON.stringify(vals[0])) && vals.length === classes.length; out[k] = same ? { '*': vals[0] } : per;
 }
-fs.writeFileSync(`${ROOT}/js/skill_nums.js`, `'use strict';\n// test/gen_skill_nums.js가 만든다. 손으로 고치지 않는다. { 기술: { 직업 또는 *: [[레벨부터, { d: 주사위, t: 피해 종류, sv: 내성, c: 상태 }]] } }. 고정 수정치는 들어 있지 않다\nG.SkillNum = ${JSON.stringify(out)};\nG.SkillNum_at = (k, cls, lv) => { const P = G.SkillNum[k]; if (!P) return null; const L = P['*'] || P[cls] || Object.values(P)[0]; let e = L[0][1]; for (const q of L) if (q[0] <= lv) e = q[1]; return e; };\n`);
+fs.writeFileSync(LOAD.jsPath('skill_nums'), `'use strict';\n// test/gen_skill_nums.js가 만든다. 손으로 고치지 않는다. { 기술: { 직업 또는 *: [[레벨부터, { d: 주사위, t: 피해 종류, sv: 내성, c: 상태 }]] } }. 고정 수정치는 들어 있지 않다\nG.SkillNum = ${JSON.stringify(out)};\nG.SkillNum_at = (k, cls, lv) => { const P = G.SkillNum[k]; if (!P) return null; const L = P['*'] || P[cls] || Object.values(P)[0]; let e = L[0][1]; for (const q of L) if (q[0] <= lv) e = q[1]; return e; };\n`);
 console.log(`수치 있음 ${n} · 없음 ${none.length}`);
 for (const k of ['sr_fireball', 'sr_mm', 'sr_mhw', 'sr_rof', 'sr_hword', 'sr_meteor', 'sr_smite', 'sr_hold']) console.log(k, JSON.stringify(out[k])?.slice(0, 220));

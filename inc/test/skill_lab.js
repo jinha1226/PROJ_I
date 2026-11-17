@@ -2,12 +2,13 @@
 // 스킬 전수 시험: node test/skill_lab.js [횟수]  → 스킬마다 같은 전투 상황에서 실제 G.Skill.tick으로 발동해 본다.
 // 잡는 것: 오류 · 발동 안 됨 · 효과 없음 · 표시 없음 · 사거리를 넘은 피해. 피해는 그 시전자의 기본 공격력 대비 배수.
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const N = +process.argv[2] || 30;
 const M = Object.create(Math); let s0 = 12345;
 M.random = () => { s0 = (s0 + 0x6D2B79F5) >>> 0; let t = s0; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const ctx = { console, Math: M, JSON, Date, btoa, atob }; vm.createContext(ctx);
 for (const n of ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'season', 'fantasy', 'guild', 'create', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'srd_spells', 'srd_upcast', 'spells', 'traits', 'options', 'pools', 'utilspell', 'srd_species', 'multiclass', 'srd_range', 'srd_items', 'items', 'skill_ai', 'team', 'camp', 'skill_fx', 'events', 'npc', 'tutorial', 'skill_nums', 'command', 'expedition', 'mission', 'explore', 'banter', 'lines_danger', 'sight', 'tactics', 'foe', 'summon', 'light','monact', 'actions', 'lore', 'region', 'scn_astral', 'tut_map', 'res', 'turn', 'flow', 'story', 'state'])
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+  vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, D = G.D, GD = G.Guild, F = G.Fantasy, LV = 20;
 const IGNORE = new Set(['hp', 'x', 'y', 'moving', 'atkT', 'gcd', 'cds', 'lastSk', 'flip', 'merc', 'def', 'dots_']);
 const sig = e => { const o = {}; for (const k of Object.keys(e)) { if (IGNORE.has(k) || k.startsWith('_')) continue; const v = e[k]; if (v == null || v === false || v === 0) continue; if (typeof v === 'object') { try { const j = JSON.stringify(v, (kk, vv) => (typeof vv === 'object' && vv && (vv.merc || vv.kind) ? '#' : typeof vv === 'number' ? 1 : vv)); o[k] = j.length > 300 ? j.slice(0, 300) : j; } catch (x) { o[k] = '?'; } } else if (typeof v !== 'function') o[k] = typeof v === 'number' ? 1 : v; } return o; };
@@ -82,7 +83,7 @@ for (const R of rows.sort((a, b) => (b.dmg / (b.fired || 1)) - (a.dmg / (a.fired
   console.log([R.k.padEnd(13), (R.n || '').padEnd(10), R.cls.padEnd(9), 'R' + String(R.range ?? '-').padEnd(4), `발동${R.fired}/${N}`.padEnd(9), `피해x${(R.dmg / (R.fired || 1)).toFixed(1)}`.padEnd(10), `치유${Math.round(R.heal / (R.fired || 1) * 100)}%`.padEnd(8), `최대${R.far.toFixed(1)}`.padEnd(8), [...R.state].slice(0, 5).join(','), '|', [...R.fx].join(','), fl.length ? '  ✗ ' + fl.join(' ') : '', R.err.size ? JSON.stringify([...R.err.keys()]) : ''].join(' '));
 }
 // 패시브: 코드 어디서도 읽지 않는 것
-const src = fs.readdirSync(path.join(__dirname, '..', 'js')).filter(n => n !== 'data.js' && n.endsWith('.js')).map(n => fs.readFileSync(path.join(__dirname, '..', 'js', n), 'utf8')).join('\n'), dataSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'data.js'), 'utf8');
+const src = [...LOAD.NAMES.game, 'sfx', 'artset', 'paperdoll'].filter(n => n !== 'data').map(n => fs.readFileSync(LOAD.jsPath(n), 'utf8')).join('\n'), dataSrc = fs.readFileSync(LOAD.jsPath('data'), 'utf8');
 const pas = Object.keys(D.MSKILLS).filter(k => D.MSKILLS[k].passive), deadP = pas.filter(k => !src.includes("'" + k + "'"));
 const unlisted = (Object.keys(D.MSKILLS).filter(k => !G.Skill.SK[k] && !D.MSKILLS[k].passive)).filter(k => !D.MSKILLS[k].explore);
 const bad = rows.filter(R => flag(R).length);

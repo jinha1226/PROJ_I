@@ -25,14 +25,9 @@
   const VER = Date.now();
   // 파일을 직접 열면 브라우저가 그림 읽기를 막아 화면이 나오지 않는다
   if (location.protocol === 'file:') document.write('<div style="position:fixed;inset:0;z-index:99;background:#17151c;color:#ece4d4;display:flex;align-items:center;justify-content:center;font:18px sans-serif">http://localhost:8765/ 로 열어 주세요</div>');
-  for (const n of ['core','data','srd_gen','srd_base','srd_mons','grid','juice','season','fantasy','guild','create','persona','dnd','feats','trinkets','bonds','report','skills','srd','srd_spells','srd_upcast','spells','traits','options','pools','utilspell','srd_species','multiclass','srd_range','srd_items','items','skill_ai','team','camp','skill_fx','events','npc','tutorial','skill_nums','command','expedition','mission','explore','banter','lines_danger','sight','tactics','foe','summon','light','monact', 'actions', 'lore','region','scn_astral','tut_map','res','turn','flow','story','state'])
-    document.write(`<script src="js/${n}.js?v=${VER}"><\/script>`);
 </script>
-<script src="js/artset.js"></script>
-<script src="assets/dcss/map.js"></script>
-<script src="js/iso/pixelfx/pixelfx.bundle.js"></script>
-<script src="js/paperdoll.js"></script>
-<!-- 파일 사이에서 최상위 이름을 공유한다: 순서가 곧 의존 순서 -->
-<script>for (const n of ['core','models','bake','sprites','minidoll','game','fxlayer','pfx','vfx','hdbg','dice','actors','props','sheet','town','hud','cmdui','codex','war','create','main']) document.write(`<script src="js/iso/${n}.js?v=${VER}"><\/script>`);</script>
+<!-- 불러오기 목록: js/manifest.js (game → render). 파일 사이에서 최상위 이름을 공유한다: 순서가 곧 의존 순서 -->
+<script src="js/manifest.js"></script>
+<script>for (const p of [...MANIFEST.game, ...MANIFEST.render]) document.write(`<script src="${p}.js?v=${VER}"><\/script>`);</script>
 </body>
 </html>

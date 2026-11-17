@@ -1,9 +1,10 @@
 'use strict';
 // 몬스터 역할 · 특성 단위 검사: node test/foe_rules.js
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 for (const n of ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'season', 'fantasy', 'guild', 'create', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'srd_spells', 'srd_upcast', 'spells', 'traits', 'options', 'pools', 'utilspell', 'srd_species', 'multiclass', 'srd_range', 'srd_items', 'items', 'skill_ai', 'team', 'camp', 'skill_fx', 'events', 'npc', 'tutorial', 'skill_nums', 'command', 'expedition', 'mission', 'explore', 'banter', 'lines_danger', 'sight', 'tactics', 'foe', 'summon', 'light','monact', 'actions', 'lore', 'region', 'scn_astral', 'tut_map', 'res', 'turn', 'flow', 'story', 'state'])
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+  vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, FO = () => G.Foe; G.newState(); G.quiet = true; G.Lore.all = true; // 공략을 아는 AI를 본다
 const f = G.S.w.fantasy, GD = G.Guild; GD.leader(f); f.leaderNew = false; f.lineup = ['archer', 'cleric', 'paladin'].map(c => { const m = GD.make(f, c, { lv: 7 }); f.mercs.push(m); return m.uid; }); G.Fantasy.syncAllies(f); f.floor = f.maxFloor = 8; f.checkpoint = f.start = 8; f.town = true; f.townT = 99;
 f.frontLock = 'green'; const rt = G.Fantasy.rt(f); G.Exp.depart(f, rt); for (let i = 0; i < 5 && !rt.map; i++) G.tick(1, 0.1);

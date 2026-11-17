@@ -1,10 +1,11 @@
 'use strict';
 // 굴림 표시: node test/roll_rules.js. 보이는 숫자로 명중과 빗나감을 설명할 수 있어야 한다 (엄폐 · 이점 · 불리 포함)
 const fs = require('fs'), vm = require('vm'), path = require('path');
-const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'));
+const LOAD = require('./_load.js');
+const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = LOAD.NAMES.game;
 let ok = 0, bad = 0; const t = (n, v, x = '') => { if (v) ok++; else { bad++; console.log('  실패:', n, x); } };
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
-for (const n of FILES) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of FILES) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, F = G.Fantasy, GD = G.Guild, DN = G.Dnd, T = G.Turn;
 // 문구
 t('평범한 굴림', T.rollCalc({ mod: 7, ac: 13 }) === '+7 · AC 13', T.rollCalc({ mod: 7, ac: 13 }));

@@ -134,9 +134,9 @@ function build(q = '') {
 function setAuto(on) { autoOn = on; autoT = 0; $('auto').classList.toggle('on', on); }
 function nextAuto() { const vis = list.filter(it => it.el && it.el.isConnected); if (!vis.length) return; const i = vis.indexOf(cur); const it = vis[(i + 1) % vis.length]; pick(it, it.el); }
 (async () => {
-  const html = await (await fetch('index.html')).text(), names = JSON.parse(/for \(const n of (\[[^\]]*\])\)/.exec(html)[1].replace(/'/g, '"'));
-  for (const n of names) await load(`js/${n}.js`);
-  await load('assets/dcss/map.js'); await load('js/iso/pixelfx/pixelfx.bundle.js');
+  await load('js/manifest.js'); const MF = window.MANIFEST; // 불러오기 목록 (game 묶음 + 타일 지도 + pixelfx)
+  for (const p of MF.game) await load(`${p}.js`);
+  for (const p of MF.render.filter(p => /dcss\/map$|pixelfx\.bundle$/.test(p))) await load(`${p}.js`);
   G = window.G; PFX = G.PFX; TB = G.SkillFx.TABLE;
   ctx = $('cv').getContext('2d'); image = ctx.createImageData(W, H); pix = new Uint32Array(image.data.buffer); floor = paintFloor(); frame = PFX.createFrame(W, H, 0, 0);
   const mk = async (parts, x, y, flip) => ({ a: await doll(parts), x, y, flip });

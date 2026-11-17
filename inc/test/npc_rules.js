@@ -2,9 +2,10 @@
 // 인물 사건 (DESIGN.md 146): node test/npc_rules.js
 // 부품 조합: 파티가 가진 수단만 보이고, 한 일이 인물에 남고, 다음 원정에 돌아오고, 그 일을 한 용병이 말한다
 const fs = require('fs'), vm = require('vm'), path = require('path'); const ROOT = path.join(__dirname, '..');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(ROOT + '/test/party_lab.js', 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(`${ROOT}/js/${n}.js`, 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, GD = G.Guild, F = G.Fantasy, E = G.Event, ST = G.Story, N = G.Npc; G.quiet = true; G.Foe.retreatOn = false;
 let ok = 0, bad = 0; const t = (n, c, x = '') => { if (c) ok++; else { bad++; console.log('실패:', n, x); } };
 function setup(cls, front = 'green', seed = 11) {

@@ -1,11 +1,12 @@
 'use strict';
 // 코드 리뷰에서 고친 규칙 (2026-11-08, DESIGN.md 152): node test/review_rules.js
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const store = {};
 const localStorage = { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } };
 const ctx = { console: { ...console, error() {} }, Math, JSON, Date, btoa, atob, localStorage }; vm.createContext(ctx);
 const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, GD = G.Guild, DN = G.Dnd; let ok = 0, bad = 0;
 const t = (n, v, x = '') => { if (v) ok++; else { bad++; console.log('  실패:', n, x); } };
 G.quiet = true; G.newState();
@@ -46,7 +47,7 @@ t('강화 단계는 없다 (SRD 마법 물건만)', !GD.autoForge && !GD.upgrade
   t('전우 연계기 피해 ×1', k === 1, k);
 }
 // 다혈질은 선제권에 수치를 더하지 않는다
-t('turn.js에 다혈질 +3 없음', !/Persona\.has\(e\.merc, 'hot'\) \? 3/.test(fs.readFileSync(path.join(__dirname, '..', 'js', 'turn.js'), 'utf8')));
+t('turn.js에 다혈질 +3 없음', !/Persona\.has\(e\.merc, 'hot'\) \? 3/.test(fs.readFileSync(LOAD.jsPath('turn'), 'utf8')));
 // 못 읽은 저장은 따로 남는다
 {
   store[G.SAVE_KEY] = '{"v":1}';
@@ -96,12 +97,12 @@ t('turn.js에 다혈질 +3 없음', !/Persona\.has\(e\.merc, 'hot'\) \? 3/.test(
 }
 // 분열은 번개 · 베기에만
 {
-  const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'foe.js'), 'utf8');
+  const src = fs.readFileSync(LOAD.jsPath('foe'), 'utf8');
   t('체력 절반 분열 없음', !/m\.hp <= m\.max0 \/ 2/.test(src));
 }
 // 강력한 소마법은 소마법만 · 가르기는 첫 공격이 맞아야
 {
-  const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'srd.js'), 'utf8');
+  const src = fs.readFileSync(LOAD.jsPath('srd'), 'utf8');
   t('강력한 소마법: 슬롯 주문 제외', /sr_potent'\) && !x\.slot/.test(src));
   t('가르기: 첫 명중 뒤에', /if \(o2 && r\.hit\)/.test(src));
 }

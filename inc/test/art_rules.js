@@ -1,9 +1,10 @@
 'use strict';
 // 몬스터 그림: node test/art_rules.js. 표에 없는 이름은 사람 그림으로 나오므로 빠지면 실패한다
 const fs = require('fs'), vm = require('vm'), path = require('path'), ROOT = path.join(__dirname, '..');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', n + '.js'), 'utf8'), ctx);
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'assets/dcss/map.js'), 'utf8'), ctx);
 const G = ctx.G, F = G.D.F, M = G.DCSS.mon; let ok = 0, bad = 0; const t = (n, c, x = '') => { if (c) ok++; else { bad++; console.log('  실패:', n, x); } };
 const HUMAN = new Set(['산적', '암살자']), art = n => F.mon[n]?.dl || M.find(x => n.includes(x[0]))?.[1]; // 그림: 몬스터 표의 dl이 먼저 (sprites.js dcssOf)

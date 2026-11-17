@@ -1,10 +1,11 @@
 'use strict';
 // 치유 외침: node test/shout_rules.js (DESIGN.md 133). 치유가 일어나면 시전자가 스킬 이름을 외친다 (화면은 a.skLog를 꺼내 띄운다)
 const fs = require('fs'), vm = require('vm'), path = require('path');
-const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'));
+const LOAD = require('./_load.js');
+const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = LOAD.NAMES.game;
 let ok = 0, bad = 0; const t = (n, v, x = '') => { if (v) ok++; else { bad++; console.log('  실패:', n, x); } };
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
-for (const n of FILES) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of FILES) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, F = G.Fantasy, GD = G.Guild;
 function boot() { G.quiet = true; G.newState(); const f = G.S.w.fantasy, L = GD.leader(f); f.leaderNew = false; L.lv = 6; f.autoTr = f.autoParty = false; f.askMeet = false; const ms = ['cleric', 'dragoon', 'archmage'].map(c => GD.make(f, c, { lv: 6 })); f.mercs.push(...ms); f.lineup = ms.map(m => m.uid); F.syncAllies(f); f.floor = f.maxFloor = 1; f.checkpoint = f.start = 1; f.town = true; f.townT = 99; G.Exp.depart(f, F.rt(f)); return { f, rt: F.rt(f) }; }
 // 기본 치유 (F.healTurn)

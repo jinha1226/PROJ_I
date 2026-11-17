@@ -2,8 +2,9 @@
 // 탐사 시제품 규칙 시험: node test/run_rules.js [판 수]  (ROGUELIKE_PLAN 10절 1번 · 8-1)
 // 지도 생성 불변식 + 성격이 다른 봇 둘(정찰하는 봇 · 눈 감고 가는 봇)로 판 전체를 돌려 본다.
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON }; vm.createContext(ctx);
-for (const n of ['core', 'data', 'combat', 'gen', 'rules', 'layout']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', 'run', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of ['core', 'data', 'combat', 'gen', 'rules', 'layout']) vm.runInContext(fs.readFileSync(LOAD.jsPath('run/' + n), 'utf8'), ctx, { filename: n + '.js' });
 const R = ctx.RUN, GEN = R.gen;
 let ok = 0, bad = 0; const t = (name, v, extra = '') => { if (v) ok++; else { bad++; console.log('  실패:', name, extra); } };
 

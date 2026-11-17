@@ -49,8 +49,10 @@ function serve() {
   });
   return new Promise(ok => srv.listen(0, '127.0.0.1', () => ok({ srv, miss, url: `http://127.0.0.1:${srv.address().port}` })));
 }
-const dump = (chrome, url) => new Promise(ok => execFile(chrome, ['--no-sandbox', '--headless', '--disable-gpu', '--hide-scrollbars', '--window-size=1100,900', '--virtual-time-budget=8000', '--dump-dom', url],
-  { maxBuffer: 64 << 20, timeout: 90000 }, (e, out) => ok(out || '')));
+// 매 프레임 그리는 페이지(px_lab)에서 헤드리스 크롬이 가끔 가상 시간을 못 끝내고 멈춘다 — 45초에 끊고, 빈 DOM이면 한 번 더.
+const dump1 = (chrome, url) => new Promise(ok => execFile(chrome, ['--no-sandbox', '--headless', '--disable-gpu', '--hide-scrollbars', '--window-size=1100,900', '--virtual-time-budget=8000', '--dump-dom', url],
+  { maxBuffer: 64 << 20, timeout: 45000 }, (e, out) => ok(out || '')));
+const dump = async (chrome, url) => (await dump1(chrome, url)) || dump1(chrome, url);
 
 (async () => {
   const chrome = findChrome();

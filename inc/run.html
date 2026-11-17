@@ -27,9 +27,11 @@
     <p class="seed">시드 <b id="seedv"></b> <button id="reseed">다른 지도</button></p>
   </div>
 </div>
+<!-- 불러오기 목록: js/manifest.js (explore) -->
+<script src="js/manifest.js"></script>
 <script>
   const VER = Date.now();
-  for (const n of ['core', 'data', 'combat', 'gen', 'rules', 'layout', 'draw', 'ui']) document.write(`<script src="js/run/${n}.js?v=${VER}"><\/script>`);
+  for (const p of MANIFEST.explore) document.write(`<script src="${p}.js?v=${VER}"><\/script>`);
 </script>
 </body>
 </html>

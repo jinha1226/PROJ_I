@@ -1,6 +1,7 @@
 // 밸런스 봇: node test/sim.js [분] [--seed=N] [--block=노드,...] [-v]
 // 화면 없이 맵 시뮬레이션을 돌리며, 스킬트리에서 가장 싼 노드를 사는 플레이어처럼 진행한다.
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const arg = k => (process.argv.find(a => a.startsWith(k + '=')) || '').slice(k.length + 1);
 const seed = +arg('--seed') || 12345;
 const MIN = +process.argv[2] || 120, VERBOSE = process.argv.includes('-v');
@@ -11,8 +12,8 @@ function boot() {
   M.random = () => { st = (st + 0x6D2B79F5) >>> 0; let t = st; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const ctx = { console, Math: M, JSON, Date, btoa, atob };
   vm.createContext(ctx);
-  for (const f of ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'season', 'fantasy', 'guild', 'create', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'srd_spells', 'srd_upcast', 'spells', 'traits', 'options', 'pools', 'utilspell', 'srd_species', 'multiclass', 'srd_range', 'srd_items', 'items', 'skill_ai', 'team', 'camp', 'skill_fx', 'events', 'npc', 'tutorial', 'skill_nums', 'command', 'expedition', 'mission', 'explore', 'banter', 'lines_danger', 'sight', 'tactics', 'foe', 'summon', 'light','monact', 'actions', 'lore', 'region', 'scn_astral', 'tut_map', 'res', 'turn', 'flow', 'story', 'state'])
-    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', f + '.js'), 'utf8'), ctx, { filename: f + '.js' });
+  for (const f of LOAD.NAMES.game)
+    vm.runInContext(fs.readFileSync(LOAD.jsPath(f), 'utf8'), ctx, { filename: f + '.js' });
   return ctx.G;
 }
 const G = boot();

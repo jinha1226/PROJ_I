@@ -1,7 +1,8 @@
 // 사거리 · 이동이 SRD 원문(data/srd521/db)과 같은가. 표는 5피트 칸, 게임 사거리는 그 1/4
 const fs = require('fs'), path = require('path'), vm = require('vm'), ROOT = path.join(__dirname, '..');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx); const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', n + '.js'), 'utf8'), ctx);
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx);
 const G = ctx.G, C = c => G.SRD_RANGE.cells(c), D = G.D, GD = G.Guild, DN = G.Dnd; let ok = 0, bad = 0; const t = (n, c, x) => { if (c) ok++; else { bad++; console.log('  실패:', n, x ?? ''); } };
 const db = f => JSON.parse(fs.readFileSync(path.join(ROOT, 'data/srd521/db', f + '.json'), 'utf8')), norm = s => s.toLowerCase().replace(/’/g, "'");
 const SP = {}; for (const s of db('spell')) SP[norm(s.name)] = s;

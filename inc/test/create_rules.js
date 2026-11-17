@@ -1,10 +1,11 @@
 'use strict';
 // 단장 만들기: node test/create_rules.js (DESIGN.md 139). 표와 추천을 SRD 원문(data/srd521/manual.json)과 대조하고, 고른 값이 실제 캐릭터에 들어가는지 본다
 const fs = require('fs'), vm = require('vm'), path = require('path');
-const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'));
+const LOAD = require('./_load.js');
+const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = LOAD.NAMES.game;
 let ok = 0, bad = 0; const t = (n, v, x = '') => { if (v) ok++; else { bad++; console.log('  실패:', n, x); } };
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
-for (const n of FILES) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of FILES) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, C = G.Create, DN = G.Dnd, GD = G.Guild, SR = G.SRD; G.quiet = true;
 const man = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'srd521', 'manual.json'), 'utf8')).nodes;
 const table = title => man.flatMap(n => n.tables || []).find(q => q.title === title);

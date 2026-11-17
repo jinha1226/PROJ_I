@@ -1,9 +1,10 @@
 'use strict';
 // 게임 데이터 ↔ SRD 5.2.1 데이터(data/srd521, 5e-bits/5e-srd-api) 대조: node test/srd_check.js
 const fs = require('fs'), vm = require('vm'), path = require('path'), CLEAN = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'srd521', 'clean.json'), 'utf8')), R = n => CLEAN[n];
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, SR = G.SRD; let bad = 0; const diff = (a, ...x) => { bad++; console.log('  다름', a, ...x); };
 const CM = { barbarian: 'barbarian', bard: 'bard', cleric: 'cleric', druid: 'scout', fighter: 'dragoon', monk: 'monk', paladin: 'paladin', ranger: 'archer', rogue: 'rogue', sorcerer: 'mage', warlock: 'warlock', wizard: 'archmage' };
 const EQ = R('Equipment'), en = s => (s || '').toLowerCase().replace(/[^a-z]/g, '');
@@ -23,7 +24,7 @@ const FE = new Set(Object.values(G.D.FEATS).concat(Object.values(G.D.BOONS || {}
 const SPE = new Set(Object.values(G.SRD_SP).map(q => en(q.en))), noSp = R('Spells').filter(q => !SPE.has(en(q.name))).map(q => q.name);
 const spellsNoCombat = Object.values(G.SRD_SP).filter(q => !q.k || q.k === 'util').length;
 const ARTS = Object.values(G.D.ARTS || {}), AE = new Set(ARTS.map(q => en(q.en))), MI = R('Magic-Items').filter(q => !q.variant), noMI = MI.filter(q => !AE.has(en(q.name))).map(q => q.name);
-const MONS = R('Monsters'), MM = (() => { const t = fs.readFileSync(path.join(__dirname, '..', 'js', 'srd_mons.js'), 'utf8'); return t; })(), noMon = MONS.filter(q => !MM.toLowerCase().includes(q.name.toLowerCase())).map(q => q.name);
+const MONS = R('Monsters'), MM = (() => { const t = fs.readFileSync(LOAD.jsPath('srd_mons'), 'utf8'); return t; })(), noMon = MONS.filter(q => !MM.toLowerCase().includes(q.name.toLowerCase())).map(q => q.name);
 const GEAR = EQ.filter(q => !q.damage && !q.armor_class);
 console.log(`재주 없음 ${noFeat.length}:`, noFeat.join(', '));
 console.log(`주문 ${R('Spells').length} · 표에 없음 ${noSp.length} · 전투 동작 없음 ${spellsNoCombat}`);

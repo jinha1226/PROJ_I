@@ -1,9 +1,10 @@
 'use strict';
 // 위험도 · 승산 판단 · 위기 대사: node test/danger_rules.js
 const fs = require('fs'), vm = require('vm'), path = require('path'); const ROOT = path.join(__dirname, '..');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(ROOT + '/test/party_lab.js', 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(`${ROOT}/js/${n}.js`, 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, F = G.Fantasy, R = G.Region, FO = G.Foe, B = G.Banter, ST = G.Story; G.quiet = true;
 let ok = 0, bad = 0; const t = (n, c, x = '') => { if (c) ok++; else { bad++; console.log('  실패:', n, x); } };
 const boot = (lv = 3) => { G.newState(); const f = G.S.w.fantasy, L = G.Guild.leader(f); f.leaderNew = false; f.autoTr = f.autoParty = f.autoGo = false; f.askMeet = false; L.lv = lv; const m = G.Guild.make(f, 'cleric', { lv }); f.mercs.push(m); f.lineup = [m.uid]; F.syncAllies(f); f.floor = f.maxFloor = f.checkpoint = f.start = 3; f.town = true; f.townT = 99; const rt = F.rt(f); G.Exp.depart(f, rt); rt.mons = []; return { f, rt }; };
@@ -45,13 +46,14 @@ const setHP = (rt, k) => rt.party.forEach(p => { p.dead = false; p.dying = null;
   t('서로 못 깎는 전투는 체력과 상관없다', FO.assess(f, rt, { round: 8, hist: [[p3, 100], [p3, 100], [p3, 100]] })); }
 
 // ── 대사 ──
-const src = fs.readFileSync(ROOT + '/js/lines_danger.js', 'utf8');
+const src = fs.readFileSync(LOAD.jsPath('lines_danger'), 'utf8');
 { const lines = eval('(' + /addLines\((\{[\s\S]*\})\);/.exec(src)[1] + ')');
   for (const k of ['lose', 'loseUseless']) { t(`${k} 있다`, lines[k] && lines[k].any && lines[k].any.length >= 4, k); }
   for (const tag of ['coward', 'hot', 'careful', 'greedy', 'brawler', 'meek']) t(`lose: 성격 ${tag}`, lines.lose?.[tag]?.length >= 2, tag);
   const WORDS = /명중|판정|슬롯|레벨|체력|d20|승산/;
   for (const k in lines) for (const tag in lines[k]) for (const s of lines[k][tag]) { t(`길이: ${s}`, s.length <= 35); t(`규칙 용어 없음: ${s}`, !WORDS.test(s)); } }
-for (const file of ['index.html', 'test/party_lab.js', 'test/sim.js', 'test/foe_rules.js', 'test/skill_lab.js']) t(`목록에 있다: ${file}`, fs.readFileSync(`${ROOT}/${file}`, 'utf8').includes('lines_danger'));
+t('목록에 있다: js/manifest.js game (index.html · party_lab · sim이 이 목록을 쓴다)', LOAD.NAMES.game.includes('lines_danger'));
+for (const file of ['test/foe_rules.js', 'test/skill_lab.js']) t(`목록에 있다: ${file}`, fs.readFileSync(`${ROOT}/${file}`, 'utf8').includes('lines_danger'));
 // 위기: 질문과 함께 누군가 말한다. 공격이 안 들면 그 말을 한다
 { const { f, rt } = boot(3); mon(rt); G.quiet = false; f.askMeet = true; const said = [], L0 = B.line, U0 = FO.useless; B.line = (r, k, w, v) => { said.push([k, v]); return null; };
   ST.askRetreat(f, rt); t('말한다', said[0]?.[0] === 'lose', JSON.stringify(said)); t('제목은 짧은 이름', rt.ask?.title === '위기', rt.ask?.title); t('선택지는 그대로', rt.ask?.opts.length === 2);

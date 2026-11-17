@@ -1,10 +1,11 @@
 'use strict';
 // 탐험 방침: node test/explore_rules.js (DESIGN.md 127). 꼼꼼히는 갈 수 있는 방을 다 들르고, 서둘러는 빈 방을 건너뛰며, 계단에서 남은 방을 묻는다
 const fs = require('fs'), vm = require('vm'), path = require('path');
-const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'));
+const LOAD = require('./_load.js');
+const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = LOAD.NAMES.game;
 let ok = 0, bad = 0; const t = (n, v, x = '') => { if (v) ok++; else { bad++; console.log('  실패:', n, x); } };
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
-for (const n of FILES) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of FILES) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, F = G.Fantasy, GD = G.Guild;
 function boot(pol, front, fl = 3) {
   G.quiet = true; G.newState(); const f = G.S.w.fantasy, L = GD.leader(f); f.leaderNew = false; L.lv = 12; f.autoTr = f.autoParty = false; f.askMeet = false;

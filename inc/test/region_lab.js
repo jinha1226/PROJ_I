@@ -1,12 +1,13 @@
 'use strict';
 // 지역 원정을 끝까지: node test/region_lab.js <파티> <레벨> <판> [시드] → 한 줄 JSON
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const crew = process.argv[2].split(','), LV = +process.argv[3], N = +process.argv[4], seed = +process.argv[5] || 1;
 const M = Object.create(Math); let s0 = seed * 7919 >>> 0;
 M.random = () => { s0 = (s0 + 0x6D2B79F5) >>> 0; let t = s0; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const ctx = { console, Math: M, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G; G.newState(); G.quiet = true;
 const f = G.S.w.fantasy, GD = G.Guild, F = G.Fantasy, L = GD.leader(f); f.leaderNew = false; f.autoTr = false; f.autoParty = false; f.autoGo = false; L.lv = LV;
 f.lineup = crew.map(c => { const m = GD.make(f, c, { lv: LV }); f.mercs.push(m); return m.uid; }); F.syncAllies(f);

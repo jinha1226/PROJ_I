@@ -1,9 +1,10 @@
 'use strict';
 // SRD 5.2.1 기본 표와 동작 시험: node test/srd_rules.js (DESIGN.md 107)
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, SR = G.SRD, DN = G.Dnd, GD = G.Guild; let ok = 0, bad = 0; const t = (n, v, x = '') => { if (v) ok++; else { bad++; console.log('  실패:', n, x); } };
 G.newState(); const f = G.S.w.fantasy, mk = (cls, ex = {}) => { const m = GD.make(f, cls, { lv: 5, ...ex }); f.mercs.push(m); return m; };
 t('무기 38', Object.values(SR.WEAPON).filter(q => !q.hidden).length === 38); t('갑옷 12', Object.values(SR.ARMOR).filter(q => q.cat !== 'none').length === 12); t('배경 4', Object.keys(SR.BG).length === 4); t('종족 9', Object.keys(SR.SPECIES).length === 9); t('기술 18', Object.keys(DN.SKILL_AB).length === 18);

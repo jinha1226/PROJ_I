@@ -2,9 +2,10 @@
 // 전투 주문 원문 대조 (DESIGN.md 163): node test/spell_lab.js [주문 id …] [-v]
 // 주문마다 그 직업의 최소 레벨 시전자가 실제로 시전한다 (SK[k].run). 시전 중의 내성 · 명중 · 피해 · 피해 종류 · 상태 · 범위를 가로채 원문(G.SRD_SP[id].srd)과 비교한다.
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
 const ctx = { console: { ...console, error() {} }, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G; G.quiet = true; G.newState();
 const f = G.S.w.fantasy, GD = G.Guild, DN = G.Dnd, F = G.Fantasy, SK = G.Skill.SK, D = G.D;
 GD.leader(f); f.leaderNew = false; f.lineup = ['cleric', 'archmage', 'bard'].map(c => { const m = GD.make(f, c, { lv: 5 }); f.mercs.push(m); return m.uid; }); F.syncAllies(f); f.floor = f.maxFloor = 6;

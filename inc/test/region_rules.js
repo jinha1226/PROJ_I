@@ -1,9 +1,10 @@
 'use strict';
 // 지역 단위 검사: node test/region_rules.js
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G; G.newState(); G.quiet = true;
 const f = G.S.w.fantasy, GD = G.Guild; GD.leader(f); f.leaderNew = false;
 let bad = 0; const ok = (name, c) => { console.log((c ? '  ok ' : '  ✗  ') + name); if (!c) bad++; };

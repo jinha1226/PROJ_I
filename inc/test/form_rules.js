@@ -2,9 +2,10 @@
 // 진형 기억 규칙: node test/form_rules.js
 // 정해 둔 자리는 부상 · 교체로 명단에서 빠졌다 돌아와도 남는다
 const fs = require('fs'), vm = require('vm'), path = require('path');
-const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'));
+const LOAD = require('./_load.js');
+const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = LOAD.NAMES.game;
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
-for (const n of FILES) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of FILES) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, F = G.Fantasy, GD = G.Guild; G.quiet = true;
 let bad = 0, n = 0; const t = (name, ok, got) => { n++; if (!ok) { bad++; console.log(`  ✗ ${name}`, got === undefined ? '' : got); } };
 const boot = () => { G.newState(); const f = G.S.w.fantasy; f.leaderNew = false; f.autoParty = false; const ms = ['cleric', 'archmage', 'rogue'].map(c => GD.make(f, c, { lv: 3 })); f.mercs.push(...ms); f.lineup = ms.map(m => m.uid); F.syncAllies(f); return { f, ms, L: GD.leader(f) }; };

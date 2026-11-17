@@ -2,12 +2,13 @@
 // 파티 조합 실험: node test/party_lab.js <직업,직업,직업> [분] [시드]  → 한 줄 JSON
 // 단장 + 지정한 셋을 같은 레벨로 고정해 돌린다. 트리 · 고용 없음, 죽으면 같은 직업으로 채워 조합을 유지한다.
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const crew = process.argv[2].split(','), MIN = +process.argv[3] || 30, seed = +process.argv[4] || 1, LV = +process.argv[5] || 7, FL = +process.argv[6] || 4;
 const M = Object.create(Math); let s0 = seed * 7919 >>> 0;
 M.random = () => { s0 = (s0 + 0x6D2B79F5) >>> 0; let t = s0; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const ctx = { console, Math: M, JSON, Date, btoa, atob }; vm.createContext(ctx);
-for (const n of ['core', 'data', 'srd_gen', 'srd_base', 'srd_mons', 'grid', 'juice', 'season', 'fantasy', 'guild', 'create', 'persona', 'dnd', 'feats', 'trinkets', 'bonds', 'report', 'skills', 'srd', 'srd_spells', 'srd_upcast', 'spells', 'traits', 'options', 'pools', 'utilspell', 'srd_species', 'multiclass', 'srd_range', 'srd_items', 'items', 'skill_ai', 'team', 'camp', 'skill_fx', 'events', 'npc', 'tutorial', 'skill_nums', 'command', 'expedition', 'mission', 'explore', 'banter', 'lines_danger', 'sight', 'tactics', 'foe', 'summon', 'light','monact', 'actions', 'lore', 'region', 'scn_astral', 'tut_map', 'res', 'turn', 'flow', 'story', 'state'])
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game)
+  vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G;
 G.newState();
 const f = G.S.w.fantasy, GD = G.Guild, L = GD.leader(f); f.leaderNew = false; f.autoTr = false; L.lv = LV; f.autoParty = false;

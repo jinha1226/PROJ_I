@@ -2,10 +2,11 @@
 // 튜토리얼 오우거 벽 실험장: node test/wall_lab.js [오우거 수 = 1] [판수] [단장 직업,…]
 // 첫 원정(단장 혼자) → 값 없는 동료 고용 → 재도전을 실제 흐름대로 돈다. 첫 원정은 못 이겨야 하고, 뽑은 뒤엔 이겨야 한다.
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const WN = +process.argv[2] || 1, N = +process.argv[3] || 20, CLS = (process.argv[4] || 'dragoon,rogue,mage,cleric').split(',');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, F = G.Fantasy, GD = G.Guild, ST = G.Story, T = G.Tut; G.quiet = false; T.WALL_N = WN;
 const STUCK = 4000, stuck = [], ends = {};
 { const H0 = G.Exp.home; G.Exp.home = function (ff, rr, why) { if (ff.tut && ff.tut.run >= 2) { const w = rr.mons?.some(o => o.tutWall && o.hp > 0), k = `${ff.tut.run}회차 ${why}@${ff.floor}${w ? ' 오우거 생존' : ''}${ff.tut.ogreDown ? ' 처치됨' : ''}`; ends[k] = (ends[k] || 0) + 1; } return H0.apply(this, arguments); }; }

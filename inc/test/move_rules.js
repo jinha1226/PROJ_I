@@ -1,9 +1,10 @@
 'use strict';
 // 이동 규칙: node test/move_rules.js  (벽을 뚫지 않는다 · 벽에 끼지 않는다 · 보이는 자리도 벽을 돌아간다)
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const ROOT = path.join(__dirname, '..');
 const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
-const FILES = JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'));
+const FILES = LOAD.NAMES.game;
 let ok = 0, bad = 0;
 const t = (n, v, x = '') => { if (v) ok++; else { bad++; console.log('  실패:', n, x); } };
 
@@ -11,7 +12,7 @@ function boot(seed) {
   const M = Object.create(Math); let s0 = seed * 7919 >>> 0;
   M.random = () => { s0 = (s0 + 0x6D2B79F5) >>> 0; let v = s0; v = Math.imul(v ^ (v >>> 15), v | 1); v ^= v + Math.imul(v ^ (v >>> 7), v | 61); return ((v ^ (v >>> 14)) >>> 0) / 4294967296; };
   const ctx = { console, Math: M, JSON, Date, btoa, atob }; vm.createContext(ctx);
-  for (const n of FILES) vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+  for (const n of FILES) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
   return ctx.G;
 }
 const G = boot(1), GR = G.Grid;
@@ -99,7 +100,7 @@ const inWall = (m, e) => !GR.pass(m, Math.round(e.x), Math.round(e.y));
 
 // ── 실제 게임을 돌려 재는 불변식 ──
 const blocked = (g, m, x0, y0, x1, y1) => { const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 6) + 1; for (let i = 1; i <= n; i++) { const u = i / n; if (!g.Grid.pass(m, Math.round(x0 + (x1 - x0) * u), Math.round(y0 + (y1 - y0) * u))) return true; } return false; };
-const actors = fs.readFileSync(path.join(ROOT, 'js', 'iso', 'actors.js'), 'utf8');
+const actors = fs.readFileSync(LOAD.jsPath('iso/actors'), 'utf8');
 function sweep(seed, crew, MIN) {
   const g = boot(seed), F = g.Fantasy, GD = g.Guild;
   g.quiet = true; g.newState();

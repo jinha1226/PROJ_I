@@ -2,11 +2,12 @@
 // 전술 실험: node test/tactic_lab.js <레벨> <층> <시드> <전투 수> <진형> <표적> <전투 방식> [파티]  → 한 줄 JSON
 // 원정 전 설정이 전투 결과를 바꾸나. 전투마다 체력 · 자원을 채우고 레벨 · 층을 고정해, 설정 말고 다른 것이 흔들지 않게 한다. 수치는 게임 그대로
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const [LV, FL, seed, WANT] = process.argv.slice(2, 6).map(Number), FORM = process.argv[6] || 'role', TGT = process.argv[7] || 'near', STYLE = process.argv[8] || '-', CREW = (process.argv[9] || 'cleric,archmage,rogue').split(',');
-const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'));
+const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = LOAD.NAMES.game;
 const M = Object.create(Math); let s0 = seed * 7919 >>> 0; M.random = () => { s0 = (s0 + 0x6D2B79F5) >>> 0; let t = s0; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const ctx = { console, Math: M, JSON, Date, btoa, atob }; vm.createContext(ctx);
-for (const n of FILES) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of FILES) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, F = G.Fantasy, GD = G.Guild; G.quiet = true; G.newState();
 const f = G.S.w.fantasy, L = GD.leader(f); f.leaderNew = false; f.autoTr = f.autoParty = false; f.askMeet = false; f.auto = true; L.lv = LV; f.fullHome = false; G.Exp.tick = () => {}; /* 체력 귀환 · 짐 귀환 없음: 끝까지 싸운 결과를 잰다 */
 const ms = CREW.map(c => GD.make(f, c, { lv: LV })); f.mercs.push(...ms); f.lineup = ms.map(m => m.uid); F.syncAllies(f);

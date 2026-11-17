@@ -3,12 +3,13 @@
 // 전투를 끝까지 돌려 경고가 맞았는지 잰다. 옛 규칙(old)과 지금 규칙(new)을 같은 전투에서 나란히 본다.
 // 오경보 = 경고가 떴는데 아무도 죽지 않고 이긴 전투 · 놓침 = 경고 없이 진 전투
 const fs = require('fs'), vm = require('vm'), path = require('path');
+const LOAD = require('./_load.js');
 const N = +process.argv[2] || 40, seed = +process.argv[3] || 1;
 const M = Object.create(Math); let s0 = seed * 7919 >>> 0;
 M.random = () => { s0 = (s0 + 0x6D2B79F5) >>> 0; let t = s0; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const ctx = { console, Math: M, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, F = G.Fantasy, GD = G.Guild, RG = G.Region, FO = G.Foe; G.quiet = true;
 const OLD_ROUND = 3, OLD_STALE = 8, OLD_K = 1.5;
 function oldAssess(rt, st) {

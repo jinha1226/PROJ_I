@@ -1,10 +1,11 @@
 'use strict';
 // 기술 설명의 능력치 자리: node test/desc_rules.js. 「2d8 + 능력치」가 아니라 그 용병의 실제 값 「2d8+4」로 쓴다
 const fs = require('fs'), vm = require('vm'), path = require('path');
-const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'));
+const LOAD = require('./_load.js');
+const lab = fs.readFileSync(path.join(__dirname, 'party_lab.js'), 'utf8'), FILES = LOAD.NAMES.game;
 let ok = 0, bad = 0; const t = (n, v, x = '') => { if (v) ok++; else { bad++; console.log('  실패:', n, x); } };
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
-for (const n of FILES) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'js', n + '.js'), 'utf8'), ctx, { filename: n + '.js' });
+for (const n of FILES) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, GD = G.Guild, DN = G.Dnd, SK = G.Skill; G.quiet = true; G.newState();
 const f = G.S.w.fantasy, make = (cls, lv = 12) => GD.make(f, cls, { lv });
 // 능력치를 원하는 값으로 고정한다 (수정치는 (값 − 10) / 2 내림)

@@ -2,9 +2,10 @@
 // 사건별 선택지 비교표 (EVENT_SYSTEM_FOLLOWUPS.md 2.3): 실제 판정으로 N번씩 돌려 평균을 낸다. node test/event_table.js [N] [레벨] [--short]
 // 금화는 그 층 몬스터 한 마리 값을 1로 잰다. 체력 손실은 사람당 평균 %. 스트레스는 사람당 평균.
 const fs = require('fs'), vm = require('vm'), path = require('path'); const ROOT = path.join(__dirname, '..');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(ROOT + '/test/party_lab.js', 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(`${ROOT}/js/${n}.js`, 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, GD = G.Guild, F = G.Fantasy, E = G.Event, ST = G.Story; G.quiet = true; G.Foe.retreatOn = false;
 const N = +process.argv[2] || 30, LV = +process.argv[3] || 8, drops = { n: 0 }, d0 = G.Trinket.drop; G.Trinket.drop = function () { drops.n++; }; ST.die = (f, r, p) => { p.dying = null; p.dead = true; };
 function run(e, i) {

@@ -1,9 +1,10 @@
 'use strict';
 // 튜토리얼 규칙: node test/tut_rules.js
 const fs = require('fs'), vm = require('vm'), path = require('path'); const ROOT = path.join(__dirname, '..');
+const LOAD = require('./_load.js');
 const ctx = { console, Math, JSON, Date, btoa, atob }; vm.createContext(ctx);
 const lab = fs.readFileSync(ROOT + '/test/party_lab.js', 'utf8');
-for (const n of JSON.parse(/for \(const n of (\[.*?\])\)/.exec(lab)[1].replace(/'/g, '"'))) vm.runInContext(fs.readFileSync(`${ROOT}/js/${n}.js`, 'utf8'), ctx, { filename: n + '.js' });
+for (const n of LOAD.NAMES.game) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n + '.js' });
 const G = ctx.G, F = G.Fantasy, T = G.Tut, E = G.Event, ST = G.Story; G.quiet = true;
 let ok = 0, bad = 0; const t = (n, c, x = '') => { if (c) ok++; else { bad++; console.log('실패:', n, x); } };
 const boot = () => { G.newState(); const f = G.S.w.fantasy; G.Guild.leader(f); f.leaderNew = false; f.autoTr = f.autoParty = f.autoGo = false; f.mercs = []; const rt = F.rt(f); T.start(f, rt); return { f, rt: F.rt(f) }; };
