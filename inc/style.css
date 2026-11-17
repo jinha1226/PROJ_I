@@ -195,6 +195,14 @@ img[src*="assets/chars/"] { image-rendering:auto; object-fit:contain; }
 #dicebear h4, #dicepick h3 { margin:0 0 6px; font:22px "Nanum Pen Script",cursive; } #dicebear p, #dicepick p { margin:0 0 8px; color:#cdbb98; } #dicebear button { display:block; width:100%; margin-top:5px; text-align:left; } #dicebear .sug { border-color:#f0c070; } #dicebear small { color:#a89878; }
 #dicepick button { display:flex; align-items:center; gap:10px; width:100%; margin-top:6px; text-align:left; } #dicepick button span { display:flex; flex-direction:column; } #dicepick button small { color:#a89878; font-size:12px; } #dicepick button.on { border-color:#f0c070; background:#4c3720; } #dicepick .go { justify-content:center; background:#6a4a1c; margin-top:10px; }
 
-/* 4×4 구역 선 */
-#zones { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2; overflow:visible; }
-#zones path { fill:none; stroke:rgba(243,228,195,.35); stroke-width:1.5; stroke-dasharray:6 5; }
+/* 진형: 줄 표시 · 차례 막대 */
+#rows { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2; overflow:visible; }
+#rows path { fill:none; stroke-width:2; stroke-dasharray:7 5; } #rows path.me { stroke:rgba(240,192,112,.55); } #rows path.foe { stroke:rgba(224,96,80,.55); }
+#rows text { font:600 11px "Noto Sans KR",sans-serif; text-anchor:end; } #rows text.me { fill:rgba(243,228,195,.75); } #rows text.foe { fill:rgba(240,160,150,.75); }
+#turnbar { position:absolute; top:44px; left:50%; transform:translateX(-50%); display:flex; align-items:flex-end; gap:5px; max-width:calc(100% - 32px); overflow-x:auto; padding:4px 8px; border-radius:9px; background:rgba(24,16,10,.78); border:1px solid #6d5a3c; z-index:5; pointer-events:none; }
+#turnbar b { color:#f0c070; font:22px "Nanum Pen Script",cursive; margin-right:4px; white-space:nowrap; }
+#turnbar span { position:relative; display:flex; flex-direction:column; align-items:center; min-width:52px; padding:3px 6px 6px; border-radius:6px; background:#3a2a1a; border:1px solid #6d5a3c; color:#f3e4c3; font:12px "Noto Sans KR",sans-serif; white-space:nowrap; }
+#turnbar span.foe { background:#3a1c18; border-color:#8a4038; } #turnbar span small { font-size:10px; color:#a89878; }
+#turnbar span.cur { transform:translateY(-3px) scale(1.12); border-color:#f0c070; box-shadow:0 0 8px rgba(240,192,112,.5); }
+#turnbar span i { position:absolute; left:3px; bottom:2px; height:3px; max-width:calc(100% - 6px); border-radius:2px; background:#7fcf8a; } #turnbar span.foe i { background:#e06050; }
+.record-stub button { margin-left:10px; padding:5px 12px; border-radius:7px; border:1px solid #6d5a3c; background:#6a4a1c; color:#f3e4c3; cursor:pointer; }

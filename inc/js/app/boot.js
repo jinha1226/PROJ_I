@@ -29,10 +29,12 @@ J.hit = (id, e, power = 0, from, dmg = 0) => { e._hit = now(); e._hitP = power;
   if (win.map && inWin(e.x, e.y)) { const flip = !!from && (from.x - from.y) > (e.x - e.y), ex = wx(e._dx == null ? e.x : e._dx), ey = wy(e._dy == null ? e.y : e._dy); pfx(power >= .25 ? 'impacts/crit-hit' : e.kind === 'mon' ? 'impacts/hit-spark' : 'impacts/blunt-hit', ex, ey, Z_CHEST, { flip, k: 1.3 }); } if (win.map && inWin(e.x, e.y)) { const p = project(wx(e._dx == null ? e.x : e._dx), wy(e._dy == null ? e.y : e._dy), 1.4); spark(p.sx, p.sy, 8 + power * 14 | 0, e.kind === 'mon' ? [rgb(255, 250, 220), rgb(255, 210, 90), rgb(240, 130, 60)] : [rgb(190, 40, 44), rgb(236, 90, 70), rgb(255, 220, 200)]); } if (from) { const dx = e.x - from.x, dy = e.y - from.y, l = Math.hypot(dx, dy) || 1; e._kx = dx / l; e._ky = dy / l; } };
 J.lunge = (id, a, tg) => {
   const dx = tg.x - a.x, dy = tg.y - a.y, l = Math.hypot(dx, dy) || 1; a._lu = now(); a._lx = dx / l; a._ly = dy / l;
+  const ranged0 = a.kind === 'mon' ? G.Foe.ranged(a) : a.def && a.def.range >= 2;
+  a._ll = G.Line?.on && !ranged0 && (a.kind === 'mon') !== (tg.kind === 'mon') ? Math.max(0, l - 1.1) : 0; // 진형 전투: 근접은 상대 앞까지 달려들었다 돌아온다
   // 근접 공격의 궤적. 같은 편에게 쓰는 치유 · 원거리는 그리지 않는다
   if (!win.map || a.kind !== 'mon' && tg.kind !== 'mon') return;
-  const ranged = a.kind === 'mon' ? G.Foe.ranged(a) : a.def && a.def.range >= 2; if (ranged || l > 3.5) return;
-  const flip = (tg.x - tg.y) < (a.x - a.y), ax = wx(a._dx == null ? a.x : a._dx), ay = wy(a._dy == null ? a.y : a._dy);
+  if (ranged0 || (a._ll ? 0 : l) > 3.5) return;
+  const flip = (tg.x - tg.y) < (a.x - a.y), ax = wx((a._dx == null ? a.x : a._dx) + a._lx * a._ll), ay = wy((a._dy == null ? a.y : a._dy) + a._ly * a._ll);
   if (a.kind === 'mon') { const beast = STYLE(a.n || '') === 'quad'; pfx(beast ? 'melee/claw-swipe' : 'melee/sword-slash', ax, ay, 0, { flip, k: 1.5, palette: FOE_SLASH }); }
   else { const id2 = SWING[(a.merc || f.leader).cls] || 'melee/sword-slash'; pfx(id2, ax, ay, 0, { flip, k: id2 === 'melee/heavy-cleave' ? 2.2 : 1.4 }); }
 };
@@ -47,7 +49,7 @@ G.Story.die = function (ff, r, p) { graves.push({ x: p.x, y: p.y, map: r.map });
 const TestFloor = (() => {
   const LAYOUT = {
     floor: { w: 36, h: 15, rooms: [['A', '입구', 2, 4, 6, 6], ['B', '곁방', 11, 2, 6, 5], ['C', '안쪽 방', 13, 9, 6, 5], ['D', '계단 방', 24, 3, 9, 8]], links: [['A', 'B'], ['A', 'C'], ['B', 'D'], ['C', 'D']] },
-    fight: { w: 16, h: 14, rooms: [['A', '전투 방', 2, 2, 12, 10]], links: [] },
+    fight: { w: 20, h: 14, rooms: [['H', '복도', 1, 6, 4, 3], ['A', '전투 방', 6, 2, 12, 10]], links: [['H', 'A']] }, // 복도로 들어와 방에서 맞닥뜨린다
   };
   function build(kind = 'floor') {
     const L = LAYOUT[kind], W = L.w, H = L.h, c = new Array(W * H).fill('#'), ix = (x, y) => y * W + x, cut = (x, y) => { if (x > 0 && y > 0 && x < W - 1 && y < H - 1) c[ix(x, y)] = '.'; };
@@ -71,7 +73,8 @@ const TestFloor = (() => {
     r.party.forEach((p, i) => { p.x = s.cx - 1 + i; p.y = s.cy + (i % 2); p._dx = p._rx = p.x; p._dy = p._ry = p.y; });
     if (kind === 'fight') {
       const names = ['고블린 졸개', '고블린 졸개', '홉고블린'].map(n => G.D.F.mon[n] ? n : Object.keys(G.D.F.mon)[0]);
-      names.forEach((n, i) => G.Fantasy.spawnMon(r, 1, { n, ...G.D.F.mon[n] }, s.x + s.w - 3, s.y + 2 + i * 2, false, { major: true, spotted: true }));
+      const A = m.rooms.find(q => q.id === 'A') || s;
+      names.forEach((n, i) => G.Fantasy.spawnMon(r, 1, { n, ...G.D.F.mon[n] }, A.x + A.w - 3, A.y + 2 + i * 2, false, { major: true, spotted: true }));
     }
     r.seen = new Uint8Array(m.w * m.h).fill(1); r.seenVer = (r.seenVer || 0) + 1;
     G.Fantasy.refreshEnts(r); if (G.Sight?.update) G.Sight.update(r);

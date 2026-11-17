@@ -113,6 +113,7 @@ const CRAWL = (() => {
   function frame(dt) {
     if (!R) return;
     if (fighting) return fightFrame(dt);
+    if (!st) return; // 시험 전투(?fight=test)는 탐사 층이 없다 — 전투가 끝나면 멈춘다
     const L = lead();
     if (walk) {
       const P = walk.pts[walk.i], v = (cutscene ? 6 : 5) * dt, dx = P[0] - L.x, dy = P[1] - L.y, d = Math.hypot(dx, dy);
@@ -217,15 +218,22 @@ const CRAWL = (() => {
     const units = n.g.units || [[n.g.name, n.g.count]]; let k = 0;
     for (const [name, cnt] of units) for (let i = 0; i < cnt; i++) { const [x, y] = cells[(k++ * 3) % Math.max(1, cells.length)] || [L.x + 3, L.y]; const nm = monName(name); G.Fantasy.spawnMon(R, 1, { n: nm, ...G.D.F.mon[nm] }, x, y, false, { aggro: true, spotted: true, major: true, boss: n.type === 'boss' } /* major: 옛 G.Flow가 층 시작에 major 아닌 몬스터를 치운다 */); }
     R.turn = null; R.phase = 'explore'; G.S.w.fantasy.town = false; G.Fantasy.refreshEnts(R); if (G.Sight?.update) G.Sight.update(R);
-    G.Zone.set(iso.rooms[n.id], iso); G.Tactics.snap(R); // 4×4 구역 판: 그 방 바닥을 넷씩 나눈다 (방 크기는 그대로)
+    const to = formUp(iso.rooms[n.id]); // 진형: 그 방 가운데를 무대로 앞줄 · 뒷줄 (방 크기는 그대로)
     G.Dice.party = () => R.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => R.turn?.cur || null; G.Dice.end();
-    fighting = { n, mod, acc: 0, round: 0, cur: null, t: 0 };
+    fighting = { n, mod, acc: 0, round: 0, cur: null, t: 0, intro: { t: 0, to } };
     st.log.push({ t: `${n.g.label} — 전투가 시작된다.` }); say();
   }
   function fightFrame(dt) {
     const F = fighting, T = R.turn; F.t += dt;
+    // 진형으로 걸어간다 (그동안 전투 시계는 멈춘다)
+    if (F.intro) {
+      F.intro.t += dt; let left = 0;
+      for (const [e, q] of F.intro.to) { const path = [q]; G.Tactics.walk(e, path, 3.2, dt); if (path.length) left++; }
+      if (left && F.intro.t < 3) return;
+      G.Tactics.snap(R); F.intro = null;
+    }
     // 새 라운드: (죽음의 주사위가 있으면 맡을 사람부터) 주사위를 굴리고 트레이에서 기다린다
-    if (T && T.round !== F.round) { F.round = T.round; if (G.Dice.loadout.includes('doom')) bearerPick(); else { G.Dice.newRound(T.round); tray(); } }
+    if (T && T.round !== F.round) { F.round = T.round; if (G.Dice.loadout.includes('doom')) bearerPick(); else { G.Dice.newRound(T.round); if (F.quiet) G.Dice.st.ready = true; else tray(); } }
     if ($('dicebear') || (G.Dice.st && !G.Dice.st.ready)) return; // 플레이어를 기다린다
     // 차례가 바뀌었다: 앞 사람의 내성 뒤집기를 끝내고, 즉사 면을 받은 사람이면 쓰러진다
     if (T && T.cur !== F.cur) { if (F.cur) G.Dice.turnEnd(F.cur); F.cur = T.cur; const r = T.cur && G.Dice.dieOf(T.cur); if (r && r.special === 'death' && !T.cur.dead) { T.cur.hp = 0; T.cur.dead = true; T.cur.dying = false; st.log.push({ t: `죽음의 주사위가 ${T.cur.merc?.name || '동료'}를 데려갔다.` }); say(); G.Fantasy.refreshEnts(R); } }
@@ -236,10 +244,10 @@ const CRAWL = (() => {
     if (!foes.length || F.t > 600) return endFight(true);
   }
   function endFight(win) {
-    const F = fighting, n = F.n; fighting = null; G.Dice.end(); closeTray(); // 조합 효과도 여기서 끝 R.turn = null; G.Zone.off(); zonesOff();
+    const F = fighting, n = F.n; fighting = null; G.Dice.end(); closeTray(); R.turn = null; G.Line.off(); rowsOff(); turnBar(); // 조합 효과 · 진형도 여기서 끝
     document.body.dataset.fights = (+(document.body.dataset.fights || 0) + 1) + (win ? 'w' : 'l'); delete document.body.dataset.fight;
     syncToRUN(); n.hostile = false;
-    if (!st) { const d = document.createElement('div'); d.className = 'record-stub'; d.textContent = win ? `시험 전투: 이겼다 (${F.round}라운드)` : '시험 전투: 졌다'; $('stage').append(d); return; }
+    if (!st) { const d = document.createElement('div'); d.className = 'record-stub'; d.innerHTML = `${win ? `시험 전투: 이겼다 (${F.round}라운드)` : '시험 전투: 졌다'} <button onclick="location.reload()">다시 보기</button>`; $('stage').append(d); return; }
     if (!win || !st.party.some(m => !m.dead)) { st.done = 'lose'; st.log.push({ t: '탐사대가 전멸했다.' }); say(); return end(); }
     if (n.type === 'boss') { st.done = 'win'; st.log.push({ t: `${n.g.name}가 쓰러졌다. 이 층의 지도가 완성됐다.` }); say(); drawMap(); return end(); }
     const gold = n.type === 'elite' ? 35 + RUN.d(st.rng, 15) : 6 + n.g.count * 2 + (n.g.tier === 'heavy' ? 15 : 0); st.gold += gold;
@@ -247,15 +255,36 @@ const CRAWL = (() => {
     const L = lead(); trail.length = 0; trail.push([L.x, L.y]);
     refreshSeen(); doorTiles = doorsOf(); drawMap(); showMarks();
   }
-  // 구역 선: 그 방 바닥 위에 4×4 (쿼터뷰 좌표로 꺾어 그린다)
-  function drawZones() {
-    const b = G.Zone.b; if (!b) return; let svg = $('zones');
-    if (!svg) { svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.id = 'zones'; $('stage').append(svg); }
-    const rc = canvas.getBoundingClientRect(), sb = $('stage').getBoundingClientRect(), P = (x, y) => { const a = project(wx(x), wy(y), 0); return `${(rc.left - sb.left + a.sx / W * rc.width).toFixed(1)},${(rc.top - sb.top + a.sy / H * rc.height).toFixed(1)}`; };
-    const L = []; for (let i = 0; i <= 4; i++) { const x = b.x + i * b.zw, y = b.y + i * b.zh; L.push(`M${P(x, b.y)}L${P(x, b.y + b.h)}`, `M${P(b.x, y)}L${P(b.x + b.w, y)}`); }
-    svg.innerHTML = `<path d="${L.join('')}"/>`;
+  // 진형 잡기: 그 방 가운데를 무대로, 아군 → 적 방향. 돌려주는 것: 사람 → 설 자리 (걸어가는 건 fightFrame)
+  function formUp(room) {
+    const avg = l => ({ x: l.reduce((a, e) => a + e.x, 0) / l.length, y: l.reduce((a, e) => a + e.y, 0) / l.length });
+    return G.Line.set(R, R.map, { x: room.cx, y: room.cy }, avg(R.party.filter(p => !p.dead)), avg(R.mons.filter(m => m.hp > 0)));
   }
-  function zonesOff() { const z = $('zones'); if (z) z.remove(); }
+  // 줄 표시: 양쪽 앞줄 · 뒷줄 밑에 짧은 선 (쿼터뷰 좌표로 꺾어 그린다)
+  function drawRows() {
+    const Ln = G.Line; let svg = $('rows');
+    if (!svg) { svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.id = 'rows'; $('stage').append(svg); }
+    const rc = canvas.getBoundingClientRect(), sb = $('stage').getBoundingClientRect(), P = (x, y) => { const a = project(wx(x), wy(y), 0); return [rc.left - sb.left + a.sx / W * rc.width, rc.top - sb.top + a.sy / H * rc.height]; };
+    let out = '';
+    const live = R.party.filter(p => !p.dead).concat(R.mons.filter(m => m.hp > 0));
+    for (const s of [0, 1]) for (const r of [0, 1]) {
+      const ls = live.filter(e => Ln.sideOf(e) === s && Ln.rowOf(e) === r).map(e => Ln.laneOf(e)); if (!ls.length) continue; // 선 사람이 있는 줄만, 그 사람들 밑에만
+      const a = (s ? 1 : -1) * Ln.D[r], l0 = (Math.min(...ls) - 0.6) * Ln.LANE, l1 = (Math.max(...ls) + 0.6) * Ln.LANE, cx = Ln.c.x + Ln.d.x * a, cy = Ln.c.y + Ln.d.y * a;
+      const A = P(cx + Ln.p.x * l0, cy + Ln.p.y * l0), B = P(cx + Ln.p.x * l1, cy + Ln.p.y * l1), [lx, ly] = A[0] < B[0] ? A : B;
+      out += `<path class="${s ? 'foe' : 'me'}" d="M${A[0].toFixed(1)},${A[1].toFixed(1)}L${B[0].toFixed(1)},${B[1].toFixed(1)}"/><text class="${s ? 'foe' : 'me'}" x="${(lx - 6).toFixed(1)}" y="${(ly + 4).toFixed(1)}">${r ? '뒷줄' : '앞줄'}</text>`;
+    }
+    svg.innerHTML = out;
+  }
+  function rowsOff() { const z = $('rows'); if (z) z.remove(); }
+  // 차례 막대: 선제권 순서대로, 지금 차례는 크게
+  function turnBar() {
+    const T = R && R.turn; let bar = $('turnbar');
+    if (!T || !fighting) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('div'); bar.id = 'turnbar'; $('stage').append(bar); }
+    const on = T.order.filter(o => o.e.hp > 0 && !o.e.dead), k = T.round + '|' + on.map(o => (o.e === T.cur ? '*' : '') + Math.round(10 * o.e.hp / (o.e.max || 1))).join();
+    if (bar.dataset.k === k) return; bar.dataset.k = k;
+    bar.innerHTML = `<b>${T.round || 1}라운드</b>` + on.map(o => { const e = o.e, foe = e.kind === 'mon', row = G.Line.on ? (G.Line.rowOf(e) ? '뒤' : '앞') : ''; return `<span class="${foe ? 'foe' : 'me'}${e === T.cur ? ' cur' : ''}"><small>${row}</small>${esc(foe ? e.n || '적' : e.merc?.name || '동료')}<i style="width:${Math.round(100 * Math.max(0, e.hp) / (e.max || 1))}%"></i></span>`; }).join('');
+  }
   // 죽음의 주사위를 맡을 사람 (굴리기 전에)
   function bearerPick() {
     const ps = G.Dice.party(), sug = G.Dice.suggestBearer(), box = document.createElement('div'); box.id = 'dicebear';
@@ -334,16 +363,17 @@ const CRAWL = (() => {
       // 시험용 ?tap=x,y: 그 타일을 화면 좌표로 바꿔 누른 것처럼 (화면 ↔ 타일 변환 확인)
       if (q.get('tap')) setTimeout(() => { const [tx, ty] = q.get('tap').split(',').map(Number), a = project(wx(tx), wy(ty), 0), rc = canvas.getBoundingClientRect(); const cx = rc.left + a.sx / canvas.width * rc.width, cy = rc.top + a.sy / canvas.height * rc.height, back = tileAtScreen(cx, cy); document.body.dataset.tap = back.map(v => v.toFixed(2)).join(','); }, 1500);
     },
-    frame(dt) { frame(dt); autoStep(dt); for (const m of marks) place(m.el, m.x, m.y, 2.2); if (G.Zone.on) drawZones(); }, // 구역 선은 카메라를 따라 매 프레임
-    // 시험 전투 (?fight=test): 이미 세운 적과 4×4 구역 전투 + 라운드 주사위 (탐사 규칙 없이)
+    frame(dt) { frame(dt); autoStep(dt); for (const m of marks) place(m.el, m.x, m.y, 2.2); if (G.Line.on && fighting) drawRows(); turnBar(); }, // 줄 표시는 카메라를 따라 매 프레임
+    // 시험 전투 (?fight=test): 복도로 들어와 적과 맞닥뜨리고 진형을 잡아 싸운다 (탐사 규칙 없이)
     fightTest(r) {
       const pm = $('pmapbox'); if (pm) pm.style.display = 'none';
-      R = r; const room = r.map.rooms[0], n = { id: -1, type: 'fight', g: { label: '시험 전투', name: '적', count: r.mons.length, units: [] } };
+      R = r; const room = r.map.rooms.find(x => x.id === 'A') || r.map.rooms[0], n = { id: -1, type: 'fight', g: { label: '시험 전투', name: '적', count: r.mons.length, units: [] } };
       R.turn = null; R.phase = 'explore'; G.S.w.fantasy.town = false;
-      G.Zone.set(room, r.map); G.Tactics.snap(R);
+      const to = formUp(room);
       G.Dice.party = () => R.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => R.turn?.cur || null; G.Dice.end();
-      fighting = { n, mod: {}, acc: 0, round: 0, cur: null, t: 0 };
-      dicePick(); if (q.get('auto')) autoN = 99;
+      const tray0 = q.get('tray') || q.get('dice') != null; // 주사위 트레이는 ?tray · ?dice일 때만 (예시 장면은 전투만 보여 준다)
+      fighting = { n, mod: {}, acc: 0, round: 0, cur: null, t: 0, intro: { t: 0, to }, quiet: !tray0 };
+      if (tray0) dicePick(); if (q.get('auto')) autoN = 99;
     },
     get st() { return st; },
   };

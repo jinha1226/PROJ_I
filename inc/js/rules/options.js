@@ -203,9 +203,9 @@ G.Opt = (() => {
     },
     // 주문을 어디서 재나: 나 + 두 정신의 응시로 묶인 동료
     inReach(a, rt, o, reach) {
-      if (G.Zone.dist(o, a) <= reach) return true;
+      if (G.Line.dist(o, a) <= reach) return true;
       if (reach <= 1.5 || !Opt.has(a, 'iv_gaze')) return false;
-      return rt.party.some(p => p !== a && !p.dead && G.Zone.dist(p, a) <= 12 && G.Zone.dist(o, p) <= reach);
+      return rt.party.some(p => p !== a && !p.dead && G.Line.dist(p, a) <= 12 && G.Line.dist(o, p) <= reach);
     },
     // 칼날의 계약: 근접 몸으로 · 섬뜩한 창: 사거리 +3
     defOf(m, base) {

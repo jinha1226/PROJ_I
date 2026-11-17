@@ -17,7 +17,7 @@ G.SkillAI = (() => {
       return Math.max(0, hp / dpr / PARTY_ROUNDS) + (1 - hpK) + (foes.some(o => o.boss) ? 0.5 : 0);
     },
     // 범위 안에 가장 많이 잡히는 적
-    best(x, r) { let top = []; for (const o of x.seen) { const q = x.seen.filter(t => G.Zone.dist(t, o) <= r); if (q.length > top.length) top = q; } return top; },
+    best(x, r) { let top = []; for (const o of x.seen) { const q = x.seen.filter(t => G.Line.dist(t, o) <= r); if (q.length > top.length) top = q; } return top; },
     // 기본 공격 한 번의 피해 (넘치는 몫은 뺀다)
     basic(a, x) { const t = x.seen[0]; if (!t) return 1; return Math.max(1, Math.min(t.hp, F().allyAtk(x.f, a) * (DN().caster(a) && a.merc.cls !== 'warlock' ? DN().tier(a) : 1) * DN().attacks(a) * HIT_P)); },
     score(k, a, x, threat) {
@@ -44,7 +44,7 @@ G.SkillAI = (() => {
     // 스킬 순서와 값: 값이 낮으면 쓰지 않는다 (행동은 기본 공격보다 높아야)
     rank(list, a, x0, bonus) {
       const threat = AI.threat(a, x0), base = bonus ? 0 : 1, out = [];
-      for (const k of list) { const S = SK()[k]; if (!S || S.rider) continue; const reach = D.SK_RANGE[k], x = { ...x0, reach, seen: reach == null ? x0.seen : x0.seen.filter(o => G.Zone.dist(o, a) <= Math.max(reach, 1.5) + 0.5) }; let v; try { v = AI.score(k, a, x.seen.length ? x : x0, threat); } catch (e) { v = 0; } out.push([k, v]); }
+      for (const k of list) { const S = SK()[k]; if (!S || S.rider) continue; const reach = D.SK_RANGE[k], x = { ...x0, reach, seen: reach == null ? x0.seen : x0.seen.filter(o => G.Line.dist(o, a) <= Math.max(reach, 1.5) + 0.5) }; let v; try { v = AI.score(k, a, x.seen.length ? x : x0, threat); } catch (e) { v = 0; } out.push([k, v]); }
       out.sort((p, q) => q[1] - p[1]); AI.last = { threat, base, out: out.slice(0, 6) };
       return out.filter(q => bonus || q[1] > base * 0.9 || !x0.seen.length || SK()[q[0]].heal).map(q => q[0]);
     },

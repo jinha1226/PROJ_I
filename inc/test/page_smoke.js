@@ -30,7 +30,8 @@ const game = (d, ents) => [
 const PAGES = {
   // 새 게임 껍데기 (2026-11-17 2단계): 시험 층에 파티 셋 · ?fight=test는 적 셋 더 · 폰 크기 · DCSS 인형 모드
   'index.html': d => game(d, 3),
-  'index.html?fight=test': d => game(d, 6),
+  // 시험 전투: 걸어 들어오는 동안 6명, 싸우는 중엔 살아 있는 적 + 아군(data-fight), 이기면 파티 셋
+  'index.html?fight=test': d => { const f = d.match(/data-fight="\d+r:(\d+)foes:(\d+)ps"/); return game(d, /data-fights="1w"/.test(d) ? 3 : f ? +f[1] + +f[2] : 6); },
   'index.html?art=dcss': d => game(d, 3),
   'index.html?phone=1': d => game(d, 3),
   'run.html': d => [
@@ -70,7 +71,7 @@ function serve() {
 // 매 프레임 그리는 페이지(px_lab)에서 헤드리스 크롬이 가끔 가상 시간을 못 끝내고 멈춘다 — 45초에 끊고, 빈 DOM이면 한 번 더.
 const dump1 = (chrome, url) => new Promise(ok => execFile(chrome, ['--no-sandbox', '--headless', '--disable-gpu', '--hide-scrollbars', `--window-size=${/phone=1/.test(url) ? '412,900' : '1100,900'}`, '--virtual-time-budget=8000', '--dump-dom', url],
   { maxBuffer: 64 << 20, timeout: 45000 }, (e, out) => ok(out || '')));
-const dump = async (chrome, url) => (await dump1(chrome, url)) || dump1(chrome, url);
+const dump = async (chrome, url) => (await dump1(chrome, url)) || (await dump1(chrome, url)) || dump1(chrome, url); // 전투 장면도 매 프레임 그린다 — 두 번까지 더
 
 (async () => {
   const chrome = findChrome();

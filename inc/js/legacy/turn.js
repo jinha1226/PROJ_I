@@ -258,7 +258,7 @@ G.Turn = (() => {
     }
   }
   // 그 칸에서 표적을 칠 수 있나: 사거리 안 + 시야
-  const canHit = (m, e, x, y, tg) => G.Zone.dist({ x, y }, tg) <= reach(e, tg) && F().sees(m, { x, y }, tg);
+  const canHit = (m, e, x, y, tg) => G.Line.dist({ x, y }, tg) <= reach(e, tg) && F().sees(m, { x, y }, tg);
   function strike(f, rt, st, e, tg) {
     // 명중 굴림이 있는 공격은 주사위부터 (광역 · 내성 공격은 굴리는 쪽이 상대라 바로)
         if (!G.quiet && (e.kind === 'mon' || e.kind === 'sum' || !(e.def.splash || e.def.chain || e.def.saveAtk))) {
