@@ -5,6 +5,7 @@ function frame(tt) {
   const n = now(); let dt = Math.min(.25, (n - last) / 1000); last = n; acc += dt;
   if (JU.frozen()) acc = 0; // 타격 경직: 그동안 게임 시간은 흐르지 않는다
   const t = n / 1000, r = rt();
+  if (!FIGHT) CRAWL.frame(dt);
   if (!r.map || !r.party) { requestAnimationFrame(frame); return; }
   const c0 = now();
   const ref = r.party.find(p => !p.dead) || r.hero;
@@ -43,7 +44,7 @@ function frame(tt) {
   VFX.present(); // 선 그림 이펙트 층 (인형 위)
   cost += (now() - c0); fN++;
   if (n - fT > 1000) { fps = fN; $('fps').textContent = q.has('debug') ? `${fps}fps · 프레임 ${(cost / fN).toFixed(1)}ms · 굽기 ${(bake0 || 0).toFixed(0)}ms` : ''; G.isoStat = { fps, ms: cost / fN, bake: bake0 }; fN = 0; cost = 0; fT = n; }
-  drawOver(r); drawMini(r); runVis(r);
+  drawOver(r); runVis(r); // 미니맵은 양피지 지도(CRAWL)
   document.body.dataset.ents = r.party.length + r.mons.length;
   requestAnimationFrame(frame);
 }

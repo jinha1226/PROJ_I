@@ -59,7 +59,7 @@ const TestFloor = (() => {
     return { w: W, h: H, c, kindAt: new Uint8Array(W * H), poi: {}, passChars: '.>,', ver: 1, dist: {}, rooms, start, end, fixed: true, title: kind === 'fight' ? '시험 전투' : '시험 층' };
   }
   // 파티: 단장(파이터) + 위저드 · 클레릭, 3레벨 (3단계에서 G.Char로 바꾼다). 적: fight일 때 셋
-  function world(kind = 'floor') {
+  function world(kind = 'floor', map0 = null) {
     G.newState();
     const f = G.S.w.fantasy, L = G.Guild.leader(f);
     f.leaderNew = false; f.autoTr = f.autoParty = false; f.askMeet = false; L.lv = 3;
@@ -67,7 +67,7 @@ const TestFloor = (() => {
     f.floor = f.maxFloor = f.start = f.checkpoint = 1; f.town = true;
     const r = G.Fantasy.rt(f); G.Fantasy.syncAllies(f);
     f.town = false; r.phase = 'explore'; r.turn = null; r.mons = []; r.chests = []; r.fields = [];
-    const m = r.map = build(kind), s = m.start;
+    const m = r.map = map0 || build(kind), s = m.start;
     r.party.forEach((p, i) => { p.x = s.cx - 1 + i; p.y = s.cy + (i % 2); p._dx = p._rx = p.x; p._dy = p._ry = p.y; });
     if (kind === 'fight') {
       const names = ['고블린 졸개', '고블린 졸개', '홉고블린'].map(n => G.D.F.mon[n] ? n : Object.keys(G.D.F.mon)[0]);
@@ -79,7 +79,10 @@ const TestFloor = (() => {
   }
   return { build, world };
 })();
-const W0 = TestFloor.world(q.get('fight') ? 'fight' : 'floor');
+// 탐사 층 (3단계): 지도 시제품의 생성기 · 규칙으로 한 층 (CRAWL). ?fight=test는 시험 전투 방, ?seed=숫자로 같은 층
+const FIGHT = !!q.get('fight');
+const W0 = FIGHT ? TestFloor.world('fight') : TestFloor.world('crawl', CRAWL.start(+q.get('seed') || ((Math.random() * 1e6) | 0)));
+if (!FIGHT) CRAWL.attach(W0.r);
 const f = W0.f, rt = () => W0.r;
 addEventListener('error', e => { document.body.dataset.err = String(e.message || e); });
 if (q.get('end')) document.addEventListener('DOMContentLoaded', () => { const d = document.createElement('div'); d.className = 'record-stub'; d.textContent = '층 끝 화면 자리 (7단계)'; document.body.append(d); });

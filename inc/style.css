@@ -162,3 +162,19 @@ img[src*="assets/chars/"] { image-rendering:auto; object-fit:contain; }
 /* 튜토리얼: 벽을 넘을 사람 · 도감 단추가 빛난다 */
 .strow.t-glow, #cdxbtn.t-glow { animation:tglow 1.4s ease-in-out infinite; }
 #hamlet .site.t-glow span, .embark.t-glow { animation:tglow 1.4s ease-in-out infinite; border-color:#ffd24a; color:#ffe08a; }
+
+/* 3단계 탐사: 양피지 미니맵 · 출구 표지 · 안내 표지 · 장면 */
+#mini { display:none !important; }
+#pmapbox { position:absolute; left:8px; top:8px; width:min(230px,42vw); max-height:46vh; overflow:hidden; border-radius:6px; cursor:zoom-in; z-index:6; box-shadow:0 4px 14px rgba(0,0,0,.55); background:#24180f; }
+#pmapbox.big { left:50%; top:50%; width:min(760px,94vw); max-height:88vh; transform:translate(-50%,-50%); overflow:auto; cursor:zoom-out; z-index:20; }
+#pmap { display:block; width:100%; height:auto; }
+#pmap .note { font:13px "Nanum Pen Script",cursive; } #pmap .sym { font:700 14px "Noto Sans KR",sans-serif; } #pmap .qm { font:700 22px "Nanum Pen Script",cursive; } #pmap .title { font:17px "Nanum Pen Script",cursive; }
+#pmap .stampt { font:28px "Nanum Pen Script",cursive; } #pmap .stampt2 { font:20px "Nanum Pen Script",cursive; } #pmap .halo { paint-order:stroke; stroke:#f3e4c3; stroke-width:3px; stroke-linejoin:round; }
+.exitmark { position:absolute; left:0; top:0; pointer-events:auto; display:flex; flex-direction:column; align-items:center; gap:1px; padding:4px 8px; border-radius:8px; border:1px solid #c9a86a; background:rgba(36,24,15,.88); color:#f3e4c3; font:12px "Noto Sans KR",sans-serif; cursor:pointer; }
+.exitmark b { font-size:15px; line-height:1; } .exitmark.seen { opacity:.7; border-color:#8a7a5a; } .exitmark:hover { background:rgba(70,48,24,.95); }
+#exitsign, #crawlscene { position:absolute; left:50%; bottom:96px; transform:translateX(-50%); width:min(420px,92vw); padding:12px 14px; border-radius:10px; border:1px solid #c9a86a; background:rgba(28,20,14,.95); color:#f3e4c3; z-index:15; font:14px "Noto Sans KR",sans-serif; }
+#exitsign h4, #crawlscene h3 { margin:0 0 6px; font:22px "Nanum Pen Script",cursive; } #exitsign p, #crawlscene p { margin:0 0 10px; color:#cdbb98; }
+#exitsign button, #crawlscene button { display:block; width:100%; text-align:left; margin:5px 0 0; padding:8px 10px; border-radius:7px; border:1px solid #6d5a3c; background:#3a2a1a; color:#f3e4c3; cursor:pointer; }
+#exitsign button:hover, #crawlscene button:hover { background:#4c3720; } #exitsign button.x { background:none; color:#a89878; } #exitsign i, #crawlscene i { color:#f0c070; font-style:normal; } #exitsign small, #crawlscene small { color:#a89878; margin-left:6px; }
+#crawlscene button:disabled { opacity:.45; cursor:default; }
+.record-stub { position:absolute; left:50%; top:40%; transform:translate(-50%,-50%); padding:18px 26px; border-radius:10px; background:rgba(28,20,14,.95); border:1px solid #c9a86a; color:#f3e4c3; font:24px "Nanum Pen Script",cursive; z-index:16; }
