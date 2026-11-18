@@ -72,7 +72,7 @@ const TestFloor = (() => {
     const m = r.map = map0 || build(kind), s = m.start;
     r.party.forEach((p, i) => { p.x = s.cx - 1 + i; p.y = s.cy + (i % 2); p._dx = p._rx = p.x; p._dy = p._ry = p.y; });
     if (kind === 'door') { // 문 앞 준비 시험: 문은 닫혀 있고(벽 칸) 방은 아직 안 보인다. 적은 잠들었거나 모른다
-      const A = m.rooms.find(q => q.id === 'A'); m.door = { x: 9, y: 8 }; m.c[m.door.y * m.w + m.door.x] = '#';
+      const A = m.rooms.find(q => q.id === 'A'); m.door = { x: 9, y: 8 }; G.Floor.setTiles(m, [m.door.y * m.w + m.door.x], '#');
       [['고블린 졸개', A.x + 3, A.cy - 2], ['고블린 졸개', A.x + 5, A.cy + 2], ['홉고블린', A.x + 8, A.cy]].forEach(([n, x, y]) => { const nm = G.D.F.mon[n] ? n : Object.keys(G.D.F.mon)[0]; G.Fantasy.spawnMon(r, 1, { n: nm, ...G.D.F.mon[nm] }, x, y, false, { major: true }); });
       for (const o of r.mons) { o.aggro = false; o.spotted = false; } G.Prep.prime(r.mons);
       r.seen = new Uint8Array(m.w * m.h); for (let y = 5; y <= 10; y++) for (let x = 0; x <= 9; x++) r.seen[y * m.w + x] = 1; r.seenVer = (r.seenVer || 0) + 1;

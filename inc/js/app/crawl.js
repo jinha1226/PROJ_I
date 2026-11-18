@@ -188,7 +188,7 @@ const CRAWL = (() => {
   function prepDoor(ex) {
     closeSign(); clearMarks(); nearKey = null;
     const n = st.map.nodes[ex.to], door = ex.path[ex.path.length - 1], lane = ex.path.slice(0, -1), dts = cellTiles(door);
-    openCor(ex.e.id); refreshSeen(); for (const k of dts) iso.c[k] = '#'; win.map = null;
+    openCor(ex.e.id); refreshSeen(); FL.setTiles(iso, dts, '#'); win.map = null;
     syncToG();
     const mons = G.Encounter.spawnRoom(R, st.map._lay.room[n.id].cells.map(FL.tile), units(n.g), { x: door[0], y: door[1] }, { boss: n.type === 'boss', hidden: true });
     if (n.alert) for (const m of mons) m.aware = 'alert'; // 이미 우리를 기다린다

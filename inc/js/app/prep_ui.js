@@ -39,7 +39,7 @@ const PREPUI = (() => {
   }
   // 문이 열린다: 그 자리를 바닥으로 바꿔 다시 굽고(잠깐 어두워졌다 밝아진다) 방을 드러낸다 → 1초 뒤 전투
   function startOpening() {
-    for (const k of O.doorTiles || [doorK()]) R.map.c[k] = '.'; win.map = null;
+    G.Floor.setTiles(R.map, O.doorTiles || [doorK()], '.'); win.map = null; // 길 찾기 기억도 새로 (floor.js)
     O.reveal?.(); for (const m of P.mons) m.spotted = true;
     G.Fantasy.refreshEnts?.(R); if (G.Sight?.update) G.Sight.update(R);
     opening = { t: 0 };

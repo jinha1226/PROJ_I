@@ -56,5 +56,8 @@ G.Floor = (() => {
     const pts = []; for (let k = g; k !== s; k = prev[k]) pts.unshift([k % W, (k / W) | 0]);
     return pts;
   }
-  return { K, tile, index, centerOf, fromRun, exits, kindOf, beyond, findPath };
+  // 판 칸을 바꾼다 (문을 닫으면 '#', 열면 '.'). 길 찾기 기억(G.Grid.field)은 m.ver로 묶여 있어 같이 올려야 한다 —
+  // 안 올리면 닫힌 채로 기억한 길이 남아 적이 다가오지 못하고, 보이는 위치는 '길이 없다'며 순간이동한다 (2026-11-18)
+  function setTiles(m, ks, ch) { for (const k of ks) m.c[k] = ch; m.ver = (m.ver || 0) + 1; }
+  return { K, tile, index, centerOf, fromRun, exits, kindOf, beyond, findPath, setTiles };
 })();

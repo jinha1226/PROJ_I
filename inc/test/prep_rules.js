@@ -75,5 +75,19 @@ const mk = (o = {}) => { shut = true; const ms = [goblin(), hob()]; return { P: 
   t('엔진: 잠든 적이 있으면 우리가 먼저', r2.turn && r2.turn.first === 'party', r2.turn && r2.turn.first);
   t('엔진: 기습 표시는 싸움이 시작되면 지운다', r2.prepSurprise == null);
 }
+// 8) 문을 열고 닫으면 길 찾기 기억(G.Grid.field)을 새로 — 닫힌 채로 기억한 길이 열린 뒤에도 남으면 적이 다가오지 못하고(전술 길 찾기)
+//    보이는 위치는 '길이 없다'며 순간이동한다 (2026-11-18 사용자: 「서로 다가가는거없이 갑자기 순간이동」)
+{
+  const m = { w: W, h: H, c: c.slice(), passChars: '.>', ver: 1, dist: {} }; m.c[DOOR] = '#';
+  const IN = 7 * W + 10, before = G.Grid.field(m, 5, 7); // 문 앞 우리 쪽 칸까지의 길 — 문이 닫힌 채로 기억된다
+  t('닫힌 문: 방 안에서 문 앞까지 길이 없다', before[IN] < 0);
+  G.Floor.setTiles(m, [DOOR], '.');
+  t('문을 열면 길 기억을 새로: 방 안에서 문 앞까지 길이 있다', G.Grid.field(m, 5, 7)[IN] > 0);
+  const hero = { x: 5, y: 7, hp: 10, kind: 'hero' }, gob = { x: 12, y: 7, hp: 7, kind: 'mon' }, rt = { map: m, party: [hero], mons: [gob] };
+  const path = G.Tactics.plan(rt, gob, hero, 3, (x, y) => Math.max(Math.abs(x - 5), Math.abs(y - 7)) <= 1);
+  t('문이 열린 뒤 방 안 적이 문 쪽으로 다가온다 (한 번에 못 닿아도)', path.length > 0 && path[path.length - 1].x < 12, JSON.stringify(path));
+  G.Floor.setTiles(m, [DOOR], '#');
+  t('다시 닫으면 다시 막힌다', G.Grid.field(m, 5, 7)[IN] < 0);
+}
 console.log(`prep_rules: 통과 ${ok} · 실패 ${bad}`);
 process.exit(bad ? 1 : 0);
