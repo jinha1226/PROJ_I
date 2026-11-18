@@ -1,5 +1,5 @@
 'use strict';
-// 문 앞 준비 (설계 5-11): node test/prep_rules.js
+// 문 열기 (설계 5-11 — 2026-11-18부터 저절로 연다): node test/prep_rules.js
 let ok = 0, bad = 0; const t = (name, v, extra = '') => { if (v) ok++; else { bad++; console.log('  실패:', name, extra); } };
 const { boot, spawn } = require('./_fight.js');
 const { G } = boot(1), P0 = G.Prep, N = G.Noise;
@@ -17,37 +17,20 @@ const fighter = { n: '파이터', merc: { skills: [] }, sk: { perception: 1, sle
 const goblin = () => ({ n: '고블린', x: 9, y: 7, stat: { skills: { stealth: 6 }, abil: { dex: 15 } }, aware: 'sleep' }); // 문 바로 뒤
 const hob = () => ({ n: '홉고블린', x: 13, y: 5, stat: { skills: {}, abil: { dex: 12 } }, aware: 'idle' }); // 방 안쪽
 const io = rolls => ({ d20: () => rolls.shift(), skill: (w, sk) => w.sk[sk] });
-const mk = (o = {}) => { shut = true; const ms = [goblin(), hob()]; return { P: P0.begin({ door: { x: 7, y: 7 }, out: { x: -1, y: 0 }, locked: true, grid, party: [rogue, mage, fighter], mons: ms, items: { oil: 1, caltrops: 1, tools: 1 }, ...o }), g: ms[0], h: ms[1] }; };
+const mk = (o = {}) => { shut = true; const ms = [goblin(), hob()]; return { P: P0.begin({ door: { x: 7, y: 7 }, out: { x: -1, y: 0 }, locked: true, grid, mons: ms, items: { tools: 1 }, ...o }), g: ms[0], h: ms[1] }; };
 
-// 1) 문 앞 (우리 쪽)
+// 1) 누가 어떻게 여나 (저절로): 안 잠겼으면 맨 앞 사람이 살살 · 잠겼으면 손재주 좋은 사람이 따기 두 번 · 그다음 운동 좋은 사람이 걷어차기
 {
-  const { P } = mk();
-  t('우리 쪽 문 앞은 세울 수 있다', P0.inZone(P, 5, 7) && P0.inZone(P, 4, 6));
-  t('방 안 · 문 칸 · 너무 먼 곳은 안 된다', !P0.inZone(P, 9, 7) && !P0.inZone(P, 7, 7) && !P0.inZone(P, 1, 7));
-  t('벽 위는 안 된다', !P0.inZone(P, 5, 5));
-}
-// 2) 엿듣기: 지각 vs 가장 높은 수동 은신 (고블린 은신 +6 → 16). 문 하나에 한 번. 단서가 있으면 판정 없이
-{
-  const { P } = mk(); t('수동 은신 = 10 + 은신 보정 (없으면 민첩)', P0.passiveStealth(goblin()) === 16 && P0.passiveStealth(hob()) === 11);
-  const r1 = P0.listen(P, rogue, io([9])).res;
-  t('엿듣기 실패: 기척만, 위치는 모른다', !r1.ok && r1.seen.length === 0 && r1.hint === '무언가 움직인다' && r1.dc === 16, JSON.stringify(r1));
-  const r2 = P0.listen(P, mage, io([20]));
-  t('엿듣기는 문 하나에 한 번 (다시 해도 같은 결과)', r2.res === r1 && r2.ev.length === 0);
-  const { P: Q } = mk(); const r3 = P0.listen(Q, rogue, io([13])).res;
-  t('엿듣기 성공(13 + 3 = 16): 몇이 어디에 (실루엣)', r3.ok && r3.seen.length === 2 && r3.seen[0].x === 9, JSON.stringify(r3.seen));
-  const { P: C } = mk({ clue: true }); const r4 = P0.listen(C, mage, io([])).res;
-  t('앞 방의 단서가 있으면 판정 없이 성공', r4.ok && r4.nat === null && r4.clue);
-}
-// 3) 자리 잡기 · 물건 놓기
-{
-  const { P } = mk();
-  t('세우기: 문 앞 우리 쪽', P0.stand(P, rogue, 5, 7) && P.starts.get(rogue).x === 5);
-  t('세우기: 다른 사람과 너무 가까우면 안 된다', !P0.stand(P, mage, 5.5, 7) && P0.stand(P, mage, 4, 6));
-  t('놓기: 기름을 문 앞에', P0.drop(P, 'oil', 5, 8) && P.items.oil === 0);
-  t('놓기: 가진 게 없으면 안 된다', !P0.drop(P, 'oil', 3, 7));
-  t('놓기: 문간(문 칸)에도 놓을 수 있다 · 놓은 것끼리 떨어져서', P0.drop(P, 'caltrops', 7, 7) && P.dropped.length === 2);
-  t('놓기: 방 안은 안 된다', !P0.canDrop({ ...P, items: { caltrops: 1 } }, 'caltrops', 10, 7));
-  t('되돌리기: 놓은 것을 다시 줍는다', P0.undrop(P, 0) && P.items.oil === 1 && P.dropped.length === 1);
+  const party = [mage, rogue, fighter], pick = io([]);
+  { const { P } = mk({ locked: false }); const n = P0.next(P, party, pick); t('안 잠긴 문: 맨 앞 사람이 살살', n.who === mage && n.id === 'push', JSON.stringify(n && { w: n.who.n, id: n.id })); }
+  const { P } = mk(); let n = P0.next(P, party, pick);
+  t('잠긴 문 · 도구 있음: 로그가 딴다', n.who === rogue && n.id === 'pick');
+  P0.open(P, rogue, 'pick', io([1])); t('따기 한 번 실패: 한 번 더 딴다', P0.next(P, party, pick).id === 'pick');
+  P0.open(P, rogue, 'pick', io([1])); n = P0.next(P, party, pick);
+  t('따기 두 번 실패: 파이터가 걷어찬다', n.who === fighter && n.id === 'kick', JSON.stringify({ w: n.who.n, id: n.id }));
+  { const { P: Q } = mk({ items: { tools: 0 } }); const m = P0.next(Q, party, pick); t('도구 없음: 바로 걷어차기', m.who === fighter && m.id === 'kick'); }
+  P0.open(P, fighter, 'kick', io([20])); t('열리면 더 하지 않는다', P0.next(P, party, pick) === null);
+  { const { P: Q } = mk({ items: { tools: 0 } }); t('노크 주문을 알아도 저절로 고르지 않는다 (가장 시끄럽다)', P0.next(Q, [mage], pick).id === 'kick'); }
 }
 // 4) 여는 방법
 {
@@ -78,16 +61,15 @@ const mk = (o = {}) => { shut = true; const ms = [goblin(), hob()]; return { P: 
 }
 // 6) 처음 상태: 잠들었거나 모른다
 { const ms = P0.prime([{}, {}, {}, {}], (() => { let i = 0; return () => [0.1, 0.9, 0.3, 0.7][i++]; })()); t('처음: 반은 잠들고 반은 모른다', ms.map(m => m.aware).join() === 'sleep,idle,sleep,idle'); }
-// 7) 엔진에 적용 (G.Encounter.applyPrep): 놓은 것 · 모두 싸움 · 잠든 적 · 기습
+// 7) 엔진에 적용 (G.Encounter.applyPrep): 모두 싸움 · 잠든 적 · 기습
 {
   const { G: G1, r } = boot(4); spawn(G1, r, ['고블린 졸개', '고블린 졸개']); for (const m of r.mons) { m.aggro = false; m.aware = 'idle'; }
-  G1.Encounter.applyPrep(r, { dropped: [{ kind: 'oil', x: 6, y: 7 }], asleep: [], surprise: true });
-  t('엔진: 놓은 기름이 바닥에', r.terrain?.length === 1 && r.terrain[0].kind === 'oil' && r.terrain[0].by === 'party');
+  G1.Encounter.applyPrep(r, { asleep: [], surprise: true });
   t('엔진: 문이 열리면 모두 싸운다', r.mons.every(m => m.aggro && m.spotted));
   for (let k = 0; k < 200 && !r.turn; k++) G1.tick(0.1);
   t('엔진: 모두 몰랐으면 기습 — 적의 선제권 불리', r.turn && r.sneaked === true, `turn=${!!r.turn} sneaked=${r.sneaked}`);
   const { G: G2, r: r2 } = boot(5); spawn(G2, r2, ['고블린 졸개', '고블린 졸개']); const z = r2.mons[0];
-  G2.Encounter.applyPrep(r2, { dropped: [], asleep: [z], surprise: true });
+  G2.Encounter.applyPrep(r2, { asleep: [z], surprise: true });
   t('엔진: 잠든 적은 첫 차례를 넘긴다 · 맞으면 깬다', z.stop > 0 && z.koHit);
   for (let k = 0; k < 200 && !r2.turn; k++) G2.tick(0.1);
   t('엔진: 잠든 적이 있으면 우리가 먼저', r2.turn && r2.turn.first === 'party', r2.turn && r2.turn.first);

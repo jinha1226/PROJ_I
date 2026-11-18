@@ -6,7 +6,7 @@
 // - 판정: 굴린 사람 머리 위에 「따기 12 + 7 = 19 성공」처럼
 const FXUI = (() => {
   const { $ } = UI;
-  let R = null, anim = [], extra = () => []; // extra: 아직 엔진에 안 넣은 바닥 것 (문 앞 준비 중 놓은 것)
+  let R = null, anim = [];
   const AW = { sleep: ['z', '#9fb4d8'], idle: ['?', '#e8d890'], alert: ['!', '#f0a050'], hunt: ['!!', '#ff5a40'] };
   const knownMon = e => e.kind !== 'mon' || e.spotted || e._known;
   const text = (x, y, s, col = '#f3e4c3', t = 1.3, sz = 0.85) => G.fx(R, { k: 'text', x, y: y - 1.15, s, col, t, sz });
@@ -19,7 +19,6 @@ const FXUI = (() => {
       case 'burn': text(e.e.x, e.e.y + 0.4, '불탄다', '#ff8a40', 1, 0.75); break;
       case 'caltrops': text(e.e.x, e.e.y, '마름쇠!', '#d0d0d0', 1.2, 0.9); break;
       case 'dodge': text(e.e.x, e.e.y, '마름쇠를 피했다', '#a0a0a0', 1, 0.75); break;
-      case 'listen': text(e.who.x, e.who.y, e.clue ? '단서로 안다' : `지각 ${e.nat} + ${e.mod} = ${e.nat + e.mod} / ${e.dc} ${e.ok ? '들었다' : '흐릿하다'}`, e.ok ? '#9fe08a' : '#c0b090', 2.2, 0.8); break;
       case 'try': text(e.who.x, e.who.y, e.nat == null ? `${TRY[e.id] || e.n}` : `${TRY[e.id] || e.n} ${e.nat} + ${e.mod} = ${e.nat + e.mod} / ${e.dc} ${e.ok ? '성공' : '실패'}`, e.ok ? '#9fe08a' : '#ff8a70', 2.2, 0.8); break;
       case 'open': text(e.who.x, e.who.y - 0.3, '문이 열렸다!', '#f0c070', 1.6, 1); break;
     }
@@ -33,7 +32,7 @@ const FXUI = (() => {
   function frame(dt) {
     if (!R) return;
     for (const e of G.Feed.take()) show(e);
-    const ground = (R.terrain || []).concat(extra());
+    const ground = R.terrain || [];
     // 타는 기름 위로 불꽃 (옛 엔진의 지형 불꽃과 같은 방식)
     for (const p of R.terrain || []) if (p.lit && Math.random() < dt * 9) G.fx(R, { k: 'tile', key: 'fx_flame', x: p.x + (Math.random() - 0.5) * p.r * 1.5, y: p.y + (Math.random() - 0.5) * p.r * 1.5, t: 0.45 });
     if (!ground.length && !anim.length) { const s = $('fxsvg'); if (s) s.innerHTML = ''; return; }
@@ -46,5 +45,5 @@ const FXUI = (() => {
     }
     UI.svg('fxsvg', 2).innerHTML = out;
   }
-  return { attach(rt) { R = rt; }, frame, show, set extra(f) { extra = f || (() => []); } };
+  return { attach(rt) { R = rt; }, frame, show };
 })();

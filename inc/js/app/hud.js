@@ -8,7 +8,7 @@ const HUD = (() => {
   const { $, esc } = UI;
   let el = null, key = '';
   const f = () => G.S.w.fantasy;
-  const ITEM = [['oil', '기름'], ['caltrops', '마름쇠'], ['potion', '물약'], ['tools', '도구'], ['torch', '횃불'], ['knockScroll', '열림'], ['seeScroll', '투시']];
+  const ITEM = [['potion', '물약'], ['tools', '도구'], ['torch', '횃불'], ['knockScroll', '열림'], ['seeScroll', '투시']];
   const clsOf = m => G.Guild.def(m) || {};
   // 화면 너비 기준 확대: 폰은 게임 픽셀 250(탐사) · 340(전투 — 적까지 보이게), 넓은 화면은 560 · 660
   const zoom = (fight = false) => { const w = STG.clientWidth || innerWidth; return Math.max(1, w * DPR / (w < 700 ? (fight ? 340 : 250) : (fight ? 660 : 560))); };

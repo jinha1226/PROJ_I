@@ -54,12 +54,10 @@ G.Reward = (() => {
 
   // ── 전리품 · 상인 물자 ──
   const ITEM = {
-    oil: { n: '기름', cost: 6, line: '5피트 칸에 붓는다 — 불이 닿으면 2라운드 탄다' },
-    caltrops: { n: '마름쇠', cost: 8, line: '처음 밟는 적은 멈춘다 (DC 15)' },
     tools: { n: '도둑 도구', cost: 20, line: '잠긴 문을 조용히 딴다 (DC 15)' },
     potion: { n: '치유 물약' }, torch: { n: '횃불' }, knockScroll: { n: '열림 두루마리' }, seeScroll: { n: '투시 두루마리' },
   };
-  const LOOT = [['oil', 30], ['potion', 26], ['caltrops', 14], ['torch', 10], ['knockScroll', 6], ['tools', 6], ['seeScroll', 5]];
+  const LOOT = [['potion', 26], ['torch', 10], ['knockScroll', 6], ['tools', 6], ['seeScroll', 5]]; // 기름 · 마름쇠는 문 앞 준비와 함께 뺐다 (2026-11-18)
   // 전투마다: 굴림 수 = 보스 3 · 정예 2 · 적 셋 이상 2 · 아니면 1, 굴림마다 70%로 하나 (무게 표에서)
   function loot(type, count, rng = Math.random) {
     const rolls = type === 'boss' ? 3 : type === 'elite' || count >= 3 ? 2 : 1, tot = LOOT.reduce((a, [, w]) => a + w, 0), out = {};
@@ -67,7 +65,7 @@ G.Reward = (() => {
     return Object.entries(out).map(([k, n]) => ({ k, n, name: ITEM[k]?.n || k }));
   }
   // 상인의 물건 목록에 새 물자를 더한다 (탐사 규칙의 RUN.ITEMS — 옛 것은 그대로)
-  function stockShop(items) { for (const k of ['oil', 'caltrops', 'tools']) if (!items[k]) items[k] = { n: ITEM[k].n, cost: ITEM[k].cost, line: ITEM[k].line }; return items; }
+  function stockShop(items) { for (const k of ['tools']) if (!items[k]) items[k] = { n: ITEM[k].n, cost: ITEM[k].cost, line: ITEM[k].line }; return items; }
 
   // ── 정예 · 보스 3택1: 마법 물건 · 운명판 규칙 카드 · 면 새기기 ──
   const RULES = {
@@ -105,7 +103,7 @@ G.Reward = (() => {
   // ── 명성 (판 밖) ──
   // 한 판의 명성: 간 방 1 · 이긴 전투 2 · 정예 3 · 보스 10 · 층 끝까지 가면 5 더
   const renown = s => (s.rooms || 0) + 2 * (s.fights || 0) + 3 * (s.elites || 0) + 10 * (s.boss ? 1 : 0) + (s.win ? 5 : 0);
-  const UNLOCKS = [{ id: 'twin', at: 10, n: '쌍둥이 주사위 (특수 주사위)' }, { id: 'oil1', at: 15, n: '시작 기름 +1' }, { id: 'doom', at: 25, n: '죽음의 주사위 (특수 주사위)' }, { id: 'potion1', at: 35, n: '시작 치유 물약 +1' }];
+  const UNLOCKS = [{ id: 'twin', at: 10, n: '쌍둥이 주사위 (특수 주사위)' }, { id: 'doom', at: 25, n: '죽음의 주사위 (특수 주사위)' }, { id: 'potion1', at: 35, n: '시작 치유 물약 +1' }];
   const unlocked = total => UNLOCKS.filter(u => total >= u.at).map(u => u.id);
 
   return { on: false, XP_PACE, AB_N, ITEM, RULES, UNLOCKS, caster, slotsOpen, pending, learnable, offer, choose, loot, stockShop, bigOffer, takeBig, blanks, renown, unlocked };

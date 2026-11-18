@@ -59,7 +59,7 @@ const seq = a => { let i = 0; return () => a[i++ % a.length]; };
   t('전리품: 보스는 셋까지 · 이름이 붙는다', b.reduce((a, q) => a + q.n, 0) >= 2 && b.every(q => q.name), JSON.stringify(b));
   t('전리품: 굴림이 70% 넘으면 없다', R.loot('fight', 1, seq([0.95])).length === 0);
   const shop = { potion: { n: '치유 물약', cost: 25 } }; R.stockShop(shop);
-  t('상인: 기름 · 마름쇠 · 도둑 도구를 더한다 (옛 물건은 그대로)', shop.oil && shop.caltrops && shop.tools && shop.potion.cost === 25);
+  t('상인: 도둑 도구를 더한다 (옛 물건은 그대로 · 기름 · 마름쇠는 없다)', shop.tools && !shop.oil && !shop.caltrops && shop.potion.cost === 25);
 }
 // 5) 정예 · 보스 3택1: 마법 물건 · 규칙 카드 · 면 새기기
 {
@@ -90,7 +90,7 @@ const seq = a => { let i = 0; return () => a[i++ % a.length]; };
 {
   const { G } = boot(7), R = G.Reward;
   t('명성: 간 방 1 · 전투 2 · 정예 3 · 보스 10 · 층 끝 5', R.renown({ rooms: 6, fights: 3, elites: 1, boss: true, win: true }) === 6 + 6 + 3 + 10 + 5);
-  t('명성이 쌓이면 풀이 넓어진다 (10 쌍둥이 · 15 기름 · 25 죽음의 주사위)', R.unlocked(9).length === 0 && R.unlocked(15).join() === 'twin,oil1' && R.unlocked(30).includes('doom'));
+  t('명성이 쌓이면 풀이 넓어진다 (10 쌍둥이 · 25 죽음의 주사위)', R.unlocked(9).length === 0 && R.unlocked(15).join() === 'twin' && R.unlocked(30).includes('doom'));
 }
 console.log(`reward_rules: 통과 ${ok} · 실패 ${bad}`);
 process.exit(bad ? 1 : 0);

@@ -6,7 +6,7 @@
 // - emit은 사건 목록을 돌려준다: { k: 'noise', x, y, n, r } (파문) · { k: 'aware', who, from, to } (상태 바뀜). 화면은 이걸 그린다.
 G.Noise = (() => {
   // 행동마다 소리 크기 (설계 5-11 표)
-  const LV = { walk: 0, listen: 0, push: 1, pick: 1, pickFail: 4, kick: 10, knock: 15, round: 8, blast: 12 };
+  const LV = { walk: 0, push: 1, pick: 1, pickFail: 4, kick: 10, knock: 15, round: 8, blast: 12 };
   const ORDER = ['sleep', 'idle', 'alert', 'hunt'];
   const DOOR = 4; // 닫힌 문 너머는 이만큼 멀게 들린다 (타일) — 자물쇠 따기 실패(4)는 문 바로 뒤의 적만 깨운다
   const reach = n => 2 * n;

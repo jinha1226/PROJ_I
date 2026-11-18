@@ -13,16 +13,15 @@ G.Encounter = (() => {
       const [x, y] = order[(k++ * 3) % Math.max(1, order.length)] || [from.x + 3, from.y], nm = monName(name);
       out.push(G.Fantasy.spawnMon(R, 1, { n: nm, ...G.D.F.mon[nm] }, x, y, false, { aggro: !opts.hidden, spotted: !opts.hidden, major: true, boss: !!opts.boss }));
     }
-    // hidden: 문 앞 준비 — 방 안에서 안 보이고(문이 열릴 때까지), 잠들었거나 모른다
+    // hidden: 닫힌 문 너머 — 방 안에서 안 보이고(문이 열릴 때까지), 잠들었거나 모른다
     if (opts.hidden) G.Prep.prime(out, opts.rng);
     G.Fantasy.refreshEnts(R); if (G.Sight?.update) G.Sight.update(R);
     return out;
   }
-  // 문 앞 준비의 결과(G.Prep.setup)를 전투에: 놓은 것을 바닥에 · 모두 싸운다 · 잠든 적은 첫 차례를 넘기고 맞으면 깬다(SRD 무의식처럼)
+  // 문 열기의 결과(G.Prep.setup)를 전투에: 모두 싸운다 · 잠든 적은 첫 차례를 넘기고 맞으면 깬다(SRD 무의식처럼)
   // · 모든 적이 몰랐으면 기습(SRD: 선제권 굴림에 불리 — bridge.js가 옛 엔진의 기습 판정에 건다)
   const ROUND = 6; // 옛 G.Turn의 한 라운드 (정지 시간은 차례마다 이만큼 준다)
   function applyPrep(R, S) {
-    for (const d of S.dropped) G.Ground.place(R, d.kind, d.x, d.y, 'party');
     for (const m of R.mons) if (m.hp > 0) { m.aggro = true; m.spotted = true; }
     for (const m of S.asleep) { m.stop = ROUND; m.koHit = true; }
     R.prepSurprise = S.surprise;

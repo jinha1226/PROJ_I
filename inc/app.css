@@ -30,19 +30,30 @@ body { touch-action:manipulation; overscroll-behavior:none; -webkit-tap-highligh
 
 /* ── 위 바 · 파티 바 사이: 미니맵 · 진행 글 ── */
 #pmapbox:not(.big) { top:calc(var(--hud-h) + var(--safe-t) + 4px) !important; right:8px !important; left:auto !important; width:116px !important; height:86px !important; }
-#dm { top:calc(var(--hud-h) + var(--safe-t) + 6px) !important; left:10px !important; right:132px !important; transform:none !important; max-width:none !important; font-size:13px !important; }
+/* 진행 글: 위 바 바로 아래 왼쪽, 새 줄 둘까지 한 줄씩 (옛 bottom:82px를 꼭 지운다 — 위아래가 둘 다 잡히면 상자가 화면 끝까지 늘어난다) */
+#dm { top:calc(var(--hud-h) + var(--safe-t) + 4px) !important; bottom:auto !important; left:8px !important; right:132px !important; transform:none !important; max-width:none !important;
+  padding:4px 8px !important; font:12px/1.45 "Noto Sans KR",sans-serif !important; font-style:normal !important; text-align:left !important; pointer-events:none; }
+#dm div { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } #dm div + div { color:var(--ink); } #dm div:first-child:not(:last-child) { color:var(--dim); }
 #fatehud { display:none; } /* 폰: 운명판은 파티 카드의 주사위로 */
 
 /* ── 창은 모두 아래에서 올라오는 시트 ── */
-#exitsign, #crawlscene, #prep, #reward, #dicetray, #dicepick, #dicebear, #csheet {
+#exitsign, #crawlscene, #reward, #dicetray, #dicepick, #dicebear, #csheet {
   position:fixed !important; left:0 !important; right:0 !important; top:auto !important; bottom:0 !important; transform:none !important;
   width:auto !important; max-width:none !important; max-height:64dvh; overflow:auto; box-sizing:border-box; z-index:20 !important;
   padding:18px 14px calc(14px + var(--safe-b)) !important; border-radius:16px 16px 0 0 !important; background:var(--panel) !important; border:1px solid #c9a86a !important; border-bottom:0 !important; }
-#exitsign::before, #crawlscene::before, #prep::before, #reward::before, #dicetray::before, #dicepick::before, #dicebear::before, #csheet::before {
+#exitsign::before, #crawlscene::before, #reward::before, #dicetray::before, #dicepick::before, #dicebear::before, #csheet::before {
   content:''; position:absolute; top:6px; left:50%; width:40px; height:4px; margin-left:-20px; border-radius:2px; background:rgba(243,228,195,.25); }
 /* 누르기 좋게: 단추는 44px 이상 */
-#exitsign button, #crawlscene button, #prep button, #reward button, #dicetray button, #dicepick button, #dicebear button, #csheet button { min-height:44px; }
-#dicetray.board table { width:100%; } #dicetray.board td .die { width:40px; height:40px; }
+#exitsign button, #crawlscene button, #reward button, #dicetray button, #dicepick button, #dicebear button, #csheet button { min-height:44px; }
+/* 운명판 창: 작게 — 머리말 한 줄 · 주사위 32px · 라운드 단추 낮게 · 조합 글은 작게 */
+#dicetray.board { padding-top:16px !important; }
+#dicetray.board .hd { margin-bottom:2px; } #dicetray.board .hd small { display:block; margin:1px 0 0; font-size:11px !important; }
+#dicetray.board table { width:100%; table-layout:fixed; border-spacing:4px 3px; margin:0 0 4px; }
+#dicetray.board th { width:auto; font-size:12px; overflow:hidden; text-overflow:ellipsis; } #dicetray.board tr > th:first-child { width:58px; }
+#dicetray.board th .col { min-height:28px; width:100%; padding:2px 4px; font-size:11px; }
+#dicetray.board td .die { width:32px; height:32px; font-size:15px; } #dicetray.board td .die .sy { font-size:9px; padding:0 2px; right:-5px; top:-5px; }
+#dicetray.board tr.cb td { font-size:10px; line-height:1.25; white-space:normal; }
+#dicetray.board .bar button { min-height:40px; }
 
 /* 캐릭터 시트 */
 #csheet { color:var(--ink); }
@@ -63,13 +74,14 @@ body { touch-action:manipulation; overscroll-behavior:none; -webkit-tap-highligh
   :root { --pbar-h:84px; }
   #hud .hud-party { justify-content:center; padding-left:16px; padding-right:16px; } #hud .pm { max-width:180px; min-height:64px; }
   #hud .pm-name { font-size:13px; } #hud .pm-lv, #hud .pm-hpn { font-size:11px; } #hud .chip { font-size:12px; }
-  #exitsign, #crawlscene, #prep, #dicetray, #dicepick, #dicebear, #csheet {
+  #exitsign, #crawlscene, #dicetray, #dicepick, #dicebear, #csheet {
     left:auto !important; right:16px !important; bottom:calc(var(--pbar-h) + 12px) !important; width:430px !important; max-height:calc(100dvh - var(--hud-h) - var(--pbar-h) - 40px); border-radius:14px !important; border-bottom:1px solid #c9a86a !important; padding-bottom:14px !important; }
   #reward { left:50% !important; right:auto !important; top:50% !important; bottom:auto !important; transform:translate(-50%, -50%) !important; width:540px !important; max-height:calc(100dvh - 120px); border-radius:14px !important; border-bottom:1px solid #c9a86a !important; padding-bottom:16px !important; }
-  #exitsign::before, #crawlscene::before, #prep::before, #reward::before, #dicetray::before, #dicepick::before, #dicebear::before, #csheet::before { display:none; }
+  #exitsign::before, #crawlscene::before, #reward::before, #dicetray::before, #dicepick::before, #dicebear::before, #csheet::before { display:none; }
   #reward .rw-cards button { flex-basis:140px; }
-  #fatehud { display:block; left:16px !important; bottom:calc(var(--pbar-h) + 12px) !important; }
-  #pmapbox:not(.big) { width:200px !important; height:150px !important; } #dm { right:220px !important; left:50% !important; transform:translateX(-50%) !important; max-width:560px !important; }
+  #fatehud { display:block; left:16px !important; bottom:calc(var(--pbar-h) + 12px) !important; padding:4px 6px 3px !important; }
+  #fatehud .die { transform:scale(.6); margin:-7px -6px; } #fatehud th { font-size:10px; } #fatehud .cb { font-size:11px; }
+  #pmapbox:not(.big) { width:200px !important; height:150px !important; } #dm { right:auto !important; left:50% !important; transform:translateX(-50%) !important; max-width:min(520px, calc(100% - 460px)) !important; }
 }
 
 /* ── 그래픽 톤: inc/px_lab.html에 맞춘다 (2026-11-18, 사용자: 「그래픽 스타일은 inc/px_lab.html를 참고」) ──
@@ -78,14 +90,14 @@ body { touch-action:manipulation; overscroll-behavior:none; -webkit-tap-highligh
 :root { --ink:#e8dcc4; --dim:#b8aa90; --mute:#8f826c; --line:#6d5a3c; --gold:#f0c070; --bg:#141217; --panel:rgba(20,18,23,.95); --btn:#2a2018; --btn-on:#5a4020; --r:6px; }
 canvas { image-rendering:pixelated; }
 /* 창 (시트 · 옆 창 · 가운데 창) */
-#exitsign, #crawlscene, #prep, #reward, #dicetray, #dicepick, #dicebear, #csheet { background:var(--panel) !important; border-color:var(--line) !important; color:var(--ink) !important; border-radius:10px 10px 0 0 !important; box-shadow:0 -6px 24px rgba(0,0,0,.55); }
-#exitsign h4, #crawlscene h3, #prep h4, #reward h3, #dicetray .hd, #dicepick h3, #dicebear h4, #csheet h3 { font:700 17px "Noto Sans KR",sans-serif !important; color:var(--ink); letter-spacing:-.2px; }
-#exitsign p, #crawlscene p, #prep .tip, #reward p, #dicepick p, #dicebear p, #prep h4 small, #dicetray .hd small { color:var(--dim) !important; }
+#exitsign, #crawlscene, #reward, #dicetray, #dicepick, #dicebear, #csheet { background:var(--panel) !important; border-color:var(--line) !important; color:var(--ink) !important; border-radius:10px 10px 0 0 !important; box-shadow:0 -6px 24px rgba(0,0,0,.55); }
+#exitsign h4, #crawlscene h3, #reward h3, #dicetray .hd, #dicepick h3, #dicebear h4, #csheet h3 { font:700 17px "Noto Sans KR",sans-serif !important; color:var(--ink); letter-spacing:-.2px; }
+#exitsign p, #crawlscene p, #reward p, #dicepick p, #dicebear p, #dicetray .hd small { color:var(--dim) !important; }
 /* 단추 · 카드: 어두운 단추, 얇은 갈색 테, 고른 것만 금색 */
-#exitsign button, #crawlscene button, #prep button, #reward .rw-cards button, #dicetray button, #dicepick button, #dicebear button, #csheet .sh-sk li, #csheet .sh-ab span {
+#exitsign button, #crawlscene button, #reward .rw-cards button, #dicetray button, #dicepick button, #dicebear button, #csheet .sh-sk li, #csheet .sh-ab span {
   background:var(--btn) !important; border:1px solid var(--line) !important; border-radius:var(--r) !important; color:var(--ink) !important; box-shadow:none !important; }
-#prep button.on, #dicetray .col.on, #dicepick button.on, #reward .rw-cards button:hover, #exitsign button:hover, #crawlscene button:hover { background:var(--btn-on) !important; border-color:var(--gold) !important; }
-#prep button:disabled, #dicetray button:disabled, #crawlscene button:disabled { opacity:.4; }
+#dicetray .col.on, #dicepick button.on, #reward .rw-cards button:hover, #exitsign button:hover, #crawlscene button:hover { background:var(--btn-on) !important; border-color:var(--gold) !important; }
+#dicetray button:disabled, #crawlscene button:disabled { opacity:.4; }
 #reward .rw-go, #csheet .sh-x, #dicetray .go, #dicepick .go { background:var(--btn-on) !important; border:1px solid var(--gold) !important; border-radius:var(--r) !important; color:var(--ink) !important; font-weight:700 !important; }
 #reward .rw-go.rw-keep { background:var(--btn) !important; border-color:var(--line) !important; font-weight:600 !important; }
 #reward .rw-stats div { background:var(--btn) !important; border:1px solid var(--line); border-radius:var(--r) !important; }
@@ -102,10 +114,10 @@ canvas { image-rendering:pixelated; }
 #hud .pm-die, #dicetray .die, #fatehud .die { border-radius:4px; }
 /* 미니맵 · 진행 글 · 작은 운명판: 어두운 판에 얇은 갈색 테 (px_lab의 미니맵 판처럼) */
 #pmapbox:not(.big) { border:1px solid var(--line) !important; border-radius:var(--r) !important; box-shadow:0 2px 10px rgba(0,0,0,.5); }
-#dm { background:rgba(20,18,23,.92) !important; border:1px solid var(--line) !important; border-radius:var(--r) !important; color:var(--ink) !important; }
+#dm { background:rgba(20,18,23,.78) !important; border:1px solid var(--line) !important; border-radius:var(--r) !important; color:var(--ink) !important; }
 #fatehud { background:rgba(20,18,23,.9) !important; border-color:var(--line) !important; border-radius:var(--r) !important; }
 @media (min-width: 900px) {
-  #exitsign, #crawlscene, #prep, #dicetray, #dicepick, #dicebear, #csheet, #reward { border-radius:10px !important; box-shadow:0 6px 28px rgba(0,0,0,.6); }
+  #exitsign, #crawlscene, #dicetray, #dicepick, #dicebear, #csheet, #reward { border-radius:10px !important; box-shadow:0 6px 28px rgba(0,0,0,.6); }
 }
-/* 넓은 화면: 캐릭터 시트는 왼쪽 — 오른쪽 창(문 앞 준비 등)과 겹치지 않게 (위 규칙들 뒤에 둬야 이긴다) */
+/* 넓은 화면: 캐릭터 시트는 왼쪽 — 오른쪽 창(갈림길 · 운명판 등)과 겹치지 않게 (위 규칙들 뒤에 둬야 이긴다) */
 @media (min-width: 900px) { #csheet { left:16px !important; right:auto !important; z-index:21 !important; } }

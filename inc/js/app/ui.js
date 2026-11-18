@@ -27,8 +27,8 @@ const UI = (() => {
   function say(log) {
     const from = seen.get(log) || 0, lines = log.slice(from); seen.set(log, log.length); if (!lines.length) return;
     const dm = $('dm'); if (!dm) return;
-    dm.textContent = lines.map(l => l.t).join(' '); dm.classList.remove('hidden');
-    clearTimeout(say.t); say.t = setTimeout(() => dm.classList.add('hidden'), 3800 + lines.length * 900);
+    dm.innerHTML = lines.slice(-2).map(l => `<div>${esc(l.t)}</div>`).join(''); dm.classList.remove('hidden'); // 새 줄 중 마지막 둘만, 한 줄씩 (화면을 덜 가리게)
+    clearTimeout(say.t); say.t = setTimeout(() => dm.classList.add('hidden'), 2600 + Math.min(2, lines.length) * 600);
   }
   return { $, esc, place, toStage, tileAt, ring, svg, say };
 })();

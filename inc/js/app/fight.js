@@ -61,7 +61,7 @@ const FIGHT = (() => {
     closeTray(); const B = G.Dice.board, sel = new Set(), box = document.createElement('div'); box.id = 'dicetray'; box.className = 'board'; let pickCol = null;
     const draw = () => {
       const cols = [0, 1, 2], pick = c => { const cs = G.Dice.combos(G.Dice.colDice(c)), s = G.Dice.pickCombo(cs); return s ? comboTxt(cs.find(x => x.s === s)) : '—'; };
-      box.innerHTML = `<div class="hd">운명판 <small>칸을 눌러 고르기 → 다시 굴리기(한 번) · 라운드 이름 둘을 눌러 순서 바꾸기 · 4라운드부터 처음 열부터 되풀이</small></div>` +
+      box.innerHTML = `<div class="hd">운명판 <small>칸 → 다시 굴리기 · 라운드 둘 → 순서 바꾸기 · 3라운드마다 되풀이</small></div>` +
         `<table><tr><th></th>${cols.map(c => `<th><button class="col${pickCol === c ? ' on' : ''}" data-c="${c}">${c + 1}라운드</button></th>`).join('')}</tr>` +
         B.rows.map((p, r) => `<tr><th>${esc(p.merc?.name || '동료')}</th>${cols.map(c => { const d = B.cells[r][c]; return `<td><b class="die k-${d.kind}${sel.has(r + ',' + c) ? ' sel' : ''}" data-rc="${r},${c}" title="${esc(G.Dice.KINDS[d.kind].n)}">${dieFace(d)}</b></td>`; }).join('')}</tr>`).join('') +
         `<tr class="cb"><th>조합</th>${cols.map(c => `<td>${pick(c)}</td>`).join('')}</tr></table>` +

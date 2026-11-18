@@ -28,7 +28,6 @@ const CRAWL = (() => {
   let autoN = 0, autoT = 0;
   function autoStep(dt) {
     if (!autoN || (st && st.done)) return; autoT += dt; if (autoT < 0.4) return; autoT = 0;
-    if (PREPUI.active) { const b = $('prep')?.querySelector('.open button:not([disabled])'); if (b) b.click(); return; } // 문 앞 준비: 처음 되는 방법으로 연다
     if (REWARDUI.active) { if (q.get('rhold')) return; const b = $('reward')?.querySelector('.rw-go, .rw-cards button'); if (b && !b.classList.contains('rw-go') || b && !$('reward').classList.contains('rw-record')) b.click(); return; } // 전투 결과 · 고르기: 처음 것 (기록 화면에서는 멈춘다) ?rhold=1이면 결과 창에서 멈춘다 (캡처용)
     if (FIGHT.on) { const bb = $('dicebear')?.querySelector('button'); if (bb) return bb.click(); if ($('dicetray') && !q.get('hold')) $('dicetray').querySelector('.go').click(); return; }
     const b = $('crawlscene')?.querySelector('button:not([disabled])') || $('exitsign')?.querySelector('button[data-i="0"]');
@@ -115,7 +114,7 @@ const CRAWL = (() => {
   function closeSign() { const s = $('exitsign'); if (s) s.remove(); }
   function sign(ex) {
     closeSign();
-    const n = st.map.nodes[ex.to], k = FL.kindOf(ex.e), acts = n.visited ? [{ label: '지나간다', run: null }] : prepable(ex) ? [{ label: '문 앞으로 다가간다', who: '엿듣고 · 자리 잡고 · 준비해서 연다', prep: true }] : RUN.moveActs(st, ex.ed);
+    const n = st.map.nodes[ex.to], k = FL.kindOf(ex.e), acts = n.visited ? [{ label: '지나간다', run: null }] : prepable(ex) ? [{ label: '문을 열고 들어간다', who: ex.e.kind === 'locked' && !ex.e.opened ? '자물쇠를 따 보고, 안 되면 걷어찬다' : '살며시 연다', prep: true }] : RUN.moveActs(st, ex.ed);
     const box = document.createElement('div'); box.id = 'exitsign';
     box.innerHTML = `<h4>${esc(KIND[k] || '통로')}</h4><p>너머: ${esc(beyond(n))}</p>` +
       acts.map((a, i) => `<button data-i="${i}">${esc(a.label)}${a.p != null && a.p < 1 ? ` <i>${Math.round(a.p * 100)}%</i>` : ''}${a.cost ? ` <small>${esc(a.cost)}</small>` : ''}${a.who ? ` <small>${esc(a.who)}</small>` : ''}</button>`).join('') +
@@ -181,7 +180,7 @@ const CRAWL = (() => {
     FIGHT.start(R, { n, mod, log: t => { st.log.push({ t }); say(); }, done: fightDone });
     st.log.push({ t: `${n.g.label} — 전투가 시작된다.` }); say();
   }
-  // ── 문 앞 준비 (설계 5-11): 아직 안 가 본, 적이 있는 방으로 가는 열린 길 · 잠긴 문 · 못 찾은 함정 길 (어두운 길은 안내 표지 그대로) ──
+  // ── 문 열기 (설계 5-11): 아직 안 가 본, 적이 있는 방으로 가는 열린 길 · 잠긴 문 · 못 찾은 함정 길 (어두운 길은 안내 표지 그대로) — 문 앞에 서면 저절로 연다 ──
   const prepable = ex => { const n = st.map.nodes[ex.to], k = ex.e.kind; return n.hostile && !n.visited && (k === 'open' || k === 'locked' || k === 'hidden' || (k === 'trap' && !ex.e.seen.trap)); };
   const cellTiles = ([x, y]) => { const K = FL.K, cx = Math.floor(x / K), cy = Math.floor(y / K), out = []; for (let j = 0; j < K; j++) for (let i = 0; i < K; i++) out.push((cy * K + j) * iso.w + cx * K + i); return out; };
   const noiseGrid = () => ({ w: iso.w, h: iso.h, pass: k => iso.c[k] !== '#' });
@@ -199,15 +198,15 @@ const CRAWL = (() => {
     cutscene = true;
     go(lane.length ? lane : [stop], () => {
       cutscene = false;
-      PREPUI.open(R, { door: { x: door[0], y: door[1] }, doorTiles: dts, out: { x: stop[0] - door[0], y: stop[1] - door[1] }, locked: ex.e.kind === 'locked' && !ex.e.opened, mons, others, clue: n.info >= 2,
-        items: { oil: st.items.oil ?? 2, caltrops: st.items.caltrops ?? 1, tools: st.party.some(m => m.cls === 'rogue' && !m.dead) || st.items.tools ? 1 : 0 },
+      PREPUI.open(R, { door: { x: door[0], y: door[1] }, doorTiles: dts, out: { x: stop[0] - door[0], y: stop[1] - door[1] }, locked: ex.e.kind === 'locked' && !ex.e.opened, mons, others,
+        items: { tools: st.party.some(m => m.cls === 'rogue' && !m.dead) || st.items.tools ? 1 : 0 },
         reveal: () => { openRoom(ex.to); refreshSeen(); },
-        onOpen: (S, left) => enterFight(ex, n, S, left, others) });
+        onOpen: S => enterFight(ex, n, S, others) });
     });
   }
-  // 문이 열렸다: 탐사 규칙(RUN)으로 방에 들어서고(기록 · 정보 — 못 찾은 함정은 여기서 터진다) 준비한 그대로 싸운다
-  function enterFight(ex, n, S, left, others) {
-    ex.e.opened = true; st.items.oil = left.oil; st.items.caltrops = left.caltrops;
+  // 문이 열렸다: 탐사 규칙(RUN)으로 방에 들어서고(기록 · 정보 — 못 찾은 함정은 여기서 터진다) 그 자리에서 싸운다
+  function enterFight(ex, n, S, others) {
+    ex.e.opened = true;
     RUN.moveActs(st, ex.ed)[0].run(); st.scene = null; if (!S.surprise) n.alert = true;
     say(); doorTiles = doorsOf(); PMAP.draw(); document.body.dataset.room = st.at; document.body.dataset.moves = (+(document.body.dataset.moves || 0) + 1);
     if (st.done) return end();
@@ -272,7 +271,7 @@ const CRAWL = (() => {
       st = RUN.newRun(seed, ['fighter']); const fl = FL.fromRun(st.map, RUN.TYPE); iso = fl.iso; roomAt = fl.roomAt; open = new Uint8Array(iso.w * iso.h); // 혼자 시작 (설계 5-13)
       // 시작 물자 (명성으로 열린 만큼 더)
       unl = G.Reward.unlocked(renownLoad()); const I = st.items;
-      I.oil = (I.oil || 0) + 2 + (unl.includes('oil1') ? 1 : 0); I.caltrops = (I.caltrops || 0) + 1; I.potion = (I.potion || 0) + (unl.includes('potion1') ? 1 : 0);
+      I.potion = (I.potion || 0) + (unl.includes('potion1') ? 1 : 0);
       return iso;
     },
     // 세계가 서면: 파티를 입구에, 입구 방을 연다, 누르기 · 표지
@@ -293,7 +292,7 @@ const CRAWL = (() => {
       if (!R) return null;
       const T = R.turn, fighting = FIGHT.on;
       const party = R.party.map((a, i) => { const rm = st?.party[i], hp = fighting || !rm ? a.hp : Math.round(a.max * rm.hp / Math.max(1, rm.max)); return { a, m: a.merc, hp: Math.round(hp), max: a.max, dead: !!(a.dead || rm?.dead), cur: fighting && T?.cur === a }; });
-      return { title: (iso || R.map)?.title || '', sub: fighting ? `${T?.round || 1}라운드` : PREPUI.active ? '문 앞 준비' : st?.done ? '끝' : '탐사', fighting, gold: st ? st.gold : null, items: st ? st.items : null, party };
+      return { title: (iso || R.map)?.title || '', sub: fighting ? `${T?.round || 1}라운드` : PREPUI.active ? '문을 연다' : st?.done ? '끝' : '탐사', fighting, gold: st ? st.gold : null, items: st ? st.items : null, party };
     },
     // 시험 전투 (?fight=test): 복도로 들어와 방에서 적과 맞닥뜨려 싸운다 (탐사 규칙 없이)
     fightTest(r) {
@@ -305,15 +304,14 @@ const CRAWL = (() => {
       FIGHT.start(R, { n, intro, quiet: !tray, done: (win, F) => { const d = document.createElement('div'); d.className = 'record-stub'; d.innerHTML = `${win ? `시험 전투: 이겼다 (${F.round}라운드)` : '시험 전투: 졌다'} <button onclick="location.reload()">다시 보기</button>`; $('stage').append(d); } });
       if (q.get('dice') != null) FIGHT.dicePick(); if (q.get('auto')) autoN = 99; // ?dice=는 고르는 창 없이 그대로 넣는다
     },
-    // 문 앞 준비 시험 (?scene=door): 복도 끝으로 걸어와 잠긴 문 앞에서 준비 → 문이 열리면 그 자리에서 전투. ?clue=1이면 단서가 있다, ?auto=1이면 정해진 차례로
+    // 문 열기 시험 (?scene=door): 복도 끝으로 걸어와 잠긴 문을 저절로 연다(따기 → 걷어차기) → 열리면 그 자리에서 전투
     doorTest(r) {
       PMAP.hide(); R = r; FXUI.attach(R);
       const m = r.map, d = m.door, room = m.rooms.find(x => x.id === 'A'), n = { id: -1, type: 'fight', g: { label: '고블린 방', name: '적', count: r.mons.length, units: [] } };
       const intro = new Map(r.party.map((p, i) => [p, { x: d.x - 2.4 - (i ? 1.2 : 0), y: d.y + (i === 1 ? -1.1 : i === 2 ? 1.1 : 0) }]));
-      const script = q.get('auto') === '2' ? [{ a: 'open', id: 'kick' }, { a: 'open', id: 'kick' }, { a: 'open', id: 'kick' }] : q.get('auto') ? [{ a: 'sel', i: 2 }, { a: 'listen' }, { a: 'drop', kind: 'oil', x: d.x - 1, y: d.y }, { a: 'drop', kind: 'caltrops', x: d.x - 1.2, y: d.y + 1.3 }, { a: 'sel', i: 0 }, { a: 'open', id: 'pick' }, { a: 'open', id: 'pick' }, { a: 'open', id: 'kick' }] : [];
-      PREPUI.open(R, { door: d, out: { x: -1, y: 0 }, locked: true, mons: r.mons.filter(x => x.hp > 0), items: { oil: 2, caltrops: 1, tools: 1 }, clue: !!q.get('clue'), intro, script,
+      PREPUI.open(R, { door: d, out: { x: -1, y: 0 }, locked: true, mons: r.mons.filter(x => x.hp > 0), items: { tools: 1 }, intro,
         reveal: () => { for (let y = room.y - 1; y <= room.y + room.h; y++) for (let x = room.x - 1; x <= room.x + room.w; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) R.seen[y * m.w + x] = 1; R.seenVer = (R.seenVer || 0) + 1; },
-        onOpen: S => { G.Encounter.applyPrep(R, S); FIGHT.start(R, { n, quiet: true, done: (win, F) => { const el = document.createElement('div'); el.className = 'record-stub'; el.innerHTML = `${win ? `문 앞 준비 시험: 이겼다 (${F.round}라운드)` : '문 앞 준비 시험: 졌다'} <button onclick="location.reload()">다시 해 보기</button>`; $('stage').append(el); } }); } });
+        onOpen: S => { G.Encounter.applyPrep(R, S); FIGHT.start(R, { n, quiet: true, done: (win, F) => { const el = document.createElement('div'); el.className = 'record-stub'; el.innerHTML = `${win ? `문 앞 준비 시험: 이겼다 (${F.round}라운드)` : '문 열기 시험: 졌다'} <button onclick="location.reload()">다시 해 보기</button>`; $('stage').append(el); } }); } });
     },
     // 보상 시험 (?scene=reward): 파티를 한 레벨 올리고 전투 결과 → 레벨업 고르기 → 정예 3택1 → 기록 화면을 차례로
     rewardTest(r) {
