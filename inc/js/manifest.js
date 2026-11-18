@@ -20,7 +20,7 @@
   // 쿼터뷰 화면: 그림 표 · DCSS 타일 지도 · pixelfx · LAYERLAB 인형 → 그리기 코드 → 새 게임 시작(app/boot — 그리기 파일 사이, 옛 game.js 자리) → 루프(app/main)
   render: [
     'js/render/artset', 'assets/dcss/map', 'js/render/pixelfx/pixelfx.bundle', 'js/render/paperdoll', 'js/render/core', 'js/render/models',
-    'js/render/bake', 'js/render/voxel', 'js/render/sprites', 'js/render/minidoll', 'js/app/ui', 'js/app/pmap', 'js/app/fight', 'js/app/fx', 'js/app/prep_ui', 'js/app/reward_ui', 'js/app/tavern_ui', 'js/app/hud', 'js/app/crawl', 'js/app/boot', 'js/render/fxlayer', 'js/render/pfx',
+    'js/render/bake', 'js/render/voxel', 'js/render/voxchar', 'js/render/sprites', 'js/render/minidoll', 'js/app/ui', 'js/app/pmap', 'js/app/fight', 'js/app/fx', 'js/app/prep_ui', 'js/app/reward_ui', 'js/app/tavern_ui', 'js/app/hud', 'js/app/crawl', 'js/app/boot', 'js/render/fxlayer', 'js/render/pfx',
     'js/render/vfx', 'js/render/hdbg', 'js/render/dice', 'js/render/actors', 'js/render/props',
     'js/app/main',
   ],

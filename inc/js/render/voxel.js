@@ -282,5 +282,7 @@ const VOX = (() => {
     pv.clear();
   }
   if (VOXON) { sphere = vSphere; capsule = vCapsule; block = vBlock; } // 소품 그리기 함수들을 복셀로 (옛 판 굽기 bakeRoom은 복셀 모드에서 부르지 않는다)
-  return { bake, light, flush };
+  // 인물을 같은 빛 · 색으로 칠할 때 읽는 것 (js/render/voxchar.js, ?vchar 시험)
+  const api = { get cur() { return cur; }, get vis() { return vis; }, get mw() { return mw; }, toV, fin, grayLin, shade, LR, VS, VPT };
+  return { bake, light, flush, api };
 })();
