@@ -184,8 +184,66 @@ const MD = (() => {
   function frame(e, st) {
     const { d, clip, time } = pose(e, st), fi = Math.round(time * FPS), key = clip + fi;
     let sp = d.cache.get(key);
-    if (!sp) { if (d.cache.size > 160) d.cache.clear(); sp = raster(d.doll, clip, fi / FPS, d.size || 1); d.cache.set(key, sp); }
-    return Object.assign({}, sp, { mini: { d, clip, time } });
+    if (!sp) { if (d.cache.size > 160) d.cache.clear(); sp = VOXON ? px32(d, clip, fi / FPS) : raster(d.doll, clip, fi / FPS, d.size || 1); d.cache.set(key, sp); }
+    return VOXON ? sp : Object.assign({}, sp, { mini: { d, clip, time } }); // 복셀 층: 32px 픽셀 인형을 버퍼에 그대로 찍는다
+  }
+
+  // ───── 32px 픽셀 인형 (복셀 층, px_lab.html에서 정한 줄이기): 외곽선 우선 · 눈 살리기 · 움직임은 1px 계단 · 1px 외곽선(몬스터는 붉게) ─────
+  const SS = 8, DARK_LUM = 70, DARK_COVER = 0.4, EYE_COVER = 0.25, EYE_LIGHT = 0.35, LIGHT_LUM = 150, PH = 32;
+  const hi = document.createElement('canvas'), hix = hi.getContext('2d', { willReadFrequently: true });
+  const eyeCv = document.createElement('canvas'), ecx = eyeCv.getContext('2d', { willReadFrequently: true });
+  let natH = 0;
+  function measure() { const c = document.createElement('canvas'); c.width = c.height = 600; const x = c.getContext('2d', { willReadFrequently: true }), dl = PaperDoll.create(PaperDoll.random(() => .37)); dl.draw(x, 300, 450, { scale: 1 }); const a = x.getImageData(0, 0, 600, 600).data; let top = 600, bot = 0; for (let y = 0; y < 600; y++) for (let i = 0; i < 600; i++) if (a[(y * 600 + i) * 4 + 3] > 40) { if (y < top) top = y; if (y > bot) bot = y; } return Math.max(1, bot - top); }
+  function quantize(dl, H) { const ts = natH / (100 * H), rs = 180 / Math.PI / H, ss = 2 / H; for (const n of dl.nodes) { const f0 = n.def; if (n.parent) { n.x = f0.x + Math.round((n.x - f0.x) / ts) * ts; n.y = f0.y + Math.round((n.y - f0.y) / ts) * ts; } n.rot = f0.rot + Math.round((n.rot - f0.rot) / rs) * rs; if (f0.sx) n.sx = f0.sx * (1 + Math.round((n.sx / f0.sx - 1) / ss) * ss); if (f0.sy) n.sy = f0.sy * (1 + Math.round((n.sy / f0.sy - 1) / ss) * ss); } }
+  const eyeNodes = dl => dl._eyes || (dl._eyes = dl.nodes.filter(n => n.def.path === 'Body/Head/Eye' || n.def.path === 'Body/Head/Ani_Eye'));
+  function eyeSample(dl, w, h, drawAt) {
+    const en = eyeNodes(dl), keep = new Set(en), sp = dl.nodes.map(n => n.sprite);
+    dl.nodes.forEach(n => { if (!keep.has(n)) n.sprite = null; }); eyeCv.width = w; eyeCv.height = h; drawAt(ecx, 1 / SS); dl.nodes.forEach((n, i) => n.sprite = sp[i]);
+    const a = ecx.getImageData(0, 0, w, h).data; let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (a[(y * w + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    if (x1 < 0) return null;
+    x0 = Math.max(0, x0 - 1); y0 = Math.max(0, y0 - 1); x1 = Math.min(w - 1, x1 + 1); y1 = Math.min(h - 1, y1 + 1);
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1, sv = en.map(n => n.show); en.forEach(n => n.show = false);
+    hix.save(); hix.beginPath(); hix.rect(x0 * SS, y0 * SS, bw * SS, bh * SS); hix.clip(); hix.clearRect(x0 * SS, y0 * SS, bw * SS, bh * SS); drawAt(hix, 1); hix.restore();
+    en.forEach((n, i) => n.show = sv[i]);
+    return { d: hix.getImageData(x0 * SS, y0 * SS, bw * SS, bh * SS).data, x: x0, y: y0, w: bw, h: bh };
+  }
+  function sampleDark(src, w, h, eye, out) {
+    const HW = hi.width, N = SS * SS;
+    for (let cy = 0; cy < h; cy++) for (let cx2 = 0; cx2 < w; cx2++) {
+      let cov = 0, dk = 0, dr = 0, dg = 0, db = 0, fa = 0, fr = 0, fg = 0, fb = 0, ec = 0, la = 0, lr = 0, lg = 0, lb = 0, ma = 0, mr = 0, mg = 0, mb = 0;
+      const noEye = eye && cx2 >= eye.x && cx2 < eye.x + eye.w && cy >= eye.y && cy < eye.y + eye.h ? eye.d : null, EW = eye ? eye.w * SS : 0;
+      for (let yy = 0; yy < SS; yy++) {
+        let j = ((cy * SS + yy) * HW + cx2 * SS) * 4, k = noEye ? (((cy - eye.y) * SS + yy) * EW + (cx2 - eye.x) * SS) * 4 : 0;
+        for (let xx = 0; xx < SS; xx++, j += 4, k += 4) {
+          if (src[j + 3] < 128) continue; cov++;
+          const r = src[j], g = src[j + 1], b = src[j + 2], L = 0.3 * r + 0.59 * g + 0.11 * b;
+          if (L < DARK_LUM) { dk++; dr += r; dg += g; db += b; } else { fa++; fr += r; fg += g; fb += b; }
+          if (noEye && Math.abs(r - noEye[k]) + Math.abs(g - noEye[k + 1]) + Math.abs(b - noEye[k + 2]) + Math.abs(src[j + 3] - noEye[k + 3]) > 24) { ec++; if (L >= LIGHT_LUM) { la++; lr += r; lg += g; lb += b; } else if (L >= DARK_LUM) { ma++; mr += r; mg += g; mb += b; } }
+        }
+      }
+      if (cov < N * 0.43) continue;
+      const o = cy * w + cx2;
+      if (ec >= N * EYE_COVER && la >= N * EYE_LIGHT) out[o] = rgb(lr / la, lg / la, lb / la);
+      else if (ec >= N * EYE_COVER && ma >= N * 0.3) out[o] = rgb(mr / ma, mg / ma, mb / ma);
+      else if (dk >= N * DARK_COVER || !fa) out[o] = rgb(dr / dk, dg / dk, db / dk);
+      else out[o] = rgb(fr / fa, fg / fa, fb / fa);
+    }
+  }
+  function px32(d, clip, time) {
+    if (!natH) natH = measure();
+    const H = Math.round(PH * (d.size || 1)), w = Math.round(H * 2.4), h = H + 17, foot = H + 3, dl = d.doll;
+    setPose(dl, clip, time); quantize(dl, H);
+    hi.width = w * SS; hi.height = h * SS;
+    const drawAt = (c, k) => dl.draw(c, Math.floor(w / 2) * SS * k, foot * SS * k, { scale: H * SS * k / natH, flip: true });
+    hix.clearRect(0, 0, hi.width, hi.height); drawAt(hix, 1);
+    const src = hix.getImageData(0, 0, hi.width, hi.height).data, px = new Uint32Array(w * h);
+    sampleDark(src, w, h, eyeSample(dl, w, h, drawAt), px);
+    // 1px 외곽선 (몬스터는 붉게 — 우리 편과 가른다)
+    const ink = d.mon ? rgb(196, 40, 36) : rgb(36, 32, 44), solid = px.slice();
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; if (solid[i]) continue; if ((x > 0 && solid[i - 1]) || (x < w - 1 && solid[i + 1]) || (y > 0 && solid[i - w]) || (y < h - 1 && solid[i + w])) px[i] = ink; }
+    let top = 0; find: for (; top < h; top++) for (let x = 0; x < w; x++) if (px[top * w + x]) break find;
+    return { w, h, foot, px, top };
   }
 
   // ───── 고해상도 층 ─────
