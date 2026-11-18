@@ -13,10 +13,10 @@ function frame(tt) {
   if (win.map !== r.map) { fxLive.length = 0; for (const P of r.map.props || []) { P._fx = null; P._zz = null; P._zzOn = false; P._cand = null; } const b0 = now(); bakeFloor(r.map); bake0 = now() - b0; canvas.style.transition = 'none'; canvas.style.opacity = 0; requestAnimationFrame(() => requestAnimationFrame(() => { canvas.style.transition = 'opacity .35s'; canvas.style.opacity = 1; })); for (const e of r.party.concat(r.mons)) { e._rx = e._dx = e.x; e._ry = e._dy = e.y; e._ldx = e.x; e._ldy = e.y; } const c0 = camFor(ref.x, ref.y); cam.x = c0[0]; cam.y = c0[1]; }
   // 싸울 때는 싸우는 사람들 가운데를, 아니면 파티 가운데를 본다
   { const list = (r.turn ? r.turn.order.map(x => x.e).filter(e => e.kind !== 'mon' ? !e.dead : r.mons.includes(e)) : r.party.filter(p => !p.dead)); let ax = 0, ay = 0, n0 = 0; for (const e of list) { ax += e.x; ay += e.y; n0++; } if (n0) { const c1 = camFor(ax / n0, ay / n0), k = 1 - Math.exp(-dt * 3.2); cam.x += (c1[0] - cam.x) * k; cam.y += (c1[1] - cam.y) * k; } }
-  syncFog(r); copyView();
+  syncFog(r); copyView(); if (VOXON) VOX.light(r, t); /* 복셀 층: 파티 둘레만 빛 */
   if (win.map === r.map) document.body.dataset.floor = 'ready';
   pix.set(bakedPix); zb.set(bakedZ);
-  drawProps(r, t); drawTufts(t); HDBG.mark(0); // 선 그림 배경: 소품까지 그린 상태
+  drawProps(r, t); if (VOXON) VOX.flush(t); /* 복셀 소품 */ drawTufts(t); HDBG.mark(0); // 선 그림 배경: 소품까지 그린 상태
   if (SPR) {
     settle(r, dt);
     const recs = r.mons.concat(r.party).map(e => prep(e, r, t, dt)).filter(Boolean);

@@ -43,7 +43,7 @@ const PAGES = {
     count(d, /class="cand"/g) !== 5 && `후보 카드 ${count(d, /class="cand"/g)}장 (5장이어야)`,
   ].filter(Boolean),
   'px_lab.html': d => [
-    count(d, /<canvas/g) < 30 && `canvas ${count(d, /<canvas/g)}개 (30개 이상이어야)`,
+    !/id="flC"/.test(d) && '층 그림(flC)이 없다', // 2026-11-18: 던전 한 층 시험만 남김
     /불러오기 실패/.test(d) && '불러오기 실패 문구',
   ].filter(Boolean),
   'vfx.html': d => [

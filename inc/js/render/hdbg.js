@@ -5,7 +5,7 @@
 //  소품(뼈 · 돌 · 나무 · 계단)과 매 프레임 그리는 것은 픽셀 그대로 위에 얹힌다. 픽셀 화면은 다시 그린 바닥 · 벽 픽셀만 투명하게(그림자는 반투명 검정)
 //  판을 조각(CS×CS)으로 나눠 화면에 들어올 때 한 번만 그린다. ?pxbg = 예전 픽셀 배경 · B = 켜고 끄기. 예전 픽셀 따라 잇기 판: old/before_hdbg/hdbg_trace.js
 const HDBG = (() => {
-  let on = !q.has('pxbg'); // 기본으로 켠다 (?pxbg = 예전 픽셀 배경, B = 켜고 끄기)
+  let on = !q.has('pxbg') && !VOXON; // 기본으로 켠다 (?pxbg = 예전 픽셀 배경, B = 켜고 끄기) · 복셀 층(js/render/voxel.js)에서는 끈다
   addEventListener('keydown', e => { if (e.key.toLowerCase() === 'b' && !e.repeat && !(e.target instanceof HTMLInputElement)) { on = !on; if (el) el.style.display = on ? '' : 'none'; } });
   const CS = 192, F = 4, BUILD_MAX = 4, OL = '#1d1418';
   let el = null, ex = null, cache = new Map(), disp = null, dispPix = null, active = false;

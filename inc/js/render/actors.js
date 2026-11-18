@@ -146,7 +146,7 @@ function drawRec(R0, t) {
     // DCSS 그림은 왼쪽을 본다: 오른쪽을 볼 때 뒤집는다
     const fl = !e._flipS;
     if (sp.mini) MD.enqueue(R0, fl, flash); // 용병 인형: 고해상도 층에 원본 그대로 (minidoll.js)
-    else if (MINI_ON && typeof HDBG !== 'undefined' && HDBG.on && !f.town) MD.enqueue(R0, fl, flash); // 선 그림 배경: 픽셀 몬스터도 고해상도 층에 (붉은 외곽선)
+    else if (MINI_ON && (VOXON || typeof HDBG !== 'undefined' && HDBG.on) && !f.town) MD.enqueue(R0, fl, flash); // 선 그림 배경 · 복셀 층: 픽셀 몬스터도 고해상도 층에 (붉은 외곽선)
     else blit(sp, sx, sy, d, { flip: fl, flash, sc, xray: true });
     if (sp.weapon) {
       const Wp = sp.weapon, ranged = isRanged(e), sign = fl ? 1 : -1, of = [0, 0];

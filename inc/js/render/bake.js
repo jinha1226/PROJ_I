@@ -17,7 +17,7 @@ function bakeFloor(m) {
   big.ox = bw / 2; big.oy = bh / 2 + 22;
   W = bw; H = bh; OX = big.ox; OY = big.oy; pix = big.pix; zb = big.z; groundZ = big.gz; ground = big.g; shadow = big.sh;
   big.cell = new Int32Array(bw * bh).fill(-1); cellMap = big.cell; big.kind = new Uint8Array(bw * bh); kindMap = big.kind; big.walls = []; big.slabs = [];
-  bakeRoom(m, w);
+  if (VOXON) VOX.bake(m, w); else bakeRoom(m, w); /* 복셀 층 (js/render/voxel.js) · ?vox=0이면 옛 판 */
   cellMap = null; kindMap = null; hideUnseen(bw * bh);
   W = VW; H = VH; pix = viewPix; zb = viewZ; groundZ = viewGZ; ground = viewG; shadow = viewSh;
   const cv = big.cv || (big.cv = document.createElement('canvas')); cv.width = bw; cv.height = bh;

@@ -76,7 +76,7 @@ const EDGE = .28, GRAD = COS / (S * SIN);
 function shadeEdges() {
   for (let iy = 1; iy < H - 1; iy++) for (let ix = 1; ix < W - 1; ix++) {
     const i = iy * W + ix, d = zb[i];
-    if (d < -1e8 || d === groundZ[i] && ground[i]) continue;
+    if (d < -1e8 || d === groundZ[i] && ground[i] || VOXON && d === bakedZ[i]) continue; // 복셀 층: 구운 판은 외곽선이 이미 있다
     const a = i - W, b = i + W, c = i - 1, e = i + 1;
     const onG = j => zb[j] < -1e8 || (ground[j] && zb[j] === groundZ[j]);
     if (onG(a) || onG(b) || onG(c) || onG(e)) tint(i, .68, .66, .76);
