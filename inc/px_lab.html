@@ -3,46 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>픽셀화 시험판</title>
-<!-- 버리는 시험판: LAYERLAB 인형을 몇 가지 픽셀 키로 줄여 원본과 나란히 본다. 본 게임과 무관 -->
+<title>던전 층 시험</title>
+<!-- 버리는 시험판: 맵 생성기(RUN.gen.make)의 한 층을 복셀로 세우고, 파티가 걸어 다니며 시야를 밝힌다. 인물은 LAYERLAB 인형을 32px로 줄인 것. 본 게임과 무관 -->
 <style>
-  body { margin: 0; background: #17151c; color: #ece4d4; font: 14px sans-serif; }
-  #bar { position: sticky; top: 0; background: #221f29; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; z-index: 2; border-bottom: 1px solid #3a3544; }
-  #bar label { display: flex; gap: 6px; align-items: center; }
-  table { border-collapse: collapse; margin: 12px; }
-  th { font-weight: normal; color: #b8ad98; padding: 4px 10px; text-align: center; }
-  td { padding: 6px 10px; text-align: center; vertical-align: bottom; }
-  canvas { image-rendering: pixelated; display: block; margin: 0 auto; }
-  body.light { background: #efe7d6; color: #2a2420; }
-  body.light #bar { background: #e2d8c4; border-color: #c8bca4; }
-  body.light th { color: #6a5e4a; }
-  .note { margin: 4px 12px; color: #8a8070; }
+  body { margin:0; padding:16px; background:#141217; color:#e8dcc4; font:14px "Noto Sans KR",sans-serif; }
+  h1 { margin:0 0 4px; font-size:18px; } p { margin:0 0 12px; color:#b8aa90; }
+  .bar { display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; margin-bottom:12px; }
+  .bar button { padding:6px 12px; border-radius:6px; border:1px solid #6d5a3c; background:#2a2018; color:#e8dcc4; cursor:pointer; }
+  .bar button.on { background:#5a4020; border-color:#f0c070; }
+  .bar label { cursor:pointer; user-select:none; }
+  .bar input[type=number] { background:#2a2018; color:#e8dcc4; border:1px solid #6d5a3c; border-radius:4px; padding:3px 6px; }
+  #flC { display:block; image-rendering:pixelated; }
+  #flMini { image-rendering:pixelated; }
+  .warn { color:#e0a050; }
 </style>
 </head>
 <body>
-<div id="bar">
-  <label>동작 <select id="anim"></select></label>
-  <label>줄이기 <select id="samp"><option value="dark" selected>외곽선 우선</option><option value="smooth">부드럽게 (평균)</option><option value="near">가장 가까운 점</option></select></label>
-  <label>색 단계 <select id="post"><option value="0" selected>원본 색</option><option value="6">6단계</option><option value="4">4단계</option><option value="3">3단계</option></select></label>
-  <label><input type="checkbox" id="eye" checked> 눈 살리기 (외곽선 우선일 때)</label>
-  <label><input type="checkbox" id="outl" checked> 1px 외곽선</label>
-  <label>동작 끊기 <select id="fps"><option value="0">끊지 않음 (매 화면 다시 그림)</option><option value="30" selected>30장/초 (굽기)</option><option value="24">24장/초 (굽기)</option><option value="15">15장/초 (굽기)</option><option value="12">12장/초 (굽기)</option><option value="8">8장/초 (굽기)</option></select></label>
-  <label><input type="checkbox" id="snap" checked> 픽셀 맞춤 (움직임을 1px 계단으로)</label>
-  <label><input type="checkbox" id="clean" checked> 깜빡임 청소</label>
-  <label>확대 <select id="zoom"><option>2</option><option selected>3</option><option>4</option></select></label>
-  <label><input type="checkbox" id="light"> 밝은 바탕</label>
-  <button id="reroll">다른 인물</button>
-</div>
-<p class="note">왼쪽은 지금 게임처럼 원본 그대로, 오른쪽은 픽셀 키(인물 높이 px)별로 줄인 뒤 확대해서 보인다. 쿼터뷰 화면의 픽셀 배율과 같은 방식(정수 확대, 번짐 없음). 떨림 잡기: 동작을 정해진 장 수로 끊어 미리 구워 두고 되풀이 + 픽셀 맞춤(1px 미만 움직임은 버림) + 깜빡임 청소(한 장만 튀는 외톨이 픽셀). '외곽선 우선'은 그림의 검은 선이 1px 남짓으로 가늘어져도 끊기지 않게 줄이고, '눈 살리기'는 그때 눈 칸만 흰자·반짝임을 먼저 남긴다. 예전 방식은 부드럽게 · 끊지 않음 · 맞춤 끔.</p>
-<div style="overflow-x:auto"><table id="grid"></table></div>
+<section id="vox">
+<h1>던전 한 층 — 맵 생성기 그대로, 복셀로</h1>
+<p>RUN.gen.make(시드)가 만든 방 · 복도 구조를 칸당 8복셀로 세운다(판석 줄눈 = 칸 경계). 바닥 앞에 선 벽은 낮게 잘라 안이 보이게. 장식 · 문 · 함정은 생성기 것 그대로. <b>바닥을 누르면 파티가 복도를 따라 걸어간다</b>(밝힌 칸으로만). 시야: 파티에서 6칸 안, 막힘 없이 보이는 칸만 보이고, 한 번 본 곳은 흑백으로 남는다. 빛은 지금 보이는 곳의 파티 둘레만(등불 + 그 안의 횃불, 흔들림). 끌어서 둘러보기(파티 따라가기가 꺼진다), 미니맵을 누르면 그리로. <span id="flInfo" class="warn"></span></p>
+<div class="bar" id="flBar"><label>시드 <input id="flSeed" type="number" value="1" style="width:70px"></label><button id="flGo">다시 만들기</button><button data-z="1">1배</button><button data-z="2" class="on">2배</button><button data-z="3">3배</button><button id="flStart">파티 따라가기</button><label><input type="checkbox" id="flAll"> 다 보기(시야 끄기)</label></div>
+<div id="flWrap" style="position:relative;height:72vh;border-radius:6px;overflow:hidden;background:#0d0b10;touch-action:none;cursor:grab"><canvas id="flC" style="width:100%;height:100%;border-radius:0"></canvas><canvas id="flMini" style="position:absolute;right:8px;top:8px;width:auto;background:rgba(20,16,12,.85);border:1px solid #6d5a3c;border-radius:4px;cursor:pointer"></canvas><div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.5))"></div></div>
+</section>
 <script src="js/render/paperdoll.js"></script>
+<script src="js/explore/core.js"></script><script src="js/explore/data.js"></script><script src="js/explore/combat.js"></script><script src="js/explore/gen.js"></script><script src="js/explore/rules.js"></script><script src="js/explore/layout.js"></script>
 <script>
 'use strict';
-const HEIGHTS = [24, 32, 40, 48];
-const N = 6;
-const $ = id => document.getElementById(id);
-let dolls = [], natH = 1, seed = 1;
-
+// ── 인물: LAYERLAB 인형을 32px로 줄이기 (외곽선 우선 · 눈 살리기 · 1px 외곽선) ──
+let natH = 1;
 const mulberry = s => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 
 // 인형의 실제 높이(scale 1)를 한 번 잰다: 큰 캔버스에 그려 불투명 픽셀의 위아래를 찾는다
@@ -181,163 +169,9 @@ function render(d, H, opt) {
   return img;
 }
 
-// 칸에 보이기. 확대는 기기 픽셀의 정수배로: 화면 배율 125%·150%에서 CSS 3px는 3.75·4.5 기기 픽셀이라 픽셀 폭이 들쭉날쭉하고,
-// 인물이 1px 움직일 때마다 넓은 줄·좁은 줄이 옮겨 다니며 일렁인다. 캔버스 크기 = 기기 픽셀, CSS 크기 = 그것 ÷ 배율
-const tmp = document.createElement('canvas'), tmx = tmp.getContext('2d');
-function show(out, img, zoom) {
-  const dpr = window.devicePixelRatio || 1, dz = Math.max(1, Math.round(zoom * dpr));
-  out.width = img.width * dz; out.height = img.height * dz;
-  out.style.width = out.width / dpr + 'px'; out.style.height = out.height / dpr + 'px';
-  tmp.width = img.width; tmp.height = img.height; tmx.putImageData(img, 0, 0);
-  const ox = out.getContext('2d'); ox.imageSmoothingEnabled = false;
-  ox.drawImage(tmp, 0, 0, out.width, out.height);
-}
 
-// 미리 굽기: 지금 동작을 opt.fps 장/초로 끊어 모든 장을 한 번만 그려 둔다. 재생 중엔 인형 시간에 맞는 장을 꺼내 보인다
-// (동작 이벤트·시간은 인형이 그대로 갖고 있고, 그림만 구운 것을 쓴다). 한 번만 도는 동작(죽음)은 끝 장이 끝 자세.
-// 24장/초면 숨쉬기 한 묶음이 45장(48px에서 약 160ms)이라, 한꺼번에 구우면 멈칫한다 — 화면마다 BAKE_MS 안에서 몇 장씩 굽고,
-// 다 구워진 묶음부터 보인다.
-// 원본 동작은 1/60초 간격 키로 만든 곡선. 굽는 장 수 비교(2026-11-17, 픽셀 맞춤 켬): 숨쉬기는 몇 장이든 1px 넘게 움직일 때만
-// 바뀌어 거의 같고, 걷기·공격은 24~30장까지 깜빡임이 8장과 비슷하다가 60장에서 몇 배로 는다(부위마다 계단을 넘는 때가 엇갈림)
-const BAKE_MS = 8;
-function bakeStep(d, H, opt, job, until) {
-  const len = d.clip.len, t0 = d.time;
-  while (job.F.length < job.nf && performance.now() < until) {
-    d.time = Math.min(len, job.F.length / opt.fps); d._pose();
-    if (opt.snap) quantize(d, H);
-    job.F.push(render(d, H, opt));
-  }
-  d.time = t0; d._pose();
-  if (job.F.length === job.nf) {
-    if (opt.clean && job.nf >= 3) declick(job.F, !d.once);
-    job.done = true;
-  }
-}
-
-// 깜빡임 청소: 앞뒤 장이 같은데 이 장만 다른 픽셀 가운데 '외톨이'(주변 8칸에 같은 처지가 1개 이하)만 앞 장 색으로 되돌린다.
-// 덩어리나 선으로 바뀐 곳(휘두르는 칼 등)은 진짜 움직임이라 그대로 둔다. 되풀이 동작은 끝 장과 첫 장이 이웃
-function declick(F, loop) {
-  const nf = F.length, w = F[0].width, h = F[0].height, M = new Uint8Array(w * h);
-  const U = F.map(f => new Uint32Array(f.data.buffer.slice(0)));
-  for (let j = 0; j < nf; j++) {
-    if (!loop && (j === 0 || j === nf - 1)) continue;
-    const a = U[(j - 1 + nf) % nf], b = U[j], c = U[(j + 1) % nf], out = new Uint32Array(F[j].data.buffer);
-    for (let q = 0; q < M.length; q++) M[q] = a[q] === c[q] && b[q] !== a[q] ? 1 : 0;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const q = y * w + x;
-      if (!M[q]) continue;
-      let nb = 0;
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-        const X = x + dx, Y = y + dy;
-        if ((dx || dy) && X >= 0 && Y >= 0 && X < w && Y < h && M[Y * w + X]) nb++;
-      }
-      if (nb <= 1) out[q] = a[q];
-    }
-  }
-}
-
-function build() {
-  const rng = mulberry(seed);
-  dolls = Array.from({ length: N }, () => PaperDoll.create(PaperDoll.random(rng)));
-  const g = $('grid'); g.innerHTML = '';
-  const hr = g.insertRow(); hr.insertCell().outerHTML = '<th>원본 (지금 게임)</th>';
-  for (const H of HEIGHTS) hr.insertCell().outerHTML = `<th>${H}px</th>`;
-  dolls.forEach((d, r) => {
-    const row = g.insertRow();
-    const c0 = document.createElement('canvas'); c0.width = 140; c0.height = 150; c0.style.imageRendering = 'auto'; row.insertCell().appendChild(c0);
-    d._cells = [c0];
-    for (const H of HEIGHTS) { const c = document.createElement('canvas'); row.insertCell().appendChild(c); d._cells.push(c); }
-    d.play($('anim').value);
-    d.update(r * 0.13); // 줄마다 조금씩 어긋나게
-  });
-}
-
-let last = performance.now();
-function frame(t) {
-  const dt = Math.min(0.1, (t - last) / 1000); last = t;
-  const opt = { samp: $('samp').value, eye: $('samp').value === 'dark' && $('eye').checked, post: +$('post').value, outl: $('outl').checked,
-                fps: +$('fps').value, snap: $('snap').checked, clean: $('clean').checked };
-  const zoom = +$('zoom').value, bakeKey = JSON.stringify(opt), viewKey = bakeKey + '|' + zoom + '|' + devicePixelRatio;
-  const until = performance.now() + BAKE_MS; // 이 화면에서 굽기에 쓸 시간
-  for (const d of dolls) {
-    d.update(dt);
-    const c0 = d._cells[0], x0 = c0.getContext('2d'); x0.clearRect(0, 0, c0.width, c0.height);
-    d.draw(x0, 70, 135, { scale: 110 / natH });
-    if (!opt.fps) { // 끊지 않음: 예전처럼 매 화면 다시 그린다 (장 수가 끝없어 구울 수 없다)
-      HEIGHTS.forEach((H, i) => {
-        d._pose();
-        if (opt.snap) quantize(d, H); // 키마다 계단 크기가 다르니 키마다 자세를 다시 잡는다
-        const c = d._cells[i + 1]; c._key = null;
-        show(c, render(d, H, opt), zoom);
-      });
-      d._pose();
-      continue;
-    }
-    if (d._bakeKey !== bakeKey) { d._bake = new Map(); d._bakeKey = bakeKey; } // 선택지가 바뀌면 다시 굽는다
-    HEIGHTS.forEach((H, i) => {
-      const c = d._cells[i + 1], k = d.clipName + '|' + H;
-      let job = d._bake.get(k);
-      if (!job) { job = { F: [], nf: Math.floor(d.clip.len * opt.fps + 1e-6) + 1, done: false }; d._bake.set(k, job); }
-      if (!job.done) { bakeStep(d, H, opt, job, until); if (!job.done) return; }
-      const idx = Math.min(job.nf - 1, Math.floor(d.time * opt.fps + 1e-6)), key = `${viewKey}|${k}|${idx}`;
-      if (c._key !== key) { c._key = key; show(c, job.F[idx], zoom); }
-    });
-  }
-  requestAnimationFrame(frame);
-}
-
-PaperDoll.load('assets/chars/').then(() => {
-  for (const a of Object.keys(PaperDoll.anims)) $('anim').add(new Option(a, a, a === 'Idle', a === 'Idle'));
-  natH = measure();
-  build();
-  $('anim').onchange = () => dolls.forEach(d => d.play($('anim').value));
-  $('reroll').onclick = () => { seed++; build(); };
-  $('light').onchange = e => document.body.classList.toggle('light', e.target.checked);
-  requestAnimationFrame(frame);
-}).catch(e => { document.body.insertAdjacentHTML('beforeend', `<p style="color:#e66">불러오기 실패: ${e.message} — inc 폴더에서 http 서버로 열어 주세요</p>`); });
+PaperDoll.load('assets/chars/').then(() => { natH = measure(); }).catch(e => console.warn('인형:', e.message));
 </script>
-
-<!-- 복셀 방 시험: 같은 방을 DCSS 무늬 상자 · 복셀 + 빛으로 나란히, 그리고 큰 방(왕좌의 대전) -->
-<style>
-  #vox { margin:24px 12px; padding-top:16px; border-top:1px solid #3a3544; font:14px "Noto Sans KR",sans-serif; }
-  #vox h2 { margin:0 0 4px; font-size:18px; } #vox p { margin:0 0 12px; color:#b8aa90; }
-  #vox .bar { display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; margin-bottom:12px; }
-  #vox .bar button { padding:6px 12px; border-radius:6px; border:1px solid #6d5a3c; background:#2a2018; color:#e8dcc4; cursor:pointer; }
-  #vox .bar button.on { background:#5a4020; border-color:#f0c070; }
-  #vox .bar label { cursor:pointer; user-select:none; }
-  #vox .wrap { display:flex; gap:12px; flex-wrap:wrap; }
-  #vox figure { margin:0; flex:1 1 460px; min-width:0; }
-  #vox canvas { display:block; width:100%; margin:0; image-rendering:pixelated; background:#0d0b10; border-radius:6px; }
-  #vox figcaption { margin-top:6px; color:#b8aa90; font-size:13px; }
-  #vox .warn { color:#e0a050; }
-</style>
-<script src="js/explore/core.js"></script><script src="js/explore/data.js"></script><script src="js/explore/combat.js"></script><script src="js/explore/gen.js"></script><script src="js/explore/rules.js"></script><script src="js/explore/layout.js"></script>
-<section id="vox">
-<h2>방 하나, 두 가지로 그리기</h2>
-<p>A: 지금 방식을 흉내 낸 것 — 상자에 DCSS 무늬(32×32)를 입히고 면마다 밝기만 다르게. B: 같은 방을 복셀 소품과 빛 후처리로 — 횃불 · 화로가 흔들린다. 투영은 본 게임 쿼터뷰와 같다.</p>
-<div class="bar">
-  <button data-v="both" class="on">나란히</button><button data-v="a">A만</button><button data-v="b">B만</button>
-  <span>복셀 켜고 끄기:</span>
-  <label><input type="checkbox" data-f="light" checked> 점광원</label>
-  <label><input type="checkbox" data-f="shadow" checked> 그림자</label>
-  <label><input type="checkbox" data-f="ao" checked> 구석 음영</label>
-  <label><input type="checkbox" data-f="bloom" checked> 빛 번짐</label>
-  <label><input type="checkbox" data-f="film" checked> 비네팅 · 그레인</label>
-  <label><input type="checkbox" data-f="dither" checked> 디더링</label>
-  <label><input type="checkbox" data-f="edge" checked> 외곽선</label>
-</div>
-<div class="wrap">
-  <figure id="voxFA"><canvas id="voxA"></canvas><figcaption>A · 상자 + DCSS 무늬 <span id="voxWA" class="warn"></span></figcaption></figure>
-  <figure id="voxFB"><canvas id="voxB"></canvas><figcaption>B · 복셀 + 빛 후처리</figcaption></figure>
-</div>
-<h2 style="margin-top:20px">큰 방 — 왕좌의 대전</h2>
-<p>168×120 복셀(21×15칸, 앞 방의 약 세 배). 가운데: 3단 단상 · 왕좌 · 융단 · 기둥 넷 · 화로 넷. 왼쪽: 서재(벽 책장 · 서 있는 책장 둘 · 촛불 탁자). 오른쪽: 무기고(창 걸이 · 모루 · 통 · 상자). 앞 왼쪽: 돌다리가 놓인 물웅덩이. 앞 오른쪽: 쓰러진 기둥 · 꺼진 바닥 · 돌무더기. 뒷벽: 깃발 넷 · 아치 문 · 무너진 벽. 인물은 우리 LAYERLAB 인형을 32px로 줄인 것(위 픽셀화와 같은 방식). <span id="voxWC" class="warn">굽는 중…</span></p>
-<figure id="voxFC" style="margin:0"><canvas id="voxC"></canvas></figure>
-<h2 style="margin-top:20px">층 전체 — 맵 생성기 그대로</h2>
-<p>RUN.gen.make(시드)가 만든 방 · 복도 구조를 칸당 8복셀로 세운다(판석 줄눈 = 칸 경계). 바닥 앞에 선 벽은 낮게 잘라 안이 보이게. 장식 · 문 · 함정은 생성기 것 그대로. <b>바닥을 누르면 파티가 복도를 따라 걸어간다</b>(밝힌 칸으로만). 시야: 파티에서 6칸 안, 막힘 없이 보이는 칸만 보이고, 한 번 본 곳은 흑백으로 남는다. 빛은 지금 보이는 곳의 파티 둘레만(등불 + 그 안의 횃불, 흔들림). 끌어서 둘러보기(파티 따라가기가 꺼진다), 미니맵을 누르면 그리로. <span id="flInfo" class="warn"></span></p>
-<div class="bar" id="flBar"><label>시드 <input id="flSeed" type="number" value="1" style="width:70px"></label><button id="flGo">다시 만들기</button><button data-z="1">1배</button><button data-z="2" class="on">2배</button><button data-z="3">3배</button><button id="flStart">파티 따라가기</button><label><input type="checkbox" id="flAll"> 다 보기(시야 끄기)</label></div>
-<div id="flWrap" style="position:relative;height:72vh;border-radius:6px;overflow:hidden;background:#0d0b10;touch-action:none;cursor:grab"><canvas id="flC" style="width:100%;height:100%;border-radius:0"></canvas><canvas id="flMini" style="position:absolute;right:8px;top:8px;width:auto;background:rgba(20,16,12,.85);border:1px solid #6d5a3c;border-radius:4px;cursor:pointer"></canvas><div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.5))"></div></div>
-</section>
 <script>
 (() => {
 const SIN = .5, COS = Math.sqrt(3) / 2, R2 = Math.SQRT2;
@@ -353,44 +187,7 @@ const FLOOR = 3;
 // 빛이 없는 곳: 흑백 (조각과 파티 빛 덮개가 같은 식 — 경계가 이어진다)
 const grayLin = (r0, g0, b0, a, nr) => { const up = nr === 0 ? 1.15 : nr === 3 ? 1.1 : .9, l = (.3 * r0 + .59 * g0 + .11 * b0) * .5 * a * up; return [l * .86, l * .9, l]; };
 
-// 화면 기하: 본 게임 쿼터뷰와 같은 직교 투영 (js/render/core.js의 project)
-function geom(W, H, S, X, Y, Z, WALL) {
-  const OX = W / 2 - (X - Y) / (2 * R2) * S, OY = 10 + WALL * COS * S;
-  return { W, H, S, X, Y, Z, WALL, N: W * H, STEP: 1 / (S * 1.6), proj: (x, y, z) => { const u = (x - y) / R2, v = (x + y) / R2; return [OX + u * S, OY + (v * SIN - z * COS) * S, v * COS + z * SIN]; } };
-}
-const newBuf = (id, g) => { const c = document.getElementById(id); c.width = g.W; c.height = g.H; const ctx = c.getContext('2d'), img = ctx.createImageData(g.W, g.H); return { ctx, img, out: new Uint32Array(img.data.buffer) }; };
 const loadImg = n => new Promise(r => { const im = new Image(); im.onload = () => { try { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0); r({ w: im.width, h: im.height, d: x.getImageData(0, 0, im.width, im.height).data }); } catch (e) { r(null); } }; im.onerror = () => r(null); im.src = 'assets/dcss/' + n + '.png'; });
-// 인물: DCSS 한 장 그림을 서 있는 판으로
-function drawFig(g, im, f, put) {
-  if (!im) return; const sc = im.sc ?? 1.5, [sx, sy, d] = g.proj(f.x, f.y, f.z ?? FLOOR), w = im.w * sc, h = im.h * sc, foot = (im.foot ?? im.h - 1) * sc;
-  for (let py = 0; py < h; py++) for (let px = 0; px < w; px++) {
-    const ix = f.flip ? im.w - 1 - Math.floor(px / sc) : Math.floor(px / sc), iy = Math.floor(py / sc), k = (iy * im.w + ix) * 4; if (im.d[k + 3] < 128) continue;
-    const X0 = Math.round(sx - w / 2 + px), Y0 = Math.round(sy - foot + py + 1); if (X0 < 0 || Y0 < 0 || X0 >= g.W || Y0 >= g.H) continue;
-    put(Y0 * g.W + X0, d + .6, im.d[k] / 255, im.d[k + 1] / 255, im.d[k + 2] / 255, f, Math.max(0, foot - py) / (g.S * COS));
-  }
-}
-
-// ══════════ A: 상자 + DCSS 무늬 (지금 방식 흉내) ══════════
-function renderA(g, tex, figs) {
-  const B = newBuf('voxA', g), N = g.N, W = g.W, zb = new Float32Array(N).fill(-1e9), col = new Float32Array(N * 3), has = new Uint8Array(N);
-  const put = (x, y, z, k, c) => { const [sx, sy, d] = g.proj(x, y, z), ix = sx | 0, iy = sy | 0; if (ix < 0 || iy < 0 || ix >= W || iy >= g.H) return; const i = iy * W + ix; if (d <= zb[i]) return; zb[i] = d; col[i * 3] = c[0] * k; col[i * 3 + 1] = c[1] * k; col[i * 3 + 2] = c[2] * k; has[i] = 1; };
-  const box = (x0, y0, z0, x1, y1, z1, t, flat) => {
-    const tc = (u, v) => { if (!t) return flat; const p = ((((v * 4) | 0) & 31) * 32 + (((u * 4) | 0) & 31)) * 4; return [t.d[p] / 255, t.d[p + 1] / 255, t.d[p + 2] / 255]; };
-    for (let a = x0; a <= x1; a += g.STEP) for (let b = y0; b <= y1; b += g.STEP) put(a, b, z1, 1, tc(a, b));
-    for (let a = x0; a <= x1; a += g.STEP) for (let z = z0; z <= z1; z += g.STEP) put(a, y1, z, .74, tc(a, z1 - z));
-    for (let a = y0; a <= y1; a += g.STEP) for (let z = z0; z <= z1; z += g.STEP) put(x1, a, z, .52, tc(a, z1 - z));
-  };
-  const T = n => tex[n] || null, X = g.X, Y = g.Y;
-  box(0, 0, 0, X, Y, FLOOR, T('d_pebble_brown0'), C(0x6a5a48));
-  box(0, 0, 0, 4, Y, g.WALL, T('d_brick_brown0'), C(0x7a5a40)); box(0, 0, 0, X, 4, g.WALL, T('d_brick_brown0'), C(0x7a5a40));
-  for (const [x, y, h] of [[16, 16, 30], [16, 36, 30], [40, 16, 30], [40, 36, 14]]) box(x - 3, y - 3, FLOOR, x + 3, y + 3, FLOOR + h, T('d_stone2_gray0'), C(0x8a8a90));
-  box(26, 6, FLOOR, 42, 12, FLOOR + 8, T('d_limestone0'), C(0xb0a080));
-  box(47, 33, FLOOR, 55, 38, FLOOR + 5, null, C(0x7a4a28));
-  box(20, 30, FLOOR, 24, 34, FLOOR + 6, null, C(0x3a3438)); box(20.5, 30.5, FLOOR + 6, 23.5, 33.5, FLOOR + 6.4, null, C(0xff9030));
-  for (const f of figs) drawFig(g, tex[f.doll] || tex[f.n], f, (i, d, r, gg, b) => { if (d <= zb[i]) return; zb[i] = d; col[i * 3] = r; col[i * 3 + 1] = gg; col[i * 3 + 2] = b; has[i] = 1; });
-  for (let i = 0; i < N; i++) { const x = i % W, y = (i / W) | 0, dz = BAYER[(y & 3) * 4 + (x & 3)] * .06; B.out[i] = has[i] ? rgb((col[i * 3] + dz) * 255, (col[i * 3 + 1] + dz) * 255, (col[i * 3 + 2] + dz) * 255) : rgb(13, 11, 16); }
-  B.ctx.putImageData(B.img, 0, 0);
-}
 
 // ══════════ 복셀 부피 + 소품 만들기 ══════════
 // 재질: 0 빈칸 · 1 돌 같은 것 · 2 빛남(가리지 않음) · 3 물
@@ -456,182 +253,6 @@ const P = {
   skull(v, x, y) { for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) for (let k = 0; k < 2; k++) v.set(x + i, y + j, FLOOR + k, 0xe8e0cc); v.set(x + 1, y + 1, FLOOR + 1, 0x302820); v.set(x, y + 1, FLOOR + 1, 0x302820); },
 };
 
-// ══════════ 복셀 화면: 굽기(겉면 → 픽셀, 빛마다 그림자) + 매 프레임 빛 · 후처리 ══════════
-function VoxView(id, g, v, scene, figs, amb, O = {}) {
-  const B = newBuf(id, g), N = g.N, W = g.W, H = g.H, L = scene.lights;
-  let K = null; const lin = new Float32Array(N * 3), hw = W >> 1, hh = H >> 1, bl = new Float32Array(hw * hh * 3), bl2 = new Float32Array(bl.length), parts = [];
-  function bake(tex) {
-    const zb = new Float32Array(N).fill(-1e9), alb = new Float32Array(N * 3), nrm = new Uint8Array(N).fill(255), pos = new Float32Array(N * 3), ao = new Float32Array(N), em = new Uint8Array(N);
-    const AX = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-    const cAO = (bx, by, bz, ea, eb, sa, sb) => { const s1 = v.solid(bx + ea[0] * sa, by + ea[1] * sa, bz + ea[2] * sa), s2 = v.solid(bx + eb[0] * sb, by + eb[1] * sb, bz + eb[2] * sb), c = v.solid(bx + ea[0] * sa + eb[0] * sb, by + ea[1] * sa + eb[1] * sb, bz + ea[2] * sa + eb[2] * sb); const q = s1 && s2 ? 0 : 3 - (s1 + s2 + c); return .45 + q / 3 * .55; };
-    const face = (x, y, z, dir, col, m) => {
-      const n = NORM[dir], fx = x + n[0], fy = y + n[1], fz = z + n[2], [ea, eb] = dir === 0 ? [AX[0], AX[1]] : dir === 1 ? [AX[0], AX[2]] : [AX[1], AX[2]];
-      const a00 = cAO(fx, fy, fz, ea, eb, -1, -1), a10 = cAO(fx, fy, fz, ea, eb, 1, -1), a01 = cAO(fx, fy, fz, ea, eb, -1, 1), a11 = cAO(fx, fy, fz, ea, eb, 1, 1);
-      const r = ((col >> 16) & 255) / 255, gg = ((col >> 8) & 255) / 255, b = (col & 255) / 255, st = g.STEP;
-      for (let s = st / 2; s < 1; s += st) for (let t = st / 2; t < 1; t += st) {
-        const px = dir === 2 ? x + 1 : x + s, py = dir === 0 ? y + t : dir === 1 ? y + 1 : y + s, pz = dir === 0 ? z + 1 : z + t;
-        const [sx, sy, d] = g.proj(px, py, pz), ix = sx | 0, iy = sy | 0; if (ix < 0 || iy < 0 || ix >= W || iy >= H) continue; const i = iy * W + ix; if (d <= zb[i]) continue;
-        zb[i] = d; alb[i * 3] = r; alb[i * 3 + 1] = gg; alb[i * 3 + 2] = b; nrm[i] = dir; pos[i * 3] = px; pos[i * 3 + 1] = py; pos[i * 3 + 2] = pz; em[i] = m === 2 ? 1 : m === 3 ? 2 : 0;
-        ao[i] = (a00 * (1 - s) + a10 * s) * (1 - t) + (a01 * (1 - s) + a11 * s) * t;
-      }
-    };
-    for (let z = 0; z < v.Z; z++) for (let y = 0; y < v.Y; y++) for (let x = 0; x < v.X; x++) {
-      const m = v.VX[v.vi(x, y, z)]; if (!m) continue; const c = v.VC[v.vi(x, y, z)];
-      if (!v.has(x, y, z + 1)) face(x, y, z, 0, c, m); if (!v.has(x, y + 1, z)) face(x, y, z, 1, c, m); if (!v.has(x + 1, y, z)) face(x, y, z, 2, c, m);
-    }
-    for (const f of figs) drawFig(g, tex[f.doll] || tex[f.n], f, (i, d, r, gg, b, Fg, hz) => { if (d <= zb[i]) return; zb[i] = d; alb[i * 3] = r; alb[i * 3 + 1] = gg; alb[i * 3 + 2] = b; nrm[i] = 3; pos[i * 3] = Fg.x + .8; pos[i * 3 + 1] = Fg.y + .8; pos[i * 3 + 2] = (Fg.z ?? FLOOR) + hz; ao[i] = 1; em[i] = 0; });
-    // 픽셀마다 닿는 빛 목록(6개까지) + 그림자 비트 — 매 프레임은 이 목록만 돈다
-    const lcnt = new Uint8Array(N), lidx = new Uint8Array(N * 6), lmask = new Uint8Array(N);
-    for (let i = 0; i < N; i++) {
-      if (nrm[i] === 255 || em[i] === 1) continue; const n = NORM[nrm[i]], px = pos[i * 3] + n[0] * .55, py = pos[i * 3 + 1] + n[1] * .55, pz = pos[i * 3 + 2] + n[2] * .55;
-      for (let li = 0; li < L.length && lcnt[i] < 6; li++) {
-        const Lg = L[li], dx = Lg.x - px, dy = Lg.y - py, dz = Lg.z - pz, dist = Math.hypot(dx, dy, dz); if (dist > Lg.r * 2.6) continue;
-        const st = Math.max(1, Math.ceil(dist / .5)); let ok = 1;
-        for (let k = 1; k < st - 1; k++) { const t = k / st; if (v.solid(Math.floor(px + dx * t), Math.floor(py + dy * t), Math.floor(pz + dz * t))) { ok = 0; break; } }
-        const k = lcnt[i]++; lidx[i * 6 + k] = li; if (ok) lmask[i] |= 1 << k;
-      }
-    }
-    K = { zb, alb, nrm, pos, ao, em, lcnt, lidx, lmask };
-  }
-  const flick = (Lg, t) => .82 + .12 * Math.sin(t * 7.3 + Lg.f * 2.1) + .08 * Math.sin(t * 13.1 + Lg.f) + .06 * (hash(Math.floor(t * 12), Lg.f) - .5);
-  L.forEach((Lg, i) => { Lg.f = Lg.f ?? i + 1; });
-  function frame(t) {
-    if (!K) return; const fl = L.map(Lg => (Lg.steady ? 1 : flick(Lg, t))), glowK = 1.6 * fl[0];
-    for (let i = 0; i < N; i++) {
-      const nr = K.nrm[i]; if (nr === 255) { if (O.fade) { lin[i * 3] = -1; continue; } lin[i * 3] = .05; lin[i * 3 + 1] = .043; lin[i * 3 + 2] = .065; continue; }
-      let fk = 1; if (O.fade) { const q = 1 - Math.hypot(K.pos[i * 3] - O.fade.x, K.pos[i * 3 + 1] - O.fade.y) / O.fade.r; if (q <= 0) { lin[i * 3] = -1; continue; } const u = Math.min(1, q / .4); fk = u * u * (3 - 2 * u); }
-      const r0 = K.alb[i * 3], g0 = K.alb[i * 3 + 1], b0 = K.alb[i * 3 + 2];
-      if (K.em[i] === 1) { let R = r0 * glowK, G = g0 * glowK, Bc = b0 * glowK; if (fk < 1) { const gy = grayLin(r0, g0, b0, F.ao ? K.ao[i] : 1, nr); R = gy[0] + (R - gy[0]) * fk; G = gy[1] + (G - gy[1]) * fk; Bc = gy[2] + (Bc - gy[2]) * fk; } lin[i * 3] = R; lin[i * 3 + 1] = G; lin[i * 3 + 2] = Bc; continue; }
-      const a = F.ao ? K.ao[i] : 1, n = NORM[nr], up = nr === 0 ? 1.15 : nr === 3 ? 1.1 : .9, px = K.pos[i * 3], py = K.pos[i * 3 + 1], pz = K.pos[i * 3 + 2];
-      let lr = amb[0] * a * up, lg = amb[1] * a * up, lb = amb[2] * a * up;
-      if (F.light) {
-        for (let k = 0, kc = K.lcnt[i]; k < kc; k++) {
-          if (F.shadow && !(K.lmask[i] >> k & 1)) continue; const li = K.lidx[i * 6 + k], Lg = L[li];
-          const dx = Lg.x - px, dy = Lg.y - py, dz = Lg.z - pz, d = Math.hypot(dx, dy, dz) + 1e-3, q = d / Lg.r; if (q > 2.6) continue;
-          const nd = nr === 3 ? .75 : Math.max(0, (n[0] * dx + n[1] * dy + n[2] * dz) / d); if (!nd) continue;
-          const val = Lg.i * fl[li] / (1 + q * q * 2.2) * (1 - q / 2.6) * nd * (.55 + .45 * a);
-          lr += Lg.c[0] * val; lg += Lg.c[1] * val; lb += Lg.c[2] * val;
-        }
-      } else { lr += .55 * a; lg += .5 * a; lb += .45 * a; }
-      let R = r0 * lr, G = g0 * lg, Bc = b0 * lb;
-      if (K.em[i] === 2) { const w = Math.max(0, Math.sin(px * 1.7 + t * 2.1) + Math.sin(py * 2.3 - t * 1.7) + Math.sin((px + py) * .9 + t * 1.3) - 1.2); R += .05 + w * .1; G += .12 + w * .22; Bc += .18 + w * .3; }
-      if (fk < 1) { const gy = grayLin(r0, g0, b0, a, nr); R = gy[0] + (R - gy[0]) * fk; G = gy[1] + (G - gy[1]) * fk; Bc = gy[2] + (Bc - gy[2]) * fk; }
-      lin[i * 3] = R; lin[i * 3 + 1] = G; lin[i * 3 + 2] = Bc;
-    }
-    // 불꽃 입자
-    for (const [fx, fy, fz] of scene.fires) for (let k = 0; k < 5; k++) parts.push({ x: fx + (Math.random() - .5) * 5, y: fy + (Math.random() - .5) * 5, z: fz, vz: 4 + Math.random() * 4, life: 0, max: .5 + Math.random() * .5 });
-    for (let k = parts.length - 1; k >= 0; k--) {
-      const p = parts[k]; p.life += 1 / 30; p.z += p.vz / 30; p.x += (Math.random() - .5) * .3; p.y += (Math.random() - .5) * .3; if (p.life > p.max) { parts.splice(k, 1); continue; }
-      const u = p.life / p.max, [sx, sy, d] = g.proj(p.x, p.y, p.z), sz = u < .5 ? 2 : 1;
-      for (let a = 0; a < sz; a++) for (let b = 0; b < sz; b++) { const ix = (sx | 0) + a, iy = (sy | 0) + b; if (ix < 0 || iy < 0 || ix >= W || iy >= H) continue; const i = iy * W + ix; if (d < K.zb[i] - .5 || lin[i * 3] < 0) continue; lin[i * 3] += 1.8 * (1 - u * .4); lin[i * 3 + 1] += 1.1 - u * .9; lin[i * 3 + 2] += .25 * (1 - u); }
-    }
-    // 빛 번짐
-    if (F.bloom) {
-      for (let y = 0; y < hh; y++) for (let x = 0; x < hw; x++) { const i = (y * 2 * W + x * 2) * 3, o = (y * hw + x) * 3; for (let c = 0; c < 3; c++) bl[o + c] = Math.max(0, lin[i + c] - .85); }
-      for (let pass = 0; pass < 2; pass++) {
-        for (let y = 0; y < hh; y++) for (let x = 0; x < hw; x++) for (let c = 0; c < 3; c++) { let s = 0; for (let k = -4; k <= 4; k++) s += bl[(y * hw + Math.min(hw - 1, Math.max(0, x + k))) * 3 + c]; bl2[(y * hw + x) * 3 + c] = s / 9; }
-        for (let y = 0; y < hh; y++) for (let x = 0; x < hw; x++) for (let c = 0; c < 3; c++) { let s = 0; for (let k = -4; k <= 4; k++) s += bl2[(Math.min(hh - 1, Math.max(0, y + k)) * hw + x) * 3 + c]; bl[(y * hw + x) * 3 + c] = s / 9; }
-      }
-    }
-    // 마무리: 번짐 → 톤 → 비네팅 · 그레인 → 디더링 → 외곽선
-    const LV = 14;
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const i = y * W + x; let r = lin[i * 3], gg = lin[i * 3 + 1], b = lin[i * 3 + 2]; if (r < 0) { B.out[i] = 0; continue; }
-      if (F.bloom) { const o = (Math.min(hh - 1, y >> 1) * hw + Math.min(hw - 1, x >> 1)) * 3; r += bl[o] * 1.4; gg += bl[o + 1] * 1.4; b += bl[o + 2] * 1.4; }
-      r = r / (1 + r * .35) * 1.3; gg = gg / (1 + gg * .35) * 1.3; b = b / (1 + b * .35) * 1.3;
-      if (F.film && !O.fade) { const dx = x / W - .5, dy = y / H - .5, q = 1 - .6 * (dx * dx + dy * dy) * 1.6, n = (Math.random() - .5) * .035; r = r * q + n; gg = gg * q + n; b = b * q + n; }
-      if (F.dither) { const dz = BAYER[(y & 3) * 4 + (x & 3)]; r = Math.floor(r * LV + dz + .5) / LV; gg = Math.floor(gg * LV + dz + .5) / LV; b = Math.floor(b * LV + dz + .5) / LV; }
-      if (F.edge && K.nrm[i] !== 255) { const z0 = K.zb[i], zr = x + 1 < W ? K.zb[i + 1] : -1e9, zd = y + 1 < H ? K.zb[i + W] : -1e9, zl = x > 0 ? K.zb[i - 1] : -1e9, zu = y > 0 ? K.zb[i - W] : -1e9; if (z0 - Math.min(zr, zd, zl, zu) > 3) { r *= .35; gg *= .32; b *= .38; } }
-      B.out[i] = rgb(r * 255, gg * 255, b * 255);
-    }
-    B.ctx.putImageData(B.img, 0, 0);
-  }
-  return { bake, frame, cv: B.ctx.canvas };
-}
-
-// ══════════ 작은 방 (A와 같은 방) ══════════
-function smallRoom() {
-  const v = Vol(64, 48, 40, 28); P.floor(v); P.walls(v);
-  P.pillar(v, 16, 16, 30); P.pillar(v, 16, 36, 30); P.pillar(v, 40, 16, 30); P.pillar(v, 40, 36, 15, true); P.rubble(v, 40, 36, 70, 7);
-  for (let x = 26; x < 42; x++) for (let y = 6; y < 12; y++) for (let z = 0; z < 7; z++) v.set(x, y, FLOOR + z, tint(0xa89a80, (x === 26 || x === 41 || z === 0 || z === 6 ? 1.08 : 1) * (.9 + hash(x, y, z) * .12)));
-  for (let x = 25; x < 43; x++) for (let y = 5; y < 13; y++) v.set(x, y, FLOOR + 7, tint(0xc8bca4, .95 + hash(x, y) * .1));
-  for (let x = 32; x < 36; x++) { for (let y = 5; y < 13; y++) v.set(x, y, FLOOR + 8, tint(0x8a2020, .9 + (x === 32 || x === 35 ? -.15 : 0))); for (let z = 2; z < 8; z++) v.set(x, 12, FLOOR + z, tint(0x8a2020, .85)); v.set(x, 12, FLOOR + 1, 0xc8a040); }
-  for (const [x, y] of [[27, 6], [40, 6], [28, 11], [39, 11]]) { for (let z = 8; z < 10 + (x + y) % 2; z++) v.set(x, y, FLOOR + z, 0xe8dcc0); v.set(x, y, FLOOR + 10 + (x + y) % 2, 0xffd080, 2); }
-  const br = P.brazier(v, 22, 32); P.chest(v, 47, 33);
-  const lights = [br.light, P.torch(v, 4, 24, 'x'), P.torch(v, 48, 4, 'y'), { x: 33.5, y: 8.5, z: FLOOR + 13, c: [1, .82, .52], i: 1.3, r: 9 }];
-  P.bones(v, [[30, 18], [31, 18], [32, 19], [33, 19], [12, 42], [13, 42]]); P.curb(v);
-  return { v, scene: { lights, fires: [br.fire] } };
-}
-
-// ══════════ 큰 방: 왕좌의 대전 (168×120, 앞 방의 약 세 배) ══════════
-function hugeRoom() {
-  const X = 168, Y = 120, v = Vol(X, Y, 46, 32);
-  P.floor(v); P.walls(v, { door: { x0: 134, x1: 146, h: 20 }, fall: { x0: 152, x1: 168, z: 16 } });
-  const box = (x0, y0, z0, x1, y1, z1, f) => { for (let x = x0; x < x1; x++) for (let y = y0; y < y1; y++) for (let z = z0; z < z1; z++) { const c = f(x, y, z); if (c != null) v.set(x, y, z, c); } };
-  // ── 가운데: 3단 단상 · 왕좌 · 융단 · 깃발
-  [[58, 110, 27], [62, 106, 23], [66, 102, 19]].forEach(([x0, x1, y1], k) => box(x0, 4, FLOOR + k * 2, x1, y1, FLOOR + k * 2 + 2, (x, y, z) => tint(y === y1 - 1 || x === x0 || x === x1 - 1 ? 0xb4a890 : 0x9c9280, (z % 2 ? 1.04 : .96) * (.92 + hash(x, y, k) * .12))));
-  const top = FLOOR + 6;
-  box(79, 7, top, 89, 13, top + 4, (x, y, z) => tint(0x4a2e22, .9 + hash(x, y, z) * .15));
-  box(79, 4, top, 89, 7, top + 20, (x, y, z) => (x === 79 || x === 88 || z === top + 19 ? 0xc8a040 : tint(0x4a2e22, .9 + hash(x, z) * .15)));
-  box(83, 4, top + 20, 85, 6, top + 24, () => 0xd8b048);
-  for (const x of [79, 80, 87, 88]) box(x, 7, top + 4, x + 1, 13, top + 6, () => tint(0x5a3a28, 1.05));
-  box(81, 7, top + 4, 87, 12, top + 5, (x, y) => tint(0x5a2a6a, .95 + hash(x, y) * .1));
-  box(80, 27, FLOOR, 88, Y - 2, FLOOR + 1, (x, y) => (x === 80 || x === 87 ? 0xc8a040 : tint(0x8a1e1e, (y % 6 === 0 ? .85 : 1) * (.93 + hash(x, y) * .1))));
-  const banner = x0 => box(x0, 4, 10, x0 + 7, 5, 29, (x, y, z) => { if (z < 10 + Math.abs(x - x0 - 3)) return null; const rim = x === x0 || x === x0 + 6 || z === 28, emb = Math.abs(x - x0 - 3) + Math.abs(z - 20) < 3; return rim || emb ? 0xc8a040 : tint(0x7a1a1a, .9 + hash(x, z) * .12); });
-  [40, 68, 93, 122].forEach(banner);
-  // ── 기둥 넷 (하나는 부러짐)
-  for (const y of [38, 64]) { P.pillar(v, 60, y, 34); P.pillar(v, 108, y, 34, y === 64); }
-  P.rubble(v, 108, 64, 90, 8, 1);
-  // ── 왼쪽: 서재 (낮은 칸막이 · 벽 책장 · 서 있는 책장 둘 · 촛불 탁자)
-  box(52, 4, FLOOR, 54, 78, FLOOR + 8, (x, y, z) => (y >= 44 && y < 54 ? null : tint(0x8a8070, (z === FLOOR + 7 ? 1.1 : 1) * (.9 + hash(x, y, z) * .12))));
-  const BOOK = [0x7a2a24, 0x2a4a6a, 0x3a5a2a, 0x6a5a2a, 0x5a2a5a, 0x8a6a3a];
-  const shelf = (x0, y0, y1, h) => box(x0, y0, FLOOR, x0 + 4, y1, FLOOR + h, (x, y, z) => {
-    const zz = z - FLOOR, frame = y === y0 || y === y1 - 1 || zz % 5 === 0 || zz === h - 1 || x === x0;
-    if (frame) return tint(0x4a3020, .9 + hash(y, z) * .1);
-    if (x < x0 + 3 && hash(y, Math.floor(zz / 5), x0) < .9 && zz % 5 <= 2 + Math.floor(hash(y, z, 6) * 3)) return BOOK[Math.floor(hash(y, Math.floor(zz / 5), 3) * BOOK.length)];
-    return null;
-  });
-  shelf(4, 10, 74, 22); shelf(20, 12, 42, 16); shelf(36, 12, 42, 16);
-  box(22, 54, FLOOR, 40, 62, FLOOR + 6, (x, y, z) => { const leg = (x === 22 || x === 39) && (y === 54 || y === 61); if (z < FLOOR + 5 && !leg) return null; return tint(0x6a4428, (z === FLOOR + 5 ? 1.08 : .95) * (.92 + hash(x, y) * .1)); });
-  box(28, 56, FLOOR + 6, 33, 59, FLOOR + 7, (x, y) => (x === 30 ? 0x8a6a3a : 0xe8dcc0)); // 펼친 책
-  for (const [x, y] of [[24, 56], [37, 59]]) { box(x, y, FLOOR + 6, x + 1, y + 1, FLOOR + 9, () => 0xe8dcc0); v.set(x, y, FLOOR + 9, 0xffd080, 2); }
-  // ── 오른쪽: 무기고 (낮은 칸막이 · 창 걸이 · 모루 · 통 · 상자)
-  box(114, 4, FLOOR, 116, 78, FLOOR + 8, (x, y, z) => (y >= 40 && y < 52 ? null : tint(0x8a8070, (z === FLOOR + 7 ? 1.1 : 1) * (.9 + hash(x, y, z) * .12))));
-  box(118, 4, FLOOR + 10, 132, 6, FLOOR + 11, () => 0x4a3020);
-  for (let x = 119; x < 132; x += 2) { box(x, 5, FLOOR, x + 1, 6, FLOOR + 22, (xx, yy, z) => (z > FLOOR + 18 ? 0xb8b8c0 : 0x6a4a2a)); }
-  box(124, 18, FLOOR, 132, 22, FLOOR + 3, () => 0x3a3438); box(122, 17, FLOOR + 3, 134, 23, FLOOR + 6, (x, y, z) => tint(0x4a4448, z === FLOOR + 5 ? 1.15 : 1));
-  const barrel = (cx, cy) => box(cx - 3, cy - 3, FLOOR, cx + 4, cy + 4, FLOOR + 8, (x, y, z) => { const zz = z - FLOOR, r = 2.7 - (zz === 0 || zz === 7 ? .3 : 0); if (Math.hypot(x - cx, y - cy) > r) return null; return zz === 1 || zz === 6 ? 0x3a3438 : zz === 7 ? tint(0x8a5a30, .9) : tint(0x7a4a28, .9 + hash(x, y, z) * .12); });
-  [[146, 26], [152, 30], [146, 34], [158, 26], [152, 22]].forEach(([x, y]) => barrel(x, y));
-  const crate = (x0, y0, z0, s) => box(x0, y0, z0, x0 + s, y0 + s, z0 + s, (x, y, z) => { const e = (x === x0 || x === x0 + s - 1) + (y === y0 || y === y0 + s - 1) + (z === z0 || z === z0 + s - 1) >= 2; return e ? 0x5a3a1e : tint(0x9a6a38, (z % 2 ? .92 : 1.02) * (.92 + hash(x, y, z) * .1)); });
-  crate(136, 50, FLOOR, 7); crate(136, 50, FLOOR + 7, 6); crate(144, 52, FLOOR, 6); crate(156, 48, FLOOR, 7); crate(157, 49, FLOOR + 7, 5);
-  // ── 앞 왼쪽: 물웅덩이 + 돌다리
-  for (let x = 10; x < 48; x++) for (let y = 84; y < 112; y++) {
-    const rim = x === 10 || x === 47 || y === 84 || y === 111; for (let z = 1; z < 5; z++) v.clr(x, y, z);
-    if (rim) for (let z = 1; z < 4; z++) v.set(x, y, z, tint(0xa09888, .9 + hash(x, y, z) * .12));
-    else v.set(x, y, 1, tint(0x1e4a5a, .9 + hash(x, y) * .15), 3);
-  }
-  box(26, 84, FLOOR - 1, 32, 112, FLOOR + 1, (x, y, z) => (z < FLOOR && Math.abs(y - 98) < 10 ? null : tint(0xa89c88, (z === FLOOR ? 1.05 : .9) * (.9 + hash(x, y, z) * .12))));
-  for (let y = 86; y < 111; y += 4) for (const x of [26, 31]) box(x, y, FLOOR + 1, x + 1, y + 1, FLOOR + 4, () => 0x8a8070);
-  // ── 앞 오른쪽: 쓰러진 기둥 · 꺼진 바닥 · 돌무더기
-  for (let x = 118; x < 146; x++) for (let y = 92; y < 102; y++) for (let z = FLOOR; z < FLOOR + 9; z++) { if (Math.hypot(y + .5 - 97, z + .5 - (FLOOR + 4)) > 3.6 + (x < 120 ? .6 : 0) || hash(x, y, z) < .05) continue; v.set(x, y, z, tint(0x9a9488, (Math.abs(Math.sin(Math.atan2(z - FLOOR - 4, y - 97) * 6)) < .25 ? .82 : 1) * (.9 + hash(x, y, z) * .15))); }
-  P.rubble(v, 147, 98, 70, 6, 3);
-  for (let x = 140; x < 154; x++) for (let y = 104; y < 114; y++) if (Math.hypot((x - 147) / 7, (y - 109) / 5) < 1 + (hash(x, y) - .5) * .3) for (let z = 0; z < 4; z++) v.clr(x, y, z);
-  P.rubble(v, 160, 12, 140, 7, 2);
-  // ── 거미줄 · 뼈 · 해골
-  for (let x = 4; x < 12; x++) for (let y = 4; y < 12; y++) for (let z = 22; z < 32; z++) if ((x - 4) + (y - 4) <= (z - 22) * .9 && hash(x, y, z) < .22) v.set(x, y, z, 0xb8b4ac);
-  P.bones(v, [[64, 80], [65, 80], [66, 81], [12, 76], [13, 76], [100, 88], [101, 89], [70, 104], [71, 104], [130, 70], [131, 70]]); P.skull(v, 58, 76); P.skull(v, 98, 110); P.skull(v, 50, 100);
-  // ── 빛: 화로 넷 · 횃불 여섯 · 물빛 · 서재 촛불
-  const bz = [[66, 32], [102, 32], [70, 86], [98, 86]].map(([x, y]) => P.brazier(v, x, y));
-  const lights = [...bz.map(b => b.light),
-    P.torch(v, 4, 80, 'x'), P.torch(v, 4, 100, 'x'), P.torch(v, 20, 4, 'y'), P.torch(v, 54, 4, 'y'), P.torch(v, 112, 4, 'y'), P.torch(v, 150, 4, 'y'),
-    { x: 29, y: 98, z: 6, c: [.35, .65, 1], i: 1.8, r: 14, steady: true }, { x: 31, y: 58, z: FLOOR + 11, c: [1, .82, .52], i: 1.3, r: 9 }];
-  P.curb(v);
-  return { v, scene: { lights, fires: bz.map(b => b.fire) } };
-}
-
-// ── 시작 ──
-const FIGS_S = [{ n: 'm_goblin', x: 29, y: 41 }, { n: 'm_skeletal_warrior', x: 46, y: 22 }];
-const FIGS_B = [{ n: 'm_ogre', x: 84, y: 34 }, { n: 'm_orc_warrior', x: 74, y: 50 }, { n: 'm_orc_warrior', x: 96, y: 48 }, { n: 'm_goblin', x: 30, y: 34 }, { n: 'm_goblin', x: 44, y: 66 }, { n: 'm_skeletal_warrior', x: 56, y: 94 }, { n: 'm_troll', x: 140, y: 62 }, { n: 'm_warg', x: 126, y: 76 }, { n: 'm_human', x: 84, y: 108, flip: true }];
 // ══════════ 층 전체: RUN.gen.make(시드)의 방 · 복도를 칸당 8복셀로 세운다 ══════════
 // · 바닥 앞에 선 벽은 낮게 잘라 안이 보이게, 나머지(뒤쪽 벽)는 높게.
 // · 조각(8×8칸)은 흑백으로 한 번 굽고, 픽셀마다 칸 · 깊이 · 법선 · 색 · 구석 음영을 들고 있는다.
@@ -938,39 +559,20 @@ const FL = (() => {
   const api = { start, wire, draw, walkTo, stepWalk, get W() { return W; } }; globalThis.VOXFL = api; return api;
 })();
 
-// 우리 인형 32px: px_lab 위쪽 스크립트가 불러온 LAYERLAB 인형(PaperDoll)을 같은 픽셀화(render — 외곽선 우선 · 눈 살리기 · 1px 외곽선)로 줄인다.
-// 그쪽 준비(natH)가 안 되면 DCSS 그림 그대로
-async function dolls(tex) {
-  if (typeof render !== 'function' || typeof mulberry !== 'function' || !window.PaperDoll) return;
+// 파티 인형 넷: 위 스크립트의 인형(PaperDoll · natH · render)으로 32px. 준비가 안 되면 DCSS 사람 그림
+async function partyDolls(tex) {
+  if (typeof render !== 'function' || !window.PaperDoll) return false;
   for (let k = 0; k < 200 && !(natH > 1); k++) await new Promise(r => setTimeout(r, 50));
-  if (!(natH > 1)) return;
-  [...FIGS_S, ...FIGS_B].forEach((f, i) => {
-    const d = PaperDoll.create(PaperDoll.random(mulberry(4242 + i * 7919))); if (PaperDoll.anims.Idle) d.play('Idle'); d.update(.01);
-    const img = render(d, 32, { samp: 'dark', eye: true, post: 0, outl: true, snap: true });
-    tex['doll' + i] = { w: img.width, h: img.height, d: new Uint8ClampedArray(img.data), foot: 35, sc: 1 }; f.doll = 'doll' + i;
-  });
+  if (!(natH > 1)) return false;
   for (let i = 0; i < 4; i++) { const d = PaperDoll.create(PaperDoll.random(mulberry(777 + i * 131))); if (PaperDoll.anims.Idle) d.play('Idle'); d.update(.01); const img = render(d, 32, { samp: 'dark', eye: true, post: 0, outl: true, snap: true }); tex['fl' + i] = { w: img.width, h: img.height, d: new Uint8ClampedArray(img.data), foot: 35, sc: 1 }; }
+  return true;
 }
 (async () => {
-  const names = ['d_pebble_brown0', 'd_brick_brown0', 'd_stone2_gray0', 'd_limestone0', ...new Set([...FIGS_S, ...FIGS_B].map(f => f.n))];
-  const ims = await Promise.all(names.map(loadImg)), tex = {}; names.forEach((n, i) => tex[n] = ims[i]);
-  if (ims.some(x => !x)) document.getElementById('voxWA').textContent = '— 그림을 못 읽었다 (로컬 서버로 열어야 한다: inc 폴더에서 python3 -m http.server)';
-  await dolls(tex);
-  const gs = geom(520, 330, 5, 64, 48, 40, 28), gb = geom(1040, 690, 5, 168, 120, 46, 32);
-  renderA(gs, tex, FIGS_S);
-  const s = smallRoom(), b = hugeRoom();
-  const vs = VoxView('voxB', gs, s.v, s.scene, FIGS_S, [.3, .31, .43]), vb = VoxView('voxC', gb, b.v, b.scene, FIGS_B, [.24, .25, .37]);
-  vs.bake(tex); await new Promise(r => setTimeout(r, 30)); vb.bake(tex); const wc = document.getElementById('voxWC'); if (wc) wc.textContent = '';
-  const figs = tex.fl0 ? ['fl0', 'fl1', 'fl2', 'fl3'] : ['m_human', 'm_human', 'm_human', 'm_human'];
-  FL.wire(); FL.start(+document.getElementById('flSeed').value || 1, tex, figs);
-  document.getElementById('flGo').onclick = () => FL.start(+document.getElementById('flSeed').value || 1, tex, figs);
-  let last = 0, lastB = 0; const loop = t => { if (t - last > 45) { last = t; vs.frame(t / 1000); } if (t - lastB > 70) { lastB = t; vb.frame(t / 1000); } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+  const tex = { m_human: await loadImg('m_human') }, figs = (await partyDolls(tex)) ? ['fl0', 'fl1', 'fl2', 'fl3'] : ['m_human', 'm_human', 'm_human', 'm_human'];
+  const seed = () => +document.getElementById('flSeed').value || 1;
+  FL.wire(); FL.start(seed(), tex, figs);
+  document.getElementById('flGo').onclick = () => FL.start(seed(), tex, figs);
 })();
-document.querySelector('#vox .bar').addEventListener('click', e => {
-  const b = e.target.closest('button[data-v]'); if (!b) return; document.querySelectorAll('#vox .bar button[data-v]').forEach(x => x.classList.toggle('on', x === b));
-  const v = b.dataset.v; document.getElementById('voxFA').style.display = v === 'b' ? 'none' : ''; document.getElementById('voxFB').style.display = v === 'a' ? 'none' : '';
-});
-document.querySelectorAll('#vox [data-f]').forEach(c => c.addEventListener('change', () => { F[c.dataset.f] = c.checked; }));
 })();
 </script>
 </body>
