@@ -231,3 +231,14 @@ img[src*="assets/chars/"] { image-rendering:auto; object-fit:contain; }
 #prep .tip { margin:0; font:12px "Noto Sans KR",sans-serif; color:#a89878; }
 #prepdie { position:absolute; left:0; top:0; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:9px; background:#f3e4c3; color:#2b1d14; font:800 19px "Noto Sans KR",sans-serif; box-shadow:0 3px 10px rgba(0,0,0,.5); z-index:9; }
 #prepdie.rolling { background:#e8dcc0; color:#6a5a40; } #prepdie.crit { background:#f0c070; } #prepdie.fumble { background:#e06050; color:#fff; }
+/* 전투 결과 · 고르기 · 기록 (설계 5-12) */
+#reward { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(520px, calc(100% - 24px)); max-height:calc(100% - 40px); overflow:auto; box-sizing:border-box; padding:14px 16px; border-radius:12px; background:rgba(28,20,14,.96); border:1px solid #c9a86a; color:#f3e4c3; z-index:12; }
+#reward h3 { margin:0 0 6px; font:26px "Nanum Pen Script",cursive; } #reward p { margin:0 0 10px; color:#cdbb98; font:13px "Noto Sans KR",sans-serif; }
+#reward .rw-line { margin:6px 0; font:14px "Noto Sans KR",sans-serif; } #reward .rw-line b { margin-right:6px; color:#f0c070; } #reward .rw-new b { color:#9fe08a; }
+#reward .rw-xp div { position:relative; padding:4px 0 9px; font:13px "Noto Sans KR",sans-serif; } #reward .rw-xp em { margin-left:4px; color:#9fe08a; font-style:normal; font-weight:700; }
+#reward .rw-xp i { position:absolute; left:0; bottom:2px; height:3px; max-width:100%; border-radius:2px; background:#7fb4e8; }
+#reward .rw-cards { display:flex; flex-wrap:wrap; gap:8px; } #reward .rw-cards button { flex:1 1 140px; display:flex; flex-direction:column; gap:3px; padding:10px; border-radius:10px; border:1px solid #6d5a3c; background:#3a2a1a; color:#f3e4c3; text-align:left; cursor:pointer; }
+#reward .rw-cards button:hover { border-color:#f0c070; background:#4c3720; } #reward .rw-cards small { font:11px "Noto Sans KR",sans-serif; color:#a89878; } #reward .rw-cards b { font:700 15px "Noto Sans KR",sans-serif; } #reward .rw-cards span { font:12px "Noto Sans KR",sans-serif; color:#cdbb98; }
+#reward .rw-cards .k-art { border-color:#8a6cc8; } #reward .rw-cards .k-rule { border-color:#c8a030; } #reward .rw-cards .k-carve { border-color:#3c78b8; }
+#reward .rw-go { width:100%; margin-top:10px; padding:10px; border-radius:8px; border:1px solid #6d5a3c; background:#6a4a1c; color:#f3e4c3; font:600 15px "Noto Sans KR",sans-serif; cursor:pointer; }
+#reward .rw-stats { display:flex; gap:8px; margin:8px 0; } #reward .rw-stats div { flex:1; padding:8px 4px; border-radius:8px; background:#3a2a1a; text-align:center; font:12px "Noto Sans KR",sans-serif; color:#cdbb98; } #reward .rw-stats b { display:block; font:800 20px "Noto Sans KR",sans-serif; color:#f3e4c3; }

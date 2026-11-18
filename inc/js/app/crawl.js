@@ -17,6 +17,9 @@ const CRAWL = (() => {
   let nearKey = null; // 지금 열려 있는 표지의 대상 (멀어지면 닫는다)
   let doorTiles = new Set(); // 지금 방의 안 지나간 출구 문 칸 (거기까지는 걸어갈 수 있다)
   const say = () => UI.say(st.log);
+  // 명성 (판 밖, 설계 5-12): 이 브라우저에 쌓인다
+  const RENOWN = 'inc.renown', renownLoad = () => { try { return +localStorage.getItem(RENOWN) || 0; } catch (e) { return 0; } }, renownSave = v => { try { localStorage.setItem(RENOWN, String(v)); } catch (e) { /* 저장 못 해도 판은 돈다 */ } };
+  let unl = [], lvSnap = null; const tally = { fights: 0, elites: 0, boss: false };
   const TI = (x, y) => FL.index(iso.w, x, y);
   const centerOf = id => FL.centerOf(st.map, id);
   const lead = () => R.party.find(p => !p.dead) || R.party[0];
@@ -26,6 +29,7 @@ const CRAWL = (() => {
   function autoStep(dt) {
     if (!autoN || (st && st.done)) return; autoT += dt; if (autoT < 0.4) return; autoT = 0;
     if (PREPUI.active) { const b = $('prep')?.querySelector('.open button:not([disabled])'); if (b) b.click(); return; } // 문 앞 준비: 처음 되는 방법으로 연다
+    if (REWARDUI.active) { if (q.get('rhold')) return; const b = $('reward')?.querySelector('.rw-go, .rw-cards button'); if (b && !b.classList.contains('rw-go') || b && !$('reward').classList.contains('rw-record')) b.click(); return; } // 전투 결과 · 고르기: 처음 것 (기록 화면에서는 멈춘다) ?rhold=1이면 결과 창에서 멈춘다 (캡처용)
     if (FIGHT.on) { const bb = $('dicebear')?.querySelector('button'); if (bb) return bb.click(); if ($('dicetray') && !q.get('hold')) $('dicetray').querySelector('.go').click(); return; }
     const b = $('crawlscene')?.querySelector('button:not([disabled])') || $('exitsign')?.querySelector('button[data-i="0"]');
     if (b) { if ($('exitsign')) autoN--; b.click(); return; }
@@ -56,7 +60,7 @@ const CRAWL = (() => {
     nearKey = null; closeSign(); go(pts.length ? pts : [[tx, ty]], null); return true;
   }
   function onTap(ev) {
-    if (cutscene || FIGHT.on || PREPUI.active || $('crawlscene') || $('dicepick') || st.done) return;
+    if (cutscene || FIGHT.on || PREPUI.active || REWARDUI.active || $('crawlscene') || $('dicepick') || st.done) return;
     const [tx, ty] = tileAtScreen(ev.clientX, ev.clientY); moveTo(tx, ty);
   }
   const trail = [];
@@ -151,12 +155,22 @@ const CRAWL = (() => {
     };
     $('stage').append(box);
   }
-  function end() { const d = document.createElement('div'); d.className = 'record-stub'; d.textContent = st.done === 'win' ? '층을 지도에 올렸다 — 층 끝 화면은 7단계' : '탐사대가 쓰러졌다 — 층 끝 화면은 7단계'; $('stage').append(d); }
+  // 판 끝: 기록 → 명성 (풀 넓히기) → 다시 들어간다
+  function end() {
+    clearMarks(); closeSign(); if (REWARDUI.active) return;
+    const before = renownLoad(), sum = { win: st.done === 'win', rooms: st.map.nodes.filter(n => n.visited).length, fights: tally.fights, elites: tally.elites, boss: tally.boss, lv: Math.max(...R.party.map(p => p.merc?.lv || 1)), gold: st.gold };
+    sum.gain = G.Reward.renown(sum); sum.total = before + sum.gain; renownSave(sum.total);
+    sum.fresh = G.Reward.UNLOCKS.filter(u => sum.total >= u.at && before < u.at).map(u => u.n);
+    document.body.dataset.done = st.done;
+    REWARDUI.record(sum, () => { location.href = location.pathname; });
+  }
 
   // ── 전투로 넘기기: 탐사 규칙(RUN)의 파티 체력과 쿼터뷰 인물을 차례로 맞춘다 (파이터 ↔ 파이터, 위저드 ↔ 위저드, 클레릭 ↔ 클레릭) ──
   const pair = () => R.party.map((p, i) => [p, st.party[i]]).filter(([p, m]) => p && m);
-  function syncToG() { for (const [p, m] of pair()) { if (m.dead) { p.hp = 0; p.dead = true; } else p.hp = Math.max(1, Math.round(p.max * m.hp / m.max)); } }
-  function syncToRUN() { for (const [p, m] of pair()) { const hp = Math.max(0, p.hp); m.hp = Math.round(m.max * hp / p.max); if (p.dead || hp <= 0) { m.hp = 0; m.dead = true; } } }
+  // 치유 물약은 전투 동안 엔진 가방으로 (엔진 AI가 마신다) — 전투가 끝나면 남은 만큼 돌아온다
+  const POT = 'Potion of Healing', bag = () => G.Items.bag(G.S.w.fantasy);
+  function syncToG() { for (const [p, m] of pair()) { if (m.dead) { p.hp = 0; p.dead = true; } else p.hp = Math.max(1, Math.round(p.max * m.hp / m.max)); } bag()[POT] = st.items.potion || 0; lvSnap = R.party.map(p => ({ p, lv: p.merc?.lv })); }
+  function syncToRUN() { for (const [p, m] of pair()) { const hp = Math.max(0, p.hp); m.hp = Math.round(m.max * hp / p.max); if (p.dead || hp <= 0) { m.hp = 0; m.dead = true; } } st.items.potion = bag()[POT] || 0; }
   function startFight(n, mod) {
     clearMarks(); closeSign(); syncToG();
     G.Encounter.spawnRoom(R, st.map._lay.room[n.id].cells.map(FL.tile), n.g.units || [[n.g.name, n.g.count]], lead(), { boss: n.type === 'boss' });
@@ -212,26 +226,43 @@ const CRAWL = (() => {
       st.log.push({ t: `${o.node.g.label} — 싸우는 소리를 듣고 달려왔다!` }); say();
     }
   }
+  // 전투가 끝났다: 졌으면 판 끝, 이겼으면 금화 · 경험치 · 전리품 → 레벨업 고르기 → 정예 · 보스 3택1 (설계 5-12)
   function fightDone(win, F) {
     const n = F.n; syncToRUN(); n.hostile = false;
     if (!win || !st.party.some(m => !m.dead)) { st.done = 'lose'; st.log.push({ t: '탐사대가 전멸했다.' }); say(); return end(); }
-    if (n.type === 'boss') { st.done = 'win'; st.log.push({ t: `${n.g.name}가 쓰러졌다. 이 층의 지도가 완성됐다.` }); say(); PMAP.draw(); return end(); }
-    const gold = n.type === 'elite' ? 35 + RUN.d(st.rng, 15) : 6 + n.g.count * 2 + (n.g.tier === 'heavy' ? 15 : 0); st.gold += gold;
-    st.log.push({ t: `전투에서 이겼다 (${F.round}라운드). 전리품: 금화 ${gold}.` }); say();
-    const L = lead(); trail.length = 0; trail.push([L.x, L.y]);
-    refreshSeen(); doorTiles = doorsOf(); PMAP.draw(); showMarks();
+    const type = n.type === 'boss' ? 'boss' : n.type === 'elite' ? 'elite' : 'fight', f = G.S.w.fantasy;
+    const gold = type === 'boss' ? 60 + RUN.d(st.rng, 20) : type === 'elite' ? 35 + RUN.d(st.rng, 15) : 6 + n.g.count * 2 + (n.g.tier === 'heavy' ? 15 : 0); st.gold += gold;
+    const loot = G.Reward.loot(type, n.g.count || 1); for (const l of loot) st.items[l.k] = (st.items[l.k] || 0) + l.n;
+    tally.fights++; if (type === 'elite') tally.elites++; if (type === 'boss') tally.boss = true;
+    const xp = R.party.filter(p => p.merc).map(p => ({ p, lv0: lvSnap?.find(s => s.p === p)?.lv ?? p.merc.lv, lv: p.merc.lv, xp: p.merc.xp, need: G.Guild.needOf(p.merc) }));
+    st.log.push({ t: `전투에서 이겼다 (${F.round}라운드). 금화 ${gold}${loot.length ? ' · ' + loot.map(l => `${l.name} ${l.n}`).join(' · ') : ''}.` }); say();
+    REWARDUI.show({ title: `${n.g.label} — 이겼다 (${F.round}라운드)`, gold, xp, loot, big: type === 'fight' ? null : G.Reward.bigOffer(f, R.party, type), type, f }, () => {
+      refreshHP();
+      if (type === 'boss') { st.done = 'win'; st.log.push({ t: `${n.g.name}가 쓰러졌다. 이 층의 지도가 완성됐다.` }); say(); PMAP.draw(); return end(); }
+      const L = lead(); trail.length = 0; trail.push([L.x, L.y]);
+      refreshSeen(); doorTiles = doorsOf(); PMAP.draw(); showMarks();
+    });
   }
+  // 레벨업 · 건강 +1 뒤: 최대 체력을 다시 (지금 체력 비율은 그대로)
+  function refreshHP() { const f = G.S.w.fantasy; for (const a of R.party) if (a.merc && !a.dead) { const k = a.max ? a.hp / a.max : 1; a.max = a.kind === 'hero' ? G.Fantasy.heroHP(f) : G.Fantasy.allyHP(f, a); a.hp = Math.max(1, Math.round(a.max * k)); } }
 
   return {
     // 층을 만들고 쿼터뷰 지도를 돌려준다
-    start(seed) { st = RUN.newRun(seed, ['fighter', 'wizard', 'cleric']); const fl = FL.fromRun(st.map, RUN.TYPE); iso = fl.iso; roomAt = fl.roomAt; open = new Uint8Array(iso.w * iso.h); return iso; },
+    start(seed) {
+      G.Reward.stockShop(RUN.ITEMS); // 상인이 기름 · 마름쇠 · 도둑 도구도 판다
+      st = RUN.newRun(seed, ['fighter', 'wizard', 'cleric']); const fl = FL.fromRun(st.map, RUN.TYPE); iso = fl.iso; roomAt = fl.roomAt; open = new Uint8Array(iso.w * iso.h);
+      // 시작 물자 (명성으로 열린 만큼 더)
+      unl = G.Reward.unlocked(renownLoad()); const I = st.items;
+      I.oil = (I.oil || 0) + 2 + (unl.includes('oil1') ? 1 : 0); I.caltrops = (I.caltrops || 0) + 1; I.potion = (I.potion || 0) + (unl.includes('potion1') ? 1 : 0);
+      return iso;
+    },
     // 세계가 서면: 파티를 입구에, 입구 방을 연다, 누르기 · 표지
     attach(r) {
       R = r; R.seen = new Uint8Array(iso.w * iso.h); FXUI.attach(R);
       const [x, y] = centerOf(st.at); r.party.forEach((p, i) => { p.x = x - 0.6 * i; p.y = y + 0.3 * i; p._dx = p._rx = p.x; p._dy = p._ry = p.y; });
       openRoom(st.at); refreshSeen(); doorTiles = doorsOf();
       canvas.addEventListener('pointerup', onTap);
-      PMAP.attach(st); say(); showMarks(); document.body.dataset.room = st.at; FIGHT.dicePick();
+      PMAP.attach(st); say(); showMarks(); document.body.dataset.room = st.at; FIGHT.dicePick(unl, Object.fromEntries(G.Reward.UNLOCKS.map(u => [u.id, u.at])));
       autoN = +q.get('auto') || 0;
       // 시험용 ?tap=x,y: 그 타일을 화면 좌표로 바꿔 누른 것처럼 (화면 ↔ 타일 변환 확인)
       if (q.get('tap')) setTimeout(() => { const [tx, ty] = q.get('tap').split(',').map(Number), a = project(wx(tx), wy(ty), 0), rc = canvas.getBoundingClientRect(); const cx = rc.left + a.sx / canvas.width * rc.width, cy = rc.top + a.sy / canvas.height * rc.height, back = tileAtScreen(cx, cy); document.body.dataset.tap = back.map(v => v.toFixed(2)).join(','); }, 1500);
@@ -256,6 +287,18 @@ const CRAWL = (() => {
       PREPUI.open(R, { door: d, out: { x: -1, y: 0 }, locked: true, mons: r.mons.filter(x => x.hp > 0), items: { oil: 2, caltrops: 1, tools: 1 }, clue: !!q.get('clue'), intro, script,
         reveal: () => { for (let y = room.y - 1; y <= room.y + room.h; y++) for (let x = room.x - 1; x <= room.x + room.w; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) R.seen[y * m.w + x] = 1; R.seenVer = (R.seenVer || 0) + 1; },
         onOpen: S => { G.Encounter.applyPrep(R, S); FIGHT.start(R, { n, quiet: true, done: (win, F) => { const el = document.createElement('div'); el.className = 'record-stub'; el.innerHTML = `${win ? `문 앞 준비 시험: 이겼다 (${F.round}라운드)` : '문 앞 준비 시험: 졌다'} <button onclick="location.reload()">다시 해 보기</button>`; $('stage').append(el); } }); } });
+    },
+    // 보상 시험 (?scene=reward): 파티를 한 레벨 올리고 전투 결과 → 레벨업 고르기 → 정예 3택1 → 기록 화면을 차례로
+    rewardTest(r) {
+      PMAP.hide(); R = r; const f = G.S.w.fantasy, mo = r.mons[0];
+      const xp = r.party.filter(p => p.merc).map(p => { const lv0 = p.merc.lv; p.merc.xp = G.Guild.needOf(p.merc) - 1; return { p, lv0 }; });
+      G.Guild.onKill(f, r, mo);
+      const rows = xp.map(x => ({ ...x, lv: x.p.merc.lv, xp: x.p.merc.xp, need: G.Guild.needOf(x.p.merc) }));
+      REWARDUI.show({ title: '시험 보상 — 이겼다 (4라운드)', gold: 37, xp: rows, loot: G.Reward.loot('elite', 3), big: G.Reward.bigOffer(f, r.party, 'elite'), type: 'elite', f }, () => {
+        REWARDUI.record({ win: true, rooms: 7, fights: 4, elites: 1, boss: true, lv: Math.max(...r.party.map(p => p.merc?.lv || 1)), gold: 128, gain: 33, total: 33, fresh: G.Reward.UNLOCKS.filter(u => u.at <= 33).map(u => u.n) }, () => location.reload());
+      });
+      // ?step=N: 첫 단추를 N번 눌러 다음 창으로 (캡처용)
+      let k = 0; const n = +q.get('step') || 0, tick = () => { if (k++ >= n) return; const b = $('reward')?.querySelector('.rw-cards button, .rw-go'); if (b) b.click(); setTimeout(tick, 250); }; setTimeout(tick, 400);
     },
     get st() { return st; },
   };

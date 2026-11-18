@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko">
-<head>
+<head><script>/* 불러오는 동안의 오류(문법 오류 · 없는 이름)도 남긴다 — boot.js의 오류 표시보다 먼저 (page_smoke가 본다) */addEventListener('error', e => { const d = document.documentElement; d.dataset.loadErr = (d.dataset.loadErr ? d.dataset.loadErr + ' | ' : '') + (e.message || '') + ' @' + (e.filename || '').split('/').pop().split('?')[0] + ':' + e.lineno; });</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>심연 탐사대</title>

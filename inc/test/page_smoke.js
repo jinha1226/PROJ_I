@@ -26,13 +26,15 @@ const game = (d, ents) => [
   !/data-floor="ready"/.test(d) && '층을 다 굽지 못했다 (data-floor)',
   !new RegExp(`data-ents="${ents}"`).test(d) && `인물 ${(d.match(/data-ents="(\d+)"/) || [])[1] ?? '?'}명 (${ents}명이어야)`,
   /data-err="/.test(d) && `JS 오류: ${(d.match(/data-err="([^"]*)"/) || [])[1]}`,
+  /data-load-err="/.test(d) && `불러오기 오류: ${(d.match(/data-load-err="([^"]*)"/) || [])[1]}`,
 ].filter(Boolean);
 const PAGES = {
   // 새 게임 껍데기 (2026-11-17 2단계): 시험 층에 파티 셋 · ?fight=test는 적 셋 더 · 폰 크기 · DCSS 인형 모드
   'index.html': d => game(d, 3),
   // 시험 전투: 걸어 들어오는 동안 6명, 싸우는 중엔 살아 있는 적 + 아군(data-fight), 이기면 파티 셋
   'index.html?fight=test': d => { const f = d.match(/data-fight="\d+r:(\d+)foes:(\d+)ps"/); return game(d, /data-fights="1w"/.test(d) ? 3 : f ? +f[1] + +f[2] : 6); },
-  'index.html?scene=door': d => game(d, 6), // 문 앞 준비 시험: 파티 셋 + 문 너머(안 보이는) 적 셋
+  'index.html?scene=door': d => game(d, 6),
+  'index.html?scene=reward': d => [...game(d, 6), !/id="reward"/.test(d) && '보상 창이 없다'].filter(Boolean), // 보상 시험: 레벨업 · 3택1 · 기록 창 // 문 앞 준비 시험: 파티 셋 + 문 너머(안 보이는) 적 셋
   'index.html?art=dcss': d => game(d, 3),
   'index.html?phone=1': d => game(d, 3),
   'run.html': d => [
