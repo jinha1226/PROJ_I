@@ -3,8 +3,10 @@
 // - 층 변환 · 출구 · 길 찾기는 js/game/floor.js (화면 없이), 전투는 js/app/fight.js, 양피지 미니맵은 js/app/pmap.js.
 // - 이동: 바닥을 누르면 열린 곳 안에서 길을 찾아 걷는다. 열린 곳 = 들어가 본 방 + 지나간 통로 + 아직 안 지나간 출구의 문 앞.
 //   (사용자, 2026-11-17: 「파티를 플레이어가 직접 움직이게 할거야 … 한번 열린 맵은 자유롭게 자유이동 가능하게」)
-// - 안내 표지: 안 지나간 문 앞에 다가가면 열린다 → 고르면 통로를 지나 새 방으로 (그 통로는 그때부터 열린 곳).
-//   구조물(야영 모닥불 · 상인)에 다가가면 그 장면이 열린다. 사건 · 전투는 방에 들어서면 바로.
+// - 저절로 걷기 (2026-11-18, 사용자: 「갈림길이 매 방마다 되게 많아서 매번 선택을 하는 문제」): 방 일이 끝나면 앞으로 가는 길로 저절로 간다.
+//   길이 하나면 그대로, 둘 이상이면 갈림길 창에서 고른다 (한 판에 세 번쯤). 돌아가는 길 · 지나간 길은 출구로 치지 않는다.
+//   문 행동도 저절로: 잠긴 문은 따기 → 부수기, 그래도 안 되면 대가가 있는 방법(열림 주문 · 두루마리)만 묻는다. 어두운 길은 횃불이 있으면 켠다.
+//   구조물(야영 모닥불 · 상인)이 있는 방은 들어서면 다가가 장면을 연다. 사건 · 전투는 방에 들어서면 바로.
 // - 가 본 방은 도착 처리를 다시 하지 않는다 (보물 · 사건 · 야영은 한 번, 상인은 다시).
 const CRAWL = (() => {
   const FL = G.Floor, { $, esc } = UI;
@@ -14,7 +16,7 @@ const CRAWL = (() => {
   let st = null, iso = null, R = null, walk = null, marks = [], cutscene = false;
   let open = null, roomAt = null; // 열린 타일 · 타일 → 방
   const deferred = {}; // 방 id → 구조물 장면 (야영 · 상인)
-  let nearKey = null; // 지금 열려 있는 표지의 대상 (멀어지면 닫는다)
+  let nearKey = null, idleT = 0; // 지금 열린 구조물 장면의 대상 · 저절로 걷기까지 기다린 시간
   let doorTiles = new Set(); // 지금 방의 안 지나간 출구 문 칸 (거기까지는 걸어갈 수 있다)
   const say = () => UI.say(st.log);
   // 명성 (판 밖, 설계 5-12): 이 브라우저에 쌓인다
@@ -32,7 +34,6 @@ const CRAWL = (() => {
     if (FIGHT.on) { const bb = $('dicebear')?.querySelector('button'); if (bb) return bb.click(); if ($('dicetray') && !q.get('hold')) $('dicetray').querySelector('.go').click(); return; }
     const b = $('crawlscene')?.querySelector('button:not([disabled])') || $('exitsign')?.querySelector('button[data-i="0"]');
     if (b) { if ($('exitsign')) autoN--; b.click(); return; }
-    if (!walk && !cutscene) { const ex = exits().find(e => !e.e.walked); if (ex) moveTo(ex.door[0], ex.door[1]); }
   }
 
   // ── 열린 곳 (걸을 수 있는 타일) · 보이는 곳 ──
@@ -81,52 +82,87 @@ const CRAWL = (() => {
     let gap = 0, j = 0; const k = 1 - Math.exp(-dt * 10);
     R.party.forEach(p => { if (p === L) return; gap += 0.9; let acc = 0; while (j < trail.length - 1 && acc < gap) { acc += Math.hypot(trail[j][0] - trail[j + 1][0], trail[j][1] - trail[j + 1][1]); j++; } const T0 = trail[Math.min(j, trail.length - 1)] || [L.x, L.y]; p.x += (T0[0] - p.x) * k; p.y += (T0[1] - p.y) * k; });
     if (!cutscene) { track(L); if (!walk) near(L); }
+    if (busy() || st.here.auto) idleT = 0; else if ((idleT += dt) > 0.6) { idleT = 0; autoNext(); } // 방 일이 끝나고 잠깐 뒤 저절로 다음 길
   }
   // 걸어서 다른 방에 들어섰다 (열린 곳 안의 이동): 지금 방을 바꾼다
   function track(L) {
     const id = roomAt[TI(L.x, L.y)]; if (id < 0 || id === st.at) return;
     st.at = id; st.path.push(id); st.here = {}; doorTiles = doorsOf(); showMarks(); PMAP.draw(); document.body.dataset.room = st.at;
   }
-  // 다가갔나: 안 지나간 출구의 문 · 구조물
+  // 다가갔나: 구조물 (출구는 표지를 누르거나 저절로 간다)
   function near(L) {
     let hit = null;
-    for (const ex of exits()) { if (ex.e.walked) continue; if (Math.hypot(ex.door[0] - L.x, ex.door[1] - L.y) < NEAR) { hit = { key: 'e' + ex.e.id, ex }; break; } }
-    const sc = deferred[st.at]; if (!hit && sc) { const [x, y] = centerOf(st.at); if (Math.hypot(x - L.x, y - L.y) < NEAR) hit = { key: 's' + st.at, sc }; }
-    if (!hit) { if (nearKey && nearKey[0] === 'e') closeSign(); nearKey = null; return; }
+    const sc = deferred[st.at]; if (sc) { const [x, y] = centerOf(st.at); if (Math.hypot(x - L.x, y - L.y) < NEAR) hit = { key: 's' + st.at, sc }; }
+    if (!hit) { nearKey = null; return; }
     if (hit.key === nearKey) return; nearKey = hit.key;
-    if (hit.ex) sign(hit.ex); else { st.scene = hit.sc; delete deferred[st.at]; showMarks(); scene(); }
+    st.scene = hit.sc; delete deferred[st.at]; showMarks(); scene();
   }
 
   // ── 표지 · 안내 표지 · 장면 ──
   function clearMarks() { for (const m of marks) m.el.remove(); marks = []; }
   function showMarks() {
     clearMarks(); if (st.done) return;
-    for (const ex of exits()) {
-      if (ex.e.walked) continue; // 지나간 통로는 표지 없이 자유롭게
+    for (const ex of ahead()) {
       const k = FL.kindOf(ex.e), el = document.createElement('div');
       el.className = 'exitmark'; el.innerHTML = `<b>${ICON[k] || '›'}</b><small>${esc(KIND[k] || '통로')}</small>`;
-      el.onclick = () => moveTo(ex.door[0], ex.door[1]);
+      el.onclick = () => { if (!busy()) takeExit(ex); };
       $('floats').append(el); marks.push({ el, x: ex.door[0], y: ex.door[1] });
     }
     const sc = deferred[st.at];
     if (sc) { const [x, y] = centerOf(st.at), el = document.createElement('div'); el.className = 'exitmark struct'; el.innerHTML = `<b>${ICON[sc.kind] || '★'}</b><small>${esc(sc.title)}</small>`; el.onclick = () => moveTo(x, y); $('floats').append(el); marks.push({ el, x, y }); }
   }
   function closeSign() { const s = $('exitsign'); if (s) s.remove(); }
-  function sign(ex) {
-    closeSign();
-    const n = st.map.nodes[ex.to], k = FL.kindOf(ex.e), acts = n.visited ? [{ label: '지나간다', run: null }] : prepable(ex) ? [{ label: '문을 열고 들어간다', who: ex.e.kind === 'locked' && !ex.e.opened ? '자물쇠를 따 보고, 안 되면 걷어찬다' : '살며시 연다', prep: true }] : RUN.moveActs(st, ex.ed);
+  // 앞으로 가는 길: 이 방에서 나가는 길 중 안 지나간 것 (돌아가는 길 · 못 연 문은 빼고)
+  const ahead = () => exits().filter(x => x.e.a === st.at && !x.e.walked && !x.e.stuck);
+  // 지금 저절로 움직이면 안 되는 때: 걷는 중 · 전투 · 문 열기 · 창이 떠 있음
+  const busy = () => cutscene || !!walk || FIGHT.on || PREPUI.active || REWARDUI.active || !!($('crawlscene') || $('dicepick') || $('exitsign') || $('csheet')) || !!st.done;
+  // 방 일이 끝났다: 새 길이 하나면 그리로, 둘 이상이면 갈림길 창. 새 길이 없으면 가 본 방으로 (앞으로만 — 길은 거꾸로 돌지 않는다)
+  function autoNext() {
+    st.here.auto = true;
+    const fresh = ahead().filter(x => !st.map.nodes[x.to].visited), opts = fresh.length ? fresh : exits().filter(x => x.e.a === st.at && !x.e.stuck);
+    if (!opts.length) return;
+    if (opts.length === 1) return takeExit(opts[0]);
+    fork(opts);
+  }
+  // 화면에서 그 문이 어느 쪽인가 (쿼터뷰: 화면 x ∝ x − y, 화면 y ∝ (x + y) / 2) — 갈림길 창의 길을 지도와 맞춰 보게
+  const DIRS = [['→', '오른쪽'], ['↘', '오른쪽 아래'], ['↓', '아래'], ['↙', '왼쪽 아래'], ['←', '왼쪽'], ['↖', '왼쪽 위'], ['↑', '위'], ['↗', '오른쪽 위']];
+  const dirOf = ([x, y]) => { const L = lead(), dx = x - L.x, dy = y - L.y; return DIRS[((Math.round(Math.atan2((dx + dy) / 2, dx - dy) / (Math.PI / 4)) % 8) + 8) % 8]; };
+  function fork(opts) {
+    closeSign(); const box = document.createElement('div'); box.id = 'exitsign';
+    box.innerHTML = '<h4>갈림길</h4><p>어느 길로 갈까</p>' + opts.map((x, i) => { const k = FL.kindOf(x.e), [ar, dw] = dirOf(x.door); return `<button data-i="${i}">${ar} ${esc(dw)} · ${esc(KIND[k] || '통로')} <small>너머: ${esc(beyond(st.map.nodes[x.to]))}</small></button>`; }).join('') +
+      '<button data-i="x" class="x">둘러본다</button>';
+    box.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; closeSign(); if (b.dataset.i !== 'x') takeExit(opts[+b.dataset.i]); };
+    $('stage').append(box);
+  }
+  // 그 출구로: 문 앞까지 걸어가서 저절로 들어간다
+  function takeExit(ex) {
+    closeSign(); clearMarks(); nearKey = null; st.here.auto = true;
+    const L = lead(), pts = FL.findPath(iso.w, iso.h, walkable, L.x, L.y, ex.door[0], ex.door[1]);
+    cutscene = true; go(pts && pts.length ? pts : [ex.door], () => { cutscene = false; enter(ex); });
+  }
+  function enter(ex) {
+    if (st.map.nodes[ex.to].visited || ex.e.walked) return choose(ex, { run: null }); // 가 본 방: 그냥 지나간다
+    if (prepable(ex)) return prepDoor(ex); // 적이 있는 방: 문을 저절로 연다
+    const acts = RUN.moveActs(st, ex.ed);
+    if (ex.e.kind === 'locked' && !ex.e.opened) return unlock(ex, acts);
+    choose(ex, acts.find(a => a.cost === '횃불 1') || acts[0]); // 어두운 길은 횃불이 있으면 켜고
+  }
+  // 잠긴 문 (적이 없는 방 — 보물 방 등): 따기 → 부수기를 저절로. 그래도 안 되면 대가가 있는 방법만 묻는다, 없으면 이 문은 두고 간다
+  function unlock(ex, acts) {
+    for (const a of acts.filter(q => q.id === 'pick' || q.id === 'break')) { const from = st.at; choose(ex, a); if (st.at !== from) return; }
+    const paid = acts.filter(q => q.id === 'knock' || q.id === 'kscroll'), leave = () => { ex.e.stuck = true; st.here.auto = false; showMarks(); };
+    if (!paid.length) { st.log.push({ t: '이 문은 열 수 없다 — 다른 길로.' }); say(); return leave(); }
     const box = document.createElement('div'); box.id = 'exitsign';
-    box.innerHTML = `<h4>${esc(KIND[k] || '통로')}</h4><p>너머: ${esc(beyond(n))}</p>` +
-      acts.map((a, i) => `<button data-i="${i}">${esc(a.label)}${a.p != null && a.p < 1 ? ` <i>${Math.round(a.p * 100)}%</i>` : ''}${a.cost ? ` <small>${esc(a.cost)}</small>` : ''}${a.who ? ` <small>${esc(a.who)}</small>` : ''}</button>`).join('') +
-      '<button data-i="x" class="x">돌아선다</button>';
-    box.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; if (b.dataset.i === 'x') { closeSign(); return; } choose(ex, acts[+b.dataset.i]); };
+    box.innerHTML = `<h4>잠긴 문</h4><p>자물쇠도, 힘으로도 안 열린다. 너머: ${esc(beyond(st.map.nodes[ex.to]))}</p>` +
+      paid.map((a, i) => `<button data-i="${i}">${esc(a.label)}${a.cost ? ` <small>${esc(a.cost)}</small>` : ''}${a.note ? ` <small>${esc(a.note)}</small>` : ''}</button>`).join('') + '<button data-i="x" class="x">두고 간다</button>';
+    box.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; closeSign(); if (b.dataset.i === 'x') leave(); else choose(ex, paid[+b.dataset.i]); };
     $('stage').append(box);
   }
   function choose(ex, a) {
     if (a.prep) return prepDoor(ex);
     closeSign(); const from = st.at;
     if (!a.run) ex.e.walked = true; else a.run();
-    if (st.at === from && a.run) { say(); nearKey = null; return; } // 자물쇠를 못 땄다 등: 다시 다가가면 표지
+    if (st.at === from && a.run) { say(); return; } // 자물쇠를 못 땄다 등: 부른 쪽(unlock)이 다음 방법을 해 본다
     // 통로를 지나 새 방으로 (잠깐 자동으로 걷는다). 그 통로와 방은 이제 열린 곳
     openCor(ex.e.id); openRoom(ex.to); refreshSeen();
     cutscene = true; nearKey = null; clearMarks();
@@ -141,6 +177,7 @@ const CRAWL = (() => {
     if (st.scene) return scene();
     if (st.done) return end();
     showMarks();
+    if (deferred[st.at] && !st.here.struct) { st.here.struct = true; const [x, y] = centerOf(st.at); moveTo(x, y); } // 야영 · 상인: 다가가서 연다
   }
   function scene() {
     const s = st.scene, box = document.createElement('div'); box.id = 'crawlscene';
