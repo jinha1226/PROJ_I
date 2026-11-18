@@ -60,6 +60,7 @@ const CRAWL = (() => {
     nearKey = null; closeSign(); go(pts.length ? pts : [[tx, ty]], null); return true;
   }
   function onTap(ev) {
+    if (HUD.closeSheet()) return; // 캐릭터 시트가 열려 있으면 바닥을 누르면 닫는다
     if (cutscene || FIGHT.on || PREPUI.active || REWARDUI.active || $('crawlscene') || $('dicepick') || st.done) return;
     const [tx, ty] = tileAtScreen(ev.clientX, ev.clientY); moveTo(tx, ty);
   }
@@ -286,7 +287,14 @@ const CRAWL = (() => {
       // 시험용 ?tap=x,y: 그 타일을 화면 좌표로 바꿔 누른 것처럼 (화면 ↔ 타일 변환 확인)
       if (q.get('tap')) setTimeout(() => { const [tx, ty] = q.get('tap').split(',').map(Number), a = project(wx(tx), wy(ty), 0), rc = canvas.getBoundingClientRect(); const cx = rc.left + a.sx / canvas.width * rc.width, cy = rc.top + a.sy / canvas.height * rc.height, back = tileAtScreen(cx, cy); document.body.dataset.tap = back.map(v => v.toFixed(2)).join(','); }, 1500);
     },
-    frame(dt) { frame(dt); autoStep(dt); for (const m of marks) UI.place(m.el, m.x, m.y, 2.2); FIGHT.hud(); FXUI.frame(dt); },
+    frame(dt) { frame(dt); autoStep(dt); for (const m of marks) UI.place(m.el, m.x, m.y, 2.2); FIGHT.hud(); FXUI.frame(dt); HUD.frame(); },
+    // 화면 틀(hud.js)이 읽는 것: 층 · 지금 상태 · 금화 · 물자 · 파티(탐사 중 체력은 탐사 규칙 쪽 비율, 싸우는 동안은 엔진 쪽)
+    view() {
+      if (!R) return null;
+      const T = R.turn, fighting = FIGHT.on;
+      const party = R.party.map((a, i) => { const rm = st?.party[i], hp = fighting || !rm ? a.hp : Math.round(a.max * rm.hp / Math.max(1, rm.max)); return { a, m: a.merc, hp: Math.round(hp), max: a.max, dead: !!(a.dead || rm?.dead), cur: fighting && T?.cur === a }; });
+      return { title: (iso || R.map)?.title || '', sub: fighting ? `${T?.round || 1}라운드` : PREPUI.active ? '문 앞 준비' : st?.done ? '끝' : '탐사', fighting, gold: st ? st.gold : null, items: st ? st.items : null, party };
+    },
     // 시험 전투 (?fight=test): 복도로 들어와 방에서 적과 맞닥뜨려 싸운다 (탐사 규칙 없이)
     fightTest(r) {
       PMAP.hide(); R = r; FXUI.attach(R);

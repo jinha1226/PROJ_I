@@ -27,6 +27,7 @@ const game = (d, ents) => [
   !new RegExp(`data-ents="${ents}"`).test(d) && `인물 ${(d.match(/data-ents="(\d+)"/) || [])[1] ?? '?'}명 (${ents}명이어야)`,
   /data-err="/.test(d) && `JS 오류: ${(d.match(/data-err="([^"]*)"/) || [])[1]}`,
   /data-load-err="/.test(d) && `불러오기 오류: ${(d.match(/data-load-err="([^"]*)"/) || [])[1]}`,
+  !/id="hud"/.test(d) && '화면 틀(위 바 · 파티 바)이 없다',
 ].filter(Boolean);
 const PAGES = {
   // 새 게임 껍데기 (2026-11-17 2단계): 탐사 층은 혼자 시작(2026-11-18) · ?fight=test · ?scene=*는 파티 셋 + 적 셋 · 폰 크기 · DCSS 인형 모드

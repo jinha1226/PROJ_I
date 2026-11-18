@@ -23,7 +23,7 @@ function fit() {
 // 휠: 화면 크기를 바꿔 보이는 범위를 늘리고 줄인다. 판보다 넓게는 못 줄인다
 const ZOOMS = [1, 1.5, 2, 2.5, 3, 4];
 function setZoom(p, force) {
-  const cw = STG.clientWidth * DPR, ch = Math.max(200, innerHeight - ($('top').offsetHeight || 38)) * DPR; p = Math.max(p, big.w ? Math.max(cw / big.w, ch / big.h) : 1);
+  const cw = STG.clientWidth * DPR, ch = Math.max(200, innerHeight - ($('top').offsetParent ? $('top').offsetHeight : 0)) * DPR; /* 위 줄을 감추면(새 게임 화면 틀) 화면 높이를 다 쓴다 */ p = Math.max(p, big.w ? Math.max(cw / big.w, ch / big.h) : 1);
   if (!force && Math.abs(p - PXS) < .01) return;
   const cx = cam.x + VW / 2, cy = cam.y + VH / 2; PXS = p;
   W = VW = Math.max(160, Math.floor(cw / p)); H = VH = Math.max(100, Math.floor(ch / p)); canvas.width = W; canvas.height = H;

@@ -49,5 +49,5 @@ function frame(tt) {
   requestAnimationFrame(frame);
 }
 G.iso = { f, rt, win, graves };
-const boot = () => { fit(); requestAnimationFrame(() => { setZoom(PXS, true); fit(); last = now(); frame(); }); };
+const boot = () => { fit(); requestAnimationFrame(() => { setZoom(HUD.zoom(), true); fit(); last = now(); frame(); }); }; // 확대는 화면 너비 기준 (hud.js)
 if (DNG) loadTex().then(boot); else boot();
