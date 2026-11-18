@@ -23,6 +23,11 @@
   const hurt0 = G.Fantasy.hurt, hurtMember0 = G.Fantasy.hurtMember; // 화염 피해를 입은 자리의 기름이 타오른다
   G.Fantasy.hurt = function (f, rt, m, dmg, src, from) { const ty = G.Foe.dtype, r = hurt0.call(this, f, rt, m, dmg, src, from); if (ty === 'fire' && rt?.terrain?.length) G.Feed.push(TR.fireAt(rt, m, io(f, rt))); return r; };
   G.Fantasy.hurtMember = function (f, rt, p, dmg, mo) { const ty = G.Foe.dtype, r = hurtMember0.call(this, f, rt, p, dmg, mo); if (ty === 'fire' && rt?.terrain?.length) G.Feed.push(TR.fireAt(rt, p, io(f, rt))); return r; };
+  // 문 앞 준비의 기습 (G.Encounter.applyPrep → rt.prepSurprise): 옛 엔진의 '들키지 않고 다가갔나' 판정 대신 쓴다. 싸움이 시작되면 지운다
+  const sneak0 = G.Pool.sneak;
+  G.Pool.sneak = function (rt, list) { if (rt.prepSurprise != null) { const v = rt.prepSurprise; rt.prepSurprise = null; return v; } return sneak0.call(this, rt, list); };
+  const beginFight0 = G.Story.beginFight;
+  G.Story.beginFight = function (f, rt) { rt.prepSurprise = null; return beginFight0.apply(this, arguments); };
   // 유틸리티 AI: 마른 기름 위에 선 적이 있으면 화염 기술 점수를 올린다 — 깔아 둔 기름을 캐릭터가 알아서 쓴다
   const score0 = G.SkillAI.score;
   G.SkillAI.score = function (k, a, x, threat) {

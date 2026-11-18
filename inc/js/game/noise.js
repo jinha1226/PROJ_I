@@ -1,6 +1,6 @@
 'use strict';
 // 소리와 적의 상태 (설계 5-11, 화면 없이) — DCSS의 noise처럼: 소리는 걸을 수 있는 칸을 따라 퍼지고 멀어질수록 작아진다.
-// - 크기 n의 소리는 걸어서 2n타일(지도 n칸)까지 닿는다. 들리는 크기 = n − 거리/2 (0 이하면 못 듣는다). 닫힌 문은 거리 +6타일.
+// - 크기 n의 소리는 걸어서 2n타일(지도 n칸)까지 닿는다. 들리는 크기 = n − 거리/2 (0 이하면 못 듣는다). 닫힌 문은 거리 +4타일.
 // - 들은 쪽(listener: { x, y, aware, heard })의 상태가 오른다: 잠듦(sleep) → 모름(idle) → 경계(alert) → 쫓음(hunt).
 //   쫓는 쪽은 소리 난 곳(heard)을 기억한다 — 그쪽으로 걸어오는 건 쓰는 쪽(전투 · 탐사)이 한다.
 // - emit은 사건 목록을 돌려준다: { k: 'noise', x, y, n, r } (파문) · { k: 'aware', who, from, to } (상태 바뀜). 화면은 이걸 그린다.
@@ -8,7 +8,7 @@ G.Noise = (() => {
   // 행동마다 소리 크기 (설계 5-11 표)
   const LV = { walk: 0, listen: 0, push: 1, pick: 1, pickFail: 4, kick: 10, knock: 15, round: 8, blast: 12 };
   const ORDER = ['sleep', 'idle', 'alert', 'hunt'];
-  const DOOR = 6; // 닫힌 문 너머는 이만큼 멀게 들린다 (타일)
+  const DOOR = 4; // 닫힌 문 너머는 이만큼 멀게 들린다 (타일) — 자물쇠 따기 실패(4)는 문 바로 뒤의 적만 깨운다
   const reach = n => 2 * n;
   const heardAs = (n, d) => n - d / 2;
   // 들리는 크기 q를 들으면 상태가 어떻게 되나

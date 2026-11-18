@@ -17,12 +17,12 @@ for (let y = 9; y <= 12; y++) { set(5, y); set(14, y); } for (let x = 5; x <= 14
 let closed = new Set();
 const grid = { w: W, h: H, pass: k => c[k] === '.' && !closed.has(k), door: k => closed.has(k) };
 
-// 1) 거리: 벽을 뚫지 않고 복도를 따라 잰다, 닫힌 문은 +6
+// 1) 거리: 벽을 뚫지 않고 복도를 따라 잰다, 닫힌 문은 +4
 {
   const D = N.field(grid, 8, 4, 99);
   t('벽 너머(오른쪽 방 11, 4)는 바로 옆이 아니라 복도를 돌아 먼 거리', D[4 * W + 11] > 15, D[4 * W + 11]);
   closed = new Set([9 * W + 14]); const D2 = N.field(grid, 8, 4, 99); closed = new Set();
-  t('닫힌 문을 지나면 6타일 더 멀다', Math.abs(D2[4 * W + 14] - D[4 * W + 14] - 6) < 0.01, [D[4 * W + 14], D2[4 * W + 14]]);
+  t('닫힌 문을 지나면 4타일 더 멀다', Math.abs(D2[4 * W + 14] - D[4 * W + 14] - N.DOOR) < 0.01 && N.DOOR === 4, [D[4 * W + 14], D2[4 * W + 14]]);
   t('거리장 밖(max)은 닿지 않는다', N.field(grid, 8, 4, 3)[4 * W + 14] === Infinity);
 }
 // 2) 상태 오르기 (설계 표)
