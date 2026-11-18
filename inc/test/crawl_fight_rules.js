@@ -15,13 +15,13 @@ for (const seed of [1, 2, 3]) {
   const res = run(G, r);
   t(`씨앗 ${seed}: 전투가 끝난다`, !res.timeout, JSON.stringify(res));
 }
-// 2) 운명판: 전투 시작에 한 번 굴리고, 라운드마다 그 열을 되풀이하며, 칸 값이 아군 공격 d20에 쓰인다
+// 2) 운명판: 전투 시작에 앞 3라운드를 굴리고, 라운드마다 새 열을 붙이며(늘 맨 앞 열이 이번 라운드), 칸 값이 아군 공격 d20에 쓰인다
 for (const seed of [4, 5]) {
   const { G, r } = boot(seed); spawn(G, r, ['고블린 졸개', '홉고블린 전사', '홉고블린 전사']);
   const res = run(G, r, { dice: ['steady'] });
   t(`씨앗 ${seed}: 운명판 전투가 끝난다`, !res.timeout, JSON.stringify(res));
   t(`씨앗 ${seed}: 판은 전투에 한 번만 굴린다`, res.boards === 1, res.boards);
-  t(`씨앗 ${seed}: 라운드마다 판의 열을 1 → 2 → 3 → 1 … 되풀이`, res.cols.length >= 1 && res.cols.every((c, i) => c === i % 3), res.cols.join());
+  t(`씨앗 ${seed}: 라운드마다 맨 앞 열을 쓴다 (판이 옆으로 흐른다)`, res.cols.length >= 1 && res.cols.every(c => c === 0) && (!G.Dice.board || G.Dice.board.cells.every(row => row.length === 3)), res.cols.join());
   t(`씨앗 ${seed}: 판의 값이 공격 굴림에 쓰였다`, res.used >= 1, JSON.stringify(res));
 }
 // 2-1) 흐르는 턴제: 판정은 SRD 차례 그대로, 범위 칠하기 · 큰 주사위 창 · 차례 사이 쉼이 없어 라운드가 짧다
@@ -51,11 +51,29 @@ for (const seed of [4, 5]) {
   t('직업은 SRD 직업으로: 정찰(드루이드) = 신성 · 궁수(레인저) = 재주꾼 · 워락 = 비전', D.dieFor({ merc: { cls: 'scout' } }) === 'c_div' && D.dieFor({ merc: { cls: 'archer' } }) === 'c_skl' && D.dieFor({ merc: { cls: 'warlock' } }) === 'c_arc');
   // 라운드 → 열: 1 2 3 1 2 3 …, 내 칸이 내 주사위
   B.cells[0][0] = D.face('c_war', 17); B.cells[0][1] = D.face('c_war', 3); B.ready = true;
-  D.useRound(1); const a1 = D.dieOf(ps[0]).value; D.useRound(2); const a2 = D.dieOf(ps[0]).value; D.useRound(4); const a4 = D.dieOf(ps[0]).value;
-  t('N라운드는 (N − 1) % 3열 — 4라운드는 1라운드와 같은 칸', a1 === 17 && a2 === 3 && a4 === 17 && D.st.col === 0, [a1, a2, a4]);
+  const third = B.cells[0][2]; D.useRound(1); const a1 = D.dieOf(ps[0]).value; D.useRound(2, () => 0.5); const a2 = D.dieOf(ps[0]).value, in2 = B.cells[0][2].value; D.useRound(3); const a3 = D.dieOf(ps[0]); D.useRound(4);
+  t('라운드가 넘어가면 맨 앞 열이 빠지고 새 열이 붙는다 (늘 세 열)', a1 === 17 && a2 === 3 && in2 === 11 && a3 === third && D.dieOf(ps[0]).value === 11 && B.base === 4 && B.cells.every(row => row.length === 3) && D.st.col === 0, [a1, a2, in2, B.base]);
   // 다시 굴리기는 한 번, 고른 칸만
   const keep = B.cells[1][1].value; D.newBoard(() => 0.5); const B2 = D.board, k2 = B2.cells[2][2];
-  t('다시 굴리기는 한 번', D.rerollCells([[0, 0]], () => 0.99) === true && D.rerollCells([[1, 1]]) === false);
+  t('다시 굴리기 값: 첫 칸 공짜, 그 뒤 칸마다 5 · 10 · 15', [0, 1, 2, 3, 4].map(D.rerollCost).join() === '0,0,5,15,30');
+  t('금화가 모자라면 못 굴린다 (두 칸 = 5)', D.rerollCells([[0, 0], [0, 1]], () => 0.99, 4) === null && !D.board.rerolls);
+  t('다시 굴리기는 한 번 (한 칸은 공짜)', D.rerollCells([[0, 0]], () => 0.99, 0)?.cost === 0 && D.rerollCells([[1, 1]]) === null);
+  // 가로줄 조합: 한 사람의 세 칸이 같은 기호 (★는 아무 기호, 빈 면 · 특수 주사위가 끼면 없다)
+  const W = v => D.face('c_war', v);
+  t('가로줄: 검 셋 · 검 둘 + ★ · 섞이면 없음 · 빈 면이 끼면 없음 · ★만은 없음', D.rowCombo([W(2), W(4), W(6)]) === 'atk' && D.rowCombo([W(2), W(20), W(4)]) === 'atk' && D.rowCombo([W(2), W(3), W(4)]) === null && D.rowCombo([W(2), W(1), W(4)]) === null && D.rowCombo([W(20), W(20), W(20)]) === null);
+  t('가로줄: 특수 주사위가 낀 줄은 없다', D.rowCombo([W(2), W(4), D.roll('steady', () => 0)]) === null);
+  t('열 조합은 넷까지 센다 (검 넷 = 4, 다섯도 4)', D.combos([W(2), W(4), W(6), W(8)])[0].n === 4 && D.combos([W(2), W(4), W(6), W(8), W(10)])[0].n === 4 && D.SYM.atk.txt(4) === '아군 피해 +5');
+  // 밀기: 전투 중 한 번, 한 사람의 다음 칸을 버리고 그다음 칸을 당긴다 (끝자리는 새로 굴린다). 시작 전(ready 전)에는 못 민다
+  { const B3 = D.newBoard(() => 0.5); B3.cells[0] = [W(2), W(3), W(5)];
+    t('밀기는 판을 받은 뒤에만', D.pushRow(0) === false); B3.ready = true;
+    t('밀기: 지금 칸은 그대로, 다음 칸을 버리고 당긴 뒤 새 눈', D.pushRow(0, () => 0.5) === true && B3.cells[0].map(c => c.value).join() === '2,5,11', B3.cells[0].map(c => c.value));
+    const hf = { hp: 5, max: 5, merc: { uid: 77, cls: 'rogue', sp: 'halfling' } }, hu = { hp: 5, max: 5, merc: { uid: 78, cls: 'rogue', sp: 'human' } }, seq = a => () => a.shift();
+    const lr = D.roll('c_skl', seq([0, 0.5]), hf), nr = D.roll('c_skl', seq([0, 0.5]), hu);
+    t('하플링 행운: 1이 나온 칸은 다시 굴린다 (다른 종족은 그대로 1)', lr.value === 11 && lr.lucky === true && nr.value === 1 && !nr.lucky, [lr.value, nr.value]);
+    t('이름표: 하플링 = 행운 · 영감이 있으면 ✦', D.tags(hf).includes('행운') && !D.tags(hu).includes('행운') && (D.giveInsp(hu), D.tags(hu).includes('✦ 영감')) && D.giveInsp(hu) === false);
+    D.rested([hf.merc, hu.merc]); hu.merc.insp = false; D.rested([hf.merc, hu.merc]); t('긴 휴식: 인간만 영감', hu.merc.insp === true && !hf.merc.insp);
+    t('칸 표시: 20 = 치명 · 1 = 빗나감', D.mark(hu, W(20)) === 'crit' && D.mark(hu, W(1)) === 'miss' && D.mark(hu, W(10)) === null);
+    t('밀기는 전투에 한 번', D.canPush() === false && D.pushRow(1) === false); D.board = B2; }
   t('다시 굴린 칸만 바뀐다 (20 = ★)', B2.cells[0][0].value === 20 && B2.cells[0][0].sym === 'wild' && B2.cells[2][2] === k2);
   // 열 순서 바꾸기
   const c0 = B2.cells.map(row => row[0]), c2 = B2.cells.map(row => row[2]); D.swapCols(0, 2);
@@ -95,10 +113,19 @@ for (const seed of [4, 5]) {
   t('방진은 시계가 흘러도 그 라운드 동안 남는다', G2.Dnd.ac(team[0]) > ac0);
   D2.useRound(2);
   t('다음 라운드가 되면 방진이 지워진다', G2.Dnd.ac(team[0]) === ac0, [ac0, G2.Dnd.ac(team[0])]);
-  D2.useRound(4); D2.fire();
-  t('4라운드에 1열 방진이 다시 켜진다', G2.Dnd.ac(team[0]) > ac0);
+  for (let r = 0; r < team.length; r++) B.cells[r][1] = D2.face('c_war', 3); D2.useRound(3); D2.fire();
+  t('다음 열에 방이 모이면 그 라운드에 방진이 다시 켜진다', G2.Dnd.ac(team[0]) > ac0);
   D2.end();
   t('전투가 끝나면 방진이 지워진다 (다음 전투로 안 넘어간다)', G2.Dnd.ac(team[0]) === ac0 && D2.st === null && D2.board === null);
+  { const Br = D2.newBoard(() => 0); Br.ready = true; Br.cells[0] = [D2.face('c_war', 3), D2.face('c_war', 7), D2.face('c_war', 20)]; // 방 · 방 · ★ — 첫 사람의 가로줄 방진
+    team.forEach(p => { p.merc.insp = false; }); const ac1 = G2.Dnd.ac(team[1]); D2.useRound(1); D2.st.combo = null; D2.fire(); const up1 = G2.Dnd.ac(team[0]) - ac0;
+    t('가로줄이 새로 맞으면 그 사람이 영웅적 영감을 얻는다 (한 사람에 하나)', team[0].merc.insp === true && !team[1].merc.insp && D2.giveInsp(team[0]) === false);
+    D2.useRound(2, () => 0.99); D2.st.combo = null; // 새 열은 모두 20(★) — 줄은 방 · ★ · ★로 이어진다
+    t('가로줄 방진: 그 사람만 AC +3, 보이는 세 칸이 같은 동안 남는다', up1 === 3 && G2.Dnd.ac(team[0]) === ac0 + 3 && G2.Dnd.ac(team[1]) === ac1, [up1, G2.Dnd.ac(team[0]) - ac0, G2.Dnd.ac(team[1]) - ac1]);
+    t('영감 다시 굴리기: 시작한 뒤에는 아직 오지 않은 칸만', D2.canInsp(0, 0) === false && D2.canInsp(0, 1) === true && D2.canInsp(1, 1) === false);
+    t('영감을 쓰면 그 칸이 다시 굴러가고 영감은 사라진다', D2.inspReroll(0, 2, () => 0.05) === true && Br.cells[0][2].value === 2 && team[0].merc.insp === false && D2.inspReroll(0, 1) === false, [Br.cells[0][2].value]);
+    D2.useRound(2); t('줄이 깨지면 가로줄 효과도 사라진다 (방 · ★ · 검)', G2.Dnd.ac(team[0]) === ac0, [G2.Dnd.ac(team[0]) - ac0]);
+    D2.end(); t('전투가 끝나면 가로줄 효과도 지워진다', G2.Dnd.ac(team[0]) === ac0); }
   const B5 = D2.newBoard(() => 0); B5.ready = true; B5.cells[0][0] = D2.face('c_div', 2); B5.cells[1][0] = D2.face('c_war', 3); B5.cells[2][0] = D2.face('c_war', 20); // 빛 · 방 · ★ — 빛×2와 방×2 둘 다 된다
   team.forEach(p => { p.hp = p.max; }); team[1].hp = 1; D2.useRound(1);
   t('AI 추천: 다친 사람이 있으면 기도 (다른 조합이 있어도)', D2.st.combo === 'holy', D2.st.combo);

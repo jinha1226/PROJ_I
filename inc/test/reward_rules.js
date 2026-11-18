@@ -64,11 +64,8 @@ const seq = a => { let i = 0; return () => a[i++ % a.length]; };
 // 5) 정예 · 보스 3택1: 마법 물건 · 규칙 카드 · 면 새기기
 {
   const { G, r, f } = boot(5), R = G.Reward; G.Dice.rules.clear(); f.trinkets = [];
-  const few = R.bigOffer(f, r.party, 'elite', seq([0.3, 0.6, 0.2, 0.8, 0.1]));
-  t('3택1 (파티 5명 미만): 마법 물건 · 동료 합류 · 규칙 카드나 면 새기기', few.length === 3 && few[0].kind === 'art' && few.some(o => o.kind === 'join') && few.some(o => o.kind === 'rule' || o.kind === 'carve'), JSON.stringify(few.map(o => o.kind)));
-  t('동료 합류를 고르면 영입 창을 연다는 표시', R.takeBig(f, few.find(o => o.kind === 'join')) === 'join');
-  const size0 = G.Party.size; G.Party.size = () => 5; const opts = R.bigOffer(f, r.party, 'elite', seq([0.3, 0.6, 0.2, 0.8, 0.1])); G.Party.size = size0;
-  t('3택1 (파티 5명): 마법 물건 · 규칙 카드 · 면 새기기', ['art', 'rule', 'carve'].every(k => opts.some(o => o.kind === k)), JSON.stringify(opts.map(o => o.kind)));
+  const opts = R.bigOffer(f, r.party, 'elite', seq([0.3, 0.6, 0.2, 0.8, 0.1]));
+  t('3택1: 마법 물건 · 규칙 카드 · 면 새기기 (동료 합류는 없다 — 파티는 선술집에서)', opts.length === 3 && ['art', 'rule', 'carve'].every(k => opts.some(o => o.kind === k)), JSON.stringify(opts.map(o => o.kind)));
   const art = opts.find(o => o.kind === 'art'); R.takeBig(f, art);
   t('마법 물건: 가방(f.trinkets)에 들어가 누군가 낀다', f.trinkets.some(q => q.k === art.id) && f.trinkets.some(q => q.on != null), JSON.stringify(f.trinkets));
   const rule = opts.find(o => o.kind === 'rule'); R.takeBig(f, rule);

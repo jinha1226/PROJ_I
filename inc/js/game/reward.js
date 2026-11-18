@@ -89,21 +89,19 @@ G.Reward = (() => {
   // 셋: 마법 물건 · 규칙 카드 · 면 새기기 — 파티가 5명이 안 되면 규칙 카드 · 면 새기기 중 하나 대신 「동료 합류」
   function bigOffer(f, party, type, rng = Math.random) {
     const out = [...artOptions(f, party, type, rng), ...ruleOptions(rng), ...carveOptions(party, rng)];
-    if (G.Party && G.Party.size(f) < G.Party.MAX) { const i = out.findIndex((o, j) => j > 0 && (o.kind === 'rule' || o.kind === 'carve') && rng() < 0.5); out.splice(i > 0 ? i : out.length - 1, 1, { kind: 'join', n: '동료 합류', d: '셋 중 한 명을 들인다' }); }
     return out;
   }
   function takeBig(f, opt) {
     if (opt.kind === 'art') { const t = { id: f.trUid = (f.trUid || 0) + 1, lv: f.floor || 1, on: null, k: opt.id }; G.Trinket.all(f).push(t); (f.artSeen = f.artSeen || []).push(opt.id); G.Trinket.overflow?.(f); G.Trinket.auto?.(f); return t; }
     if (opt.kind === 'rule') { G.Dice.rules.add(opt.id); return true; }
     if (opt.kind === 'carve') { const m = opt.who.merc; m.carve = { ...(m.carve || {}), [opt.v]: 'wild' }; return true; }
-    if (opt.kind === 'join') return 'join'; // 영입 창은 화면 쪽이 연다
     return false;
   }
 
-  // ── 명성 (판 밖) ──
-  // 한 판의 명성: 간 방 1 · 이긴 전투 2 · 정예 3 · 보스 10 · 층 끝까지 가면 5 더
+  // ── 소문 (판 밖 — 코드 이름은 renown) ──: 고를 것만 넓힌다. 물건 · 돈은 넘어가지 않는다
+  // 한 판의 소문: 간 방 1 · 이긴 전투 2 · 정예 3 · 보스 10 · 층 끝까지 가면 5 더
   const renown = s => (s.rooms || 0) + 2 * (s.fights || 0) + 3 * (s.elites || 0) + 10 * (s.boss ? 1 : 0) + (s.win ? 5 : 0);
-  const UNLOCKS = [{ id: 'twin', at: 10, n: '쌍둥이 주사위 (특수 주사위)' }, { id: 'doom', at: 25, n: '죽음의 주사위 (특수 주사위)' }, { id: 'potion1', at: 35, n: '시작 치유 물약 +1' }];
+  const UNLOCKS = [{ id: 'twin', at: 10, n: '쌍둥이 주사위 (특수 주사위)' }, { id: 'doom', at: 25, n: '죽음의 주사위 (특수 주사위)' }];
   const unlocked = total => UNLOCKS.filter(u => total >= u.at).map(u => u.id);
 
   return { on: false, XP_PACE, AB_N, ITEM, RULES, UNLOCKS, caster, slotsOpen, pending, learnable, offer, choose, loot, stockShop, bigOffer, takeBig, blanks, renown, unlocked };

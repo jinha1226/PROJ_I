@@ -11,7 +11,7 @@ G.Encounter = (() => {
     const out = []; let k = 0;
     for (const [name, cnt] of units) for (let i = 0; i < cnt; i++) {
       const [x, y] = order[(k++ * 3) % Math.max(1, order.length)] || [from.x + 3, from.y], nm = monName(name);
-      out.push(G.Fantasy.spawnMon(R, 1, { n: nm, ...G.D.F.mon[nm] }, x, y, false, { aggro: !opts.hidden, spotted: !opts.hidden, major: true, boss: !!opts.boss }));
+      out.push(G.Fantasy.spawnMon(R, 1, { n: nm, ...G.D.F.mon[nm] }, x, y, false, { aggro: !opts.hidden, spotted: !opts.hidden, major: true, boss: !!opts.boss && !out.length })); // 우두머리 표시는 무리의 첫 놈만 (문지기 · 우두머리와 그 졸개)
     }
     // hidden: 닫힌 문 너머 — 방 안에서 안 보이고(문이 열릴 때까지), 잠들었거나 모른다
     if (opts.hidden) G.Prep.prime(out, opts.rng);
@@ -26,7 +26,5 @@ G.Encounter = (() => {
     for (const m of S.asleep) { m.stop = ROUND; m.koHit = true; }
     R.prepSurprise = S.surprise;
   }
-  // 파티 수에 맞춘 적 수 (탐사 규칙의 무리는 3명 기준): 수마다 × 인원/3, 적어도 하나 — 혼자일 때 고블린 넷이 나오지 않게
-  const scale = (units, n) => units.map(([nm, c]) => [nm, Math.max(1, Math.round(c * n / 3))]);
-  return { monName, spawnRoom, applyPrep, scale };
+  return { monName, spawnRoom, applyPrep };
 })();

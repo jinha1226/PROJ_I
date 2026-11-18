@@ -19,9 +19,9 @@ const CRAWL = (() => {
   let nearKey = null, idleT = 0; // 지금 열린 구조물 장면의 대상 · 저절로 걷기까지 기다린 시간
   let doorTiles = new Set(); // 지금 방의 안 지나간 출구 문 칸 (거기까지는 걸어갈 수 있다)
   const say = () => UI.say(st.log);
-  // 명성 (판 밖, 설계 5-12): 이 브라우저에 쌓인다
+  // 소문 (판 밖, 설계 5-12 — 코드 이름은 renown): 이 브라우저에 쌓인다
   const RENOWN = 'inc.renown', renownLoad = () => { try { return +localStorage.getItem(RENOWN) || 0; } catch (e) { return 0; } }, renownSave = v => { try { localStorage.setItem(RENOWN, String(v)); } catch (e) { /* 저장 못 해도 판은 돈다 */ } };
-  let unl = [], lvSnap = null; const tally = { fights: 0, elites: 0, boss: false };
+  let unl = [], lvSnap = null; const tally = { fights: 0, elites: 0, boss: false, bossFloor: 0 };
   const TI = (x, y) => FL.index(iso.w, x, y);
   const centerOf = id => FL.centerOf(st.map, id);
   const lead = () => R.party.find(p => !p.dead) || R.party[0];
@@ -170,6 +170,7 @@ const CRAWL = (() => {
   }
   // 새 방에 들어서서 멈출 곳: 가운데까지 가지 않고 문에서 세 칸쯤 안쪽 (다음 길로 이어 걸을 때 덜 멈칫하게)
   const inside = ex => { const [cx, cy] = centerOf(ex.to), [dx, dy] = ex.path[ex.path.length - 1], L = Math.hypot(cx - dx, cy - dy), k = Math.min(1, 3 / (L || 1)); return [dx + (cx - dx) * k, dy + (cy - dy) * k]; };
+  const purse = { gold: () => st.gold, pay: n => { st.gold -= n; } }; // 운명판 다시 굴리기 값 (fight.js)
   function arrived() {
     document.body.dataset.room = st.at; document.body.dataset.moves = (+(document.body.dataset.moves || 0) + 1);
     if (st.combat) { const c = st.combat; st.log.push({ t: `전투 ${c.rounds.length}라운드 — ${c.win ? '이겼다' : '졌다'}.` }); st.combat = null; }
@@ -182,27 +183,34 @@ const CRAWL = (() => {
     if (deferred[st.at] && !st.here.struct) { st.here.struct = true; const [x, y] = centerOf(st.at); moveTo(x, y); return; } // 야영 · 상인: 다가가서 연다
     if (!busy() && !st.here.auto) autoNext(); // 이 방에 할 일이 없으면 기다리지 않고 이어 걷는다
   }
+  // 구출 (드문 사건): 그 판에만 함께하는 사람 하나. 선술집의 자리 수와 별개다
+  function rescue() {
+    const f = G.S.w.fantasy, m = G.Party.rescued(f), L = lead();
+    G.Party.join(f, R, m, st, { x: L.x - 0.7, y: L.y + 0.5 }); trail.length = 0; trail.push([L.x, L.y]);
+    st.log.push({ t: `${m.name} (${G.Guild.def(m).n})가 이번 길에 함께한다.`, c: 'good' }); document.body.dataset.rescued = m.name;
+  }
   function scene() {
     const s = st.scene, box = document.createElement('div'); box.id = 'crawlscene';
-    // 상인: 용병 계약 (금화로 후보 셋 중 하나)
-    if (s.kind === 'shop' && !s.choices.some(c => c.ours === 'hire')) s.choices.splice(Math.max(0, s.choices.length - 1), 0, { n: '용병 계약', who: `금화 ${HIRE} · 셋 중 한 명`, ours: 'hire', off: () => st.gold < HIRE });
-    box.innerHTML = `<h3>${esc(s.title)}</h3><p>${esc(s.text || '')}</p>` + s.choices.map((c, i) => `<button data-i="${i}"${c.off && c.off() ? ' disabled' : ''}>${esc(c.n)}${c.p != null && c.p < 1 ? ` <i>${Math.round(c.p * 100)}%</i>` : ''}${c.who ? ` <small>${esc(c.who)}</small>` : ''}</button>`).join('');
+    box.innerHTML = `<h3>${esc(s.title)}</h3><p>${esc(s.text || '')}</p>` + s.choices.map((c, i) => `<button data-i="${i}"${c.off && c.off() ? ' disabled' : ''}>${esc(c.n)}${c.p != null && c.p < 1 ? ` <i>${Math.round(c.p * 100)}%</i>` : ''}${c.who ? ` <small>${esc(c.who)}</small>` : ''}${c.sub ? ` <small>${esc(c.sub)}</small>` : ''}</button>`).join('');
     box.onclick = ev => {
       const b = ev.target.closest('button'); if (!b || b.disabled) return; box.remove();
       const kind = s.kind, at = st.at, ch = s.choices[+b.dataset.i];
-      if (ch.ours === 'hire') { st.gold -= HIRE; st.log.push({ t: `용병 계약 — 금화 ${HIRE}.` }); return recruit(() => scene(), '용병 계약'); }
       if (kind === 'fight' && (ch.n === '싸운다' || ch.n === '기습한다')) { st.scene = null; return startFight(st.map.nodes[at], { ambush: ch.n === '기습한다' }); }
       RUN.choose(st, +b.dataset.i);
+      if (st.flags.ally) { st.flags.ally = false; rescue(); }
+      if (kind === 'rest' && !st.scene) return descend(); // 야영지를 떠난다
+      if ((kind === 'camp' || kind === 'rest') && ch.n === '긴 휴식') G.Dice.rested(G.Party.members(G.S.w.fantasy)); // 긴 휴식: 인간은 영웅적 영감 (SRD)
       if (kind === 'shop' && !st.scene) deferred[at] = s; // 상인은 다시 와도 연다
       arrived();
     };
     $('stage').append(box);
   }
-  // 판 끝: 기록 → 명성 (풀 넓히기) → 다시 들어간다
+  // 판 끝: 기록 → 소문 (풀 넓히기) → 선술집으로
   function end() {
     clearMarks(); closeSign(); if (REWARDUI.active) return;
-    const before = renownLoad(), sum = { win: st.done === 'win', rooms: st.map.nodes.filter(n => n.visited).length, fights: tally.fights, elites: tally.elites, boss: tally.boss, lv: Math.max(...R.party.map(p => p.merc?.lv || 1)), gold: st.gold };
+    const before = renownLoad(), sum = { win: st.done === 'win', rooms: st.map.nodes.filter(n => n.visited).length, fights: tally.fights, elites: tally.elites, boss: tally.boss, lv: Math.max(...R.party.map(p => p.merc?.lv || 1)), gold: st.gold, floor: st.floor, bossFloor: tally.bossFloor, names: R.party.map(p => p.merc?.name).filter(Boolean) };
     sum.gain = G.Reward.renown(sum); sum.total = before + sum.gain; renownSave(sum.total);
+    { const m = TAVERNUI.load(), r = G.Tavern.finish(m, sum); sum.seat = r.seat; sum.lured = r.cls.map(c => (G.Guild.def({ cls: c }) || {}).n || c); TAVERNUI.save(m); } // 선술집: 닿은 층 · 잡은 우두머리 층 · 벽의 명패
     sum.fresh = G.Reward.UNLOCKS.filter(u => sum.total >= u.at && before < u.at).map(u => u.n);
     document.body.dataset.done = st.done;
     REWARDUI.record(sum, () => { location.href = location.pathname; });
@@ -217,7 +225,7 @@ const CRAWL = (() => {
   function startFight(n, mod) {
     clearMarks(); closeSign(); syncToG();
     G.Encounter.spawnRoom(R, st.map._lay.room[n.id].cells.map(FL.tile), units(n.g), lead(), { boss: n.type === 'boss' });
-    FIGHT.start(R, { n, mod, log: t => { st.log.push({ t }); say(); }, done: fightDone });
+    FIGHT.start(R, { n, mod, log: t => { st.log.push({ t }); say(); }, purse, done: fightDone });
     st.log.push({ t: `${n.g.label} — 전투가 시작된다.` }); say();
   }
   // ── 문 열기 (설계 5-11): 아직 안 가 본, 적이 있는 방으로 가는 열린 길 · 잠긴 문 · 못 찾은 함정 길 (어두운 길은 안내 표지 그대로) — 문 앞에 서면 저절로 연다 ──
@@ -252,7 +260,7 @@ const CRAWL = (() => {
     if (st.done) return end();
     syncToG(); G.Encounter.applyPrep(R, S);
     const waiting = others.filter(o => o.aware === 'hunt');
-    FIGHT.start(R, { n, mod: {}, log: t => { st.log.push({ t }); say(); }, done: fightDone, onRound: r => fightRound(r, waiting, others) });
+    FIGHT.start(R, { n, mod: {}, log: t => { st.log.push({ t }); say(); }, purse, done: fightDone, onRound: r => fightRound(r, waiting, others) });
     st.log.push({ t: `${n.g.label} — 전투가 시작된다.` }); say();
   }
   // 전투 라운드마다: 싸우는 소리(8)가 층에 퍼지고, 쫓아오는 다른 방 적은 걸어서 닿으면(6타일/라운드) 이 방으로 들어온다
@@ -269,60 +277,70 @@ const CRAWL = (() => {
       st.log.push({ t: `${o.node.g.label} — 싸우는 소리를 듣고 달려왔다!` }); say();
     }
   }
-  // 적 무리 → 파티 수에 맞춘 적 수 (탐사 규칙의 무리는 3명 기준)
-  const units = g => G.Encounter.scale(g.units || [[g.name, g.count]], R.party.filter(p => !p.dead).length);
-  // 동료 영입 (설계 5-13): 후보 셋 중 하나 — 다섯이면 한 명을 내보낸다. 들어온 동료는 단장 곁에 나타난다
-  function recruit(after, title, only = null) {
-    const f = G.S.w.fantasy, cands = G.Party.offer(f, 3, Math.random, only);
-    REWARDUI.recruit(cands, G.Party.size(f) >= G.Party.MAX, G.Party.members(f).slice(1), (m, out) => {
-      if (m) {
-        if (out) { G.Party.leave(f, R, out, st); if (st) st.log.push({ t: `${out.name}이(가) 파티를 떠났다.` }); }
-        const L = lead(); G.Party.join(f, R, m, st, { x: L.x - 0.7, y: L.y + 0.5 }); trail.length = 0; trail.push([L.x, L.y]);
-        if (st) { st.log.push({ t: `${m.name}(${G.Guild.def(m).n}) — 동료가 되었다.` }); say(); }
-      }
-      if (after) after(m);
-    }, title);
-  }
-  const HIRE = 30; // 상인의 용병 계약 값 (금화)
+  // 적 무리: 구역 규칙표가 그 층의 기준 인원으로 정한 그대로 (파티 수로 깎거나 불리지 않는다)
+  const units = g => g.units || [[g.name, g.count]];
   // 전투가 끝났다: 졌으면 판 끝, 이겼으면 금화 · 경험치 · 전리품 → 레벨업 고르기 → 정예 · 보스 3택1 (설계 5-12)
   function fightDone(win, F) {
     const n = F.n; syncToRUN(); n.hostile = false;
-    if (!win || !st.party.some(m => !m.dead)) { st.done = 'lose'; st.log.push({ t: '탐사대가 전멸했다.' }); say(); return end(); }
+    if (!win || !st.party.some(m => !m.dead)) { st.done = 'lose'; st.log.push({ t: '일행이 모두 쓰러졌다. 주사위만이 선술집 탁자로 돌아간다.' }); say(); return end(); }
     const type = n.type === 'boss' ? 'boss' : n.type === 'elite' ? 'elite' : 'fight', f = G.S.w.fantasy;
     const gold = type === 'boss' ? 60 + RUN.d(st.rng, 20) : type === 'elite' ? 35 + RUN.d(st.rng, 15) : 6 + n.g.count * 2 + (n.g.tier === 'heavy' ? 15 : 0); st.gold += gold;
     const loot = G.Reward.loot(type, n.g.count || 1); for (const l of loot) st.items[l.k] = (st.items[l.k] || 0) + l.n;
-    tally.fights++; if (type === 'elite') tally.elites++; if (type === 'boss') tally.boss = true;
+    tally.fights++; if (type === 'elite') tally.elites++; if (type === 'boss') { tally.boss = true; if (st.floor % 2 === 0) tally.bossFloor = st.floor; }
     const xp = R.party.filter(p => p.merc).map(p => ({ p, lv0: lvSnap?.find(s => s.p === p)?.lv ?? p.merc.lv, lv: p.merc.lv, xp: p.merc.xp, need: G.Guild.needOf(p.merc) }));
     st.log.push({ t: `전투에서 이겼다 (${F.round}라운드). 금화 ${gold}${loot.length ? ' · ' + loot.map(l => `${l.name} ${l.n}`).join(' · ') : ''}.` }); say();
-    REWARDUI.show({ title: `${n.g.label} — 이겼다 (${F.round}라운드)`, gold, xp, loot, big: type === 'fight' ? null : G.Reward.bigOffer(f, R.party, type), type, f, join: cont => recruit(cont, '동료 합류') }, () => {
+    REWARDUI.show({ title: `${n.g.label} — 이겼다 (${F.round}라운드)`, gold, xp, loot, big: type === 'fight' ? null : G.Reward.bigOffer(f, R.party, type), type, f }, () => {
       refreshHP();
-      if (type === 'boss') { st.done = 'win'; st.log.push({ t: `${n.g.name}가 쓰러졌다. 이 층의 지도가 완성됐다.` }); say(); PMAP.draw(); return end(); }
+      if (type === 'boss') {
+        if (RUN.ZONES.some(z => st.floor + 1 >= z.floors[0] && st.floor + 1 <= z.floors[1])) { st.log.push({ t: `${n.g.name}가 쓰러졌다. 그 뒤로 아래로 내려가는 계단이 보인다.` }); if (st.floor % 2) return descend(); RUN.campsite(st, RUN.zone(st.floor).n); say(); PMAP.draw(); return scene(); } // 구역의 끝이면 야영지에서 쉬고 내려간다
+        st.done = 'win'; st.log.push({ t: `${n.g.name}가 쓰러졌다. 더 아래로 내려가는 길은 아직 무너진 돌에 막혀 있다.` }); say(); PMAP.draw(); return end();
+      }
       const L = lead(); trail.length = 0; trail.push([L.x, L.y]);
       refreshSeen(); doorTiles = doorsOf(); PMAP.draw(); showMarks();
     });
+  }
+  // 다음 층으로: 파티 · 금화 · 물자 · 기록은 그대로 들고, 층(지도 · 적 · 길)만 새로 세운다
+  function descend() {
+    const o = st; st = RUN.newRun(o.seed + (o.floor + 1) * 977, o.party.map(m => m.cls), o.floor + 1);
+    st.party = o.party; st.gold = o.gold; st.items = o.items; st.log = o.log.concat(st.log);
+    for (const k in deferred) delete deferred[k]; clearMarks(); closeSign(); walk = null; nearKey = null;
+    R.mons = []; R.chests = []; R.fields = []; layFloor(); G.Fantasy.refreshEnts(R);
+    PMAP.attach(st); say(); showMarks(); document.body.dataset.room = st.at; document.body.dataset.depth = st.floor;
+  }
+  // 층을 쿼터뷰 지도로 깔고 파티를 입구에 세운다 (판 시작 · 내려갈 때)
+  function layFloor() {
+    const fl = FL.fromRun(st.map, RUN.TYPE); iso = fl.iso; roomAt = fl.roomAt; open = new Uint8Array(iso.w * iso.h);
+    if (!R) return;
+    R.map = iso; R.seen = new Uint8Array(iso.w * iso.h);
+    const [x, y] = centerOf(st.at); R.party.forEach((p, i) => { p.x = x - 0.6 * i; p.y = y + 0.3 * i; p._dx = p._rx = p.x; p._dy = p._ry = p.y; });
+    trail.length = 0; openRoom(st.at); refreshSeen(); doorTiles = doorsOf();
   }
   // 레벨업 · 건강 +1 뒤: 최대 체력을 다시 (지금 체력 비율은 그대로)
   function refreshHP() { const f = G.S.w.fantasy; for (const a of R.party) if (a.merc && !a.dead) { const k = a.max ? a.hp / a.max : 1; a.max = a.kind === 'hero' ? G.Fantasy.heroHP(f) : G.Fantasy.allyHP(f, a); a.hp = Math.max(1, Math.round(a.max * k)); } }
 
   return {
     // 층을 만들고 쿼터뷰 지도를 돌려준다
-    start(seed) {
+    renown: () => renownLoad(),
+    start(seed, picks = ['dragoon']) {
       G.Reward.stockShop(RUN.ITEMS); // 상인이 기름 · 마름쇠 · 도둑 도구도 판다
-      st = RUN.newRun(seed, ['fighter']); const fl = FL.fromRun(st.map, RUN.TYPE); iso = fl.iso; roomAt = fl.roomAt; open = new Uint8Array(iso.w * iso.h); // 혼자 시작 (설계 5-13)
-      // 시작 물자 (명성으로 열린 만큼 더)
-      unl = G.Reward.unlocked(renownLoad()); const I = st.items;
-      I.potion = (I.potion || 0) + (unl.includes('potion1') ? 1 : 0);
+      st = RUN.newRun(seed, picks.map(p => G.Party.RUN_CLS[typeof p === 'string' ? p : p.cls] || 'fighter'), +q.get('floor') || 1); layFloor(); // 시험용 ?floor=N: 그 층에서 시작 // 선술집에서 고른 파티 (탐사 규칙의 직업으로)
+      // 시작 물자 (소문으로 열린 만큼 더)
+      unl = G.Reward.unlocked(renownLoad());
       return iso;
     },
     // 세계가 서면: 파티를 입구에, 입구 방을 연다, 누르기 · 표지
     attach(r) {
       R = r; R.seen = new Uint8Array(iso.w * iso.h); FXUI.attach(R);
-      if (st.party[0] && r.party[0]?.merc) st.party[0].n = r.party[0].merc.name; // 탐사 기록에도 단장의 이름
-      const [x, y] = centerOf(st.at); r.party.forEach((p, i) => { p.x = x - 0.6 * i; p.y = y + 0.3 * i; p._dx = p._rx = p.x; p._dy = p._ry = p.y; });
+      { const ms = G.Party.members(G.S.w.fantasy); ms.forEach(m => { m.insp = false; }); G.Dice.rested(ms); } // 새 판: 영웅적 영감은 인간만 하나 (SRD 인간 — 수완)
+      st.party.forEach((m, i) => { const a = r.party[i]?.merc; if (a) { m.n = a.name; m.uid = a.uid; } }); // 탐사 기록에도 그 사람들의 이름
+      { const [x, y] = centerOf(st.at); r.party.forEach((p, i) => { p.x = x - 0.6 * i; p.y = y + 0.3 * i; p._dx = p._rx = p.x; p._dy = p._ry = p.y; }); }
       openRoom(st.at); refreshSeen(); doorTiles = doorsOf();
       canvas.addEventListener('pointerup', onTap);
       PMAP.attach(st); say(); showMarks(); document.body.dataset.room = st.at; FIGHT.dicePick(unl, Object.fromEntries(G.Reward.UNLOCKS.map(u => [u.id, u.at])));
       autoN = +q.get('auto') || 0;
+      // 시험용 ?ev=사건 이름 · ?ev=campsite: 입구에서 그 사건(야영지)을 바로 연다
+      if (q.get('ev') === 'campsite') { RUN.campsite(st, RUN.zone(st.floor).n); scene(); } // 구역 끝 야영지
+      else if (q.get('ev')) { const ev = RUN.EVENTS.find(x => x.id === q.get('ev')); if (ev) { st.scene = { kind: 'event', title: ev.t, text: ev.d, choices: RUN.eventScene(st, st.map.nodes[st.at], ev.id) }; scene(); } }
       // 시험용 ?tap=x,y: 그 타일을 화면 좌표로 바꿔 누른 것처럼 (화면 ↔ 타일 변환 확인)
       if (q.get('tap')) setTimeout(() => { const [tx, ty] = q.get('tap').split(',').map(Number), a = project(wx(tx), wy(ty), 0), rc = canvas.getBoundingClientRect(); const cx = rc.left + a.sx / canvas.width * rc.width, cy = rc.top + a.sy / canvas.height * rc.height, back = tileAtScreen(cx, cy); document.body.dataset.tap = back.map(v => v.toFixed(2)).join(','); }, 1500);
     },
@@ -365,8 +383,6 @@ const CRAWL = (() => {
       // ?step=N: 첫 단추를 N번 눌러 다음 창으로 (캡처용)
       let k = 0; const n = +q.get('step') || 0, tick = () => { if (k++ >= n) return; const b = $('reward')?.querySelector('.rw-cards button, .rw-go'); if (b) b.click(); setTimeout(tick, 250); }; setTimeout(tick, 400);
     },
-    // 영입 시험 (?scene=recruit): 후보 셋 중 하나를 들인다 (파티 다섯이면 내보내기까지)
-    recruitTest(r) { PMAP.hide(); R = r; FXUI.attach(R); recruit(m => { document.body.dataset.joined = m ? m.name : '-'; }, '동료 영입 (시험)'); },
     get st() { return st; },
   };
 })();

@@ -10,7 +10,7 @@ const PREPUI = (() => {
   const walks = new Map(); // 사람 → { to, then }
   const doorK = () => Math.round(O.door.y) * R.map.w + Math.round(O.door.x);
   const front = () => ({ x: O.door.x + P.out.x * 1.1, y: O.door.y + P.out.y * 1.1 }); // 문 바로 앞 (우리 쪽)
-  const io = { d20: () => 1 + Math.floor(Math.random() * 20), skill: (w, sk) => G.Dnd.best([w.merc], sk).v };
+  const io = { d20: () => 1 + Math.floor(Math.random() * 20), skill: (w, sk) => G.Dnd.best([w.merc], sk).v, insp: w => { if (!w.merc?.insp) return false; w.merc.insp = false; return true; } };
   const live = () => R.party.filter(p => !p.dead);
 
   function open(rt, o) {

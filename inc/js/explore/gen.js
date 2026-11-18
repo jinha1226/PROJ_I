@@ -176,17 +176,20 @@ RUN.gen = (() => {
     while (q.length) { const id = q.shift(); if (id === goal) return true; for (const e of outs(m, id)) if (keyless(e) && !seen.has(e.b) && !avoid(m.nodes[e.b])) { seen.add(e.b); q.push(e.b); } }
     return false;
   }
-  function group(rng, type, tier) {
-    const famKey = RUN.pick(rng, Object.keys(RUN.FAMS)), fam = RUN.FAMS[famKey];
-    if (type === 'boss') return { fam: RUN.BOSS.fam, name: RUN.BOSS.n, count: 1, d: RUN.BOSS.d, label: RUN.BOSS.n, units: [[RUN.BOSS.n, 1]] };
-    if (type === 'elite') { const [n, per, c, ex] = fam.elite, xc = ex[2] + Math.floor(rng() * 2); return { fam: famKey, name: n, count: c + xc, d: per * c + ex[1] * xc, label: `${n}${c > 1 ? ` ${c}` : ''} · ${ex[0]} ${xc}`, units: [[n, c], [ex[0], xc]].filter(u => u[1] > 0) }; }
-    // 대규모 무리(heavy)는 위험하고 전리품이 많다, 소규모(light)는 수월하다 — 갈림길 대비용
-    const [n, per, [lo, hi]] = RUN.pick(rng, fam.fight);
-    const c = tier === 'heavy' ? hi + 1 : tier === 'light' ? Math.max(2, lo - 1) : lo + Math.floor(rng() * (hi - lo + 1));
-    return { fam: famKey, name: n, count: c, d: per * c, label: `${n} ${c}`, tier, units: [[n, c]] };
+  // 적 무리: 구역 규칙표(RUN.ZONES)의 예산과 틀로 채운다. fi = 구역 안에서 몇째 층(0 · 1), deep = 입구에서 먼 정도(0~1)
+  function group(rng, type, tier, Z, fi, small, deep) {
+    const mk = (fam, units) => { const count = units.reduce((a, u) => a + u[1], 0); return { fam, name: units[0][0], count, d: units.reduce((a, u) => a + Z.cost[u[0]] * u[1], 0), label: units.map(([n, c]) => `${n}${count > 1 ? ` ${c}` : ''}`).join(' · '), tier, units }; };
+    if (type === 'boss') { const p = fi % 2 ? Z.boss : Z.gate; return mk(p.n, p.u.map(u => u.slice())); }
+    const [lo, mid, hi, el] = Z.budget[fi], bud = type === 'elite' ? el : (tier === 'heavy' ? hi : tier === 'light' ? lo : mid) * (0.8 + 0.4 * deep);
+    const pool = type === 'elite' ? Z.elites : Z.packs, two = [RUN.pick(rng, pool), RUN.pick(rng, pool)].sort((p, q) => Z.cost[q.u[0]] - Z.cost[p.u[0]]);
+    const { n, u: [a, b] } = small ? two[0] : two[1];
+    const cnt = v => Math.max(1, Math.min(6, Math.round(v))); // 한 종류는 여섯까지 (싼 몬스터로 방이 넘치지 않게)
+    if (!b) return mk(n, [[a, cnt(bud / Z.cost[a])]]);
+    const na = cnt(bud / 2 / Z.cost[a]);
+    return mk(n, [[a, na], [b, cnt((bud - na * Z.cost[a]) / Z.cost[b])]]);
   }
-
-  function build(seed, F) {
+  function build(seed, F, floor) {
+    const Z = RUN.zone(floor), fi = floor - Z.floors[0];
     const g = grow(seed, F); if (!g) return null;
     const rng = RUN.rng(seed * 13 + 5);
     // 방 번호를 다시 매긴다 (입구 0, 깊이 순)
@@ -201,7 +204,7 @@ RUN.gen = (() => {
       const e = { id: edges.length, a, b, kind: 'open', loop: !l.tree }; edges.push(e);
       cor[e.id] = { cells, doorA: dA, doorB: dB, doorAout: cells[0], doorBout: cells[cells.length - 1] };
     }
-    const m = { nodes, edges, rows: [], seed };
+    const m = { nodes, edges, rows: [], seed, floor, zone: Z.id };
     for (let r = 0; r <= maxD; r++) m.rows.push(nodes.filter(n => n.row === r).map(n => n.id));
     const N = nodes, bossN = N[idx.get(g.boss)];
     if (bossN.row < 5 || N.length < 12) return null;
@@ -210,7 +213,7 @@ RUN.gen = (() => {
     N[0].type = 'start'; bossN.type = 'boss';
     for (const e of ins(m, bossN.id)) N[e.a].type = N[e.a].id === 0 ? 'start' : 'camp';
     const mid = N.filter(n => n.type === 'fight' && n.id !== 0);
-    for (const n of mid) { const u = rng(); n.type = n.row <= 1 ? (u < 0.6 ? 'fight' : 'event') : u < 0.45 ? 'fight' : u < 0.75 ? 'event' : u < 0.9 && n.row >= 3 ? 'elite' : 'fight'; }
+    for (const n of mid) { const u = rng(); const T = Z.rooms; n.type = n.row <= 1 ? (u < T.near ? 'event' : 'fight') : u < T.event ? 'event' : u < T.event + T.elite && n.row >= 3 ? 'elite' : 'fight'; }
     const shopC = mid.filter(n => n.row >= 2 && n.row <= Math.max(3, maxD - 2)); if (!shopC.length) return null; RUN.pick(rng, shopC).type = 'shop';
     if (!mid.some(n => n.type === 'elite')) { const c = mid.filter(n => n.row >= 3 && n.type !== 'shop'); if (!c.length) return null; RUN.pick(rng, c).type = 'elite'; }
     let treasure = null;
@@ -233,12 +236,12 @@ RUN.gen = (() => {
     const hid = RUN.shuffle(rng, edges.filter(e => e.kind === 'open' && N[e.b] !== treasure && outs(m, e.a).filter(o => o !== e && keyless(o)).length && ins(m, e.b).length > 1)).sort((a, b) => b.loop - a.loop)[0];
     if (!hid) return null; hid.kind = 'hidden';
     const opens = () => RUN.shuffle(rng, edges.filter(e => e.kind === 'open' && N[e.b].type !== 'boss' && e.a !== 0));
-    opens().slice(0, 3).forEach(e => { e.kind = 'trap'; });
-    opens().slice(0, 2).forEach(e => { e.kind = 'dark'; });
-    for (const e of opens()) if (outs(m, e.a).filter(o => o !== e && keyless(o)).length) { e.kind = 'locked'; break; }
-    const evs = RUN.shuffle(rng, RUN.EVENTS.map(e => e.id)); let ei = 0;
+    opens().slice(0, Z.paths.trap).forEach(e => { e.kind = 'trap'; });
+    opens().slice(0, Z.paths.dark).forEach(e => { e.kind = 'dark'; });
+    { let k = Z.paths.locked; for (const e of opens()) { if (k <= 0) break; if (outs(m, e.a).filter(o => o !== e && keyless(o)).length) { e.kind = 'locked'; k--; } } }
+    const evs = RUN.shuffle(rng, RUN.EVENTS.filter(e => !e.rare).map(e => e.id).filter(id => !Z.events || Z.events.includes(id))); let ei = 0;
     for (const n of N) {
-      if (n.type === 'fight' || n.type === 'elite' || n.type === 'boss') { n.g = group(rng, n.type, n.tier); n.hostile = true; n.dc = n.type === 'fight' ? 12 : n.type === 'elite' ? 14 : 15; }
+      if (n.type === 'fight' || n.type === 'elite' || n.type === 'boss') { n.g = group(rng, n.type, n.tier, Z, fi, n.size === 'small', n.row / maxD); n.hostile = true; n.dc = n.type === 'fight' ? 12 : n.type === 'elite' ? 14 : 15; }
       else { n.hostile = false; if (n.type === 'event') n.ev = evs[ei++ % evs.length]; }
     }
     // 방 장식: 종류에 맞춰
@@ -247,8 +250,7 @@ RUN.gen = (() => {
     rm(bossN.id).decor.push({ k: 'stairs', x: rm(bossN.id).x + Math.floor(rm(bossN.id).w / 2) - 1, y: rm(bossN.id).y + 1 });
     for (const n of N) { const r = rm(n.id), c = r.cells[Math.floor(r.cells.length / 2)]; if (n.type === 'event' && rng() < 0.7) r.decor.push({ k: 'altar', x: c[0], y: c[1] }); if (n.type === 'treasure') r.decor.push({ k: 'chest', x: c[0], y: c[1] }); }
     // 소품 (잔해 · 상자 · 통 · 뼈 · 석상 · 깔개 …): 문 곁은 비우고 안쪽 칸에 흩어 놓는다
-    const FURN = { fight: ['bones', 'crate', 'barrel', 'debris', 'web'], elite: ['bones', 'bones', 'debris', 'web', 'brokenpillar'], event: ['statue', 'rug', 'urn', 'web'],
-      camp: ['bedroll', 'bedroll', 'barrel', 'crate'], shop: ['table', 'crate', 'barrel', 'rug'], treasure: ['urn', 'urn', 'crate'], boss: ['bones', 'brokenpillar', 'web', 'debris', 'bones'], start: ['crate', 'barrel', 'web'] };
+    const FURN = Z.furn;
     const doorCells = new Set(); for (const e of edges) { const c = cor[e.id]; doorCells.add(c.doorA.join(',')); doorCells.add(c.doorB.join(',')); }
     for (const n of N) {
       const r = room[n.id], set = new Set(r.cells.map(c => c.join(','))), taken = new Set(r.decor.map(o => o.x + ',' + o.y));
@@ -279,10 +281,16 @@ RUN.gen = (() => {
     return m;
   }
 
-  const make = seed => {
+  // 드문 사건 (rare = 층마다 나올 확률): 지도가 선 뒤에 따로 굴려, 사건 방 하나를 바꿔 놓는다 (지도 자체는 그대로)
+  function rares(m, seed) {
+    const rng = RUN.rng(seed * 31 + 7), evs = m.nodes.filter(n => n.type === 'event');
+    for (const e of RUN.EVENTS) if (e.rare && evs.length && rng() < e.rare) evs[Math.floor(rng() * evs.length)].ev = e.id;
+    return m;
+  }
+  const make = (seed, floor = 1) => {
     const F = frameOf(seed);
-    for (let k = 0; k < 300; k++) { const m = build(seed * 7919 + k, F); if (m) return m; }
-    for (let k = 0; k < 300; k++) { const m = build(seed * 7919 + k, FRAMES.tall(RUN.rng(seed))); if (m) return m; }  // 윤곽이 너무 좁으면 세로형으로
+    for (let k = 0; k < 300; k++) { const m = build(seed * 7919 + k, F, floor); if (m) return rares(m, seed); }
+    for (let k = 0; k < 300; k++) { const m = build(seed * 7919 + k, FRAMES.tall(RUN.rng(seed)), floor); if (m) return rares(m, seed); }  // 윤곽이 너무 좁으면 세로형으로
     throw new Error('지도를 만들지 못했다');
   };
   return { make, outs, ins, keyless, path, ROWS: ROWS_GRAPH, FRAMES };

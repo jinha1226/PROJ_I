@@ -178,7 +178,7 @@ RUN.draw = (() => {
       out.push('</g>');
     }
     // 장식: 제목 띠 · 나침반
-    out.push(`<g ${O}><path d="M${f(W / 2 - 78)},10 h156 l-8,8 l8,8 h-156 l8,-8 Z" fill="#c9a46a" stroke-width="1.8"/><text x="${f(W / 2)}" y="23" text-anchor="middle" class="title" fill="${INK}" stroke="none">심연 · 1층 (${L.frame || ''})</text></g>`);
+    out.push(`<g ${O}><path d="M${f(W / 2 - 78)},10 h156 l-8,8 l8,8 h-156 l8,-8 Z" fill="#c9a46a" stroke-width="1.8"/><text x="${f(W / 2)}" y="23" text-anchor="middle" class="title" fill="${INK}" stroke="none">${RUN.zone(map.floor || 1).n} · ${map.floor || 1}층 (${L.frame || ''})</text></g>`);
     const kx = W - 26, ky = H - 26;
     out.push(`<g ${O} stroke-width="1.6"><circle cx="${kx}" cy="${ky}" r="13" fill="none" opacity="0.7"/><path d="M${kx},${ky - 17} l4,13 l-4,4 l-4,-4 Z" fill="${RUST}"/><path d="M${kx},${ky + 17} l4,-13 l-4,-4 l-4,4 Z" fill="#efe6d6"/><path d="M${kx - 17},${ky} l13,-4 l4,4 l-4,4 Z M${kx + 17},${ky} l-13,-4 l-4,4 l4,4 Z" fill="#efe6d6"/></g><text x="${kx}" y="${ky - 20}" text-anchor="middle" class="note halo" fill="${INK}">북</text>`);
     const boss = N.find(n => n.type === 'boss');

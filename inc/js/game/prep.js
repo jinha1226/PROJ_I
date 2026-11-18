@@ -3,7 +3,7 @@
 // 2026-11-18: 손으로 하는 준비(엿듣기 · 자리 잡기 · 기름 · 마름쇠)는 뺐다 (사용자: 「이 과정이 너무 번거롭다」). 여는 판정과 소리는 그대로.
 // 판정은 SRD 그대로: 자물쇠 따기 = 도둑 도구(손재주) DC 15 · 걷어차기 = 근력(운동) DC 15 · 노크 = 늘 열림.
 // 여는 소리는 G.Noise로 방 안에 퍼진다 — 문이 닫혀 있으니 우리 쪽 문 앞에서 나서 닫힌 문을 지난다. 그래서 조용히 따면 아무도 못 듣는다.
-// 엔진 판정(d20 · 기술 보정)은 io로 넘겨받는다: { d20() → 1~20, skill(who, sk) → 보정 }. 함수는 사건 목록(ev)을 돌려준다 — 화면은 이걸 그린다.
+// 엔진 판정(d20 · 기술 보정)은 io로 넘겨받는다: { d20() → 1~20, skill(who, sk) → 보정, insp(who) → 영웅적 영감을 썼으면 true (없어도 된다) }. 함수는 사건 목록(ev)을 돌려준다 — 화면은 이걸 그린다.
 // 상태 P는 이 문 하나: { door, out, locked, grid, mons, items, others(다른 방 — 소리만 듣는다), opened, tries }.
 G.Prep = (() => {
   const DC = 15, PICK_TRIES = 2; // 자물쇠는 두 번까지 따 보고, 안 되면 걷어찬다
@@ -40,8 +40,9 @@ G.Prep = (() => {
   function open(P, who, id, io) {
     const m = methods(P, who).find(q => q.id === id); if (!m || !m.ok || P.opened) return null;
     let ok = true, nat = null, mod = 0;
-    if (m.dc) { nat = io.d20(); mod = io.skill(who, m.sk); ok = nat + mod >= m.dc; }
-    const noise = ok ? m.noise : m.fail, ev = [{ k: 'try', who, id, n: m.n, ok, nat, mod, dc: m.dc || null }];
+    let insp = false;
+    if (m.dc) { nat = io.d20(); mod = io.skill(who, m.sk); ok = nat + mod >= m.dc; if (!ok && io.insp && io.insp(who)) { insp = true; nat = io.d20(); ok = nat + mod >= m.dc; } } // 영웅적 영감 (SRD): 실패한 d20을 다시 굴리고 새 눈을 쓴다
+    const noise = ok ? m.noise : m.fail, ev = [{ k: 'try', who, id, n: m.n, ok, nat, mod, dc: m.dc || null, insp }];
     ev.push(...G.Noise.emit(P.grid, src(P), noise, P.mons.concat(P.others))); // 다른 방(others)도 듣는다 — 쫓아오면 증원
     P.tries.push({ who, id, ok, noise });
     if (ok) { P.opened = { who, id }; P.locked = false; ev.push({ k: 'open', who, id }); }

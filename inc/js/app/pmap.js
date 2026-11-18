@@ -20,7 +20,7 @@ const PMAP = (() => {
     box.classList.toggle('big'); if (box.classList.contains('big')) svg.setAttribute('viewBox', svg.dataset.full); else zoom(svg);
   }
   return {
-    attach(s) { st = s; const box = $('pmapbox'); if (box) box.onclick = toggle; addEventListener('keydown', e => { if (e.key === 'm' || e.key === 'M') toggle(); }); draw(); },
+    attach(s) { const first = !st; st = s; const box = $('pmapbox'); if (box) box.onclick = toggle; if (first) addEventListener('keydown', e => { if (e.key === 'm' || e.key === 'M') toggle(); }); draw(); }, // 층을 내려가면 다시 부른다
     draw,
     hide() { const box = $('pmapbox'); if (box) box.style.display = 'none'; },
   };

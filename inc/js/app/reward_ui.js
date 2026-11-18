@@ -1,11 +1,11 @@
 'use strict';
 // 전투 결과 · 고르기 · 기록 화면 (화면 쪽, 설계 5-12). 규칙은 js/game/reward.js — 여기는 창과 카드뿐.
 // REWARDUI.show(res, then): 전투 결과(금화 · 경험치 · 전리품) → 레벨업 고르기(남은 만큼) → 정예 · 보스 3택1 → then()
-// REWARDUI.record(sum, then): 판 끝 기록(명성 · 새로 열린 것) → 「다시 들어간다」
+// REWARDUI.record(sum, then): 판 끝 기록(소문 · 새로 열린 것) → 「다시 들어간다」
 const REWARDUI = (() => {
   const { $, esc } = UI;
   let queue = [], then = null, res = null;
-  const KIND = { spell: '주문', swap: '바꿀 주문', ability: '능력치', art: '마법 물건', rule: '규칙 카드', carve: '면 새기기', join: '동료' };
+  const KIND = { spell: '주문', swap: '바꿀 주문', ability: '능력치', art: '마법 물건', rule: '규칙 카드', carve: '면 새기기' };
   const skN = k => G.D.MSKILLS[k]?.n || k, clsN = m => G.Guild.def(m)?.n || m.cls;
   function open() { let box = $('reward'); if (!box) { box = document.createElement('div'); box.id = 'reward'; box.onpointerup = ev => ev.stopPropagation(); $('stage').append(box); } return box; }
   function close() { const b = $('reward'); if (b) b.remove(); }
@@ -40,7 +40,7 @@ const REWARDUI = (() => {
     if (q.k === 'big') {
       box.innerHTML = `<h3>${res.type === 'boss' ? '보스' : '정예'}의 보상</h3><p>하나를 고른다</p>` +
         `<div class="rw-cards">${res.big.map((c, i) => `<button data-i="${i}" class="k-${c.kind}"><small>${KIND[c.kind]}</small><b>${c.ic ? `${c.ic} ` : ''}${esc(c.n)}</b><span>${esc(c.d || '')}</span></button>`).join('')}</div>`;
-      box.querySelector('.rw-cards').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; const opt = res.big[+b.dataset.i]; if (opt.kind === 'join') { box.remove(); return res.join(step); } G.Reward.takeBig(res.f, opt); step(); };
+      box.querySelector('.rw-cards').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; const opt = res.big[+b.dataset.i]; G.Reward.takeBig(res.f, opt); step(); };
     }
   }
   // 5칸이 다 찬 채 레벨업: 새 주문 셋 중 하나를 골라 지금 기술 하나와 바꾸거나, 그대로 둔다
@@ -57,30 +57,17 @@ const REWARDUI = (() => {
       box.querySelector('.rw-cards').onclick = ev2 => { const d = ev2.target.closest('button'); if (!d) return; G.Reward.choose(m, pickd, d.dataset.k); step(); };
     };
   }
-  // 동료 영입: 후보 셋(cands) 중 하나 → 5명이 차 있으면 내보낼 사람 → cb(들인 사람 | null, 내보낸 사람 | null)
-  function recruit(cands, full, members, cb, title = '동료 영입') {
-    const box = open(); box.classList.remove('rw-record');
-    box.innerHTML = `<h3>${esc(title)}</h3><p>${full ? '파티가 다섯 — 들이려면 한 명을 내보낸다' : '한 명을 들인다'}</p>` +
-      `<div class="rw-cards">${cands.map((m, i) => `<button data-i="${i}"><small>${esc(clsN(m))} · ${m.lv}레벨</small><b>${esc(m.name)}</b><span>${(m.skills || []).slice(0, 3).map(skN).map(esc).join(' · ') || '직업 기능'}</span></button>`).join('')}</div>` +
-      `<button class="rw-go rw-keep">들이지 않는다</button>`;
-    box.querySelector('.rw-keep').onclick = () => { close(); cb(null, null); };
-    box.querySelector('.rw-cards').onclick = ev => {
-      const b = ev.target.closest('button'); if (!b) return; const m = cands[+b.dataset.i];
-      if (!full) { close(); return cb(m, null); }
-      box.innerHTML = `<h3>누구를 내보낼까</h3><p>${esc(m.name)}(${esc(clsN(m))})이(가) 들어온다</p><div class="rw-cards">${members.map((q, i) => `<button data-i="${i}"><small>${esc(clsN(q))} · ${q.lv}레벨</small><b>${esc(q.name)}</b></button>`).join('')}</div><button class="rw-go rw-keep">들이지 않는다</button>`;
-      box.querySelector('.rw-keep').onclick = () => { close(); cb(null, null); };
-      box.querySelector('.rw-cards').onclick = ev2 => { const d = ev2.target.closest('button'); if (!d) return; close(); cb(m, members[+d.dataset.i]); };
-    };
-  }
   // 판 끝: sum = { win, rooms, fights, elites, boss, lv, gold, gain, total, fresh: [새로 열린 것 이름] }
   function record(sum, cb) {
     const box = open(); box.classList.add('rw-record');
-    box.innerHTML = `<h3>${sum.win ? '층을 지도에 올렸다' : '탐사대가 쓰러졌다'}</h3>` +
+    box.innerHTML = `<h3>${sum.win ? `${sum.floor}층을 넘었다` : `${sum.floor}층에서 쓰러졌다`}</h3>` +
       `<div class="rw-stats"><div><b>${sum.rooms}</b>간 방</div><div><b>${sum.fights}</b>이긴 전투</div><div><b>${sum.lv}</b>레벨</div><div><b>${sum.gold}</b>금화</div></div>` +
-      `<div class="rw-line"><b>명성</b> +${sum.gain} (모두 ${sum.total})</div>` +
+      `<div class="rw-line"><b>소문이 퍼진다</b> +${sum.gain} (소문 ${sum.total})</div>` +
+      (sum.lured?.length ? `<div class="rw-line rw-new"><b>새 얼굴이 선술집을 찾는다</b> ${sum.lured.map(esc).join(' · ')}</div>` : '') +
+      (sum.seat ? `<div class="rw-line rw-new"><b>파티 자리가 하나 늘었다</b></div>` : '') +
       (sum.fresh.length ? `<div class="rw-line rw-new"><b>새로 열렸다</b> ${sum.fresh.map(esc).join(' · ')}</div>` : '') +
-      `<button class="rw-go">다시 들어간다</button>`;
+      `<button class="rw-go">선술집으로</button>`;
     box.querySelector('.rw-go').onclick = () => { close(); cb(); };
   }
-  return { show, record, recruit, get active() { return !!$('reward'); } };
+  return { show, record, get active() { return !!$('reward'); } };
 })();

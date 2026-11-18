@@ -19,7 +19,7 @@ const FXUI = (() => {
       case 'burn': text(e.e.x, e.e.y + 0.4, '불탄다', '#ff8a40', 1, 0.75); break;
       case 'caltrops': text(e.e.x, e.e.y, '마름쇠!', '#d0d0d0', 1.2, 0.9); break;
       case 'dodge': text(e.e.x, e.e.y, '마름쇠를 피했다', '#a0a0a0', 1, 0.75); break;
-      case 'try': text(e.who.x, e.who.y, e.nat == null ? `${TRY[e.id] || e.n}` : `${TRY[e.id] || e.n} ${e.nat} + ${e.mod} = ${e.nat + e.mod} / ${e.dc} ${e.ok ? '성공' : '실패'}`, e.ok ? '#9fe08a' : '#ff8a70', 2.2, 0.8); break;
+      case 'try': text(e.who.x, e.who.y, e.nat == null ? `${TRY[e.id] || e.n}` : `${e.insp ? '✦ 영감 · ' : ''}${TRY[e.id] || e.n} ${e.nat} + ${e.mod} = ${e.nat + e.mod} / ${e.dc} ${e.ok ? '성공' : '실패'}`, e.ok ? '#9fe08a' : '#ff8a70', 2.2, 0.8); break;
       case 'open': text(e.who.x, e.who.y - 0.3, '문이 열렸다!', '#f0c070', 1.6, 1); break;
     }
   }

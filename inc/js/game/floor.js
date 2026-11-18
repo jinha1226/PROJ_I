@@ -21,7 +21,7 @@ G.Floor = (() => {
     for (const id in L.cor) L.cor[id].cells.forEach(p => put(p, null));
     const rooms = map.nodes.map(n => { const b = L.room[n.id], [cx, cy] = centerOf(map, n.id); return { id: n.id, title: TYPE[n.type] || '', x: b.x * K, y: b.y * K, w: b.w * K, h: b.h * K, cx: Math.floor(cx), cy: Math.floor(cy), tags: ['hall'] }; });
     const start = rooms[0], end = rooms.find(r => map.nodes[r.id].type === 'boss') || rooms[rooms.length - 1];
-    return { iso: { w: W, h: H, c, kindAt: new Uint8Array(W * H), poi: {}, passChars: '.>,', ver: 1, dist: {}, rooms, start, end, fixed: true, title: '심연 1층' }, roomAt };
+    return { iso: { w: W, h: H, c, kindAt: new Uint8Array(W * H), poi: {}, passChars: '.>,', ver: 1, dist: {}, rooms, start, end, fixed: true, title: `${RUN.zone(map.floor || 1).n} ${map.floor || 1}층` }, roomAt };
   }
   // 방 at의 출구: 닿은 길 전부 (숨은 통로는 찾았을 때만). 거꾸로 가는 길은 a · b를 뒤집어 규칙에 넘긴다 (쓰기는 원래 길에)
   function exits(map, at) {

@@ -26,13 +26,42 @@ RUN.CLS_LINE = {
 };
 
 // 무리 수는 SRD 기준(4~5인 파티)보다 하나 적게 — 파티가 셋이다.
-// 위험도 = SRD 경험치 / 50 (고블린 · 해골 · 늑대 1, 홉고블린 2, 구울 4, 오우거 9, 미노타우로스 14)
-RUN.FAMS = {
-  humanoid: { n: '인간형', fight: [['고블린', 1, [2, 4]], ['홉고블린', 2, [2, 3]]], elite: ['오우거', 9, 1, ['고블린', 1, 2]] },
-  undead: { n: '언데드', fight: [['해골', 1, [2, 4]], ['좀비', 1, [2, 4]]], elite: ['구울', 4, 2, ['해골', 1, 2]] },
-  beast: { n: '짐승', fight: [['늑대', 1, [2, 4]], ['거대 쥐', 0.5, [4, 6]]], elite: ['거대 거미', 4, 2, ['늑대', 1, 1]] },
-};
-RUN.BOSS = { n: '미노타우로스', fam: 'beast', d: 14 };
+// 위험도 = SRD 경험치 / 50 (고블린 · 해골 · 늑대 1, 홉고블린 2, 구울 4, 오우거 9)
+// 구역 규칙표 (ROGUELIKE_PLAN 0-0 · 4-7): 생성기(gen.js)는 하나이고, 구역마다 다른 값은 여기 한 줄이다 — 새 층은 한 줄 더하기.
+// - floors: 이 구역의 층 (두 층). 앞 층 끝에는 문지기(gate), 뒤 층 끝에는 우두머리(boss).
+// - seats · lv: 그 층을 맞춘 기준 인원 · 레벨. 적의 수는 이 기준으로 고정이다 (파티 수로 깎거나 불리지 않는다).
+// - budget: 층마다 [소규모, 보통, 대규모, 정예] 위험도. 위험도 = SRD 경험치 / 50, 값은 SRD 조우 예산(낮음 · 보통 · 높음)을 기준 인원 · 레벨로 곱한 것.
+//   방이 입구에서 멀수록 0.8배 → 1.2배 (gen.js group).
+// - cost: 몬스터 하나의 위험도. packs · elites: 섞이는 틀 [앞에 서는 종류, 뒤따르는 종류] — 앞 종류가 예산의 절반, 나머지를 뒤 종류로.
+//   좁은 방에는 센 놈 적게, 넓은 방에는 약한 놈 여럿 (틀 둘을 뽑아 방 크기에 맞는 쪽).
+// - rooms: 방 종류 비율 (near = 입구 곁 두 줄의 사건 비율). paths: 길의 상황 수. furn: 방 종류 → 소품. events: 나오는 사건 (null = 전부).
+RUN.ZONES = [
+  { id: 'goblin', n: '고블린 굴', floors: [1, 2], seats: [2, 2], lv: [1, 2],
+    budget: [[2, 3, 4, 6], [4, 6, 8, 10]],
+    cost: { '거대 쥐': 0.5, 고블린: 1, 늑대: 1, 홉고블린: 2, 워그: 2, 버그베어: 4, '버그베어 추적자': 14 },
+    packs: [{ n: '고블린 무리', u: ['고블린'] }, { n: '고블린 무리', u: ['홉고블린', '고블린'] }, { n: '굴의 짐승', u: ['늑대'] }, { n: '굴의 짐승', u: ['거대 쥐'] }, { n: '늑대를 부리는 고블린', u: ['늑대', '고블린'] }],
+    elites: [{ n: '고블린 무리', u: ['버그베어', '고블린'] }, { n: '늑대를 부리는 고블린', u: ['워그', '고블린'] }],
+    gate: { n: '굴 문지기', u: [['버그베어', 1], ['고블린', 2]] },
+    boss: { n: '고블린 무리', u: [['버그베어 추적자', 1]] },
+    rooms: { near: 0.4, event: 0.3, elite: 0.15 }, paths: { trap: 3, dark: 2, locked: 1 },
+    furn: { fight: ['bones', 'crate', 'barrel', 'debris', 'web'], elite: ['bones', 'bones', 'debris', 'web', 'brokenpillar'], event: ['statue', 'rug', 'urn', 'web'],
+      camp: ['bedroll', 'bedroll', 'barrel', 'crate'], shop: ['table', 'crate', 'barrel', 'rug'], treasure: ['urn', 'urn', 'crate'], boss: ['bones', 'brokenpillar', 'web', 'debris', 'bones'], start: ['crate', 'barrel', 'web'] },
+    events: null },
+  // 드워프 폐성채: 주인 잃은 병기(움직이는 갑옷 · 날아다니는 검 · 석상)가 아직 돌고, 빈 방은 굴러든 것들이 차지했다. 값은 시험값
+  { id: 'hold', n: '드워프 폐성채', floors: [3, 4], seats: [3, 3], lv: [3, 4],
+    budget: [[8, 12, 16, 22], [12, 17, 22, 30]],
+    cost: { 스터지: 0.5, '날아다니는 검': 1, 그림록: 1, 홉고블린: 2, '녹 괴물': 2, 다크맨틀: 2, '움직이는 갑옷': 4, 오우거: 9, 가고일: 9, 에틴: 22 },
+    packs: [{ n: '깨어난 병기', u: ['움직이는 갑옷', '날아다니는 검'] }, { n: '깨어난 병기', u: ['날아다니는 검'] }, { n: '성채의 불청객', u: ['홉고블린'] }, { n: '어둠의 주민', u: ['그림록'] },
+      { n: '천장의 것들', u: ['다크맨틀', '스터지'] }, { n: '쇠를 먹는 것', u: ['녹 괴물'] }],
+    elites: [{ n: '성채의 불청객', u: ['오우거', '홉고블린'] }, { n: '깨어난 석상', u: ['가고일', '날아다니는 검'] }],
+    gate: { n: '성문 석상', u: [['가고일', 2]] },
+    boss: { n: '성채를 차지한 거인', u: [['에틴', 1], ['홉고블린', 2]] },
+    rooms: { near: 0.35, event: 0.3, elite: 0.2 }, paths: { trap: 4, dark: 2, locked: 2 },
+    furn: { fight: ['brokenpillar', 'crate', 'debris', 'statue', 'barrel'], elite: ['statue', 'brokenpillar', 'debris', 'bones', 'statue'], event: ['statue', 'urn', 'table', 'rug'],
+      camp: ['bedroll', 'bedroll', 'barrel', 'crate'], shop: ['table', 'crate', 'barrel', 'rug'], treasure: ['urn', 'urn', 'crate'], boss: ['brokenpillar', 'statue', 'debris', 'bones', 'brokenpillar'], start: ['crate', 'debris', 'statue'] },
+    events: null },
+];
+RUN.zone = floor => RUN.ZONES.find(z => floor >= z.floors[0] && floor <= z.floors[1]) || RUN.ZONES[RUN.ZONES.length - 1];
 // 몬스터 전투 수치 (SRD 5.2.1 몬스터 블록을 줄인 것: AC · 체력 · 명중 · 피해). pack = 무리 전술(동료가 있으면 이점)
 RUN.MON = {
   고블린: { ac: 15, hp: 10, atk: 4, dmg: '1d6+2', what: '단검' },
@@ -44,7 +73,17 @@ RUN.MON = {
   오우거: { ac: 11, hp: 68, atk: 6, dmg: '2d8+4', what: '몽둥이' },
   구울: { ac: 12, hp: 22, atk: 4, dmg: '2d4+2', what: '발톱' },
   '거대 거미': { ac: 14, hp: 26, atk: 5, dmg: '1d8+3', what: '독니' },
-  미노타우로스: { ac: 14, hp: 85, atk: 6, dmg: '2d12+4', what: '큰 도끼' },
+  버그베어: { ac: 14, hp: 33, atk: 4, dmg: '2d6+2', what: '움켜쥐기' },
+  워그: { ac: 13, hp: 26, atk: 5, dmg: '1d8+3', what: '물기' },
+  '버그베어 추적자': { ac: 15, hp: 65, atk: 5, dmg: '2d8+3', what: '모닝스타' },
+  스터지: { ac: 13, hp: 5, atk: 5, dmg: '1d4+3', what: '주둥이' },
+  '날아다니는 검': { ac: 17, hp: 14, atk: 4, dmg: '1d8+2', what: '칼날' },
+  그림록: { ac: 11, hp: 11, atk: 4, dmg: '1d8+2', what: '뼈 몽둥이' },
+  '녹 괴물': { ac: 14, hp: 33, atk: 3, dmg: '1d8+1', what: '물기' },
+  다크맨틀: { ac: 11, hp: 22, atk: 5, dmg: '1d6+3', what: '덮치기' },
+  '움직이는 갑옷': { ac: 18, hp: 33, atk: 4, dmg: '2d6+4', what: '내리치기' },
+  가고일: { ac: 15, hp: 67, atk: 4, dmg: '4d4+4', what: '발톱' },
+  에틴: { ac: 12, hp: 85, atk: 7, dmg: '4d8+10', what: '도끼와 철퇴' },
 };
 
 RUN.ITEMS = {
@@ -58,8 +97,20 @@ RUN.ITEMS = {
 // cls가 붙은 선택지는 그 직업이 파티에 있을 때만 나온다 (화면에 최대 2개). 빠진 직업 하나는 '???'로 잠가 보여 준다.
 // slot = 그 직업이 쓰는 주문 슬롯 레벨, item = 쓰고 없어지는 물건.
 // 결과의 뒤끝: warn(다음 적 방이 미리 알고 기다림) · curse(다음 전투가 힘듦) · hurt(굴린 사람이 다침)
-//             healAll(모두 회복) · scoutAhead(앞쪽 적 방 둘이 드러남)
+//             healAll(모두 회복) · scoutAhead(앞쪽 적 방 둘이 드러남) · ally(구한 사람이 이 판에만 함께한다 — 자리 수와 별개)
+// rare = 층마다 나올 확률 (없으면 늘 섞이는 보통 사건)
 RUN.EVENTS = [
+  { id: 'captive', rare: 0.1, t: '우리에 갇힌 사람', d: '녹슨 쇠우리 안에 누군가 웅크리고 있다. 먼저 내려왔다가 붙잡힌 모험가다.',
+    opts: [
+      { cls: 'rogue', n: '자물쇠를 딴다', tag: '구출', ok: { msg: '자물쇠가 딸깍 열린다. "빚을 졌군. 끝까지 같이 가지."', ally: true } },
+      { cls: 'fighter', n: '창살을 벌린다', tag: '구출', sk: '운동', dc: 11,
+        ok: { msg: '창살이 비명을 지르며 휜다. "빚을 졌군. 끝까지 같이 가지."', ally: true },
+        no: { msg: '창살은 꿈쩍도 않고 손바닥만 찢어졌다. 한참을 더 씨름한 끝에야 문이 떨어진다.', hurt: 4, ally: true } },
+      { n: '우리를 부순다', tag: '구출', sk: '운동', dc: 13,
+        ok: { msg: '경첩이 떨어져 나간다. "빚을 졌군. 끝까지 같이 가지."', ally: true },
+        no: { msg: '쇠우리가 요란하게 넘어간다. 사람은 꺼냈지만, 이 소리를 못 들었을 리 없다.', warn: true, ally: true } },
+      { n: '지나친다', ok: { msg: '눈을 마주치지 않고 지나간다.' } },
+    ] },
   { id: 'toll', t: '다리를 막은 고블린', d: '고블린 다섯이 다리를 막고 통행세를 요구한다.',
     opts: [
       { cls: 'rogue', n: '"두목이 너희 몫을 빼돌린다"고 속인다', tag: '이간질', sk: '설득', dc: 11,
@@ -107,7 +158,7 @@ RUN.EVENTS = [
   { id: 'runes', t: '벽에 새긴 옛 글씨', d: '복도 벽에 오래된 글씨가 빽빽하다.',
     opts: [
       { cls: 'wizard', n: '글씨 사이에 숨은 주문을 깨운다', tag: '숨은 주문', sk: '비전', dc: 12,
-        ok: { msg: '글씨가 빛나며 미궁의 주인이 불을 두려워한다는 것, 그리고 다음 방들의 모양을 보여 준다.', bossHint: true, revealRow: true },
+        ok: { msg: '글씨가 빛나며 굴의 두목이 불을 두려워한다는 것, 그리고 다음 방들의 모양을 보여 준다.', bossHint: true, revealRow: true },
         no: { msg: '글씨가 터지듯 번쩍인다. 눈앞이 하얘진다.', hurt: 6 } },
       { cls: 'fighter', n: '글씨가 새겨진 벽을 부숴 본다', tag: '벽을 부숨', sk: '운동', dc: 14,
         ok: { msg: '벽 뒤 좁은 틈에 누군가 숨겨 둔 두루마리가 있다.', item: 'knockScroll' },
@@ -115,7 +166,7 @@ RUN.EVENTS = [
       { cls: 'ranger', n: '글씨 밑 긁힌 자국을 살핀다', tag: '긁힌 자국', sk: '생존', dc: 11,
         ok: { msg: '무언가 큰 놈이 자주 지나다닌 자국이다. 앞쪽 소굴이 어디인지 짐작이 간다.', scoutAhead: true },
         no: { msg: '오래된 자국이라 알 수 없다.' } },
-      { n: '해독한다', sk: '역사', dc: 13, ok: { msg: '글씨는 미궁의 주인이 불을 두려워한다고 적고 있다. 우두머리가 약해진다.', bossHint: true }, no: { msg: '뜻을 알 수 없다.' } },
+      { n: '해독한다', sk: '역사', dc: 13, ok: { msg: '글씨는 굴의 두목이 불을 두려워한다고 적고 있다. 우두머리가 약해진다.', bossHint: true }, no: { msg: '뜻을 알 수 없다.' } },
       { n: '함정을 살핀다', sk: '조사', dc: 12, ok: { msg: '글씨 아래 숨은 함정 장치를 찾았다. 이 방에서 나가는 함정이 모두 드러난다.', revealTraps: true }, no: { msg: '이상한 것은 없다.' } },
       { n: '지나간다', ok: { msg: '글씨를 뒤로한다.' } },
     ] },

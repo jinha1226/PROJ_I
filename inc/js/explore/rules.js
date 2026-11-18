@@ -42,12 +42,12 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
     }
   }
 
-  RUN.newRun = (seed, picks) => {
-    const st = { seed, rng: RUN.rng((seed ^ 0x9e3779b9) >>> 0), map: RUN.gen.make(seed), at: 0, gold: 20, items: { torch: 1 },
+  RUN.newRun = (seed, picks, floor = 1) => {
+    const st = { seed, rng: RUN.rng((seed ^ 0x9e3779b9) >>> 0), floor, map: RUN.gen.make(seed, floor), at: 0, gold: 20, items: { torch: 1 },
       party: picks.map(cls => ({ cls, n: C[cls].n, hp: C[cls].hp, max: C[cls].hp, dead: false, sl: { ...(C[cls].slots || {}) } })),
       log: [], scene: null, done: null, flags: {}, here: {}, turn: 0, path: [0] };
     const s = node(st, 0); s.visited = true; s.info = 3; note(s, '입구', 'ink');
-    say(st, `탐사대가 심연의 입구에 섰다. ${st.party.map(m => m.n).join(' · ')}.`);
+    say(st, `일행이 ${RUN.zone(floor).n} ${floor}층 입구에 섰다. ${st.party.map(m => m.n).join(' · ')}.`);
     look(st);
     return st;
   };
@@ -76,7 +76,7 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
       acts.push({ id: 'track', label: '흔적을 쫓는다', who: tr.m.n, check: c, p: pOf(c), run: () => {
         n.trackTried = true; const r = roll(st, c, tr.m.n, '추적');
         if (!r.ok) return say(st, '흔적이 엉켜 알 수 없다.');
-        if (n.hostile) { note(n, RUN.FAMS[n.g.fam]?.n || '짐승', 'pencil'); n.famKnown = true; say(st, `${RUN.FAMS[n.g.fam]?.n || '짐승'}의 흔적이다.`, 'good'); }
+        if (n.hostile) { note(n, n.g.fam || '짐승', 'pencil'); n.famKnown = true; say(st, `${n.g.fam || '짐승'}의 흔적이다.`, 'good'); }
         else { note(n, '흔적 없음'); say(st, '저쪽으로 간 발자국은 없다.', 'good'); }
       } });
     }
@@ -254,11 +254,12 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
       if (res.gold) { st.gold += res.gold; say(st, `금화 ${res.gold}.`, 'good'); }
       if (res.item) st.items[res.item] = (st.items[res.item] || 0) + 1;
       if (res.bless) st.flags.bless = true;
+      if (res.ally) st.flags.ally = true; // 구출: 화면 쪽(crawl.js)이 사람을 세운다
       if (res.bossHint) st.flags.bossHint = true;
       if (res.revealRow) for (const id of st.map.rows[n.row + 1] || []) reveal(st, node(st, id), 2);
       if (res.mapPiece) { const later = RUN.shuffle(st.rng, st.map.nodes.filter(x => x.row > n.row && x.info < 2)).slice(0, 3); later.forEach(x => reveal(st, x, 2)); say(st, '지도 조각에 방 몇 개가 그려져 있다.', 'good'); }
       if (res.revealTraps) for (const e of G().outs(st.map, n.id)) if (e.kind === 'trap') e.seen.trap = true;
-      if (res.fight) { const [nm, per, cnt] = res.fight; fight(st, n, { name: nm, count: cnt, d: per * cnt, label: `${nm} ${cnt}`, fam: 'humanoid' }, { alert: !!res.alert }); }
+      if (res.fight) { const [nm, per, cnt] = res.fight; fight(st, n, { name: nm, count: cnt, d: per * cnt, label: `${nm} ${cnt}`, fam: '고블린 무리' }, { alert: !!res.alert }); }
     } };
   }
 
@@ -289,7 +290,7 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
       const low = alive(st).filter(m => m.hp < m.max * 0.5).sort((a, b) => a.hp / a.max - b.hp / b.max)[0]; if (!low) break;
       healer.sl[1]--; const h = RUN.roll(st.rng, '1d8+3'); low.hp = Math.min(low.max, low.hp + h); say(st, `${healer.n}이 ${low === healer ? '자기' : `${low.n}의`} 상처를 치료한다 (+${h}).`, 'good');
     }
-    if (n.type === 'boss') { st.done = 'win'; note(n, `${g.name} 쓰러뜨림`, 'ink'); say(st, `${g.name}가 쓰러졌다. 이 층의 지도가 완성됐다.`, 'good'); return; }
+    if (n.type === 'boss') { st.done = 'win'; note(n, `${g.name} 쓰러뜨림`, 'ink'); say(st, `${g.name}가 쓰러졌다. 이들을 부린 자는 더 아래에 있다.`, 'good'); return; }
     const gold = n.type === 'elite' ? 35 + RUN.d(st.rng, 15) : 6 + g.count * 2 + (g.tier === 'heavy' ? 15 : 0); st.gold += gold;
     let loot = `금화 ${gold}`;
     if (n.type === 'elite' || g.tier === 'heavy') { const it = RUN.pick(st.rng, ['potion', 'knockScroll', 'seeScroll']); st.items[it] = (st.items[it] || 0) + 1; loot += ` · ${RUN.ITEMS[it].n}`; }
@@ -298,13 +299,22 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
 
   RUN.doAct = (st, a) => { if (st.done || st.scene) return {}; const r = a.run() || {}; return r; };
   RUN.eventScene = (st, n, id) => eventChoices(st, n, RUN.EVENTS.find(x => x.id === id)); // 시험용
+  // 구역 끝 야영지 (ROGUELIKE_PLAN 0-0): 우두머리를 잡은 자리에서 긴 휴식 한 번 · 상인 · 내려가기. 돌아가는 길은 없다
+  RUN.campsite = (st, zone) => {
+    let rested = false;
+    const mk = () => ({ kind: 'rest', title: '야영지', again: mk, text: `${zone}의 끝. 계단 어귀에 누군가 피워 둔 불자리가 남아 있고, 떠돌이 상인이 짐을 풀고 있다. 여기서 숨을 고르면 다음은 더 깊은 곳이다.`, choices: [
+      { n: '긴 휴식', sub: '체력 · 주문 슬롯을 모두 되찾는다', stay: true, off: () => rested, run: () => { rested = true; for (const m of alive(st)) { m.hp = m.max; m.sl = { ...(C[m.cls].slots || {}) }; } say(st, '불을 살리고 긴 휴식을 했다. 모두 기운을 되찾았다.', 'good'); } },
+      ...shopScene(st, node(st, st.at)).choices.slice(0, -1),
+      { n: '내려간다', run: () => say(st, '짐을 챙겨 계단을 내려간다.') }] });
+    st.scene = mk();
+  };
   RUN.choose = (st, i) => {
     const s = st.scene; if (!s || st.done) return;
     const c = s.choices[i]; if (!c || (c.off && c.off())) return;
     c.run();
     if (!st.done && !alive(st).length) { st.done = 'lose'; say(st, '탐사대가 전멸했다.', 'bad'); }
     if (st.done) { st.scene = null; return; }
-    if (c.stay) { st.scene = shopScene(st, node(st, st.at)); return; }
+    if (c.stay) { st.scene = s.again ? s.again() : shopScene(st, node(st, st.at)); return; }
     after(st);
   };
   // 물약: 가장 다친 사람에게
