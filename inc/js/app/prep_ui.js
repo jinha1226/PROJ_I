@@ -37,9 +37,10 @@ const PREPUI = (() => {
     let el = $('prepdie'); if (!el) { el = document.createElement('div'); el.id = 'prepdie'; $('floats').append(el); }
     die = { who, t: 0, T: 1.3, nat, then, el };
   }
-  // 문이 열린다: 그 자리를 바닥으로 바꿔 다시 굽고(잠깐 어두워졌다 밝아진다) 방을 드러낸다 → 1초 뒤 전투
+  // 문이 열린다: 방을 시야에 드러낸다 (벽으로 구운 문이면 바닥으로 바꿔 다시 굽는다) → 1초 뒤 전투
   function startOpening() {
-    G.Floor.setTiles(R.map, O.doorTiles || [doorK()], '.'); win.map = null; // 길 찾기 기억도 새로 (floor.js)
+    const shut = (O.doorTiles || [doorK()]).filter(k => R.map.c[k] === '#'); // 벽으로 구운 문만 (시험 장면) — 탐사 층은 문을 굽지 않아 다시 굽지 않는다
+    if (shut.length) { G.Floor.setTiles(R.map, shut, '.'); win.map = null; } // 길 찾기 기억도 새로 (floor.js)
     O.reveal?.(); for (const m of P.mons) m.spotted = true;
     G.Fantasy.refreshEnts?.(R); if (G.Sight?.update) G.Sight.update(R);
     opening = { t: 0 };

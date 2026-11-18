@@ -82,7 +82,7 @@ const CRAWL = (() => {
     let gap = 0, j = 0; const k = 1 - Math.exp(-dt * 10);
     R.party.forEach(p => { if (p === L) return; gap += 0.9; let acc = 0; while (j < trail.length - 1 && acc < gap) { acc += Math.hypot(trail[j][0] - trail[j + 1][0], trail[j][1] - trail[j + 1][1]); j++; } const T0 = trail[Math.min(j, trail.length - 1)] || [L.x, L.y]; p.x += (T0[0] - p.x) * k; p.y += (T0[1] - p.y) * k; });
     if (!cutscene) { track(L); if (!walk) near(L); }
-    if (busy() || st.here.auto) idleT = 0; else if ((idleT += dt) > 0.6) { idleT = 0; autoNext(); } // 방 일이 끝나고 잠깐 뒤 저절로 다음 길
+    if (busy() || st.here.auto) idleT = 0; else if ((idleT += dt) > 0.4) { idleT = 0; autoNext(); } // 전투 · 보상 · 장면이 끝나고 잠깐 뒤 저절로 다음 길
   }
   // 걸어서 다른 방에 들어섰다 (열린 곳 안의 이동): 지금 방을 바꾼다
   function track(L) {
@@ -166,8 +166,10 @@ const CRAWL = (() => {
     // 통로를 지나 새 방으로 (잠깐 자동으로 걷는다). 그 통로와 방은 이제 열린 곳
     openCor(ex.e.id); openRoom(ex.to); refreshSeen();
     cutscene = true; nearKey = null; clearMarks();
-    go([...ex.path, centerOf(ex.to)], () => { cutscene = false; if (st.at !== ex.to) { st.at = ex.to; st.path.push(ex.to); st.here = {}; } arrived(); });
+    go([...ex.path, inside(ex)], () => { cutscene = false; if (st.at !== ex.to) { st.at = ex.to; st.path.push(ex.to); st.here = {}; } arrived(); });
   }
+  // 새 방에 들어서서 멈출 곳: 가운데까지 가지 않고 문에서 세 칸쯤 안쪽 (다음 길로 이어 걸을 때 덜 멈칫하게)
+  const inside = ex => { const [cx, cy] = centerOf(ex.to), [dx, dy] = ex.path[ex.path.length - 1], L = Math.hypot(cx - dx, cy - dy), k = Math.min(1, 3 / (L || 1)); return [dx + (cx - dx) * k, dy + (cy - dy) * k]; };
   function arrived() {
     document.body.dataset.room = st.at; document.body.dataset.moves = (+(document.body.dataset.moves || 0) + 1);
     if (st.combat) { const c = st.combat; st.log.push({ t: `전투 ${c.rounds.length}라운드 — ${c.win ? '이겼다' : '졌다'}.` }); st.combat = null; }
@@ -177,7 +179,8 @@ const CRAWL = (() => {
     if (st.scene) return scene();
     if (st.done) return end();
     showMarks();
-    if (deferred[st.at] && !st.here.struct) { st.here.struct = true; const [x, y] = centerOf(st.at); moveTo(x, y); } // 야영 · 상인: 다가가서 연다
+    if (deferred[st.at] && !st.here.struct) { st.here.struct = true; const [x, y] = centerOf(st.at); moveTo(x, y); return; } // 야영 · 상인: 다가가서 연다
+    if (!busy() && !st.here.auto) autoNext(); // 이 방에 할 일이 없으면 기다리지 않고 이어 걷는다
   }
   function scene() {
     const s = st.scene, box = document.createElement('div'); box.id = 'crawlscene';
@@ -221,11 +224,11 @@ const CRAWL = (() => {
   const prepable = ex => { const n = st.map.nodes[ex.to], k = ex.e.kind; return n.hostile && !n.visited && (k === 'open' || k === 'locked' || k === 'hidden' || (k === 'trap' && !ex.e.seen.trap)); };
   const cellTiles = ([x, y]) => { const K = FL.K, cx = Math.floor(x / K), cy = Math.floor(y / K), out = []; for (let j = 0; j < K; j++) for (let i = 0; i < K; i++) out.push((cy * K + j) * iso.w + cx * K + i); return out; };
   const noiseGrid = () => ({ w: iso.w, h: iso.h, pass: k => iso.c[k] !== '#' });
-  // 통로를 지나 방 문 앞까지 걸어간다 — 문은 닫혀 있고(벽처럼 굽는다) 방 안 적은 안 보인다(잠들었거나 모른다)
+  // 통로를 지나 방 문 앞까지 걸어간다 — 방 안은 시야 밖이라 안 보이고, 적은 잠들었거나 모른다 (소리는 문 칸에서 줄어든다: doorTiles)
   function prepDoor(ex) {
     closeSign(); clearMarks(); nearKey = null;
     const n = st.map.nodes[ex.to], door = ex.path[ex.path.length - 1], lane = ex.path.slice(0, -1), dts = cellTiles(door);
-    openCor(ex.e.id); refreshSeen(); FL.setTiles(iso, dts, '#'); win.map = null;
+    openCor(ex.e.id); refreshSeen(); // 문은 벽으로 굽지 않는다 — 다시 굽기는 화면이 깜빡이고 인물 · 카메라가 튄다(main.js). 방 안은 시야가 가린다
     syncToG();
     const mons = G.Encounter.spawnRoom(R, st.map._lay.room[n.id].cells.map(FL.tile), units(n.g), { x: door[0], y: door[1] }, { boss: n.type === 'boss', hidden: true });
     if (n.alert) for (const m of mons) m.aware = 'alert'; // 이미 우리를 기다린다

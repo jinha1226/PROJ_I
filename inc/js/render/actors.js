@@ -34,7 +34,7 @@ function drawEnt(e, r, t) {
 }
 // 겹침 풀기: 보이는 자리만 서로 밀어낸다. 벽 칸으로는 밀지 않고 벽을 따라 미끄러진다 — 복도에서는 저절로 한 줄이 된다
 const MIN_D = .9; // 전투는 칸마다 한 명이라 거의 밀리지 않는다
-const DISP_V = 6, SNAP_D = 8, PUSH_V = .8;
+const DISP_V = 6, SNAP_D = 26, PUSH_V = .8; // SNAP_D: 이보다 멀면 바로 옮긴다 — 전투의 가장 긴 이동(이동력 60피트 질주 = 24칸)보다 커야 질주가 순간이동으로 보이지 않는다 (흐르는 턴제는 한 차례 길을 진짜 위치에 한 번에 옮긴다)
 function settle(r, dt) {
   const m = r.map, es = r.party.concat(r.mons).filter(e => !e.dead && !e.dying), open = (x, y) => isFloor(m, Math.round(x), Math.round(y));
   const k = 1 - Math.exp(-dt * 5);
