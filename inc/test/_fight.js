@@ -17,7 +17,7 @@ function boot(seed) {
   r.map = { w: W, h: H, c, kindAt: new Uint8Array(W * H), poi: {}, passChars: '.>,', ver: 1, dist: {}, rooms: [room], start: room, end: room, fixed: true };
   r.party.forEach((p, i) => { p.x = 4 + i * 0.6; p.y = 7 + (i % 2) * 0.4; });
   r.seen = new Uint8Array(W * H).fill(1); r.seenVer = (r.seenVer || 0) + 1;
-  return { G, f, r };
+  return { G, f, r, ctx };
 }
 function spawn(G, r, names) { names.forEach((n, i) => G.Fantasy.spawnMon(r, 1, { n, ...G.D.F.mon[n] }, 11, 4 + i * 2, false, { aggro: true, spotted: true, major: true })); G.Fantasy.refreshEnts(r); if (G.Sight?.update) G.Sight.update(r); }
 function run(G, r, { dice = null, maxT = 400 } = {}) {

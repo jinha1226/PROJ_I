@@ -144,10 +144,13 @@ const CRAWL = (() => {
   }
   function scene() {
     const s = st.scene, box = document.createElement('div'); box.id = 'crawlscene';
+    // 상인: 용병 계약 (금화로 후보 셋 중 하나)
+    if (s.kind === 'shop' && !s.choices.some(c => c.ours === 'hire')) s.choices.splice(Math.max(0, s.choices.length - 1), 0, { n: '용병 계약', who: `금화 ${HIRE} · 셋 중 한 명`, ours: 'hire', off: () => st.gold < HIRE });
     box.innerHTML = `<h3>${esc(s.title)}</h3><p>${esc(s.text || '')}</p>` + s.choices.map((c, i) => `<button data-i="${i}"${c.off && c.off() ? ' disabled' : ''}>${esc(c.n)}${c.p != null && c.p < 1 ? ` <i>${Math.round(c.p * 100)}%</i>` : ''}${c.who ? ` <small>${esc(c.who)}</small>` : ''}</button>`).join('');
     box.onclick = ev => {
       const b = ev.target.closest('button'); if (!b || b.disabled) return; box.remove();
       const kind = s.kind, at = st.at, ch = s.choices[+b.dataset.i];
+      if (ch.ours === 'hire') { st.gold -= HIRE; st.log.push({ t: `용병 계약 — 금화 ${HIRE}.` }); return recruit(() => scene(), '용병 계약'); }
       if (kind === 'fight' && (ch.n === '싸운다' || ch.n === '기습한다')) { st.scene = null; return startFight(st.map.nodes[at], { ambush: ch.n === '기습한다' }); }
       RUN.choose(st, +b.dataset.i);
       if (kind === 'shop' && !st.scene) deferred[at] = s; // 상인은 다시 와도 연다
@@ -173,7 +176,7 @@ const CRAWL = (() => {
   function syncToRUN() { for (const [p, m] of pair()) { const hp = Math.max(0, p.hp); m.hp = Math.round(m.max * hp / p.max); if (p.dead || hp <= 0) { m.hp = 0; m.dead = true; } } st.items.potion = bag()[POT] || 0; }
   function startFight(n, mod) {
     clearMarks(); closeSign(); syncToG();
-    G.Encounter.spawnRoom(R, st.map._lay.room[n.id].cells.map(FL.tile), n.g.units || [[n.g.name, n.g.count]], lead(), { boss: n.type === 'boss' });
+    G.Encounter.spawnRoom(R, st.map._lay.room[n.id].cells.map(FL.tile), units(n.g), lead(), { boss: n.type === 'boss' });
     FIGHT.start(R, { n, mod, log: t => { st.log.push({ t }); say(); }, done: fightDone });
     st.log.push({ t: `${n.g.label} — 전투가 시작된다.` }); say();
   }
@@ -187,7 +190,7 @@ const CRAWL = (() => {
     const n = st.map.nodes[ex.to], door = ex.path[ex.path.length - 1], lane = ex.path.slice(0, -1), dts = cellTiles(door);
     openCor(ex.e.id); refreshSeen(); for (const k of dts) iso.c[k] = '#'; win.map = null;
     syncToG();
-    const mons = G.Encounter.spawnRoom(R, st.map._lay.room[n.id].cells.map(FL.tile), n.g.units || [[n.g.name, n.g.count]], { x: door[0], y: door[1] }, { boss: n.type === 'boss', hidden: true });
+    const mons = G.Encounter.spawnRoom(R, st.map._lay.room[n.id].cells.map(FL.tile), units(n.g), { x: door[0], y: door[1] }, { boss: n.type === 'boss', hidden: true });
     if (n.alert) for (const m of mons) m.aware = 'alert'; // 이미 우리를 기다린다
     // 다른 방의 적도 소리를 듣는다 (쫓아오면 전투 중에 증원)
     const others = st.map.nodes.filter(o => o.hostile && !o.visited && o.id !== n.id).map(o => { const [x, y] = centerOf(o.id); return { x, y, aware: o.alert ? 'alert' : 'idle', node: o }; });
@@ -222,10 +225,25 @@ const CRAWL = (() => {
       if (o.eta == null) { const d = D[FL.index(iso.w, o.x, o.y)]; o.eta = round + Math.ceil((Number.isFinite(d) ? d : 30) / 6); }
       if (round < o.eta) continue;
       o.joined = true; o.node.hostile = false; o.node.alert = true;
-      G.Encounter.spawnRoom(R, st.map._lay.room[st.at].cells.map(FL.tile), o.node.g.units || [[o.node.g.name, o.node.g.count]], lead(), {});
+      G.Encounter.spawnRoom(R, st.map._lay.room[st.at].cells.map(FL.tile), units(o.node.g), lead(), {});
       st.log.push({ t: `${o.node.g.label} — 싸우는 소리를 듣고 달려왔다!` }); say();
     }
   }
+  // 적 무리 → 파티 수에 맞춘 적 수 (탐사 규칙의 무리는 3명 기준)
+  const units = g => G.Encounter.scale(g.units || [[g.name, g.count]], R.party.filter(p => !p.dead).length);
+  // 동료 영입 (설계 5-13): 후보 셋 중 하나 — 다섯이면 한 명을 내보낸다. 들어온 동료는 단장 곁에 나타난다
+  function recruit(after, title, only = null) {
+    const f = G.S.w.fantasy, cands = G.Party.offer(f, 3, Math.random, only);
+    REWARDUI.recruit(cands, G.Party.size(f) >= G.Party.MAX, G.Party.members(f).slice(1), (m, out) => {
+      if (m) {
+        if (out) { G.Party.leave(f, R, out, st); if (st) st.log.push({ t: `${out.name}이(가) 파티를 떠났다.` }); }
+        const L = lead(); G.Party.join(f, R, m, st, { x: L.x - 0.7, y: L.y + 0.5 }); trail.length = 0; trail.push([L.x, L.y]);
+        if (st) { st.log.push({ t: `${m.name}(${G.Guild.def(m).n}) — 동료가 되었다.` }); say(); }
+      }
+      if (after) after(m);
+    }, title);
+  }
+  const HIRE = 30; // 상인의 용병 계약 값 (금화)
   // 전투가 끝났다: 졌으면 판 끝, 이겼으면 금화 · 경험치 · 전리품 → 레벨업 고르기 → 정예 · 보스 3택1 (설계 5-12)
   function fightDone(win, F) {
     const n = F.n; syncToRUN(); n.hostile = false;
@@ -236,7 +254,7 @@ const CRAWL = (() => {
     tally.fights++; if (type === 'elite') tally.elites++; if (type === 'boss') tally.boss = true;
     const xp = R.party.filter(p => p.merc).map(p => ({ p, lv0: lvSnap?.find(s => s.p === p)?.lv ?? p.merc.lv, lv: p.merc.lv, xp: p.merc.xp, need: G.Guild.needOf(p.merc) }));
     st.log.push({ t: `전투에서 이겼다 (${F.round}라운드). 금화 ${gold}${loot.length ? ' · ' + loot.map(l => `${l.name} ${l.n}`).join(' · ') : ''}.` }); say();
-    REWARDUI.show({ title: `${n.g.label} — 이겼다 (${F.round}라운드)`, gold, xp, loot, big: type === 'fight' ? null : G.Reward.bigOffer(f, R.party, type), type, f }, () => {
+    REWARDUI.show({ title: `${n.g.label} — 이겼다 (${F.round}라운드)`, gold, xp, loot, big: type === 'fight' ? null : G.Reward.bigOffer(f, R.party, type), type, f, join: cont => recruit(cont, '동료 합류') }, () => {
       refreshHP();
       if (type === 'boss') { st.done = 'win'; st.log.push({ t: `${n.g.name}가 쓰러졌다. 이 층의 지도가 완성됐다.` }); say(); PMAP.draw(); return end(); }
       const L = lead(); trail.length = 0; trail.push([L.x, L.y]);
@@ -250,7 +268,7 @@ const CRAWL = (() => {
     // 층을 만들고 쿼터뷰 지도를 돌려준다
     start(seed) {
       G.Reward.stockShop(RUN.ITEMS); // 상인이 기름 · 마름쇠 · 도둑 도구도 판다
-      st = RUN.newRun(seed, ['fighter', 'wizard', 'cleric']); const fl = FL.fromRun(st.map, RUN.TYPE); iso = fl.iso; roomAt = fl.roomAt; open = new Uint8Array(iso.w * iso.h);
+      st = RUN.newRun(seed, ['fighter']); const fl = FL.fromRun(st.map, RUN.TYPE); iso = fl.iso; roomAt = fl.roomAt; open = new Uint8Array(iso.w * iso.h); // 혼자 시작 (설계 5-13)
       // 시작 물자 (명성으로 열린 만큼 더)
       unl = G.Reward.unlocked(renownLoad()); const I = st.items;
       I.oil = (I.oil || 0) + 2 + (unl.includes('oil1') ? 1 : 0); I.caltrops = (I.caltrops || 0) + 1; I.potion = (I.potion || 0) + (unl.includes('potion1') ? 1 : 0);
@@ -259,6 +277,7 @@ const CRAWL = (() => {
     // 세계가 서면: 파티를 입구에, 입구 방을 연다, 누르기 · 표지
     attach(r) {
       R = r; R.seen = new Uint8Array(iso.w * iso.h); FXUI.attach(R);
+      if (st.party[0] && r.party[0]?.merc) st.party[0].n = r.party[0].merc.name; // 탐사 기록에도 단장의 이름
       const [x, y] = centerOf(st.at); r.party.forEach((p, i) => { p.x = x - 0.6 * i; p.y = y + 0.3 * i; p._dx = p._rx = p.x; p._dy = p._ry = p.y; });
       openRoom(st.at); refreshSeen(); doorTiles = doorsOf();
       canvas.addEventListener('pointerup', onTap);
@@ -300,6 +319,8 @@ const CRAWL = (() => {
       // ?step=N: 첫 단추를 N번 눌러 다음 창으로 (캡처용)
       let k = 0; const n = +q.get('step') || 0, tick = () => { if (k++ >= n) return; const b = $('reward')?.querySelector('.rw-cards button, .rw-go'); if (b) b.click(); setTimeout(tick, 250); }; setTimeout(tick, 400);
     },
+    // 영입 시험 (?scene=recruit): 후보 셋 중 하나를 들인다 (파티 다섯이면 내보내기까지)
+    recruitTest(r) { PMAP.hide(); R = r; FXUI.attach(R); recruit(m => { document.body.dataset.joined = m ? m.name : '-'; }, '동료 영입 (시험)'); },
     get st() { return st; },
   };
 })();

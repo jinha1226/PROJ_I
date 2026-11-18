@@ -5,7 +5,8 @@
 const REWARDUI = (() => {
   const { $, esc } = UI;
   let queue = [], then = null, res = null;
-  const KIND = { spell: '주문', ability: '능력치', art: '마법 물건', rule: '규칙 카드', carve: '면 새기기' };
+  const KIND = { spell: '주문', swap: '바꿀 주문', ability: '능력치', art: '마법 물건', rule: '규칙 카드', carve: '면 새기기', join: '동료' };
+  const skN = k => G.D.MSKILLS[k]?.n || k, clsN = m => G.Guild.def(m)?.n || m.cls;
   function open() { let box = $('reward'); if (!box) { box = document.createElement('div'); box.id = 'reward'; box.onpointerup = ev => ev.stopPropagation(); $('stage').append(box); } return box; }
   function close() { const b = $('reward'); if (b) b.remove(); }
   // res = { title, gold, xp: [{ p, lv0, lv, xp, need }], loot: [{ name, n }], big: [옵션] | null, type, f }
@@ -30,6 +31,7 @@ const REWARDUI = (() => {
     }
     if (q.k === 'lv') {
       const m = q.p.merc, o = G.Reward.offer(m);
+      if (o.kind === 'swap') return swap(box, m, o);
       box.innerHTML = `<h3>${esc(m.name)} — ${m.lv}레벨</h3><p>${o.kind === 'spell' ? '새 주문 하나를 배운다' : '능력치 하나를 올린다'}</p>` +
         `<div class="rw-cards">${o.options.map((c, i) => `<button data-i="${i}"><small>${KIND[c.kind]}${c.lv ? ` · ${c.lv}레벨` : c.kind === 'spell' ? ' · 소마법' : ''}</small><b>${esc(c.n)}</b><span>${esc(c.d || '')}</span></button>`).join('')}</div>`;
       box.querySelector('.rw-cards').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; G.Reward.choose(m, o.options[+b.dataset.i]); step(); };
@@ -38,8 +40,37 @@ const REWARDUI = (() => {
     if (q.k === 'big') {
       box.innerHTML = `<h3>${res.type === 'boss' ? '보스' : '정예'}의 보상</h3><p>하나를 고른다</p>` +
         `<div class="rw-cards">${res.big.map((c, i) => `<button data-i="${i}" class="k-${c.kind}"><small>${KIND[c.kind]}</small><b>${c.ic ? `${c.ic} ` : ''}${esc(c.n)}</b><span>${esc(c.d || '')}</span></button>`).join('')}</div>`;
-      box.querySelector('.rw-cards').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; G.Reward.takeBig(res.f, res.big[+b.dataset.i]); step(); };
+      box.querySelector('.rw-cards').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; const opt = res.big[+b.dataset.i]; if (opt.kind === 'join') { box.remove(); return res.join(step); } G.Reward.takeBig(res.f, opt); step(); };
     }
+  }
+  // 5칸이 다 찬 채 레벨업: 새 주문 셋 중 하나를 골라 지금 기술 하나와 바꾸거나, 그대로 둔다
+  function swap(box, m, o) {
+    if (!o.options.length) { G.Reward.choose(m, 'keep'); return step(); }
+    box.innerHTML = `<h3>${esc(m.name)} — ${m.lv}레벨</h3><p>손에 든 기술은 다섯 — 새 주문으로 하나를 바꿀 수 있다</p>` +
+      `<div class="rw-cards">${o.options.map((c, i) => `<button data-i="${i}"><small>${KIND.swap}${c.lv ? ` · ${c.lv}레벨` : ' · 소마법'}</small><b>${esc(c.n)}</b><span>${esc(c.d || '')}</span></button>`).join('')}</div>` +
+      `<button class="rw-go rw-keep">지금 기술 그대로 둔다</button>`;
+    box.querySelector('.rw-keep').onclick = () => { G.Reward.choose(m, 'keep'); step(); };
+    box.querySelector('.rw-cards').onclick = ev => {
+      const b = ev.target.closest('button'); if (!b) return; const pickd = o.options[+b.dataset.i];
+      box.innerHTML = `<h3>무엇과 바꿀까</h3><p>${esc(pickd.n)}을(를) 들고, 하나를 내려놓는다</p><div class="rw-cards">${m.skills.map(k => `<button data-k="${esc(k)}"><small>내려놓기</small><b>${esc(skN(k))}</b></button>`).join('')}</div><button class="rw-go rw-keep">바꾸지 않는다</button>`;
+      box.querySelector('.rw-keep').onclick = () => { G.Reward.choose(m, 'keep'); step(); };
+      box.querySelector('.rw-cards').onclick = ev2 => { const d = ev2.target.closest('button'); if (!d) return; G.Reward.choose(m, pickd, d.dataset.k); step(); };
+    };
+  }
+  // 동료 영입: 후보 셋(cands) 중 하나 → 5명이 차 있으면 내보낼 사람 → cb(들인 사람 | null, 내보낸 사람 | null)
+  function recruit(cands, full, members, cb, title = '동료 영입') {
+    const box = open(); box.classList.remove('rw-record');
+    box.innerHTML = `<h3>${esc(title)}</h3><p>${full ? '파티가 다섯 — 들이려면 한 명을 내보낸다' : '한 명을 들인다'}</p>` +
+      `<div class="rw-cards">${cands.map((m, i) => `<button data-i="${i}"><small>${esc(clsN(m))} · ${m.lv}레벨</small><b>${esc(m.name)}</b><span>${(m.skills || []).slice(0, 3).map(skN).map(esc).join(' · ') || '직업 기능'}</span></button>`).join('')}</div>` +
+      `<button class="rw-go rw-keep">들이지 않는다</button>`;
+    box.querySelector('.rw-keep').onclick = () => { close(); cb(null, null); };
+    box.querySelector('.rw-cards').onclick = ev => {
+      const b = ev.target.closest('button'); if (!b) return; const m = cands[+b.dataset.i];
+      if (!full) { close(); return cb(m, null); }
+      box.innerHTML = `<h3>누구를 내보낼까</h3><p>${esc(m.name)}(${esc(clsN(m))})이(가) 들어온다</p><div class="rw-cards">${members.map((q, i) => `<button data-i="${i}"><small>${esc(clsN(q))} · ${q.lv}레벨</small><b>${esc(q.name)}</b></button>`).join('')}</div><button class="rw-go rw-keep">들이지 않는다</button>`;
+      box.querySelector('.rw-keep').onclick = () => { close(); cb(null, null); };
+      box.querySelector('.rw-cards').onclick = ev2 => { const d = ev2.target.closest('button'); if (!d) return; close(); cb(m, members[+d.dataset.i]); };
+    };
   }
   // 판 끝: sum = { win, rooms, fights, elites, boss, lv, gold, gain, total, fresh: [새로 열린 것 이름] }
   function record(sum, cb) {
@@ -51,5 +82,5 @@ const REWARDUI = (() => {
       `<button class="rw-go">다시 들어간다</button>`;
     box.querySelector('.rw-go').onclick = () => { close(); cb(); };
   }
-  return { show, record, get active() { return !!$('reward'); } };
+  return { show, record, recruit, get active() { return !!$('reward'); } };
 })();

@@ -15,7 +15,7 @@ const seq = a => { let i = 0; return () => a[i++ % a.length]; };
 {
   const { G, r, f } = boot(2); spawn(G, r, ['홉고블린 전사']); G.Reward.on = true;
   const fighter = r.party.find(p => p.merc.cls === 'dragoon').merc, mage = r.party.find(p => p.merc.cls === 'mage').merc;
-  for (const m of [fighter, mage]) { m.lv = 1; m.skills = G.Guild.roll(m.cls, 1); m.xp = G.Guild.needOf(m) - 1; }
+  for (const m of [fighter, mage]) { m.lv = 1; m.skills = G.Guild.roll(m.cls, 1).slice(0, 3); m.xp = G.Guild.needOf(m) - 1; } // 시전자는 5칸 중 셋만 찬 채로
   const k0 = mage.skills.length; G.Guild.onKill(f, r, r.mons[0]);
   t('레벨업: 둘 다 2레벨', fighter.lv === 2 && mage.lv === 2, [fighter.lv, mage.lv]);
   t('시전자: 기술을 저절로 더하지 않는다 · 열린 칸만큼 고를 것이 남는다', mage.skills.length === k0 && G.Reward.pending(mage) > 0, [k0, mage.skills.length, G.Reward.pending(mage)]);
@@ -28,6 +28,22 @@ const seq = a => { let i = 0; return () => a[i++ % a.length]; };
   t('무예 후보: 능력치 +1 셋 (근력 · 건강 · 민첩)', fo.kind === 'ability' && fo.options.map(q => q.id).join() === 'str,con,dex');
   G.Reward.choose(fighter, fo.options[0]);
   t('능력치를 고르면 +1 · 남은 고르기 0', fighter.ab.str === Math.min(20, str0 + 1) && G.Reward.pending(fighter) === 0, [str0, fighter.ab.str]);
+}
+// 2-1) 손에 든 기술 5칸: 다 찼으면 레벨업 때 새 주문 셋 중 하나로 바꾸거나 그대로
+{
+  const { G, r, f } = boot(12); spawn(G, r, ['홉고블린 전사']); G.Reward.on = true;
+  const mage = r.party.find(p => p.merc.cls === 'mage').merc; mage.lv = 3; mage.skills = G.Guild.roll('mage', 3); G.Party.trim(mage);
+  t('새 게임: 손에 든 기술은 5개로 맞춘다', mage.skills.length === 5, mage.skills.length);
+  t('5칸이 다 차면 더 열리지 않는다', G.Reward.slotsOpen(mage).cantrip + G.Reward.slotsOpen(mage).prepared === 0);
+  mage.xp = G.Guild.needOf(mage) - 1; G.Guild.onKill(f, r, r.mons[0]);
+  t('5칸이 다 찬 채 레벨업: 바꾸기 기회 하나', mage.lv === 4 && mage.swapPend === 1 && G.Reward.pending(mage) === 1, [mage.lv, mage.swapPend]);
+  const o = G.Reward.offer(mage, seq([0.4, 0.2, 0.8]));
+  t('바꾸기 후보: 아직 모르는 주문 셋', o.kind === 'swap' && o.options.length === 3 && o.options.every(q => !mage.skills.includes(q.id)), JSON.stringify(o.options.map(q => q.id)));
+  const drop = mage.skills[4]; G.Reward.choose(mage, o.options[0], drop);
+  t('바꾸면 내려놓은 자리에 새 주문 · 여전히 5개 · 기회 끝', mage.skills.length === 5 && mage.skills.includes(o.options[0].id) && !mage.skills.includes(drop) && G.Reward.pending(mage) === 0);
+  mage.swapPend = 1; const keep = mage.skills.slice(); G.Reward.choose(mage, 'keep');
+  t('그대로 두기: 기술은 그대로 · 기회 끝', mage.skills.join() === keep.join() && G.Reward.pending(mage) === 0);
+  const nm = G.Guild.make(f, 'archmage', { lv: 5 }); t('새 게임에서 만든 사람은 5개만 든다', nm.skills.length <= 5, nm.skills.length);
 }
 // 3) 옛 방식(새 게임 아님)은 레벨이 오르면 엔진이 그대로 채운다
 {
@@ -48,8 +64,11 @@ const seq = a => { let i = 0; return () => a[i++ % a.length]; };
 // 5) 정예 · 보스 3택1: 마법 물건 · 규칙 카드 · 면 새기기
 {
   const { G, r, f } = boot(5), R = G.Reward; G.Dice.rules.clear(); f.trinkets = [];
-  const opts = R.bigOffer(f, r.party, 'elite', seq([0.3, 0.6, 0.2, 0.8, 0.1]));
-  t('3택1: 마법 물건 · 규칙 카드 · 면 새기기', ['art', 'rule', 'carve'].every(k => opts.some(o => o.kind === k)), JSON.stringify(opts.map(o => o.kind)));
+  const few = R.bigOffer(f, r.party, 'elite', seq([0.3, 0.6, 0.2, 0.8, 0.1]));
+  t('3택1 (파티 5명 미만): 마법 물건 · 동료 합류 · 규칙 카드나 면 새기기', few.length === 3 && few[0].kind === 'art' && few.some(o => o.kind === 'join') && few.some(o => o.kind === 'rule' || o.kind === 'carve'), JSON.stringify(few.map(o => o.kind)));
+  t('동료 합류를 고르면 영입 창을 연다는 표시', R.takeBig(f, few.find(o => o.kind === 'join')) === 'join');
+  const size0 = G.Party.size; G.Party.size = () => 5; const opts = R.bigOffer(f, r.party, 'elite', seq([0.3, 0.6, 0.2, 0.8, 0.1])); G.Party.size = size0;
+  t('3택1 (파티 5명): 마법 물건 · 규칙 카드 · 면 새기기', ['art', 'rule', 'carve'].every(k => opts.some(o => o.kind === k)), JSON.stringify(opts.map(o => o.kind)));
   const art = opts.find(o => o.kind === 'art'); R.takeBig(f, art);
   t('마법 물건: 가방(f.trinkets)에 들어가 누군가 낀다', f.trinkets.some(q => q.k === art.id) && f.trinkets.some(q => q.on != null), JSON.stringify(f.trinkets));
   const rule = opts.find(o => o.kind === 'rule'); R.takeBig(f, rule);

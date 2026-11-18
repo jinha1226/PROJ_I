@@ -27,5 +27,7 @@ G.Encounter = (() => {
     for (const m of S.asleep) { m.stop = ROUND; m.koHit = true; }
     R.prepSurprise = S.surprise;
   }
-  return { monName, spawnRoom, applyPrep };
+  // 파티 수에 맞춘 적 수 (탐사 규칙의 무리는 3명 기준): 수마다 × 인원/3, 적어도 하나 — 혼자일 때 고블린 넷이 나오지 않게
+  const scale = (units, n) => units.map(([nm, c]) => [nm, Math.max(1, Math.round(c * n / 3))]);
+  return { monName, spawnRoom, applyPrep, scale };
 })();

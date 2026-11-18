@@ -14,13 +14,15 @@ G.Reward = (() => {
 
   // ── 레벨업 ──
   const caster = m => { const L = GD().limits(m.cls, Math.max(1, m.lv)); return L.cantrip + L.prepared > 0; };
-  // 열린 칸: SRD 표의 소마법 · 준비 주문 수 − 지금 아는 수
+  // 열린 칸: SRD 표의 소마법 · 준비 주문 수 − 지금 아는 수. 손에 든 기술은 5칸까지(G.Party.CAP) — 주문 칸을 먼저 연다
+  const CAP = () => G.Party?.CAP ?? 99;
   function slotsOpen(m) {
-    const L = GD().limits(m.cls, m.lv), cur = (m.skills || []).filter(k => GD().spLv(k) != null);
-    return { cantrip: Math.max(0, L.cantrip - cur.filter(k => GD().spLv(k) === 0).length), prepared: Math.max(0, L.prepared - cur.filter(k => GD().spLv(k) > 0).length) };
+    const L = GD().limits(m.cls, m.lv), cur = (m.skills || []).filter(k => GD().spLv(k) != null), free = Math.max(0, CAP() - cur.length);
+    const p = Math.min(free, Math.max(0, L.prepared - cur.filter(k => GD().spLv(k) > 0).length)), c = Math.min(free - p, Math.max(0, L.cantrip - cur.filter(k => GD().spLv(k) === 0).length));
+    return { cantrip: c, prepared: p };
   }
-  // 남은 고르기 수
-  function pending(m) { if (caster(m)) { const o = slotsOpen(m); return o.cantrip + o.prepared; } return m.abPend || 0; }
+  // 남은 고르기 수 (시전자: 열린 칸 + 5칸이 다 찬 뒤 레벨이 올라 생긴 바꾸기 기회)
+  function pending(m) { if (caster(m)) { const o = slotsOpen(m); return o.cantrip + o.prepared + (m.swapPend || 0); } return m.abPend || 0; }
   // 배울 수 있는 주문 (그 칸 종류 · 그 레벨까지 · 아직 모르는 것)
   function learnable(m, slot) {
     const S = GD();
@@ -30,14 +32,21 @@ G.Reward = (() => {
   // 후보 셋: 시전자는 새 칸의 주문 (높은 레벨 주문이 하나는 끼게), 무예는 능력치
   function offer(m, rng = Math.random) {
     if (!caster(m)) return abilityOffer(m);
-    const o = slotsOpen(m), slot = o.prepared > 0 ? 'prepared' : 'cantrip', pool = learnable(m, slot);
+    const o = slotsOpen(m);
+    if (!o.prepared && !o.cantrip) { // 5칸이 다 찼다: 새 주문 셋 중 하나로 바꾸거나 그대로
+      const all = learnable(m, 'prepared').concat(learnable(m, 'cantrip')); if (!all.length) return { kind: 'swap', options: [] };
+      const top = Math.max(...all.map(k => GD().spLv(k))), first = pick(all.filter(k => GD().spLv(k) === top), 1, rng), rest = pick(all.filter(k => !first.includes(k)), 2, rng);
+      return { kind: 'swap', options: first.concat(rest).map(k => ({ kind: 'swap', id: k, n: G.D.MSKILLS[k]?.n || k, lv: GD().spLv(k), d: G.D.MSKILLS[k]?.d || '' })) };
+    }
+    const slot = o.prepared > 0 ? 'prepared' : 'cantrip', pool = learnable(m, slot);
     if (!pool.length) return abilityOffer(m);
     const top = Math.max(...pool.map(k => GD().spLv(k))), hi = pool.filter(k => GD().spLv(k) === top);
     const first = pick(hi, 1, rng), rest = pick(pool.filter(k => !first.includes(k)), 2, rng);
     return { kind: 'spell', slot, options: first.concat(rest).map(k => ({ kind: 'spell', id: k, n: G.D.MSKILLS[k]?.n || k, lv: GD().spLv(k), d: G.D.MSKILLS[k]?.d || '' })) };
   }
-  // 고른 것을 적용
-  function choose(m, opt) {
+  // 고른 것을 적용 (바꾸기는 drop = 내려놓을 기술 — 없으면 그대로 둔다)
+  function choose(m, opt, drop = null) {
+    if (opt?.kind === 'swap' || opt === 'keep') { if (opt !== 'keep' && drop && (m.skills || []).includes(drop)) { m.skills = m.skills.map(k => (k === drop ? opt.id : k)); m.skPri = m.skills.slice(); } m.swapPend = Math.max(0, (m.swapPend || 0) - 1); return true; }
     if (opt.kind === 'spell') { m.skills = (m.skills || []).concat(opt.id); m.skManual = true; m.skPri = m.skills.slice(); return true; }
     if (opt.kind === 'ability') { m.ab = m.ab || {}; m.ab[opt.id] = Math.min(20, (m.ab[opt.id] ?? 10) + 1); m.abPend = Math.max(0, (m.abPend || 0) - 1); return true; }
     return false;
@@ -79,12 +88,17 @@ G.Reward = (() => {
   }
   function blanks(p) { const kind = G.Dice.dieFor(p), K = G.Dice.KINDS[kind]; if (!K?.sym) return []; const out = []; for (let v = 2; v <= 19; v++) if (G.Dice.face(kind, v, p).sym === null) out.push(v); return out; }
   function ruleOptions(rng) { const left = Object.keys(RULES).filter(k => !G.Dice.rules.has(k)); return pick(left, 1, rng).map(k => ({ kind: 'rule', id: k, n: RULES[k].n, d: RULES[k].d })); }
-  // 셋: 마법 물건 · 규칙 카드 · 면 새기기 (모자라면 있는 만큼)
-  function bigOffer(f, party, type, rng = Math.random) { return [...artOptions(f, party, type, rng), ...ruleOptions(rng), ...carveOptions(party, rng)]; }
+  // 셋: 마법 물건 · 규칙 카드 · 면 새기기 — 파티가 5명이 안 되면 규칙 카드 · 면 새기기 중 하나 대신 「동료 합류」
+  function bigOffer(f, party, type, rng = Math.random) {
+    const out = [...artOptions(f, party, type, rng), ...ruleOptions(rng), ...carveOptions(party, rng)];
+    if (G.Party && G.Party.size(f) < G.Party.MAX) { const i = out.findIndex((o, j) => j > 0 && (o.kind === 'rule' || o.kind === 'carve') && rng() < 0.5); out.splice(i > 0 ? i : out.length - 1, 1, { kind: 'join', n: '동료 합류', d: '셋 중 한 명을 들인다' }); }
+    return out;
+  }
   function takeBig(f, opt) {
     if (opt.kind === 'art') { const t = { id: f.trUid = (f.trUid || 0) + 1, lv: f.floor || 1, on: null, k: opt.id }; G.Trinket.all(f).push(t); (f.artSeen = f.artSeen || []).push(opt.id); G.Trinket.overflow?.(f); G.Trinket.auto?.(f); return t; }
     if (opt.kind === 'rule') { G.Dice.rules.add(opt.id); return true; }
     if (opt.kind === 'carve') { const m = opt.who.merc; m.carve = { ...(m.carve || {}), [opt.v]: 'wild' }; return true; }
+    if (opt.kind === 'join') return 'join'; // 영입 창은 화면 쪽이 연다
     return false;
   }
 

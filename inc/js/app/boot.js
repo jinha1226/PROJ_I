@@ -65,7 +65,7 @@ const TestFloor = (() => {
     const f = G.S.w.fantasy, L = G.Guild.leader(f);
     const lv = kind === 'crawl' ? 1 : 3; // 탐사 층은 1레벨에서 시작해 전투로 큰다 (설계 5-12) · 시험 장면은 3레벨
     f.leaderNew = false; f.autoTr = f.autoParty = false; f.askMeet = false; L.lv = lv;
-    const ms = ['mage', 'cleric'].map(c => G.Guild.make(f, c, { lv })); f.mercs.push(...ms); f.lineup = ms.map(m => m.uid);
+    const ms = kind === 'crawl' ? [] : ['mage', 'cleric'].map(c => G.Guild.make(f, c, { lv })); f.mercs.push(...ms); f.lineup = ms.map(m => m.uid); // 탐사 층은 혼자 시작 — 영입으로 다섯까지 (설계 5-13)
     f.floor = f.maxFloor = f.start = f.checkpoint = 1; f.town = true;
     const r = G.Fantasy.rt(f); G.Fantasy.syncAllies(f);
     f.town = false; r.phase = 'explore'; r.turn = null; r.mons = []; r.chests = []; r.fields = [];
@@ -94,8 +94,8 @@ G.Reward.on = true; // 새 게임: 경험치 3배 · 레벨업은 고르기 (설
 const TEST_FIGHT = !!q.get('fight'); // ?fight=test: 탐사 층 없이 시험 전투 방 하나
 const SCENE = q.get('scene'); // ?scene=door: 문 앞 준비 시험 (복도 + 잠긴 문 + 고블린 방)
 G.Turn.smooth = !q.get('steps'); // 흐르는 턴제 (?steps=1이면 옛 방식: 범위 칠하기 · 차례마다 쉼)
-const W0 = SCENE === 'door' ? TestFloor.world('door') : SCENE === 'reward' ? TestFloor.world('fight') : TEST_FIGHT ? TestFloor.world('fight') : TestFloor.world('crawl', CRAWL.start(+q.get('seed') || ((Math.random() * 1e6) | 0)));
-if (SCENE === 'door') CRAWL.doorTest(W0.r); else if (SCENE === 'reward') CRAWL.rewardTest(W0.r); else if (!TEST_FIGHT) CRAWL.attach(W0.r); else CRAWL.fightTest(W0.r);
+const W0 = SCENE === 'door' ? TestFloor.world('door') : SCENE === 'reward' || SCENE === 'recruit' ? TestFloor.world('fight') : TEST_FIGHT ? TestFloor.world('fight') : TestFloor.world('crawl', CRAWL.start(+q.get('seed') || ((Math.random() * 1e6) | 0)));
+if (SCENE === 'door') CRAWL.doorTest(W0.r); else if (SCENE === 'reward') CRAWL.rewardTest(W0.r); else if (SCENE === 'recruit') CRAWL.recruitTest(W0.r); else if (!TEST_FIGHT) CRAWL.attach(W0.r); else CRAWL.fightTest(W0.r);
 const f = W0.f, rt = () => W0.r;
 addEventListener('error', e => { document.body.dataset.err = String(e.message || e); });
 if (q.get('end')) document.addEventListener('DOMContentLoaded', () => { const d = document.createElement('div'); d.className = 'record-stub'; d.textContent = '층 끝 화면 자리 (7단계)'; document.body.append(d); });

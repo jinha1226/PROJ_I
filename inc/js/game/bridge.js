@@ -32,7 +32,18 @@
   const mult0 = G.Guild.mult;
   G.Guild.mult = function (m, k) { const v = mult0.call(this, m, k); return k === 'xp' && G.Reward.on ? v * G.Reward.XP_PACE : v; };
   const grow0 = G.Guild.grow;
-  G.Guild.grow = function (m) { if (!G.Reward.on) return grow0.call(this, m); m.skManual = true; if (!G.Reward.caster(m)) m.abPend = (m.abPend || 0) + 1; };
+  G.Guild.grow = function (m) {
+    if (!G.Reward.on) return grow0.call(this, m);
+    m.skManual = true;
+    if (!G.Reward.caster(m)) m.abPend = (m.abPend || 0) + 1;
+    else if ((m.skills || []).filter(k => G.Guild.spLv(k) != null).length >= G.Party.CAP) m.swapPend = (m.swapPend || 0) + 1; // 5칸이 다 찼다: 바꾸기 기회
+  };
+  // 파티 최대 5명 (G.Party): 옛 엔진의 출전 칸(단장 + 3)을 단장 + 4로
+  const slots0 = G.Fantasy.slots;
+  G.Fantasy.slots = function () { return G.Reward.on ? G.Party.MAX - 1 : slots0.call(this); };
+  // 손에 든 기술 5칸 (G.Party): 새 게임에서 만드는 사람은 엔진 추천 순서로 5개만 든다
+  const make0 = G.Guild.make;
+  G.Guild.make = function (...a) { const m = make0.apply(this, a); if (G.Reward.on) G.Party.trim(m); return m; };
   // 유틸리티 AI: 마른 기름 위에 선 적이 있으면 화염 기술 점수를 올린다 — 깔아 둔 기름을 캐릭터가 알아서 쓴다
   const score0 = G.SkillAI.score;
   G.SkillAI.score = function (k, a, x, threat) {
