@@ -28,6 +28,11 @@
   G.Pool.sneak = function (rt, list) { if (rt.prepSurprise != null) { const v = rt.prepSurprise; rt.prepSurprise = null; return v; } return sneak0.call(this, rt, list); };
   const beginFight0 = G.Story.beginFight;
   G.Story.beginFight = function (f, rt) { rt.prepSurprise = null; return beginFight0.apply(this, arguments); };
+  // 보상 · 성장 (G.Reward, 새 게임에서만 켠다): 한 층 판이라 경험치 3배 · 레벨이 오르면 기술 칸을 저절로 채우지 않고 고르게 한다
+  const mult0 = G.Guild.mult;
+  G.Guild.mult = function (m, k) { const v = mult0.call(this, m, k); return k === 'xp' && G.Reward.on ? v * G.Reward.XP_PACE : v; };
+  const grow0 = G.Guild.grow;
+  G.Guild.grow = function (m) { if (!G.Reward.on) return grow0.call(this, m); m.skManual = true; if (!G.Reward.caster(m)) m.abPend = (m.abPend || 0) + 1; };
   // 유틸리티 AI: 마른 기름 위에 선 적이 있으면 화염 기술 점수를 올린다 — 깔아 둔 기름을 캐릭터가 알아서 쓴다
   const score0 = G.SkillAI.score;
   G.SkillAI.score = function (k, a, x, threat) {

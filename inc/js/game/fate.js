@@ -25,10 +25,12 @@ G.Dice = (() => {
   };
   const SPECIAL = ['gamble', 'doom', 'steady', 'twin']; // 원정 전에 고를 수 있는 것
   const CH = { A: 'atk', D: 'def', R: 'arc', H: 'holy', '*': 'wild', '.': null };
-  const face = (kind, v) => ({ kind, face: v, value: v, sym: CH[KINDS[kind].sym[v - 1]], special: null });
-  const roll = (kind, rng = Math.random) => {
+  const rules = new Set(); // 운명판 규칙 카드 (정예 · 보스 3택1, G.Reward): reroll2 · wild19 · pairUp — 이번 판 내내
+  // 면: 값은 SRD d20 그대로, 기호는 직업 주사위 표 → 그 사람이 새긴 면(merc.carve) → 규칙 카드(19면도 ★)
+  const face = (kind, v, p) => { let sym = CH[KINDS[kind].sym[v - 1]]; if (p?.merc?.carve?.[v]) sym = p.merc.carve[v]; if (v === 19 && rules.has('wild19')) sym = 'wild'; return { kind, face: v, value: v, sym, special: null }; };
+  const roll = (kind, rng = Math.random, p = null) => {
     const K = KINDS[kind]; if (!K) throw new Error('모르는 주사위: ' + kind);
-    if (K.sym) return face(kind, d(rng, 20));
+    if (K.sym) return face(kind, d(rng, 20), p);
     const f = K.faces ? K.faces[Math.floor(rng() * K.faces.length)] : K.roll(rng);
     return f === 'death' ? { kind, face: f, value: null, special: 'death' } : { kind, face: f, value: f, special: null };
   };
@@ -49,7 +51,7 @@ G.Dice = (() => {
   const ROUND_T = 1e6; // 조합 효과의 끝은 시계가 아니라 라운드 (useRound · end가 지운다)
 
   const D = {
-    K: { SLOTS: 2, COLS: 3 }, KINDS, SPECIAL, SYM, roll, face,
+    K: { SLOTS: 2, COLS: 3 }, KINDS, SPECIAL, SYM, roll, face, rules,
     dieFor: p => DIE[srd(p)] || 'd20',
     loadout: [],        // 원정 전에 고른 특수 주사위 id
     bearer: null,       // 죽음의 주사위를 맡은 사람 (판을 굴리기 전에)
@@ -63,7 +65,7 @@ G.Dice = (() => {
     // 특수 주사위는 칸 하나씩 — 죽음의 주사위는 맡은 사람 줄, 나머지는 높은 값을 원하는 사람 줄 앞쪽부터
     newBoard(rng = Math.random) {
       D.end();
-      const ps = D.party(), cells = ps.map(p => Array.from({ length: D.K.COLS }, () => roll(D.dieFor(p), rng)));
+      const ps = D.party(), cells = ps.map(p => Array.from({ length: D.K.COLS }, () => roll(D.dieFor(p), rng, p)));
       const sp = [...new Set(D.loadout)].filter(k => SPECIAL.includes(k)).slice(0, D.K.SLOTS);
       if (sp.includes('doom') && (!D.bearer || !ps.includes(D.bearer))) D.bearer = D.suggestBearer();
       const top = ps.slice().sort((a, b) => want(b) - want(a))[0];
@@ -71,11 +73,11 @@ G.Dice = (() => {
       D.board = { rows: ps, cells, rerolled: false, ready: false };
       return D.board;
     },
-    // 다시 굴리기(한 번): 고른 칸들 [[줄, 열], …]
+    // 다시 굴리기(한 번, 규칙 카드 '두 번 굴리기'면 두 번): 고른 칸들 [[줄, 열], …]
     rerollCells(list, rng = Math.random) {
-      const B = D.board; if (!B || B.rerolled || !list.length) return false;
-      for (const [r, c] of list) B.cells[r][c] = roll(B.cells[r][c].kind, rng);
-      B.rerolled = true; return true;
+      const B = D.board, lim = rules.has('reroll2') ? 2 : 1; if (!B || (B.rerolls || 0) >= lim || !list.length) return false;
+      for (const [r, c] of list) B.cells[r][c] = roll(B.cells[r][c].kind, rng, B.rows[r]);
+      B.rerolls = (B.rerolls || 0) + 1; B.rerolled = B.rerolls >= lim; return true;
     },
     // 열 순서 바꾸기 (공짜): 센 열을 앞에 몰지, 뒤로 아낄지
     swapCols(a, b) { const B = D.board; if (!B || a === b) return false; for (const row of B.cells) [row[a], row[b]] = [row[b], row[a]]; return true; },
@@ -97,7 +99,7 @@ G.Dice = (() => {
     combos(dice = D.st ? D.st.dice : []) {
       const c = {}; let w = 0;
       for (const r of dice) if (!r) continue; else if (r.sym === 'wild') w++; else if (r.sym) c[r.sym] = (c[r.sym] || 0) + 1;
-      return ['atk', 'def', 'arc', 'holy'].filter(s => c[s] && c[s] + w >= 2).map(s => ({ s, n: Math.min(3, c[s] + w) }));
+      return ['atk', 'def', 'arc', 'holy'].filter(s => c[s] && c[s] + w >= 2).map(s => ({ s, n: rules.has('pairUp') ? 3 : Math.min(3, c[s] + w) })); // 규칙 카드 '맞물림': 둘도 셋처럼
     },
     // AI 추천: 다친 사람(체력 절반 아래)이 있으면 기도, 아니면 가장 큰 조합 (같으면 검 → 방 → 주 → 빛)
     pickCombo(cs = D.combos()) {
