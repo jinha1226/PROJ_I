@@ -296,5 +296,285 @@ PaperDoll.load('assets/chars/').then(() => {
   requestAnimationFrame(frame);
 }).catch(e => { document.body.insertAdjacentHTML('beforeend', `<p style="color:#e66">불러오기 실패: ${e.message} — inc 폴더에서 http 서버로 열어 주세요</p>`); });
 </script>
+
+<!-- 복셀 방 시험 (예전 proto/voxel_room.html): 같은 방을 DCSS 무늬 상자 · 복셀 + 빛으로 나란히 -->
+<style>
+  #vox { margin:24px 12px; padding-top:16px; border-top:1px solid #3a3544; font:14px "Noto Sans KR",sans-serif; }
+  #vox h2 { margin:0 0 4px; font-size:18px; } #vox p { margin:0 0 12px; color:#b8aa90; }
+  #vox .bar { display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; margin-bottom:12px; }
+  #vox .bar button { padding:6px 12px; border-radius:6px; border:1px solid #6d5a3c; background:#2a2018; color:#e8dcc4; cursor:pointer; }
+  #vox .bar button.on { background:#5a4020; border-color:#f0c070; }
+  #vox .bar label { cursor:pointer; user-select:none; }
+  #vox .wrap { display:flex; gap:12px; flex-wrap:wrap; }
+  #vox figure { margin:0; flex:1 1 460px; min-width:0; }
+  #vox canvas { display:block; width:100%; margin:0; image-rendering:pixelated; background:#0d0b10; border-radius:6px; }
+  #vox figcaption { margin-top:6px; color:#b8aa90; font-size:13px; }
+  #vox .warn { color:#e0a050; }
+</style>
+<section id="vox">
+<h2>방 하나, 두 가지로 그리기</h2>
+<p>A: 지금 방식을 흉내 낸 것 — 상자에 DCSS 무늬(32×32)를 입히고 면마다 밝기만 다르게. B: 같은 방을 복셀 소품과 빛 후처리로 — 횃불 · 화로가 흔들린다. 투영은 본 게임 쿼터뷰와 같다.</p>
+<div class="bar">
+  <button data-v="both" class="on">나란히</button><button data-v="a">A만</button><button data-v="b">B만</button>
+  <span>B 켜고 끄기:</span>
+  <label><input type="checkbox" data-f="light" checked> 점광원</label>
+  <label><input type="checkbox" data-f="shadow" checked> 그림자</label>
+  <label><input type="checkbox" data-f="ao" checked> 구석 음영</label>
+  <label><input type="checkbox" data-f="bloom" checked> 빛 번짐</label>
+  <label><input type="checkbox" data-f="film" checked> 비네팅 · 그레인</label>
+  <label><input type="checkbox" data-f="dither" checked> 디더링</label>
+  <label><input type="checkbox" data-f="edge" checked> 외곽선</label>
+</div>
+<div class="wrap">
+  <figure id="voxFA"><canvas id="voxA"></canvas><figcaption>A · 상자 + DCSS 무늬 <span id="voxWA" class="warn"></span></figcaption></figure>
+  <figure id="voxFB"><canvas id="voxB"></canvas><figcaption>B · 복셀 + 빛 후처리</figcaption></figure>
+</div>
+</section>
+<script>
+(() => {
+
+// ── 공통: 본 게임 쿼터뷰와 같은 직교 투영 (js/render/core.js의 project) ──
+const W = 520, H = 330, S = 5, SIN = .5, COS = Math.sqrt(3) / 2, R2 = Math.SQRT2;
+const X = 64, Y = 48, Z = 40, WALL = 28, FLOOR = 3; // 복셀 단위. 칸 하나 = 8복셀
+const OX = W / 2 - (X - Y) / (2 * R2) * S, OY = 10 + WALL * COS * S;
+const proj = (x, y, z) => { const u = (x - y) / R2, v = (x + y) / R2; return [OX + u * S, OY + (v * SIN - z * COS) * S, v * COS + z * SIN]; };
+const hash = (a, b, c = 0) => { const s = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453; return s - Math.floor(s); };
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + .5) / 16 - .5);
+const N = W * H;
+const NORM = [[0, 0, 1], [0, 1, 0], [1, 0, 0], [.45, .45, .77]]; // 위 · +y면 · +x면 · 인물(카메라 쪽)
+const STEP = 1 / (S * 1.6);
+const newBuf = id => { const c = document.getElementById(id); c.width = W; c.height = H; const ctx = c.getContext('2d'), img = ctx.createImageData(W, H); return { ctx, img, out: new Uint32Array(img.data.buffer), zb: new Float32Array(N).fill(-1e9) }; };
+const rgb = (r, g, b) => (255 << 24 | Math.max(0, Math.min(255, b | 0)) << 16 | Math.max(0, Math.min(255, g | 0)) << 8 | Math.max(0, Math.min(255, r | 0))) >>> 0;
+const C = (h, k = 1) => [((h >> 16) & 255) / 255 * k, ((h >> 8) & 255) / 255 * k, (h & 255) / 255 * k];
+
+// 그림 불러오기 (DCSS 무늬 · 인물)
+const loadImg = n => new Promise(r => { const im = new Image(); im.onload = () => { try { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, im.width, im.height).data; r({ w: im.width, h: im.height, d }); } catch (e) { r(null); } }; im.onerror = () => r(null); im.src = 'assets/dcss/' + n + '.png'; });
+
+// ── 인물 (둘 다 같은 DCSS 한 장 그림, 서 있는 판으로) ──
+const FIGS = [{ n: 'm_goblin', x: 29, y: 41 }, { n: 'm_skeletal_warrior', x: 46, y: 22 }];
+function drawFig(im, f, put) {
+  if (!im) return; const sc = 1.5, [sx, sy, d] = proj(f.x, f.y, FLOOR), w = im.w * sc, h = im.h * sc;
+  for (let py = 0; py < h; py++) for (let px = 0; px < w; px++) {
+    const ix = Math.floor(px / sc), iy = Math.floor(py / sc), k = (iy * im.w + ix) * 4; if (im.d[k + 3] < 128) continue;
+    const X0 = Math.round(sx - w / 2 + px), Y0 = Math.round(sy - h + py + 2); if (X0 < 0 || Y0 < 0 || X0 >= W || Y0 >= H) continue;
+    put(Y0 * W + X0, d + .6, im.d[k] / 255, im.d[k + 1] / 255, im.d[k + 2] / 255, f, (h - py) / (S * COS));
+  }
+}
+
+// ══════════ A: 상자 + DCSS 무늬 (지금 방식 흉내) ══════════
+function renderA(tex, figs) {
+  const B = newBuf('voxA'), col = new Float32Array(N * 3), has = new Uint8Array(N);
+  const box = (x0, y0, z0, x1, y1, z1, t, flat) => {
+    const put = (x, y, z, k, u, v) => {
+      const [sx, sy, d] = proj(x, y, z), ix = sx | 0, iy = sy | 0; if (ix < 0 || iy < 0 || ix >= W || iy >= H) return; const i = iy * W + ix; if (d <= B.zb[i]) return; B.zb[i] = d;
+      let c = flat; if (t) { const p = ((((v * 4) | 0) & 31) * 32 + (((u * 4) | 0) & 31)) * 4; c = [t.d[p] / 255, t.d[p + 1] / 255, t.d[p + 2] / 255]; }
+      col[i * 3] = c[0] * k; col[i * 3 + 1] = c[1] * k; col[i * 3 + 2] = c[2] * k; has[i] = 1;
+    };
+    for (let a = x0; a <= x1; a += STEP) for (let b = y0; b <= y1; b += STEP) put(a, b, z1, 1, a, b);
+    for (let a = x0; a <= x1; a += STEP) for (let z = z0; z <= z1; z += STEP) put(a, y1, z, .74, a, z1 - z);
+    for (let a = y0; a <= y1; a += STEP) for (let z = z0; z <= z1; z += STEP) put(x1, a, z, .52, a, z1 - z);
+  };
+  const T = n => tex[n] || null;
+  box(0, 0, 0, X, Y, FLOOR, T('d_pebble_brown0'), C(0x6a5a48));
+  box(0, 0, 0, 4, Y, WALL, T('d_brick_brown0'), C(0x7a5a40)); box(0, 0, 0, X, 4, WALL, T('d_brick_brown0'), C(0x7a5a40));
+  for (const [x, y, h] of [[16, 16, 30], [16, 36, 30], [40, 16, 30], [40, 36, 14]]) box(x - 3, y - 3, FLOOR, x + 3, y + 3, FLOOR + h, T('d_stone2_gray0'), C(0x8a8a90));
+  box(26, 6, FLOOR, 42, 12, FLOOR + 8, T('d_limestone0'), C(0xb0a080));
+  box(47, 33, FLOOR, 55, 38, FLOOR + 5, null, C(0x7a4a28));
+  box(20, 30, FLOOR, 24, 34, FLOOR + 6, null, C(0x3a3438)); box(20.5, 30.5, FLOOR + 6, 23.5, 33.5, FLOOR + 6.4, null, C(0xff9030));
+  drawFig(figs.m_goblin, FIGS[0], (i, d, r, g, b) => { if (d <= B.zb[i]) return; B.zb[i] = d; col[i * 3] = r; col[i * 3 + 1] = g; col[i * 3 + 2] = b; has[i] = 1; });
+  drawFig(figs.m_skeletal_warrior, FIGS[1], (i, d, r, g, b) => { if (d <= B.zb[i]) return; B.zb[i] = d; col[i * 3] = r; col[i * 3 + 1] = g; col[i * 3 + 2] = b; has[i] = 1; });
+  for (let i = 0; i < N; i++) { const x = i % W, y = (i / W) | 0, dz = BAYER[(y & 3) * 4 + (x & 3)] * .06; B.out[i] = has[i] ? rgb((col[i * 3] + dz) * 255, (col[i * 3 + 1] + dz) * 255, (col[i * 3 + 2] + dz) * 255) : rgb(13, 11, 16); }
+  B.ctx.putImageData(B.img, 0, 0);
+}
+
+// ══════════ B: 복셀 + 빛 ══════════
+const VX = new Uint8Array(X * Y * Z), VC = new Uint32Array(X * Y * Z); // 1 = 단단함, 2 = 빛남
+const vi = (x, y, z) => (z * Y + y) * X + x;
+const solid = (x, y, z) => x >= 0 && y >= 0 && z >= 0 && x < X && y < Y && z < Z && VX[vi(x, y, z)] === 1;
+const set = (x, y, z, c, em) => { x |= 0; y |= 0; z |= 0; if (x < 0 || y < 0 || z < 0 || x >= X || y >= Y || z >= Z) return; VX[vi(x, y, z)] = em ? 2 : 1; VC[vi(x, y, z)] = c; };
+const clr = (x, y, z) => { if (x >= 0 && y >= 0 && z >= 0 && x < X && y < Y && z < Z) VX[vi(x, y, z)] = 0; };
+const tint = (h, k) => { const r = Math.min(255, ((h >> 16) & 255) * k), g = Math.min(255, ((h >> 8) & 255) * k), b = Math.min(255, (h & 255) * k); return (r << 16) | (g << 8) | b; };
+const mix = (a, b, t) => { const f = (s) => [(a >> s) & 255, (b >> s) & 255]; const o = [16, 8, 0].map(s => { const [p, q] = f(s); return Math.round(p + (q - p) * t); }); return (o[0] << 16) | (o[1] << 8) | o[2]; };
+
+function buildRoom() {
+  // 바닥: 아래 받침 두 층 + 판석 (8칸마다 줄눈이 파인다, 판석마다 색 · 높이가 조금씩 다르다, 금)
+  for (let x = 0; x < X; x++) for (let y = 0; y < Y; y++) {
+    set(x, y, 0, 0x2a2420); set(x, y, 1, 0x3a322a);
+    const row = Math.floor(y / 8), ox = row % 2 ? 4 : 0, sx = Math.floor((x + ox) / 8), id = [sx, row];
+    const joint = (x + ox) % 8 === 0 || y % 8 === 0; if (joint) continue;
+    const t = .82 + hash(id[0], id[1]) * .3, base = mix(0x6e6254, 0x5a6058, hash(id[1], id[0], 3));
+    const crack = hash(x, y, 9) < .035;
+    set(x, y, 2, tint(crack ? 0x2e2822 : base, crack ? 1 : t * (.93 + hash(x, y) * .14)));
+    if (hash(id[0], id[1], 5) < .18 && !crack && hash(x, y, 2) > .3) set(x, y, 3, tint(base, t * 1.05)); // 들뜬 판석
+  }
+  // 벽: 돌 블록 (높이 4, 길이 7, 줄마다 엇갈림), 줄눈은 한 칸 들어가고 몇몇 돌은 튀어나온다, 아래쪽엔 이끼
+  const wallStone = (a, z, isX) => { const row = Math.floor(z / 4), off = row % 2 ? 3 : 0, col = Math.floor((a + off) / 7); return { joint: z % 4 === 0 || (a + off) % 7 === 0, id: [col, row, isX ? 1 : 2] }; };
+  for (let z = 0; z < WALL; z++) {
+    for (let y = 0; y < Y; y++) for (let x = 0; x < 4; x++) {
+      const s = wallStone(y, z, true), out = hash(...s.id) < .14; if (x === 3 && s.joint) continue;
+      const moss = z < 9 && hash(y, z, 4) < (.5 - z * .05) && x === 3, k = .78 + hash(s.id[0], s.id[1], 1) * .32;
+      set(x, y, z, moss ? tint(0x4a5a30, .8 + hash(y, z) * .3) : tint(mix(0x7a6c5c, 0x6c6460, hash(...s.id, 7)), k * (.94 + hash(y, z, 8) * .12)));
+      if (out && x === 3 && !s.joint) set(4, y, z, tint(0x7a6c5c, k * 1.06));
+    }
+    for (let x = 0; x < X; x++) for (let y = 0; y < 4; y++) {
+      const s = wallStone(x, z, false), out = hash(...s.id) < .14; if (y === 3 && s.joint) continue;
+      const moss = z < 9 && hash(x, z, 5) < (.5 - z * .05) && y === 3, k = .78 + hash(s.id[0], s.id[1], 2) * .32;
+      set(x, y, z, moss ? tint(0x4a5a30, .8 + hash(x, z) * .3) : tint(mix(0x7a6c5c, 0x6c6460, hash(...s.id, 7)), k * (.94 + hash(x, z, 8) * .12)));
+      if (out && y === 3 && !s.joint) set(x, 4, z, tint(0x7a6c5c, k * 1.06));
+    }
+  }
+  // 기둥: 둥근 몸통 + 받침 + 머리, 가장자리가 조금씩 깨져 있다. 하나는 부러졌다
+  const pillar = (cx, cy, h, broken) => {
+    for (let z = 0; z < h; z++) {
+      const r = z < 2 ? 4.3 : z < 3 ? 3.7 : z >= h - 2 && !broken ? 4.2 : z === h - 3 && !broken ? 3.6 : 3.1;
+      for (let x = Math.floor(cx - 5); x <= cx + 5; x++) for (let y = Math.floor(cy - 5); y <= cy + 5; y++) {
+        const d = Math.hypot(x + .5 - cx, y + .5 - cy); if (d > r) continue;
+        if (d > r - 1 && hash(x, y, z) < .12) continue; // 깨진 자리
+        if (broken && z > h - 5 && hash(x, y, 11) * 5 < z - (h - 5)) continue; // 부러진 윗면
+        const flute = Math.abs(Math.sin(Math.atan2(y + .5 - cy, x + .5 - cx) * 6)) < .25 && z > 2 && z < h - 3;
+        set(x, y, FLOOR + z, tint(0x9a9488, (flute ? .82 : 1) * (.9 + hash(x, y, z) * .15)));
+      }
+    }
+  };
+  pillar(16, 16, 30); pillar(16, 36, 30); pillar(40, 16, 30); pillar(40, 36, 15, true);
+  // 부서진 돌무더기
+  for (let k = 0; k < 70; k++) { const a = hash(k, 1) * 6.28, r = 3 + hash(k, 2) * 7, x = 40 + Math.cos(a) * r, y = 36 + Math.sin(a) * r * .8, s = hash(k, 3) < .3 ? 2 : 1; for (let i = 0; i < s; i++) for (let j = 0; j < s; j++) for (let z = 0; z < s; z++) if (!solid(x + i | 0, y + j | 0, FLOOR + z)) set(x + i, y + j, FLOOR + z, tint(0x8a847a, .8 + hash(k, i, j) * .25)); }
+  // 제단: 몸통 + 넘치는 윗판 + 붉은 천 + 초 넷
+  for (let x = 26; x < 42; x++) for (let y = 6; y < 12; y++) for (let z = 0; z < 7; z++) { const panel = (x === 26 || x === 41 || z === 0 || z === 6) ? 1.08 : 1; set(x, y, FLOOR + z, tint(0xa89a80, panel * (.9 + hash(x, y, z) * .12))); }
+  for (let x = 25; x < 43; x++) for (let y = 5; y < 13; y++) set(x, y, FLOOR + 7, tint(0xc8bca4, .95 + hash(x, y) * .1));
+  for (let x = 32; x < 36; x++) { for (let y = 5; y < 13; y++) set(x, y, FLOOR + 8, tint(0x8a2020, .9 + (x === 32 || x === 35 ? -.15 : 0))); for (let z = 2; z < 8; z++) set(x, 12, FLOOR + z, tint(0x8a2020, .85)); set(x, 12, FLOOR + 1, 0xc8a040); }
+  const candles = [[27, 6], [40, 6], [28, 11], [39, 11]];
+  for (const [x, y] of candles) { for (let z = 8; z < 8 + 2 + (x + y) % 2; z++) set(x, y, FLOOR + z, 0xe8dcc0); set(x, y, FLOOR + 10 + (x + y) % 2, 0xffd080, true); }
+  // 화로: 다리 + 쇠 그릇 + 숯 (불꽃은 매 프레임 입자로)
+  const bx = 22, by = 32; for (let z = 0; z < 6; z++) for (const [dx, dy] of [[-2, -2], [2, -2], [-2, 2], [2, 2], [0, 0]]) if (z < 5 || dx === 0) set(bx + dx, by + dy, FLOOR + z, 0x2e2a2c);
+  for (let x = bx - 4; x <= bx + 4; x++) for (let y = by - 4; y <= by + 4; y++) { const d = Math.hypot(x - bx, y - by); if (d <= 4.2) { set(x, y, FLOOR + 6, 0x3a3436); if (d > 3.2) set(x, y, FLOOR + 7, tint(0x4a4044, 1 + hash(x, y) * .2)); else set(x, y, FLOOR + 7, hash(x, y, 1) < .55 ? 0xff7020 : 0xffb040, true); } }
+  // 상자: 판자 무늬 나무 + 쇠 띠 + 자물쇠
+  for (let x = 47; x < 55; x++) for (let y = 33; y < 38; y++) for (let z = 0; z < 5; z++) { const band = x === 49 || x === 52, lid = z === 4; set(x, y, FLOOR + z, band ? 0x50484a : tint(0x7a4a28, (lid ? 1.12 : 1) * (y % 2 ? .92 : 1.02) * (.92 + hash(x, y, z) * .1))); }
+  set(50, 37, FLOOR + 3, 0xd8b040); set(51, 37, FLOOR + 3, 0xd8b040);
+  // 벽 횃불 둘: 받침 + 불꽃
+  for (const [x, y, side] of [[4, 24, 'x'], [48, 4, 'y']]) { for (let z = 14; z < 17; z++) set(x, y, z, 0x3a2a1a); set(side === 'x' ? x + 1 : x, side === 'y' ? y + 1 : y, 17, 0x3a2a1a); set(side === 'x' ? x + 1 : x, side === 'y' ? y + 1 : y, 18, 0xffc060, true); }
+  // 뼈 몇 조각
+  for (const [x, y] of [[30, 18], [31, 18], [32, 19], [33, 19], [12, 42], [13, 42]]) set(x, y, FLOOR, 0xe0d8c4);
+  // 앞쪽 낮은 턱 (잘라 낸 단면)
+  for (let x = 0; x < X; x++) for (let z = 0; z < 4; z++) set(x, Y - 1, z, tint(0x5a5048, .9 + hash(x, z) * .1));
+  for (let y = 0; y < Y; y++) for (let z = 0; z < 4; z++) set(X - 1, y, z, tint(0x5a5048, .9 + hash(y, z) * .1));
+}
+const LIGHTS = [
+  { x: 22.5, y: 32.5, z: FLOOR + 11, c: [1, .6, .28], i: 3.4, r: 19, f: 1 },   // 화로
+  { x: 5.5, y: 24.5, z: 19, c: [1, .68, .36], i: 2.2, r: 14, f: 2 },          // 왼쪽 벽 횃불
+  { x: 48.5, y: 5.5, z: 19, c: [1, .68, .36], i: 2.2, r: 14, f: 3 },          // 뒷벽 횃불
+  { x: 33.5, y: 8.5, z: FLOOR + 13, c: [1, .82, .52], i: 1.3, r: 9, f: 4 },     // 제단 초
+];
+const AMB = [.3, .31, .43];
+
+// 굽기: 복셀 겉면을 화면 픽셀로 (깊이 · 색 · 법선 · 위치 · 구석 음영), 그다음 빛마다 그림자
+let BK = null;
+function bakeB(figs) {
+  const zb = new Float32Array(N).fill(-1e9), alb = new Float32Array(N * 3), nrm = new Uint8Array(N).fill(255), pos = new Float32Array(N * 3), ao = new Float32Array(N), em = new Uint8Array(N);
+  const AX = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+  // 면 꼭짓점 음영 (복셀 AO): 앞 칸 기준 옆 둘 + 대각선
+  const cAO = (bx, by, bz, ea, eb, sa, sb) => { const s1 = solid(bx + ea[0] * sa, by + ea[1] * sa, bz + ea[2] * sa), s2 = solid(bx + eb[0] * sb, by + eb[1] * sb, bz + eb[2] * sb), c = solid(bx + ea[0] * sa + eb[0] * sb, by + ea[1] * sa + eb[1] * sb, bz + ea[2] * sa + eb[2] * sb); const v = s1 && s2 ? 0 : 3 - (s1 + s2 + c); return .45 + v / 3 * .55; };
+  const face = (x, y, z, dir, col, glow) => {
+    const n = NORM[dir], fx = x + n[0], fy = y + n[1], fz = z + n[2];
+    const [ea, eb] = dir === 0 ? [AX[0], AX[1]] : dir === 1 ? [AX[0], AX[2]] : [AX[1], AX[2]];
+    const a00 = cAO(fx, fy, fz, ea, eb, -1, -1), a10 = cAO(fx, fy, fz, ea, eb, 1, -1), a01 = cAO(fx, fy, fz, ea, eb, -1, 1), a11 = cAO(fx, fy, fz, ea, eb, 1, 1);
+    const r = ((col >> 16) & 255) / 255, g = ((col >> 8) & 255) / 255, b = (col & 255) / 255;
+    for (let s = STEP / 2; s < 1; s += STEP) for (let t = STEP / 2; t < 1; t += STEP) {
+      const px = dir === 0 ? x + s : dir === 1 ? x + s : x + 1, py = dir === 0 ? y + t : dir === 1 ? y + 1 : y + s, pz = dir === 0 ? z + 1 : z + t;
+      const [sx, sy, d] = proj(px, py, pz), ix = sx | 0, iy = sy | 0; if (ix < 0 || iy < 0 || ix >= W || iy >= H) continue; const i = iy * W + ix; if (d <= zb[i]) continue;
+      zb[i] = d; alb[i * 3] = r; alb[i * 3 + 1] = g; alb[i * 3 + 2] = b; nrm[i] = dir; pos[i * 3] = px; pos[i * 3 + 1] = py; pos[i * 3 + 2] = pz; em[i] = glow ? 1 : 0;
+      ao[i] = (a00 * (1 - s) + a10 * s) * (1 - t) + (a01 * (1 - s) + a11 * s) * t;
+    }
+  };
+  for (let z = 0; z < Z; z++) for (let y = 0; y < Y; y++) for (let x = 0; x < X; x++) {
+    const k = VX[vi(x, y, z)]; if (!k) continue; const c = VC[vi(x, y, z)], g = k === 2;
+    const open = (a, b, c2) => !(a < X && b < Y && c2 < Z) || !VX[vi(a, b, c2)];
+    if (open(x, y, z + 1)) face(x, y, z, 0, c, g); if (open(x, y + 1, z)) face(x, y, z, 1, c, g); if (open(x + 1, y, z)) face(x, y, z, 2, c, g);
+  }
+  // 인물: 카메라 쪽 법선, 발 위치에서 빛을 받는다
+  for (const f of FIGS) drawFig(figs[f.n], f, (i, d, r, g, b, F, hz) => { if (d <= zb[i]) return; zb[i] = d; alb[i * 3] = r; alb[i * 3 + 1] = g; alb[i * 3 + 2] = b; nrm[i] = 3; pos[i * 3] = F.x + .8; pos[i * 3 + 1] = F.y + .8; pos[i * 3 + 2] = FLOOR + hz; ao[i] = 1; em[i] = 0; });
+  // 빛마다 그림자: 그 점에서 빛까지 복셀을 따라 걷는다
+  const sh = LIGHTS.map(() => new Float32Array(N));
+  for (let i = 0; i < N; i++) {
+    if (nrm[i] === 255 || em[i]) continue; const n = NORM[nrm[i]], px = pos[i * 3] + n[0] * .55, py = pos[i * 3 + 1] + n[1] * .55, pz = pos[i * 3 + 2] + n[2] * .55;
+    LIGHTS.forEach((L, li) => {
+      const dx = L.x - px, dy = L.y - py, dz = L.z - pz, dist = Math.hypot(dx, dy, dz); if (dist > L.r * 2.6) { sh[li][i] = 0; return; }
+      const st = Math.max(1, Math.ceil(dist / .45)); let v = 1;
+      for (let k = 1; k < st - 1; k++) { const t = k / st; if (solid(Math.floor(px + dx * t), Math.floor(py + dy * t), Math.floor(pz + dz * t))) { v = 0; break; } }
+      sh[li][i] = v;
+    });
+  }
+  BK = { zb, alb, nrm, pos, ao, em, sh };
+}
+
+const F = { light: true, shadow: true, ao: true, bloom: true, film: true, dither: true, edge: true };
+const BB = newBuf('voxB'), lin = new Float32Array(N * 3), bl = new Float32Array((W >> 1) * (H >> 1) * 3), bl2 = new Float32Array(bl.length);
+const parts = [];
+function flick(L, t) { return .82 + .12 * Math.sin(t * 7.3 + L.f * 2.1) + .08 * Math.sin(t * 13.1 + L.f) + .06 * (hash(Math.floor(t * 12), L.f) - .5); }
+function frameB(t) {
+  const K = BK, fl = LIGHTS.map(L => flick(L, t));
+  for (let i = 0; i < N; i++) {
+    const nr = K.nrm[i]; if (nr === 255) { lin[i * 3] = .05; lin[i * 3 + 1] = .043; lin[i * 3 + 2] = .065; continue; }
+    const r0 = K.alb[i * 3], g0 = K.alb[i * 3 + 1], b0 = K.alb[i * 3 + 2];
+    if (K.em[i]) { const k = 1.6 * fl[0]; lin[i * 3] = r0 * k; lin[i * 3 + 1] = g0 * k; lin[i * 3 + 2] = b0 * k; continue; }
+    const a = F.ao ? K.ao[i] : 1, n = NORM[nr], up = nr === 0 ? 1.15 : nr === 3 ? 1.1 : .9;
+    let lr = AMB[0] * a * up, lg = AMB[1] * a * up, lb = AMB[2] * a * up;
+    if (F.light) {
+      const px = K.pos[i * 3], py = K.pos[i * 3 + 1], pz = K.pos[i * 3 + 2];
+      for (let li = 0; li < LIGHTS.length; li++) {
+        const L = LIGHTS[li], s = F.shadow ? K.sh[li][i] : 1; if (!s) continue;
+        const dx = L.x - px, dy = L.y - py, dz = L.z - pz, d = Math.hypot(dx, dy, dz) + 1e-3;
+        const nd = nr === 3 ? .75 : Math.max(0, (n[0] * dx + n[1] * dy + n[2] * dz) / d); if (!nd) continue;
+        const q = d / L.r, att = L.i * fl[li] / (1 + q * q * 2.2) * Math.max(0, 1 - q / 2.6), v = att * nd * s * (.55 + .45 * a);
+        lr += L.c[0] * v; lg += L.c[1] * v; lb += L.c[2] * v;
+      }
+    } else { lr += .55 * a; lg += .5 * a; lb += .45 * a; }
+    lin[i * 3] = r0 * lr; lin[i * 3 + 1] = g0 * lg; lin[i * 3 + 2] = b0 * lb;
+  }
+  // 화로 불꽃: 위로 오르며 식는 입자 (깊이 버퍼에 맞춰 더한다)
+  for (let k = 0; k < 5; k++) parts.push({ x: 22.5 + (Math.random() - .5) * 5, y: 32.5 + (Math.random() - .5) * 5, z: FLOOR + 8, vz: 4 + Math.random() * 4, life: 0, max: .5 + Math.random() * .5 });
+  for (let k = parts.length - 1; k >= 0; k--) {
+    const p = parts[k]; p.life += 1 / 30; p.z += p.vz / 30; p.x += (Math.random() - .5) * .3; p.y += (Math.random() - .5) * .3; if (p.life > p.max) { parts.splice(k, 1); continue; }
+    const u = p.life / p.max, [sx, sy, d] = proj(p.x, p.y, p.z), sz = u < .5 ? 2 : 1;
+    for (let a = 0; a < sz; a++) for (let b = 0; b < sz; b++) { const ix = (sx | 0) + a, iy = (sy | 0) + b; if (ix < 0 || iy < 0 || ix >= W || iy >= H) continue; const i = iy * W + ix; if (d < K.zb[i] - .5) continue; lin[i * 3] += 1.8 * (1 - u * .4); lin[i * 3 + 1] += (1.1 - u * .9); lin[i * 3 + 2] += .25 * (1 - u); }
+  }
+  // 빛 번짐: 밝은 곳만 반 크기로 뽑아 흐리게 해서 더한다
+  const hw = W >> 1, hh = H >> 1;
+  if (F.bloom) {
+    for (let y = 0; y < hh; y++) for (let x = 0; x < hw; x++) { const i = (y * 2 * W + x * 2) * 3, o = (y * hw + x) * 3; for (let c = 0; c < 3; c++) bl[o + c] = Math.max(0, lin[i + c] - .85); }
+    for (let pass = 0; pass < 2; pass++) {
+      for (let y = 0; y < hh; y++) for (let x = 0; x < hw; x++) for (let c = 0; c < 3; c++) { let s = 0; for (let k = -4; k <= 4; k++) { const xx = Math.min(hw - 1, Math.max(0, x + k)); s += bl[(y * hw + xx) * 3 + c]; } bl2[(y * hw + x) * 3 + c] = s / 9; }
+      for (let y = 0; y < hh; y++) for (let x = 0; x < hw; x++) for (let c = 0; c < 3; c++) { let s = 0; for (let k = -4; k <= 4; k++) { const yy = Math.min(hh - 1, Math.max(0, y + k)); s += bl2[(yy * hw + x) * 3 + c]; } bl[(y * hw + x) * 3 + c] = s / 9; }
+    }
+  }
+  // 마무리: 번짐 더하기 → 톤 → 비네팅 · 그레인 → 디더링으로 단계 나누기 → 외곽선
+  const LV = 14;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x; let r = lin[i * 3], g = lin[i * 3 + 1], b = lin[i * 3 + 2];
+    if (F.bloom) { const o = (Math.min(hh - 1, y >> 1) * hw + Math.min(hw - 1, x >> 1)) * 3; r += bl[o] * 1.4; g += bl[o + 1] * 1.4; b += bl[o + 2] * 1.4; }
+    r = r / (1 + r * .35) * 1.3; g = g / (1 + g * .35) * 1.3; b = b / (1 + b * .35) * 1.3;
+    if (F.film) { const dx = x / W - .5, dy = y / H - .5, v = 1 - .6 * (dx * dx + dy * dy) * 1.6, n = (Math.random() - .5) * .035; r = r * v + n; g = g * v + n; b = b * v + n; }
+    if (F.dither) { const dz = BAYER[(y & 3) * 4 + (x & 3)]; r = Math.floor(r * LV + dz + .5) / LV; g = Math.floor(g * LV + dz + .5) / LV; b = Math.floor(b * LV + dz + .5) / LV; }
+    if (F.edge && BK.nrm[i] !== 255) { const zr = x + 1 < W ? BK.zb[i + 1] : -1e9, zd = y + 1 < H ? BK.zb[i + W] : -1e9, zl = x > 0 ? BK.zb[i - 1] : -1e9, zu = y > 0 ? BK.zb[i - W] : -1e9, z0 = BK.zb[i]; if (z0 - Math.min(zr, zd, zl, zu) > 3) { r *= .35; g *= .32; b *= .38; } }
+    BB.out[i] = rgb(r * 255, g * 255, b * 255);
+  }
+  BB.ctx.putImageData(BB.img, 0, 0);
+}
+
+// ── 시작 ──
+(async () => {
+  const names = ['d_pebble_brown0', 'd_brick_brown0', 'd_stone2_gray0', 'd_limestone0', 'm_goblin', 'm_skeletal_warrior'];
+  const ims = await Promise.all(names.map(loadImg)), tex = {}; names.forEach((n, i) => tex[n] = ims[i]);
+  if (ims.some(x => !x)) document.getElementById('voxWA').textContent = '— 그림을 못 읽었다 (로컬 서버로 열어야 한다: inc 폴더에서 python3 -m http.server)';
+  renderA(tex, tex);
+  buildRoom(); bakeB(tex);
+  let last = 0; const loop = t => { if (t - last > 33) { last = t; frameB(t / 1000); } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+})();
+document.querySelector('#vox .bar').addEventListener('click', e => {
+  const b = e.target.closest('button[data-v]'); if (b) { document.querySelectorAll('#vox .bar button').forEach(x => x.classList.toggle('on', x === b)); const v = b.dataset.v; document.getElementById('voxFA').style.display = v === 'b' ? 'none' : ''; document.getElementById('voxFB').style.display = v === 'a' ? 'none' : ''; }
+});
+document.querySelectorAll('#vox [data-f]').forEach(c => c.addEventListener('change', () => { F[c.dataset.f] = c.checked; }));
+})();
+</script>
 </body>
 </html>
