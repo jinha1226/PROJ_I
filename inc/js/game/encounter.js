@@ -11,8 +11,10 @@ G.Encounter = (() => {
     const out = []; let k = 0;
     for (const [name, cnt] of units) for (let i = 0; i < cnt; i++) {
       const [x, y] = order[(k++ * 3) % Math.max(1, order.length)] || [from.x + 3, from.y], nm = monName(name);
-      out.push(G.Fantasy.spawnMon(R, 1, { n: nm, ...G.D.F.mon[nm] }, x, y, false, { aggro: true, spotted: true, major: true, boss: !!opts.boss }));
+      out.push(G.Fantasy.spawnMon(R, 1, { n: nm, ...G.D.F.mon[nm] }, x, y, false, { aggro: !opts.hidden, spotted: !opts.hidden, major: true, boss: !!opts.boss }));
     }
+    // hidden: 문 앞 준비 — 방 안에서 안 보이고(문이 열릴 때까지), 잠들었거나 모른다
+    if (opts.hidden) G.Prep.prime(out, opts.rng);
     G.Fantasy.refreshEnts(R); if (G.Sight?.update) G.Sight.update(R);
     return out;
   }

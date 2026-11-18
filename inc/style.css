@@ -209,3 +209,25 @@ img[src*="assets/chars/"] { image-rendering:auto; object-fit:contain; }
 #fatehud .die { position:relative; } #fatehud .die .sy { position:absolute; right:-6px; top:-7px; margin:0; }
 /* 오른쪽 아래 전투 기록창은 새 게임에서 쓰지 않는다 (2026-11-18) */
 #glog { display:none !important; }
+/* 무대 위 SVG (사건 · 문 앞 준비) */
+.stagesvg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
+#fxsvg .ripple { fill:none; stroke:#f3e4c3; } #fxsvg .g-flash { fill:rgba(255,160,60,.45); }
+#fxsvg .g-oil { fill:rgba(28,18,8,.62); stroke:rgba(90,66,30,.65); stroke-width:1; } #fxsvg .g-oil.lit { fill:rgba(255,120,30,.32); stroke:rgba(255,180,70,.85); stroke-width:1.5; }
+#fxsvg .g-sheen { fill:rgba(210,190,150,.2); } #fxsvg .g-cal { fill:rgba(120,120,120,.16); stroke:rgba(190,190,190,.55); stroke-dasharray:3 3; }
+#fxsvg .g-spike { font:10px sans-serif; fill:#cfcfcf; text-anchor:middle; dominant-baseline:middle; }
+#prepsvg .p-door { fill:none; stroke:#f0c070; stroke-width:2; stroke-dasharray:5 4; } #prepsvg .p-sel { fill:none; stroke:#ffe08a; stroke-width:2.2; }
+#prepsvg .p-zone { fill:rgba(240,192,112,.06); stroke:rgba(240,192,112,.4); stroke-dasharray:6 5; }
+#prepsvg .p-ghost.ok { fill:rgba(150,230,140,.25); stroke:#9fe08a; stroke-width:1.5; } #prepsvg .p-ghost.bad { fill:rgba(255,100,80,.2); stroke:#ff7060; stroke-width:1.5; }
+#prepsvg .p-sil ellipse, #prepsvg .p-sil circle { fill:rgba(200,40,40,.28); stroke:rgba(255,90,80,.85); stroke-width:1.5; stroke-dasharray:3 2; }
+#prepsvg .p-aw { font:800 15px "Noto Sans KR",sans-serif; text-anchor:middle; paint-order:stroke; stroke:#1a120c; stroke-width:3px; }
+#prepsvg .a-sleep { fill:#9fb4d8; } #prepsvg .a-idle { fill:#e8d890; } #prepsvg .a-alert { fill:#f0a050; } #prepsvg .a-hunt { fill:#ff5a40; }
+/* 문 앞 준비 창 */
+#prep { position:absolute; left:50%; bottom:12px; transform:translateX(-50%); width:min(560px, calc(100% - 24px)); box-sizing:border-box; padding:10px 12px; border-radius:12px; background:rgba(28,20,14,.94); border:1px solid #c9a86a; color:#f3e4c3; z-index:8; }
+#prep h4 { margin:0 0 8px; font:22px "Nanum Pen Script",cursive; } #prep h4 small { margin-left:6px; font:12px "Noto Sans KR",sans-serif; color:#cdbb98; }
+#prep .who, #prep .acts, #prep .open { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+#prep button { flex:1 1 92px; display:flex; flex-direction:column; align-items:center; gap:1px; padding:6px 8px; border-radius:8px; border:1px solid #6d5a3c; background:#3a2a1a; color:#f3e4c3; font:600 13px "Noto Sans KR",sans-serif; cursor:pointer; }
+#prep button small { font:400 11px "Noto Sans KR",sans-serif; color:#a89878; } #prep button.on { border-color:#f0c070; background:#4c3720; } #prep button:disabled { opacity:.42; cursor:default; }
+#prep .open b { width:100%; font:600 12px "Noto Sans KR",sans-serif; color:#cdbb98; } #prep .open button { background:#4a3018; }
+#prep .tip { margin:0; font:12px "Noto Sans KR",sans-serif; color:#a89878; }
+#prepdie { position:absolute; left:0; top:0; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:9px; background:#f3e4c3; color:#2b1d14; font:800 19px "Noto Sans KR",sans-serif; box-shadow:0 3px 10px rgba(0,0,0,.5); z-index:9; }
+#prepdie.rolling { background:#e8dcc0; color:#6a5a40; } #prepdie.crit { background:#f0c070; } #prepdie.fumble { background:#e06050; color:#fff; }

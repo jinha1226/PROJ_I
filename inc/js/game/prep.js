@@ -3,7 +3,7 @@
 // 판정은 SRD 그대로: 엿듣기 = 지혜(지각) vs 수동 은신 · 자물쇠 따기 = 도둑 도구(손재주) DC 15 · 걷어차기 = 근력(운동) DC 15 · 노크 = 늘 열림.
 // 여는 소리는 G.Noise로 방 안에 퍼진다 — 문이 닫혀 있으니 우리 쪽 문 앞에서 나서 닫힌 문(+6타일)을 지난다. 그래서 조용히 따면 아무도 못 듣는다.
 // 엔진 판정(d20 · 기술 보정)은 io로 넘겨받는다: { d20() → 1~20, skill(who, sk) → 보정 }. 함수는 사건 목록(ev)을 돌려준다 — 화면은 이걸 그린다.
-// 상태 P는 이 문 하나의 준비: { door, out, locked, grid, party, mons, items, clue, listened, starts, dropped, opened, tries }.
+// 상태 P는 이 문 하나의 준비: { door, out, locked, grid, party, mons, items, clue, others(다른 방 — 소리만 듣는다), listened, starts, dropped, opened, tries }.
 G.Prep = (() => {
   const ZONE_R = 4.5; // 문에서 이만큼 안까지 (우리 쪽) 세우고 놓을 수 있다
   const DC = 15;
@@ -12,7 +12,7 @@ G.Prep = (() => {
   function begin(o) {
     const l = Math.hypot(o.out.x, o.out.y) || 1;
     return { door: { x: o.door.x, y: o.door.y }, out: { x: o.out.x / l, y: o.out.y / l }, locked: !!o.locked, grid: o.grid, party: o.party, mons: o.mons,
-      items: { oil: 0, caltrops: 0, tools: 0, ...o.items }, clue: !!o.clue, listened: null, starts: new Map(), dropped: [], opened: null, tries: [] };
+      items: { oil: 0, caltrops: 0, tools: 0, ...o.items }, clue: !!o.clue, others: o.others || [], listened: null, starts: new Map(), dropped: [], opened: null, tries: [] };
   }
   const front = (P, x, y) => (x - P.door.x) * P.out.x + (y - P.door.y) * P.out.y; // 문에서 우리 쪽으로 얼마나 나왔나
   const walk = (P, x, y) => { const X = Math.round(x), Y = Math.round(y); return X >= 0 && Y >= 0 && X < P.grid.w && Y < P.grid.h && P.grid.pass(Y * P.grid.w + X); };
@@ -64,7 +64,7 @@ G.Prep = (() => {
     let ok = true, nat = null, mod = 0;
     if (m.dc) { nat = io.d20(); mod = io.skill(who, m.sk); ok = nat + mod >= m.dc; }
     const noise = ok ? m.noise : m.fail, ev = [{ k: 'try', who, id, n: m.n, ok, nat, mod, dc: m.dc || null }];
-    ev.push(...G.Noise.emit(P.grid, src(P), noise, P.mons));
+    ev.push(...G.Noise.emit(P.grid, src(P), noise, P.mons.concat(P.others))); // 다른 방(others)도 듣는다 — 쫓아오면 증원
     P.tries.push({ who, id, ok, noise });
     if (ok) { P.opened = { who, id }; P.locked = false; ev.push({ k: 'open', who, id }); }
     return { ok, nat, mod, dc: m.dc || null, noise, ev };

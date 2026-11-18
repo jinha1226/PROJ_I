@@ -25,6 +25,7 @@ const CRAWL = (() => {
   let autoN = 0, autoT = 0;
   function autoStep(dt) {
     if (!autoN || (st && st.done)) return; autoT += dt; if (autoT < 0.4) return; autoT = 0;
+    if (PREPUI.active) { const b = $('prep')?.querySelector('.open button:not([disabled])'); if (b) b.click(); return; } // 문 앞 준비: 처음 되는 방법으로 연다
     if (FIGHT.on) { const bb = $('dicebear')?.querySelector('button'); if (bb) return bb.click(); if ($('dicetray') && !q.get('hold')) $('dicetray').querySelector('.go').click(); return; }
     const b = $('crawlscene')?.querySelector('button:not([disabled])') || $('exitsign')?.querySelector('button[data-i="0"]');
     if (b) { if ($('exitsign')) autoN--; b.click(); return; }
@@ -47,11 +48,7 @@ const CRAWL = (() => {
   function doorsOf() { const s = new Set(); for (const ex of exits()) if (!ex.e.walked) s.add(TI(ex.door[0], ex.door[1])); return s; }
 
   // ── 누르기 · 걷기 ──
-  // 누른 곳 → 바닥 타일 좌표
-  function tileAtScreen(clientX, clientY) {
-    const rc = canvas.getBoundingClientRect(), sx = (clientX - rc.left) / rc.width * canvas.width, sy = (clientY - rc.top) / rc.height * canvas.height;
-    const g = unproject(sx, sy); return [g.x / T + win.cx, g.y / T + win.cy];
-  }
+  const tileAtScreen = UI.tileAt; // 누른 곳 → 바닥 타일 좌표
   // 그 타일로 걷는다 (못 가는 곳이면 가까운 걸을 수 있는 칸으로)
   function moveTo(tx, ty) {
     if (!walkable(TI(tx, ty))) { let best = null, bd = 10; for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const X = tx + dx, Y = ty + dy; if (X < 0 || Y < 0 || X >= iso.w || Y >= iso.h) continue; if (walkable(TI(X, Y))) { const d = dx * dx + dy * dy; if (d < bd) { bd = d; best = [Math.round(X), Math.round(Y)]; } } } if (!best) return false; [tx, ty] = best; }
@@ -59,13 +56,14 @@ const CRAWL = (() => {
     nearKey = null; closeSign(); go(pts.length ? pts : [[tx, ty]], null); return true;
   }
   function onTap(ev) {
-    if (cutscene || FIGHT.on || $('crawlscene') || $('dicepick') || st.done) return;
+    if (cutscene || FIGHT.on || PREPUI.active || $('crawlscene') || $('dicepick') || st.done) return;
     const [tx, ty] = tileAtScreen(ev.clientX, ev.clientY); moveTo(tx, ty);
   }
   const trail = [];
   function go(pts, then) { walk = { pts, i: 0, then }; }
   function frame(dt) {
     if (!R) return;
+    if (PREPUI.frame(dt)) return; // 문 앞 준비 중: 시간이 멈춘다
     if (FIGHT.frame(dt)) return;
     if (!st) return; // 시험 전투(?fight=test)는 탐사 층이 없다 — 전투가 끝나면 멈춘다
     const L = lead();
@@ -112,7 +110,7 @@ const CRAWL = (() => {
   function closeSign() { const s = $('exitsign'); if (s) s.remove(); }
   function sign(ex) {
     closeSign();
-    const n = st.map.nodes[ex.to], k = FL.kindOf(ex.e), acts = n.visited ? [{ label: '지나간다', run: null }] : RUN.moveActs(st, ex.ed);
+    const n = st.map.nodes[ex.to], k = FL.kindOf(ex.e), acts = n.visited ? [{ label: '지나간다', run: null }] : prepable(ex) ? [{ label: '문 앞으로 다가간다', who: '엿듣고 · 자리 잡고 · 준비해서 연다', prep: true }] : RUN.moveActs(st, ex.ed);
     const box = document.createElement('div'); box.id = 'exitsign';
     box.innerHTML = `<h4>${esc(KIND[k] || '통로')}</h4><p>너머: ${esc(beyond(n))}</p>` +
       acts.map((a, i) => `<button data-i="${i}">${esc(a.label)}${a.p != null && a.p < 1 ? ` <i>${Math.round(a.p * 100)}%</i>` : ''}${a.cost ? ` <small>${esc(a.cost)}</small>` : ''}${a.who ? ` <small>${esc(a.who)}</small>` : ''}</button>`).join('') +
@@ -121,6 +119,7 @@ const CRAWL = (() => {
     $('stage').append(box);
   }
   function choose(ex, a) {
+    if (a.prep) return prepDoor(ex);
     closeSign(); const from = st.at;
     if (!a.run) ex.e.walked = true; else a.run();
     if (st.at === from && a.run) { say(); nearKey = null; return; } // 자물쇠를 못 땄다 등: 다시 다가가면 표지
@@ -164,6 +163,55 @@ const CRAWL = (() => {
     FIGHT.start(R, { n, mod, log: t => { st.log.push({ t }); say(); }, done: fightDone });
     st.log.push({ t: `${n.g.label} — 전투가 시작된다.` }); say();
   }
+  // ── 문 앞 준비 (설계 5-11): 아직 안 가 본, 적이 있는 방으로 가는 열린 길 · 잠긴 문 · 못 찾은 함정 길 (어두운 길은 안내 표지 그대로) ──
+  const prepable = ex => { const n = st.map.nodes[ex.to], k = ex.e.kind; return n.hostile && !n.visited && (k === 'open' || k === 'locked' || k === 'hidden' || (k === 'trap' && !ex.e.seen.trap)); };
+  const cellTiles = ([x, y]) => { const K = FL.K, cx = Math.floor(x / K), cy = Math.floor(y / K), out = []; for (let j = 0; j < K; j++) for (let i = 0; i < K; i++) out.push((cy * K + j) * iso.w + cx * K + i); return out; };
+  const noiseGrid = () => ({ w: iso.w, h: iso.h, pass: k => iso.c[k] !== '#' });
+  // 통로를 지나 방 문 앞까지 걸어간다 — 문은 닫혀 있고(벽처럼 굽는다) 방 안 적은 안 보인다(잠들었거나 모른다)
+  function prepDoor(ex) {
+    closeSign(); clearMarks(); nearKey = null;
+    const n = st.map.nodes[ex.to], door = ex.path[ex.path.length - 1], lane = ex.path.slice(0, -1), dts = cellTiles(door);
+    openCor(ex.e.id); refreshSeen(); for (const k of dts) iso.c[k] = '#'; win.map = null;
+    syncToG();
+    const mons = G.Encounter.spawnRoom(R, st.map._lay.room[n.id].cells.map(FL.tile), n.g.units || [[n.g.name, n.g.count]], { x: door[0], y: door[1] }, { boss: n.type === 'boss', hidden: true });
+    if (n.alert) for (const m of mons) m.aware = 'alert'; // 이미 우리를 기다린다
+    // 다른 방의 적도 소리를 듣는다 (쫓아오면 전투 중에 증원)
+    const others = st.map.nodes.filter(o => o.hostile && !o.visited && o.id !== n.id).map(o => { const [x, y] = centerOf(o.id); return { x, y, aware: o.alert ? 'alert' : 'idle', node: o }; });
+    const stop = lane.length ? lane[lane.length - 1] : [lead().x, lead().y];
+    cutscene = true;
+    go(lane.length ? lane : [stop], () => {
+      cutscene = false;
+      PREPUI.open(R, { door: { x: door[0], y: door[1] }, doorTiles: dts, out: { x: stop[0] - door[0], y: stop[1] - door[1] }, locked: ex.e.kind === 'locked' && !ex.e.opened, mons, others, clue: n.info >= 2,
+        items: { oil: st.items.oil ?? 2, caltrops: st.items.caltrops ?? 1, tools: st.party.some(m => m.cls === 'rogue' && !m.dead) || st.items.tools ? 1 : 0 },
+        reveal: () => { openRoom(ex.to); refreshSeen(); },
+        onOpen: (S, left) => enterFight(ex, n, S, left, others) });
+    });
+  }
+  // 문이 열렸다: 탐사 규칙(RUN)으로 방에 들어서고(기록 · 정보 — 못 찾은 함정은 여기서 터진다) 준비한 그대로 싸운다
+  function enterFight(ex, n, S, left, others) {
+    ex.e.opened = true; st.items.oil = left.oil; st.items.caltrops = left.caltrops;
+    RUN.moveActs(st, ex.ed)[0].run(); st.scene = null; if (!S.surprise) n.alert = true;
+    say(); doorTiles = doorsOf(); PMAP.draw(); document.body.dataset.room = st.at; document.body.dataset.moves = (+(document.body.dataset.moves || 0) + 1);
+    if (st.done) return end();
+    syncToG(); G.Encounter.applyPrep(R, S);
+    const waiting = others.filter(o => o.aware === 'hunt');
+    FIGHT.start(R, { n, mod: {}, log: t => { st.log.push({ t }); say(); }, done: fightDone, onRound: r => fightRound(r, waiting, others) });
+    st.log.push({ t: `${n.g.label} — 전투가 시작된다.` }); say();
+  }
+  // 전투 라운드마다: 싸우는 소리(8)가 층에 퍼지고, 쫓아오는 다른 방 적은 걸어서 닿으면(6타일/라운드) 이 방으로 들어온다
+  function fightRound(round, waiting, others) {
+    const live = R.party.filter(p => !p.dead).concat(R.mons.filter(m => m.hp > 0)), c = { x: live.reduce((a, e) => a + e.x, 0) / live.length, y: live.reduce((a, e) => a + e.y, 0) / live.length };
+    if (round > 1) { G.Feed.push(G.Noise.emit(noiseGrid(), c, G.Noise.LV.round, others.filter(o => !o.joined))); for (const o of others) if (o.aware === 'hunt' && !waiting.includes(o)) waiting.push(o); }
+    const D = waiting.some(o => o.eta == null) ? G.Noise.field(noiseGrid(), c.x, c.y, 400) : null;
+    for (const o of waiting) {
+      if (o.joined) continue;
+      if (o.eta == null) { const d = D[FL.index(iso.w, o.x, o.y)]; o.eta = round + Math.ceil((Number.isFinite(d) ? d : 30) / 6); }
+      if (round < o.eta) continue;
+      o.joined = true; o.node.hostile = false; o.node.alert = true;
+      G.Encounter.spawnRoom(R, st.map._lay.room[st.at].cells.map(FL.tile), o.node.g.units || [[o.node.g.name, o.node.g.count]], lead(), {});
+      st.log.push({ t: `${o.node.g.label} — 싸우는 소리를 듣고 달려왔다!` }); say();
+    }
+  }
   function fightDone(win, F) {
     const n = F.n; syncToRUN(); n.hostile = false;
     if (!win || !st.party.some(m => !m.dead)) { st.done = 'lose'; st.log.push({ t: '탐사대가 전멸했다.' }); say(); return end(); }
@@ -179,7 +227,7 @@ const CRAWL = (() => {
     start(seed) { st = RUN.newRun(seed, ['fighter', 'wizard', 'cleric']); const fl = FL.fromRun(st.map, RUN.TYPE); iso = fl.iso; roomAt = fl.roomAt; open = new Uint8Array(iso.w * iso.h); return iso; },
     // 세계가 서면: 파티를 입구에, 입구 방을 연다, 누르기 · 표지
     attach(r) {
-      R = r; R.seen = new Uint8Array(iso.w * iso.h);
+      R = r; R.seen = new Uint8Array(iso.w * iso.h); FXUI.attach(R);
       const [x, y] = centerOf(st.at); r.party.forEach((p, i) => { p.x = x - 0.6 * i; p.y = y + 0.3 * i; p._dx = p._rx = p.x; p._dy = p._ry = p.y; });
       openRoom(st.at); refreshSeen(); doorTiles = doorsOf();
       canvas.addEventListener('pointerup', onTap);
@@ -188,16 +236,26 @@ const CRAWL = (() => {
       // 시험용 ?tap=x,y: 그 타일을 화면 좌표로 바꿔 누른 것처럼 (화면 ↔ 타일 변환 확인)
       if (q.get('tap')) setTimeout(() => { const [tx, ty] = q.get('tap').split(',').map(Number), a = project(wx(tx), wy(ty), 0), rc = canvas.getBoundingClientRect(); const cx = rc.left + a.sx / canvas.width * rc.width, cy = rc.top + a.sy / canvas.height * rc.height, back = tileAtScreen(cx, cy); document.body.dataset.tap = back.map(v => v.toFixed(2)).join(','); }, 1500);
     },
-    frame(dt) { frame(dt); autoStep(dt); for (const m of marks) UI.place(m.el, m.x, m.y, 2.2); FIGHT.hud(); },
+    frame(dt) { frame(dt); autoStep(dt); for (const m of marks) UI.place(m.el, m.x, m.y, 2.2); FIGHT.hud(); FXUI.frame(dt); },
     // 시험 전투 (?fight=test): 복도로 들어와 방에서 적과 맞닥뜨려 싸운다 (탐사 규칙 없이)
     fightTest(r) {
-      PMAP.hide(); R = r;
+      PMAP.hide(); R = r; FXUI.attach(R);
       const room = r.map.rooms.find(x => x.id === 'A') || r.map.rooms[0], n = { id: -1, type: 'fight', g: { label: '시험 전투', name: '적', count: r.mons.length, units: [] } };
       // 걸어 들어올 자리: 첫 사람은 방 입구 안쪽, 나머지는 그 뒤로 (진형을 맞추지 않는다)
       const intro = new Map(r.party.map((p, i) => [p, { x: room.x + 2 - (i ? 1.2 : 0), y: room.cy + (i === 1 ? -1.2 : i === 2 ? 1.2 : 0) }]));
       const tray = q.get('tray') || q.get('dice') != null; // 운명판 창은 ?tray · ?dice일 때만 (예시 장면은 판을 알아서 굴리고 작은 판만 띄운다)
       FIGHT.start(R, { n, intro, quiet: !tray, done: (win, F) => { const d = document.createElement('div'); d.className = 'record-stub'; d.innerHTML = `${win ? `시험 전투: 이겼다 (${F.round}라운드)` : '시험 전투: 졌다'} <button onclick="location.reload()">다시 보기</button>`; $('stage').append(d); } });
       if (q.get('dice') != null) FIGHT.dicePick(); if (q.get('auto')) autoN = 99; // ?dice=는 고르는 창 없이 그대로 넣는다
+    },
+    // 문 앞 준비 시험 (?scene=door): 복도 끝으로 걸어와 잠긴 문 앞에서 준비 → 문이 열리면 그 자리에서 전투. ?clue=1이면 단서가 있다, ?auto=1이면 정해진 차례로
+    doorTest(r) {
+      PMAP.hide(); R = r; FXUI.attach(R);
+      const m = r.map, d = m.door, room = m.rooms.find(x => x.id === 'A'), n = { id: -1, type: 'fight', g: { label: '고블린 방', name: '적', count: r.mons.length, units: [] } };
+      const intro = new Map(r.party.map((p, i) => [p, { x: d.x - 2.4 - (i ? 1.2 : 0), y: d.y + (i === 1 ? -1.1 : i === 2 ? 1.1 : 0) }]));
+      const script = q.get('auto') === '2' ? [{ a: 'open', id: 'kick' }, { a: 'open', id: 'kick' }, { a: 'open', id: 'kick' }] : q.get('auto') ? [{ a: 'sel', i: 2 }, { a: 'listen' }, { a: 'drop', kind: 'oil', x: d.x - 1, y: d.y }, { a: 'drop', kind: 'caltrops', x: d.x - 1.2, y: d.y + 1.3 }, { a: 'sel', i: 0 }, { a: 'open', id: 'pick' }, { a: 'open', id: 'pick' }, { a: 'open', id: 'kick' }] : [];
+      PREPUI.open(R, { door: d, out: { x: -1, y: 0 }, locked: true, mons: r.mons.filter(x => x.hp > 0), items: { oil: 2, caltrops: 1, tools: 1 }, clue: !!q.get('clue'), intro, script,
+        reveal: () => { for (let y = room.y - 1; y <= room.y + room.h; y++) for (let x = room.x - 1; x <= room.x + room.w; x++) if (x >= 0 && y >= 0 && x < m.w && y < m.h) R.seen[y * m.w + x] = 1; R.seenVer = (R.seenVer || 0) + 1; },
+        onOpen: S => { G.Encounter.applyPrep(R, S); FIGHT.start(R, { n, quiet: true, done: (win, F) => { const el = document.createElement('div'); el.className = 'record-stub'; el.innerHTML = `${win ? `문 앞 준비 시험: 이겼다 (${F.round}라운드)` : '문 앞 준비 시험: 졌다'} <button onclick="location.reload()">다시 해 보기</button>`; $('stage').append(el); } }); } });
     },
     get st() { return st; },
   };

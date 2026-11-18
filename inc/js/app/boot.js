@@ -48,6 +48,7 @@ const TestFloor = (() => {
   const LAYOUT = {
     floor: { w: 36, h: 15, rooms: [['A', '입구', 2, 4, 6, 6], ['B', '곁방', 11, 2, 6, 5], ['C', '안쪽 방', 13, 9, 6, 5], ['D', '계단 방', 24, 3, 9, 8]], links: [['A', 'B'], ['A', 'C'], ['B', 'D'], ['C', 'D']] },
     fight: { w: 20, h: 14, rooms: [['H', '복도', 1, 6, 4, 3], ['A', '전투 방', 6, 2, 12, 10]], links: [['H', 'A']] }, // 복도로 들어와 방에서 맞닥뜨린다
+    door: { w: 24, h: 16, rooms: [['H', '복도', 1, 6, 8, 4], ['A', '고블린 방', 10, 2, 12, 12]], links: [['H', 'A']] }, // 문 앞 준비: 복도 끝 잠긴 문 (9, 8) 너머 고블린 방
   };
   function build(kind = 'floor') {
     const L = LAYOUT[kind], W = L.w, H = L.h, c = new Array(W * H).fill('#'), ix = (x, y) => y * W + x, cut = (x, y) => { if (x > 0 && y > 0 && x < W - 1 && y < H - 1) c[ix(x, y)] = '.'; };
@@ -69,6 +70,13 @@ const TestFloor = (() => {
     f.town = false; r.phase = 'explore'; r.turn = null; r.mons = []; r.chests = []; r.fields = [];
     const m = r.map = map0 || build(kind), s = m.start;
     r.party.forEach((p, i) => { p.x = s.cx - 1 + i; p.y = s.cy + (i % 2); p._dx = p._rx = p.x; p._dy = p._ry = p.y; });
+    if (kind === 'door') { // 문 앞 준비 시험: 문은 닫혀 있고(벽 칸) 방은 아직 안 보인다. 적은 잠들었거나 모른다
+      const A = m.rooms.find(q => q.id === 'A'); m.door = { x: 9, y: 8 }; m.c[m.door.y * m.w + m.door.x] = '#';
+      [['고블린 졸개', A.x + 3, A.cy - 2], ['고블린 졸개', A.x + 5, A.cy + 2], ['홉고블린', A.x + 8, A.cy]].forEach(([n, x, y]) => { const nm = G.D.F.mon[n] ? n : Object.keys(G.D.F.mon)[0]; G.Fantasy.spawnMon(r, 1, { n: nm, ...G.D.F.mon[nm] }, x, y, false, { major: true }); });
+      for (const o of r.mons) { o.aggro = false; o.spotted = false; } G.Prep.prime(r.mons);
+      r.seen = new Uint8Array(m.w * m.h); for (let y = 5; y <= 10; y++) for (let x = 0; x <= 9; x++) r.seen[y * m.w + x] = 1; r.seenVer = (r.seenVer || 0) + 1;
+      G.Fantasy.refreshEnts(r); return { f, r };
+    }
     if (kind === 'fight') {
       const names = ['고블린 졸개', '고블린 졸개', '홉고블린'].map(n => G.D.F.mon[n] ? n : Object.keys(G.D.F.mon)[0]);
       const A = m.rooms.find(q => q.id === 'A') || s;
@@ -82,9 +90,10 @@ const TestFloor = (() => {
 })();
 // 탐사 층 (3단계): 지도 시제품의 생성기 · 규칙으로 한 층 (CRAWL). ?fight=test는 시험 전투 방, ?seed=숫자로 같은 층
 const TEST_FIGHT = !!q.get('fight'); // ?fight=test: 탐사 층 없이 시험 전투 방 하나
+const SCENE = q.get('scene'); // ?scene=door: 문 앞 준비 시험 (복도 + 잠긴 문 + 고블린 방)
 G.Turn.smooth = !q.get('steps'); // 흐르는 턴제 (?steps=1이면 옛 방식: 범위 칠하기 · 차례마다 쉼)
-const W0 = TEST_FIGHT ? TestFloor.world('fight') : TestFloor.world('crawl', CRAWL.start(+q.get('seed') || ((Math.random() * 1e6) | 0)));
-if (!TEST_FIGHT) CRAWL.attach(W0.r); else CRAWL.fightTest(W0.r);
+const W0 = SCENE === 'door' ? TestFloor.world('door') : TEST_FIGHT ? TestFloor.world('fight') : TestFloor.world('crawl', CRAWL.start(+q.get('seed') || ((Math.random() * 1e6) | 0)));
+if (SCENE === 'door') CRAWL.doorTest(W0.r); else if (!TEST_FIGHT) CRAWL.attach(W0.r); else CRAWL.fightTest(W0.r);
 const f = W0.f, rt = () => W0.r;
 addEventListener('error', e => { document.body.dataset.err = String(e.message || e); });
 if (q.get('end')) document.addEventListener('DOMContentLoaded', () => { const d = document.createElement('div'); d.className = 'record-stub'; d.textContent = '층 끝 화면 자리 (7단계)'; document.body.append(d); });

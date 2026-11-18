@@ -8,7 +8,7 @@ const FIGHT = (() => {
   const dieFace = r => (r.special === 'death' ? '☠' : r.value) + (r.sym ? `<i class="sy s-${r.sym}">${G.Dice.SYM[r.sym].n}</i>` : '');
   const comboTxt = c => { const Y = G.Dice.SYM[c.s]; return `${Y.n}×${c.n} ${Y.fx}`; };
 
-  // 전투 시작. opts = { n: 탐사의 방 노드, mod, intro: Map(사람 → 걸어갈 자리), quiet: 운명판 창 없이 알아서, log(t), done(win, F) }
+  // 전투 시작. opts = { n: 탐사의 방 노드, mod, intro: Map(사람 → 걸어갈 자리), quiet: 운명판 창 없이 알아서, log(t), done(win, F), onRound(round) }
   function start(rt, opts) {
     R = rt; R.turn = null; R.phase = 'explore'; G.S.w.fantasy.town = false;
     G.Dice.party = () => R.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => R.turn?.cur || null; G.Dice.end();
@@ -26,6 +26,7 @@ const FIGHT = (() => {
       G.Tactics.snap(R); F.intro = null;
     }
     // 첫 라운드에 운명판을 한 번 굴린다 (죽음의 주사위가 있으면 맡을 사람부터). 라운드마다 판의 그 열을 쓴다
+    if (T && T.round !== F.round && F.onRound) F.onRound(T.round); // 쓰는 쪽의 라운드 일 (탐사: 전투 소리 · 증원)
     if (T && T.round !== F.round) { F.round = T.round; if (!G.Dice.board && !$('dicebear')) { if (G.Dice.loadout.includes('doom') && !F.quiet) bearerPick(); else { G.Dice.newBoard(); if (F.quiet) G.Dice.board.ready = true; else boardTray(); } } }
     if ($('dicebear') || (G.Dice.board && !G.Dice.board.ready)) return true; // 플레이어를 기다린다
     if (T && G.Dice.board && G.Dice.st?.round !== T.round) { G.Dice.useRound(T.round); const c = G.Dice.fire(); if (c) F.log(`${T.round}라운드 — ${comboTxt(c)}: ${G.Dice.SYM[c.s].txt(c.n)}`); }

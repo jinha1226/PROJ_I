@@ -13,6 +13,15 @@ const UI = (() => {
     const rc = canvas.getBoundingClientRect(), sb = $('stage').getBoundingClientRect(), a = project(wx(x), wy(y), z);
     return [rc.left - sb.left + a.sx / W * rc.width, rc.top - sb.top + a.sy / H * rc.height];
   }
+  // 누른 화면 좌표(clientX, clientY) → 바닥 타일 좌표 [x, y]
+  function tileAt(clientX, clientY) {
+    const rc = canvas.getBoundingClientRect(), sx = (clientX - rc.left) / rc.width * canvas.width, sy = (clientY - rc.top) / rc.height * canvas.height;
+    const g = unproject(sx, sy); return [g.x / T + win.cx, g.y / T + win.cy];
+  }
+  // 바닥 위 원(중심 x, y · 반지름 r타일)을 쿼터뷰로 꺾은 SVG 경로 (무대 좌표)
+  function ring(x, y, r, n = 28) { let d = ''; for (let i = 0; i <= n; i++) { const a = i / n * Math.PI * 2, [X, Y] = toStage(x + Math.cos(a) * r, y + Math.sin(a) * r); d += `${i ? 'L' : 'M'}${X.toFixed(1)},${Y.toFixed(1)}`; } return d + 'Z'; }
+  // 무대 위에 깔리는 SVG 한 장 (없으면 만든다)
+  function svg(id, z = 2) { let el = $(id); if (!el) { el = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); el.id = id; el.classList.add('stagesvg'); el.style.zIndex = z; $('stage').append(el); } return el; }
   // 진행 글: 그 기록(log: [{ t }])에 새로 쌓인 줄만 화면 위 dm 줄에 잠깐
   const seen = new WeakMap();
   function say(log) {
@@ -21,5 +30,5 @@ const UI = (() => {
     dm.textContent = lines.map(l => l.t).join(' '); dm.classList.remove('hidden');
     clearTimeout(say.t); say.t = setTimeout(() => dm.classList.add('hidden'), 3800 + lines.length * 900);
   }
-  return { $, esc, place, toStage, say };
+  return { $, esc, place, toStage, tileAt, ring, svg, say };
 })();
