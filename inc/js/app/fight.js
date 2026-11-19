@@ -1,25 +1,29 @@
 'use strict';
 // 쿼터뷰 전투 (화면 쪽): 옛 SRD 턴제 오토배틀(G.Turn · G.Flow)을 그 자리에서 돌리고 운명판(G.Dice)을 띄운다.
-// 판정 · 규칙은 옛 엔진과 js/game에 — 여기는 전투 시계 · 플레이어 기다리기 · 운명판 창 · 작은 판뿐.
+// 판정 · 규칙은 옛 엔진과 js/game에 — 여기는 전투 시계 · 플레이어 기다리기 · 운명판 창 · 작은 판 · 주사위가 날아가는 연출뿐.
 // 쓰는 쪽(탐사 crawl.js · 시험 장면)은 start(rt, opts)로 넘기고, 끝나면 opts.done(win, F)를 받는다.
 const FIGHT = (() => {
   const { $, esc } = UI;
   let R = null, F = null;
   const dieFace = r => (r.special === 'death' ? '☠' : r.value) + (r.sym ? `<i class="sy s-${r.sym}">${G.Dice.SYM[r.sym].n}</i>` : '');
-  // 칸 하나: 치명타 범위 · 자연 1 · 하플링 행운으로 다시 굴린 칸을 표시한다 (d = null이면 아직 모르는 칸)
+  // 칸 하나: 치명타 범위 · 자연 1 · 하플링 행운으로 다시 굴린 칸을 표시한다 (d = null이면 굴러가는 칸)
   const dieHTML = (p, d, cls = '', attr = '') => (d ? `<b class="die k-${d.kind} ${G.Dice.mark(p, d) || ''}${d.lucky ? ' lucky' : ''} ${cls}" ${attr} title="${esc(G.Dice.KINDS[d.kind].n)}${d.lucky ? ' · 하플링 행운으로 다시 굴림' : ''}">${dieFace(d)}</b>` : `<b class="die roll ${cls}" ${attr}>?</b>`);
-  const comboTxt = c => { const Y = G.Dice.SYM[c.s]; return `${Y.n}×${c.n} ${Y.fx}`; };
+  const name = p => esc(p.merc?.name || '동료');
+  // 빙고 줄에 든 칸: '줄,칸' → 기호 (rows = 판의 줄 순서)
+  const lineHits = (rows, L) => { const m = new Map(), alive = new Set(G.Dice.party()); for (const x of L) { if (x.t === 'r') { const r = rows.indexOf(x.p); for (let c = 0; c < G.Dice.K.COLS; c++) m.set(r + ',' + c, x.s); } else rows.forEach((p, r) => { if (alive.has(p)) m.set(r + ',' + x.c, x.s); }); } return m; };
+  const lineName = x => (x.t === 'r' ? `${name(x.p)} 가로줄` : `${x.c + 1}열 세로줄`) + ` · ${G.Dice.SYM[x.s].n}`;
 
-  // 전투 시작. opts = { n: 탐사의 방 노드, mod, intro: Map(사람 → 걸어갈 자리), quiet: 운명판 창 없이 알아서, log(t), done(win, F), onRound(round), purse: { gold(), pay(n) } — 다시 굴리기 값을 낼 주머니 (없으면 공짜) }
+  // 전투 시작. opts = { n: 탐사의 방 노드, mod, intro: Map(사람 → 걸어갈 자리), quiet: 운명판 연출 없이 알아서, log(t), done(win, F), onRound(round), purse: { gold(), pay(n) } — 유지비 · 다시 굴리기 값을 낼 주머니 (없으면 공짜) }
   function start(rt, opts) {
     R = rt; R.turn = null; R.phase = 'explore'; G.S.w.fantasy.town = false;
-    G.Dice.party = () => R.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => R.turn?.cur || null; G.Dice.end();
     F = { log: () => {}, done: () => {}, purse: { gold: () => Infinity, pay: () => {} }, ...opts, acc: 0, round: 0, cur: null, t: 0, intro: opts.intro ? { t: 0, to: opts.intro } : null };
+    const D = G.Dice; D.party = () => R.party.filter(p => !p.dead && p.hp > 0); D.roster = () => R.party; D.cur = () => R.turn?.cur || null; D.purse = F.purse;
+    D.end(); D.sync(); // 층의 운명판은 그대로 — 새 동료의 줄만 굴린다 (판이 없으면 새로)
   }
   // 매 화면 틱. 전투 중이면 true
   function frame(dt) {
     if (!F) return false;
-    const T = R.turn; F.t += dt;
+    const T = R.turn, D = G.Dice; F.t += dt;
     // 걸어 들어오기 (그동안 전투 시계는 멈춘다)
     if (F.intro) {
       F.intro.t += dt; let left = 0;
@@ -27,21 +31,22 @@ const FIGHT = (() => {
       if (left && F.intro.t < 3) return true;
       G.Tactics.snap(R); F.intro = null;
     }
-    // 첫 라운드에 운명판(앞 3라운드)을 굴린다 (죽음의 주사위가 있으면 맡을 사람부터). 라운드마다 맨 앞 열을 쓰고, 새 열이 굴러 들어온다
     if (T && T.round !== F.round && F.onRound) F.onRound(T.round); // 쓰는 쪽의 라운드 일 (탐사: 전투 소리 · 증원)
-    if (T && T.round !== F.round) { F.round = T.round; if (!G.Dice.board && !$('dicebear')) { if (G.Dice.loadout.includes('doom') && !F.quiet) bearerPick(); else { G.Dice.newBoard(); if (F.quiet) G.Dice.board.ready = true; else boardTray(); } } }
-    if ($('dicebear') || $('dicetray') || (G.Dice.board && !G.Dice.board.ready)) return true; // 플레이어를 기다린다 (전투 중 밀기 창도)
-    if (T && G.Dice.board && G.Dice.st?.round !== T.round) {
-      const B = G.Dice.board, old = G.Dice.st && B.base < T.round ? B.cells.map(row => row[0]) : null; // 방금까지의 맨 앞 칸 (쓴 줄만 밀려 나간다 — B.fresh)
-      G.Dice.useRound(T.round); const c = G.Dice.fire(); if (c) F.log(`${T.round}라운드 — ${comboTxt(c)}: ${G.Dice.SYM[c.s].txt(c.n)}`);
-      if (F.quiet) roundFx(c); else stage(c, old);
+    if (T && T.round !== F.round) { F.round = T.round; if (D.loadout.includes('doom') && !D.board.asked && !F.quiet) { D.board.asked = true; bearerPick(); } } // 죽음의 주사위를 맡을 사람은 층에 한 번 묻는다
+    if ($('dicebear') || $('dicetray')) return true; // 플레이어를 기다린다 (운명판 창을 열면 전투가 멈춘다)
+    // 라운드 시작: 다 쓴 줄이 넘어가고(새로 굴리거나 붙잡거나) 빙고 효과가 켜진다. 판을 띄우는 것은 전투의 첫 라운드와 판이 바뀐 라운드뿐
+    if (T && D.st?.round !== T.round) {
+      D.useRound(T.round); const L = D.fire(), S = D.st;
+      for (const x of D.board.turned) F.log(x.kept ? `${x.p.merc?.name || '동료'} — 운명판의 줄을 붙잡았다 (금화 ${x.cost}).` : `${x.p.merc?.name || '동료'} — 운명판의 줄을 새로 굴렸다.`);
+      for (const x of S.first ? L : S.fx.news) F.log(`운명판 — ${lineName(x).replace(/<[^>]+>/g, '')}: ${D.lineTxt(x)}`);
+      if (!F.quiet && (S.first || D.board.turned.length || S.fx.news.length)) stage(); else roundFx();
     }
     if (F.stage) { stageStep(dt); return true; } // 라운드 연출 동안 전투는 멈춘다
-    // 차례가 바뀌었다: 앞 사람의 내성 뒤집기를 끝내고, 즉사 면을 받은 사람이면 쓰러진다
+    // 차례가 바뀌었다: 앞 사람의 내성 뒤집기를 끝내고, 즉사 면이 다음 칸인 사람이면 쓰러진다
     if (T && T.cur !== F.cur) {
-      if (F.cur) G.Dice.turnEnd(F.cur); F.cur = T.cur;
-      const r = T.cur && G.Dice.dieOf(T.cur);
-      if (r && r.special === 'death' && !T.cur.dead) { T.cur.hp = 0; T.cur.dead = true; T.cur.dying = false; F.log(`죽음의 주사위가 ${T.cur.merc?.name || '동료'}를 데려갔다.`); G.Fantasy.refreshEnts(R); }
+      if (F.cur) D.turnEnd(F.cur); F.cur = T.cur;
+      const r = T.cur && D.dieOf(T.cur);
+      if (r && r.special === 'death' && !T.cur.dead) { D.use(T.cur, 'death'); T.cur.hp = 0; T.cur.dead = true; T.cur.dying = false; F.log(`죽음의 주사위가 ${T.cur.merc?.name || '동료'}를 데려갔다.`); G.Fantasy.refreshEnts(R); }
     }
     F.acc += dt; let n = 0; while (F.acc >= 0.1 && n++ < 4) { G.tick(0.1); F.acc -= 0.1; }
     const foes = R.mons.filter(m => m.hp > 0), ps = R.party.filter(p => !p.dead && p.hp > 0);
@@ -50,12 +55,13 @@ const FIGHT = (() => {
     return true;
   }
   function end(win) {
-    stageEnd(); const f = F; F = null; G.Dice.end(); closeTray(); $('fatepush')?.remove(); $('fatebanners')?.remove(); R.turn = null; // 조합 효과도 여기서 끝
+    stageEnd(); const f = F; F = null; G.Dice.end(); closeTray(); $('fatebanners')?.remove(); R.turn = null; // 빙고 효과도 여기서 끝 (판은 남는다)
     document.body.dataset.fights = ((parseInt(document.body.dataset.fights, 10) || 0) + 1) + (win ? 'w' : 'l'); delete document.body.dataset.fight;
     f.done(win, f);
   }
 
-  // ── 라운드 시작 연출: 조합이 맞으면 위쪽에 띠 · 효과를 받은 사람마다 이펙트 (기호마다 다르게), 가로줄이 새로 맞으면 금빛 띠 + 후광, 영감은 반짝임 ──
+  // ── 빙고 연출: 줄이 맞으면 위쪽에 띠 · 효과를 받은 사람마다 이펙트 (기호마다 다르게), 가로줄은 금빛 띠 + 후광, 영감은 반짝임 ──
+  // 전투의 첫 라운드에는 맞아 있는 줄 모두, 그 뒤로는 새로 맞은 줄만
   const COMBO_FX = { atk: 'impacts/ground-slam', def: 'holy/divine-shield', arc: 'arcane/rune-circle', holy: 'holy/heal' }, ROW_FX = 'holy/halo', INSP_FX = 'pickups/collect-burst';
   const cast = (p, id) => G.fx(R, { k: 'cast', mode: 'me', id, who: p, x: p.x, y: p.y, pts: [[p.x, p.y]], t: 0.6 }); // 0.6초: 배속으로 한 화면에 여러 틱이 돌아도 그리기 전에 사라지지 않게 (재생은 한 번 — playCast)
   const chip = s => `<i class="sy s-${s}">${G.Dice.SYM[s].n}</i>`;
@@ -63,59 +69,53 @@ const FIGHT = (() => {
     let box = $('fatebanners'); if (!box) { box = document.createElement('div'); box.id = 'fatebanners'; $('stage').append(box); }
     const b = document.createElement('div'); b.className = 'fb ' + cls; b.innerHTML = html; box.append(b); setTimeout(() => b.remove(), 2300);
   }
-  function roundFx(c, staged = false) { // staged: 조합은 라운드 연출(stage)이 보여 준다 — 띠는 한 줄 · 영감만
-    const D = G.Dice, fx = D.st?.fx || {}, name = p => esc(p.merc?.name || '동료');
-    if (c && staged) { for (const p of D.party()) cast(p, COMBO_FX[c.s]); }
-    else if (c) { banner(`${chip(c.s).repeat(Math.min(4, c.n))} <b>${D.SYM[c.s].fx}</b> <span>${D.SYM[c.s].txt(c.n)}</span>`, `c-${c.s}${c.n >= 3 ? ' big' : ''}`); for (const p of D.party()) cast(p, COMBO_FX[c.s]); }
-    const got = new Set(fx.insp || []), rowed = new Set(); // 한 줄로 얻은 영감은 한 줄 띠에 같이 적는다 (띠가 쌓이지 않게)
-    for (const [p, s] of fx.rowsNew || []) { rowed.add(p); banner(`${chip(s).repeat(3)} <b>${name(p)} — 한 줄!</b> <span>${D.rowTxt(s)}${got.has(p) ? ' · ✦ 영감' : ''}</span>`, 'row'); cast(p, ROW_FX); }
-    for (const p of got) { if (!rowed.has(p)) banner(`✦ <b>영웅적 영감</b> <span>${name(p)}</span>`, 'insp'); cast(p, INSP_FX); }
+  function roundFx(staged = false) { // staged: 줄은 판 연출(stage)이 보여 준다 — 띠는 영감만
+    const D = G.Dice, S = D.st, fx = S?.fx; if (!fx) return;
+    const got = new Set(fx.insp), rowed = new Set(); // 가로줄로 얻은 영감은 그 띠에 같이 적는다 (띠가 쌓이지 않게)
+    for (const x of S.first ? fx.lines : fx.news) {
+      if (x.t === 'r') { rowed.add(x.p); if (!staged) banner(`${chip(x.s).repeat(D.K.COLS)} <b>${name(x.p)} — 한 줄!</b> <span>${D.rowTxt(x.s)}${got.has(x.p) ? ' · ✦ 영감' : ''}</span>`, 'row'); cast(x.p, ROW_FX); }
+      else { if (!staged) banner(`${chip(x.s).repeat(Math.min(4, x.n))} <b>${D.SYM[x.s].fx}</b> <span>${D.lineTxt(x)}</span>`, `c-${x.s}${x.n >= 3 ? ' big' : ''}`); for (const p of D.party()) cast(p, COMBO_FX[x.s]); }
+    }
+    for (const p of got) { if (staged || !rowed.has(p)) banner(`✦ <b>영웅적 영감</b> <span>${name(p)}</span>`, 'insp'); cast(p, INSP_FX); }
   }
-  // ── 라운드 연출 (슬롯 한 번 돌리듯): 쓴 열이 밀려 나가고 새 열이 굴러 들어온다 → 이번 열이 켜지고 조합이 맞은 칸이 빛난다 → 주사위가 각자의 카드로 날아간다 ──
+  // ── 판 연출 (슬롯 한 번 돌리듯): 판이 뜬다 → 새로 굴리는 줄이 굴러 멈춘다 → 맞은 줄이 빛난다 → 걷힌다 ──
   // 시각만 — 규칙(useRound · fire)은 이미 끝났다. 시간은 전투 시계(dt × 배속)로 센다
-  function stage(c, old) {
-    const D = G.Dice, B = D.board, alive = new Set(D.party()), el = document.createElement('div'); el.id = 'fatestage';
-    const adv = r => !!old && B.fresh?.has(r), any = !!old && B.rows.some((p, r) => adv(r)); // 주사위를 쓴 줄만 당겨지고 끝 칸이 새로 굴러 들어온다
-    el.innerHTML = `<div class="fs-hd">${B.base}라운드${old ? `<small>${any ? '쓴 주사위만 빠지고, 그 줄 끝에 새 주사위가 굴러 들어온다' : '아무도 주사위를 쓰지 않았다 — 그대로'}</small>` : ''}</div><div class="fs-row fs-cols"><span></span><span>지금</span><span>다음</span><span>그다음</span></div>` +
-      B.rows.map((p, r) => `<div class="fs-row${alive.has(p) ? '' : ' dead'}${adv(r) ? ' adv' : ''}" data-r="${r}"><span class="fs-n">${esc(p.merc?.name || '동료')}${old && !adv(r) && alive.has(p) ? '<small>안 썼다</small>' : ''}</span>` +
-      `${adv(r) ? `<span class="fs-cell out">${dieHTML(p, old[r])}</span>` : ''}${B.cells[r].map((d, k) => `<span class="fs-cell c${k}">${adv(r) && k === 2 ? '<b class="die spin">?</b>' : dieHTML(p, d)}</span>`).join('')}</div>`).join('') + '<div class="fs-cb"></div>';
+  function stage() {
+    const D = G.Dice, B = D.board, rows = D.rows(), alive = new Set(D.party()), tv = new Map(B.turned.map(x => [x.p, x])), el = document.createElement('div'); el.id = 'fatestage';
+    const spin = p => tv.has(p) && !tv.get(p).kept, any = rows.some(spin);
+    el.innerHTML = `<div class="fs-hd">운명판</div>` + rows.map((p, r) => { const L = D.line(p), x = tv.get(p);
+      return `<div class="fs-row${alive.has(p) ? '' : ' dead'}${spin(p) ? ' adv' : ''}" data-r="${r}"><span class="fs-n">${name(p)}${x ? `<small>${x.kept ? `붙잡았다 · 금화 ${x.cost}` : '새로 굴린다'}</small>` : ''}</span>` +
+        L.cells.map((d, c) => `<span class="fs-cell c${c}${c === L.at ? ' now' : c < L.at ? ' used' : ''}">${spin(p) ? '<b class="die spin">?</b>' : dieHTML(p, d)}</span>`).join('') + '</div>'; }).join('') + '<div class="fs-cb"></div>';
     $('stage').append(el); document.body.dataset.fstage = '1';
-    F.stage = { el, c, t: 0, ph: any ? 0 : 1, at: !old ? [0, 0.2, 1.1, 1.5] : !any ? [0, 0.35, 0.9, 1.2] : !c ? [0.7, 0.95, 1.4, 1.7] : [0.7, 1.0, 1.9, 2.3] }; // 조합이 없는 라운드는 짧게
+    F.stage = { el, rows, t: 0, ph: any ? 0 : 1, at: any ? [0.7, 1.0, 2.2] : D.st.fx.lines.length ? [0, 0.25, 1.6] : [0, 0.2, 1.1] }; // 맞은 줄이 없으면 짧게
   }
   function stageStep(dt) {
-    const S = F.stage, D = G.Dice, B = D.board, el = S.el; S.t += dt * G.Turn.speed(G.S.w.fantasy);
+    const S = F.stage, D = G.Dice, el = S.el; S.t += dt * G.Turn.speed(G.S.w.fantasy);
     if (S.ph === 0) { for (const d of el.querySelectorAll('.die.spin')) d.textContent = 1 + Math.floor(Math.random() * 20); }
-    if (S.ph === 0 && S.t >= S.at[0]) { S.ph = 1; B.rows.forEach((p, r) => { const cell = el.querySelector(`.fs-row.adv[data-r="${r}"] .c2`); if (cell) cell.innerHTML = dieHTML(p, B.cells[r][2], 'land') + '<i class="fs-new">새로</i>'; }); } // 새 주사위가 멈춘다 (당겨진 줄만)
-    if (S.ph === 1 && S.t >= S.at[1]) { S.ph = 2; el.classList.add('use'); const c = S.c, alive = new Set(D.party()); // 이번 열이 켜진다: 위에서 아래로 하나씩, 조합이 맞은 칸은 그 빛으로
-      B.rows.forEach((p, r) => { const d = el.querySelector(`.fs-row[data-r="${r}"] .c0 .die`); if (!d) return; d.style.animationDelay = `${r * 0.09}s`; d.classList.add('pop'); if (c && alive.has(p) && D.inCombo(B.cells[r][0], c.s)) d.classList.add('hit', 'h-' + c.s); });
-      const cb = el.querySelector('.fs-cb'); if (c) { cb.innerHTML = `<b class="h-${c.s}">${comboTxt(c)}</b> <span>${esc(D.SYM[c.s].txt(c.n))}</span>`; el.classList.add('win', 'w-' + c.s); } else cb.innerHTML = '<span>조합 없음</span>';
-      roundFx(c, true); }
-    if (S.ph === 2 && S.t >= S.at[2]) { S.ph = 3; el.classList.add('deal'); // 주사위가 각자의 카드로
-      B.rows.forEach((p, r) => { const d = el.querySelector(`.fs-row[data-r="${r}"] .c0 .die`), to = $('hud')?.querySelector(`.pm[data-i="${R.party.indexOf(p)}"]`); if (!d || !to || p.dead) return;
-        const a = d.getBoundingClientRect(), b = to.getBoundingClientRect(); d.style.animation = 'none'; d.style.transition = 'transform .32s cubic-bezier(.5,0,.8,.4), opacity .32s'; d.style.transform = `translate(${b.right - 22 - a.left - a.width / 2}px, ${b.top + 12 - a.top - a.height / 2}px) scale(.6)`; d.style.opacity = '.2'; }); }
-    if (S.t >= S.at[3]) stageEnd();
+    if (S.ph === 0 && S.t >= S.at[0]) { S.ph = 1; S.rows.forEach((p, r) => { const L = D.line(p); el.querySelectorAll(`.fs-row.adv[data-r="${r}"] .fs-cell`).forEach((cell, c) => { cell.innerHTML = dieHTML(p, L.cells[c], 'land'); cell.firstChild.style.animationDelay = `${c * 0.07}s`; }); }); } // 새 줄이 왼쪽부터 멈춘다
+    if (S.ph === 1 && S.t >= S.at[1]) { S.ph = 2; const L = D.st.fx.lines, hits = lineHits(S.rows, L); // 맞은 줄이 빛난다
+      for (const [k, s] of hits) { const [r, c] = k.split(','), d = el.querySelector(`.fs-row[data-r="${r}"] .c${c} .die`); if (d) d.classList.add('pop', 'hit', 'h-' + s); }
+      const cb = el.querySelector('.fs-cb'); cb.innerHTML = L.length ? L.map(x => `<div><b class="h-${x.s}">${lineName(x)}</b> <span>${esc(D.lineTxt(x))}</span></div>`).join('') : '<span>맞은 줄 없음</span>'; if (L.length) el.classList.add('win', 'w-' + L[0].s);
+      roundFx(true); }
+    if (S.t >= S.at[2]) stageEnd();
   }
   function stageEnd() { if (F?.stage) { F.stage.el.remove(); F.stage = null; } $('fatestage')?.remove(); delete document.body.dataset.fstage; }
-  // ── 죽음의 주사위를 맡을 사람 (판을 굴리기 전에) ──
+  // ── 죽음의 주사위를 맡을 사람 (층의 첫 전투에서) ──
   function bearerPick() {
-    const ps = G.Dice.party(), sug = G.Dice.suggestBearer(), box = document.createElement('div'); box.id = 'dicebear';
-    box.innerHTML = '<h4>죽음의 주사위를 누가 맡나</h4><p>20 · 20 · 20 · 20 · 즉사 — 즉사가 나오면 맡은 사람이 쓰러진다.</p>' + ps.map((p, i) => `<button data-i="${i}" class="${p === sug ? 'sug' : ''}">${esc(p.merc?.name || '동료')}${p === sug ? ' <small>추천</small>' : ''}</button>`).join('');
-    box.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; G.Dice.bearer = ps[+b.dataset.i]; box.remove(); G.Dice.newBoard(); boardTray(); };
+    const ps = G.Dice.party(), sug = G.Dice.bearer || G.Dice.suggestBearer(), box = document.createElement('div'); box.id = 'dicebear';
+    box.innerHTML = '<h4>죽음의 주사위를 누가 맡나</h4><p>20 · 20 · 20 · 20 · 즉사 — 즉사가 나오면 맡은 사람이 쓰러진다.</p>' + ps.map((p, i) => `<button data-i="${i}" class="${p === sug ? 'sug' : ''}">${name(p)}${p === sug ? ' <small>추천</small>' : ''}</button>`).join('');
+    box.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; G.Dice.setBearer(ps[+b.dataset.i]); box.remove(); };
     $('stage').append(box);
   }
-  // ── 운명판 창 ──
-  // 전투 시작(view = false): 열이 하나씩 굴러 멈춘다 → 칸을 골라 다시 굴리기(한 번) · 라운드 이름 둘을 눌러 순서 바꾸기 · 시작
-  // 전투 중(view = true, 「운명판」 단추): 전투가 멈추고 판을 본다 — 밀기(한 번): 한 사람의 다음 칸을 버리고 당긴다(끝자리는 새로 굴러 들어온다)
-  // 둘 다: ✦ 영웅적 영감이 있는 사람은 자기 칸 하나를 다시 굴릴 수 있다 (✦ → 칸)
+  // ── 운명판 창 (작은 판 · 「운명판」 단추를 누르면 — 전투 중이면 전투가 멈춘다) ──
+  // 줄마다: 쓴 칸은 흐리게 · 다음에 쓸 칸은 밝은 테 · 「붙잡기」(다 쓴 뒤 유지비를 내고 한 바퀴 더). 안 쓴 칸을 누르고 「다시 굴리기」(금화) · ✦ 영웅적 영감이 있으면 자기 칸 하나를 공짜로
   function closeTray() { const t = $('dicetray'); if (t) t.remove(); }
-  function boardTray(view = false) {
-    closeTray(); const B = G.Dice.board, D = G.Dice, sel = new Set(), box = document.createElement('div'); box.id = 'dicetray'; box.className = 'board'; let pickCol = null, pickRow = null, pickInsp = null;
+  function boardTray() {
+    closeTray(); const D = G.Dice, rows = D.rows(), cols = [...Array(D.K.COLS).keys()], box = document.createElement('div'); box.id = 'dicetray'; box.className = 'board'; let sel = null, pickInsp = null;
+    const log = t => (F ? F.log(t) : 0), now = () => performance.now();
     box.onpointerup = ev => ev.stopPropagation(); // 창 위를 누른 것은 바닥 누르기가 아니다
-    const name = p => esc(p.merc?.name || '동료'), cols = [0, 1, 2], now = () => performance.now();
-    // 굴러가는 칸: '줄,열' → 멈출 시각. 처음에는 열이 차례로 멈추고, 한 줄의 앞 두 칸이 같은 기호면 셋째 칸은 뜸을 들인다 (슬롯의 마지막 릴)
-    const spin = new Map(), landed = new Set(), rolling = (r, c) => spin.has(r + ',' + c), busy = () => spin.size > 0;
-    const tease = r => { const [a, b] = B.cells[r]; return !!a?.sym && !!b?.sym && (a.sym === b.sym || a.sym === 'wild' || b.sym === 'wild'); };
-    const roll = (keys, ms = 520) => { const t = now(); for (const k of keys) spin.set(k, t + ms); tick(); };
+    // 굴러가는 칸: '줄,칸' → 멈출 시각
+    const spin = new Map(), landed = new Set(), rolling = k => spin.has(k), busy = () => spin.size > 0;
     let timer = 0;
     const tick = () => { if (timer) return; timer = setInterval(() => {
       if (!box.isConnected) { clearInterval(timer); timer = 0; return; }
@@ -123,40 +123,32 @@ const FIGHT = (() => {
       if (stop) draw(); else for (const el of box.querySelectorAll('.die.roll')) el.textContent = 1 + Math.floor(Math.random() * 20);
       if (!busy()) { clearInterval(timer); timer = 0; }
     }, 70); };
-    box._rv = { get on() { return !!timer; } }; // closeTray가 지운다 (시계는 창이 사라지면 스스로 멈춘다)
+    const roll = (k, ms = 520) => { spin.set(k, now() + ms); tick(); };
     const draw = () => {
-      const cells = B.cells.map((row, r) => (r === pickRow ? D.pushed(row) : row)), alive = new Set(D.party());
-      const colOk = c => B.rows.every((p, r) => !rolling(r, c)), rowOk = r => cols.every(c => !rolling(r, c));
-      const best = cols.map(c => { if (!colOk(c)) return null; const cs = D.combos(B.rows.map((p, r) => (alive.has(p) ? cells[r][c] : null))), s = D.pickCombo(cs); return s ? cs.find(x => x.s === s) : null; });
-      const cost = D.rerollCost(sel.size), gold = F.purse.gold(), push = view && D.canPush(), idle = !busy();
-      box.innerHTML = `<div class="hd">운명판 <small>${pickInsp != null ? `✦ 영웅적 영감 — ${name(B.rows[pickInsp])}의 칸 하나를 골라 다시 굴린다` : view ? (push ? '밀기 ▸ 한 사람의 다음 칸을 버리고 당긴다 (끝자리는 새로 굴러 들어온다). 전투에 한 번' : '라운드가 끝날 때마다 새 열이 굴러 들어온다') : '칸 → 다시 굴리기 (첫 칸 공짜, 더 고르면 금화) · 라운드 둘 → 순서 바꾸기 · 라운드마다 새 열이 붙는다'}</small></div>` +
-        `<table><tr><th></th>${cols.map(c => `<th><button class="col${pickCol === c || (view && c === 0) ? ' on' : ''}" data-c="${c}"${view || !idle ? ' disabled' : ''}>${view && c === 0 ? '지금' : `${B.base + c}라운드`}</button></th>`).join('')}</tr>` +
-        B.rows.map((p, r) => { const rs = rowOk(r) ? D.rowCombo(cells[r]) : null, tags = D.tags(p).filter(x => x[0] !== '✦'), can = idle && cols.some(c => D.canInsp(r, c));
-          return `<tr class="${rs ? 'rowfx' : ''}${alive.has(p) ? '' : ' dead'}"><th>${push && alive.has(p) ? `<button class="push${pickRow === r ? ' on' : ''}" data-r="${r}">${name(p)} ▸</button>` : name(p)}` +
-            `${can ? `<button class="insp${pickInsp === r ? ' on' : ''}" data-ir="${r}" title="영웅적 영감: 칸 하나를 다시 굴린다">✦</button>` : ''}` +
-            `${rs ? `<small>${D.SYM[rs].n} 한 줄 · ${D.rowTxt(rs)}</small>` : tags.length ? `<small class="tg">${tags.map(esc).join(' · ')}</small>` : ''}</th>` +
-            `${cols.map(c => { const k = r + ',' + c, d = rolling(r, c) ? null : cells[r][c], hit = d && best[c] && alive.has(p) && D.inCombo(d, best[c].s);
-              return `<td>${dieHTML(p, d, `${sel.has(k) ? 'sel' : ''}${pickInsp === r && D.canInsp(r, c) ? ' can' : ''}${landed.has(k) ? ' land' : ''}${hit ? ` hit h-${best[c].s}` : ''}${!d && c === 2 && rolling(r, c) && !rolling(r, 1) && tease(r) ? ' tease' : ''}`, `data-rc="${k}"`)}</td>`; }).join('')}</tr>`; }).join('') +
-        `<tr class="cb"><th>조합</th>${cols.map(c => `<td>${!colOk(c) ? '' : best[c] ? `<b class="cbhit h-${best[c].s}">${comboTxt(best[c])}</b>` : '—'}</td>`).join('')}</tr></table>` +
-        (view ? `<div class="bar">${push ? `<button class="pp"${pickRow == null ? ' disabled' : ''}>민다</button>` : ''}<button class="go">닫기</button></div>`
-          : `<div class="bar"><button class="rr"${B.rerolled || !sel.size || cost > gold || !idle ? ' disabled' : ''}>다시 굴리기${cost ? ` · 금화 ${cost}${cost > gold ? ' (모자람)' : ''}` : ''}</button><button class="go">시작</button></div>`);
+      const alive = new Set(D.party()), L = busy() ? [] : D.bingo(), hits = lineHits(rows, L), gold = D.purse.gold(), idle = !busy(), cost = D.nextCost();
+      box.innerHTML = `<div class="hd">운명판 <small>${pickInsp != null ? `✦ 영웅적 영감 — ${name(rows[pickInsp])}의 안 쓴 칸 하나를 골라 다시 굴린다` : '각자 자기 줄을 앞에서부터 쓴다 · 다 쓰면 그 줄을 새로 굴린다 · 안 쓴 칸을 눌러 다시 굴리기'}</small></div><table>` +
+        rows.map((p, r) => { const Ln = D.line(p), rs = L.find(x => x.t === 'r' && x.p === p), tags = D.tags(p).filter(x => x[0] !== '✦'), can = idle && cols.some(c => D.canInsp(p, c));
+          return `<tr class="${rs ? 'rowfx' : ''}${alive.has(p) ? '' : ' dead'}"><th>${name(p)}${can ? `<button class="insp${pickInsp === r ? ' on' : ''}" data-ir="${r}" title="영웅적 영감: 칸 하나를 다시 굴린다">✦</button>` : ''}` +
+            `${rs ? `<small>${D.SYM[rs.s].n} 한 줄 · ${D.rowTxt(rs.s)}</small>` : tags.length ? `<small class="tg">${tags.map(esc).join(' · ')}</small>` : ''}</th>` +
+            cols.map(c => { const k = r + ',' + c, d = rolling(k) ? null : Ln.cells[c], s = d && hits.get(k);
+              return `<td class="${c === Ln.at ? 'now' : c < Ln.at ? 'used' : ''}">${dieHTML(p, d, `${sel === k ? 'sel' : ''}${pickInsp === r && D.canInsp(p, c) ? ' can' : ''}${landed.has(k) ? ' land' : ''}${s ? ` hit h-${s}` : ''}`, `data-rc="${k}"`)}</td>`; }).join('') +
+            `<td class="hold"><button class="hb${Ln.hold ? ' on' : ''}" data-h="${r}"${alive.has(p) ? '' : ' disabled'} title="이 줄을 다 쓴 뒤 유지비를 내고 한 바퀴 더 쓴다">${Ln.hold ? '붙잡음' : '붙잡기'}<small>금화 ${D.holdCost(Ln)}</small></button></td></tr>`; }).join('') +
+        `<tr class="cb"><th>세로줄</th>${cols.map(c => { const x = L.find(y => y.t === 'c' && y.c === c); return `<td>${x ? `<b class="cbhit h-${x.s}">${D.SYM[x.s].n} ${D.SYM[x.s].fx}</b>` : '—'}</td>`; }).join('')}<td></td></tr></table>` +
+        `<div class="fx">${L.length ? L.map(x => `<div><b class="h-${x.s}">${lineName(x)}</b> ${esc(D.lineTxt(x))}</div>`).join('') : '<div>맞은 줄 없음 — 가로 네 칸이나 세로 한 줄이 모두 같은 기호면, 그 줄이 판에 있는 동안 효과를 받는다</div>'}</div>` +
+        `<div class="bar"><button class="rr"${!sel || cost > gold || !idle ? ' disabled' : ''}>다시 굴리기${cost ? ` · 금화 ${cost}${cost > gold ? ' (모자람)' : ''}` : ' · 공짜'}</button><button class="go">닫기</button></div>`;
       landed.clear();
     };
     box.onclick = ev => {
-      const t = ev.target.closest('[data-rc],[data-c],[data-r],[data-ir],.rr,.pp,.go'); if (!t || t.disabled) return;
-      if (t.classList.contains('go')) { B.ready = true; closeTray(); return; }
+      const t = ev.target.closest('[data-rc],[data-h],[data-ir],.rr,.go'); if (!t || t.disabled) return;
+      if (t.classList.contains('go')) { closeTray(); return; }
       if (busy()) return;
-      if (t.dataset.ir != null) { pickInsp = pickInsp === +t.dataset.ir ? null : +t.dataset.ir; pickRow = null; }
-      else if (pickInsp != null) { if (t.dataset.rc == null) return; const [r, c] = t.dataset.rc.split(',').map(Number); if (r !== pickInsp || !D.inspReroll(r, c)) return; F.log(`영웅적 영감 — ${B.rows[r].merc?.name || '동료'}의 칸을 다시 굴렸다.`); pickInsp = null; sel.delete(r + ',' + c); roll([r + ',' + c]); }
-      else if (t.dataset.r != null) pickRow = pickRow === +t.dataset.r ? null : +t.dataset.r;
-      else if (t.classList.contains('pp')) { const p = B.rows[pickRow], r = pickRow; if (D.pushRow(r)) { F.log(`운명판 밀기 — ${p.merc?.name || '동료'}의 다음 칸을 버렸다.`); roll([r + ',2'], 700); } pickRow = null; }
-      else if (view) return;
-      else if (t.dataset.rc != null) { if (B.rerolled) return; const k = t.dataset.rc; sel.has(k) ? sel.delete(k) : sel.add(k); }
-      else if (t.dataset.c != null) { const c = +t.dataset.c; if (pickCol == null) pickCol = c; else { D.swapCols(pickCol, c); pickCol = null; } }
-      else if (t.classList.contains('rr')) { const keys = [...sel], res = D.rerollCells(keys.map(k => k.split(',').map(Number)), Math.random, F.purse.gold()); if (res) { if (res.cost) { F.purse.pay(res.cost); F.log(`운명판 다시 굴리기 — 금화 ${res.cost}.`); } sel.clear(); roll(keys); } }
+      if (t.dataset.ir != null) { pickInsp = pickInsp === +t.dataset.ir ? null : +t.dataset.ir; sel = null; }
+      else if (pickInsp != null) { if (t.dataset.rc == null) return; const [r, c] = t.dataset.rc.split(',').map(Number); if (r !== pickInsp || !D.inspReroll(rows[r], c)) return; log(`영웅적 영감 — ${rows[r].merc?.name || '동료'}의 칸을 다시 굴렸다.`); pickInsp = null; roll(r + ',' + c); }
+      else if (t.dataset.h != null) D.setHold(rows[+t.dataset.h]);
+      else if (t.dataset.rc != null) { const k = t.dataset.rc, [r, c] = k.split(',').map(Number); if (!D.canReroll(rows[r], c)) return; sel = sel === k ? null : k; }
+      else if (t.classList.contains('rr')) { const [r, c] = sel.split(',').map(Number), res = D.rerollCell(rows[r], c); if (res) { log(`운명판 다시 굴리기 — ${rows[r].merc?.name || '동료'}의 칸${res.cost ? ` (금화 ${res.cost})` : ''}.`); roll(sel); } sel = null; }
       draw();
     };
-    if (!view) { const t = now(); B.rows.forEach((p, r) => cols.forEach(c => spin.set(r + ',' + c, t + 420 * (c + 1) + (c === 2 && tease(r) ? 700 : 0)))); tick(); }
     draw(); $('stage').append(box);
   }
   // ── 차례 띠 (위): 이번 라운드의 선제권 순서 — 지금 차례는 밝게, 쓰러진 쪽은 빠진다. 그 아래 한 줄: 지금 누가 무엇을 누구에게 (굴림 · 결과) ──
@@ -195,38 +187,54 @@ const FIGHT = (() => {
     el.lastChild.innerHTML = act; el.lastChild.className = 'ts-act' + (F.act?.foe && act === F.act.html ? ' foe' : '');
     el.querySelector('.ts-c.cur')?.scrollIntoView({ inline: 'center', block: 'nearest' });
   }
-  // ── 싸우는 동안 작은 운명판 (왼쪽 아래): 맨 앞 열이 이번 라운드(쓴 칸은 흐리게), 새로 굴러 들어온 끝 열은 잠깐 구른다 ──
-  function hud() {
-    const B = G.Dice.board, S = G.Dice.st, D = G.Dice; let el = $('fatehud');
-    pushBtn(); strip();
-    if (!B || !B.ready || !F) { if (el) el.remove(); return; }
-    if (!el) { el = document.createElement('div'); el.id = 'fatehud'; el.onpointerup = ev => ev.stopPropagation(); el.onclick = () => { if (F && !F.quiet && !$('dicetray')) boardTray(true); }; $('stage').append(el); }
-    const cs = S ? D.combos().find(x => x.s === S.combo) : null, bon = B.rows.map(p => D.bonus(p).join(''));
-    const k = `${B.base}|${S ? S.used.size : 0}|${S?.combo}|${B.rows.filter(p => p.dead).length}|${B.pushes || 0}|${bon}|${B.rows.map(p => +D.insp(p)).join('')}|${B.cells.map(row => row.map(d => d.value).join()).join(';')}`;
-    if (el.dataset.k === k) return; const fresh = el.dataset.base && +el.dataset.base !== B.base && B.base > 1; el.dataset.k = k; el.dataset.base = B.base;
-    el.innerHTML = `<table>${B.rows.map((p, r) => `<tr class="${p.dead ? 'dead' : ''}${S?.rows?.has(p) ? ' rowfx' : ''}"><th>${D.insp(p) ? '<i class="ins">✦</i>' : ''}${esc(p.merc?.name || '동료')}</th>${B.cells[r].map((d, c) => `<td class="${c === 0 ? 'now' : ''}${c === 0 && S && S.used.has(p) ? ' used' : ''}${fresh && c === 2 && B.fresh?.has(r) ? ' new' : ''}">${dieHTML(p, d, c === 0 && cs && !p.dead && D.inCombo(d, cs.s) ? `hit h-${cs.s}` : '')}${c === 0 && bon[r] ? `<i class="bn">${bon[r]}</i>` : ''}</td>`).join('')}</tr>`).join('')}</table>` +
-      `<div class="cb">${S ? `${S.round}라운드` : ''}${cs ? ` · ${comboTxt(cs)}` : ''}</div>`;
+  // ── 작은 운명판 (왼쪽 아래, 탐험 중에도): 줄마다 쓴 칸은 흐리게 · 다음에 쓸 칸은 밝게 · 맞은 줄은 그 빛으로. 누르면 운명판 창 ──
+  // 칸을 쓰면(G.Dice.board.uses) 그 칸에서 주사위가 빠져나와 그 사람 머리 위로 날아간다
+  const lineSeen = new Map(); // 사람 → 지난번에 그린 줄 (새로 굴린 줄은 굴러 들어온다)
+  function fly(u, r) {
+    const src = $('fatehud')?.querySelector(`tr:nth-child(${r + 1}) td:nth-of-type(${u.c + 1}) .die`), fl = $('floats'); if (!src || !fl || u.d.special) return;
+    const el = document.createElement('div'); el.className = 'fatefly'; el.innerHTML = dieHTML(u.p, u.d) + (u.how === 'save' ? '<i>내성</i>' : ''); fl.append(el);
+    UI.place(el, u.p._dx ?? u.p.x, u.p._dy ?? u.p.y, 2.7); // 끝자리: 머리 위
+    const a = src.getBoundingClientRect(), die = el.firstChild, b = die.getBoundingClientRect();
+    die.style.transform = `translate(${a.left + a.width / 2 - b.left - b.width / 2}px, ${a.top + a.height / 2 - b.top - b.height / 2}px) scale(.6)`;
+    requestAnimationFrame(() => { die.style.transition = 'transform .34s cubic-bezier(.3,.9,.4,1)'; die.style.transform = 'none'; });
+    setTimeout(() => el.remove(), 1200);
   }
-  // 전투 중 「운명판」 단추 (오른쪽 아래): 누르면 전투가 멈추고 판이 열린다 — 앞으로 올 열을 보고, 밀기(한 번) · 영감을 쓴다
+  function hud() {
+    const D = G.Dice, B = D.board; let el = $('fatehud');
+    pushBtn(); strip();
+    const rows = B ? D.rows() : [];
+    if (!rows.length) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement('div'); el.id = 'fatehud'; el.onpointerup = ev => ev.stopPropagation(); el.onclick = () => { if (!(F && F.quiet) && !$('dicetray')) boardTray(); }; $('stage').append(el); }
+    for (const u of B.uses.splice(0)) if (!(F && F.quiet) && !document.body.dataset.fstage) fly(u, rows.indexOf(u.p)); // 그리기 전에 — 빠져나오는 자리는 지금 화면의 그 칸
+    const L = D.bingo(), hits = lineHits(rows, L), bon = rows.map(p => (F ? D.bonus(p).join('') : ''));
+    const k = rows.map((p, r) => { const Ln = D.line(p); return `${Ln.at}${Ln.hold ? 'h' : ''}${p.dead ? 'x' : ''}${D.insp(p) ? 'i' : ''}${bon[r]}:${Ln.cells.map(d => d.value ?? '☠').join()}`; }).join(';') + '|' + L.length;
+    if (el.dataset.k === k) return; el.dataset.k = k;
+    el.innerHTML = `<table>${rows.map((p, r) => { const Ln = D.line(p), fresh = lineSeen.has(p) && lineSeen.get(p) !== Ln; lineSeen.set(p, Ln);
+      return `<tr class="${p.dead ? 'dead' : ''}${L.some(x => x.t === 'r' && x.p === p) ? ' rowfx' : ''}"><th>${D.insp(p) ? '<i class="ins">✦</i>' : ''}${name(p)}${Ln.hold ? '<i class="hold" title="붙잡아 둔 줄">◆</i>' : ''}</th>` +
+        Ln.cells.map((d, c) => { const s = hits.get(r + ',' + c); return `<td class="${c === Ln.at ? 'now' : c < Ln.at ? 'used' : ''}${fresh ? ' new' : ''}">${dieHTML(p, d, s ? `hit h-${s}` : '')}${c === Ln.at && bon[r] ? `<i class="bn">${bon[r]}</i>` : ''}</td>`; }).join('') + '</tr>'; }).join('')}</table>` +
+      (L.length ? `<div class="cb">${L.map(x => `<span class="h-${x.s}">${D.SYM[x.s].n} ${x.t === 'r' ? '한 줄' : D.SYM[x.s].fx}</span>`).join(' · ')}</div>` : '');
+  }
+  // 「운명판」 단추 (오른쪽 아래): 누르면 판이 열린다 — 붙잡기 · 다시 굴리기 · 영감
   function pushBtn() {
-    let b = $('fatepush'); const B = G.Dice.board, on = !!F && !F.quiet && !!B && B.ready && !$('dicetray');
+    let b = $('fatepush'); const D = G.Dice, rows = D.board ? D.rows() : [], on = rows.length > 0 && !(F && F.quiet) && !$('dicetray');
     if (!on) { if (b) b.remove(); return; }
-    const txt = `운명판${G.Dice.canPush() ? ' · 밀기' : ''}${B.rows.some(p => G.Dice.insp(p) && !p.dead) ? ' ✦' : ''}`;
-    if (!b) { b = document.createElement('button'); b.id = 'fatepush'; b.title = '운명판을 본다 (전투가 멈춘다)'; b.onpointerup = ev => ev.stopPropagation(); b.onclick = () => { b.remove(); boardTray(true); }; $('stage').append(b); }
+    const txt = `운명판${rows.some(p => D.insp(p) && !p.dead) ? ' ✦' : ''}`;
+    if (!b) { b = document.createElement('button'); b.id = 'fatepush'; b.title = '운명판을 본다 (전투 중이면 전투가 멈춘다)'; b.onpointerup = ev => ev.stopPropagation(); b.onclick = () => { b.remove(); boardTray(); }; $('stage').append(b); }
     if (b.textContent !== txt) b.textContent = txt;
   }
-  // ── 원정 전: 특수 주사위 고르기 (2개까지). ?dice=gamble,doom 이면 창 없이 그대로, ?auto면 건너뛴다 ──
+  // ── 원정 전: 특수 주사위 고르기 (2개까지). ?dice=gamble,doom 이면 창 없이 그대로, ?auto면 건너뛴다. 고르면 판을 다시 굴린다 (특수 주사위가 줄에 들어간다) ──
   function dicePick(open = null, need = {}) { // open: 소문으로 열린 특수 주사위 (null이면 모두) · need: 잠긴 것이 열리는 소문
-    if (q.get('dice') != null) { G.Dice.loadout = q.get('dice').split(',').filter(k => G.Dice.SPECIAL.includes(k)).slice(0, 2); return; }
+    const take = list => { G.Dice.loadout = list; if (G.Dice.board) G.Dice.newBoard(); };
+    if (q.get('dice') != null) return take(q.get('dice').split(',').filter(k => G.Dice.SPECIAL.includes(k)).slice(0, 2));
     if (q.get('auto')) return;
     const box = document.createElement('div'), sel = []; box.id = 'dicepick';
     const SP = G.Dice.SPECIAL, faces = k => (G.Dice.KINDS[k].faces ? G.Dice.KINDS[k].faces.map(f => (f === 'death' ? '☠' : f)).join(' · ') : k === 'twin' ? 'd20 두 번 중 높은 쪽' : '');
     const locked = k => open && (k === 'twin' || k === 'doom') && !open.includes(k);
-    const draw = () => { box.innerHTML = `<h3>특수 주사위</h3><p>둘까지 골라 간다. 전투마다 운명판의 칸 하나씩에 들어간다.</p>${SP.map(k => locked(k) ? `<button disabled><b class="die">?</b><span>잠김<small>소문 ${need[k] || '?'}에 열린다</small></span></button>` : `<button data-k="${k}" class="${sel.includes(k) ? 'on' : ''}"><b class="die k-${k}">${k === 'doom' ? '☠' : k === 'gamble' ? '20' : k === 'steady' ? '10' : '↑'}</b><span>${esc(G.Dice.KINDS[k].n)}<small>${esc(faces(k))}</small></span></button>`).join('')}<button class="go">출발${sel.length ? ` (${sel.length})` : ' (보통 주사위만)'}</button>`; };
-    box.onclick = ev => { const b = ev.target.closest('button'); if (!b || b.disabled) return; if (b.classList.contains('go')) { G.Dice.loadout = sel.slice(); box.remove(); return; } const k = b.dataset.k, i = sel.indexOf(k); if (i >= 0) sel.splice(i, 1); else if (sel.length < 2) sel.push(k); draw(); };
+    const draw = () => { box.innerHTML = `<h3>특수 주사위</h3><p>둘까지 골라 간다. 운명판의 줄을 굴릴 때마다 칸 하나씩에 들어간다.</p>${SP.map(k => locked(k) ? `<button disabled><b class="die">?</b><span>잠김<small>소문 ${need[k] || '?'}에 열린다</small></span></button>` : `<button data-k="${k}" class="${sel.includes(k) ? 'on' : ''}"><b class="die k-${k}">${k === 'doom' ? '☠' : k === 'gamble' ? '20' : k === 'steady' ? '10' : '↑'}</b><span>${esc(G.Dice.KINDS[k].n)}<small>${esc(faces(k))}</small></span></button>`).join('')}<button class="go">출발${sel.length ? ` (${sel.length})` : ' (보통 주사위만)'}</button>`; };
+    box.onclick = ev => { const b = ev.target.closest('button'); if (!b || b.disabled) return; if (b.classList.contains('go')) { take(sel.slice()); box.remove(); return; } const k = b.dataset.k, i = sel.indexOf(k); if (i >= 0) sel.splice(i, 1); else if (sel.length < 2) sel.push(k); draw(); };
     draw(); $('stage').append(box);
   }
   // 연계 띠: 누가 깐 것을 누가 터뜨렸나 (사건 줄의 'link' — bridge.js). 같은 차례에 같은 연계는 한 번만
   function link(e) { if (!F) return; const who = e.who.merc?.name || '동료', k = `${G.Turn.no()}|${who}|${e.set}|${e.use}`; if (F.linkK === k) return; F.linkK = k; banner(`<b>연계</b> ${esc(e.set)} → <b>${esc(e.use)}</b> <span>${esc(who)}</span>`, 'link'); }
-  return { start, frame, hud, dicePick, link, get on() { return !!F; } };
+  return { start, frame, hud, dicePick, link, board: boardTray, die: dieHTML, get on() { return !!F; } };
 })();

@@ -31,8 +31,10 @@ RUN.pGroup = ps => {
   let dp = [1]; for (const p of ps) { const n = new Array(dp.length + 1).fill(0); dp.forEach((v, k) => { n[k] += v * (1 - p); n[k + 1] += v * p; }); dp = n; }
   const need = Math.ceil(ps.length / 2); return dp.slice(need).reduce((a, b) => a + b, 0);
 };
-RUN.check = (rng, bonus, dc, adv = 0, guid = false) => {
-  const r1 = RUN.d(rng, 20), r2 = adv ? RUN.d(rng, 20) : r1, r = adv > 0 ? Math.max(r1, r2) : adv < 0 ? Math.min(r1, r2) : r1;
+// fate: 미리 정해진 눈 (운명판의 칸 — RUN.fate) · 없으면 굴린다. 이점 · 불리의 다른 한 번은 늘 굴린다
+RUN.fate = null; // 화면 쪽이 채운다: m(파티원) → 그 사람의 다음 칸 눈 | null
+RUN.check = (rng, bonus, dc, adv = 0, guid = false, fate = null) => {
+  const r1 = fate ?? RUN.d(rng, 20), r2 = adv ? RUN.d(rng, 20) : r1, r = adv > 0 ? Math.max(r1, r2) : adv < 0 ? Math.min(r1, r2) : r1;
   const g = guid ? RUN.d(rng, 4) : 0, tot = r + bonus + g;
   return { ok: tot >= dc, r, g, tot, bonus, dc };
 };

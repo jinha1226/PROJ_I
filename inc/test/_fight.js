@@ -21,20 +21,19 @@ function boot(seed) {
 }
 function spawn(G, r, names) { names.forEach((n, i) => G.Fantasy.spawnMon(r, 1, { n, ...G.D.F.mon[n] }, 11, 4 + i * 2, false, { aggro: true, spotted: true, major: true })); G.Fantasy.refreshEnts(r); if (G.Sight?.update) G.Sight.update(r); }
 function run(G, r, { dice = null, maxT = 400 } = {}) {
-  let round = 0, cur = null, used = 0, boards = 0; const cols = [];
-  if (dice) { G.Dice.loadout = dice; G.Dice.party = () => r.party.filter(p => !p.dead && p.hp > 0); G.Dice.cur = () => r.turn?.cur || null; G.Dice.end(); }
+  let round = 0, cur = null, used = 0;
+  if (dice) { const D = G.Dice; D.loadout = dice; D.party = () => r.party.filter(p => !p.dead && p.hp > 0); D.roster = () => r.party; D.cur = () => r.turn?.cur || null; D.newBoard(); } // 층에 들어설 때처럼 판을 굴려 둔다
   const d20 = G.Dnd.d20; if (dice) G.Dnd.d20 = function (adv) { const S = G.Dice.st, before = S ? S.used.size : 0; const v = d20.call(this, adv); if (S && S.used.size > before) used++; return v; };
   for (let k = 0; k < maxT * 10; k++) {
     const T = r.turn;
-    // 앱과 같게: 첫 라운드에 운명판을 한 번, 라운드마다 그 열
-    if (dice && T && !G.Dice.board) { G.Dice.newBoard(); G.Dice.board.ready = true; boards++; }
-    if (dice && T && T.round !== round) { round = T.round; G.Dice.useRound(T.round); G.Dice.fire(); cols.push(G.Dice.st.col); }
+    // 앱과 같게: 라운드마다 다 쓴 줄을 넘기고 빙고 효과를 켠다
+    if (dice && T && T.round !== round) { round = T.round; G.Dice.useRound(T.round); G.Dice.fire(); }
     if (dice && T && T.cur !== cur) { if (cur) G.Dice.turnEnd(cur); cur = T.cur; }
     G.tick(0.1);
     const foes = r.mons.filter(m => m.hp > 0), ps = r.party.filter(p => !p.dead && p.hp > 0);
-    if (!foes.length || !ps.length) return { win: !!ps.length && !foes.length, t: k / 10, rounds: r.turn?.round || round, used, maxRound: round, boards, cols };
+    if (!foes.length || !ps.length) { if (dice) G.Dice.end(); return { win: !!ps.length && !foes.length, t: k / 10, rounds: r.turn?.round || round, used, maxRound: round }; }
   }
-  return { win: false, t: maxT, rounds: r.turn?.round || 0, used, timeout: true, boards, cols };
+  return { win: false, t: maxT, rounds: r.turn?.round || 0, used, timeout: true };
 }
 
 module.exports = { boot, spawn, run };

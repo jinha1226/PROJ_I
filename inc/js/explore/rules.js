@@ -16,7 +16,11 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
   const node = (st, id) => st.map.nodes[id];
   const mkCheck = (st, sk, dc, who, extra = {}) => ({ skill: sk, bonus: who.bonus, dc, guid: extra.guid ?? guid(st), adv: extra.adv || 0 });
   const pOf = c => RUN.pCheck(c.bonus, c.dc, c.adv, c.guid);
-  const roll = (st, c, whoName, what) => { const r = RUN.check(st.rng, c.bonus, c.dc, c.adv, c.guid); say(st, `${whoName} ${what}: ${RUN.fmtRoll(r)} — ${r.ok ? '성공' : '실패'}`, 'roll'); st.lastCheck = { ...r, who: whoName, skill: what, at: st.log.length }; return r; }; // lastCheck: 화면 쪽이 굴림 연출에 쓴다
+  // 판정할 수 있는 사람들 (화면이 「누가 할까」를 물을 때): 그 기술이 표에 있는 판정만 — 도구 · 직업으로 묶인 판정은 빈 목록
+  RUN.checkers = (st, c) => (c ? alive(st).filter(m => typeof C[m.cls].sk[c.skill] === 'number').map(m => ({ m, bonus: C[m.cls].sk[c.skill] })) : []);
+  // st.by: 화면이 고른 사람 (한 번 쓰고 지운다) — 그 사람의 보정과 운명판 칸으로 굴린다. 없으면 규칙이 고른 사람(whoName)
+  const roll = (st, c, whoName, what) => { const by = RUN.checkers(st, c).find(x => x.m === st.by); st.by = null; if (by) { c = { ...c, bonus: by.bonus }; whoName = by.m.n; }
+    const m = RUN.fate && alive(st).find(x => x.n === whoName), r = RUN.check(st.rng, c.bonus, c.dc, c.adv, c.guid, m ? RUN.fate(m) : null); say(st, `${whoName} ${what}: ${RUN.fmtRoll(r)} — ${r.ok ? '성공' : '실패'}`, 'roll'); st.lastCheck = { ...r, who: whoName, skill: what, at: st.log.length }; return r; }; // lastCheck: 화면 쪽이 굴림 연출에 쓴다
 
   // 정보 단계를 올리고 지도 여백에 메모를 남긴다 (4-4)
   function reveal(st, n, lv) {

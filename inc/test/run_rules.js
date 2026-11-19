@@ -15,6 +15,16 @@ t('인도는 오른다', R.pCheck(5, 15, 0, true) > R.pCheck(5, 15));
 t('능력 판정은 20 자동 성공이 없다', R.pCheck(0, 25) === 0);
 t('무리 판정: 둘 중 하나', Math.abs(R.pGroup([0.5, 0.5]) - 0.75) < 1e-9);
 
+// ── 누가 할까: 화면이 고른 사람(st.by)의 보정과 운명판 칸(RUN.fate)으로 굴린다 ──
+{
+  const st = R.newRun(7, ['fighter', 'rogue', 'wizard'], 1), act = () => R.roomActs(st).find(a => a.id === 'search'), a0 = act(), cs = R.checkers(st, a0.check), low = cs.slice().sort((x, y) => x.bonus - y.bonus)[0];
+  t('판정할 수 있는 사람: 살아 있는 모두 (기술 판정)', cs.length === 3 && R.checkers(st, { skill: '도둑 도구' }).length === 0);
+  t('안 고르면 규칙이 고른 사람 (기술이 가장 좋은 사람)', (a0.run(), st.lastCheck.who === a0.who));
+  st.here.search = false; R.fate = m => (m === low.m ? 20 : 1); st.by = low.m; act().run();
+  t('고른 사람의 이름 · 보정 · 그 사람의 칸으로 굴린다', st.lastCheck.who === low.m.n && st.lastCheck.bonus === low.bonus && st.lastCheck.r === 20 && st.by === null, JSON.stringify(st.lastCheck));
+  R.fate = null;
+}
+
 // ── 지도 불변식 ──
 const N = +(process.argv[2] || 300);
 for (let s = 1; s <= N; s++) {

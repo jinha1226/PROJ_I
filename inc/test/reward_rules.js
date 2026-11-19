@@ -86,12 +86,12 @@ const seq = a => { let i = 0; return () => a[i++ % a.length]; };
 }
 // 6) 규칙 카드가 운명판에 걸린다
 {
-  const { G, r } = boot(6), D = G.Dice; D.rules.clear(); D.party = () => r.party.filter(p => !p.dead); D.loadout = [];
-  D.newBoard(() => 0.5); t('기본: 다시 굴리기는 한 번', D.rerollCells([[0, 0]]) && !D.rerollCells([[0, 1]]));
-  D.rules.add('reroll2'); D.newBoard(() => 0.5); t('두 번 굴리기: 두 번까지', D.rerollCells([[0, 0]]) && D.rerollCells([[0, 1]]) && !D.rerollCells([[0, 2]]));
+  const { G } = boot(6), D = G.Dice; D.rules.clear();
+  t('기본: 한 칸 다시 굴리기는 층마다 첫 번만 공짜', D.rerollCost(1) === 0 && D.rerollCost(2) === 5);
+  D.rules.add('reroll2'); t('두 번 굴리기: 두 번까지 공짜', D.rerollCost(2) === 0 && D.rerollCost(3) === 5);
   t('별의 면 없이는 19면이 표 그대로', D.face('c_war', 19).sym !== 'wild'); D.rules.add('wild19'); t('별의 면: 19면도 ★', D.face('c_war', 19).sym === 'wild');
-  const pair = [D.face('c_war', 2), D.face('c_war', 4), D.face('c_arc', 3)]; t('맞물림 없이는 둘 = 보통', D.combos(pair).find(c => c.s === 'atk').n === 2);
-  D.rules.add('pairUp'); t('맞물림: 둘도 셋처럼', D.combos(pair).find(c => c.s === 'atk').n === 3);
+  t('맞물림 없이는 둘이 맞춘 세로줄 = 둘', D.colN({ n: 2 }) === 2);
+  D.rules.add('pairUp'); t('맞물림: 둘이 맞춘 세로줄도 셋처럼', D.colN({ n: 2 }) === 3 && D.lineTxt({ t: 'c', s: 'atk', n: 2 }) === D.SYM.atk.txt(3));
   D.rules.clear();
 }
 // 7) 명성 · 풀 넓히기

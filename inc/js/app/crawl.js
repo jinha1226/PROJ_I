@@ -61,7 +61,7 @@ const CRAWL = (() => {
   }
   function onTap(ev) {
     if (HUD.closeSheet()) return; // 캐릭터 시트가 열려 있으면 바닥을 누르면 닫는다
-    if (cutscene || FIGHT.on || PREPUI.active || REWARDUI.active || CHECKUI.active || $('crawlscene') || $('dicepick') || st.done) return;
+    if (cutscene || FIGHT.on || PREPUI.active || REWARDUI.active || CHECKUI.active || $('crawlscene') || $('dicepick') || $('dicetray') || st.done) return;
     const [tx, ty] = tileAtScreen(ev.clientX, ev.clientY); moveTo(tx, ty);
   }
   const trail = [];
@@ -117,7 +117,7 @@ const CRAWL = (() => {
   // 앞으로 가는 길: 이 방에서 나가는 길 중 안 지나간 것 (돌아가는 길 · 못 연 문은 빼고)
   const ahead = () => exits().filter(x => x.e.a === st.at && !x.e.walked && !x.e.stuck);
   // 지금 저절로 움직이면 안 되는 때: 걷는 중 · 전투 · 문 열기 · 창이 떠 있음
-  const busy = () => cutscene || !!walk || FIGHT.on || PREPUI.active || REWARDUI.active || CHECKUI.active || GEARUI.active || !!($('crawlscene') || $('dicepick') || $('exitsign') || $('csheet')) || !!st.done;
+  const busy = () => cutscene || !!walk || FIGHT.on || PREPUI.active || REWARDUI.active || CHECKUI.active || GEARUI.active || !!($('crawlscene') || $('dicepick') || $('dicetray') || $('exitsign') || $('csheet')) || !!st.done;
   // 방 일이 끝났다: 새 길이 하나면 그리로, 둘 이상이면 갈림길 창. 새 길이 없으면 가 본 방으로 (앞으로만 — 길은 거꾸로 돌지 않는다)
   function autoNext() {
     { const o = lootAt[st.at]; if (o && !st.here.loot) { st.here.loot = true; if (moveTo(o.x, o.y)) return; } } // 이 방에 놓인 장비부터 줍는다
@@ -155,7 +155,9 @@ const CRAWL = (() => {
   }
   // 잠긴 문 (적이 없는 방 — 보물 방 등): 따기 → 부수기를 저절로. 그래도 안 되면 대가가 있는 방법만 묻는다, 없으면 이 문은 두고 간다
   function unlock(ex, acts) {
-    for (const a of acts.filter(q => q.id === 'pick' || q.id === 'break')) { const from = st.at; choose(ex, a); if (st.at !== from) return; }
+    const tries = acts.filter(q => q.id === 'pick' || q.id === 'break'), from = st.at;
+    const step = i => (i < tries.length ? askWho(tries[i], () => { choose(ex, tries[i]); if (st.at === from) step(i + 1); }) : stuck());
+    const stuck = () => {
     const paid = acts.filter(q => q.id === 'knock' || q.id === 'kscroll'), leave = () => { ex.e.stuck = true; st.here.auto = false; showMarks(); };
     if (!paid.length) { st.log.push({ t: '이 문은 열 수 없다 — 다른 길로.' }); say(); return leave(); }
     const box = document.createElement('div'); box.id = 'exitsign';
@@ -163,6 +165,22 @@ const CRAWL = (() => {
       paid.map((a, i) => `<button data-i="${i}">${esc(a.label)}${a.cost ? ` <small>${esc(a.cost)}</small>` : ''}${a.note ? ` <small>${esc(a.note)}</small>` : ''}</button>`).join('') + '<button data-i="x" class="x">두고 간다</button>';
     box.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; closeSign(); if (b.dataset.i === 'x') leave(); else choose(ex, paid[+b.dataset.i]); };
     $('stage').append(box);
+    };
+    step(0);
+  }
+  // ── 누가 할까: 탐험 판정은 그 사람의 운명판 다음 칸을 쓴다 — 좋은 눈을 전투에 아낄지 플레이어가 고른다 (기술 보정 + 다음 칸의 눈이 높은 순) ──
+  // o = { title, dc, cands: [{ name, bonus, p: 그 사람(판의 줄) }], back() — 있으면 「돌아간다」 }, cb(고른 cands의 번호)
+  function pickWho(o, cb) {
+    const box = document.createElement('div'); box.id = 'crawlscene'; box.className = 'who';
+    const rows = o.cands.map((c, i) => { const d = c.p ? G.Dice.peek(c.p) : null, v = d && !d.special ? d.value : null; return { ...c, i, d: v == null ? null : d, tot: (v ?? 10.5) + c.bonus }; }).sort((a, b) => b.tot - a.tot);
+    box.innerHTML = `<h3>${esc(o.title)} — 누가 할까</h3><p>난이도 ${o.dc}. 판정하는 사람의 운명판 다음 칸을 쓴다.</p>` + rows.map(c => `<button data-i="${c.i}">${c.d ? FIGHT.die(c.p, c.d) : '<b class="die">?</b>'} ${esc(c.name)} <small>보정 ${c.bonus >= 0 ? '+' : '−'}${Math.abs(c.bonus)}</small>${c.d ? ` <i class="${c.tot >= o.dc ? 'ok' : 'no'}">합 ${c.tot}</i>` : ' <small>눈을 모른다 (새로 굴린다)</small>'}</button>`).join('') + (o.back ? '<button data-i="x" class="x">돌아간다</button>' : '');
+    box.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; box.remove(); if (b.dataset.i === 'x') o.back(); else cb(+b.dataset.i); };
+    $('stage').append(box);
+  }
+  // 탐사 규칙(RUN)의 판정 행동 a: 할 수 있는 사람이 둘 이상이면 묻고(st.by), 아니면 바로
+  function askWho(a, then, back) {
+    const cs = a.check && a.who ? RUN.checkers(st, a.check) : []; if (cs.length < 2) return then();
+    pickWho({ title: a.label || a.n, dc: a.check.dc, back, cands: cs.map(c => ({ name: c.m.n, bonus: c.bonus, p: pair().find(([, x]) => x === c.m)?.[0] })) }, i => { st.by = cs[i].m; then(); });
   }
   function choose(ex, a) {
     if (a.prep) return prepDoor(ex);
@@ -176,7 +194,12 @@ const CRAWL = (() => {
   }
   // 새 방에 들어서서 멈출 곳: 가운데까지 가지 않고 문에서 세 칸쯤 안쪽 (다음 길로 이어 걸을 때 덜 멈칫하게)
   const inside = ex => { const [cx, cy] = centerOf(ex.to), [dx, dy] = ex.path[ex.path.length - 1], L = Math.hypot(cx - dx, cy - dy), k = Math.min(1, 3 / (L || 1)); return [dx + (cx - dx) * k, dy + (cy - dy) * k]; };
-  const purse = { gold: () => st.gold, pay: n => { st.gold -= n; } }; // 운명판 다시 굴리기 값 (fight.js)
+  const purse = { gold: () => st.gold, pay: n => { st.gold -= n; } }; // 운명판의 유지비 · 다시 굴리기 값 (G.Dice.purse)
+  // 운명판을 이 판(탐사)에 잇는다: 줄을 가진 사람 · 주머니 · 탐험 판정의 d20 (RUN.fate — 그 사람의 다음 칸). 층에 들어설 때마다 newBoard
+  function bindDice() {
+    const D = G.Dice; D.party = () => R.party.filter(p => !p.dead && p.hp > 0); D.roster = () => R.party; D.cur = () => R.turn?.cur || null; D.purse = purse;
+    RUN.fate = m => { const p = pair().find(([, x]) => x === m)?.[0]; return p && !p.dead ? D.take(p) : null; };
+  }
   // ── 방에 놓인 장비: 보물 방의 상자 · 바닥에 떨어진 장비 (2026-11-19). 다가가면 열고 → 물건 정보 → 「누구에게」 또는 가방 (js/app/gear_ui.js) ──
   // 처음 들어선 방에서 한 번 굴린다. 적이 있는 방이면 싸움이 끝난 뒤에 걸어간다 (autoNext)
   const lootAt = {}, P_FLOOR = 0.12; // 바닥 장비가 있을 확률 (입구 · 우두머리 방 빼고, 시험값)
@@ -220,6 +243,7 @@ const CRAWL = (() => {
       const b = ev.target.closest('button'); if (!b || b.disabled) return; box.remove();
       const kind = s.kind, at = st.at, ch = s.choices[+b.dataset.i];
       if (kind === 'fight' && (ch.n === '싸운다' || ch.n === '기습한다')) { st.scene = null; return startFight(st.map.nodes[at], { ambush: ch.n === '기습한다' }); }
+      askWho(ch, () => {
       st.lastCheck = null; RUN.choose(st, +b.dataset.i);
       const go = () => {
         if (st.pend) { const pd = st.pend, n = st.map.nodes[at]; st.pend = null; st.scene = null; { const cap = RUN.zone(st.floor).seats[st.floor - RUN.zone(st.floor).floors[0]] + 1, c = Math.min(pd.g.count, cap); n.g = { ...pd.g, count: c, label: `${pd.g.name} ${c}`, units: pd.g.units || [[pd.g.name, c]] }; } return startFight(n, pd.mod); } // 사건이 틀어졌다 · 들켰다: 그 방에서 싸운다
@@ -231,6 +255,7 @@ const CRAWL = (() => {
       };
       // 판정을 굴렸으면 굴림 장면을 먼저 (d20 → 보정 → 성공 / 실패 → 결과 글). 그 뒤에 이어 간다
       const c = st.lastCheck; if (c && !autoN) CHECKUI.show({ ...c, text: st.log[c.at]?.t || '' }, go); else go();
+      }, scene);
     };
     $('stage').append(box);
   }
@@ -278,6 +303,7 @@ const CRAWL = (() => {
       PREPUI.open(R, { door: { x: door[0], y: door[1] }, doorTiles: dts, out: { x: stop[0] - door[0], y: stop[1] - door[1] }, locked: ex.e.kind === 'locked' && !ex.e.opened, mons, others,
         items: { tools: st.party.some(m => m.cls === 'rogue' && !m.dead) || st.items.tools ? 1 : 0 },
         reveal: () => { openRoom(ex.to); refreshSeen(); },
+        ask: (o, cb) => pickWho({ title: o.n, dc: o.dc, cands: o.cands.map(c => ({ name: c.w.merc?.name || '동료', bonus: c.bonus, p: c.w })) }, i => cb(o.cands[i].w)),
         onOpen: S => enterFight(ex, n, S, others) });
     });
   }
@@ -333,7 +359,7 @@ const CRAWL = (() => {
     const o = st; st = RUN.newRun(o.seed + (o.floor + 1) * 977, o.party.map(m => m.cls), o.floor + 1);
     st.party = o.party; st.gold = o.gold; st.items = o.items; st.log = o.log.concat(st.log); st.real = true;
     for (const k in deferred) delete deferred[k]; for (const k in lootAt) delete lootAt[k]; clearMarks(); closeSign(); walk = null; nearKey = null;
-    R.mons = []; R.chests = []; R.fields = []; layFloor(); G.Fantasy.refreshEnts(R);
+    R.mons = []; R.chests = []; R.fields = []; layFloor(); G.Fantasy.refreshEnts(R); G.Dice.newBoard(); // 새 층: 운명판을 새로 굴린다
     PMAP.attach(st); say(); showMarks(); document.body.dataset.room = st.at; document.body.dataset.depth = st.floor;
   }
   // 층을 쿼터뷰 지도로 깔고 파티를 입구에 세운다 (판 시작 · 내려갈 때)
@@ -362,11 +388,13 @@ const CRAWL = (() => {
       R = r; R.seen = new Uint8Array(iso.w * iso.h); FXUI.attach(R);
       { const ms = G.Party.members(G.S.w.fantasy); ms.forEach(m => { m.insp = false; }); G.Dice.rested(ms); } // 새 판: 영웅적 영감은 인간만 하나 (SRD 인간 — 수완)
       st.party.forEach((m, i) => { const a = r.party[i]?.merc; if (a) { m.n = a.name; m.uid = a.uid; } }); // 탐사 기록에도 그 사람들의 이름
+      bindDice(); G.Dice.newBoard(); // 이 층의 운명판
       { const [x, y] = centerOf(st.at); r.party.forEach((p, i) => { p.x = x - 0.6 * i; p.y = y + 0.3 * i; p._dx = p._rx = p.x; p._dy = p._ry = p.y; }); }
       openRoom(st.at); refreshSeen(); doorTiles = doorsOf();
       canvas.addEventListener('pointerup', onTap);
       PMAP.attach(st); say(); showMarks(); document.body.dataset.room = st.at; // 들어설 때 특수 주사위를 고르지 않는다 (2026-11-19 뺐다 — 주사위는 사람마다 가진 것이다. 시험용 ?dice=gamble,doom은 남긴다)
       if (q.get('dice')) FIGHT.dicePick();
+      if (q.get('tray')) FIGHT.board(); // 시험용 ?tray=1: 운명판 창을 열어 둔다
       autoN = +q.get('auto') || 0;
       if (q.get('loot')) { const n = st.map.nodes[st.at], f0 = G.S.w.fantasy, [cx, cy] = centerOf(st.at), chest = q.get('loot') === 'chest', o = lootAt[st.at] = { kind: chest ? 'chest' : 'drop', x: Math.round(cx + 2), y: Math.round(cy), ds: [G.Gear.roll(+q.get('floor') || 1, 'elite', Math.random, f0, R.party)].filter(Boolean) }; n.lootDone = true; if (chest) { o.ent = { kind: 'obj', chest: true, t: 'x_chest', x: o.x, y: o.y, s: 0.9 }; R.chests.push(o.ent); G.Fantasy.refreshEnts(R); } showMarks(); } // 시험용 ?loot=chest|drop: 입구 방에 상자 · 떨어진 장비
       if (q.get('gear')) GEARUI.found(Array.from({ length: +q.get('gear') || 1 }, (_, i) => G.Gear.roll(+q.get('floor') || 1, i ? 'elite' : 'boss', Math.random, G.S.w.fantasy, R.party)).filter(Boolean), '시험 장비', null); // 시험용 ?gear=N: 입구에서 장비 N개
@@ -422,9 +450,9 @@ const CRAWL = (() => {
       const room = r.map.rooms.find(x => x.id === 'A') || r.map.rooms[0], n = { id: -1, type: 'fight', g: { label: '시험 전투', name: '적', count: r.mons.length, units: [] } };
       // 걸어 들어올 자리: 첫 사람은 방 입구 안쪽, 나머지는 그 뒤로 (진형을 맞추지 않는다)
       const intro = new Map(r.party.map((p, i) => [p, { x: room.x + 2 - (i ? 1.2 : 0), y: room.cy + (i === 1 ? -1.2 : i === 2 ? 1.2 : 0) }]));
-      const tray = q.get('tray') || q.get('dice') != null; // 운명판 창은 ?tray · ?dice일 때만 (예시 장면은 판을 알아서 굴리고 작은 판만 띄운다)
-      FIGHT.start(R, { n, intro, quiet: !tray, done: (win, F) => { const d = document.createElement('div'); d.className = 'record-stub'; d.innerHTML = `${win ? `시험 전투: 이겼다 (${F.round}라운드)` : '시험 전투: 졌다'} <button onclick="location.reload()">다시 보기</button>`; $('stage').append(d); } });
+      FIGHT.start(R, { n, intro, done: (win, F) => { const d = document.createElement('div'); d.className = 'record-stub'; d.innerHTML = `${win ? `시험 전투: 이겼다 (${F.round}라운드)` : '시험 전투: 졌다'} <button onclick="location.reload()">다시 보기</button>`; $('stage').append(d); } });
       if (q.get('dice') != null) FIGHT.dicePick(); if (q.get('auto')) autoN = 99; // ?dice=는 고르는 창 없이 그대로 넣는다
+      if (q.get('tray')) FIGHT.board(); // 시험용 ?tray=1: 운명판 창을 열어 둔다
     },
     // 문 열기 시험 (?scene=door): 복도 끝으로 걸어와 잠긴 문을 저절로 연다(따기 → 걷어차기) → 열리면 그 자리에서 전투
     doorTest(r) {
