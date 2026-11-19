@@ -18,15 +18,6 @@ body { touch-action:manipulation; overscroll-behavior:none; -webkit-tap-highligh
 #hud .hud-spd { min-width:40px; min-height:30px; padding:2px 8px; border-radius:8px; border:1px solid var(--line); background:#3a2a1a; color:var(--ink); font:700 13px "Noto Sans KR",sans-serif; }
 
 /* ── 아래 파티 바 ── */
-#hud .hud-party { position:absolute; left:0; right:0; bottom:0; box-sizing:border-box; padding:12px 8px calc(6px + var(--safe-b)); display:flex; gap:6px; background:linear-gradient(rgba(14,10,6,0), rgba(14,10,6,.92) 40%); pointer-events:auto; }
-#hud .pm { position:relative; flex:1 1 0; min-width:0; max-width:150px; min-height:64px; display:flex; flex-direction:column; align-items:flex-start; gap:3px; padding:14px 7px 6px; border-radius:10px; border:1px solid var(--line); background:rgba(40,28,16,.92); color:var(--ink); text-align:left; cursor:pointer; }
-#hud .pm.cur { border-color:var(--gold); box-shadow:0 0 10px rgba(240,192,112,.5); } #hud .pm.dead { opacity:.42; filter:grayscale(.8); }
-#hud .pm-cls { position:absolute; top:-7px; left:6px; width:18px; height:18px; border-radius:6px; display:flex; align-items:center; justify-content:center; font:700 10px "Noto Sans KR",sans-serif; font-style:normal; color:#1a120c; border:1px solid rgba(0,0,0,.4); }
-#hud .pm-name { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:700 12px "Noto Sans KR",sans-serif; }
-#hud .pm-lv, #hud .pm-hpn { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:10px "Noto Sans KR",sans-serif; color:var(--mute); }
-#hud .pm-hp { width:100%; height:5px; border-radius:3px; background:#2a1a12; overflow:hidden; } #hud .pm-hp i { display:block; height:100%; }
-#hud .pm-die { position:absolute; top:-10px; right:-4px; min-width:24px; height:24px; padding:0 3px; border-radius:7px; display:flex; align-items:center; justify-content:center; background:#f3e4c3; color:#2b1d14; font:800 13px "Noto Sans KR",sans-serif; box-shadow:0 2px 6px rgba(0,0,0,.5); }
-#hud .pm-die sup { position:absolute; top:-7px; right:-6px; margin:0; font-size:9px; }
 
 /* ── 위 바 · 파티 바 사이: 미니맵 · 진행 글 ── */
 #pmapbox:not(.big) { top:calc(var(--hud-h) + var(--safe-t) + 4px) !important; right:8px !important; left:auto !important; width:116px !important; height:86px !important; }
@@ -34,26 +25,18 @@ body { touch-action:manipulation; overscroll-behavior:none; -webkit-tap-highligh
 #dm { top:calc(var(--hud-h) + var(--safe-t) + 4px) !important; bottom:auto !important; left:8px !important; right:132px !important; transform:none !important; max-width:none !important;
   padding:4px 8px !important; font:12px/1.45 "Noto Sans KR",sans-serif !important; font-style:normal !important; text-align:left !important; pointer-events:none; }
 #dm div { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } #dm div + div { color:var(--ink); } #dm div:first-child:not(:last-child) { color:var(--dim); }
-#fatehud { display:block; left:8px !important; bottom:calc(var(--pbar-h) + 10px) !important; padding:3px 5px 2px !important; pointer-events:auto !important; cursor:pointer; } /* 폰에서도 작은 판을 보인다 (누르면 운명판) */
-#fatehud .die { transform:scale(.6); margin:-7px -6px; } #fatehud th { font-size:10px; } #fatehud .cb { font-size:11px; }
+ /* 폰에서도 작은 판을 보인다 (누르면 운명판) */
 
 /* ── 창은 모두 아래에서 올라오는 시트 ── */
-#exitsign, #crawlscene, #reward, #dicetray, #dicepick, #dicebear, #csheet {
+#exitsign, #crawlscene, #reward, #dicepick, #dicebear, #csheet {
   position:fixed !important; left:0 !important; right:0 !important; top:auto !important; bottom:0 !important; transform:none !important;
   width:auto !important; max-width:none !important; max-height:64dvh; overflow:auto; box-sizing:border-box; z-index:20 !important;
   padding:18px 14px calc(14px + var(--safe-b)) !important; border-radius:16px 16px 0 0 !important; background:var(--panel) !important; border:1px solid #c9a86a !important; border-bottom:0 !important; }
-#exitsign::before, #crawlscene::before, #reward::before, #dicetray::before, #dicepick::before, #dicebear::before, #csheet::before {
+#exitsign::before, #crawlscene::before, #reward::before, #dicepick::before, #dicebear::before, #csheet::before {
   content:''; position:absolute; top:6px; left:50%; width:40px; height:4px; margin-left:-20px; border-radius:2px; background:rgba(243,228,195,.25); }
 /* 누르기 좋게: 단추는 44px 이상 */
-#exitsign button, #crawlscene button, #reward button, #dicetray button, #dicepick button, #dicebear button, #csheet button { min-height:44px; }
+#exitsign button, #crawlscene button, #reward button, #dicepick button, #dicebear button, #csheet button { min-height:44px; }
 /* 운명판 창: 작게 — 머리말 한 줄 · 주사위 32px · 라운드 단추 낮게 · 조합 글은 작게 */
-#dicetray.board { padding-top:16px !important; }
-#dicetray.board .hd { margin-bottom:2px; } #dicetray.board .hd small { display:block; margin:1px 0 0; font-size:11px !important; }
-#dicetray.board table { width:100%; table-layout:fixed; border-spacing:4px 3px; margin:0 0 4px; }
-#dicetray.board th { width:auto; font-size:12px; overflow:hidden; text-overflow:ellipsis; } #dicetray.board tr > th:first-child { width:58px; }
-#dicetray.board td .die { width:32px; height:32px; font-size:15px; } #dicetray.board td .die .sy { font-size:9px; padding:0 2px; right:-5px; top:-5px; }
-#dicetray.board tr.cb td { font-size:10px; line-height:1.25; white-space:normal; }
-#dicetray.board .bar button { min-height:40px; }
 
 /* 캐릭터 시트 */
 #csheet { color:var(--ink); }
@@ -72,15 +55,12 @@ body { touch-action:manipulation; overscroll-behavior:none; -webkit-tap-highligh
 /* ── 넓은 화면 (PC · 태블릿 가로) ── */
 @media (min-width: 900px) {
   :root { --pbar-h:84px; }
-  #hud .hud-party { justify-content:center; padding-left:16px; padding-right:16px; } #hud .pm { max-width:180px; min-height:64px; }
-  #hud .pm-name { font-size:13px; } #hud .pm-lv, #hud .pm-hpn { font-size:11px; } #hud .chip { font-size:12px; }
-  #exitsign, #crawlscene, #dicetray, #dicepick, #dicebear, #csheet {
+    #hud .chip { font-size:12px; }
+  #exitsign, #crawlscene, #dicepick, #dicebear, #csheet {
     left:auto !important; right:16px !important; bottom:calc(var(--pbar-h) + 12px) !important; width:430px !important; max-height:calc(100dvh - var(--hud-h) - var(--pbar-h) - 40px); border-radius:14px !important; border-bottom:1px solid #c9a86a !important; padding-bottom:14px !important; }
   #reward { left:50% !important; right:auto !important; top:50% !important; bottom:auto !important; transform:translate(-50%, -50%) !important; width:540px !important; max-height:calc(100dvh - 120px); border-radius:14px !important; border-bottom:1px solid #c9a86a !important; padding-bottom:16px !important; }
-  #exitsign::before, #crawlscene::before, #reward::before, #dicetray::before, #dicepick::before, #dicebear::before, #csheet::before { display:none; }
+  #exitsign::before, #crawlscene::before, #reward::before, #dicepick::before, #dicebear::before, #csheet::before { display:none; }
   #reward .rw-cards button { flex-basis:140px; }
-  #fatehud { display:block; left:16px !important; bottom:calc(var(--pbar-h) + 12px) !important; padding:4px 6px 3px !important; }
-  #fatehud .die { transform:scale(.6); margin:-7px -6px; } #fatehud th { font-size:10px; } #fatehud .cb { font-size:11px; }
   #pmapbox:not(.big) { width:200px !important; height:150px !important; } #dm { right:auto !important; left:50% !important; transform:translateX(-50%) !important; max-width:min(520px, calc(100% - 460px)) !important; }
 }
 
@@ -90,15 +70,15 @@ body { touch-action:manipulation; overscroll-behavior:none; -webkit-tap-highligh
 :root { --ink:#e8dcc4; --dim:#b8aa90; --mute:#8f826c; --line:#6d5a3c; --gold:#f0c070; --bg:#141217; --panel:rgba(20,18,23,.95); --btn:#2a2018; --btn-on:#5a4020; --r:6px; }
 canvas { image-rendering:pixelated; }
 /* 창 (시트 · 옆 창 · 가운데 창) */
-#exitsign, #crawlscene, #reward, #dicetray, #dicepick, #dicebear, #csheet { background:var(--panel) !important; border-color:var(--line) !important; color:var(--ink) !important; border-radius:10px 10px 0 0 !important; box-shadow:0 -6px 24px rgba(0,0,0,.55); }
-#exitsign h4, #crawlscene h3, #reward h3, #dicetray .hd, #dicepick h3, #dicebear h4, #csheet h3 { font:700 17px "Noto Sans KR",sans-serif !important; color:var(--ink); letter-spacing:-.2px; }
-#exitsign p, #crawlscene p, #reward p, #dicepick p, #dicebear p, #dicetray .hd small { color:var(--dim) !important; }
+#exitsign, #crawlscene, #reward, #dicepick, #dicebear, #csheet { background:var(--panel) !important; border-color:var(--line) !important; color:var(--ink) !important; border-radius:10px 10px 0 0 !important; box-shadow:0 -6px 24px rgba(0,0,0,.55); }
+#exitsign h4, #crawlscene h3, #reward h3, #dicepick h3, #dicebear h4, #csheet h3 { font:700 17px "Noto Sans KR",sans-serif !important; color:var(--ink); letter-spacing:-.2px; }
+#exitsign p, #crawlscene p, #reward p, #dicepick p, #dicebear p { color:var(--dim) !important; }
 /* 단추 · 카드: 어두운 단추, 얇은 갈색 테, 고른 것만 금색 */
-#exitsign button, #crawlscene button, #reward .rw-cards button, #dicetray button, #dicepick button, #dicebear button, #csheet .sh-sk li, #csheet .sh-ab span {
+#exitsign button, #crawlscene button, #reward .rw-cards button, #dicepick button, #dicebear button, #csheet .sh-sk li, #csheet .sh-ab span {
   background:var(--btn) !important; border:1px solid var(--line) !important; border-radius:var(--r) !important; color:var(--ink) !important; box-shadow:none !important; }
 #dicepick button.on, #reward .rw-cards button:hover, #exitsign button:hover, #crawlscene button:hover { background:var(--btn-on) !important; border-color:var(--gold) !important; }
-#dicetray button:disabled, #crawlscene button:disabled { opacity:.4; }
-#reward .rw-go, #csheet .sh-x, #dicetray .go, #dicepick .go { background:var(--btn-on) !important; border:1px solid var(--gold) !important; border-radius:var(--r) !important; color:var(--ink) !important; font-weight:700 !important; }
+#crawlscene button:disabled { opacity:.4; }
+#reward .rw-go, #csheet .sh-x, #dicepick .go { background:var(--btn-on) !important; border:1px solid var(--gold) !important; border-radius:var(--r) !important; color:var(--ink) !important; font-weight:700 !important; }
 #reward .rw-go.rw-keep { background:var(--btn) !important; border-color:var(--line) !important; font-weight:600 !important; }
 #reward .rw-stats div { background:var(--btn) !important; border:1px solid var(--line); border-radius:var(--r) !important; }
 /* 위 바 · 파티 바 */
@@ -106,36 +86,18 @@ canvas { image-rendering:pixelated; }
 #hud .hud-l b { font:700 15px "Noto Sans KR",sans-serif; letter-spacing:-.2px; }
 #hud .chip { border-radius:4px; background:rgba(42,32,24,.92); }
 #hud .hud-spd { background:var(--btn); border-radius:var(--r); }
-#hud .hud-party { background:linear-gradient(rgba(20,18,23,0), rgba(20,18,23,.95) 40%); }
-#hud .pm { background:rgba(29,25,21,.95); border-radius:var(--r); }
-#hud .pm.cur { background:#2f2416; }
-#hud .pm-cls { border-radius:3px; }
-#hud .pm-hp { border-radius:1px; height:4px; } #hud .pm-hp i { border-radius:0; }
-#hud .pm-die, #dicetray .die, #fatehud .die { border-radius:4px; }
 /* 미니맵 · 진행 글 · 작은 운명판: 어두운 판에 얇은 갈색 테 (px_lab의 미니맵 판처럼) */
 #pmapbox:not(.big) { border:1px solid var(--line) !important; border-radius:var(--r) !important; box-shadow:0 2px 10px rgba(0,0,0,.5); }
 #dm { background:rgba(20,18,23,.78) !important; border:1px solid var(--line) !important; border-radius:var(--r) !important; color:var(--ink) !important; }
-#fatehud { background:rgba(20,18,23,.9) !important; border-color:var(--line) !important; border-radius:var(--r) !important; }
 @media (min-width: 900px) {
-  #exitsign, #crawlscene, #dicetray, #dicepick, #dicebear, #csheet, #reward { border-radius:10px !important; box-shadow:0 6px 28px rgba(0,0,0,.6); }
+  #exitsign, #crawlscene, #dicepick, #dicebear, #csheet, #reward { border-radius:10px !important; box-shadow:0 6px 28px rgba(0,0,0,.6); }
 }
 /* 넓은 화면: 캐릭터 시트는 왼쪽 — 오른쪽 창(갈림길 · 운명판 등)과 겹치지 않게 (위 규칙들 뒤에 둬야 이긴다) */
 @media (min-width: 900px) { #csheet { left:16px !important; right:auto !important; z-index:21 !important; } }
 
 /* 운명판: 가로줄 조합 · 전투 중 밀기 · 영웅적 영감 · 굴러 들어오는 열 · SRD 표시 */
-#dicetray.board tr.rowfx th, #fatehud tr.rowfx th { color:var(--gold) !important; }
-#dicetray.board tr.dead { opacity:.4; }
-#dicetray.board th small { display:block; font-size:9px; line-height:1.15; white-space:normal; color:var(--gold); } #dicetray.board th small.tg { color:var(--mute); }
-#dicetray.board th .insp { width:auto; min-height:26px; min-width:26px; padding:0 4px; margin-left:3px; font-size:13px; color:var(--gold); }
-#dicetray .insp.on, #dicetray .hb.on { background:var(--btn-on) !important; border-color:var(--gold) !important; }
-#dicetray.board .bar .rr { flex:2; }
-#dicetray .die.can { outline:2px dashed var(--gold); cursor:pointer; }
 .die.crit { box-shadow:0 0 0 2px #ffd060, 0 0 8px rgba(255,208,96,.7); } .die.miss { filter:brightness(.6) saturate(.5); } .die.lucky { border-bottom:3px solid #7fcf8a; }
 .die.roll { animation:dieroll .22s linear infinite; opacity:.85; color:var(--mute) !important; } @keyframes dieroll { 0% { transform:rotate(-12deg) scale(.9); } 50% { transform:rotate(12deg) scale(1.05); } 100% { transform:rotate(-12deg) scale(.9); } }
-#fatehud td.new .die { animation:diein .5s ease-out; } @keyframes diein { 0% { transform:translateX(18px) rotate(40deg) scale(.4); opacity:0; } 100% { opacity:1; } }
-#fatehud td { position:relative; } #fatehud .bn { position:absolute; left:0; bottom:-3px; font:700 8px "Noto Sans KR",sans-serif; font-style:normal; color:#9fe08a; } #fatehud .ins, #hud .pm-ins { font-style:normal; color:var(--gold); font-size:10px; }
-#fatepush { position:absolute; right:12px; bottom:calc(var(--pbar-h) + 12px); z-index:6; min-height:40px; padding:6px 12px; border-radius:var(--r); border:1px solid var(--gold); background:var(--btn-on); color:var(--ink); font:600 13px "Noto Sans KR",sans-serif; }
-#dicetray.board tr > th:first-child { width:86px; white-space:normal; overflow:visible; line-height:1.2; }
 
 /* 운명판 연출: 멈추는 칸 · 뜸 들이는 셋째 칸 · 조합에 든 칸 · 한 줄 · 라운드 띠 */
 .die.land { animation:dieland .32s cubic-bezier(.2,1.6,.4,1); } @keyframes dieland { 0% { transform:translateY(-7px) scale(1.16); } 60% { transform:translateY(1px) scale(.94); } 100% { transform:none; } }
@@ -143,16 +105,13 @@ canvas { image-rendering:pixelated; }
 .die.hit { animation:diehit .7s ease-in-out infinite alternate; } .die.hit.land { animation:dieland .32s cubic-bezier(.2,1.6,.4,1), diehit .7s ease-in-out .32s infinite alternate; }
 @keyframes diehit { from { box-shadow:0 0 0 2px var(--hc); } to { box-shadow:0 0 0 3px var(--hc), 0 0 12px var(--hc); } }
 .h-atk { --hc:#e0604a; } .h-def { --hc:#4a8fd8; } .h-arc { --hc:#a070e0; } .h-holy { --hc:#e8c860; }
-#dicetray .cbhit { display:inline-block; color:var(--hc); animation:cbpop .35s cubic-bezier(.2,1.6,.4,1); } @keyframes cbpop { from { transform:scale(.4); opacity:0; } to { transform:none; opacity:1; } }
-#dicetray.board tr.rowfx td { background:linear-gradient(90deg, transparent, rgba(240,192,112,.22), transparent); background-size:200% 100%; animation:rowsweep 1.4s linear infinite; } @keyframes rowsweep { from { background-position:200% 0; } to { background-position:-200% 0; } }
-#dicetray.board tr.rowfx .die { box-shadow:0 0 0 2px var(--gold), 0 0 10px rgba(240,192,112,.6); }
 #fatebanners { position:absolute; left:50%; top:calc(var(--hud-h) + 14px); transform:translateX(-50%); z-index:7; display:flex; flex-direction:column; align-items:center; gap:6px; pointer-events:none; width:max-content; max-width:94vw; }
 #fatebanners .fb { padding:6px 14px; border-radius:var(--r); background:rgba(20,18,23,.92); border:1px solid var(--hc, var(--line)); color:var(--ink); font:500 14px "Noto Sans KR",sans-serif; white-space:nowrap; box-shadow:0 0 18px -4px var(--hc, transparent); animation:fbin 2.3s ease both; }
 #fatebanners .fb b { margin:0 6px; font-weight:700; color:var(--hc, var(--ink)); } #fatebanners .fb span { color:var(--dim); } #fatebanners .fb .sy { margin:0 1px; font-size:11px; }
 #fatebanners .fb.big { font-size:16px; padding:8px 18px; } #fatebanners .fb.row, #fatebanners .fb.insp { --hc:#f0c070; } #fatebanners .fb.row { font-size:16px; padding:8px 18px; }
 #fatebanners .c-atk { --hc:#e0604a; } #fatebanners .c-def { --hc:#4a8fd8; } #fatebanners .c-arc { --hc:#a070e0; } #fatebanners .c-holy { --hc:#e8c860; }
 @keyframes fbin { 0% { transform:translateY(-14px) scale(.8); opacity:0; } 9% { transform:translateY(0) scale(1.08); opacity:1; } 14% { transform:none; } 82% { opacity:1; } 100% { opacity:0; transform:translateY(-6px); } }
-@media (prefers-reduced-motion: reduce) { .die.roll, .die.tease, .die.hit, .die.land, #dicetray.board tr.rowfx td, #fatebanners .fb, #fatehud td.new .die { animation:none !important; } }
+@media (prefers-reduced-motion: reduce) { .die.roll, .die.tease, .die.hit, .die.land, #fatebanners .fb { animation:none !important; } }
 
 /* ── 선술집 (판과 판 사이의 한 화면 — js/app/tavern_ui.js): 위는 장면(캔버스 + 인물 누를 자리), 곁은 안내 · 명패, 인물을 누르면 상태창 ── */
 #tavern { position:fixed; inset:0; z-index:60; overflow-y:auto; background:#120c08; color:var(--ink); font:14px "Noto Sans KR",sans-serif; }
@@ -210,28 +169,7 @@ canvas { image-rendering:pixelated; }
 }
 
 /* ── 라운드 연출 (js/app/fight.js stage): 차례 띠 아래 가운데. 쓴 열이 밀려 나가고 → 새 열이 굴러 멈추고 → 이번 열이 켜지고 → 카드로 날아간다 ── */
-#fatestage { position:absolute; left:50%; top:calc(var(--hud-h) + var(--safe-t) + 92px); transform:translateX(-50%); z-index:9; pointer-events:none; padding:10px 14px 8px; border-radius:12px; background:rgba(20,18,23,.94); border:1px solid var(--line); box-shadow:0 8px 30px rgba(0,0,0,.6); animation:fsin .18s ease-out; --hc:var(--gold); }
 @keyframes fsin { from { transform:translateX(-50%) scale(.85); opacity:0; } to { transform:translateX(-50%); opacity:1; } }
-#fatestage .fs-hd { text-align:center; font:700 13px "Noto Sans KR",sans-serif; color:var(--gold); margin-bottom:6px; letter-spacing:.5px; }
-#fatestage .fs-row { position:relative; display:grid; grid-template-columns:64px repeat(4, 48px); align-items:center; height:48px; }
-#fatestage .fs-row.dead { opacity:.35; }
-#fatestage .fs-n { font:500 12px "Noto Sans KR",sans-serif; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:6px; text-align:right; }
-#fatestage .fs-cell { display:grid; place-items:center; height:48px; }
-#fatestage .die { width:40px; height:40px; font-size:18px; border-radius:6px; }
-#fatestage .die .sy { font-size:10px; }
-#fatestage .die.spin { animation:fsspin .09s linear infinite; color:#7a6a52 !important; background:repeating-linear-gradient(180deg, #f3e4c3 0 6px, #d9c8a2 6px 12px); background-size:100% 24px; }
-@keyframes fsspin { from { background-position:0 0; transform:translateY(-2px); } to { background-position:0 24px; transform:translateY(2px); } }
-#fatestage .die.pop { animation:fspop .34s cubic-bezier(.2,1.7,.4,1) both; }
-@keyframes fspop { 0% { transform:scale(1); } 45% { transform:scale(1.32); } 100% { transform:scale(1.12); } }
-#fatestage .die.pop.hit { animation:fspop .34s cubic-bezier(.2,1.7,.4,1) both, diehit .5s ease-in-out .34s infinite alternate; }
-#fatestage .fs-cb { min-height:20px; margin-top:4px; text-align:center; font:500 13px "Noto Sans KR",sans-serif; color:var(--mute); white-space:nowrap; }
-#fatestage .fs-cb b { font-weight:700; font-size:15px; color:var(--hc); display:inline-block; animation:cbpop .35s cubic-bezier(.2,1.6,.4,1); } #fatestage .fs-cb span { color:var(--dim); }
-#fatestage .h-atk, #fatestage.w-atk { --hc:#e0604a; } #fatestage .h-def, #fatestage.w-def { --hc:#4a8fd8; } #fatestage .h-arc, #fatestage.w-arc { --hc:#a070e0; } #fatestage .h-holy, #fatestage.w-holy { --hc:#e8c860; }
-#fatestage.win { border-color:var(--hc); box-shadow:0 0 0 1px var(--hc), 0 0 34px -6px var(--hc), 0 8px 30px rgba(0,0,0,.6); animation:fswin .4s ease-out; }
-@keyframes fswin { 0% { transform:translateX(-50%) scale(1); } 30% { transform:translateX(-50%) scale(1.06); } 100% { transform:translateX(-50%); } }
-body[data-fstage] #fatehud, body[data-fstage] #hud .pm-die { visibility:hidden; }
-#hud .pm-die { animation:pmdie .3s cubic-bezier(.2,1.7,.4,1); } @keyframes pmdie { from { transform:scale(1.7); } to { transform:none; } }
-@media (prefers-reduced-motion: reduce) { #fatestage, #fatestage * { animation:none !important; transition:none !important; } }
 
 /* ── 판정 굴림 장면 (js/app/check_ui.js): 화면을 어둡게 덮고 가운데에 d20 — 난이도 → 굴림 → 보정 → 성공 / 실패 ── */
 #checkroll { position:fixed; inset:0; z-index:40; display:grid; place-items:center; background:radial-gradient(60% 50% at 50% 45%, rgba(40,30,18,.82), rgba(6,5,8,.94)); cursor:pointer; --ck:#d9b872; }
@@ -345,29 +283,29 @@ body[data-fstage] #fatehud, body[data-fstage] #hud .pm-die { visibility:hidden; 
 :root { --ink:#eadcbd; --dim:#b9a784; --mute:#8a7a5e; --line:#7a5c30; --gold:#e3c27a; --brass:#a8823f; --brass-hi:#e3c27a; --wood:#231912; --wood-hi:#3b2b1c; --wood-lo:#0b0705;
   --parch:#dfcfa6; --parch-ink:#24170b; --parch-dim:#5d4829; --blood:#a8332a; --panel:#231912; --btn:#3a2a1c; --btn-on:#6a4a22; --r:2px; --serif:"Noto Serif KR","Nanum Myeongjo",serif; }
 /* ── 틀: 나무 판 + 놋쇠 두 줄 테 ── */
-#exitsign, #crawlscene, #reward, #dicetray, #dicepick, #dicebear, #csheet, #gearwin, #fatestage, #fatehud, #dm, #pmapbox:not(.big), #turnstrip .ts-row, #turnstrip .ts-act, #fatebanners .fb, .exitmark, #tavern .tv-sheet {
+#exitsign, #crawlscene, #reward, #dicepick, #dicebear, #csheet, #gearwin, #dm, #pmapbox:not(.big), #turnstrip .ts-row, #turnstrip .ts-act, #fatebanners .fb, .exitmark, #tavern .tv-sheet {
   background:linear-gradient(#2a1e15, #1e150f) !important; border:2px solid var(--wood-lo) !important; border-radius:2px !important; color:var(--ink) !important;
   box-shadow:inset 0 0 0 1px var(--brass), inset 0 0 0 3px #150e09, inset 0 0 0 4px rgba(227,194,122,.2), 0 0 0 1px #000, 0 8px 22px rgba(0,0,0,.6) !important; }
-#exitsign::before, #crawlscene::before, #reward::before, #dicetray::before, #dicepick::before, #dicebear::before, #csheet::before { display:none !important; }
-#exitsign, #crawlscene, #reward, #dicetray, #dicepick, #dicebear, #csheet, #gearwin { padding-top:14px !important; }
+#exitsign::before, #crawlscene::before, #reward::before, #dicepick::before, #dicebear::before, #csheet::before { display:none !important; }
+#exitsign, #crawlscene, #reward, #dicepick, #dicebear, #csheet, #gearwin { padding-top:14px !important; }
 /* ── 제목: 명조, 놋쇠 밑줄 ── */
-#exitsign h4, #crawlscene h3, #reward h3, #dicetray .hd, #dicepick h3, #dicebear h4, #csheet h3, #gearwin h3, #tavern h2, #checkroll .ck-hd b {
+#exitsign h4, #crawlscene h3, #reward h3, #dicepick h3, #dicebear h4, #csheet h3, #gearwin h3, #tavern h2, #checkroll .ck-hd b {
   font:700 18px var(--serif) !important; color:var(--brass-hi) !important; letter-spacing:0 !important; text-shadow:0 1px 0 #000; }
 #exitsign h4, #crawlscene h3, #reward h3, #dicepick h3, #dicebear h4, #csheet h3, #gearwin h3 { margin:0 0 8px !important; padding-bottom:6px; border-bottom:1px solid var(--brass); box-shadow:0 1px 0 #000; }
 #csheet h4, #tavern h4, #tavern h5, #gearwin h4 { font:700 13px var(--serif) !important; color:var(--brass-hi) !important; margin:12px 0 6px !important; }
 #csheet h4::before, #tavern h4::before, #tavern h5::before { content:'◆ '; font-size:8px; vertical-align:2px; color:var(--brass); }
 #exitsign p, #crawlscene p, #reward p, #dicepick p, #dicebear p { color:var(--dim) !important; }
 /* ── 단추: 도드라진 나무 판 (누르면 들어간다) ── */
-#exitsign button, #crawlscene button, #dicepick button, #dicebear button, #dicetray button, #gearwin button, #reward .rw-go, #reward .rw-all, #csheet .sh-x, #hud .hud-spd, #fatepush, #tavern .tv-x, .gshop {
+#exitsign button, #crawlscene button, #dicepick button, #dicebear button, #gearwin button, #reward .rw-go, #reward .rw-all, #csheet .sh-x, #hud .hud-spd, #tavern .tv-x, .gshop {
   background:linear-gradient(#4b3824, #33251a) !important; border:1px solid var(--wood-lo) !important; border-radius:2px !important; color:var(--ink) !important;
   box-shadow:inset 0 1px 0 #7a5f3e, inset 0 -2px 0 #1b130c, 0 1px 0 rgba(0,0,0,.5) !important; text-shadow:0 1px 0 #000; }
 #exitsign button:hover, #crawlscene button:hover, #gearwin button:hover, #dicepick button:hover { background:linear-gradient(#5a4329, #3d2c1e) !important; border-color:var(--wood-lo) !important; }
 #exitsign button:active, #crawlscene button:active, #gearwin button:active, #reward .rw-go:active, #tavern .tv-go:active, #tavern .tv-take:active { transform:translateY(1px); box-shadow:inset 0 2px 0 #1b130c !important; }
 #exitsign button:disabled, #crawlscene button:disabled, #gearwin button:disabled, #tavern .tv-go:disabled, #tavern .tv-take:disabled { opacity:.5 !important; filter:grayscale(.5); }
 #crawlscene button i { color:var(--brass-hi) !important; } #crawlscene button small, #exitsign button small { color:var(--mute) !important; }
-#dicepick button.on, #dicetray .insp.on, #dicetray .hb.on { background:linear-gradient(#7a5a2a, #55401f) !important; box-shadow:inset 0 0 0 1px var(--brass-hi), inset 0 -2px 0 #2a1d0e !important; }
+#dicepick button.on { background:linear-gradient(#7a5a2a, #55401f) !important; box-shadow:inset 0 0 0 1px var(--brass-hi), inset 0 -2px 0 #2a1d0e !important; }
 /* 으뜸 단추: 놋쇠 판 */
-#reward .rw-go:not(.rw-keep), #dicetray .go, #dicepick .go, #gearwin .gw-go, #tavern .tv-go, #tavern .tv-take, #checkroll .ck-go, #csheet .sh-x {
+#reward .rw-go:not(.rw-keep), #dicepick .go, #gearwin .gw-go, #tavern .tv-go, #tavern .tv-take, #checkroll .ck-go, #csheet .sh-x {
   background:linear-gradient(#cba25d, #8c672f) !important; border:1px solid #2e2010 !important; border-radius:2px !important; color:#1d130a !important; font:700 15px var(--serif) !important;
   box-shadow:inset 0 1px 0 #f0d79a, inset 0 -2px 0 #5e4420, 0 2px 0 rgba(0,0,0,.5) !important; text-shadow:0 1px 0 rgba(255,236,186,.45) !important; }
 #tavern .tv-take.out { background:linear-gradient(#4b3824, #33251a) !important; color:var(--ink) !important; text-shadow:0 1px 0 #000 !important; box-shadow:inset 0 1px 0 #7a5f3e, inset 0 -2px 0 #1b130c !important; }
@@ -389,25 +327,16 @@ body[data-fstage] #fatehud, body[data-fstage] #hud .pm-die { visibility:hidden; 
 #hud .hud-l b { font:700 16px var(--serif) !important; color:var(--brass-hi) !important; text-shadow:0 1px 0 #000; } #hud .hud-l small { color:var(--dim) !important; }
 #hud .chip, #tavern .chip { padding:3px 8px !important; border-radius:2px !important; background:#150e09 !important; border:1px solid var(--brass) !important; box-shadow:inset 0 0 0 1px #000 !important; color:var(--ink) !important; font:600 11px "Noto Sans KR",sans-serif !important; }
 #hud .chip.c-gold { color:#ffd98a !important; }
-#hud .hud-party { padding-top:8px !important; background:linear-gradient(#1b130d, #2c2017) !important; border-top:2px solid var(--wood-lo); box-shadow:inset 0 1px 0 var(--brass), 0 -3px 0 rgba(0,0,0,.35); justify-content:center; }
-#hud .pm { padding:6px 6px 6px 42px !important; min-height:56px !important; gap:2px !important; background:#150e09 !important; border:1px solid #000 !important; border-radius:2px !important; box-shadow:inset 0 0 0 1px var(--brass) !important; }
-#hud .pm.cur { background:#2a1d10 !important; box-shadow:inset 0 0 0 1px var(--brass-hi), 0 0 0 2px var(--brass-hi), 0 0 14px rgba(227,194,122,.45) !important; }
-#hud .pm-face { position:absolute; left:6px; top:6px; width:30px; height:35px; image-rendering:pixelated; background:radial-gradient(circle at 50% 35%, #4a3826, #17100b); border:1px solid #000; border-bottom:3px solid var(--cc); box-shadow:0 0 0 1px var(--brass); }
-#hud .pm.dead .pm-face { filter:grayscale(1) brightness(.6); }
-#hud .pm-name { font:700 13px var(--serif) !important; color:var(--ink); }
-#hud .pm-hp { height:8px !important; border-radius:0 !important; background:#0b0705 !important; border:1px solid #000; box-shadow:0 0 0 1px #4a3826; } #hud .pm-hp i { background:linear-gradient(#d44a3b, #8e241c) !important; border-radius:0 !important; }
-#hud .pm-die { top:-9px !important; right:-3px !important; border-radius:2px !important; background:linear-gradient(#efe2bf, #cdb98a) !important; border:1px solid #2e2010; box-shadow:0 2px 0 rgba(0,0,0,.5) !important; font-family:var(--serif) !important; }
 /* ── 전투: 차례 띠 · 운명판 · 표지 ── */
 #turnstrip .ts-row { padding:5px 8px !important; font:500 12px "Noto Sans KR",sans-serif !important; }
 #turnstrip .ts-rd { font-family:var(--serif); color:var(--brass-hi) !important; }
 #turnstrip .ts-c, #turnstrip .ts-side { border-radius:2px !important; } #turnstrip .ts-c i { border-radius:1px !important; }
 #turnstrip .ts-c.cur { background:linear-gradient(#7a5a2a, #55401f) !important; border-color:var(--brass-hi) !important; } #turnstrip .ts-c.cur.foe { background:linear-gradient(#7a2c22, #4a1a14) !important; border-color:#e0604a !important; }
 #turnstrip .ts-act { font:500 13px "Noto Sans KR",sans-serif !important; } #turnstrip .ts-act b { font-family:var(--serif); color:#fff4d6; }
-#fatestage .fs-hd, #fatestage .fs-cb b, #fatebanners .fb b { font-family:var(--serif) !important; }
+#fatebanners .fb b { font-family:var(--serif) !important; }
 .die { border-radius:3px !important; background:linear-gradient(#efe2bf, #d2bf90) !important; color:#24170b !important; box-shadow:inset 0 -3px 0 #b09a6a, inset 0 0 0 1px #5b4426, 0 1px 0 #000 !important; font-family:var(--serif) !important; }
 .die.k-doom { background:linear-gradient(#3a2a1c, #17100b) !important; color:#e06050 !important; } .die.k-gamble { background:linear-gradient(#f0cf78, #c79b45) !important; } .die.k-steady { background:linear-gradient(#bcd4b0, #8fae84) !important; } .die.k-twin { background:linear-gradient(#bccbea, #8fa3cf) !important; }
 .exitmark { padding:4px 9px !important; } .exitmark b { font-family:var(--serif); color:var(--brass-hi); } .exitmark small { color:var(--dim) !important; }
-#fatepush { font:700 13px var(--serif) !important; }
 /* ── 선술집 ── */
 #tavern .tv-g .tv-nm { background:#150e09 !important; border:1px solid var(--brass) !important; border-radius:2px !important; box-shadow:0 0 0 1px #000, 0 2px 0 rgba(0,0,0,.5) !important; font-family:var(--serif); }
 #tavern .tv-g.on .tv-nm { background:#3a2a12 !important; border-color:var(--brass-hi) !important; } #tavern .tv-nm em { border-radius:2px !important; background:var(--brass-hi) !important; color:#1d130a !important; }
@@ -446,28 +375,14 @@ body[data-fstage] #fatehud, body[data-fstage] #hud .pm-die { visibility:hidden; 
    운명판(전투 전)은 구석이 아니라 가운데 큰 창, 파티 카드는 초상을 크게, 차례 띠 · 라운드 연출은 한 단계 크게. 그 밖의 창은 오른쪽 옆 그대로 */
 @media (min-width: 900px) {
   /* 운명판: 가운데 */
-  #dicetray.board { left:50% !important; right:auto !important; top:50% !important; bottom:auto !important; transform:translate(-50%, -52%) !important; width:620px !important; max-height:calc(100dvh - 180px) !important; padding:20px 24px 18px !important; }
-  #dicetray.board .hd { font-size:22px !important; margin-bottom:6px; } #dicetray.board .hd small { font-size:13px !important; margin-top:4px; line-height:1.5; }
-  #dicetray.board table { border-spacing:10px 8px !important; } #dicetray.board tr > th:first-child { width:120px !important; font-size:15px !important; }
-  #dicetray.board td .die { width:52px !important; height:52px !important; font-size:24px !important; } #dicetray.board td .die .sy { font-size:12px !important; padding:1px 4px !important; right:-9px !important; top:-8px !important; }
-  #dicetray.board tr.cb td { font-size:13px !important; } #dicetray.board th small { font-size:12px !important; }
-  #dicetray.board .bar button { min-height:48px !important; font-size:16px !important; }
   #dicebear, #dicepick { left:50% !important; right:auto !important; top:50% !important; bottom:auto !important; transform:translate(-50%, -50%) !important; width:460px !important; }
   /* 파티 카드: 크게 */
   :root { --pbar-h:96px; }
-  #hud .hud-party { gap:10px !important; padding:10px 16px 10px !important; }
-  #hud .pm { max-width:240px !important; min-height:74px !important; padding:8px 10px 8px 62px !important; gap:3px !important; }
-  #hud .pm-face { left:8px !important; top:8px !important; width:44px !important; height:52px !important; }
-  #hud .pm-name { font-size:15px !important; } #hud .pm-lv, #hud .pm-hpn { font-size:12px !important; } #hud .pm-hp { height:10px !important; }
-  #hud .pm-die { min-width:30px !important; height:30px !important; font-size:16px !important; top:-12px !important; }
   /* 위 바 */
   #hud .hud-l b { font-size:19px !important; } #hud .hud-l small { font-size:12px !important; } #hud .chip { font-size:13px !important; padding:4px 10px !important; } #hud .hud-spd { min-width:48px; min-height:34px; font-size:14px !important; }
   /* 전투: 차례 띠 · 라운드 연출 · 작은 운명판 */
   #turnstrip .ts-row { font-size:14px !important; padding:6px 12px !important; gap:6px !important; } #turnstrip .ts-c i { width:22px !important; height:22px !important; font-size:12px !important; } #turnstrip .ts-c.cur { font-size:15px !important; }
   #turnstrip .ts-act { font-size:15px !important; padding:7px 16px !important; } #turnstrip .ts-act .why { font-size:12px !important; }
-  #fatestage { top:calc(var(--hud-h) + 120px) !important; padding:16px 22px 12px !important; } #fatestage .fs-row { grid-template-columns:90px repeat(4, 64px) !important; height:62px !important; } #fatestage .fs-cell { height:62px !important; }
-  #fatestage .die { width:54px !important; height:54px !important; font-size:24px !important; } #fatestage .fs-n { font-size:15px !important; } #fatestage .fs-hd { font-size:16px !important; } #fatestage .fs-cb { font-size:15px !important; } #fatestage .fs-cb b { font-size:18px !important; }
-  #fatehud .die { transform:scale(.8) !important; margin:-3px -2px !important; } #fatehud th { font-size:12px !important; } #fatehud .cb { font-size:13px !important; }
   #turnmark { font-size:24px; } #turnmark.say { font-size:16px; }
   /* 창 글씨 */
   #exitsign button, #crawlscene button { font-size:15px; min-height:46px; } #crawlscene p, #exitsign p { font-size:14px; }
@@ -475,23 +390,63 @@ body[data-fstage] #fatehud, body[data-fstage] #hud .pm-die { visibility:hidden; 
 }
 
 /* ══ 운명판 (2026-11-19 다시 짬): 줄 = 사람, 네 칸. 쓴 칸은 흐리게 · 다음에 쓸 칸은 밝은 테 · 맞은 줄(빙고)은 그 기호의 빛 ══ */
-#dicetray.board td.used .die, #fatestage .fs-cell.used .die { opacity:.35; filter:grayscale(.6); }
-#dicetray.board td.now .die, #fatestage .fs-cell.now .die { outline:2px solid var(--gold); outline-offset:2px; }
-#dicetray.board td.hold { width:62px; padding-left:4px; } #dicetray.board .hb { width:100%; min-height:36px; padding:2px 4px; font-size:11px; line-height:1.2; } #dicetray.board .hb small { display:block; font-size:9px; color:var(--mute); }
-#dicetray.board .fx { margin:2px 0 8px; display:grid; gap:2px; font-size:12px; color:var(--dim); } #dicetray.board .fx b { color:var(--hc, var(--gold)); margin-right:6px; }
-#dicetray .h-atk, #fatehud .h-atk { --hc:#e0604a; } #dicetray .h-def, #fatehud .h-def { --hc:#4a8fd8; } #dicetray .h-arc, #fatehud .h-arc { --hc:#a070e0; } #dicetray .h-holy, #fatehud .h-holy { --hc:#e8c860; }
-#fatehud td { opacity:1; } #fatehud td.used { opacity:.3; } #fatehud td.now .die { box-shadow:0 0 0 2px var(--gold), 0 0 8px rgba(240,192,112,.6) !important; }
-#fatehud .hold { margin-left:2px; font-style:normal; font-size:9px; color:var(--gold); } #fatehud .cb { white-space:nowrap; } #fatehud .cb span { color:var(--hc, var(--gold)); }
-#fatestage .fs-n small { display:block; font-size:10px; color:var(--gold); }
-#fatestage .fs-cb div + div { margin-top:2px; }
 /* 주사위를 쓸 때: 작은 판의 그 칸에서 빠져나와 그 사람 머리 위로 날아가 멈췄다가 사라진다 (fight.js fly) */
 .fatefly { position:absolute; left:0; top:0; z-index:8; pointer-events:none; animation:flyout 1.2s linear forwards; } .fatefly .die { width:30px; height:30px; font-size:15px; box-shadow:0 0 0 2px var(--gold), 0 0 12px rgba(240,192,112,.7) !important; }
 .fatefly .die .sy { position:absolute; right:-6px; top:-7px; margin:0; font-size:9px; } .fatefly i:not(.sy) { display:block; margin-top:1px; text-align:center; font:700 10px "Noto Sans KR",sans-serif; font-style:normal; color:var(--gold); text-shadow:0 1px 2px #000; }
 @keyframes flyout { 0%, 78% { opacity:1; } 100% { opacity:0; } }
-@media (min-width: 900px) { #dicetray.board td.hold { width:92px; } #dicetray.board .hb { min-height:52px; font-size:14px; } #dicetray.board .hb small { font-size:11px; } #dicetray.board .fx { font-size:14px; } .fatefly .die { width:40px; height:40px; font-size:20px; } }
+@media (min-width: 900px) {     .fatefly .die { width:40px; height:40px; font-size:20px; } }
 @media (prefers-reduced-motion: reduce) { .fatefly { animation-duration:.8s; } .fatefly .die { transition:none !important; } }
-#fatestage .die { position:relative; } #fatestage .die .sy { position:absolute; right:-6px; top:-7px; margin:0; }
 /* 누가 할까 (탐험 판정): 사람마다 다음 칸의 눈 · 보정 · 합 (crawl.js pickWho) */
 #crawlscene.who button { display:flex; align-items:center; gap:8px; } #crawlscene.who .die { position:relative; flex:none; width:30px; height:30px; font-size:15px; }
 #crawlscene.who .die .sy { position:absolute; right:-6px; top:-7px; margin:0; font-size:9px; color:#fff !important; } #crawlscene.who .die .sy.s-wild { color:#f0c070 !important; }
 #crawlscene.who button i.ok, #crawlscene.who button i.no { margin-left:auto; font-style:normal; font-weight:700; } #crawlscene.who button i.ok { color:#9fe08a !important; } #crawlscene.who button i.no { color:#e08a6a !important; }
+/* ── 운명판 칸 (js/app/side.js, 2026-11-19): 파티 + 운명판을 한 곳에 — 폰은 아래 띠, 넓은 화면은 왼쪽 기둥 (오른쪽이 게임 화면) ── */
+#side { position:fixed; left:0; right:0; bottom:0; z-index:5; box-sizing:border-box; padding:6px 8px calc(6px + var(--safe-b)); color:var(--ink); font:12px "Noto Sans KR",sans-serif;
+  background:linear-gradient(#1b130d, #2c2017); border-top:2px solid var(--wood-lo); box-shadow:inset 0 1px 0 var(--brass), 0 -3px 0 rgba(0,0,0,.35); user-select:none; }
+#side .sd-hd { display:none; }
+#side .sd-rows { display:grid; gap:3px; }
+#side .sd-row { display:grid; grid-template-columns:minmax(0,1fr) auto 48px; align-items:center; gap:8px; padding:3px 5px; background:#150e09; border:1px solid #000; box-shadow:inset 0 0 0 1px #4a3826; }
+#side .sd-row.cur { background:#2a1d10; box-shadow:inset 0 0 0 1px var(--brass-hi), 0 0 10px rgba(227,194,122,.35); }
+#side .sd-row.dead { opacity:.45; filter:grayscale(.8); }
+#side .sd-row.rowfx { box-shadow:inset 0 0 0 1px var(--hc), 0 0 12px -2px var(--hc); }
+#side .sd-who { display:grid; grid-template-columns:26px minmax(0,1fr) auto; grid-template-rows:auto auto; column-gap:7px; row-gap:2px; align-items:center; min-width:0; padding:0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+#side .sd-face { grid-row:1 / 3; width:26px; height:30px; image-rendering:pixelated; background:radial-gradient(circle at 50% 35%, #4a3826, #17100b); border:1px solid #000; border-bottom:3px solid var(--cc); }
+#side .sd-name { grid-column:2 / 4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:700 13px var(--serif); }
+#side .sd-name .ins { margin-left:4px; font-style:normal; color:var(--gold); }
+#side .sd-hp { height:7px; background:#0b0705; border:1px solid #000; box-shadow:0 0 0 1px #4a3826; } #side .sd-hp i { display:block; height:100%; background:linear-gradient(#d44a3b, #8e241c); }
+#side .sd-who small { font-size:10px; color:var(--mute); white-space:nowrap; }
+#side .sd-dice { display:flex; gap:5px; }
+#side .sd-c { position:relative; display:grid; place-items:center; }
+#side .die { position:relative; width:30px; height:30px; font-size:15px; cursor:pointer; }
+#side .die .sy { position:absolute; right:-5px; top:-6px; margin:0; padding:0 2px; font-size:9px; }
+#side .sd-c.used .die { opacity:.3; filter:grayscale(.7); cursor:default; }
+#side .sd-c.now .die { outline:2px solid var(--gold); outline-offset:1px; }
+#side .die.sel { outline:3px solid #fff3c4 !important; transform:translateY(-2px); }
+#side .bn { position:absolute; left:0; bottom:-4px; font:700 8px "Noto Sans KR",sans-serif; font-style:normal; color:#9fe08a; }
+#side .h-atk { --hc:#e0604a; } #side .h-def { --hc:#4a8fd8; } #side .h-arc { --hc:#a070e0; } #side .h-holy { --hc:#e8c860; }
+#side button { font-family:"Noto Sans KR",sans-serif; }
+#side .sd-hold { min-height:30px; padding:1px 2px; font-size:10px; line-height:1.15; color:var(--dim); background:#221810; border:1px solid #000; box-shadow:inset 0 0 0 1px #4a3826; cursor:pointer; }
+#side .sd-hold small { display:block; font-size:9px; color:var(--mute); }
+#side .sd-hold.on { color:#1a120c; background:linear-gradient(#e3c27a, #b08a45); } #side .sd-hold.on small { color:#3a2a14; }
+#side .sd-fx { margin:5px 2px 0; display:grid; gap:1px; font-size:12px; color:var(--dim); } #side .sd-fx b { margin-right:6px; color:var(--hc, var(--gold)); font-family:var(--serif); }
+#side .sd-fx .none { color:var(--mute); } #side .sd-fx .none small { margin-left:6px; font-size:10px; opacity:.8; }
+#side .sd-bar { display:none; gap:6px; margin-top:5px; } #side .sd-bar.on { display:flex; }
+#side .sd-bar button { flex:1; min-height:36px; font:700 13px var(--serif); color:#1a120c; background:linear-gradient(#e3c27a, #b08a45); border:1px solid #000; cursor:pointer; } #side .sd-bar button:disabled { opacity:.45; cursor:default; }
+#side .sd-bar .ir { background:linear-gradient(#fff0b8, #e3c27a); }
+.fatefly { z-index:30; }
+@media (min-width: 900px) {
+  body.has-side #wrap { grid-template-columns:348px minmax(0,1fr); grid-template-rows:minmax(0,1fr); }
+  body.has-side #stage { grid-column:2; grid-row:1; }
+  #side { position:relative; grid-column:1; grid-row:1; display:flex; flex-direction:column; padding:14px 14px 12px; border-top:0; border-right:2px solid var(--wood-lo); box-shadow:inset -1px 0 0 var(--brass); overflow-y:auto; }
+  #side .sd-hd { display:block; margin:0 2px 10px; } #side .sd-hd b { display:block; font:700 20px var(--serif); color:var(--gold); letter-spacing:.5px; } #side .sd-hd small { font-size:12px; color:var(--mute); }
+  #side .sd-rows { gap:8px; }
+  #side .sd-row { grid-template-columns:minmax(0,1fr) 64px; gap:8px 10px; padding:8px 10px 10px; }
+  #side .sd-who { grid-column:1 / 3; grid-template-columns:34px minmax(0,1fr) auto; column-gap:10px; }
+  #side .sd-face { width:34px; height:40px; } #side .sd-name { font-size:15px; } #side .sd-hp { height:9px; } #side .sd-who small { font-size:12px; }
+  #side .sd-dice { gap:8px; } #side .die { width:50px; height:50px; font-size:23px; } #side .die .sy { right:-7px; top:-7px; padding:1px 3px; font-size:11px; } #side .bn { font-size:10px; bottom:-6px; }
+  #side .sd-hold { min-height:50px; font-size:13px; } #side .sd-hold small { font-size:11px; }
+  #side .sd-fx { margin:12px 2px 0; gap:4px; font-size:14px; } #side .sd-fx .none small { display:block; margin:2px 0 0; font-size:12px; }
+  #side .sd-bar { display:flex; margin-top:auto; padding-top:12px; min-height:44px; align-items:center; } #side .sd-bar .hint { font-size:12px; color:var(--mute); } #side .sd-bar button { min-height:44px; font-size:15px; }
+}
+#side .sd-bar .hint { display:none; } @media (min-width: 900px) { #side .sd-bar .hint { display:inline; } }
+@media (prefers-reduced-motion: reduce) { #side .die { animation:none !important; } }

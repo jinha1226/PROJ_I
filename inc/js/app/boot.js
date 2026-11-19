@@ -117,7 +117,7 @@ addEventListener('keydown', ev => {
   if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.repeat) return;
   const $q = s => document.querySelector(s), vis = b => b && !b.disabled && b.offsetParent !== null;
   if (ev.key === 'Enter' || ev.key === ' ') {
-    const b = ['#titlescreen .tt-go', '#checkroll', '#gearwin .gw-go', '#reward .rw-go:not(.rw-keep)', '#dicetray .go', '#dicepick .go', '#tavern .tv-take', '#tavern .tv-go'].map($q).find(x => x && (x.id === 'checkroll' || vis(x)));
+    const b = ['#titlescreen .tt-go', '#checkroll', '#gearwin .gw-go', '#reward .rw-go:not(.rw-keep)', '#dicepick .go', '#tavern .tv-take', '#tavern .tv-go'].map($q).find(x => x && (x.id === 'checkroll' || vis(x)));
     if (b) { ev.preventDefault(); b.click(); } return;
   }
   if (ev.key === 'Escape') { const b = ['#gearwin .gw-go', '#csheet .sh-x', '#tavern .tv-x'].map($q).find(vis); if (b) { ev.preventDefault(); b.click(); } return; }

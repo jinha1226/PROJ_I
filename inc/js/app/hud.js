@@ -1,7 +1,6 @@
 'use strict';
-// 화면 틀 (모바일 우선, 넓은 화면은 app.css의 미디어 쿼리로): 위 바 · 아래 파티 바 · 캐릭터 시트 · 확대.
+// 화면 틀 (모바일 우선, 넓은 화면은 app.css의 미디어 쿼리로): 위 바 · 캐릭터 시트 · 확대. 파티와 운명판은 왼쪽 칸(js/app/side.js).
 // - 위 바: 층 · 지금 상태(탐사 / 문 앞 준비 / N라운드) · 금화 · 물자 · 배속
-// - 파티 바: 최대 다섯 장 — 직업 · 이름 · 레벨 · 체력, 지금 차례는 밝게, 전투 중엔 그 라운드 운명판 주사위. 누르면 캐릭터 시트
 // - 확대: 기기 픽셀이 아니라 화면 너비 기준 — 폰은 게임 픽셀 250쯤, 넓은 화면은 560쯤이 한 화면 너비
 // 읽는 것은 CRAWL.view()뿐 (규칙 · 상태를 바꾸지 않는다).
 const HUD = (() => {
@@ -15,29 +14,19 @@ const HUD = (() => {
   let wasFight = false;
   function mount() {
     el = document.createElement('div'); el.id = 'hud';
-    el.innerHTML = '<div class="hud-top"></div><div class="hud-party"></div>';
+    el.innerHTML = '<div class="hud-top"></div>';
     el.onpointerup = ev => ev.stopPropagation(); // 바 위를 누른 것은 바닥 누르기가 아니다
     el.querySelector('.hud-top').onclick = ev => { if (ev.target.closest('.hud-spd')) { G.Turn.nextSpeed(f()); key = ''; } };
-    el.querySelector('.hud-party').onclick = ev => { const b = ev.target.closest('.pm'); if (b) sheet(+b.dataset.i); };
     $('stage').append(el);
   }
-  const dieHTML = r => (r ? `<b class="pm-die k-${r.kind}">${r.special === 'death' ? '☠' : r.value}${r.sym ? `<sup class="sy s-${r.sym}">${G.Dice.SYM[r.sym].n}</sup>` : ''}</b>` : '');
-  // 파티 카드의 초상 (그림이 늦게 오면 올 때까지 다시 그린다)
-  let faceLeft = 0;
-  function drawFaces(v) { faceLeft = 0; el.querySelectorAll('.pm-face').forEach((cv, i) => { if (cv.dataset.ok) return; if (v.party[i]?.m && UI.face(cv, v.party[i].m)) cv.dataset.ok = '1'; else faceLeft++; }); }
   function frame() {
     const v = CRAWL.view(); if (!v) return; if (!el) mount();
     if (v.fighting !== wasFight) { wasFight = v.fighting; if (typeof setZoom === 'function') setZoom(zoom(wasFight), true); } // 전투가 시작되면 넓게, 끝나면 되돌린다
-    const dice = v.fighting && G.Dice.st ? v.party.map(p => G.Dice.dieOf(p.a)) : [], ins = v.party.map(p => (G.Dice.insp(p.a) ? '✦' : '') + (v.fighting ? G.Dice.bonus(p.a).join('') : ''));
-    const k = JSON.stringify([v.title, v.sub, v.gold, v.items, GEARUI.count(), G.Turn.speed(f()), v.party.map(p => [p.m?.name, p.m?.lv, p.hp, p.max, p.dead, p.cur]), dice.map(r => r && `${r.value}${r.sym}`), ins]);
-    if (k === key) { if (faceLeft) drawFaces(v); return; } key = k;
+    const k = JSON.stringify([v.title, v.sub, v.gold, v.items, GEARUI.count(), G.Turn.speed(f())]);
+    if (k === key) return; key = k;
     const res = v.items ? ITEM.filter(([id]) => v.items[id] > 0).map(([id, n]) => `<span class="chip c-${id}" title="${n}">${n} ${v.items[id]}</span>`).join('') : '';
     el.querySelector('.hud-top').innerHTML = `<div class="hud-l"><b>${esc(v.title)}</b><small>${esc(v.sub)}</small></div>` +
       `<div class="hud-r">${v.gold != null ? `<span class="chip c-gold" title="금화">금화 ${v.gold}</span>` : ''}${res}${v.gold != null ? GEARUI.chip() : ''}<button class="hud-spd" title="배속 (T)">×${G.Turn.speed(f())}</button></div>`;
-    el.querySelector('.hud-party').innerHTML = v.party.map((p, i) => { const m = p.m, c = clsOf(m), w = Math.round(100 * Math.max(0, p.hp) / Math.max(1, p.max));
-      return `<button class="pm${p.cur ? ' cur' : ''}${p.dead ? ' dead' : ''}" data-i="${i}"><canvas class="pm-face" width="26" height="30" style="--cc:${c.col || '#888'}"></canvas>` +
-        `<span class="pm-name">${esc(m?.name || '동료')}${ins[i] ? ` <i class="pm-ins" title="영웅적 영감 · 얹히는 주사위">${ins[i]}</i>` : ''}</span><small class="pm-lv">${esc(c.n || '')} · ${m?.lv || 1}레벨</small>` +
-        `<span class="pm-hp"><i style="width:${w}%;background:${w > 50 ? '#7fcf8a' : w > 25 ? '#e8c860' : '#e06050'}"></i></span><small class="pm-hpn">${Math.max(0, p.hp)}/${p.max}</small>${dieHTML(dice[i])}</button>`; }).join(''); drawFaces(v);
   }
   // 캐릭터 시트 (바텀 시트): 직업 · 레벨 · 경험치 · 체력 · 능력치 · 손에 든 기술(5칸) · 끼운 물건 · 직업 주사위
   function sheet(i) {

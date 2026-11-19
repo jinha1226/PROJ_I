@@ -216,6 +216,7 @@ G.Dice = (() => {
   // ── 굴림에 끼우기 ──
   const N = G.Dnd, d20 = N.d20.bind(N), attack = N.attack, save = N.save;
   N.attack = function (att, tg, critAt) { const prev = D.ctx; D.ctx = { kind: 'attack', actor: att }; try { return attack.call(N, att, tg, critAt); } finally { D.ctx = prev; } };
+  const atkDie = N.atkDie; N.atkDie = function (att, tg) { const prev = D.ctx; D.ctx = { kind: 'attack', actor: att }; try { return atkDie.call(N, att, tg); } finally { D.ctx = prev; } }; // 턴 엔진이 미리 굴리는 공격 d20도 판의 칸
   N.save = function (tg, k, dc) { const prev = D.ctx; D.ctx = { kind: 'save', target: tg }; try { return save.call(N, tg, k, dc); } finally { D.ctx = prev; } };
   N.d20 = function (adv) {
     const S = D.st, c = D.ctx; if (!S || !S.ready || !c) return d20(adv);

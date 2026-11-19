@@ -31,7 +31,7 @@ const CRAWL = (() => {
   function autoStep(dt) {
     if (!autoN || (st && st.done)) return; autoT += dt; if (autoT < 0.4) return; autoT = 0;
     if (REWARDUI.active) { if (q.get('rhold')) return; const b = $('reward')?.querySelector('.rw-go, .rw-cards button'); if (b && !b.classList.contains('rw-go') || b && !$('reward').classList.contains('rw-record')) b.click(); return; } // 전투 결과 · 고르기: 처음 것 (기록 화면에서는 멈춘다) ?rhold=1이면 결과 창에서 멈춘다 (캡처용)
-    if (FIGHT.on) { const bb = $('dicebear')?.querySelector('button'); if (bb) return bb.click(); if ($('dicetray') && !q.get('hold')) $('dicetray').querySelector('.go').click(); return; }
+    if (FIGHT.on) { const bb = $('dicebear')?.querySelector('button'); if (bb) return bb.click(); return; }
     const b = $('crawlscene')?.querySelector('button:not([disabled])') || $('exitsign')?.querySelector('button[data-i="0"]');
     if (b) { if ($('exitsign')) autoN--; b.click(); return; }
   }
@@ -61,7 +61,7 @@ const CRAWL = (() => {
   }
   function onTap(ev) {
     if (HUD.closeSheet()) return; // 캐릭터 시트가 열려 있으면 바닥을 누르면 닫는다
-    if (cutscene || FIGHT.on || PREPUI.active || REWARDUI.active || CHECKUI.active || $('crawlscene') || $('dicepick') || $('dicetray') || st.done) return;
+    if (cutscene || FIGHT.on || PREPUI.active || REWARDUI.active || CHECKUI.active || $('crawlscene') || $('dicepick') || SIDE.busy || st.done) return;
     const [tx, ty] = tileAtScreen(ev.clientX, ev.clientY); moveTo(tx, ty);
   }
   const trail = [];
@@ -117,7 +117,7 @@ const CRAWL = (() => {
   // 앞으로 가는 길: 이 방에서 나가는 길 중 안 지나간 것 (돌아가는 길 · 못 연 문은 빼고)
   const ahead = () => exits().filter(x => x.e.a === st.at && !x.e.walked && !x.e.stuck);
   // 지금 저절로 움직이면 안 되는 때: 걷는 중 · 전투 · 문 열기 · 창이 떠 있음
-  const busy = () => cutscene || !!walk || FIGHT.on || PREPUI.active || REWARDUI.active || CHECKUI.active || GEARUI.active || !!($('crawlscene') || $('dicepick') || $('dicetray') || $('exitsign') || $('csheet')) || !!st.done;
+  const busy = () => cutscene || !!walk || FIGHT.on || PREPUI.active || REWARDUI.active || CHECKUI.active || GEARUI.active || !!($('crawlscene') || $('dicepick') || $('exitsign') || $('csheet')) || SIDE.busy || !!st.done;
   // 방 일이 끝났다: 새 길이 하나면 그리로, 둘 이상이면 갈림길 창. 새 길이 없으면 가 본 방으로 (앞으로만 — 길은 거꾸로 돌지 않는다)
   function autoNext() {
     { const o = lootAt[st.at]; if (o && !st.here.loot) { st.here.loot = true; if (moveTo(o.x, o.y)) return; } } // 이 방에 놓인 장비부터 줍는다
@@ -359,7 +359,7 @@ const CRAWL = (() => {
     const o = st; st = RUN.newRun(o.seed + (o.floor + 1) * 977, o.party.map(m => m.cls), o.floor + 1);
     st.party = o.party; st.gold = o.gold; st.items = o.items; st.log = o.log.concat(st.log); st.real = true;
     for (const k in deferred) delete deferred[k]; for (const k in lootAt) delete lootAt[k]; clearMarks(); closeSign(); walk = null; nearKey = null;
-    R.mons = []; R.chests = []; R.fields = []; layFloor(); G.Fantasy.refreshEnts(R); G.Dice.newBoard(); // 새 층: 운명판을 새로 굴린다
+    R.mons = []; R.chests = []; R.fields = []; layFloor(); G.Fantasy.refreshEnts(R); G.Dice.newBoard(); // 새 층: 운명판을 새로 굴린다 (왼쪽 칸에서 굴러 멈춘다)
     PMAP.attach(st); say(); showMarks(); document.body.dataset.room = st.at; document.body.dataset.depth = st.floor;
   }
   // 층을 쿼터뷰 지도로 깔고 파티를 입구에 세운다 (판 시작 · 내려갈 때)
@@ -394,7 +394,6 @@ const CRAWL = (() => {
       canvas.addEventListener('pointerup', onTap);
       PMAP.attach(st); say(); showMarks(); document.body.dataset.room = st.at; // 들어설 때 특수 주사위를 고르지 않는다 (2026-11-19 뺐다 — 주사위는 사람마다 가진 것이다. 시험용 ?dice=gamble,doom은 남긴다)
       if (q.get('dice')) FIGHT.dicePick();
-      if (q.get('tray')) FIGHT.board(); // 시험용 ?tray=1: 운명판 창을 열어 둔다
       autoN = +q.get('auto') || 0;
       if (q.get('loot')) { const n = st.map.nodes[st.at], f0 = G.S.w.fantasy, [cx, cy] = centerOf(st.at), chest = q.get('loot') === 'chest', o = lootAt[st.at] = { kind: chest ? 'chest' : 'drop', x: Math.round(cx + 2), y: Math.round(cy), ds: [G.Gear.roll(+q.get('floor') || 1, 'elite', Math.random, f0, R.party)].filter(Boolean) }; n.lootDone = true; if (chest) { o.ent = { kind: 'obj', chest: true, t: 'x_chest', x: o.x, y: o.y, s: 0.9 }; R.chests.push(o.ent); G.Fantasy.refreshEnts(R); } showMarks(); } // 시험용 ?loot=chest|drop: 입구 방에 상자 · 떨어진 장비
       if (q.get('gear')) GEARUI.found(Array.from({ length: +q.get('gear') || 1 }, (_, i) => G.Gear.roll(+q.get('floor') || 1, i ? 'elite' : 'boss', Math.random, G.S.w.fantasy, R.party)).filter(Boolean), '시험 장비', null); // 시험용 ?gear=N: 입구에서 장비 N개
@@ -404,7 +403,7 @@ const CRAWL = (() => {
       // 시험용 ?tap=x,y: 그 타일을 화면 좌표로 바꿔 누른 것처럼 (화면 ↔ 타일 변환 확인)
       if (q.get('tap')) setTimeout(() => { const [tx, ty] = q.get('tap').split(',').map(Number), a = project(wx(tx), wy(ty), 0), rc = canvas.getBoundingClientRect(); const cx = rc.left + a.sx / canvas.width * rc.width, cy = rc.top + a.sy / canvas.height * rc.height, back = tileAtScreen(cx, cy); document.body.dataset.tap = back.map(v => v.toFixed(2)).join(','); }, 1500);
     },
-    frame(dt) { frame(dt); autoStep(dt); for (const m of marks) UI.place(m.el, m.x, m.y, 2.2); FIGHT.hud(); FXUI.frame(dt); HUD.frame(); },
+    frame(dt) { frame(dt); autoStep(dt); for (const m of marks) UI.place(m.el, m.x, m.y, 2.2); FIGHT.hud(); SIDE.frame(); FXUI.frame(dt); HUD.frame(); },
     // 화면 틀(hud.js)이 읽는 것: 층 · 지금 상태 · 금화 · 물자 · 파티(탐사 중 체력은 탐사 규칙 쪽 비율, 싸우는 동안은 엔진 쪽)
     view() {
       if (!R) return null;
@@ -452,7 +451,6 @@ const CRAWL = (() => {
       const intro = new Map(r.party.map((p, i) => [p, { x: room.x + 2 - (i ? 1.2 : 0), y: room.cy + (i === 1 ? -1.2 : i === 2 ? 1.2 : 0) }]));
       FIGHT.start(R, { n, intro, done: (win, F) => { const d = document.createElement('div'); d.className = 'record-stub'; d.innerHTML = `${win ? `시험 전투: 이겼다 (${F.round}라운드)` : '시험 전투: 졌다'} <button onclick="location.reload()">다시 보기</button>`; $('stage').append(d); } });
       if (q.get('dice') != null) FIGHT.dicePick(); if (q.get('auto')) autoN = 99; // ?dice=는 고르는 창 없이 그대로 넣는다
-      if (q.get('tray')) FIGHT.board(); // 시험용 ?tray=1: 운명판 창을 열어 둔다
     },
     // 문 열기 시험 (?scene=door): 복도 끝으로 걸어와 잠긴 문을 저절로 연다(따기 → 걷어차기) → 열리면 그 자리에서 전투
     doorTest(r) {

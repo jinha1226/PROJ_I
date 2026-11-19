@@ -288,6 +288,7 @@ G.Dnd = (() => {
     useReact(e) { e.reacted = true; e.reactT = now(); }, /* 실시간 구간은 한 라운드 시간이 지나면 */
     boon: (m, k) => !!(m && m.boons && m.boons.includes(k)),
     d20(adv) { const a = 1 + U.rand(20); if (!adv) return a; const b = 1 + U.rand(20); return adv > 0 ? Math.max(a, b) : Math.min(a, b); },
+    atkDie(att, tg) { return N.d20(N.adv(att, tg)); }, // 공격 굴림의 d20만 먼저 (턴 엔진이 주사위부터 보여 줄 때 — 운명판 G.Dice가 감싼다)
     melee: e => (e.longNow ? false : e.kind === 'mon' ? !G.Foe.ranged(e) : e.def ? N.rng0(e) < 2 || (e.merc && !CANTRIP[e.merc.cls] && G.SRD.weaponOf(e.merc).rng === 'melee') : e.kind === 'hero'),
     // 명중 굴림: 1은 늘 빗나감 · 치명 범위(critAt 이상, 기본 20)는 늘 맞고 치명타 · 마비된 상대를 근접으로 맞히면 치명타
     attack(att, tg, critAt = 20) {

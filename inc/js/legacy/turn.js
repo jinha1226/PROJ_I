@@ -267,7 +267,7 @@ G.Turn = (() => {
   function strike(f, rt, st, e, tg) {
     // 명중 굴림이 있는 공격은 주사위부터 (광역 · 내성 공격은 굴리는 쪽이 상대라 바로)
         if (!G.quiet && (e.kind === 'mon' || e.kind === 'sum' || !(e.def.splash || e.def.chain || e.def.saveAtk))) {
-          T.pre = DN().d20(DN().adv(e, tg));
+          T.pre = DN().atkDie(e, tg);
           const why = stakeOf(e, tg, T.pre);
           T.rolls.all++;
           // 판이 갈리는 굴림만 크게 보여 준다. 나머지는 바로 치고 숫자만 뜬다
