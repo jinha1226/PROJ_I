@@ -147,7 +147,7 @@ function drawRec(R0, t) {
     const fl = !e._flipS;
     if (sp.mini) MD.enqueue(R0, fl, flash); // 용병 인형: 고해상도 층에 원본 그대로 (minidoll.js)
     else if (MINI_ON && !VOXON && typeof HDBG !== 'undefined' && HDBG.on && !f.town) MD.enqueue(R0, fl, flash); // 선 그림 배경: 픽셀 몬스터도 고해상도 층에 (붉은 외곽선). 복셀 층에서는 32px 인형처럼 버퍼에 그대로
-    else if (!(VCH.on && VCH.draw(sp, sx, sy, d, { flip: fl, flash, sc, xray: true }, e))) blit(sp, sx, sy, d, { flip: fl, flash, sc, xray: true }); // ?vchar: 복셀 층과 같은 빛 · 색 (voxchar.js)
+    else if (!(VCH.on && VCH.draw(sp, sx, sy, d, { flip: fl, flash, sc, xray: true }, e))) blit(sp, sx, sy, d, { flip: fl, flash, sc, xray: true }); // 복셀 층: 배경과 같은 빛 · 색으로 다시 칠한다 (voxchar.js, ?vchar=0이면 원래 색)
     if (sp.weapon) {
       const Wp = sp.weapon, ranged = isRanged(e), sign = fl ? 1 : -1, of = [0, 0];
       let ang = 0, lift = 0;
