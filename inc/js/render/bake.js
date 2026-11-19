@@ -2,7 +2,7 @@
 // 층을 한 판으로 굽기: 바닥 · 벽 · 그림자 · 카메라
 // ───── 방 굽기 ─────
 let bake0 = null, tufts = [], torches = [];
-const isFloor = (m, x, y) => { const c = G.Grid.at(m, x, y); return c === '.' || c === '>' || c === ',' || c === '~'; }; // 물도 평평한 바닥으로 그린다
+const isFloor = (m, x, y) => { const c = G.Grid.at(m, x, y); return c === '.' || c === '>' || c === ',' || c === '~' || c === 'o'; }; // 물도 평평한 바닥으로 그린다 · 'o' = 장애물 칸(기둥 · 바위 · 상자 — 바닥 위에 장식, 길 · 시야는 막는다)
 const win = { x0: 0, y0: 0, x1: 0, y1: 0, cx: 0, cy: 0, map: null, key: '' };
 const wx = x => (x - win.cx) * T, wy = y => (y - win.cy) * T;
 // 판: 층 전체를 한 번 구워 두고, 카메라가 그 위를 움직인다

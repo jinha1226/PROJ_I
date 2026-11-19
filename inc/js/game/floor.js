@@ -17,7 +17,9 @@ G.Floor = (() => {
   function fromRun(map, TYPE = {}) {
     const L = map._lay, W = L.COLS * K, H = L.ROWS * K, c = new Array(W * H).fill('#'), roomAt = new Int16Array(W * H).fill(-1);
     const put = ([x, y], v) => { for (let j = 0; j < K; j++) for (let i = 0; i < K; i++) { const k = (y * K + j) * W + x * K + i; c[k] = '.'; if (v != null && roomAt[k] < 0) roomAt[k] = v; } };
-    for (const id in L.room) L.room[id].cells.forEach(p => put(p, +id));
+    // 손으로 짠 방(tmap — js/explore/rooms.js)은 타일 그대로: 장애물은 'o'(길 · 시야를 막는다), 물은 '~'(걷지 못하고 시야는 통한다), 나머지는 바닥
+    const putT = (r, id) => r.tmap.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === ' ') continue; const k = (r.y * K + j) * W + r.x * K + i; c[k] = RUN.TILE.solid.includes(ch) ? 'o' : ch === '~' ? '~' : '.'; if (roomAt[k] < 0) roomAt[k] = id; } });
+    for (const id in L.room) { const r = L.room[id]; if (r.tmap) putT(r, +id); else r.cells.forEach(p => put(p, +id)); }
     for (const id in L.cor) L.cor[id].cells.forEach(p => put(p, null));
     const rooms = map.nodes.map(n => { const b = L.room[n.id], [cx, cy] = centerOf(map, n.id); return { id: n.id, title: TYPE[n.type] || '', x: b.x * K, y: b.y * K, w: b.w * K, h: b.h * K, cx: Math.floor(cx), cy: Math.floor(cy), tags: ['hall'] }; });
     const start = rooms[0], end = rooms.find(r => map.nodes[r.id].type === 'boss') || rooms[rooms.length - 1];

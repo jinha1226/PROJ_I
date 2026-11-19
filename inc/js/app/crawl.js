@@ -13,7 +13,7 @@ const CRAWL = (() => {
   const KIND = { open: '통로', locked: '잠긴 문', trap: '함정 복도', dark: '어두운 길', hidden: '숨은 통로' };
   const ICON = { open: '›', locked: '▣', trap: '!', dark: '●', hidden: '⋯', camp: '▲', shop: '◎' }; // 그림 글자(이모지)는 쓰지 않는다 — 기기마다 모양이 다르고 화면 틀과 안 어울린다
   const NEAR = 1.6; // 이만큼 다가가면 안내 표지 · 구조물이 열린다
-  let st = null, iso = null, R = null, walk = null, marks = [], cutscene = false;
+  let st = null, iso = null, R = null, walk = null, marks = [], cutscene = false, roomLab = null; // roomLab: 방 검수 장면(?scene=rooms)의 방
   let open = null, roomAt = null; // 열린 타일 · 타일 → 방
   const deferred = {}; // 방 id → 구조물 장면 (야영 · 상인)
   let nearKey = null, idleT = 0; // 지금 열린 구조물 장면의 대상 · 저절로 걷기까지 기다린 시간
@@ -46,7 +46,7 @@ const CRAWL = (() => {
     for (let k = 0; k < open.length; k++) if (open[k]) { const x = k % iso.w, y = (k / iso.w) | 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const X = x + dx, Y = y + dy; if (X >= 0 && Y >= 0 && X < iso.w && Y < iso.h) s[Y * iso.w + X] = 1; } }
     R.seenVer = (R.seenVer || 0) + 1;
   }
-  const walkable = k => !!open[k] || doorTiles.has(k);
+  const walkable = k => (!!open[k] && '.>,'.includes(iso.c[k])) || doorTiles.has(k); // 열린 곳이라도 장애물('o') · 물('~')은 못 지난다 (손으로 짠 방)
   const exits = () => FL.exits(st.map, st.at);
   const beyond = n => FL.beyond(n, RUN.TYPE);
   function doorsOf() { const s = new Set(); for (const ex of exits()) if (!ex.e.walked) s.add(TI(ex.door[0], ex.door[1])); return s; }
@@ -383,6 +383,38 @@ const CRAWL = (() => {
       const T = R.turn, fighting = FIGHT.on;
       const party = R.party.map((a, i) => { const rm = st?.party[i], hp = fighting || !rm ? a.hp : Math.round(a.max * rm.hp / Math.max(1, rm.max)); return { a, m: a.merc, hp: Math.round(hp), max: a.max, dead: !!(a.dead || rm?.dead), cur: fighting && T?.cur === a }; });
       return { title: (iso || R.map)?.title || '', sub: fighting ? `${T?.round || 1}라운드` : PREPUI.active ? '문을 연다' : st?.done ? '끝' : '탐사', fighting, gold: st ? st.gold : null, items: st ? st.items : null, party };
+    },
+    // 방 검수 (?scene=rooms&i=N&e=K): 손으로 짠 방(js/explore/rooms.js) 하나를 복셀로 — 적 구성 K번을 몬스터 자리에 세워 본다. 걷기 · 전투 없음
+    roomStart(i) {
+      const L = RUN.ROOMS, n = ((i % L.length) + L.length) % L.length, t = L[n], room = RUN.gen.fromTemplate(t, 3, 3), Z = RUN.ZONES.find(z => z.id === t.zone) || RUN.ZONES[0];
+      if (t.tags.includes('start') || t.tags.includes('boss')) room.decor.push({ k: 'stairs', x: room.x + 1, y: room.y + 1 }); // 생성기가 입구 · 우두머리 방에 놓는 계단
+      const m = { nodes: [{ id: 0, type: t.tags[0], row: 0, info: 3, visited: true, notes: [] }], edges: [], rows: [[0]], seed: 1, floor: Z.floors[0], zone: t.zone, _lay: { COLS: room.w + 6, ROWS: room.h + 6, room: { 0: room }, cor: {}, frame: '검수' } };
+      st = { map: m, party: [], items: {}, gold: 0, log: [], at: 0, here: { auto: true }, path: [0], floor: Z.floors[0], done: null };
+      const fl = FL.fromRun(m, RUN.TYPE); iso = fl.iso; roomAt = fl.roomAt; open = new Uint8Array(iso.w * iso.h); iso.title = `방 검수 ${n + 1}/${L.length} · ${t.n}`;
+      roomLab = { n, t, room };
+      return iso;
+    },
+    roomsTest(r) {
+      R = r; R.seen = new Uint8Array(iso.w * iso.h).fill(1); R.seenVer = 1; FXUI.attach(R); PMAP.hide();
+      const { n, t, room } = roomLab, K = FL.K, e = +q.get('e') || 0, enc = t.enc.length ? t.enc[e % t.enc.length] : null;
+      // 파티: 방 가운데에 가장 가까운 빈 바닥 (등불이 방을 넓게 비추게)
+      const free = (x, y) => '.>,'.includes(iso.c[y * iso.w + x]) && !room.spawns.some(s => s.tx === x && s.ty === y), cx = Math.round((room.x + room.w / 2) * K), cy = Math.round((room.y + room.h / 2) * K);
+      let best = [cx, cy], bd = 1e9; for (let y = room.y * K; y < (room.y + room.h) * K; y++) for (let x = room.x * K; x < (room.x + room.w) * K; x++) if (free(x, y)) { const d = (x - cx) ** 2 + (y - cy) ** 2; if (d < bd) { bd = d; best = [x, y]; } }
+      r.party.forEach((p, k) => { p.x = best[0] + k * 1.2; p.y = best[1] + 1; p._dx = p._rx = p.x; p._dy = p._ry = p.y; });
+      // 적: 첫 종류(앞장서는 놈)는 우두머리(3) · 앞줄(1) 자리부터, 나머지는 뒷줄(2) · 앞줄 자리부터
+      if (enc) {
+        const pool = k => room.spawns.filter(s => s.k === k), used = new Set(), take = ks => { for (const k of ks) for (const s of pool(k)) { const key = s.tx + ',' + s.ty; if (!used.has(key)) { used.add(key); return s; } } return null; };
+        enc.u.forEach(([name, cnt], ui) => { for (let c = 0; c < cnt; c++) { const s = take(ui === 0 ? [3, 1, 2] : [2, 1, 3]); if (!s) return; const nm = G.Encounter.monName(name); G.Fantasy.spawnMon(R, 1, { n: nm, ...G.D.F.mon[nm] }, s.tx, s.ty, false, { aggro: false, spotted: true, major: true }); } });
+        G.Fantasy.refreshEnts(R);
+      }
+      const box = document.createElement('div'); box.id = 'roomlab';
+      box.style.cssText = 'position:absolute;top:64px;left:10px;z-index:21;max-width:min(320px,80vw);padding:8px 10px;border-radius:6px;border:1px solid #6d5a3c;background:rgba(20,16,12,.92);color:#e8dcc4;font:12px/1.5 sans-serif';
+      const go = (di, de) => `?scene=rooms&i=${n + di}&e=${de == null ? 0 : de}`;
+      box.innerHTML = `<b style="font-size:14px">${esc(t.n)}</b> <small>${esc(t.id)} · ${t.tags.join(' · ')} · ${room.w}×${room.h}칸</small><br>` +
+        (enc ? `적 구성 ${e % t.enc.length + 1}/${t.enc.length}: ${esc(enc.n)} — ${enc.u.map(([a, c]) => `${esc(a)} ${c}`).join(' · ')}<br>` : '') + `<small>${esc(t.note || '')}</small><br>` +
+        `<a href="${go(-1)}" style="color:#f0c070">◀ 이전</a> · <a href="${go(1)}" style="color:#f0c070">다음 ▶</a>` + (t.enc.length > 1 ? ` · <a href="${go(0, e + 1)}" style="color:#f0c070">적 구성 바꾸기</a>` : '');
+      $('stage').append(box);
+      document.body.dataset.room = 'lab:' + t.id;
     },
     // 시험 전투 (?fight=test): 복도로 들어와 방에서 적과 맞닥뜨려 싸운다 (탐사 규칙 없이)
     fightTest(r) {

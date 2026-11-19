@@ -38,7 +38,9 @@ const VOX = (() => {
   let V = null, X0 = 0, Y0 = 0, mw = 0, mh = 0, kind = null, tall = null, lights = [], A = null;
   const K = (x, y) => (x < 0 || y < 0 || x >= mw || y >= mh ? 0 : kind[y * mw + x]);
   // 탐사 층이면 지도 생성기의 배치(방 칸 · 복도 칸 · 장식)를 쓴다. 시험 층은 타일 지도만
-  const runOf = m => { const R0 = typeof CRAWL !== 'undefined' && CRAWL.st && CRAWL.st.map; return R0 && R0._lay && R0._lay.COLS * 2 === m.w && R0._lay.ROWS * 2 === m.h ? R0 : null; };
+  // 지도 1칸 = 타일 KK×KK (G.Floor.K — 2026-11-19 2 → 3. 2로 박혀 있어서 3이 된 뒤 탐사 층의 방 · 장식 · 구역 재질을 못 읽었다)
+  const KC = () => (G.Floor && G.Floor.K) || 2;
+  const runOf = m => { const R0 = typeof CRAWL !== 'undefined' && CRAWL.st && CRAWL.st.map, KK = KC(); return R0 && R0._lay && R0._lay.COLS * KK === m.w && R0._lay.ROWS * KK === m.h ? R0 : null; };
 
   // 구역 재질 (2026-11-19 — 구역마다 달라 보이게): 판석 · 복도 조약돌 · 벽돌 · 줄눈 · 낮은 벽 윗면 · 이끼. 고블린 굴은 RUN.ZONES shape.cave로 방 · 복도를 모두 동굴로
   const PAL0 = { fl: [0x6e6254, 0x5a6058], cor: [0x5e5850, 0x6a6052], wall: [0x7a6c5c, 0x6c6460], joint: 0x4a4038, cap: 0x80766a, moss: true };
@@ -46,11 +48,12 @@ const VOX = (() => {
   // ── 층 세우기
   function build(m) {
     mw = m.w; mh = m.h; kind = new Uint8Array(mw * mh); tall = new Uint8Array(mw * mh); const cave = new Uint8Array(mw * mh);
-    const R0 = runOf(m), L = R0 && R0._lay, rooms = []; // rooms: [{ tiles, type }]
+    const R0 = runOf(m), L = R0 && R0._lay, rooms = [], KK = KC(); // rooms: [{ tiles, type }]
     const Zs = R0 && typeof RUN !== 'undefined' && RUN.ZONES ? (RUN.ZONES.find(z => z.id === R0.zone) || {}).shape : null, allCave = !!(Zs && Zs.cave), P = (R0 && PAL[R0.zone]) || PAL0;
     if (L) {
-      for (const id in L.room) { const r = L.room[id], tiles = []; for (const [x, y] of r.cells) for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) { const k = (y * 2 + j) * mw + x * 2 + i; tiles.push([x * 2 + i, y * 2 + j]); if (isFloor(m, x * 2 + i, y * 2 + j)) { kind[k] = 1; if (r.kind === 'cave' || allCave) cave[k] = 1; } } rooms.push({ tiles, type: R0.nodes[id] && R0.nodes[id].type, decor: r.decor || [] }); }
-      for (const id in L.cor) for (const [x, y] of L.cor[id].cells) for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) { const k = (y * 2 + j) * mw + x * 2 + i; if (!kind[k] && isFloor(m, x * 2 + i, y * 2 + j)) { kind[k] = 2; if (allCave) cave[k] = 1; } }
+      for (const id in L.room) { const r = L.room[id], tiles = []; if (r.tmap) { r.tmap.forEach((row, j) => { for (let i = 0; i < row.length; i++) { if (row[i] === ' ') continue; const tx = r.x * KK + i, ty = r.y * KK + j, k = ty * mw + tx; tiles.push([tx, ty]); if (isFloor(m, tx, ty)) { kind[k] = 1; if (r.kind === 'cave' || allCave) cave[k] = 1; } } }); rooms.push({ tiles, type: R0.nodes[id] && R0.nodes[id].type, decor: r.decor || [] }); continue; } // 손으로 짠 방: 타일 그대로
+        for (const [x, y] of r.cells) for (let j = 0; j < KK; j++) for (let i = 0; i < KK; i++) { const k = (y * KK + j) * mw + x * KK + i; tiles.push([x * KK + i, y * KK + j]); if (isFloor(m, x * KK + i, y * KK + j)) { kind[k] = 1; if (r.kind === 'cave' || allCave) cave[k] = 1; } } rooms.push({ tiles, type: R0.nodes[id] && R0.nodes[id].type, decor: r.decor || [] }); }
+      for (const id in L.cor) for (const [x, y] of L.cor[id].cells) for (let j = 0; j < KK; j++) for (let i = 0; i < KK; i++) { const k = (y * KK + j) * mw + x * KK + i; if (!kind[k] && isFloor(m, x * KK + i, y * KK + j)) { kind[k] = 2; if (allCave) cave[k] = 1; } }
     }
     for (const r of L ? [] : m.rooms || []) { const tiles = []; for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (isFloor(m, x, y)) { kind[y * mw + x] = 1; tiles.push([x, y]); } rooms.push({ tiles, type: null, decor: [] }); }
     for (let y = 0; y < mh; y++) for (let x = 0; x < mw; x++) if (!kind[y * mw + x] && isFloor(m, x, y)) kind[y * mw + x] = 2;
@@ -58,6 +61,7 @@ const VOX = (() => {
     // 바닥: 방은 타일마다 판석 하나(타일 경계가 줄눈 = 칸이 읽힌다), 동굴은 흙 · 자갈, 복도는 작은 조약돌
     for (let ty = 0; ty < mh; ty++) for (let tx = 0; tx < mw; tx++) {
       const k = K(tx, ty); if (!k) continue; const cv = cave[ty * mw + tx];
+      if (G.Grid.at(m, tx, ty) === '~') { for (let lx = 0; lx < VPT; lx++) for (let ly = 0; ly < VPT; ly++) { const x = tx * VPT + lx, y = ty * VPT + ly; v.set(x, y, 0, 0x2a2420); v.set(x, y, 1, tint(0x1e4a5a, .9 + hs(x, y) * .15), 3); } continue; } // 물 칸(손으로 짠 방의 '~'): 바닥보다 한 단 낮은 물 (pool 장식과 같은 재질)
       for (let lx = 0; lx < VPT; lx++) for (let ly = 0; ly < VPT; ly++) {
         const x = tx * VPT + lx, y = ty * VPT + ly; v.set(x, y, 0, 0x2a2420); v.set(x, y, 1, 0x3a322a);
         if (cv) { const pb = hs(x, y, 13) < .08; v.set(x, y, 2, pb ? tint(0x8a8070, .9 + hs(x, y) * .2) : tint(mix(0x5a4a38, 0x4a4030, hs(x >> 2, y >> 2)), .85 + hs(x, y, 1) * .2)); continue; }
@@ -99,6 +103,7 @@ const VOX = (() => {
     const brazier = (bx, by) => { const z0 = FLOOR; for (let z = 0; z < 6; z++) for (const [dx, dy] of [[-2, -2], [2, -2], [-2, 2], [2, 2], [0, 0]]) if (z < 5 || !dx) v.set(bx + dx, by + dy, z0 + z, 0x2e2a2c); for (let x = bx - 4; x <= bx + 4; x++) for (let y = by - 4; y <= by + 4; y++) { const d = Math.hypot(x - bx, y - by); if (d > 4.2) continue; v.set(x, y, z0 + 6, 0x3a3436); if (d > 3.2) v.set(x, y, z0 + 7, tint(0x4a4044, 1 + hs(x, y) * .2)); else glow(x, y, z0 + 7, hs(x, y, 1) < .55 ? 0xff7020 : 0xffb040); } lights.push({ x: bx + .5, y: by + .5, z: z0 + 11, c: [1, .6, .28], i: 3.4, r: 19 }); };
     const D = {
       pillar(x, y) { pillar(x + 4, y + 4, WH - FLOOR); },
+      boulder(x, y) { const cx = x + 4, cy = y + 4, h = 7 + Math.floor(hs(x, y, 2) * 5); for (let z = 0; z < h; z++) { const r = 3.9 * (1 - z / (h + 1)) + .9; cyl(cx + (hs(x, z, 1) - .5) * 1.2, cy + (hs(y, z, 3) - .5) * 1.2, r, FLOOR + z, FLOOR + z + 1, (a, b, zz) => tint(mix(0x6a5a48, 0x52463c, hs(a >> 1, b >> 1, zz >> 1)), .78 + hs(a, b, zz) * .28)); } }, // 바위 · 종유석 (손으로 짠 방의 'O')
       brokenpillar(x, y) { pillar(x + 4, y + 4, 7, true); rubble(x + 4, y + 4, 14, 4, x + y); },
       rubble(x, y) { rubble(x + 4, y + 4, 22, 4, x * 3 + y); },
       debris(x, y) { rubble(x + 4, y + 4, 12, 3, x + y * 5); },
@@ -114,10 +119,11 @@ const VOX = (() => {
       table(x, y) { box(x - 1, y + 1, FLOOR, x + 9, y + 7, FLOOR + 5, (a, b, z) => { const leg = (a === x - 1 || a === x + 8) && (b === y + 1 || b === y + 6); return z < FLOOR + 4 && !leg ? null : tint(0x6a4428, .92 + hs(a, b) * .1); }); },
       bedroll(x, y) { box(x + 1, y + 2, FLOOR, x + 8, y + 6, FLOOR + 1, (a, b) => tint(a < x + 3 ? 0xb8a888 : 0x4a6a5a, .92 + hs(a, b) * .1)); },
       stairs(x, y) { for (let a = x; a < x + 8; a++) for (let b = y; b < y + 8; b++) for (let z = 0; z < FLOOR; z++) v.clr(a, b, z); for (let s = 0; s < 3; s++) box(x, y + s * 2 + 1, 0, x + 8, y + s * 2 + 3, FLOOR - s, (a, b, z) => tint(0x8a8070, (z === FLOOR - s - 1 ? 1.05 : .85) * (.9 + hs(a, b, z) * .1))); },
-      pool(x, y, o) { const r = (o.r || 1.2) * VPT * 2, cx = x + 4, cy = y + 4; for (let a = Math.floor(cx - r - 2); a <= cx + r + 2; a++) for (let b = Math.floor(cy - r - 2); b <= cy + r + 2; b++) { const d = Math.hypot(a + .5 - cx, b + .5 - cy); if (d > r + 1 || !K(Math.floor(a / VPT), Math.floor(b / VPT))) continue; for (let z = 1; z < 5; z++) v.clr(a, b, z); if (d > r) for (let z = 1; z < 4; z++) v.set(a, b, z, tint(0xa09888, .9 + hs(a, b, z) * .12)); else v.set(a, b, 1, tint(0x1e4a5a, .9 + hs(a, b) * .15), 3); } lights.push({ x: cx, y: cy, z: 6, c: [.35, .65, 1], i: 1.3, r: 11 }); },
+      pool(x, y, o) { const r = (o.r || 1.2) * VPT * KC(), cx = x + 4, cy = y + 4; for (let a = Math.floor(cx - r - 2); a <= cx + r + 2; a++) for (let b = Math.floor(cy - r - 2); b <= cy + r + 2; b++) { const d = Math.hypot(a + .5 - cx, b + .5 - cy); if (d > r + 1 || !K(Math.floor(a / VPT), Math.floor(b / VPT))) continue; for (let z = 1; z < 5; z++) v.clr(a, b, z); if (d > r) for (let z = 1; z < 4; z++) v.set(a, b, z, tint(0xa09888, .9 + hs(a, b, z) * .12)); else v.set(a, b, 1, tint(0x1e4a5a, .9 + hs(a, b) * .15), 3); } lights.push({ x: cx, y: cy, z: 6, c: [.35, .65, 1], i: 1.3, r: 11 }); },
     };
-    const C2 = VPT * 2; // 방 칸 하나 = 복셀 12 (원점 +2 → px_lab 장식의 가운데 +4가 칸 가운데 +6)
-    const put = o => { const f = D[o.k]; if (f) f(o.x * C2 + 2, o.y * C2 + 2, o); };
+    // 장식 자리: 장식 함수는 (원점 + 4)를 가운데로 그린다. 방 칸 좌표(o.x · o.y)면 그 칸 가운데, 타일 좌표(o.tx · o.ty, 크기 o.s 타일)면 그 타일 묶음 가운데
+    const C2 = VPT * KC();
+    const put = o => { const f = D[o.k]; if (!f) return; const cx = o.tx != null ? (o.tx + (o.s || 1) / 2) * VPT : (o.x + .5) * C2, cy = o.ty != null ? (o.ty + (o.s || 1) / 2) * VPT : (o.y + .5) * C2; f(Math.round(cx - 4), Math.round(cy - 4), o); };
     for (const r of rooms) {
       for (const o of r.decor) put(o);
       // 횃불: 방의 뒤쪽 높은 벽(방 타일의 -x · -y 쪽)에 방 크기만큼. 불꽃은 옛 횃불 효과(pfx), 여기서는 빛만

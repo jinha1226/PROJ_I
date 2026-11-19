@@ -302,5 +302,20 @@ RUN.gen = (() => {
     for (let k = 0; k < 300; k++) { const m = build(seed * 7919 + k, FRAMES.tall(RUN.rng(seed)), floor); if (m) return rares(m, seed); }  // 윤곽이 너무 좁으면 세로형으로
     throw new Error('지도를 만들지 못했다');
   };
-  return { make, outs, ins, keyless, path, ROWS: ROWS_GRAPH, FRAMES };
+  // 손으로 짠 방(RUN.ROOMS, js/explore/rooms.js) → 방 배치. x0 · y0: 놓을 지도 칸 좌표, flip: 좌우 뒤집기.
+  // 돌려주는 것: 생성기의 방과 같은 꼴(x · y · w · h 칸, cells, decor, kind) + tmap(타일 글자 줄) · spawns(몬스터 자리, 타일 좌표) · tpl(이름)
+  // 장식은 타일 좌표(tx · ty, 크기 s 타일)로 — 기둥 'P'는 2×2 묶음 하나로 그린다
+  function fromTemplate(t, x0, y0, flip = false) {
+    const K = RUN.ROOM_K, T = RUN.TILE, rows = flip ? t.map.map(r => [...r].reverse().join('')) : t.map.slice(), th = rows.length, tw = rows[0].length;
+    const at = (x, y) => (y >= 0 && y < th && x >= 0 && x < tw ? rows[y][x] : ' '), cells = [], decor = [], spawns = [];
+    for (let cy = 0; cy < th / K; cy++) for (let cx = 0; cx < tw / K; cx++) { let any = false; for (let j = 0; j < K; j++) for (let i = 0; i < K; i++) if (at(cx * K + i, cy * K + j) !== ' ') any = true; if (any) cells.push([x0 + cx, y0 + cy]); }
+    for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
+      const ch = at(x, y), X = x0 * K + x, Y = y0 * K + y;
+      if (ch === 'P') { if (at(x - 1, y) !== 'P' && at(x, y - 1) !== 'P') decor.push({ k: 'pillar', tx: X, ty: Y, s: at(x + 1, y) === 'P' && at(x, y + 1) === 'P' ? 2 : 1 }); continue; }
+      const k = T.decor[ch]; if (k) decor.push({ k, tx: X, ty: Y, s: 1 });
+      if (T.spawn.includes(ch)) spawns.push({ tx: X, ty: Y, k: +ch });
+    }
+    return { x: x0, y: y0, w: tw / K, h: th / K, cells, decor, kind: t.cave ? 'cave' : 'tmpl', tmap: rows, tpl: t.id, spawns };
+  }
+  return { make, outs, ins, keyless, path, ROWS: ROWS_GRAPH, FRAMES, fromTemplate };
 })();
