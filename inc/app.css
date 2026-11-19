@@ -274,7 +274,7 @@ canvas { image-rendering:pixelated; }
 #tavern .tv-leg { width:100%; border-collapse:collapse; font-size:12px; }
 #tavern .tv-leg th, #tavern .tv-leg td { padding:4px 6px; text-align:left; border-bottom:1px solid var(--line); font-weight:400; }
 #tavern .tv-leg tr:first-child th { color:var(--dim); font-size:11px; } #tavern .tv-leg th:first-child { white-space:nowrap; color:var(--ink); }
-#tavern .sy.s-wild { background:#e8c860; color:#2b1d14; } #tavern .sy.s-blank { background:#3a3440; color:#b9b0a0; }
+#tavern .sy.s-blank { background:#3a3440; color:#b9b0a0; }
 
 /* ══ 화면 틀 다시 (2026-11-19, 사용자: 「ui 디자인이 너무 ai 냄새가 난다 — 유명한 dnd rpg 화면처럼」) ══
    옛 CRPG 화면의 문법으로 (특정 게임을 베끼지는 않는다): 놋쇠 테를 두른 어두운 나무 판 · 제목은 명조 · 고를 것은 양피지 카드 ·
@@ -404,11 +404,13 @@ canvas { image-rendering:pixelated; }
 #side { position:fixed; left:0; right:0; bottom:0; z-index:5; box-sizing:border-box; padding:6px 8px calc(6px + var(--safe-b)); color:var(--ink); font:12px "Noto Sans KR",sans-serif;
   background:linear-gradient(#1b130d, #2c2017); border-top:2px solid var(--wood-lo); box-shadow:inset 0 1px 0 var(--brass), 0 -3px 0 rgba(0,0,0,.35); user-select:none; }
 #side .sd-hd { display:none; }
-#side .sd-rows { display:grid; gap:3px; }
+#side .sd-rows { position:relative; display:grid; gap:3px; }
+/* 빙고 묶음: 맞은 줄의 주사위들을 그 기호 빛깔 테로 한데 묶는다 (가로 = 한 사람의 네 칸 · 세로 = 같은 열) */
+#side .sd-grp { position:absolute; box-sizing:border-box; pointer-events:none; border:2px solid var(--hc); border-radius:7px; background:color-mix(in srgb, var(--hc) 16%, transparent); animation:sdgrp .8s ease-in-out infinite alternate; }
+@keyframes sdgrp { from { box-shadow:0 0 4px var(--hc); } to { box-shadow:0 0 14px var(--hc), inset 0 0 8px -2px var(--hc); } }
 #side .sd-row { display:grid; grid-template-columns:minmax(0,1fr) auto 48px; align-items:center; gap:8px; padding:3px 5px; background:#150e09; border:1px solid #000; box-shadow:inset 0 0 0 1px #4a3826; }
 #side .sd-row.cur { background:#2a1d10; box-shadow:inset 0 0 0 1px var(--brass-hi), 0 0 10px rgba(227,194,122,.35); }
 #side .sd-row.dead { opacity:.45; filter:grayscale(.8); }
-#side .sd-row.rowfx { box-shadow:inset 0 0 0 1px var(--hc), 0 0 12px -2px var(--hc); }
 #side .sd-who { display:grid; grid-template-columns:26px minmax(0,1fr) auto; grid-template-rows:auto auto; column-gap:7px; row-gap:2px; align-items:center; min-width:0; padding:0; border:0; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
 #side .sd-face { grid-row:1 / 3; width:26px; height:30px; image-rendering:pixelated; background:radial-gradient(circle at 50% 35%, #4a3826, #17100b); border:1px solid #000; border-bottom:3px solid var(--cc); }
 #side .sd-name { grid-column:2 / 4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:700 13px var(--serif); }
@@ -418,7 +420,7 @@ canvas { image-rendering:pixelated; }
 #side .sd-dice { display:flex; gap:5px; }
 #side .sd-c { position:relative; display:grid; place-items:center; }
 #side .die { position:relative; width:30px; height:30px; font-size:15px; cursor:pointer; }
-#side .die .sy { position:absolute; right:-5px; top:-6px; margin:0; padding:0 2px; font-size:9px; }
+#side .die .sy { position:absolute; right:-5px; top:-6px; margin:0; font-size:10px; box-shadow:0 0 0 1px #000; }
 #side .sd-c.used .die { opacity:.3; filter:grayscale(.7); cursor:default; }
 #side .sd-c.now .die { outline:2px solid var(--gold); outline-offset:1px; }
 #side .die.sel { outline:3px solid #fff3c4 !important; transform:translateY(-2px); }
@@ -428,25 +430,42 @@ canvas { image-rendering:pixelated; }
 #side .sd-hold { min-height:30px; padding:1px 2px; font-size:10px; line-height:1.15; color:var(--dim); background:#221810; border:1px solid #000; box-shadow:inset 0 0 0 1px #4a3826; cursor:pointer; }
 #side .sd-hold small { display:block; font-size:9px; color:var(--mute); }
 #side .sd-hold.on { color:#1a120c; background:linear-gradient(#e3c27a, #b08a45); } #side .sd-hold.on small { color:#3a2a14; }
-#side .sd-fx { margin:5px 2px 0; display:grid; gap:1px; font-size:12px; color:var(--dim); } #side .sd-fx b { margin-right:6px; color:var(--hc, var(--gold)); font-family:var(--serif); }
+#side .sd-fx { margin:5px 2px 0; display:grid; gap:1px; font-size:12px; color:var(--dim); } #side .sd-fx .sy { margin:0 5px 0 0; font-size:11px; } #side .sd-fx b { margin-right:6px; color:var(--hc, var(--gold)); font-family:var(--serif); }
 #side .sd-fx .none { color:var(--mute); } #side .sd-fx .none small { margin-left:6px; font-size:10px; opacity:.8; }
 #side .sd-bar { display:none; gap:6px; margin-top:5px; } #side .sd-bar.on { display:flex; }
 #side .sd-bar button { flex:1; min-height:36px; font:700 13px var(--serif); color:#1a120c; background:linear-gradient(#e3c27a, #b08a45); border:1px solid #000; cursor:pointer; } #side .sd-bar button:disabled { opacity:.45; cursor:default; }
 #side .sd-bar .ir { background:linear-gradient(#fff0b8, #e3c27a); }
 .fatefly { z-index:30; }
 @media (min-width: 900px) {
-  body.has-side #wrap { grid-template-columns:348px minmax(0,1fr); grid-template-rows:minmax(0,1fr); }
+  body.has-side #wrap { grid-template-columns:440px minmax(0,1fr); grid-template-rows:minmax(0,1fr); }
   body.has-side #stage { grid-column:2; grid-row:1; }
   #side { position:relative; grid-column:1; grid-row:1; display:flex; flex-direction:column; padding:14px 14px 12px; border-top:0; border-right:2px solid var(--wood-lo); box-shadow:inset -1px 0 0 var(--brass); overflow-y:auto; }
   #side .sd-hd { display:block; margin:0 2px 10px; } #side .sd-hd b { display:block; font:700 20px var(--serif); color:var(--gold); letter-spacing:.5px; } #side .sd-hd small { font-size:12px; color:var(--mute); }
-  #side .sd-rows { gap:8px; }
-  #side .sd-row { grid-template-columns:minmax(0,1fr) 64px; gap:8px 10px; padding:8px 10px 10px; }
-  #side .sd-who { grid-column:1 / 3; grid-template-columns:34px minmax(0,1fr) auto; column-gap:10px; }
+  #side .sd-rows { gap:4px; } /* 줄을 붙여 주사위가 4×4 판으로 보이게 (폰과 같은 한 줄 배치) */
+  #side .sd-row { grid-template-columns:minmax(0,1fr) auto 58px; gap:10px; padding:5px 8px; }
+  #side .sd-who { grid-template-columns:34px minmax(0,1fr) auto; column-gap:8px; }
   #side .sd-face { width:34px; height:40px; } #side .sd-name { font-size:15px; } #side .sd-hp { height:9px; } #side .sd-who small { font-size:12px; }
-  #side .sd-dice { gap:8px; } #side .die { width:50px; height:50px; font-size:23px; } #side .die .sy { right:-7px; top:-7px; padding:1px 3px; font-size:11px; } #side .bn { font-size:10px; bottom:-6px; }
-  #side .sd-hold { min-height:50px; font-size:13px; } #side .sd-hold small { font-size:11px; }
+  #side .sd-dice { gap:6px; } #side .die { width:48px; height:48px; font-size:22px; } #side .die .sy { right:-7px; top:-7px; font-size:14px; } #side .bn { font-size:10px; bottom:-6px; }
+  #side .sd-hold { min-height:48px; font-size:12px; } #side .sd-hold small { font-size:11px; }
   #side .sd-fx { margin:12px 2px 0; gap:4px; font-size:14px; } #side .sd-fx .none small { display:block; margin:2px 0 0; font-size:12px; }
   #side .sd-bar { display:flex; margin-top:auto; padding-top:12px; min-height:44px; align-items:center; } #side .sd-bar .hint { font-size:12px; color:var(--mute); } #side .sd-bar button { min-height:44px; font-size:15px; }
 }
 #side .sd-bar .hint { display:none; } @media (min-width: 900px) { #side .sd-bar .hint { display:inline; } }
-@media (prefers-reduced-motion: reduce) { #side .die { animation:none !important; } }
+@media (prefers-reduced-motion: reduce) { #side .die, #side .sd-grp { animation:none !important; } }
+/* 주사위 면의 빛깔 = 기호 (검 붉은 · 방 푸른 · 주 보라 · 빛 금 · ★ 흰금 · 빈 면 잿빛) — 줄이 맞아 가는 것이 빛깔로 먼저 보이게 */
+.die.y-atk { background:linear-gradient(#f3b7a4, #d9836c) !important; box-shadow:inset 0 -3px 0 #a84e3a, inset 0 0 0 1px #5b241a, 0 1px 0 #000 !important; }
+.die.y-def { background:linear-gradient(#b4d2f2, #7ea6d8) !important; box-shadow:inset 0 -3px 0 #44699c, inset 0 0 0 1px #1d3454, 0 1px 0 #000 !important; }
+.die.y-arc { background:linear-gradient(#d6bdf2, #a887d6) !important; box-shadow:inset 0 -3px 0 #6c4a9e, inset 0 0 0 1px #33205a, 0 1px 0 #000 !important; }
+.die.y-holy { background:linear-gradient(#f6e39a, #dcbb52) !important; box-shadow:inset 0 -3px 0 #a07f24, inset 0 0 0 1px #5a4310, 0 1px 0 #000 !important; }
+.die.y-wild { background:linear-gradient(135deg, #fff8dc, #f0cf78 55%, #fff3c4) !important; box-shadow:inset 0 -3px 0 #b08a35, inset 0 0 0 1px #5a4310, 0 0 8px rgba(255,224,138,.7) !important; }
+.die.y-none { background:linear-gradient(#b9b2a4, #8f887a) !important; color:#3a342a !important; box-shadow:inset 0 -3px 0 #645d50, inset 0 0 0 1px #37322a, 0 1px 0 #000 !important; }
+
+/* 기호 아이콘 (9×9 픽셀): 검 · 방패 · 마법모자 · 해 · 별 — 글자는 남기고(읽어 주는 기기 · 시험) 그림으로 덮는다 */
+.sy.s-atk, .sy.s-def, .sy.s-arc, .sy.s-holy, .sy.s-wild { display:inline-block; box-sizing:content-box; width:1.2em; height:1.2em; padding:1px !important; overflow:hidden; text-indent:-99px; white-space:nowrap; vertical-align:middle; background-repeat:no-repeat; background-position:center; background-size:calc(100% - 4px) calc(100% - 4px); background-origin:border-box; image-rendering:pixelated; }
+.sy.s-atk { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath fill='%23fff' d='M7 0h2v1h-2zM6 1h3v1h-3zM5 2h3v1h-3zM4 3h3v1h-3zM0 4h1v1h-1zM3 4h3v1h-3zM1 5h4v1h-4zM2 6h2v1h-2zM1 7h1v1h-1zM3 7h2v1h-2zM0 8h1v1h-1zM4 8h1v1h-1z'/%3E%3C/svg%3E"); }
+.sy.s-def { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath fill='%23fff' d='M1 0h7v1h-7zM0 1h9v1h-9zM0 2h4v1h-4zM5 2h4v1h-4zM0 3h4v1h-4zM5 3h4v1h-4zM0 4h1v1h-1zM8 4h1v1h-1zM1 5h3v1h-3zM5 5h3v1h-3zM1 6h3v1h-3zM5 6h3v1h-3zM2 7h5v1h-5zM3 8h3v1h-3z'/%3E%3C/svg%3E"); }
+.sy.s-arc { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath fill='%23fff' d='M4 0h1v1h-1zM3 1h2v1h-2zM3 2h3v1h-3zM2 3h4v1h-4zM2 4h5v1h-5zM1 5h6v1h-6zM1 6h7v1h-7zM0 7h9v1h-9zM1 8h7v1h-7z'/%3E%3C/svg%3E"); }
+.sy.s-holy { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath fill='%23fff' d='M4 0h1v1h-1zM1 1h1v1h-1zM7 1h1v1h-1zM3 2h3v1h-3zM2 3h5v1h-5zM0 4h1v1h-1zM2 4h5v1h-5zM8 4h1v1h-1zM2 5h5v1h-5zM3 6h3v1h-3zM1 7h1v1h-1zM7 7h1v1h-1zM4 8h1v1h-1z'/%3E%3C/svg%3E"); }
+.sy.s-wild { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath fill='%23f0c070' d='M4 0h1v1h-1zM4 1h1v1h-1zM3 2h3v1h-3zM0 3h9v1h-9zM1 4h7v1h-7zM2 5h5v1h-5zM2 6h5v1h-5zM1 7h3v1h-3zM5 7h3v1h-3zM1 8h1v1h-1zM7 8h1v1h-1z'/%3E%3C/svg%3E"); }
+/* 폰: 고르는 창(갈림길 · 장면 · 누가 할까 · 주사위 고르기)은 운명판 칸 위에 얹는다 — 판을 보면서 고르게 */
+@media (max-width: 899px) { body.has-side #exitsign, body.has-side #crawlscene, body.has-side #dicepick, body.has-side #dicebear { bottom:var(--pbar-h) !important; max-height:calc(100dvh - var(--hud-h) - var(--pbar-h) - 8px); padding-bottom:12px !important; border-radius:10px 10px 0 0 !important; } }

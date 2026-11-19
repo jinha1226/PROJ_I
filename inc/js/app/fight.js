@@ -7,7 +7,7 @@ const FIGHT = (() => {
   let R = null, F = null;
   const dieFace = r => (r.special === 'death' ? '☠' : r.value) + (r.sym ? `<i class="sy s-${r.sym}">${G.Dice.SYM[r.sym].n}</i>` : '');
   // 칸 하나: 치명타 범위 · 자연 1 · 하플링 행운으로 다시 굴린 칸을 표시한다 (d = null이면 굴러가는 칸)
-  const dieHTML = (p, d, cls = '', attr = '') => (d ? `<b class="die k-${d.kind} ${G.Dice.mark(p, d) || ''}${d.lucky ? ' lucky' : ''} ${cls}" ${attr} title="${esc(G.Dice.KINDS[d.kind].n)}${d.lucky ? ' · 하플링 행운으로 다시 굴림' : ''}">${dieFace(d)}</b>` : `<b class="die roll ${cls}" ${attr}>?</b>`);
+  const dieHTML = (p, d, cls = '', attr = '') => (d ? `<b class="die k-${d.kind}${G.Dice.KINDS[d.kind].sym ? ` y-${d.sym || 'none'}` : ''} ${G.Dice.mark(p, d) || ''}${d.lucky ? ' lucky' : ''} ${cls}" ${attr} title="${esc(G.Dice.KINDS[d.kind].n)}${d.lucky ? ' · 하플링 행운으로 다시 굴림' : ''}">${dieFace(d)}</b>` : `<b class="die roll ${cls}" ${attr}>?</b>`);
   const name = p => esc(p.merc?.name || '동료');
   const lineName = x => (x.t === 'r' ? `${name(x.p)} 가로줄` : `${x.c + 1}열 세로줄`) + ` · ${G.Dice.SYM[x.s].n}`;
 
