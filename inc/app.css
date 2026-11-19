@@ -349,3 +349,94 @@ body[data-fstage] #fatehud, body[data-fstage] #hud .pm-die { visibility:hidden; 
 #tavern .tv-leg th, #tavern .tv-leg td { padding:4px 6px; text-align:left; border-bottom:1px solid var(--line); font-weight:400; }
 #tavern .tv-leg tr:first-child th { color:var(--dim); font-size:11px; } #tavern .tv-leg th:first-child { white-space:nowrap; color:var(--ink); }
 #tavern .sy.s-wild { background:#e8c860; color:#2b1d14; } #tavern .sy.s-blank { background:#3a3440; color:#b9b0a0; }
+
+/* ══ 화면 틀 다시 (2026-11-19, 사용자: 「ui 디자인이 너무 ai 냄새가 난다 — 유명한 dnd rpg 화면처럼」) ══
+   옛 CRPG 화면의 문법으로 (특정 게임을 베끼지는 않는다): 놋쇠 테를 두른 어두운 나무 판 · 제목은 명조 · 고를 것은 양피지 카드 ·
+   단추는 도드라진 판 · 체력은 붉은 막대 · 파티 카드에는 인물 초상. 쓰지 않는 것: 둥근 알약, 반투명 유리판, 얇은 1px 테만 두른 카드, 그림 글자.
+   값은 아래 변수 한 곳. 이 블록이 앞의 모양을 덮는다 (배치는 그대로). */
+:root { --ink:#eadcbd; --dim:#b9a784; --mute:#8a7a5e; --line:#7a5c30; --gold:#e3c27a; --brass:#a8823f; --brass-hi:#e3c27a; --wood:#231912; --wood-hi:#3b2b1c; --wood-lo:#0b0705;
+  --parch:#dfcfa6; --parch-ink:#24170b; --parch-dim:#5d4829; --blood:#a8332a; --panel:#231912; --btn:#3a2a1c; --btn-on:#6a4a22; --r:2px; --serif:"Noto Serif KR","Nanum Myeongjo",serif; }
+/* ── 틀: 나무 판 + 놋쇠 두 줄 테 ── */
+#exitsign, #crawlscene, #reward, #dicetray, #dicepick, #dicebear, #csheet, #gearwin, #fatestage, #fatehud, #dm, #pmapbox:not(.big), #turnstrip .ts-row, #turnstrip .ts-act, #fatebanners .fb, .exitmark, #tavern .tv-sheet {
+  background:linear-gradient(#2a1e15, #1e150f) !important; border:2px solid var(--wood-lo) !important; border-radius:2px !important; color:var(--ink) !important;
+  box-shadow:inset 0 0 0 1px var(--brass), inset 0 0 0 3px #150e09, inset 0 0 0 4px rgba(227,194,122,.2), 0 0 0 1px #000, 0 8px 22px rgba(0,0,0,.6) !important; }
+#exitsign::before, #crawlscene::before, #reward::before, #dicetray::before, #dicepick::before, #dicebear::before, #csheet::before { display:none !important; }
+#exitsign, #crawlscene, #reward, #dicetray, #dicepick, #dicebear, #csheet, #gearwin { padding-top:14px !important; }
+/* ── 제목: 명조, 놋쇠 밑줄 ── */
+#exitsign h4, #crawlscene h3, #reward h3, #dicetray .hd, #dicepick h3, #dicebear h4, #csheet h3, #gearwin h3, #tavern h2, #checkroll .ck-hd b {
+  font:700 18px var(--serif) !important; color:var(--brass-hi) !important; letter-spacing:0 !important; text-shadow:0 1px 0 #000; }
+#exitsign h4, #crawlscene h3, #reward h3, #dicepick h3, #dicebear h4, #csheet h3, #gearwin h3 { margin:0 0 8px !important; padding-bottom:6px; border-bottom:1px solid var(--brass); box-shadow:0 1px 0 #000; }
+#csheet h4, #tavern h4, #tavern h5, #gearwin h4 { font:700 13px var(--serif) !important; color:var(--brass-hi) !important; margin:12px 0 6px !important; }
+#csheet h4::before, #tavern h4::before, #tavern h5::before { content:'◆ '; font-size:8px; vertical-align:2px; color:var(--brass); }
+#exitsign p, #crawlscene p, #reward p, #dicepick p, #dicebear p { color:var(--dim) !important; }
+/* ── 단추: 도드라진 나무 판 (누르면 들어간다) ── */
+#exitsign button, #crawlscene button, #dicepick button, #dicebear button, #dicetray button, #gearwin button, #reward .rw-go, #reward .rw-all, #csheet .sh-x, #hud .hud-spd, #fatepush, #tavern .tv-x, .gshop {
+  background:linear-gradient(#4b3824, #33251a) !important; border:1px solid var(--wood-lo) !important; border-radius:2px !important; color:var(--ink) !important;
+  box-shadow:inset 0 1px 0 #7a5f3e, inset 0 -2px 0 #1b130c, 0 1px 0 rgba(0,0,0,.5) !important; text-shadow:0 1px 0 #000; }
+#exitsign button:hover, #crawlscene button:hover, #gearwin button:hover, #dicepick button:hover { background:linear-gradient(#5a4329, #3d2c1e) !important; border-color:var(--wood-lo) !important; }
+#exitsign button:active, #crawlscene button:active, #gearwin button:active, #reward .rw-go:active, #tavern .tv-go:active, #tavern .tv-take:active { transform:translateY(1px); box-shadow:inset 0 2px 0 #1b130c !important; }
+#exitsign button:disabled, #crawlscene button:disabled, #gearwin button:disabled, #tavern .tv-go:disabled, #tavern .tv-take:disabled { opacity:.5 !important; filter:grayscale(.5); }
+#crawlscene button i { color:var(--brass-hi) !important; } #crawlscene button small, #exitsign button small { color:var(--mute) !important; }
+#dicetray .col.on, #dicepick button.on, #dicetray .push.on, #dicetray .insp.on { background:linear-gradient(#7a5a2a, #55401f) !important; box-shadow:inset 0 0 0 1px var(--brass-hi), inset 0 -2px 0 #2a1d0e !important; }
+/* 으뜸 단추: 놋쇠 판 */
+#reward .rw-go:not(.rw-keep), #dicetray .go, #dicepick .go, #gearwin .gw-go, #tavern .tv-go, #tavern .tv-take, #checkroll .ck-go, #csheet .sh-x {
+  background:linear-gradient(#cba25d, #8c672f) !important; border:1px solid #2e2010 !important; border-radius:2px !important; color:#1d130a !important; font:700 15px var(--serif) !important;
+  box-shadow:inset 0 1px 0 #f0d79a, inset 0 -2px 0 #5e4420, 0 2px 0 rgba(0,0,0,.5) !important; text-shadow:0 1px 0 rgba(255,236,186,.45) !important; }
+#tavern .tv-take.out { background:linear-gradient(#4b3824, #33251a) !important; color:var(--ink) !important; text-shadow:0 1px 0 #000 !important; box-shadow:inset 0 1px 0 #7a5f3e, inset 0 -2px 0 #1b130c !important; }
+#reward .rw-all { font:500 12px "Noto Sans KR",sans-serif !important; min-height:32px; }
+/* ── 고를 것 · 읽을 것: 양피지 카드 (먹색 글씨) ── */
+#reward .rw-cards button, #gearwin .gw-card, #reward .rw-new-list li, #csheet .sh-sk li, #tavern .tv-sk li, #tavern .tv-die, #tavern .tv-lk li, .gs3 .gs-row, #gearwin .gw-cur {
+  background:linear-gradient(#e6d7b0, #d3c092) !important; border:1px solid #4e3a1e !important; border-radius:2px !important; color:var(--parch-ink) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,249,224,.55), 0 2px 0 rgba(0,0,0,.45) !important; text-shadow:none !important; }
+#reward .rw-cards button b, #gearwin .gw-card b, #reward .rw-new-list b, #csheet .sh-sk b, #tavern .tv-sk b, #tavern .tv-die b, #tavern .tv-lk b, .gs3 .gs-row b, #gearwin .gw-cur b { color:var(--parch-ink) !important; font-family:var(--serif); }
+#reward .rw-cards button small, #reward .rw-cards button span, #gearwin .gw-card small, #gearwin .gw-card li, #reward .rw-new-list span, #csheet .sh-sk small, #csheet .sh-sk span, #tavern .tv-sk small, #tavern .tv-sk span, #tavern .tv-die small, #tavern .tv-fx span, #tavern .tv-lk span, .gs3 .gs-row span, #gearwin .gw-cur small, #gearwin .gw-cur span { color:var(--parch-dim) !important; }
+#reward .rw-cards button:hover { filter:brightness(1.05); border-color:#8a6a2e !important; }
+#gearwin .gw-card li { background:rgba(60,42,18,.12) !important; border:0 !important; border-radius:2px !important; }
+#gearwin .gw-card b i { display:none; } /* 물건 아이콘(그림 글자)은 뺀다 */
+#gearwin .gw-card.r1, .gs3 .gs-row.r1 { border-left:4px solid #3f8a52 !important; } #gearwin .gw-card.r2, .gs3 .gs-row.r2 { border-left:4px solid #2f6fb8 !important; } #gearwin .gw-card.r3, .gs3 .gs-row.r3 { border-left:4px solid #7a4ac0 !important; } #gearwin .gw-card.r4, .gs3 .gs-row.r4 { border-left:4px solid #c9781e !important; }
+.gs3 .gs-row.empty { background:#1a120c !important; border:1px dashed #5a4426 !important; box-shadow:none !important; } .gs3 .gs-row.empty b { color:var(--mute) !important; }
+#tavern .tv-cnt, #tavern .tv-fx b { color:var(--parch-ink) !important; }
+/* ── 위 바 · 파티 바: 나무 선반 ── */
+#hud .hud-top { background:linear-gradient(#2c2017, #1b130d) !important; border-bottom:2px solid var(--wood-lo); box-shadow:inset 0 -1px 0 var(--brass), 0 3px 0 rgba(0,0,0,.35); }
+#hud .hud-l b { font:700 16px var(--serif) !important; color:var(--brass-hi) !important; text-shadow:0 1px 0 #000; } #hud .hud-l small { color:var(--dim) !important; }
+#hud .chip, #tavern .chip { padding:3px 8px !important; border-radius:2px !important; background:#150e09 !important; border:1px solid var(--brass) !important; box-shadow:inset 0 0 0 1px #000 !important; color:var(--ink) !important; font:600 11px "Noto Sans KR",sans-serif !important; }
+#hud .chip.c-gold { color:#ffd98a !important; }
+#hud .hud-party { padding-top:8px !important; background:linear-gradient(#1b130d, #2c2017) !important; border-top:2px solid var(--wood-lo); box-shadow:inset 0 1px 0 var(--brass), 0 -3px 0 rgba(0,0,0,.35); justify-content:center; }
+#hud .pm { padding:6px 6px 6px 42px !important; min-height:56px !important; gap:2px !important; background:#150e09 !important; border:1px solid #000 !important; border-radius:2px !important; box-shadow:inset 0 0 0 1px var(--brass) !important; }
+#hud .pm.cur { background:#2a1d10 !important; box-shadow:inset 0 0 0 1px var(--brass-hi), 0 0 0 2px var(--brass-hi), 0 0 14px rgba(227,194,122,.45) !important; }
+#hud .pm-face { position:absolute; left:6px; top:6px; width:30px; height:35px; image-rendering:pixelated; background:radial-gradient(circle at 50% 35%, #4a3826, #17100b); border:1px solid #000; border-bottom:3px solid var(--cc); box-shadow:0 0 0 1px var(--brass); }
+#hud .pm.dead .pm-face { filter:grayscale(1) brightness(.6); }
+#hud .pm-name { font:700 13px var(--serif) !important; color:var(--ink); }
+#hud .pm-hp { height:8px !important; border-radius:0 !important; background:#0b0705 !important; border:1px solid #000; box-shadow:0 0 0 1px #4a3826; } #hud .pm-hp i { background:linear-gradient(#d44a3b, #8e241c) !important; border-radius:0 !important; }
+#hud .pm-die { top:-9px !important; right:-3px !important; border-radius:2px !important; background:linear-gradient(#efe2bf, #cdb98a) !important; border:1px solid #2e2010; box-shadow:0 2px 0 rgba(0,0,0,.5) !important; font-family:var(--serif) !important; }
+/* ── 전투: 차례 띠 · 운명판 · 표지 ── */
+#turnstrip .ts-row { padding:5px 8px !important; font:500 12px "Noto Sans KR",sans-serif !important; }
+#turnstrip .ts-rd { font-family:var(--serif); color:var(--brass-hi) !important; }
+#turnstrip .ts-c, #turnstrip .ts-side { border-radius:2px !important; } #turnstrip .ts-c i { border-radius:1px !important; }
+#turnstrip .ts-c.cur { background:linear-gradient(#7a5a2a, #55401f) !important; border-color:var(--brass-hi) !important; } #turnstrip .ts-c.cur.foe { background:linear-gradient(#7a2c22, #4a1a14) !important; border-color:#e0604a !important; }
+#turnstrip .ts-act { font:500 13px "Noto Sans KR",sans-serif !important; } #turnstrip .ts-act b { font-family:var(--serif); color:#fff4d6; }
+#fatestage .fs-hd, #fatestage .fs-cb b, #fatebanners .fb b { font-family:var(--serif) !important; }
+.die { border-radius:3px !important; background:linear-gradient(#efe2bf, #d2bf90) !important; color:#24170b !important; box-shadow:inset 0 -3px 0 #b09a6a, inset 0 0 0 1px #5b4426, 0 1px 0 #000 !important; font-family:var(--serif) !important; }
+.die.k-doom { background:linear-gradient(#3a2a1c, #17100b) !important; color:#e06050 !important; } .die.k-gamble { background:linear-gradient(#f0cf78, #c79b45) !important; } .die.k-steady { background:linear-gradient(#bcd4b0, #8fae84) !important; } .die.k-twin { background:linear-gradient(#bccbea, #8fa3cf) !important; }
+.exitmark { padding:4px 9px !important; } .exitmark b { font-family:var(--serif); color:var(--brass-hi); } .exitmark small { color:var(--dim) !important; }
+#fatepush { font:700 13px var(--serif) !important; }
+/* ── 선술집 ── */
+#tavern .tv-g .tv-nm { background:#150e09 !important; border:1px solid var(--brass) !important; border-radius:2px !important; box-shadow:0 0 0 1px #000, 0 2px 0 rgba(0,0,0,.5) !important; font-family:var(--serif); }
+#tavern .tv-g.on .tv-nm { background:#3a2a12 !important; border-color:var(--brass-hi) !important; } #tavern .tv-nm em { border-radius:2px !important; background:var(--brass-hi) !important; color:#1d130a !important; }
+#tavern .tv-scene { border:2px solid var(--wood-lo); box-shadow:inset 0 0 0 1px var(--brass), 0 0 0 1px #000; }
+#tavern .tv-st span { background:#150e09 !important; border:1px solid var(--brass) !important; border-radius:2px !important; box-shadow:inset 0 0 0 1px #000; } #tavern .tv-st b { font-family:var(--serif); }
+#tavern .tv-wall li { border-left:3px solid var(--brass) !important; background:#150e09 !important; border-radius:0 !important; }
+#tavern .tv-leg th, #tavern .tv-leg td { border-bottom:1px solid #4a3826 !important; }
+#tavern .tv-face { background:radial-gradient(circle at 50% 35%, #4a3826, #17100b) !important; border:1px solid #000 !important; border-radius:0 !important; box-shadow:0 0 0 1px var(--brass); }
+/* ── 캐릭터 시트 ── */
+#csheet .sh-ab span { background:#150e09 !important; border:1px solid var(--brass) !important; border-radius:2px !important; box-shadow:inset 0 0 0 1px #000 !important; font-family:var(--serif); }
+#csheet .sh-bar { border-radius:0 !important; background:#0b0705 !important; border:1px solid #000; box-shadow:0 0 0 1px #4a3826; } #csheet .sh-bar i { border-radius:0 !important; background:linear-gradient(#d44a3b, #8e241c) !important; } #csheet .sh-bar.xp i { background:linear-gradient(#cba25d, #8c672f) !important; }
+#reward .rw-stats div { background:#150e09 !important; border:1px solid var(--brass) !important; border-radius:2px !important; box-shadow:inset 0 0 0 1px #000; } #reward .rw-stats b { font-family:var(--serif); color:var(--brass-hi); }
+#reward .rw-xp i { background:linear-gradient(#cba25d, #8c672f) !important; border-radius:0 !important; }
+.sy { border-radius:2px !important; font-family:var(--serif) !important; }
+/* 시트 안의 장비 줄: #csheet의 단추 모양보다 앞서게 */
+#csheet .gs3 .gs-row { background:linear-gradient(#e6d7b0, #d3c092) !important; border:1px solid #4e3a1e !important; border-radius:2px !important; color:var(--parch-ink) !important; box-shadow:inset 0 0 0 1px rgba(255,249,224,.55), 0 2px 0 rgba(0,0,0,.45) !important; text-shadow:none !important; }
+#csheet .gs3 .gs-row b { color:var(--parch-ink) !important; font-family:var(--serif); } #csheet .gs3 .gs-row span { color:var(--parch-dim) !important; }
+#csheet .gs3 .gs-row.r1 { border-left:4px solid #3f8a52 !important; } #csheet .gs3 .gs-row.r2 { border-left:4px solid #2f6fb8 !important; } #csheet .gs3 .gs-row.r3 { border-left:4px solid #7a4ac0 !important; } #csheet .gs3 .gs-row.r4 { border-left:4px solid #c9781e !important; }
+#csheet .gs3 .gs-row.empty { background:#1a120c !important; border:1px dashed #5a4426 !important; box-shadow:none !important; } #csheet .gs3 .gs-row.empty b { color:var(--mute) !important; }
+#csheet .gs3 .gs-row:disabled { opacity:1 !important; filter:none !important; }

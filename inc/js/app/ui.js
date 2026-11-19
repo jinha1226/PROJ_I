@@ -8,6 +8,13 @@ const UI = (() => {
     const rc = canvas.getBoundingClientRect(), sb = $('stage').getBoundingClientRect(), a = project(wx(x), wy(y), z);
     el.style.transform = `translate(${Math.round(rc.left - sb.left + a.sx / W * rc.width)}px,${Math.round(rc.top - sb.top + a.sy / H * rc.height)}px) translate(-50%,-100%)`;
   }
+  // 초상: 게임 안 픽셀 인형(MD.pix — js/render/minidoll.js)의 윗몸을 작은 캔버스에 그린다. 그림이 아직 안 왔으면 false (다음 틱에 다시)
+  const bmp = new WeakMap();
+  function face(cv, m) {
+    const sp = typeof MD !== 'undefined' && MD.pix ? MD.pix(m, 0.2) : null; if (!sp || !cv) return false;
+    let c = bmp.get(sp); if (!c) { c = document.createElement('canvas'); c.width = sp.w; c.height = sp.h; c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(sp.px.buffer.slice(0)), sp.w, sp.h), 0, 0); bmp.set(sp, c); }
+    const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.clearRect(0, 0, cv.width, cv.height); x.drawImage(c, Math.floor(cv.width / 2 - sp.w / 2), Math.floor(cv.height - (sp.foot - sp.top) * 0.62 - sp.top) - 2); return true;
+  }
   // 쿼터뷰 좌표 → 무대(#stage) 안 화면 좌표 [x, y]
   function toStage(x, y, z = 0) {
     const rc = canvas.getBoundingClientRect(), sb = $('stage').getBoundingClientRect(), a = project(wx(x), wy(y), z);
@@ -30,5 +37,5 @@ const UI = (() => {
     dm.innerHTML = lines.slice(-2).map(l => `<div>${esc(l.t)}</div>`).join(''); dm.classList.remove('hidden'); // 새 줄 중 마지막 둘만, 한 줄씩 (화면을 덜 가리게)
     clearTimeout(say.t); say.t = setTimeout(() => dm.classList.add('hidden'), 2600 + Math.min(2, lines.length) * 600);
   }
-  return { $, esc, place, toStage, tileAt, ring, svg, say };
+  return { $, esc, place, toStage, tileAt, ring, svg, say, face };
 })();

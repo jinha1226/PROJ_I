@@ -22,19 +22,22 @@ const HUD = (() => {
     $('stage').append(el);
   }
   const dieHTML = r => (r ? `<b class="pm-die k-${r.kind}">${r.special === 'death' ? '☠' : r.value}${r.sym ? `<sup class="sy s-${r.sym}">${G.Dice.SYM[r.sym].n}</sup>` : ''}</b>` : '');
+  // 파티 카드의 초상 (그림이 늦게 오면 올 때까지 다시 그린다)
+  let faceLeft = 0;
+  function drawFaces(v) { faceLeft = 0; el.querySelectorAll('.pm-face').forEach((cv, i) => { if (cv.dataset.ok) return; if (v.party[i]?.m && UI.face(cv, v.party[i].m)) cv.dataset.ok = '1'; else faceLeft++; }); }
   function frame() {
     const v = CRAWL.view(); if (!v) return; if (!el) mount();
     if (v.fighting !== wasFight) { wasFight = v.fighting; if (typeof setZoom === 'function') setZoom(zoom(wasFight), true); } // 전투가 시작되면 넓게, 끝나면 되돌린다
     const dice = v.fighting && G.Dice.st ? v.party.map(p => G.Dice.dieOf(p.a)) : [], ins = v.party.map(p => (G.Dice.insp(p.a) ? '✦' : '') + (v.fighting ? G.Dice.bonus(p.a).join('') : ''));
     const k = JSON.stringify([v.title, v.sub, v.gold, v.items, GEARUI.count(), G.Turn.speed(f()), v.party.map(p => [p.m?.name, p.m?.lv, p.hp, p.max, p.dead, p.cur]), dice.map(r => r && `${r.value}${r.sym}`), ins]);
-    if (k === key) return; key = k;
+    if (k === key) { if (faceLeft) drawFaces(v); return; } key = k;
     const res = v.items ? ITEM.filter(([id]) => v.items[id] > 0).map(([id, n]) => `<span class="chip c-${id}" title="${n}">${n} ${v.items[id]}</span>`).join('') : '';
     el.querySelector('.hud-top').innerHTML = `<div class="hud-l"><b>${esc(v.title)}</b><small>${esc(v.sub)}</small></div>` +
       `<div class="hud-r">${v.gold != null ? `<span class="chip c-gold" title="금화">금화 ${v.gold}</span>` : ''}${res}${v.gold != null ? GEARUI.chip() : ''}<button class="hud-spd" title="배속 (T)">×${G.Turn.speed(f())}</button></div>`;
     el.querySelector('.hud-party').innerHTML = v.party.map((p, i) => { const m = p.m, c = clsOf(m), w = Math.round(100 * Math.max(0, p.hp) / Math.max(1, p.max));
-      return `<button class="pm${p.cur ? ' cur' : ''}${p.dead ? ' dead' : ''}" data-i="${i}"><i class="pm-cls" style="background:${c.col || '#888'}">${esc((c.n || '?').slice(0, 1))}</i>` +
+      return `<button class="pm${p.cur ? ' cur' : ''}${p.dead ? ' dead' : ''}" data-i="${i}"><canvas class="pm-face" width="26" height="30" style="--cc:${c.col || '#888'}"></canvas>` +
         `<span class="pm-name">${esc(m?.name || '동료')}${ins[i] ? ` <i class="pm-ins" title="영웅적 영감 · 얹히는 주사위">${ins[i]}</i>` : ''}</span><small class="pm-lv">${esc(c.n || '')} · ${m?.lv || 1}레벨</small>` +
-        `<span class="pm-hp"><i style="width:${w}%;background:${w > 50 ? '#7fcf8a' : w > 25 ? '#e8c860' : '#e06050'}"></i></span><small class="pm-hpn">${Math.max(0, p.hp)}/${p.max}</small>${dieHTML(dice[i])}</button>`; }).join('');
+        `<span class="pm-hp"><i style="width:${w}%;background:${w > 50 ? '#7fcf8a' : w > 25 ? '#e8c860' : '#e06050'}"></i></span><small class="pm-hpn">${Math.max(0, p.hp)}/${p.max}</small>${dieHTML(dice[i])}</button>`; }).join(''); drawFaces(v);
   }
   // 캐릭터 시트 (바텀 시트): 직업 · 레벨 · 경험치 · 체력 · 능력치 · 손에 든 기술(5칸) · 끼운 물건 · 직업 주사위
   function sheet(i) {

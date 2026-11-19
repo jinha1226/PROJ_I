@@ -11,7 +11,7 @@
 const CRAWL = (() => {
   const FL = G.Floor, { $, esc } = UI;
   const KIND = { open: '통로', locked: '잠긴 문', trap: '함정 복도', dark: '어두운 길', hidden: '숨은 통로' };
-  const ICON = { open: '›', locked: '🔒', trap: '⚠', dark: '●', hidden: '⋯', camp: '🔥', shop: '⚖' };
+  const ICON = { open: '›', locked: '▣', trap: '!', dark: '●', hidden: '⋯', camp: '▲', shop: '◎' }; // 그림 글자(이모지)는 쓰지 않는다 — 기기마다 모양이 다르고 화면 틀과 안 어울린다
   const NEAR = 1.6; // 이만큼 다가가면 안내 표지 · 구조물이 열린다
   let st = null, iso = null, R = null, walk = null, marks = [], cutscene = false;
   let open = null, roomAt = null; // 열린 타일 · 타일 → 방
