@@ -103,7 +103,7 @@ G.Turn.smooth = !q.get('steps'); // 흐르는 턴제 (?steps=1이면 옛 방식:
 const PICKS = TAVERNUI.takeParty() || (q.get('party') || q.get('seed') || q.get('auto') ? (q.get('party') || 'dragoon,cleric').split(',') : null);
 const TAVERN = !PICKS && !SCENE && !TEST_FIGHT;
 const W0 = SCENE === 'door' ? TestFloor.world('door') : SCENE === 'reward' ? TestFloor.world('fight') : TEST_FIGHT ? TestFloor.world('fight') : TestFloor.world('crawl', CRAWL.start(+q.get('seed') || ((Math.random() * 1e6) | 0), PICKS || ['dragoon']), PICKS);
-if (SCENE === 'door') CRAWL.doorTest(W0.r); else if (SCENE === 'reward') CRAWL.rewardTest(W0.r); else if (TAVERN) TAVERNUI.open(W0.f, CRAWL.renown()); else if (!TEST_FIGHT) CRAWL.attach(W0.r); else CRAWL.fightTest(W0.r);
+if (SCENE === 'door') CRAWL.doorTest(W0.r); else if (SCENE === 'reward') CRAWL.rewardTest(W0.r); else if (TAVERN) { TAVERNUI.open(W0.f, CRAWL.renown()); TITLEUI.open(W0.f, null); /* 타이틀은 선술집 위에 덮는다 (이 탭에서 처음 열 때만) */ } else if (!TEST_FIGHT) CRAWL.attach(W0.r); else CRAWL.fightTest(W0.r);
 const f = W0.f, rt = () => W0.r;
 addEventListener('error', e => { document.body.dataset.err = String(e.message || e); });
 if (q.get('end')) document.addEventListener('DOMContentLoaded', () => { const d = document.createElement('div'); d.className = 'record-stub'; d.textContent = '층 끝 화면 자리 (7단계)'; document.body.append(d); });
