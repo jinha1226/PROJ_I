@@ -64,7 +64,7 @@ const TestFloor = (() => {
   function world(kind = 'floor', map0 = null, picks = null) {
     G.newState();
     const f = G.S.w.fantasy, adopt = p => (typeof p === 'string' ? (m => { if (m.lv >= 3) m.adv = Object.keys(G.D.ADV).find(k => G.D.ADV[k].base === p) || null; return G.Party.forge(m); })(G.Party.trim(G.Guild.make(f, p, { lv: G.Party.START_LV, ab: G.Party.stdAb(p) }))) : { ...p, uid: f.nextUid = (f.nextUid || 0) + 1, lv: Math.max(G.Party.START_LV, p.lv || 1), xp: 0 });
-    if (picks && typeof picks[0] !== 'string') f.leader = { ...adopt(picks[0]), lead: true };
+    if (picks) f.leader = { ...adopt(picks[0]), lead: true }; // 앞장도 고른 사람 그대로 (시험 주소의 직업 이름도 — 엔진이 굴린 단장이 서지 않게)
     const L = G.Guild.leader(f);
     const lv = kind === 'crawl' ? G.Party.START_LV : 3; // 탐사 층은 시작 레벨에서 전투로 큰다 · 시험 장면은 3레벨
     f.leaderNew = false; f.autoTr = f.autoParty = false; f.askMeet = false; L.lv = lv;
@@ -107,4 +107,17 @@ if (SCENE === 'door') CRAWL.doorTest(W0.r); else if (SCENE === 'reward') CRAWL.r
 const f = W0.f, rt = () => W0.r;
 addEventListener('error', e => { document.body.dataset.err = String(e.message || e); });
 if (q.get('end')) document.addEventListener('DOMContentLoaded', () => { const d = document.createElement('div'); d.className = 'record-stub'; d.textContent = '층 끝 화면 자리 (7단계)'; document.body.append(d); });
-
+// 자판 (PC): 숫자 1~9 = 창의 n번째 선택지 · Enter / Space = 으뜸 단추(시작 · 계속 · 확인) · Esc = 닫기. 글자를 치는 칸은 없으니 늘 받는다
+addEventListener('keydown', ev => {
+  if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.repeat) return;
+  const $q = s => document.querySelector(s), vis = b => b && !b.disabled && b.offsetParent !== null;
+  if (ev.key === 'Enter' || ev.key === ' ') {
+    const b = ['#titlescreen .tt-go', '#checkroll', '#gearwin .gw-go', '#reward .rw-go:not(.rw-keep)', '#dicetray .go', '#dicepick .go', '#tavern .tv-take', '#tavern .tv-go'].map($q).find(x => x && (x.id === 'checkroll' || vis(x)));
+    if (b) { ev.preventDefault(); b.click(); } return;
+  }
+  if (ev.key === 'Escape') { const b = ['#gearwin .gw-go', '#csheet .sh-x', '#tavern .tv-x'].map($q).find(vis); if (b) { ev.preventDefault(); b.click(); } return; }
+  if (/^[1-9]$/.test(ev.key) && !$q('#checkroll')) {
+    const box = ['#gearwin .gw-who', '#reward .rw-cards', '#exitsign', '#crawlscene'].map($q).find(x => x), b = box && [...box.querySelectorAll('button')].filter(x => !x.classList.contains('x'))[+ev.key - 1];
+    if (vis(b)) { ev.preventDefault(); b.click(); }
+  }
+});
