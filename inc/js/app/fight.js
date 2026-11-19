@@ -32,7 +32,7 @@ const FIGHT = (() => {
     if (T && T.round !== F.round) { F.round = T.round; if (!G.Dice.board && !$('dicebear')) { if (G.Dice.loadout.includes('doom') && !F.quiet) bearerPick(); else { G.Dice.newBoard(); if (F.quiet) G.Dice.board.ready = true; else boardTray(); } } }
     if ($('dicebear') || $('dicetray') || (G.Dice.board && !G.Dice.board.ready)) return true; // 플레이어를 기다린다 (전투 중 밀기 창도)
     if (T && G.Dice.board && G.Dice.st?.round !== T.round) {
-      const B = G.Dice.board, old = G.Dice.st && B.base < T.round ? B.cells.map(row => row[0]) : null; // 방금 쓴 열 (밀려 나가는 그림용)
+      const B = G.Dice.board, old = G.Dice.st && B.base < T.round ? B.cells.map(row => row[0]) : null; // 방금까지의 맨 앞 칸 (쓴 줄만 밀려 나간다 — B.fresh)
       G.Dice.useRound(T.round); const c = G.Dice.fire(); if (c) F.log(`${T.round}라운드 — ${comboTxt(c)}: ${G.Dice.SYM[c.s].txt(c.n)}`);
       if (F.quiet) roundFx(c); else stage(c, old);
     }
@@ -74,16 +74,18 @@ const FIGHT = (() => {
   // ── 라운드 연출 (슬롯 한 번 돌리듯): 쓴 열이 밀려 나가고 새 열이 굴러 들어온다 → 이번 열이 켜지고 조합이 맞은 칸이 빛난다 → 주사위가 각자의 카드로 날아간다 ──
   // 시각만 — 규칙(useRound · fire)은 이미 끝났다. 시간은 전투 시계(dt × 배속)로 센다
   function stage(c, old) {
-    const D = G.Dice, B = D.board, alive = new Set(D.party()), el = document.createElement('div'); el.id = 'fatestage'; if (old) el.className = 'slide';
-    el.innerHTML = `<div class="fs-hd">${B.base}라운드</div>` + B.rows.map((p, r) => `<div class="fs-row${alive.has(p) ? '' : ' dead'}" data-r="${r}"><span class="fs-n">${esc(p.merc?.name || '동료')}</span>` +
-      `${old ? `<span class="fs-cell out">${dieHTML(p, old[r])}</span>` : ''}${B.cells[r].map((d, k) => `<span class="fs-cell c${k}">${old && k === 2 ? '<b class="die spin">?</b>' : dieHTML(p, d)}</span>`).join('')}</div>`).join('') + '<div class="fs-cb"></div>';
+    const D = G.Dice, B = D.board, alive = new Set(D.party()), el = document.createElement('div'); el.id = 'fatestage';
+    const adv = r => !!old && B.fresh?.has(r), any = !!old && B.rows.some((p, r) => adv(r)); // 주사위를 쓴 줄만 당겨지고 끝 칸이 새로 굴러 들어온다
+    el.innerHTML = `<div class="fs-hd">${B.base}라운드${old ? `<small>${any ? '쓴 주사위만 빠지고, 그 줄 끝에 새 주사위가 굴러 들어온다' : '아무도 주사위를 쓰지 않았다 — 그대로'}</small>` : ''}</div><div class="fs-row fs-cols"><span></span><span>지금</span><span>다음</span><span>그다음</span></div>` +
+      B.rows.map((p, r) => `<div class="fs-row${alive.has(p) ? '' : ' dead'}${adv(r) ? ' adv' : ''}" data-r="${r}"><span class="fs-n">${esc(p.merc?.name || '동료')}${old && !adv(r) && alive.has(p) ? '<small>안 썼다</small>' : ''}</span>` +
+      `${adv(r) ? `<span class="fs-cell out">${dieHTML(p, old[r])}</span>` : ''}${B.cells[r].map((d, k) => `<span class="fs-cell c${k}">${adv(r) && k === 2 ? '<b class="die spin">?</b>' : dieHTML(p, d)}</span>`).join('')}</div>`).join('') + '<div class="fs-cb"></div>';
     $('stage').append(el); document.body.dataset.fstage = '1';
-    F.stage = { el, c, t: 0, ph: old ? 0 : 1, at: !c && old ? [0.5, 0.65, 1.05, 1.35] : old ? [0.6, 0.85, 1.75, 2.15] : [0, 0.2, 1.1, 1.5] }; // 조합이 없는 라운드는 짧게
+    F.stage = { el, c, t: 0, ph: any ? 0 : 1, at: !old ? [0, 0.2, 1.1, 1.5] : !any ? [0, 0.35, 0.9, 1.2] : !c ? [0.7, 0.95, 1.4, 1.7] : [0.7, 1.0, 1.9, 2.3] }; // 조합이 없는 라운드는 짧게
   }
   function stageStep(dt) {
     const S = F.stage, D = G.Dice, B = D.board, el = S.el; S.t += dt * G.Turn.speed(G.S.w.fantasy);
     if (S.ph === 0) { for (const d of el.querySelectorAll('.die.spin')) d.textContent = 1 + Math.floor(Math.random() * 20); }
-    if (S.ph === 0 && S.t >= S.at[0]) { S.ph = 1; B.rows.forEach((p, r) => { const cell = el.querySelector(`.fs-row[data-r="${r}"] .c2`); if (cell) cell.innerHTML = dieHTML(p, B.cells[r][2], 'land'); }); } // 새 열이 멈춘다
+    if (S.ph === 0 && S.t >= S.at[0]) { S.ph = 1; B.rows.forEach((p, r) => { const cell = el.querySelector(`.fs-row.adv[data-r="${r}"] .c2`); if (cell) cell.innerHTML = dieHTML(p, B.cells[r][2], 'land') + '<i class="fs-new">새로</i>'; }); } // 새 주사위가 멈춘다 (당겨진 줄만)
     if (S.ph === 1 && S.t >= S.at[1]) { S.ph = 2; el.classList.add('use'); const c = S.c, alive = new Set(D.party()); // 이번 열이 켜진다: 위에서 아래로 하나씩, 조합이 맞은 칸은 그 빛으로
       B.rows.forEach((p, r) => { const d = el.querySelector(`.fs-row[data-r="${r}"] .c0 .die`); if (!d) return; d.style.animationDelay = `${r * 0.09}s`; d.classList.add('pop'); if (c && alive.has(p) && D.inCombo(B.cells[r][0], c.s)) d.classList.add('hit', 'h-' + c.s); });
       const cb = el.querySelector('.fs-cb'); if (c) { cb.innerHTML = `<b class="h-${c.s}">${comboTxt(c)}</b> <span>${esc(D.SYM[c.s].txt(c.n))}</span>`; el.classList.add('win', 'w-' + c.s); } else cb.innerHTML = '<span>조합 없음</span>';
@@ -202,7 +204,7 @@ const FIGHT = (() => {
     const cs = S ? D.combos().find(x => x.s === S.combo) : null, bon = B.rows.map(p => D.bonus(p).join(''));
     const k = `${B.base}|${S ? S.used.size : 0}|${S?.combo}|${B.rows.filter(p => p.dead).length}|${B.pushes || 0}|${bon}|${B.rows.map(p => +D.insp(p)).join('')}|${B.cells.map(row => row.map(d => d.value).join()).join(';')}`;
     if (el.dataset.k === k) return; const fresh = el.dataset.base && +el.dataset.base !== B.base && B.base > 1; el.dataset.k = k; el.dataset.base = B.base;
-    el.innerHTML = `<table>${B.rows.map((p, r) => `<tr class="${p.dead ? 'dead' : ''}${S?.rows?.has(p) ? ' rowfx' : ''}"><th>${D.insp(p) ? '<i class="ins">✦</i>' : ''}${esc(p.merc?.name || '동료')}</th>${B.cells[r].map((d, c) => `<td class="${c === 0 ? 'now' : ''}${c === 0 && S && S.used.has(p) ? ' used' : ''}${fresh && c === 2 ? ' new' : ''}">${dieHTML(p, d, c === 0 && cs && !p.dead && D.inCombo(d, cs.s) ? `hit h-${cs.s}` : '')}${c === 0 && bon[r] ? `<i class="bn">${bon[r]}</i>` : ''}</td>`).join('')}</tr>`).join('')}</table>` +
+    el.innerHTML = `<table>${B.rows.map((p, r) => `<tr class="${p.dead ? 'dead' : ''}${S?.rows?.has(p) ? ' rowfx' : ''}"><th>${D.insp(p) ? '<i class="ins">✦</i>' : ''}${esc(p.merc?.name || '동료')}</th>${B.cells[r].map((d, c) => `<td class="${c === 0 ? 'now' : ''}${c === 0 && S && S.used.has(p) ? ' used' : ''}${fresh && c === 2 && B.fresh?.has(r) ? ' new' : ''}">${dieHTML(p, d, c === 0 && cs && !p.dead && D.inCombo(d, cs.s) ? `hit h-${cs.s}` : '')}${c === 0 && bon[r] ? `<i class="bn">${bon[r]}</i>` : ''}</td>`).join('')}</tr>`).join('')}</table>` +
       `<div class="cb">${S ? `${S.round}라운드` : ''}${cs ? ` · ${comboTxt(cs)}` : ''}</div>`;
   }
   // 전투 중 「운명판」 단추 (오른쪽 아래): 누르면 전투가 멈추고 판이 열린다 — 앞으로 올 열을 보고, 밀기(한 번) · 영감을 쓴다

@@ -51,8 +51,11 @@ for (const seed of [4, 5]) {
   t('직업은 SRD 직업으로: 정찰(드루이드) = 신성 · 궁수(레인저) = 재주꾼 · 워락 = 비전', D.dieFor({ merc: { cls: 'scout' } }) === 'c_div' && D.dieFor({ merc: { cls: 'archer' } }) === 'c_skl' && D.dieFor({ merc: { cls: 'warlock' } }) === 'c_arc');
   // 라운드 → 열: 1 2 3 1 2 3 …, 내 칸이 내 주사위
   B.cells[0][0] = D.face('c_war', 17); B.cells[0][1] = D.face('c_war', 3); B.ready = true;
-  const third = B.cells[0][2]; D.useRound(1); const a1 = D.dieOf(ps[0]).value; D.useRound(2, () => 0.5); const a2 = D.dieOf(ps[0]).value, in2 = B.cells[0][2].value; D.useRound(3); const a3 = D.dieOf(ps[0]); D.useRound(4);
-  t('라운드가 넘어가면 맨 앞 열이 빠지고 새 열이 붙는다 (늘 세 열)', a1 === 17 && a2 === 3 && in2 === 11 && a3 === third && D.dieOf(ps[0]).value === 11 && B.base === 4 && B.cells.every(row => row.length === 3) && D.st.col === 0, [a1, a2, in2, B.base]);
+  // 주사위를 쓴 사람의 줄만 당겨진다 — 안 쓴 칸은 다음 라운드에 그대로 남는다
+  const third = B.cells[0][2], other0 = B.cells[1][0]; D.useRound(1); const a1 = D.dieOf(ps[0]).value;
+  D.useRound(2, () => 0.5); t('아무도 안 썼으면 라운드가 넘어가도 그대로 (걷기만 한 차례에 주사위가 사라지지 않는다)', D.dieOf(ps[0]).value === 17 && B.base === 2 && B.fresh.size === 0 && B.cells[1][0] === other0);
+  D.st.used.add(ps[0]); D.useRound(3, () => 0.5); const a2 = D.dieOf(ps[0]).value, in2 = B.cells[0][2].value;
+  t('쓴 사람의 줄만 맨 앞 칸이 빠지고 끝에 새 칸이 붙는다 (늘 세 칸)', a1 === 17 && a2 === 3 && in2 === 11 && B.cells[0][1] === third && B.fresh.has(0) && B.fresh.size === 1 && B.cells[1][0] === other0 && B.base === 3 && B.cells.every(row => row.length === 3) && D.st.col === 0, [a1, a2, in2, B.base]);
   // 다시 굴리기는 한 번, 고른 칸만
   const keep = B.cells[1][1].value; D.newBoard(() => 0.5); const B2 = D.board, k2 = B2.cells[2][2];
   t('다시 굴리기 값: 첫 칸 공짜, 그 뒤 칸마다 5 · 10 · 15', [0, 1, 2, 3, 4].map(D.rerollCost).join() === '0,0,5,15,30');

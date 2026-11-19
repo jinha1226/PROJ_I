@@ -131,10 +131,12 @@ G.Dice = (() => {
     swapCols(a, b) { const B = D.board; if (!B || a === b) return false; for (const row of B.cells) [row[a], row[b]] = [row[b], row[a]]; return true; },
     // 한 열의 주사위 (쓰러진 사람 칸은 빠진다)
     colDice(c) { const B = D.board, alive = new Set(D.party()); return B.rows.map((p, r) => (alive.has(p) ? B.cells[r][c] : null)); },
-    // 라운드 시작: 지난 라운드 열을 빼고 새 열을 붙인 뒤(advance), 맨 앞 열을 이번 라운드 주사위로. 앞 라운드 조합 효과는 지운다
+    // 라운드 시작: 지난 라운드에 **주사위를 쓴 사람의 줄만** 한 칸 당기고 끝에 새 주사위를 굴린다 (2026-11-19 — 걷기만 한 차례에 주사위가 그냥 사라지지 않게).
+    // 안 쓴 사람의 맨 앞 칸은 그대로 다음 라운드에 남는다. B.fresh = 이번에 당겨진 줄 (화면이 그 줄만 굴린다). 앞 라운드 조합 효과는 지운다
     useRound(round, rng = Math.random) {
-      D.clearFate();
-      const B = D.board; while (B.base < round) D.advance(rng);
+      const prev = D.st; D.clearFate();
+      const B = D.board; B.fresh = new Set();
+      if (B.base < round) { B.rows.forEach((p, r) => { if (prev && prev.used.has(p)) { B.cells[r].shift(); B.cells[r].push(roll(D.dieFor(p), rng, p)); B.fresh.add(r); } }); B.base = round; }
       const col = 0, dice = D.colDice(col).map(r => r || { kind: 'd20', face: 0, value: null, sym: null, special: 'gone' });
       D.st = { round, col, dice, alloc: new Map(B.rows.map((p, r) => [p, r])), combo: null, comboUser: false, used: new Set(), saveBy: null, ready: true };
       D.recombo(); D.rowFire();
