@@ -209,6 +209,7 @@ G.Fantasy = (() => {
         kind: 'mon', n: d.n, t: d.t, wpn: d.wpn, ty: d.ty, role: st.role, tr: st.tr, hand: st.hand, stat: st.block, scale: sc, x, y, s: boss ? d.s || 1.6 : d.s || 1, hp, max: hp, atk: 1, gold: G.Items.coinOf(st.block, d.ty),
         boss, aggro: false, atkT: Math.random(), bar: true, label: boss ? d.n : null, dots: [],
       };
+      if (G.Dnd.trueDragon(d.n)) mo.cells = G.Dnd.CELLS[st.block.size] || 1; // 용은 SRD 크기대로 여러 칸 (설계 2026-11-19)
       rt.mons.push(Object.assign(mo, extra));
       return mo;
     },

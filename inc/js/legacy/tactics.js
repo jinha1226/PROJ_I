@@ -13,13 +13,13 @@ G.Tactics = (() => {
   const stepOK = (m, x, y, dx, dy, e) => { const rt = G.RT.fantasy, ok = (u, v) => (e && rt?.map === m && G.Terrain ? G.Terrain.enter(rt, e, u, v) : GR.pass(m, u, v)); return ok(x + dx, y + dy) && (!dx || !dy || (ok(x + dx, y) && ok(x, y + dy))); }; // 깊은 물은 날거나 헤엄치는 몸만
   function taken(rt, except) {
     const m = rt.map, s = new Set();
-    for (const e of fighters(rt)) if (e !== except) { const [x, y] = cellOf(e); s.add(key(m, x, y)); }
+    for (const e of fighters(rt)) if (e !== except) for (const [x, y] of G.Dnd.foot(e)) s.add(key(m, x, y)); // 큰 몸(용)은 칸 전부
     return s;
   }
   // 상대편이 선 칸: 지나갈 수 없다
   function foesOf(rt, e) {
     const m = rt.map, s = new Set(), mon = e.kind === 'mon';
-    for (const o of fighters(rt)) if (o !== e && (o.kind === 'mon') !== mon) { const [x, y] = cellOf(o); s.add(key(m, x, y)); }
+    for (const o of fighters(rt)) if (o !== e && (o.kind === 'mon') !== mon) for (const [x, y] of G.Dnd.foot(o)) s.add(key(m, x, y));
     return s;
   }
   // 걸어서 닿는 가장 가까운 빈 칸 (벽 건너로 보내지 않는다). 벽 안에 있으면 벽을 지나 가장 가까운 바닥으로
@@ -53,7 +53,7 @@ G.Tactics = (() => {
   const rowOf = m => { const c = m ? G.S.w.fantasy.form?.[m.uid] : null; return c == null ? HOME_ROW[roleOf(m)] : c / 3 | 0; };
   const stanceOf = m => STANCE[roleOf(m)][rowOf(m)];
   const of = e => { const m = e.merc, s = stanceOf(m); return { pos: s.pos, low: s.low, heal: s.heal || 'early', target: TARGET[m?.tac?.t] ? m.tac.t : 'near' }; };
-  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const dist = (a, b) => G.Dnd.gap(a, b); // 큰 몸(용)은 가장 가까운 칸끼리
   const soft = p => p.def && (G.Dnd.rng(p) >= 2 || p.def.heal);
   // 지켜 줄 사람: 가장 가까운 후열 동료
   const ward = (rt, e) => { const l = rt.party.filter(p => p !== e && !p.dead && soft(p)); return l.length ? l.reduce((a, b) => (dist(b, e) < dist(a, e) ? b : a)) : null; };
@@ -118,8 +118,9 @@ G.Tactics = (() => {
     // walker: 걷는 중인 사람은 건드리지 않는다. 그가 지나가는 칸의 아군도 밀어내지 않고, 새로 자리를 찾는 사람만 그 칸을 피한다
     snap(rt, walker) {
       const m = rt.map, used = new Set(), extra = [];
+      for (const e of fighters(rt)) if (G.Dnd.cells(e) > 1 && e !== walker) { const [x, y] = cellOf(e); e.x = x; e.y = y; for (const [u, v] of G.Dnd.foot(e)) used.add(key(m, u, v)); } // 큰 몸은 제자리, 나머지가 비킨다
       for (const e of fighters(rt)) {
-        if (e === walker) continue;
+        if (e === walker || G.Dnd.cells(e) > 1) continue;
         const [x, y] = cellOf(e), k = key(m, x, y);
         if (!used.has(k) && GR.pass(m, x, y)) { used.add(k); e.x = x; e.y = y; } else extra.push(e);
       }
@@ -133,18 +134,19 @@ G.Tactics = (() => {
     // strict: 그런 칸이 없으면 걷지 않는다
     plan(rt, e, tg, budget, hits, strict) {
       const m = rt.map, [sx, sy] = cellOf(e), used = taken(rt, e), foes = foesOf(rt, e), start = key(m, sx, sy), prev = new Map([[start, null]]), q = [[sx, sy, 0]];
+      const big = G.Dnd.cells(e) > 1, fits = (x, y, set) => G.Dnd.foot(e, x, y).every(([u, v]) => GR.pass(m, u, v) && !set.has(key(m, u, v))); // 큰 몸: 몸 전체가 들어가는 칸만
       if (hits(sx, sy)) return [];
       const [tx, ty] = cellOf(tg), far = GR.field(m, tx, ty);
       let goal = null, best = far[start] >= 0 ? far[start] : 1e9, near = start;
       for (let i = 0; i < q.length; i++) {
-        const [x, y, d] = q[i], k = key(m, x, y), stop = k !== start && !used.has(k);
+        const [x, y, d] = q[i], k = key(m, x, y), stop = k !== start && (big ? fits(x, y, used) : !used.has(k));
         if (stop && hits(x, y)) { goal = k; break; }
         const v = far[k]; if (stop && v >= 0 && v < best) { best = v; near = k; }
         if (d >= budget) continue;
         for (const [dx, dy] of GR.DIR) {
-          if (!stepOK(m, x, y, dx, dy, e)) continue;
+          if (big ? !fits(x + dx, y + dy, foes) : !stepOK(m, x, y, dx, dy, e)) continue;
           const nk = key(m, x + dx, y + dy), nd = d + stepCost(m, e, x + dx, y + dy);
-          if (prev.has(nk) || foes.has(nk) || nd > budget) continue;
+          if (prev.has(nk) || (!big && foes.has(nk)) || nd > budget) continue;
           prev.set(nk, k); insertBy(q, [x + dx, y + dy, nd]);
         }
       }
@@ -177,7 +179,8 @@ G.Tactics = (() => {
       if (!path.length) return;
       const m = rt.map, at = c => key(m, c.x, c.y), used = taken(rt, e);
       if (Math.hypot(path[0].x - e.x, path[0].y - e.y) < 1.01 && foesOf(rt, e).has(at(path[0]))) { path.length = 0; return; }
-      while (path.length && used.has(at(path[path.length - 1]))) path.pop();
+      const hit = c => G.Dnd.foot(e, c.x, c.y).some(([u, v]) => used.has(key(m, u, v)));
+      while (path.length && hit(path[path.length - 1])) path.pop();
     },
     // 경로를 따라 걷는다. 끝까지 갔으면 true
     walk(e, path, v, dt) {
@@ -202,7 +205,7 @@ G.Tactics = (() => {
       const m = rt.map, f = G.S.w.fantasy, form = F().formation(f), [lx, ly] = cellOf(lead), fx = Math.sign(Math.round(foe.x) - lx), fy = Math.sign(Math.round(foe.y) - ly), hx = Math.sign(Math.round((rt.headX || 0) * 2)), hy = Math.sign(Math.round((rt.headY || 0) * 2)),
         // 걷던 대형을 유지한다: 적이 앞쪽 반원에 있으면 가던 방향이 앞이고, 옆이나 뒤에 있을 때만 적 쪽으로 돈다
         keep = (hx || hy) && hx * fx + hy * fy > 0, dx = keep ? hx : fx || (fy ? 0 : 1), dy = keep ? hy : fy, sx = -dy, sy = dx, used = new Set([key(m, lx, ly)]), plans = [];
-      for (const o of rt.mons) if (o.hp > 0) used.add(key(m, ...cellOf(o)));
+      for (const o of rt.mons) if (o.hp > 0) for (const [u, v] of G.Dnd.foot(o)) used.add(key(m, u, v));
       const c0 = lead.merc ? form[lead.merc.uid] : null, r0 = c0 == null ? 0 : c0 / 3 | 0, q0 = c0 == null ? 1 : c0 % 3;
       for (const p of rt.party.filter(q => !q.dead && !q.dying && q !== lead)) {
         const c = p.merc ? form[p.merc.uid] : null, r = c == null ? 2 : c / 3 | 0, q = c == null ? 1 : c % 3, a = (r0 - r) * BOARD_GAP, b = (q - q0) * BOARD_GAP;

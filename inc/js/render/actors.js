@@ -71,7 +71,7 @@ function prep(e, r, t, dt) {
   const pr = e._ldx == null ? e._dx : e._ldx, pq = e._ldy == null ? e._dy : e._ldy; e._rx = e._dx; e._ry = e._dy;
   if (e.kind === 'mon' && r.seen && !r.seen[Math.round(e.y) * r.map.w + Math.round(e.x)]) return null;
   const vx = e._rx - pr, vy = e._ry - pq, moving = (e._spd || 0) > .7, st = r.turn;
-  const wxp = wx(e._rx), wyp = wy(e._ry);
+  const off = G.Dnd.cells(e) % 2 ? 0 : .5, wxp = wx(e._rx + off), wyp = wy(e._ry + off); // 짝수 칸 몸은 칸 사이가 가운데
   // 바라보는 쪽: 화면 좌우 기준
   let tx = null;
   if (st && st.cur === e && st.tg) tx = (st.tg.x - st.tg.y) - (e.x - e.y);
@@ -105,10 +105,10 @@ function prep(e, r, t, dt) {
     // 깡충: 움직인 거리만큼 뛴다 (속도가 바뀌어도 발이 미끄러지지 않게)
     if (dl.hop) { e._hopA = lerp(e._hopA || 0, moving ? 1 : 0, .3); e._hopP = (e._hopP || 0) + Math.hypot(e._rx - pr, e._ry - pq) / HOP_D * Math.PI; oy -= Math.round(Math.abs(Math.sin(e._hopP)) * HOP_H * e._hopA); }
     const list = dl.fr[fk], idx = list.length > 1 ? (fk === 'run' ? Math.floor(t * 8 + e._ph) : Math.floor(t * 3 + e._ph)) % list.length : 0;
-    sp = { w: dl.w, h: dl.h, foot: dl.foot, px: list[idx], weapon: dl.weapon, top: dl.top };
+    sp = dl.spr ? dl.spr[fk][idx] : { w: dl.w, h: dl.h, foot: dl.foot, px: list[idx], weapon: dl.weapon, top: dl.top }; // 용: 미리 구운 그림 객체 그대로
   } else sp = sprite(k2, fr) || sprite(key, 0);
   if (!sp) return null;
-  e._sz = (e._sz ?? 1) + (G.Dnd.sizeK(e) - (e._sz ?? 1)) * Math.min(1, dt * 6); const sc = SC * (e.boss || (e.kind === 'mon' && e.s >= 2) ? 2 : 1) * e._sz; // 보스 · 큰 몬스터는 두 배로, 거대화는 서서히 커진다
+  e._sz = (e._sz ?? 1) + (G.Dnd.sizeK(e) - (e._sz ?? 1)) * Math.min(1, dt * 6); const sc = SC * (sp.native ? 1 : e.boss || (e.kind === 'mon' && e.s >= 2) ? 2 : 1) * e._sz; // 용 그림은 이미 제 크기 (배율 1이라 복셀 다시 칠하기도 탄다) // 보스 · 큰 몬스터는 두 배로, 거대화는 서서히 커진다
   if (!down) { if (typeof HDBG !== 'undefined' && HDBG.on && !f.town) HDBG.shadow(wxp, wyp, .42 * sc); /* 선 그림 배경: 발밑 둥근 그림자 하나 */ else { pend.push([wxp, wyp, 0], .34 * sc, [wxp, wyp, (sp.foot * sc) / (COS * S) * .85]); castShadow(wxp, wyp, 0, .42 * sc, 2); } }
   return { e, sp, sx: base.sx + ox, sy: base.sy + oy, d: base.d, sc, flash, down, lq, moving, fk };
 }

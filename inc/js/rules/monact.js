@@ -39,14 +39,17 @@ G.MonAct = (() => {
       if (A.shape === 'sphere' && A.self) A.shape = 'emanation';
       const t = A.shape === 'emanation' ? e : H().AREA.aim(x, e, A, 0, reach); if (!t) return null;
       const list = H().AREA.hits(x, e, A, t), foes = list.filter(o => !H().isMon(x, o)).length; if (!foes) return null;
-      return { x, list, n: foes, score: foes - 0.5 * (list.length - foes) };
+      return { x, list, t, n: foes, score: foes - 0.5 * (list.length - foes) };
     }
     const r = a.one ? cells(a.one) + 0.6 : 12; const t = x.seen.filter(o => Math.hypot(o.x - e.x, o.y - e.y) <= r).sort((p, q) => p.hp / (p.max || 1) - q.hp / (q.max || 1))[0];
     return t ? { x, list: [t], n: 1, score: 1 } : null;
   }
   // 내성 행동 · 주문 실행: 한 번 굴려 모두에게 (SRD) · 아군 · 회피 · 저항은 AREA.save가
+  // 숨결 · 원뿔 · 선 (몬스터 내성 행동): 피해 종류에 맞는 기술 이펙트를 쓴 사람에서 겨눈 쪽으로 (용 보스 2026-11-19)
+  const AREA_FX = { cone: { fire: 'sr_breath', cold: 'sr_cone', lightning: 'sr_chain', poison: 'sp_poison_spray', acid: 'sp_acid_splash' }, line: { lightning: 'sr_lbolt', fire: 'sr_breath', acid: 'sp_acid_splash' } };
   function doSave(rt, e, a, q, label) {
     say(rt, e, label || ko(a.name));
+    { const k = a.area && AREA_FX[a.area[0]]?.[a.dmg?.[0]?.t]; if (k && q.t && q.t !== e) G.SkillFx?.play(rt, e, k, q.t); }
     const d = a.dmg || [], conds = a.cond || [];
     if (d.length) { FO().dtype = d[0].t === 'chosen' ? (e.stat.res?.[0] || 'fire') : d[0].t; H().AREA.save(q.x, e, q.list, a.save, [d[0].n, d[0].d, d[0].b], a.half !== false && !!a.half, o => giveAll(rt, o, conds, e, a, a.dc), false, d[1] ? [d[1].n, d[1].d, d[1].t] : null, a.dc); FO().dtype = null; }
     else for (const o of q.list) { if (H().isMon(q.x, o) && q.x.c.kind === 'mon') continue; if (!DN().save(o, a.save, a.dc)) giveAll(rt, o, conds, e, a, a.dc); }
@@ -94,7 +97,7 @@ G.MonAct = (() => {
   // 공격 하나 (전설 행동 · 보너스 행동): 능력치표의 그 공격 (명중 굴림 · 명중 뒤 효과는 F.hurtMember → G.Foe.onHit)
   function attackOne(f, rt, e, tg, name) {
     const s = e.stat, q = [...(s.melee || []), ...(s.alt || []), s.far].filter(Boolean).find(a => a.name === name) || (s.melee || [])[0]; if (!q || !tg) return false;
-    if (Math.hypot(tg.x - e.x, tg.y - e.y) > (q === s.far ? FO().reach(e) + 6 : FO().reach0(e)) + 0.01) return false;
+    if (G.Dnd.gap(tg, e) > (q === s.far ? FO().reach(e) + 6 : FO().reach0(e)) + 0.01) return false;
     const av = FO().avgOf(q); e.useAtk = q; e._critK = (av + q.n * (q.d + 1) / 2 + (q.ex ? q.ex.n * (q.ex.d + 1) / 2 : 0)) / Math.max(1, av); /* turn.js hitBy와 같은 굴림 */
     F().hurtMember(f, rt, tg, (av * DN().monRoll(q, false) + FO().extra(rt, e, tg, q)) * e.atk * G.Turn.pace, e); e.useAtk = null; return true;
   }

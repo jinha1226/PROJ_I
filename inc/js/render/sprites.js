@@ -80,6 +80,7 @@ function layered(key, parts, style = 'biped') {
 }
 function dcssOf(e) {
   if (e.kind !== 'mon') { const c = (e.merc || f.leader).cls; return layered('c_' + c, G.DCSS.cls[c] || G.DCSS.cls.dragoon); }
+  if (G.Dnd.trueDragon(e.n)) return DRAGON.of(e); // 용: 부위 인형 (js/render/dragon.js)
   const n = e.n || '', hit = G.DCSS.mon.find(x => n.includes(x[0])), own = G.D.F.mon[n]?.dl, art = n === '히드라' ? 'm_hydra' + Math.min(5, e.heads ?? 5) : own || (hit ? hit[1] : 'm_human'); return layered('m_' + art + (e.hand || ''), [art].concat(e.hand || []), STYLE(n)); // 히드라는 머리 수대로 (그림은 5까지)
 }
 function sprite(key, v = 0) {

@@ -48,6 +48,7 @@ const TestFloor = (() => {
   const LAYOUT = {
     floor: { w: 36, h: 15, rooms: [['A', '입구', 2, 4, 6, 6], ['B', '곁방', 11, 2, 6, 5], ['C', '안쪽 방', 13, 9, 6, 5], ['D', '계단 방', 24, 3, 9, 8]], links: [['A', 'B'], ['A', 'C'], ['B', 'D'], ['C', 'D']] },
     fight: { w: 20, h: 14, rooms: [['H', '복도', 1, 6, 4, 3], ['A', '전투 방', 6, 2, 12, 10]], links: [['H', 'A']] }, // 복도로 들어와 방에서 맞닥뜨린다
+    dragon: { w: 36, h: 24, rooms: [['H', '복도', 1, 11, 4, 3], ['A', '용의 둥지', 6, 2, 28, 20]], links: [['H', 'A']] }, // 용 보스 시험 (?scene=dragon): 넓은 방에 용 하나
     door: { w: 24, h: 16, rooms: [['H', '복도', 1, 6, 8, 4], ['A', '고블린 방', 10, 2, 12, 12]], links: [['H', 'A']] }, // 문 앞 준비: 복도 끝 잠긴 문 (9, 8) 너머 고블린 방
   };
   function build(kind = 'floor') {
@@ -66,9 +67,9 @@ const TestFloor = (() => {
     const f = G.S.w.fantasy, adopt = p => (typeof p === 'string' ? (m => { if (m.lv >= 3) m.adv = Object.keys(G.D.ADV).find(k => G.D.ADV[k].base === p) || null; return G.Party.forge(m); })(G.Party.trim(G.Guild.make(f, p, { lv: G.Party.START_LV, ab: G.Party.stdAb(p) }))) : { ...p, uid: f.nextUid = (f.nextUid || 0) + 1, lv: Math.max(G.Party.START_LV, p.lv || 1), xp: 0 });
     if (picks) f.leader = { ...adopt(picks[0]), lead: true }; // 앞장도 고른 사람 그대로 (시험 주소의 직업 이름도 — 엔진이 굴린 단장이 서지 않게)
     const L = G.Guild.leader(f);
-    const lv = kind === 'crawl' ? G.Party.START_LV : 3; // 탐사 층은 시작 레벨에서 전투로 큰다 · 시험 장면은 3레벨
+    const lv = kind === 'crawl' ? G.Party.START_LV : kind === 'dragon' ? +q.get('lv') || 12 : 3; // 용 시험은 12레벨 (계획: 4인 12레벨 안팎) // 탐사 층은 시작 레벨에서 전투로 큰다 · 시험 장면은 3레벨
     f.leaderNew = false; f.autoTr = f.autoParty = false; f.askMeet = false; L.lv = lv;
-    const ms = kind === 'crawl' ? (picks || []).slice(1).map(adopt) : ['mage', 'cleric'].map(c => G.Guild.make(f, c, { lv })); f.mercs.push(...ms); f.lineup = ms.map(m => m.uid); // 탐사 층: 선술집에서 고른 파티 (던전 안 영입은 없다)
+    const ms = kind === 'crawl' ? (picks || []).slice(1).map(adopt) : (kind === 'dragon' ? ['paladin', 'mage', 'cleric'] : ['mage', 'cleric']).map(c => G.Guild.make(f, c, { lv })); f.mercs.push(...ms); f.lineup = ms.map(m => m.uid); // 탐사 층: 선술집에서 고른 파티 (던전 안 영입은 없다)
     f.floor = f.maxFloor = f.start = f.checkpoint = 1; f.town = true;
     if (kind === 'crawl') G.Party.members(f).forEach(m => G.Party.place(f, m)); // 전투 자리 (클레릭은 앞줄)
     const r = G.Fantasy.rt(f); G.Fantasy.syncAllies(f);
@@ -81,6 +82,10 @@ const TestFloor = (() => {
       for (const o of r.mons) { o.aggro = false; o.spotted = false; } G.Prep.prime(r.mons);
       r.seen = new Uint8Array(m.w * m.h); for (let y = 5; y <= 10; y++) for (let x = 0; x <= 9; x++) r.seen[y * m.w + x] = 1; r.seenVer = (r.seenVer || 0) + 1;
       G.Fantasy.refreshEnts(r); return { f, r };
+    }
+    if (kind === 'dragon') { // 용 보스 시험: ?mon=이름 (기본 붉은 성룡)
+      const n = G.D.F.mon[q.get('mon')] ? q.get('mon') : '붉은 성룡', A = m.rooms.find(q2 => q2.id === 'A');
+      G.Fantasy.spawnMon(r, 10, { n, ...G.D.F.mon[n] }, A.x + A.w - 7, A.cy, true, { major: true, spotted: true });
     }
     if (kind === 'fight') {
       const names = ['고블린 졸개', '고블린 졸개', '홉고블린'].map(n => G.D.F.mon[n] ? n : Object.keys(G.D.F.mon)[0]);
@@ -102,8 +107,8 @@ G.Turn.smooth = !q.get('steps'); // 흐르는 턴제 (?steps=1이면 옛 방식:
 // ?seed= · ?auto= · ?party=직업,직업 이면 선술집 없이 바로 층으로 (시험 · 캡처용 — 기본은 파이터 · 클레릭)
 const PICKS = TAVERNUI.takeParty() || (q.get('party') || q.get('seed') || q.get('auto') ? (q.get('party') || 'dragoon,cleric').split(',') : null);
 const TAVERN = !PICKS && !SCENE && !TEST_FIGHT;
-const W0 = SCENE === 'door' ? TestFloor.world('door') : SCENE === 'reward' ? TestFloor.world('fight') : SCENE === 'rooms' ? TestFloor.world('crawl', CRAWL.roomStart(+q.get('i') || 0), PICKS || ['dragoon', 'cleric']) : TEST_FIGHT ? TestFloor.world('fight') : TestFloor.world('crawl', CRAWL.start(+q.get('seed') || ((Math.random() * 1e6) | 0), PICKS || ['dragoon']), PICKS);
-if (SCENE === 'door') CRAWL.doorTest(W0.r); else if (SCENE === 'reward') CRAWL.rewardTest(W0.r); else if (SCENE === 'rooms') CRAWL.roomsTest(W0.r); /* 방 검수 (js/explore/rooms.js) */ else if (TAVERN) { TAVERNUI.open(W0.f, CRAWL.renown()); TITLEUI.open(W0.f, null); /* 타이틀은 선술집 위에 덮는다 (이 탭에서 처음 열 때만) */ } else if (!TEST_FIGHT) CRAWL.attach(W0.r); else CRAWL.fightTest(W0.r);
+const W0 = SCENE === 'dragon' ? TestFloor.world('dragon') : SCENE === 'door' ? TestFloor.world('door') : SCENE === 'reward' ? TestFloor.world('fight') : SCENE === 'rooms' ? TestFloor.world('crawl', CRAWL.roomStart(+q.get('i') || 0), PICKS || ['dragoon', 'cleric']) : TEST_FIGHT ? TestFloor.world('fight') : TestFloor.world('crawl', CRAWL.start(+q.get('seed') || ((Math.random() * 1e6) | 0), PICKS || ['dragoon']), PICKS);
+if (SCENE === 'door') CRAWL.doorTest(W0.r); else if (SCENE === 'reward') CRAWL.rewardTest(W0.r); else if (SCENE === 'rooms') CRAWL.roomsTest(W0.r); /* 방 검수 (js/explore/rooms.js) */ else if (TAVERN) { TAVERNUI.open(W0.f, CRAWL.renown()); TITLEUI.open(W0.f, null); /* 타이틀은 선술집 위에 덮는다 (이 탭에서 처음 열 때만) */ } else if (!TEST_FIGHT && SCENE !== 'dragon') CRAWL.attach(W0.r); else CRAWL.fightTest(W0.r); // 용 시험도 시험 전투 길로
 const f = W0.f, rt = () => W0.r;
 addEventListener('error', e => { document.body.dataset.err = String(e.message || e); });
 if (q.get('end')) document.addEventListener('DOMContentLoaded', () => { const d = document.createElement('div'); d.className = 'record-stub'; d.textContent = '층 끝 화면 자리 (7단계)'; document.body.append(d); });

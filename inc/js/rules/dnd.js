@@ -90,6 +90,20 @@ G.Dnd = (() => {
     rng(e) { return e.longNow ? N.rngL(e) || N.rng0(e) : N.rng0(e); },
     // 몸집: 거대화 · 확대 주문을 쓰면 정말 커진다 (그리는 쪽: prep)
     sizeK(e) { if (N.bon(e, 'large')) return 1.5; for (const k in e.bf || {}) if (/enlarge/i.test(k)) return 1.5; return 1; },
+    // 여러 칸을 차지하는 몸 (설계 2026-11-19 용 보스): cells = 한 변의 칸 수 (지금은 용만 — spawnMon이 SRD 크기에서 정한다).
+    // 몸은 (x, y) 칸에서 오른쪽 · 아래로 넓어진다: 칸 오프셋 -⌊(n-1)/2⌋ … ⌈(n-1)/2⌉. 짝수 몸의 가운데는 (x + .5, y + .5)
+    cells: e => (e && e.cells) || 1,
+    trueDragon: n => /(새끼 용|어린 \S+ 용|성룡|고룡)$/.test(n || ''), // 진짜 용 (유사용 · 반룡 · 와이번은 아님) — 부위 인형으로 그리고 크기대로 칸을 차지한다
+    CELLS: { large: 2, huge: 3, gargantuan: 4 },
+    footOff: n => Array.from({ length: n }, (_, i) => i - ((n - 1) >> 1)),
+    foot(e, x = Math.round(e.x), y = Math.round(e.y)) { const n = N.cells(e); if (n === 1) return [[x, y]]; const o = N.footOff(n), out = []; for (const b of o) for (const a of o) out.push([x + a, y + b]); return out; },
+    // 가장 가까운 칸끼리의 거리 (칸 중심 기준, 붙어 있으면 1 · 대각선 √2). 1칸끼리는 중심 거리와 같다
+    gap(a, b) {
+      const na = N.cells(a), nb = N.cells(b); if (na === 1 && nb === 1) return Math.hypot(a.x - b.x, a.y - b.y);
+      const ca = (na - 1) % 2 / 2, cb = (nb - 1) % 2 / 2, ha = (na - 1) / 2, hb = (nb - 1) / 2;
+      const dx = Math.max(0, Math.abs(a.x + ca - b.x - cb) - ha - hb), dy = Math.max(0, Math.abs(a.y + ca - b.y - cb) - ha - hb);
+      return Math.hypot(dx, dy);
+    },
     // 먼 거리 불리: 무기 기본 사거리(투척 포함) 너머
     farDis(att, tg) { if (!att?.longNow || !tg) return false; const d = Math.hypot(att.x - tg.x, att.y - tg.y); if (att.kind === 'mon') return d > G.Foe.reach0(att); return d > G.SRD_RANGE.cells(G.SRD.weaponOf(att.merc).ft / 5); },
     gearWeapon: m => N.weapon({ merc: m, swing: true }),

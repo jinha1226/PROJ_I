@@ -263,7 +263,7 @@ G.Turn = (() => {
     }
   }
   // 그 칸에서 표적을 칠 수 있나: 사거리 안 + 시야
-  const canHit = (m, e, x, y, tg) => Math.hypot(x - tg.x, y - tg.y) <= reach(e, tg) && F().sees(m, { x, y }, tg);
+  const canHit = (m, e, x, y, tg) => G.Dnd.gap({ x, y, cells: e.cells }, tg) <= reach(e, tg) && F().sees(m, { x, y }, tg);
   function strike(f, rt, st, e, tg) {
     // 명중 굴림이 있는 공격은 주사위부터 (광역 · 내성 공격은 굴리는 쪽이 상대라 바로)
         if (!G.quiet && (e.kind === 'mon' || e.kind === 'sum' || !(e.def.splash || e.def.chain || e.def.saveAtk))) {
@@ -386,7 +386,7 @@ G.Turn = (() => {
   }
   function act(f, rt, st, e, tg) {
     // 그사이 밀려나 닿지 않게 되었으면 치지 않는다
-    if (GR.dist(e, tg) > reach(e, tg) + 0.01) { pause(st, SKIP); return; }
+    if (G.Dnd.gap(e, tg) > reach(e, tg) + 0.01) { pause(st, SKIP); return; }
     e.flip = tg.x < e.x;
     const before = snapshot(rt), hp0 = tg.hp;
     T.rec = [];
@@ -399,7 +399,7 @@ G.Turn = (() => {
         // SRD: 연속 공격은 공격마다 명중 · 피해를 굴린다
         const list = (e.stat ? G.Foe.attacks(e, tg) : [null]).slice(e._skipAtk || 0); e._skipAtk = 0; // 공격 하나를 숨결 · 주문으로 바꿨다 (SRD 용)
         const swap = e.stat && G.Foe.engulf(rt, e, tg); // 슈블링 마운드: 공격 하나를 삼키기로
-        for (const a of swap ? list.slice(1) : list) { if (tg.dead || GR.dist(e, tg) > reach(e, tg) + 0.01 || !F().sees(rt.map, e, tg)) break; hitBy(f, rt, e, tg, a, slow * k); } tg._dodge = false; if (e.stat && !tg.dead) G.MonAct.after(f, rt, e, tg); G.MonAct.flush(); /* 광란 */ /* 연속 공격의 「… and uses Constrict」 (SRD) */ // 밀어내 닿지 않으면 남은 공격은 없다
+        for (const a of swap ? list.slice(1) : list) { if (tg.dead || G.Dnd.gap(e, tg) > reach(e, tg) + 0.01 || !F().sees(rt.map, e, tg)) break; hitBy(f, rt, e, tg, a, slow * k); } tg._dodge = false; if (e.stat && !tg.dead) G.MonAct.after(f, rt, e, tg); G.MonAct.flush(); /* 광란 */ /* 연속 공격의 「… and uses Constrict」 (SRD) */ // 밀어내 닿지 않으면 남은 공격은 없다
       }
     } else if (tg.down && !G.Foe.burns(e)) { if (G.Lore.knows(f, tg)) G.Foe.torch(f, rt, e, tg); }
     else F().allyAttack(f, rt, e, tg);

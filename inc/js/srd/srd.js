@@ -79,7 +79,7 @@
   const AREA = {
     // 범위 안의 생물: 원점에서 벽에 가리지 않은 몸만 (SRD: 범위는 막힌 곳 너머로 퍼지지 않는다)
     hits(x, c, A, aim, up = 0) {
-      const L = A.ft / 5 + up, rt = x.rt, all = rt.mons.filter(o => o.hp > 0).concat(rt.party.filter(p => !p.dead), (rt.sums || []).filter(s => s.hp > 0)); // 아군 생물도 범위에 든다
+      const L = A.ft / 5 + up + (A.self ? (G.Dnd.cells(c) - 1) / 2 : 0), rt = x.rt, /* 큰 몸(용)의 숨결은 몸 가장자리에서 나간다 */ all = rt.mons.filter(o => o.hp > 0).concat(rt.party.filter(p => !p.dead), (rt.sums || []).filter(s => s.hp > 0)); // 아군 생물도 범위에 든다
       const dx0 = aim.x - c.x, dy0 = aim.y - c.y, l0 = Math.hypot(dx0, dy0) || 1, ux = dx0 / l0, uy = dy0 / l0;
       let cx = aim.x, cy = aim.y;
       if ((A.shape === 'cube' || A.shape === 'square') && A.self) { cx = c.x + ux * (L / 2 + 0.5); cy = c.y + uy * (L / 2 + 0.5); }

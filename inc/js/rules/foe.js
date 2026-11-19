@@ -29,7 +29,7 @@ G.Foe = (() => {
   const IMMUNE = { undead: ['poison', 'bleed'], construct: ['poison', 'bleed', 'stun', 'stop'], ooze: ['bleed', 'stop'] };
   const def = e => ROLES[e.role] || ROLES.soldier;
   const has = (e, k) => !!((e.tr && e.tr.includes(k)) || e.stat?.tr?.includes(k) || (k === 'nimble' && e.stat?.bonus?.some(b => /\bDisengage\b/.test(b.text)))); /* 특성: 옛 표 + SRD 능력치표 (재빠른 도주 · 교활한 행동 = 물러나기) */
-  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const dist = (a, b) => G.Dnd.gap(a, b); // 큰 몸(용)은 가장 가까운 칸끼리
   const near = (e, list) => list.reduce((a, b) => (dist(e, b) < dist(e, a) ? b : a));
   const line = (rt, e, s, col) => G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.1, s, col, t: 0.9, sz: 0.75 });
   const band = fl => G.D.F.bands[F().band(fl)];
