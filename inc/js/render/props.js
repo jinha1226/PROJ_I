@@ -245,7 +245,7 @@ function drawProps(r, t) {
     for (let a = 0; a < 5; a++) for (let b = 0; b < 5; b++) { const px = x - 2 + a, py = y - 2 + b; capsule([px, py, 0], [px, py, h * (.7 + hash(a, b) * .5)], .2, .02, [206, 200, 192]); }
   }
   for (const g of graves) if (g.map === r.map && inWin(g.x, g.y)) grave(wx(g.x), wy(g.y));
-  for (const q of torches) { if (q.cell != null && !r.seen[q.cell]) continue; if (!q._fx) q._fx = pfx('fire/torch', q.x, q.y, q.z - .95, { under: true, light: .5, clip: TORCH_CLIP }); if (!q._fx) { const fl = Math.floor(t * 8); capsule([q.x, q.y, q.z - .4], [q.x, q.y, q.z], .07, .09, C.wood); sphere(q.x, q.y, q.z + .2 + (fl % 3) * .03, .2 + (fl % 2) * .03, C.flame, 'glow'); } }
+  for (const q of torches) { if (q.cell != null && !r.seen[q.cell]) continue; if (!q._fx) q._fx = pfx('fire/torch', q.x, q.y, q.z - .95, { under: true, light: VOXON ? 0 : .5, clip: TORCH_CLIP }); if (!q._fx) { const fl = Math.floor(t * 8); capsule([q.x, q.y, q.z - .4], [q.x, q.y, q.z], .07, .09, C.wood); sphere(q.x, q.y, q.z + .2 + (fl % 3) * .03, .2 + (fl % 2) * .03, C.flame, 'glow'); } }
 }
 function drawTufts(t) {
   for (const u of tufts) {

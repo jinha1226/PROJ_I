@@ -3,8 +3,9 @@
 //  1단계: pixelfx가 칠한 이펙트(바닥 아래 것 제외)를 픽셀 버퍼 대신 이 층에 올린다 — 부드럽게 키운 뒤 알파를 세워 매끈한 가장자리를 만들고 어두운 외곽선을 두른다. 빛은 따로 화면 혼합.
 //  2단계: 자주 보이는 이펙트는 손으로 그린 벡터로 바꾼다 (VEC). pfx()가 같은 이름이면 이쪽으로 보낸다. 나머지는 1단계 그대로.
 //  ?pxfx = 예전 픽셀 이펙트 그대로
+//  복셀 층(기본)에서는 끈다 — 그림이 복셀 + 픽셀로 돌아가서 이펙트도 원래 픽셀(pixelfx)로 (2026-11-19 사용자). ?hdfx면 복셀 층에서도 선 그림
 const VFX = (() => {
-  const on = !q.has('pxfx');
+  const on = typeof VOXON !== 'undefined' && VOXON ? q.has('hdfx') : !q.has('pxfx');
   const OL = '#1d1418', LW = 1.15, VS = 1.25; // VS: 인형 크기에 맞춘 벡터 배율 // 외곽선 색 · 굵기 (버퍼 px)
   let el = null, ex = null, lel = null, lx = null, sc = null, sx = null, lsc = null, lsx = null, C = null, L = null, BW = 0, BH = 0, box = null, lbox = null, kNow = 0;
   const svgNS = 'http://www.w3.org/2000/svg';
