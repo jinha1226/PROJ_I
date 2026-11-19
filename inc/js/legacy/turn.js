@@ -330,7 +330,6 @@ G.Turn = (() => {
     if (e.dead) { pause(st, SKIP); return; }
     // 우두머리: 약해지면 달아난다
     if (e.chief && G.Story.chiefTurn(f, rt, e)) { pause(st, BEAT); return; }
-    G.fx(rt, { k: 'ring', x: e.x, y: e.y, r: 0.8, t: 0.5, col: e.kind === 'mon' ? '#ff8a8a' : '#ffe08a' });
     // 기절 · 정지 · 마비: 차례를 넘긴다
     const stunned = e.kind === 'mon' && (e.stun > 0 || e.stop > 0);
     if ((stunned || DN().out(e)) && e.kind === 'mon' && G.Foe.regen(f, rt, e)) { pause(st, BEAT); return; } // 재생은 차례 시작에

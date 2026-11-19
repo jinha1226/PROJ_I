@@ -61,7 +61,7 @@ const FIGHT = (() => {
   }
 
   // ── 빙고 연출: 줄이 맞으면 위쪽에 띠 · 효과를 받은 사람마다 이펙트 (기호마다 다르게), 가로줄은 금빛 띠 + 후광, 영감은 반짝임 ──
-  // 전투의 첫 라운드에는 맞아 있는 줄 모두, 그 뒤로는 새로 맞은 줄만
+  // 띠는 전투의 첫 라운드에 맞아 있는 줄 모두 · 그 뒤로는 새로 맞은 줄만. 이펙트는 새로 맞은 줄에만 (판이 층 내내 남으니 전투마다 다시 터뜨리지 않는다)
   const COMBO_FX = { atk: 'impacts/ground-slam', def: 'holy/divine-shield', arc: 'arcane/rune-circle', holy: 'holy/heal' }, ROW_FX = 'holy/halo', INSP_FX = 'pickups/collect-burst';
   const cast = (p, id) => G.fx(R, { k: 'cast', mode: 'me', id, who: p, x: p.x, y: p.y, pts: [[p.x, p.y]], t: 0.6 }); // 0.6초: 배속으로 한 화면에 여러 틱이 돌아도 그리기 전에 사라지지 않게 (재생은 한 번 — playCast)
   const chip = s => `<i class="sy s-${s}">${G.Dice.SYM[s].n}</i>`;
@@ -72,9 +72,10 @@ const FIGHT = (() => {
   function roundFx(staged = false) { // staged: 줄은 판 연출(stage)이 보여 준다 — 띠는 영감만
     const D = G.Dice, S = D.st, fx = S?.fx; if (!fx) return;
     const got = new Set(fx.insp), rowed = new Set(); // 가로줄로 얻은 영감은 그 띠에 같이 적는다 (띠가 쌓이지 않게)
+    const done = new Set(), cast1 = (p, id) => { const k = id + '|' + R.party.indexOf(p); if (!done.has(k)) { done.add(k); cast(p, id); } }; // 같은 이펙트는 한 사람에 한 번 (같은 기호의 줄이 둘이어도)
     for (const x of S.first ? fx.lines : fx.news) {
-      if (x.t === 'r') { rowed.add(x.p); if (!staged) banner(`${chip(x.s).repeat(D.K.COLS)} <b>${name(x.p)} — 한 줄!</b> <span>${D.rowTxt(x.s)}${got.has(x.p) ? ' · ✦ 영감' : ''}</span>`, 'row'); cast(x.p, ROW_FX); }
-      else { if (!staged) banner(`${chip(x.s).repeat(Math.min(4, x.n))} <b>${D.SYM[x.s].fx}</b> <span>${D.lineTxt(x)}</span>`, `c-${x.s}${x.n >= 3 ? ' big' : ''}`); for (const p of D.party()) cast(p, COMBO_FX[x.s]); }
+      if (x.t === 'r') { rowed.add(x.p); if (!staged) banner(`${chip(x.s).repeat(D.K.COLS)} <b>${name(x.p)} — 한 줄!</b> <span>${D.rowTxt(x.s)}${got.has(x.p) ? ' · ✦ 영감' : ''}</span>`, 'row'); if (x.fresh) cast(x.p, ROW_FX); }
+      else { if (!staged) banner(`${chip(x.s).repeat(Math.min(4, x.n))} <b>${D.SYM[x.s].fx}</b> <span>${D.lineTxt(x)}</span>`, `c-${x.s}${x.n >= 3 ? ' big' : ''}`); if (x.fresh) for (const p of D.party()) cast1(p, COMBO_FX[x.s]); }
     }
     for (const p of got) { if (staged || !rowed.has(p)) banner(`✦ <b>영웅적 영감</b> <span>${name(p)}</span>`, 'insp'); cast(p, INSP_FX); }
   }

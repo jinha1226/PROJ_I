@@ -195,7 +195,7 @@ G.Dice = (() => {
       const add = (p, t) => say.set(p, say.has(p) ? say.get(p) + ' · ' + t : t), bump = (p, k, v) => { const o = sum.get(p) || {}; o[k] = (o[k] || 0) + v; sum.set(p, o); };
       const heal = (p, [k, d, b]) => { const h = Math.min(p.max - p.hp, N.dice(k, d) + b); if (h > 0) { p.hp += h; add(p, `회복 +${h}`); } };
       for (const x of L) {
-        const Y = SYM[x.s], show = S.first || news.some(y => same(x, y));
+        x.fresh = news.some(y => same(x, y)); const Y = SYM[x.s], show = S.first || x.fresh; // fresh: 새로 맞은 줄 (화면이 이펙트를 터뜨린다)
         if (x.t === 'r') { if (Y.prop) { bump(x.p, Y.prop, Y.row); if (show) add(x.p, `★ ${Y.short} +${Y.row}`); } else heal(x.p, Y.rowHeal); continue; }
         const n = D.colN(x), i = tier(n);
         if (Y.prop) for (const p of ps) { bump(p, Y.prop, Y.v[i]); if (show) add(p, `${Y.short} +${Y.v[i]}`); }
