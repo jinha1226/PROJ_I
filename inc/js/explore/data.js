@@ -35,6 +35,8 @@ RUN.CLS_LINE = {
 // - cost: 몬스터 하나의 위험도. packs · elites: 섞이는 틀 [앞에 서는 종류, 뒤따르는 종류] — 앞 종류가 예산의 절반, 나머지를 뒤 종류로.
 //   좁은 방에는 센 놈 적게, 넓은 방에는 약한 놈 여럿 (틀 둘을 뽑아 방 크기에 맞는 쪽).
 // - rooms: 방 종류 비율 (near = 입구 곁 두 줄의 사건 비율). paths: 길의 상황 수. furn: 방 종류 → 소품. events: 나오는 사건 (null = 전부).
+// - shape (2026-11-19, 구역마다 생김새가 달라 보이게): rooms · big = 방 모양 무게 [모양, 무게], pair = 대칭 날개를 붙일 확률, frames = 층 윤곽,
+//   cave = 방 · 복도를 모두 흙 · 바위 동굴로 그린다 (voxel.js). 재질 색은 voxel.js의 구역 팔레트.
 RUN.ZONES = [
   { id: 'goblin', n: '고블린 굴', floors: [1, 2], seats: [2, 2], lv: [1, 2],
     budget: [[2, 3, 4, 6], [4, 6, 8, 10]],
@@ -44,6 +46,7 @@ RUN.ZONES = [
     gate: { n: '굴 문지기', u: [['버그베어', 1], ['고블린', 2]] },
     boss: { n: '고블린 무리', u: [['버그베어 추적자', 1]] },
     rooms: { near: 0.4, event: 0.3, elite: 0.15 }, paths: { trap: 3, dark: 2, locked: 1 },
+    shape: { rooms: [['cave', 0.4], ['round', 0.3], ['rect', 0.18], ['hall', 0.07], ['cross', 0.05]], big: [['round', 0.65], ['cross', 0.2], ['hall', 0.15]], pair: 0.2, frames: ['blob', 'diag', 'ell', 'square'], cave: true }, // 짐승 굴: 둥글고 불규칙한 방 · 대칭이 드물다
     furn: { fight: ['bones', 'crate', 'barrel', 'debris', 'web'], elite: ['bones', 'bones', 'debris', 'web', 'brokenpillar'], event: ['statue', 'rug', 'urn', 'web'],
       camp: ['bedroll', 'bedroll', 'barrel', 'crate'], shop: ['table', 'crate', 'barrel', 'rug'], treasure: ['urn', 'urn', 'crate'], boss: ['bones', 'brokenpillar', 'web', 'debris', 'bones'], start: ['crate', 'barrel', 'web'] },
     events: null },
@@ -57,6 +60,7 @@ RUN.ZONES = [
     gate: { n: '성문 석상', u: [['가고일', 2]] },
     boss: { n: '성채를 차지한 거인', u: [['에틴', 1], ['홉고블린', 2]] },
     rooms: { near: 0.35, event: 0.3, elite: 0.2 }, paths: { trap: 4, dark: 2, locked: 2 },
+    shape: { rooms: [['hall', 0.36], ['rect', 0.32], ['cross', 0.22], ['round', 0.08], ['cave', 0.02]], big: [['hall', 0.7], ['cross', 0.3]], pair: 0.7, frames: ['tall', 'wide', 'square'] }, // 다듬은 성채: 반듯한 방 · 기둥 홀 · 좌우 대칭
     furn: { fight: ['brokenpillar', 'crate', 'debris', 'statue', 'barrel'], elite: ['statue', 'brokenpillar', 'debris', 'bones', 'statue'], event: ['statue', 'urn', 'table', 'rug'],
       camp: ['bedroll', 'bedroll', 'barrel', 'crate'], shop: ['table', 'crate', 'barrel', 'rug'], treasure: ['urn', 'urn', 'crate'], boss: ['brokenpillar', 'statue', 'debris', 'bones', 'brokenpillar'], start: ['crate', 'debris', 'statue'] },
     events: null },

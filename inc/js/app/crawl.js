@@ -106,7 +106,7 @@ const CRAWL = (() => {
       const k = FL.kindOf(ex.e), el = document.createElement('div');
       el.className = 'exitmark'; el.innerHTML = `<b>${ICON[k] || '›'}</b><small>${esc(KIND[k] || '통로')}</small>`;
       el.onclick = () => { if (!busy()) takeExit(ex); };
-      $('floats').append(el); marks.push({ el, x: ex.door[0], y: ex.door[1] });
+      $('floats').append(el); marks.push({ el, x: ex.door[0], y: ex.door[1], ex });
     }
     const sc = deferred[st.at];
     if (sc) { const [x, y] = centerOf(st.at), el = document.createElement('div'); el.className = 'exitmark struct'; el.innerHTML = `<b>${ICON[sc.kind] || '★'}</b><small>${esc(sc.title)}</small>`; el.onclick = () => moveTo(x, y); $('floats').append(el); marks.push({ el, x, y }); }
@@ -127,9 +127,12 @@ const CRAWL = (() => {
   // 화면에서 그 문이 어느 쪽인가 (쿼터뷰: 화면 x ∝ x − y, 화면 y ∝ (x + y) / 2) — 갈림길 창의 길을 지도와 맞춰 보게
   const DIRS = [['→', '오른쪽'], ['↘', '오른쪽 아래'], ['↓', '아래'], ['↙', '왼쪽 아래'], ['←', '왼쪽'], ['↖', '왼쪽 위'], ['↑', '위'], ['↗', '오른쪽 위']];
   const dirOf = ([x, y]) => { const L = lead(), dx = x - L.x, dy = y - L.y; return DIRS[((Math.round(Math.atan2((dx + dy) / 2, dx - dy) / (Math.PI / 4)) % 8) + 8) % 8]; };
+  // 갈림길 번호: 창의 길과 지도 위 표지에 같은 번호 (방향이 겹쳐도 — 출구 넷인 방에서 「왼쪽 위」가 둘이던 것)
+  const NUM = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
   function fork(opts) {
     closeSign(); const box = document.createElement('div'); box.id = 'exitsign';
-    box.innerHTML = '<h4>갈림길</h4><p>어느 길로 갈까</p>' + opts.map((x, i) => { const k = FL.kindOf(x.e), [ar, dw] = dirOf(x.door); return `<button data-i="${i}">${ar} ${esc(dw)} · ${esc(KIND[k] || '통로')} <small>너머: ${esc(beyond(st.map.nodes[x.to]))}</small></button>`; }).join('') +
+    opts.forEach((x, i) => { const mk = marks.find(q => q.ex && q.ex.e.id === x.e.id); if (mk) mk.el.querySelector('b').textContent = NUM[i] || '›'; });
+    box.innerHTML = '<h4>갈림길</h4><p>어느 길로 갈까 — 번호는 지도 위 표지와 같다</p>' + opts.map((x, i) => { const k = FL.kindOf(x.e), [ar, dw] = dirOf(x.door); return `<button data-i="${i}"><b class="fk-n">${NUM[i] || ''}</b> ${ar} ${esc(dw)} · ${esc(KIND[k] || '통로')} <small>너머: ${esc(beyond(st.map.nodes[x.to]))}</small></button>`; }).join('') +
       '<button data-i="x" class="x">둘러본다</button>';
     box.onclick = ev => { const b = ev.target.closest('button'); if (!b) return; closeSign(); if (b.dataset.i !== 'x') takeExit(opts[+b.dataset.i]); };
     $('stage').append(box);

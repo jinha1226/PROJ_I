@@ -40,13 +40,17 @@ const VOX = (() => {
   // 탐사 층이면 지도 생성기의 배치(방 칸 · 복도 칸 · 장식)를 쓴다. 시험 층은 타일 지도만
   const runOf = m => { const R0 = typeof CRAWL !== 'undefined' && CRAWL.st && CRAWL.st.map; return R0 && R0._lay && R0._lay.COLS * 2 === m.w && R0._lay.ROWS * 2 === m.h ? R0 : null; };
 
+  // 구역 재질 (2026-11-19 — 구역마다 달라 보이게): 판석 · 복도 조약돌 · 벽돌 · 줄눈 · 낮은 벽 윗면 · 이끼. 고블린 굴은 RUN.ZONES shape.cave로 방 · 복도를 모두 동굴로
+  const PAL0 = { fl: [0x6e6254, 0x5a6058], cor: [0x5e5850, 0x6a6052], wall: [0x7a6c5c, 0x6c6460], joint: 0x4a4038, cap: 0x80766a, moss: true };
+  const PAL = { hold: { fl: [0x686c74, 0x5a5e68], cor: [0x585a62, 0x64666e], wall: [0x707480, 0x626672], joint: 0x383a44, cap: 0x7c808a, moss: false } }; // 드워프 폐성채: 차가운 회청색 다듬은 돌
   // ── 층 세우기
   function build(m) {
     mw = m.w; mh = m.h; kind = new Uint8Array(mw * mh); tall = new Uint8Array(mw * mh); const cave = new Uint8Array(mw * mh);
     const R0 = runOf(m), L = R0 && R0._lay, rooms = []; // rooms: [{ tiles, type }]
+    const Zs = R0 && typeof RUN !== 'undefined' && RUN.ZONES ? (RUN.ZONES.find(z => z.id === R0.zone) || {}).shape : null, allCave = !!(Zs && Zs.cave), P = (R0 && PAL[R0.zone]) || PAL0;
     if (L) {
-      for (const id in L.room) { const r = L.room[id], tiles = []; for (const [x, y] of r.cells) for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) { const k = (y * 2 + j) * mw + x * 2 + i; tiles.push([x * 2 + i, y * 2 + j]); if (isFloor(m, x * 2 + i, y * 2 + j)) { kind[k] = 1; if (r.kind === 'cave') cave[k] = 1; } } rooms.push({ tiles, type: R0.nodes[id] && R0.nodes[id].type, decor: r.decor || [] }); }
-      for (const id in L.cor) for (const [x, y] of L.cor[id].cells) for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) { const k = (y * 2 + j) * mw + x * 2 + i; if (!kind[k] && isFloor(m, x * 2 + i, y * 2 + j)) kind[k] = 2; }
+      for (const id in L.room) { const r = L.room[id], tiles = []; for (const [x, y] of r.cells) for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) { const k = (y * 2 + j) * mw + x * 2 + i; tiles.push([x * 2 + i, y * 2 + j]); if (isFloor(m, x * 2 + i, y * 2 + j)) { kind[k] = 1; if (r.kind === 'cave' || allCave) cave[k] = 1; } } rooms.push({ tiles, type: R0.nodes[id] && R0.nodes[id].type, decor: r.decor || [] }); }
+      for (const id in L.cor) for (const [x, y] of L.cor[id].cells) for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) { const k = (y * 2 + j) * mw + x * 2 + i; if (!kind[k] && isFloor(m, x * 2 + i, y * 2 + j)) { kind[k] = 2; if (allCave) cave[k] = 1; } }
     }
     for (const r of L ? [] : m.rooms || []) { const tiles = []; for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (isFloor(m, x, y)) { kind[y * mw + x] = 1; tiles.push([x, y]); } rooms.push({ tiles, type: null, decor: [] }); }
     for (let y = 0; y < mh; y++) for (let x = 0; x < mw; x++) if (!kind[y * mw + x] && isFloor(m, x, y)) kind[y * mw + x] = 2;
@@ -57,9 +61,9 @@ const VOX = (() => {
       for (let lx = 0; lx < VPT; lx++) for (let ly = 0; ly < VPT; ly++) {
         const x = tx * VPT + lx, y = ty * VPT + ly; v.set(x, y, 0, 0x2a2420); v.set(x, y, 1, 0x3a322a);
         if (cv) { const pb = hs(x, y, 13) < .08; v.set(x, y, 2, pb ? tint(0x8a8070, .9 + hs(x, y) * .2) : tint(mix(0x5a4a38, 0x4a4030, hs(x >> 2, y >> 2)), .85 + hs(x, y, 1) * .2)); continue; }
-        if (k === 2) { const j = lx % 3 === 0 || ly % 3 === 0; if (j && hs(x, y, 3) < .7) continue; v.set(x, y, 2, tint(mix(0x5e5850, 0x6a6052, hs(x / 3 | 0, y / 3 | 0, 4)), .85 + hs(x / 3 | 0, y / 3 | 0, 5) * .25)); continue; }
+        if (k === 2) { const j = lx % 3 === 0 || ly % 3 === 0; if (j && hs(x, y, 3) < .7) continue; v.set(x, y, 2, tint(mix(P.cor[0], P.cor[1], hs(x / 3 | 0, y / 3 | 0, 4)), .85 + hs(x / 3 | 0, y / 3 | 0, 5) * .25)); continue; }
         if (lx === 0 || ly === 0) continue;
-        const t = .82 + hs(tx, ty) * .3, base = mix(0x6e6254, 0x5a6058, hs(ty, tx, 3)), crack = hs(x, y, 9) < .03;
+        const t = .82 + hs(tx, ty) * .3, base = mix(P.fl[0], P.fl[1], hs(ty, tx, 3)), crack = hs(x, y, 9) < .03;
         v.set(x, y, 2, tint(crack ? 0x2e2822 : base, crack ? 1 : t * (.93 + hs(x, y) * .14)));
       }
     }
@@ -75,8 +79,8 @@ const VOX = (() => {
         for (let z = 0; z < hh; z++) {
           if (nearCave) { v.set(x, y, z, tint(mix(0x6a5a48, 0x564a40, hs(x >> 1, y >> 1, z >> 1)), .8 + hs(x, y, z) * .25)); continue; }
           const row = (z / 3) | 0, off = row % 2 ? 2 : 0, joint = z % 3 === 0 || (x + off) % 5 === 0 || (y + off) % 5 === 0;
-          const id = [Math.floor((x + off) / 5), Math.floor((y + off) / 5), row], cap = !hi && z === hh - 1, moss = z < 5 && hs(x, y, z + 40) < .2 - z * .03;
-          v.set(x, y, z, cap ? tint(0x80766a, .95 + hs(x, y) * .1) : joint ? tint(0x4a4038, .9 + hs(x, y, z) * .15) : moss ? tint(0x4a5a30, .85 + hs(x, z) * .3) : tint(mix(0x7a6c5c, 0x6c6460, hs(...id, 7)), (.78 + hs(...id, 2) * .32) * (.94 + hs(x, y, z) * .1)));
+          const id = [Math.floor((x + off) / 5), Math.floor((y + off) / 5), row], cap = !hi && z === hh - 1, moss = P.moss && z < 5 && hs(x, y, z + 40) < .2 - z * .03;
+          v.set(x, y, z, cap ? tint(P.cap, .95 + hs(x, y) * .1) : joint ? tint(P.joint, .9 + hs(x, y, z) * .15) : moss ? tint(0x4a5a30, .85 + hs(x, z) * .3) : tint(mix(P.wall[0], P.wall[1], hs(...id, 7)), (.78 + hs(...id, 2) * .32) * (.94 + hs(x, y, z) * .1)));
         }
       }
     }
