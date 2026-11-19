@@ -253,7 +253,7 @@ const CRAWL = (() => {
   function syncToRUN() { for (const [p, m] of pair()) { const hp = Math.max(0, p.hp); m.hp = Math.round(m.max * hp / p.max); if (p.dead || hp <= 0) { m.hp = 0; m.dead = true; } } st.items.potion = bag()[POT] || 0; }
   function startFight(n, mod) {
     clearMarks(); closeSign(); syncToG();
-    G.Encounter.spawnRoom(R, st.map._lay.room[n.id].cells.map(FL.tile), units(n.g), lead(), { boss: n.type === 'boss' });
+    G.Encounter.spawnRoom(R, st.map._lay.room[n.id].cells.map(FL.tile), units(n.g), lead(), { boss: n.type === 'boss', spots: st.map._lay.room[n.id].spawns }); // spots: 손으로 짠 방의 몬스터 자리
     FIGHT.start(R, { n, mod, log: t => { st.log.push({ t }); say(); }, purse, done: fightDone });
     st.log.push({ t: `${n.g.label} — 전투가 시작된다.` }); say();
   }
@@ -267,7 +267,7 @@ const CRAWL = (() => {
     const n = st.map.nodes[ex.to], door = ex.path[ex.path.length - 1], lane = ex.path.slice(0, -1), dts = cellTiles(door);
     openCor(ex.e.id); refreshSeen(); // 문은 벽으로 굽지 않는다 — 다시 굽기는 화면이 깜빡이고 인물 · 카메라가 튄다(main.js). 방 안은 시야가 가린다
     syncToG();
-    const mons = G.Encounter.spawnRoom(R, st.map._lay.room[n.id].cells.map(FL.tile), units(n.g), { x: door[0], y: door[1] }, { boss: n.type === 'boss', hidden: true });
+    const mons = G.Encounter.spawnRoom(R, st.map._lay.room[n.id].cells.map(FL.tile), units(n.g), { x: door[0], y: door[1] }, { boss: n.type === 'boss', hidden: true, spots: st.map._lay.room[n.id].spawns });
     if (n.alert) for (const m of mons) m.aware = 'alert'; // 이미 우리를 기다린다
     // 다른 방의 적도 소리를 듣는다 (쫓아오면 전투 중에 증원)
     const others = st.map.nodes.filter(o => o.hostile && !o.visited && o.id !== n.id).map(o => { const [x, y] = centerOf(o.id); return { x, y, aware: o.alert ? 'alert' : 'idle', node: o }; });

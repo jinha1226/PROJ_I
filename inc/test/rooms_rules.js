@@ -4,7 +4,7 @@
 const fs = require('fs'), vm = require('vm'), path = require('path'), LOAD = require('./_load.js');
 let ok = 0, bad = 0; const t = (name, v, extra = '') => { if (v) ok++; else { bad++; console.log('  실패:', name, extra); } };
 const ctx = { console, Math, JSON, G: {} }; vm.createContext(ctx);
-for (const n of ['run/core', 'run/data', 'run/rooms', 'run/gen']) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n });
+for (const n of ['run/core', 'run/data', 'run/rooms', 'run/combat', 'run/gen', 'run/rules', 'run/layout']) vm.runInContext(fs.readFileSync(LOAD.jsPath(n), 'utf8'), ctx, { filename: n });
 vm.runInContext(fs.readFileSync(path.join(LOAD.ROOT, 'js/game/floor.js'), 'utf8'), ctx, { filename: 'floor.js' });
 const R = ctx.RUN, K = R.ROOM_K, TILE = R.TILE, KNOWN = new Set(' .~123' + TILE.solid + Object.keys(TILE.decor).join('') + 'P'), TAGS = new Set(['start', 'fight', 'elite', 'event', 'treasure', 'camp', 'shop', 'boss']);
 t('템플릿 칸 = 쿼터뷰 지도 칸 (RUN.ROOM_K = G.Floor.K)', K === ctx.G.Floor.K, [K, ctx.G.Floor.K]);
@@ -50,6 +50,22 @@ for (const rm of R.ROOMS) {
   t('지도: 글자마다 바닥 · 장애물(o) · 물(~) · 방 밖(#)', okAll);
   t('지도: 웅덩이 방에 물 · 장애물이 있다', water > 20 && solid > 0, [water, solid]);
   t('지도: 방 타일은 그 방 번호', roomAt[(2 * K + 10) * iso.w + 2 * K + 2] === 0);
+}
+// 생성기가 손으로 짠 방으로 층을 짓는다 (템플릿이 있는 구역): 길 · 방 종류 · 몬스터 자리
+{
+  let floors = 0, rooms = 0, tpl = 0, own = 0, pathBad = 0, short = 0, fail = 0;
+  for (let s = 1; s <= 60; s++) for (const floor of [1, 2]) {
+    let m; try { m = R.gen.make(s, floor); } catch (e) { fail++; continue; } floors++;
+    if (!R.gen.path(m) || !R.gen.path(m, n => n.type === 'elite')) pathBad++;
+    for (const n of m.nodes) { const r = m._lay.room[n.id]; rooms++; if (!r.tmap) continue; tpl++; const t = R.ROOMS.find(q => q.id === r.tpl); if (t.tags.includes(n.type)) own++; if (n.g && (n.type === 'fight' || n.type === 'elite') && n.g.count > r.spawns.length) short++; }
+    ctx.G.Floor.fromRun(m, R.TYPE);
+  }
+  t('층 짓기: 실패 없음', fail === 0, fail);
+  t('층 짓기: 열쇠 없이 · 정예를 피해서도 끝까지', pathBad === 0, pathBad);
+  t('층 짓기: 고블린 굴의 방은 모두 손으로 짠 방', tpl === rooms, [tpl, rooms]);
+  t('층 짓기: 방 종류가 맞는 템플릿이 대부분 (85% 이상)', own / tpl >= 0.85, (own / tpl).toFixed(2));
+  t('층 짓기: 싸우는 방은 몬스터 자리가 적 수보다 많거나 같다', short === 0, short);
+  const m3 = R.gen.make(1, 3); t('층 짓기: 템플릿이 없는 구역(드워프 폐성채)은 예전 방', Object.values(m3._lay.room).every(r => !r.tmap));
 }
 console.log(`rooms_rules: 통과 ${ok} · 실패 ${bad}`);
 process.exit(bad ? 1 : 0);

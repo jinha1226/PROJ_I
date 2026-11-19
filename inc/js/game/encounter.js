@@ -9,11 +9,13 @@ G.Encounter = (() => {
   // major: 옛 G.Flow가 층 시작에 major 아닌 몬스터를 치운다 · aggro · spotted: 바로 싸운다 (문 앞 준비가 있으면 그쪽이 상태를 정한다)
   function spawnRoom(R, cells, units, from, opts = {}) {
     const order = cells.slice().sort((a, b) => Math.hypot(b[0] - from.x, b[1] - from.y) - Math.hypot(a[0] - from.x, a[1] - from.y));
+    // opts.spots: 손으로 짠 방의 몬스터 자리 [{ tx, ty, k: 1 앞줄 · 2 뒷줄 · 3 우두머리 }] — 첫 종류(앞장서는 놈)는 3 · 1 · 2 차례로, 나머지는 2 · 1 · 3. 모자라면 예전처럼 흩어 놓는다
+    const spots = opts.spots || [], used = new Set(), take = ks => { for (const q of ks) { const s = spots.find(p => p.k === q && !used.has(p)); if (s) { used.add(s); return [s.tx, s.ty]; } } return null; };
     const out = []; let k = 0;
-    for (const [name, cnt] of units) for (let i = 0; i < cnt; i++) {
-      const [x, y] = order[(k++ * 3) % Math.max(1, order.length)] || [from.x + 3, from.y], nm = monName(name);
+    units.forEach(([name, cnt], ui) => { for (let i = 0; i < cnt; i++) {
+      const [x, y] = (spots.length && take(ui === 0 ? [3, 1, 2] : [2, 1, 3])) || order[(k++ * 3) % Math.max(1, order.length)] || [from.x + 3, from.y], nm = monName(name);
       out.push(G.Fantasy.spawnMon(R, 1, { n: nm, ...G.D.F.mon[nm] }, x, y, false, { aggro: !opts.hidden, spotted: !opts.hidden, major: true, boss: !!opts.boss && !out.length })); // 우두머리 표시는 무리의 첫 놈만 (문지기 · 우두머리와 그 졸개)
-    }
+    } });
     // hidden: 닫힌 문 너머 — 방 안에서 안 보이고(문이 열릴 때까지), 잠들었거나 모른다
     if (opts.hidden) G.Prep.prime(out, opts.rng);
     G.Fantasy.refreshEnts(R); if (G.Sight?.update) G.Sight.update(R);

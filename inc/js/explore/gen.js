@@ -29,6 +29,7 @@ RUN.gen = (() => {
       let ok = true;
       if (kind === 'round') ok = (x - cx) ** 2 + (y - cy) ** 2 <= (cx + 0.55) ** 2;
       else if (kind === 'cross') ok = Math.abs(x - cx) <= Math.floor(w / 4) || Math.abs(y - cy) <= Math.floor(h / 4);
+      else if (kind === 'tmpl') ok = true; // 손으로 짠 방의 자리: 사각형 전체 (모양은 나중에 템플릿으로)
       else if (kind === 'cave') { const r = ((x - cx) / (cx + 0.5)) ** 2 + ((y - cy) / (cy + 0.5)) ** 2; ok = r <= 1 + (rng() - 0.6) * 0.7 || x === cx || y === cy; }
       if (ok) out.push([x, y]);
     }
@@ -43,9 +44,18 @@ RUN.gen = (() => {
   const BIG = { hall: ['hall', 11, 9], round: ['round', 11, 11], cross: ['cross', 11, 11] };
   const SHAPE0 = { rooms: [['rect', 0.32], ['hall', 0.2], ['round', 0.18], ['cave', 0.15], ['cross', 0.15]], big: [['hall', 0.4], ['round', 0.35], ['cross', 0.25]] };
   const wpick = (rng, list) => { let u = rng() * list.reduce((a, x) => a + x[1], 0); for (const [k, w] of list) if ((u -= w) < 0) return k; return list[0][0]; };
-  function pickRoom(rng, big, S = {}) { return big ? BIG[wpick(rng, S.big || SHAPE0.big)].slice() : SIZE[wpick(rng, S.rooms || SHAPE0.rooms)](rng); }
+  function pickRoom(rng, big, S = {}, TP = []) {
+    // 손으로 짠 방이 있는 구역: 방 크기를 그 템플릿들의 크기에서 고른다 (자리 종류는 나중에 정하므로 우두머리 · 입구 아닌 것 고루)
+    if (TP.length) { const pool = TP.filter(t => (big ? t.tags.includes('boss') : !t.tags.includes('boss') && !t.tags.includes('start'))); if (pool.length) { const [w, h] = tdim(RUN.pick(rng, pool)); return ['tmpl', w, h]; } }
+    return big ? BIG[wpick(rng, S.big || SHAPE0.big)].slice() : SIZE[wpick(rng, S.rooms || SHAPE0.rooms)](rng);
+  }
+  // 손으로 짠 방 (js/explore/rooms.js): 구역의 템플릿 · 칸 크기 · 돌리기(시계 방향 90°) · 좌우 뒤집기
+  const tplsOf = zid => (typeof RUN.ROOMS !== 'undefined' ? RUN.ROOMS.filter(t => t.zone === zid) : []);
+  const tdim = t => [t.map[0].length / RUN.ROOM_K, t.map.length / RUN.ROOM_K];
+  const rotCW = rows => [...rows[0]].map((_, x) => rows.map((_, y) => rows[rows.length - 1 - y][x]).join(''));
+  const flipX = rows => rows.map(r => [...r].reverse().join(''));
 
-  function grow(seed, F, S = {}) { // S: 구역 생김새 (RUN.ZONES의 shape)
+  function grow(seed, F, S = {}, TP = []) { // S: 구역 생김새 (RUN.ZONES의 shape) · TP: 그 구역의 손으로 짠 방
     const CW = F.cw, CH = F.ch;
     const rng = RUN.rng(seed), occ = new Int8Array(CW * CH), own = new Int16Array(CW * CH).fill(-1);
     const at = (x, y) => x < 0 || y < 0 || x >= CW || y >= CH ? 9 : occ[y * CW + x];
@@ -73,7 +83,7 @@ RUN.gen = (() => {
       return pl.r;
     }
     // 입구
-    const start = mkRoom('rect', 7, 5, Math.max(2, Math.min(CW - 9, Math.round(F.sx * CW) - 3)), CH - 8); start.id = 0; start.parent = -1; rooms.push(start); mark(start.cells, 1, 0);
+    const start = mkRoom(TP.length ? 'tmpl' : 'rect', 7, 5, Math.max(2, Math.min(CW - 9, Math.round(F.sx * CW) - 3)), CH - 8); start.id = 0; start.parent = -1; rooms.push(start); mark(start.cells, 1, 0);
     start.tried = {};
     for (let guard = 0; guard < 500 && rooms.length < 11; guard++) {
       // 위쪽(앞으로) 방을 더 자주 고른다
@@ -82,7 +92,7 @@ RUN.gen = (() => {
       open.sort((a, b) => a.y - b.y);
       const p = rng() < F.up ? open[Math.floor(rng() * Math.min(3, open.length))] : open[Math.floor(rng() * open.length)];
       p.tried = p.tried || {};
-      const [kind, w, h] = pickRoom(rng, false, S), L = 2 + Math.floor(rng() * 3), u = rng();
+      const [kind, w, h] = pickRoom(rng, false, S, TP), L = 2 + Math.floor(rng() * 3), u = rng();
       if (u < (S.pair ?? 0.45) && !p.tried.pair) {
         // 대칭 날개: 양옆에 같은 방
         p.tried.pair = 1; const a = plan(p, 'left', kind, w, h, L), b = plan(p, 'right', kind, w, h, L);
@@ -99,7 +109,7 @@ RUN.gen = (() => {
     const tops = rooms.slice().sort((a, b) => a.y - b.y);
     let boss = null;
     for (const p of tops.slice(0, 6)) {
-      for (const L of [2, 3, 4]) { const [kind, w, h] = pickRoom(rng, true, S), a = plan(p, 'up', kind, w, h, L); if (corOk(a.cor, p.id) && fits(a.r)) { boss = commit(p, a); break; } }
+      for (const L of [2, 3, 4]) { const [kind, w, h] = pickRoom(rng, true, S, TP), a = plan(p, 'up', kind, w, h, L); if (corOk(a.cor, p.id) && fits(a.r)) { boss = commit(p, a); break; } }
       if (boss) break;
     }
     if (!boss) return null;
@@ -175,10 +185,18 @@ RUN.gen = (() => {
     return false;
   }
   // 적 무리: 구역 규칙표(RUN.ZONES)의 예산과 틀로 채운다. fi = 구역 안에서 몇째 층(0 · 1), deep = 입구에서 먼 정도(0~1)
+  const mkGroup = (Z, tier, fam, units) => { const count = units.reduce((a, u) => a + u[1], 0); return { fam, name: units[0][0], count, d: units.reduce((a, u) => a + Z.cost[u[0]] * u[1], 0), label: units.map(([n, c]) => `${n}${count > 1 ? ` ${c}` : ''}`).join(' · '), tier, units }; };
+  const budgetOf = (type, tier, Z, fi, deep) => { const [lo, mid, hi, el] = Z.budget[fi]; return type === 'elite' ? el : (tier === 'heavy' ? hi : tier === 'light' ? lo : mid) * (0.8 + 0.4 * deep); };
+  // 손으로 짠 방의 적 구성 중 예산에 맞는 것: 예산(조금 넘는 것까지) 안에서 가장 센 것, 없으면 가장 약한 것
+  function encOf(t, type, tier, Z, fi, deep) {
+    const bud = budgetOf(type, tier, Z, fi, deep), cost = e => e.u.reduce((a, [k, c]) => a + Z.cost[k] * c, 0), list = t.enc.slice().sort((a, b) => cost(a) - cost(b));
+    const e = list.filter(x => cost(x) <= bud * 1.15).pop() || list[0];
+    return mkGroup(Z, tier, e.n, e.u.map(u => u.slice()));
+  }
   function group(rng, type, tier, Z, fi, small, deep) {
-    const mk = (fam, units) => { const count = units.reduce((a, u) => a + u[1], 0); return { fam, name: units[0][0], count, d: units.reduce((a, u) => a + Z.cost[u[0]] * u[1], 0), label: units.map(([n, c]) => `${n}${count > 1 ? ` ${c}` : ''}`).join(' · '), tier, units }; };
+    const mk = (fam, units) => mkGroup(Z, tier, fam, units);
     if (type === 'boss') { const p = fi % 2 ? Z.boss : Z.gate; return mk(p.n, p.u.map(u => u.slice())); }
-    const [lo, mid, hi, el] = Z.budget[fi], bud = type === 'elite' ? el : (tier === 'heavy' ? hi : tier === 'light' ? lo : mid) * (0.8 + 0.4 * deep);
+    const bud = budgetOf(type, tier, Z, fi, deep);
     const pool = type === 'elite' ? Z.elites : Z.packs, two = [RUN.pick(rng, pool), RUN.pick(rng, pool)].sort((p, q) => Z.cost[q.u[0]] - Z.cost[p.u[0]]);
     const { n, u: [a, b] } = small ? two[0] : two[1];
     // 한 종류는 기준 인원 + 1까지 (2026-11-19 — 같은 놈 여섯이 한 방에 서면 행동 수가 파티를 압도하고 화면도 되풀이된다).
@@ -195,7 +213,9 @@ RUN.gen = (() => {
   }
   function build(seed, F, floor) {
     const Z = RUN.zone(floor), fi = floor - Z.floors[0];
-    const g = grow(seed, F, Z.shape); if (!g) return null;
+    const TP = tplsOf(Z.id), g = grow(seed, F, Z.shape, TP); if (!g) return null;
+    // 그 종류의 손으로 짠 방이 이 방 크기에 (돌려서라도) 들어가나 — 하나뿐인 특별한 방(야영 · 상점 · 보물 · 정예)은 맞는 크기의 방에 먼저
+    const fitsType = (r, type) => TP.some(t => { const [w, h] = tdim(t); return t.tags.includes(type) && ((w === r.w && h === r.h) || (w === r.h && h === r.w)); }), prefer = (list, type) => { const f = list.filter(n => fitsType(room[n.id], type)); return f.length ? f : list; };
     const rng = RUN.rng(seed * 13 + 5);
     // 방 번호를 다시 매긴다 (입구 0, 깊이 순)
     const order = g.rooms.slice().sort((a, b) => g.rank.get(a.id) - g.rank.get(b.id)), idx = new Map(order.map((r, i) => [r.id, i]));
@@ -217,13 +237,13 @@ RUN.gen = (() => {
     if (N.some(n => n !== bossN && !outs(m, n.id).length)) return null;
     N[0].type = 'start'; bossN.type = 'boss';
     // 우두머리 앞 야영은 한 곳만 (2026-11-19 — 우두머리 방으로 들어가는 방을 모두 야영으로 하니 층마다 2.5곳, 구역 끝 야영지까지 쉼이 넘쳤다)
-    { const pre = ins(m, bossN.id).map(e => N[e.a]).filter(n => n.id !== 0); if (pre.length) RUN.pick(rng, pre).type = 'camp'; }
+    { const pre = ins(m, bossN.id).map(e => N[e.a]).filter(n => n.id !== 0); if (pre.length) RUN.pick(rng, prefer(pre, 'camp')).type = 'camp'; }
     const mid = N.filter(n => n.type === 'fight' && n.id !== 0);
     for (const n of mid) { const u = rng(); const T = Z.rooms; n.type = n.row <= 1 ? (u < T.near ? 'event' : 'fight') : u < T.event ? 'event' : u < T.event + T.elite && n.row >= 3 ? 'elite' : 'fight'; }
-    const shopC = mid.filter(n => n.row >= 2 && n.row <= Math.max(3, maxD - 2)); if (!shopC.length) return null; RUN.pick(rng, shopC).type = 'shop';
+    const shopC = mid.filter(n => n.row >= 2 && n.row <= Math.max(3, maxD - 2)); if (!shopC.length) return null; RUN.pick(rng, prefer(shopC, 'shop')).type = 'shop';
     if (!mid.some(n => n.type === 'elite')) { const c = mid.filter(n => n.row >= 3 && n.type !== 'shop'); if (!c.length) return null; RUN.pick(rng, c).type = 'elite'; }
     let treasure = null;
-    for (const n of RUN.shuffle(rng, mid.filter(n => n.row >= 2 && n.type !== 'shop' && n.type !== 'elite'))) if (ins(m, n.id).every(e => outs(m, e.a).some(o => o.b !== n.id))) { treasure = n; break; }
+    for (const n of prefer(RUN.shuffle(rng, mid.filter(n => n.row >= 2 && n.type !== 'shop' && n.type !== 'elite')), 'treasure')) if (ins(m, n.id).every(e => outs(m, e.a).some(o => o.b !== n.id))) { treasure = n; break; }
     if (!treasure) return null;
     treasure.type = 'treasure'; ins(m, treasure.id).forEach(e => { e.kind = 'locked'; });
     // 갈림길 대비 (DESIGN.md 178): 갈림길마다 한쪽은 위험하지만 얻는 게 많고(정예 · 대규모 무리), 다른 쪽은 수월하게(사건 · 소규모 무리).
@@ -238,6 +258,8 @@ RUN.gen = (() => {
       if (a.row >= 3 && elites < 2 && rng() < 0.4) { a.type = 'elite'; a.tier = null; } else { a.type = 'fight'; a.tier = 'heavy'; }
       if (rng() < 0.5) { b.type = 'event'; b.tier = null; } else { b.type = 'fight'; b.tier = 'light'; }
     }
+    // 정예 자리 맞추기: 정예 방 크기에 정예 템플릿이 없으면, 정예 템플릿이 들어가는 전투 방(3줄 이상)과 종류를 맞바꾼다 (정예 수 · 줄 조건 그대로)
+    if (TP.length) for (const e of N.filter(n => n.type === 'elite' && !fitsType(room[n.id], 'elite'))) { const o = RUN.shuffle(rng, N.filter(n => n.type === 'fight' && n.row >= 3 && fitsType(room[n.id], 'elite')))[0]; if (o) { [e.type, o.type] = [o.type, e.type]; [e.tier, o.tier] = [o.tier, e.tier]; } }
     // 숨은 통로: 고리 복도 하나 (나가는 길이 따로 있고, 들어가는 방은 다른 길로도 갈 수 있을 때)
     const hid = RUN.shuffle(rng, edges.filter(e => e.kind === 'open' && N[e.b] !== treasure && outs(m, e.a).filter(o => o !== e && keyless(o)).length && ins(m, e.b).length > 1)).sort((a, b) => b.loop - a.loop)[0];
     if (!hid) return null; hid.kind = 'hidden';
@@ -245,21 +267,35 @@ RUN.gen = (() => {
     opens().slice(0, Z.paths.trap).forEach(e => { e.kind = 'trap'; });
     opens().slice(0, Z.paths.dark).forEach(e => { e.kind = 'dark'; });
     { let k = Z.paths.locked; for (const e of opens()) { if (k <= 0) break; if (outs(m, e.a).filter(o => o !== e && keyless(o)).length) { e.kind = 'locked'; k--; } } }
+    // 손으로 짠 방 고르기: 방 종류가 맞고 크기가 맞는(돌려서라도) 템플릿, 같은 층에서는 덜 쓴 것부터.
+    // 종류가 맞는 것이 없으면 같은 크기의 다른 방을 무대로 (적은 생성기가 고른다). 그래도 없으면 예전 방 그대로
+    if (TP.length) {
+      const used = new Map();
+      for (const n of N) {
+        const r = room[n.id], fits = TP.map(t => { const [w, h] = tdim(t); return [t, w === r.w && h === r.h ? 0 : w === r.h && h === r.w ? 1 : -1]; }).filter(([, f]) => f >= 0);
+        const HOST = ['fight', 'elite'], side = t => HOST.some(x => t.tags.includes(x)) === HOST.includes(n.type), any = fits.filter(([t]) => !t.tags.includes('start') && !t.tags.includes('boss'));
+        const own = fits.filter(([t]) => t.tags.includes(n.type)), near = any.filter(([t]) => side(t)), pool = own.length ? own : n.type === 'start' || n.type === 'boss' ? [] : near.length ? near : any; // 빌릴 때는 같은 계열(싸우는 방 ↔ 평화로운 방)부터
+        if (!pool.length) continue;
+        const least = Math.min(...pool.map(([t]) => used.get(t.id) || 0)), [t, rot] = RUN.pick(rng, pool.filter(([q]) => (used.get(q.id) || 0) === least));
+        used.set(t.id, least + 1); r.tpl = t; r.tplRot = rot; r.tplFlip = rng() < 0.5;
+      }
+    }
     const evs = RUN.shuffle(rng, RUN.EVENTS.filter(e => !e.rare).map(e => e.id).filter(id => !Z.events || Z.events.includes(id))); let ei = 0;
     for (const n of N) {
-      if (n.type === 'fight' || n.type === 'elite' || n.type === 'boss') { n.g = group(rng, n.type, n.tier, Z, fi, n.size === 'small', n.row / maxD); n.hostile = true; n.dc = n.type === 'fight' ? 12 : n.type === 'elite' ? 14 : 15; }
+      if (n.type === 'fight' || n.type === 'elite' || n.type === 'boss') { n.g = group(rng, n.type, n.tier, Z, fi, n.size === 'small', n.row / maxD); { const T0 = room[n.id].tpl; if (T0 && T0.enc.length && T0.tags.includes(n.type) && n.type !== 'boss') n.g = encOf(T0, n.type, n.tier, Z, fi, n.row / maxD); } n.hostile = true; n.dc = n.type === 'fight' ? 12 : n.type === 'elite' ? 14 : 15; } // 손으로 짠 방은 그 방의 적 구성 중 예산에 맞는 것 (우두머리 · 문지기는 규칙표 그대로)
       else { n.hostile = false; if (n.type === 'event') n.ev = evs[ei++ % evs.length]; }
     }
     // 방 장식: 종류에 맞춰
     const rm = id => room[id];
-    rm(0).decor.push({ k: 'stairs', x: rm(0).x + 1, y: rm(0).y + 1 });
-    rm(bossN.id).decor.push({ k: 'stairs', x: rm(bossN.id).x + Math.floor(rm(bossN.id).w / 2) - 1, y: rm(bossN.id).y + 1 });
-    for (const n of N) { const r = rm(n.id), c = r.cells[Math.floor(r.cells.length / 2)]; if (n.type === 'event' && rng() < 0.7) r.decor.push({ k: 'altar', x: c[0], y: c[1] }); if (n.type === 'treasure') r.decor.push({ k: 'chest', x: c[0], y: c[1] }); }
+    if (!rm(0).tpl) rm(0).decor.push({ k: 'stairs', x: rm(0).x + 1, y: rm(0).y + 1 }); // 손으로 짠 방의 계단은 앉힐 때 (빈 칸에)
+    if (!rm(bossN.id).tpl) rm(bossN.id).decor.push({ k: 'stairs', x: rm(bossN.id).x + Math.floor(rm(bossN.id).w / 2) - 1, y: rm(bossN.id).y + 1 });
+    for (const n of N) { const r = rm(n.id), c = r.cells[Math.floor(r.cells.length / 2)]; if (r.tpl) continue; if (n.type === 'event' && rng() < 0.7) r.decor.push({ k: 'altar', x: c[0], y: c[1] }); if (n.type === 'treasure') r.decor.push({ k: 'chest', x: c[0], y: c[1] }); }
     // 소품 (잔해 · 상자 · 통 · 뼈 · 석상 · 깔개 …): 문 곁은 비우고 안쪽 칸에 흩어 놓는다
     const FURN = Z.furn;
     const doorCells = new Set(); for (const e of edges) { const c = cor[e.id]; doorCells.add(c.doorA.join(',')); doorCells.add(c.doorB.join(',')); }
     for (const n of N) {
       const r = room[n.id], set = new Set(r.cells.map(c => c.join(','))), taken = new Set(r.decor.map(o => o.x + ',' + o.y));
+      if (r.tpl) continue; // 손으로 짠 방은 소품도 템플릿 그대로
       const nearDoor = (x, y) => D8.some(([dx, dy]) => doorCells.has((x + dx) + ',' + (y + dy))) || doorCells.has(x + ',' + y);
       const inner = RUN.shuffle(rng, r.cells.filter(([x, y]) => D4.every(([dx, dy]) => set.has((x + dx) + ',' + (y + dy))) && !taken.has(x + ',' + y) && !nearDoor(x, y) && !D8.some(([dx, dy]) => taken.has((x + dx) + ',' + (y + dy)))));
       const k = inner.length >= 15 ? 3 + Math.floor(rng() * 3) : inner.length >= 4 ? 1 + Math.floor(rng() * 2) : 0, pool = FURN[n.type] || FURN.fight;
@@ -283,6 +319,14 @@ RUN.gen = (() => {
     const ox = x0 - 4, oy = y0 - 6, sh = ([x, y]) => [x - ox, y - oy], shp = o => ({ ...o, x: o.x - ox, y: o.y - oy });
     for (const id in room) { const r = room[id]; room[id] = { ...r, cells: r.cells.map(sh), x: r.x - ox, y: r.y - oy, decor: r.decor.map(shp) }; }
     for (const id in cor) { const c = cor[id]; cor[id] = { cells: c.cells.map(sh), doorA: sh(c.doorA), doorB: sh(c.doorB), doorAout: sh(c.doorAout), doorBout: sh(c.doorBout), decor: c.decor.map(shp) }; }
+    // 손으로 짠 방 앉히기: 마지막 자리 · 방향(템플릿 돌리기 · 뒤집기 → 층 돌리기 · 뒤집기)으로. 계단(입구 · 우두머리)은 바닥만인 첫 칸에
+    for (const id in room) {
+      const r = room[id]; if (!r.tpl) continue;
+      let rows = r.tpl.map.slice(); if (r.tplRot) rows = rotCW(rows); if (r.tplFlip) rows = flipX(rows); if (F.rot) rows = rotCW(rows); if (F.flip) rows = flipX(rows);
+      const t = fromTemplate({ ...r.tpl, map: rows }, r.x, r.y), KK = RUN.ROOM_K; if (t.w !== r.w || t.h !== r.h) { delete r.tpl; continue; }
+      if (N[+id].type === 'start' || N[+id].type === 'boss') { const c = t.cells.find(([cx, cy]) => { for (let j = 0; j < KK; j++) for (let i = 0; i < KK; i++) if (rows[(cy - r.y) * KK + j][(cx - r.x) * KK + i] !== '.') return false; return true; }); if (c) t.decor.push({ k: 'stairs', x: c[0], y: c[1] }); }
+      room[id] = { ...r, ...t };
+    }
     m._lay = { COLS: x1 - ox + 5, ROWS: y1 - oy + 5, room, cor, frame: F.n };
     return m;
   }
