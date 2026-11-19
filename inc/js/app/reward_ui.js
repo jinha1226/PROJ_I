@@ -62,10 +62,10 @@ const REWARDUI = (() => {
     const box = open(); box.classList.add('rw-record');
     box.innerHTML = `<h3>${sum.win ? `${sum.floor}층을 넘었다` : `${sum.floor}층에서 쓰러졌다`}</h3>` +
       `<div class="rw-stats"><div><b>${sum.rooms}</b>간 방</div><div><b>${sum.fights}</b>이긴 전투</div><div><b>${sum.lv}</b>레벨</div><div><b>${sum.gold}</b>금화</div></div>` +
-      `<div class="rw-line"><b>소문이 퍼진다</b> +${sum.gain} (소문 ${sum.total})</div>` +
-      (sum.lured?.length ? `<div class="rw-line rw-new"><b>새 얼굴이 선술집을 찾는다</b> ${sum.lured.map(esc).join(' · ')}</div>` : '') +
-      (sum.seat ? `<div class="rw-line rw-new"><b>파티 자리가 하나 늘었다</b></div>` : '') +
-      (sum.fresh.length ? `<div class="rw-line rw-new"><b>새로 열렸다</b> ${sum.fresh.map(esc).join(' · ')}</div>` : '') +
+      `<div class="rw-line"><b>소문</b> +${sum.gain} (합계 ${sum.total})</div>` +
+      (sum.lured?.length ? `<div class="rw-line rw-new"><b>새 직업</b> ${sum.lured.map(esc).join(' · ')}</div>` : '') +
+      (sum.seat ? `<div class="rw-line rw-new"><b>파티 자리 +1</b></div>` : '') +
+      (sum.fresh.length ? `<div class="rw-line rw-new"><b>해금</b> ${sum.fresh.map(esc).join(' · ')}</div>` : '') +
       `<button class="rw-go">선술집으로</button>`;
     box.querySelector('.rw-go').onclick = () => { close(); cb(); };
   }

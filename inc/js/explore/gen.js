@@ -183,7 +183,7 @@ RUN.gen = (() => {
     const [lo, mid, hi, el] = Z.budget[fi], bud = type === 'elite' ? el : (tier === 'heavy' ? hi : tier === 'light' ? lo : mid) * (0.8 + 0.4 * deep);
     const pool = type === 'elite' ? Z.elites : Z.packs, two = [RUN.pick(rng, pool), RUN.pick(rng, pool)].sort((p, q) => Z.cost[q.u[0]] - Z.cost[p.u[0]]);
     const { n, u: [a, b] } = small ? two[0] : two[1];
-    const cnt = v => Math.max(1, Math.min(6, Math.round(v))); // 한 종류는 여섯까지 (싼 몬스터로 방이 넘치지 않게)
+    const cnt = v => Math.max(1, Math.min(Z.seats[fi] * 2, Math.round(v))); // 한 종류는 기준 인원의 두 배까지 (싼 몬스터로 방이 넘치지 않게 — 둘이 도는 층에 쥐 여섯은 무리 전술로 감당이 안 된다)
     if (!b) return mk(n, [[a, cnt(bud / Z.cost[a])]]);
     const na = cnt(bud / 2 / Z.cost[a]);
     return mk(n, [[a, na], [b, cnt((bud - na * Z.cost[a]) / Z.cost[b])]]);

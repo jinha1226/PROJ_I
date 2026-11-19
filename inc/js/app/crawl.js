@@ -187,7 +187,7 @@ const CRAWL = (() => {
   function rescue() {
     const f = G.S.w.fantasy, m = G.Party.rescued(f), L = lead();
     G.Party.join(f, R, m, st, { x: L.x - 0.7, y: L.y + 0.5 }); trail.length = 0; trail.push([L.x, L.y]);
-    st.log.push({ t: `${m.name} (${G.Guild.def(m).n})가 이번 길에 함께한다.`, c: 'good' }); document.body.dataset.rescued = m.name;
+    st.log.push({ t: `합류: ${m.name} (${G.Guild.def(m).n})`, c: 'good' }); document.body.dataset.rescued = m.name;
   }
   function scene() {
     const s = st.scene, box = document.createElement('div'); box.id = 'crawlscene';
@@ -200,7 +200,7 @@ const CRAWL = (() => {
       if (st.flags.ally) { st.flags.ally = false; rescue(); }
       if (kind === 'rest' && !st.scene) return descend(); // 야영지를 떠난다
       if ((kind === 'camp' || kind === 'rest') && ch.n === '긴 휴식') G.Dice.rested(G.Party.members(G.S.w.fantasy)); // 긴 휴식: 인간은 영웅적 영감 (SRD)
-      if (kind === 'shop' && !st.scene) deferred[at] = s; // 상인은 다시 와도 연다
+      if (kind === 'shop' && !st.scene) { deferred[at] = s; nearKey = 's' + at; } // 상인은 다시 와도 연다 (곁에 선 채로 바로 다시 열리지는 않게 — 떠났다가 돌아오면 연다)
       arrived();
     };
     $('stage').append(box);
@@ -282,7 +282,7 @@ const CRAWL = (() => {
   // 전투가 끝났다: 졌으면 판 끝, 이겼으면 금화 · 경험치 · 전리품 → 레벨업 고르기 → 정예 · 보스 3택1 (설계 5-12)
   function fightDone(win, F) {
     const n = F.n; syncToRUN(); n.hostile = false;
-    if (!win || !st.party.some(m => !m.dead)) { st.done = 'lose'; st.log.push({ t: '일행이 모두 쓰러졌다. 주사위만이 선술집 탁자로 돌아간다.' }); say(); return end(); }
+    if (!win || !st.party.some(m => !m.dead)) { st.done = 'lose'; st.log.push({ t: '전멸.' }); say(); return end(); }
     const type = n.type === 'boss' ? 'boss' : n.type === 'elite' ? 'elite' : 'fight', f = G.S.w.fantasy;
     const gold = type === 'boss' ? 60 + RUN.d(st.rng, 20) : type === 'elite' ? 35 + RUN.d(st.rng, 15) : 6 + n.g.count * 2 + (n.g.tier === 'heavy' ? 15 : 0); st.gold += gold;
     const loot = G.Reward.loot(type, n.g.count || 1); for (const l of loot) st.items[l.k] = (st.items[l.k] || 0) + l.n;
@@ -292,8 +292,8 @@ const CRAWL = (() => {
     REWARDUI.show({ title: `${n.g.label} — 이겼다 (${F.round}라운드)`, gold, xp, loot, big: type === 'fight' ? null : G.Reward.bigOffer(f, R.party, type), type, f }, () => {
       refreshHP();
       if (type === 'boss') {
-        if (RUN.ZONES.some(z => st.floor + 1 >= z.floors[0] && st.floor + 1 <= z.floors[1])) { st.log.push({ t: `${n.g.name}가 쓰러졌다. 그 뒤로 아래로 내려가는 계단이 보인다.` }); if (st.floor % 2) return descend(); RUN.campsite(st, RUN.zone(st.floor).n); say(); PMAP.draw(); return scene(); } // 구역의 끝이면 야영지에서 쉬고 내려간다
-        st.done = 'win'; st.log.push({ t: `${n.g.name}가 쓰러졌다. 더 아래로 내려가는 길은 아직 무너진 돌에 막혀 있다.` }); say(); PMAP.draw(); return end();
+        if (RUN.ZONES.some(z => st.floor + 1 >= z.floors[0] && st.floor + 1 <= z.floors[1])) { st.log.push({ t: `${n.g.name}가 쓰러졌다. 아래로 내려가는 계단이 있다.` }); if (st.floor % 2) return descend(); RUN.campsite(st, RUN.zone(st.floor).n); say(); PMAP.draw(); return scene(); } // 구역의 끝이면 야영지에서 쉬고 내려간다
+        st.done = 'win'; st.log.push({ t: `${n.g.name}가 쓰러졌다. 여기가 마지막 층이다.` }); say(); PMAP.draw(); return end();
       }
       const L = lead(); trail.length = 0; trail.push([L.x, L.y]);
       refreshSeen(); doorTiles = doorsOf(); PMAP.draw(); showMarks();

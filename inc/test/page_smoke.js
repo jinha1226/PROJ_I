@@ -31,7 +31,7 @@ const game = (d, ents) => [
 ].filter(Boolean);
 const PAGES = {
   // 새 게임 껍데기 (2026-11-17 2단계): 탐사 층은 혼자 시작(2026-11-18) · ?fight=test · ?scene=*는 파티 셋 + 적 셋 · 폰 크기 · DCSS 인형 모드
-  'index.html': d => [/data-err="/.test(d) && `JS 오류: ${(d.match(/data-err="([^"]*)"/) || [])[1]}`, !/id="tavern"/.test(d) && '선술집 화면이 없다', count(d, /class="tv-g"/g) !== 4 && `오늘 밤의 모험가 ${count(d, /class="tv-g"/g)}명 (4명이어야)`].filter(Boolean), // 판은 선술집에서 시작한다
+  'index.html': d => [/data-err="/.test(d) && `JS 오류: ${(d.match(/data-err="([^"]*)"/) || [])[1]}`, !/id="tavern"/.test(d) && '선술집 화면이 없다', count(d, /class="tv-g"/g) !== 4 && `오늘 밤의 모험가 ${count(d, /class="tv-g"/g)}명 (4명이어야)`, !/class="tv-scene"[^>]*><canvas/.test(d) && '선술집 장면(캔버스)이 없다'].filter(Boolean), // 판은 선술집에서 시작한다
   'index.html?party=dragoon,cleric': d => game(d, 2), // 선술집 없이 바로 층으로 (시험용): 파이터 · 클레릭
   // 시험 전투: 걸어 들어오는 동안 6명, 싸우는 중엔 살아 있는 적 + 아군(data-fight), 이기면 파티 셋
   'index.html?fight=test': d => { const f = d.match(/data-fight="\d+r:(\d+)foes:(\d+)ps"/); return game(d, /data-fights="1w"/.test(d) ? 3 : f ? +f[1] + +f[2] : 6); },

@@ -302,10 +302,10 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
   // 구역 끝 야영지 (ROGUELIKE_PLAN 0-0): 우두머리를 잡은 자리에서 긴 휴식 한 번 · 상인 · 내려가기. 돌아가는 길은 없다
   RUN.campsite = (st, zone) => {
     let rested = false;
-    const mk = () => ({ kind: 'rest', title: '야영지', again: mk, text: `${zone}의 끝. 계단 어귀에 누군가 피워 둔 불자리가 남아 있고, 떠돌이 상인이 짐을 풀고 있다. 여기서 숨을 고르면 다음은 더 깊은 곳이다.`, choices: [
-      { n: '긴 휴식', sub: '체력 · 주문 슬롯을 모두 되찾는다', stay: true, off: () => rested, run: () => { rested = true; for (const m of alive(st)) { m.hp = m.max; m.sl = { ...(C[m.cls].slots || {}) }; } say(st, '불을 살리고 긴 휴식을 했다. 모두 기운을 되찾았다.', 'good'); } },
+    const mk = () => ({ kind: 'rest', title: '야영지', again: mk, text: `${zone} 끝. 쉴 자리와 상인이 있다. 내려가면 돌아올 수 없다.`, choices: [
+      { n: '긴 휴식', sub: '체력 · 주문 슬롯을 모두 되찾는다', stay: true, off: () => rested, run: () => { rested = true; for (const m of alive(st)) { m.hp = m.max; m.sl = { ...(C[m.cls].slots || {}) }; } say(st, '긴 휴식. 체력과 주문 슬롯을 되찾았다.', 'good'); } },
       ...shopScene(st, node(st, st.at)).choices.slice(0, -1),
-      { n: '내려간다', run: () => say(st, '짐을 챙겨 계단을 내려간다.') }] });
+      { n: '내려간다', run: () => say(st, '계단을 내려간다.') }] });
     st.scene = mk();
   };
   RUN.choose = (st, i) => {

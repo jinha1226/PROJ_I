@@ -98,6 +98,20 @@ G.Tactics = (() => {
       return this.plan(rt, e, w, budget, (x, y) => Math.hypot(x - w.x, y - w.y) <= GUARD_R, true);
     },
     cellOf,
+    // 함께 싸우는 치유 직업 (앞줄에 세운 클레릭): 멀리서 쏠 수 있어도 앞에 선 동료 곁(두 칸 안)까지 따라붙어 거기서 친다
+    escorts: e => !!e.merc && roleOf(e.merc) === 'healer' && of(e).pos === 'charge',
+    // 차례 첫머리: 앞에 선 동료가 세 칸 넘게 떨어져 있으면 먼저 그 곁으로 걷는다 (그 자리에서 주문 · 치유를 쓴다)
+    follow(rt, e, budget) {
+      const line = rt.party.filter(p => p !== e && !p.dead && !p.dying && !soft(p)), foes = rt.mons.filter(o => o.hp > 0 && o.aggro); if (!line.length || !foes.length) return [];
+      const near = p => Math.min(...foes.map(o => dist(o, p))), b = line.reduce((a, c) => (near(c) < near(a) ? c : a)); if (dist(e, b) <= 3) return [];
+      return this.plan(rt, e, b, budget, (x, y) => Math.hypot(x - b.x, y - b.y) <= 2.2);
+    },
+    escort(rt, e, tg, budget, can) {
+      const line = rt.party.filter(p => p !== e && !p.dead && !p.dying && !soft(p)); if (!line.length) return this.plan(rt, e, tg, budget, can);
+      const b = line.reduce((a, c) => (dist(c, tg) < dist(a, tg) ? c : a)), by = (x, y) => Math.hypot(x - b.x, y - b.y) <= 2.2;
+      const [sx, sy] = cellOf(e); if (by(sx, sy)) return can(sx, sy) ? [] : this.plan(rt, e, tg, budget, can);
+      return this.plan(rt, e, b, budget, by);
+    },
     // 모두를 칸 위에 세운다 (전투 시작 · 밀침 · 소환 뒤). 이미 칸 위에 혼자 서 있으면 그대로
     // walker: 걷는 중인 사람은 건드리지 않는다. 그가 지나가는 칸의 아군도 밀어내지 않고, 새로 자리를 찾는 사람만 그 칸을 피한다
     snap(rt, walker) {

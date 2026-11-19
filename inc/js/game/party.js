@@ -18,15 +18,18 @@ G.Party = (() => {
     m.skManual = true; m.skPri = (m.skills || []).slice(); return m;
   }
   const runMember = m => { const cls = RUN_CLS[m.cls] || 'fighter', C = RUN.CLS[cls]; return { cls, n: m.name, hp: C.hp, max: C.hp, dead: false, sl: { ...(C.slots || {}) }, uid: m.uid }; };
+  // 전투 자리: 옛 엔진은 치유 직업을 뒷줄(거리 유지 — 적에게서 물러난다)에 세운다. 줄을 짜는 화면이 없는 새 게임에서는
+  // 갑옷 입은 클레릭은 앞줄에서 함께 싸운다 (2인 파티에서 혼자 빠지지 않게). 드루이드 · 바드는 가운데 줄 그대로
+  const place = (f, m) => { if (m.cls === 'cleric') (f.form = f.form || {})[m.uid] = 0; return m; };
   // 구출한 사람: 아무 직업, 파티 평균 레벨
   const rescued = (f, rng = Math.random) => trim(G.Guild.make(f, CLASSES[Math.floor(rng() * CLASSES.length)], { lv: level(f) }));
   // 들인다: 엔진 명단 · 출전 줄 · 탐사 파티에. at = 나타날 자리. 돌려주는 것: 쿼터뷰 인물
   function join(f, rt, m, st, at) {
-    f.mercs.push(m); (f.lineup = f.lineup || []).push(m.uid); G.Fantasy.syncAllies(f);
+    place(f, m); f.mercs.push(m); (f.lineup = f.lineup || []).push(m.uid); G.Fantasy.syncAllies(f);
     const a = rt.party.find(p => p.merc === m);
     if (a && at) { a.x = at.x; a.y = at.y; a._dx = a._rx = a.x; a._dy = a._ry = a.y; }
     if (st) st.party.push(runMember(m));
     return a;
   }
-  return { MAX, CAP, CLASSES, RUN_CLS, members, size, level, trim, runMember, rescued, join };
+  return { MAX, CAP, CLASSES, RUN_CLS, members, size, level, trim, runMember, rescued, join, place };
 })();

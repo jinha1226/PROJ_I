@@ -70,6 +70,7 @@ const TestFloor = (() => {
     f.leaderNew = false; f.autoTr = f.autoParty = false; f.askMeet = false; L.lv = lv;
     const ms = kind === 'crawl' ? (picks || []).slice(1).map(adopt) : ['mage', 'cleric'].map(c => G.Guild.make(f, c, { lv })); f.mercs.push(...ms); f.lineup = ms.map(m => m.uid); // 탐사 층: 선술집에서 고른 파티 (던전 안 영입은 없다)
     f.floor = f.maxFloor = f.start = f.checkpoint = 1; f.town = true;
+    if (kind === 'crawl') G.Party.members(f).forEach(m => G.Party.place(f, m)); // 전투 자리 (클레릭은 앞줄)
     const r = G.Fantasy.rt(f); G.Fantasy.syncAllies(f);
     f.town = false; r.phase = 'explore'; r.turn = null; r.mons = []; r.chests = []; r.fields = [];
     const m = r.map = map0 || build(kind), s = m.start;

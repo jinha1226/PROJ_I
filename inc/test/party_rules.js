@@ -16,6 +16,10 @@ const seq = a => { let i = 0; return () => a[i++ % a.length]; };
   t('오늘 밤: 의자 수만큼, 오는 직업만, 1레벨, 기술 5칸', n.length === 4 && n.every(g => T.classes(m).includes(g.cls) && g.lv === 1 && (g.skills || []).length <= 5), n.map(g => g.cls).join());
   t('오는 직업이 다 앉아 있다', new Set(n.map(g => g.cls)).size === 3);
   t('다시 열어도 같은 사람들', T.night(f, m, 0) === n);
+  t('손님마다 생김새의 씨앗이 있다 (던전에서도 같은 모습)', n.every(g => g.lid) && new Set(n.map(g => g.lid)).size === n.length);
+  { const all = G.Party.CLASSES.map(c => T.sheet(G.Party.trim(G.Guild.make(f, c, { lv: 1 })))), s = T.sheet(n.find(g => g.cls === 'cleric'));
+    t('상태창: 체력 · AC · 능력치 여섯 · 기본 공격 · 방어구', all.every(a => a.hp > 0 && a.ac >= 10 && a.ab.length === 6 && /^명중 [+-]\d+ · \d+d\d+/.test(a.weapon.d) && a.armor && a.cls && a.sp && a.role), all.map(a => a.weapon.d).join(' | '));
+    t('상태창: 기술마다 효과 한 줄', s.skills.length > 0 && s.skills.every(k => k.n && k.d && k.tag), JSON.stringify(s.skills)); }
   const r1 = T.finish(m, { bossFloor: 0, names: ['가', '나'], floor: 1, win: false });
   t('판 끝: 명패가 걸리고 손님은 바뀐다 (넘어가는 돈은 없다)', m.wall[0].names.join() === '가,나' && m.night === null && !r1.seat && T.seats(m) === 2 && m.coin === undefined);
   t('고블린 굴에 닿으면 레인저 · 바바리안이 온다', r1.cls.join() === 'archer,barbarian' && T.classes(m).length === 5);

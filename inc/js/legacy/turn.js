@@ -42,6 +42,7 @@ G.Turn = (() => {
     // 흐르는 턴제 (새 게임, 2026-11-18): 판정은 SRD 차례 그대로, 보이는 것만 실시간처럼 — 범위 칠하기 · 큰 주사위 창 · 차례 사이 쉼을 없애고,
     // 걸음은 논리상 바로 옮겨 그림이 따라 걷게 한다(그림이 도착하면 친다). 다음 사람의 걸음이 앞사람의 공격 동작과 겹쳐 보인다
     smooth: false,
+    beat: 1.3, // 흐르는 턴제에서 행동 사이 쉼의 배수 (행동 하나 0.7초쯤 — 누가 무엇을 했는지 읽을 시간. 배속 단추로 줄인다)
     // 먼저 굴린 주사위 눈: 행동보다 앞서 보여 주고, 그 눈으로 판정한다
     pre: null,
     rolls: { all: 0, shown: 0 },
@@ -277,15 +278,15 @@ G.Turn = (() => {
             return;
           }
           // 주사위가 없어도 그림이 도착한 뒤에 친다
-          st.ph = 'pre'; st.t = st.fast ? 0 : T.smooth ? 0.05 : CLOSE_T;
+          st.ph = 'pre'; st.t = st.fast ? 0 : T.smooth ? 0.35 : CLOSE_T;
           return;
         }
-        if (!G.quiet) { st.ph = 'pre'; st.t = st.fast ? 0 : T.smooth ? 0.05 : CLOSE_T; return; } // 범위 공격도 그림이 도착한 뒤에
+        if (!G.quiet) { st.ph = 'pre'; st.t = st.fast ? 0 : T.smooth ? 0.35 : CLOSE_T; return; } // 범위 공격도 그림이 도착한 뒤에
         act(f, rt, st, e, tg);
         return;
   }
   const sameNext = st => { const a = st.order[st.i], b = st.order[st.i + 1]; return !!(a && b && a.init === b.init); }; // 같은 선제권 무리 (SRD: 같은 몬스터 무리는 한 번 굴린다)
-  const pause = (st, t) => { st.ph = 'wait'; st.t = st.fast && sameNext(st) ? 0 : T.smooth ? Math.min(t * 0.3, 0.25) : t; st.ov = null; };
+  const pause = (st, t) => { st.ph = 'wait'; st.t = st.fast && sameNext(st) ? 0 : T.smooth ? t * T.beat : t; st.ov = null; };
   // 굴림을 크게 보여 줄 때: 동료가 쓰러질 수 있을 때 · 우두머리를 끝낼 수 있을 때 · 20과 1
   function stakeOf(e, tg, nat) {
     if (e.kind === 'mon' && tg.merc && tg.hp / (tg.max || 1) < STAKE_HP) return '쓰러질 위기';
@@ -342,6 +343,8 @@ G.Turn = (() => {
       e.gcd = 0; e.lastSk = null; e.lastBonus = null; e.freeDone = null; e.lastHitSk = null; e.hit1Done = false; e.heroic = !!(e.merc && F().sk(e, 'ft_heroic'));
       if (G.Skill.persist) G.Skill.persist(f, rt, e, ROUND);
       if (e.fleeT) e.fleeT = 0;
+      // 함께 싸우는 치유 직업은 앞사람 곁으로 먼저 걷고 나서 주문을 쓴다 (새 게임 — 뒤에 혼자 남지 않게). 이 차례의 이동은 여기서 썼다
+      st.pm = null; if (T.smooth && G.Tactics.escorts(e) && !DN().held(e) && !G.Act.adjacent(rt, e).length) { const p = G.Tactics.follow(rt, e, moveOf(e)); if (p.length) { const px = e.x, py = e.y; G.Tactics.walk(e, p, MOVE_V, 99); F().fieldMove(f, rt, e, px, py); st.pm = e; } }
       if (G.Story.aid(f, rt, e)) { pause(st, BEAT); return; }
       if (G.Trinket.beads(f, rt, e)) { pause(st, BEAT); return; } // 화염구 구슬 (SRD)
       // 치유 → 기술 → 공격 순서로 그 차례의 행동을 정한다
@@ -367,12 +370,12 @@ G.Turn = (() => {
     if (e.merc && ['bard', 'paladin', 'warlock', 'mage'].includes(e.merc.cls) && G.Act.influence(f, rt, e)) { pause(st, BEAT); return; } // 설득 (SRD Influence): 꺾인 적을 항복시킨다
     st.tg = target(rt, e);
     if (!st.tg) { if (e.kind !== 'mon' && G.Act.search(rt, e)) { pause(st, BEAT); return; } pause(st, SKIP); return; } // 보이는 적이 없으면 찾기 (SRD Search)
-    const held = DN().held(e), keep = e.kind === 'mon' ? G.Foe.ranged(e) : !G.Dnd.melee(e) && G.Dnd.rng(e) >= 2 && G.Tactics.keeps(e) && !st.tg.down, can = (x, y) => canHit(rt.map, e, x, y, st.tg);
+    const held = DN().held(e) || st.pm === e, keep = e.kind === 'mon' ? G.Foe.ranged(e) : !G.Dnd.melee(e) && G.Dnd.rng(e) >= 2 && G.Tactics.keeps(e) && !st.tg.down, can = (x, y) => canHit(rt.map, e, x, y, st.tg);
     // 유지 · 후퇴: 칠 수 없고 적이 멀면 자리를 지킨다
     if (e.kind !== 'mon' && !canHit(rt.map, e, e.x, e.y, st.tg) && G.Tactics.waits(rt, st, e)) { if (G.Act.idle(f, rt, e)) { pause(st, BEAT); return; } e.ready = true; G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.1, s: '준비', col: '#9fc8ff', t: 0.7, sz: 0.7 }); pause(st, SKIP); return; } // 준비 행동 (SRD): 적이 곁에 오면 반응으로 먼저 친다
     // 위기 지시: 체력이 낮은 근접은 후열 동료 곁으로 물러난다
     if (e.kind !== 'mon') { const away = G.Tactics.fall(rt, e, moveOf(e)); if (away && away.length) { if (G.Act.adjacent(rt, e).length) G.Act.disengage(rt, e); else G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.1, s: '물러남', col: '#d8c79a', t: 0.8, sz: 0.75 }); /* 물러나기 (SRD Disengage): 기회 공격 없이 */ st.path = away; st.ph = 'back'; return; } }
-    st.path = e.kind !== 'mon' && keep ? G.Tactics.rearward(rt, e, st.tg, moveOf(e), can) : keep ? G.Tactics.kite(rt, e, st.tg, held ? 0 : moveOf(e), can) : G.Tactics.plan(rt, e, st.tg, held ? 0 : moveOf(e), can); // 원거리 몬스터 · 후퇴 설정의 원거리는 거리를 벌리고 쏜다
+    st.path = e.kind !== 'mon' && !held && !keep && G.Tactics.escorts(e) ? G.Tactics.escort(rt, e, st.tg, moveOf(e), can) : e.kind !== 'mon' && keep ? G.Tactics.rearward(rt, e, st.tg, moveOf(e), can) : keep ? G.Tactics.kite(rt, e, st.tg, held ? 0 : moveOf(e), can) : G.Tactics.plan(rt, e, st.tg, held ? 0 : moveOf(e), can); // 원거리 몬스터 · 후퇴 설정의 원거리는 거리를 벌리고 쏜다
     { const end = st.path.length ? st.path[st.path.length - 1] : e; if (!held && !keep && !can(end.x, end.y) && !G.Act.dashing(e) && !(e.kind === 'mon' ? G.Foe.ranged(e) : DN().rng(e) >= 2) && (e.kind !== 'mon' || !G.Foe.reachL?.(e))) { G.Act.dash(e); const p2 = G.Tactics.plan(rt, e, st.tg, moveOf(e), can); if (p2.length >= st.path.length) { st.path = p2; G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.1, s: '질주', col: '#9fc8ff', t: 0.7, sz: 0.7 }); } } } // 질주 (SRD Dash): 행동으로 두 배 — 닿아도 이번 차례엔 치지 않는다
     // 기본 사거리로 못 치면 긴 사거리 · 투척으로 (SRD: 불리)
     { const end = st.path.length ? st.path[st.path.length - 1] : e, L = e.kind === 'mon' ? G.Foe.reachL(e) : G.Dnd.rngL(e); if (L && !st.tg.down && !can(end.x, end.y)) { e.longNow = true; if (!can(end.x, end.y)) e.longNow = false; } }

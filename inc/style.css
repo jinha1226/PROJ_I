@@ -229,3 +229,24 @@ img[src*="assets/chars/"] { image-rendering:auto; object-fit:contain; }
 #reward .rw-cards .k-art { border-color:#8a6cc8; } #reward .rw-cards .k-rule { border-color:#c8a030; } #reward .rw-cards .k-carve { border-color:#3c78b8; }
 #reward .rw-go { width:100%; margin-top:10px; padding:10px; border-radius:8px; border:1px solid #6d5a3c; background:#6a4a1c; color:#f3e4c3; font:600 15px "Noto Sans KR",sans-serif; cursor:pointer; }
 #reward .rw-stats { display:flex; gap:8px; margin:8px 0; } #reward .rw-stats div { flex:1; padding:8px 4px; border-radius:8px; background:#3a2a1a; text-align:center; font:12px "Noto Sans KR",sans-serif; color:#cdbb98; } #reward .rw-stats b { display:block; font:800 20px "Noto Sans KR",sans-serif; color:#f3e4c3; }
+
+/* ── 전투 차례 띠 (js/app/fight.js strip): 위 바 아래. 선제권 순서 · 지금 차례 · 지금 행동 한 줄 ── */
+#turnstrip { position:absolute; top:calc(var(--hud-h, 46px) + var(--safe-t, 0px) + 4px); left:8px; right:8px; z-index:8; pointer-events:none; display:flex; flex-direction:column; gap:4px; align-items:center; }
+#turnstrip .ts-row { display:flex; align-items:center; gap:4px; max-width:100%; overflow-x:auto; scrollbar-width:none; padding:4px 8px; border-radius:10px; background:rgba(20,18,23,.88); border:1px solid #3a3440; font:500 12px "Noto Sans KR",sans-serif; color:#b9b0a0; white-space:nowrap; }
+#turnstrip .ts-row::-webkit-scrollbar { display:none; }
+#turnstrip .ts-rd { color:#f0c070; font-weight:700; margin-right:4px; }
+#turnstrip s { text-decoration:none; opacity:.35; }
+#turnstrip .ts-c { display:inline-flex; align-items:center; gap:4px; padding:2px 7px 2px 2px; border-radius:99px; border:1px solid transparent; }
+#turnstrip .ts-c i { width:18px; height:18px; border-radius:50%; display:grid; place-items:center; font:700 10px "Noto Sans KR",sans-serif; font-style:normal; color:#16110b; }
+#turnstrip .ts-c.foe { color:#d9a096; } #turnstrip .ts-c.foe i { color:#fff; }
+#turnstrip .ts-c.down { opacity:.45; text-decoration:line-through; }
+#turnstrip .ts-c.cur { background:#4a3a1e; border-color:#f0c070; color:#fff; font-weight:700; font-size:13px; }
+#turnstrip .ts-c.cur.foe { background:#4a211c; border-color:#e0604a; }
+#turnstrip .ts-act { min-height:20px; max-width:100%; padding:5px 12px; border-radius:10px; background:rgba(20,18,23,.92); border:1px solid #6d5a3c; font:500 13px "Noto Sans KR",sans-serif; color:#ece4d4; text-align:center; }
+#turnstrip .ts-act:empty { display:none; }
+#turnstrip .ts-act.foe { border-color:#8a3a30; }
+#turnstrip .ts-act b { font-weight:700; } #turnstrip .ts-act small { color:#a89878; margin-left:4px; }
+#turnstrip .ts-act i { font-style:normal; font-weight:700; } #turnstrip .ts-act i.ok { color:#8fd49a; } #turnstrip .ts-act i.no { color:#e08a7a; }
+#turnstrip .ts-act.foe i.ok { color:#e08a7a; } #turnstrip .ts-act.foe i.no { color:#8fd49a; }
+body:has(#turnstrip) #fatebanners { top:calc(var(--hud-h, 46px) + 84px) !important; }
+body:has(#turnstrip) #pmapbox:not(.big), body:has(#turnstrip) #dm { display:none !important; }

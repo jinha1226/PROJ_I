@@ -17,6 +17,7 @@ const MD = (() => {
   const C = () => PaperDoll.catalog;
   const hs = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
   const pick = (a, n) => a[(n >>> 0) % a.length];
+  const lid = m => m.lid ?? m.uid; // 생김새의 씨앗: 선술집 손님은 받은 번호(lid)를 던전까지 들고 간다 — 선술집에서 본 모습 그대로
   const real = cat => C()[cat].filter(n => !/_Line_|_Down$/.test(n));
   // 직업 모습: 투구(Helmet 번호) · 머리 · 왼손 물건. 무기와 갑옷은 실제 장비에서 온다
   const CLS = {
@@ -51,17 +52,17 @@ const MD = (() => {
     if (!wm) return null;
     const all = real(wm[0]);
     const artId = art && String(art.id ?? art.k ?? art.n ?? 'a');
-    const i = art ? pick(WPN_MAGIC[wm[0]] || [all.length - 1], hs(artId)) : pick(wm[1], hs(m.uid + ':' + wk));
+    const i = art ? pick(WPN_MAGIC[wm[0]] || [all.length - 1], hs(artId)) : pick(wm[1], hs(lid(m) + ':' + wk));
     return [wm[0], all[Math.min(all.length - 1, i)]];
   }
   function chestOf(m, aq) {
     const art = G.Trinket.armor(m);
     const ak = aq.cat === 'heavy' ? 'heavy' : aq.cat === 'medium' ? 'medium' : aq.cat === 'light' ? 'light' : ROBE_CLS.has(m.cls) ? 'robe' : 'cloth';
-    const i = art ? pick(CHEST_MAGIC[ak], hs(String(art.id ?? art.k ?? art.n ?? 'a'))) : pick(CHEST[ak], hs(m.uid + ':' + aq.en));
+    const i = art ? pick(CHEST_MAGIC[ak], hs(String(art.id ?? art.k ?? art.n ?? 'a'))) : pick(CHEST[ak], hs(lid(m) + ':' + aq.en));
     return C().Chest[i];
   }
   function lookOf(m) {
-    const cls = CLS[m.cls] || {}, SR = G.SRD, e = SR.eq(m), aq = SR.armorOf(m), sp = G.Res.species(m) || 'human', h = hs(m.uid + ':' + m.name + ':' + (m.look ?? ''));
+    const cls = CLS[m.cls] || {}, SR = G.SRD, e = SR.eq(m), aq = SR.armorOf(m), sp = G.Res.species(m) || 'human', h = hs(lid(m) + ':' + m.name + ':' + (m.look ?? ''));
     const L = { colors: {} };
     L.colors.skin = pick(SKIN[sp] || SKIN.human, h >> 3);
     L.colors.hair = cls.hair || pick(HAIR, h >> 6);
@@ -72,7 +73,7 @@ const MD = (() => {
     L.Helmet = cls.helm != null ? C().Helmet[cls.helm] : null;
     L.Chest = chestOf(m, aq);
     L.weapon = weaponOf(m, L, cls);
-    L.Shield = e.shield ? C().Shield[hs(m.uid + 'sh') % 6] : null;
+    L.Shield = e.shield ? C().Shield[hs(lid(m) + 'sh') % 6] : null;
     const ranged = L.weapon && /Bow|Crossbow/.test(L.weapon[0]);
     L.Sub_Item = !L.Shield && cls.sub && !ranged ? C().Sub_Item.find(n => n.includes(cls.sub)) : null;
     L.Arrow = pick(C().Arrow, h >> 18);
@@ -363,5 +364,7 @@ const MD = (() => {
     cvs.style.imageRendering = 'auto';
     if (MINI_READY) go(); else PaperDoll.load('assets/chars/').then(go).catch(() => {});
   }
-  return { lookOf, frame, portrait, iconUrl, enqueue, snap, present, clear, isMon };
+  // 선술집 등 전투 밖 화면: 그 사람의 32px 픽셀 인형 한 장 (가만히 선 모습, time = 초). 그림이 아직 안 왔으면 null
+  function pix(m, time = 0) { if (!MINI_READY) return null; const d = dollOf(m), fi = Math.round((time % PaperDoll.anims.Idle.len) * FPS), key = 'P' + fi; let sp = d.cache.get(key); if (!sp) { sp = px32(d, 'Idle', fi / FPS); d.cache.set(key, sp); } return sp; }
+  return { lookOf, frame, portrait, pix, iconUrl, enqueue, snap, present, clear, isMon };
 })();
