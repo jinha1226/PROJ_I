@@ -8,13 +8,13 @@ RUN.gen = (() => {
   // 층의 윤곽 (DESIGN.md 180): 같은 규칙으로 키워도 윤곽이 다르면 전체 모습이 달라진다.
   // 캔버스 기준(앞 = 위)에서 키운 뒤 rot(돌리기) · flip(뒤집기)으로 실제 지도에 옮긴다.
   const FRAMES = {
-    tall: rng => ({ n: '세로형', cw: 32, ch: 74, sx: 0.5, up: 0.55, rot: 0, region: () => true }),
-    wide: rng => ({ n: '가로형', cw: 30, ch: 68, sx: 0.5, up: 0.55, rot: 1, region: () => true }),
-    square: rng => ({ n: '정사각형', cw: 48, ch: 48, sx: 0.3 + rng() * 0.4, up: 0.3, rot: 0, region: () => true }),
-    blob: rng => { const cw = 46, ch = 54, rx = cw / 2 - 1, ry = ch / 2 - 1, cx = cw / 2, cy = ch / 2, ph = rng() * 6;
+    tall: rng => ({ n: '세로형', cw: 40, ch: 84, sx: 0.5, up: 0.55, rot: 0, region: () => true }),
+    wide: rng => ({ n: '가로형', cw: 38, ch: 78, sx: 0.5, up: 0.55, rot: 1, region: () => true }),
+    square: rng => ({ n: '정사각형', cw: 58, ch: 58, sx: 0.3 + rng() * 0.4, up: 0.3, rot: 0, region: () => true }),
+    blob: rng => { const cw = 58, ch = 66, rx = cw / 2 - 1, ry = ch / 2 - 1, cx = cw / 2, cy = ch / 2, ph = rng() * 6;
       return { n: '덩어리형', cw, ch, sx: 0.5, up: 0.4, rot: rng() < 0.5 ? 0 : 1, region: (x, y) => { const a = Math.atan2(y - cy, x - cx), w = 1 + 0.16 * Math.sin(a * 3 + ph) + 0.1 * Math.sin(a * 5 + ph * 2); return ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= w * w; } }; },
-    ell: rng => ({ n: 'L자형', cw: 50, ch: 54, sx: 0.2, up: 0.5, rot: 0, region: (x, y) => x < 22 || y < 24 }),
-    diag: rng => ({ n: '대각선형', cw: 52, ch: 60, sx: 0.12, up: 0.55, rot: 0, region: (x, y) => { const t = (x / 52) - (1 - y / 60); return Math.abs(t) < 0.34; } }),
+    ell: rng => ({ n: 'L자형', cw: 62, ch: 66, sx: 0.2, up: 0.5, rot: 0, region: (x, y) => x < 28 || y < 30 }),
+    diag: rng => ({ n: '대각선형', cw: 64, ch: 72, sx: 0.12, up: 0.55, rot: 0, region: (x, y) => { const t = (x / 64) - (1 - y / 72); return Math.abs(t) < 0.4; } }),
   };
   const frameOf = (seed, S = {}) => { const r = RUN.rng(seed * 101 + 17), keys = S.frames || Object.keys(FRAMES), F = FRAMES[keys[Math.floor(r() * keys.length)]](r); F.flip = r() < 0.5; return F; }; // S.frames: 구역이 고른 윤곽
   const KEYLESS = { open: 1, trap: 1, dark: 1 };
@@ -38,8 +38,9 @@ RUN.gen = (() => {
     return { cells: out, decor };
   }
   // 방 모양 뽑기: 구역 규칙표의 shape.rooms · shape.big 무게 (없으면 예전 비율)
-  const SIZE = { rect: rng => ['rect', 5 + 2 * Math.floor(rng() * 2), 3 + 2 * Math.floor(rng() * 2)], hall: () => ['hall', 7, 5], round: rng => ['round', rng() < 0.5 ? 5 : 7, 0], cave: () => ['cave', 7, 5], cross: () => ['cross', 7, 7] };
-  const BIG = { hall: ['hall', 9, 7], round: ['round', 9, 9], cross: ['cross', 9, 9] };
+  // 방은 적게 · 넓게 (2026-11-19): 파티 넷과 적 여섯이 자리를 잡을 만큼 — 보통 방 7~9 × 5~7칸, 큰 방 11칸
+  const SIZE = { rect: rng => ['rect', 7 + 2 * Math.floor(rng() * 2), 5 + 2 * Math.floor(rng() * 2)], hall: () => ['hall', 9, 7], round: rng => ['round', rng() < 0.5 ? 7 : 9, 0], cave: () => ['cave', 9, 7], cross: () => ['cross', 9, 9] };
+  const BIG = { hall: ['hall', 11, 9], round: ['round', 11, 11], cross: ['cross', 11, 11] };
   const SHAPE0 = { rooms: [['rect', 0.32], ['hall', 0.2], ['round', 0.18], ['cave', 0.15], ['cross', 0.15]], big: [['hall', 0.4], ['round', 0.35], ['cross', 0.25]] };
   const wpick = (rng, list) => { let u = rng() * list.reduce((a, x) => a + x[1], 0); for (const [k, w] of list) if ((u -= w) < 0) return k; return list[0][0]; };
   function pickRoom(rng, big, S = {}) { return big ? BIG[wpick(rng, S.big || SHAPE0.big)].slice() : SIZE[wpick(rng, S.rooms || SHAPE0.rooms)](rng); }
@@ -72,9 +73,9 @@ RUN.gen = (() => {
       return pl.r;
     }
     // 입구
-    const start = mkRoom('rect', 5, 3, Math.max(2, Math.min(CW - 7, Math.round(F.sx * CW) - 2)), CH - 6); start.id = 0; start.parent = -1; rooms.push(start); mark(start.cells, 1, 0);
+    const start = mkRoom('rect', 7, 5, Math.max(2, Math.min(CW - 9, Math.round(F.sx * CW) - 3)), CH - 8); start.id = 0; start.parent = -1; rooms.push(start); mark(start.cells, 1, 0);
     start.tried = {};
-    for (let guard = 0; guard < 500 && rooms.length < 23; guard++) {
+    for (let guard = 0; guard < 500 && rooms.length < 11; guard++) {
       // 위쪽(앞으로) 방을 더 자주 고른다
       const open = rooms.filter(r => !r.tried || Object.keys(r.tried).length < 3);
       if (!open.length) break;
@@ -185,8 +186,11 @@ RUN.gen = (() => {
     const CAP = Z.seats[fi] + 1, cnt = v => Math.max(1, Math.min(CAP, Math.round(v)));
     const units = b ? (() => { const na = cnt(bud / 2 / Z.cost[a]); return [[a, na], [b, cnt((bud - na * Z.cost[a]) / Z.cost[b])]]; })() : [[a, cnt(bud / Z.cost[a])]];
     let left = bud - units.reduce((s, [k, c]) => s + Z.cost[k] * c, 0);
-    const kin = [...new Set(Z.packs.concat(Z.elites).filter(p => p.n === n).flatMap(p => p.u))].filter(k => !units.some(([q]) => q === k)).sort((p, q) => Z.cost[q] - Z.cost[p]);
-    for (const k of kin) { const c = Math.min(CAP, Math.floor(left / Z.cost[k])); if (c < 1) continue; units.push([k, c]); left -= c * Z.cost[k]; }
+    // 채울 종류는 그 방과 같은 급의 틀에서만 (보통 방에 정예 몬스터가 섞이지 않게), 무리 전체는 기준 인원의 두 배까지 (행동 수가 파티를 압도하지 않게)
+    const ALL = Z.seats[fi] * 2; let n0 = units.reduce((s, u) => s + u[1], 0);
+    for (let i = units.length - 1; n0 > ALL && i >= 0; i--) { const cut = Math.min(units[i][1] - 1, n0 - ALL); units[i][1] -= cut; n0 -= cut; left += cut * Z.cost[units[i][0]]; }
+    const kin = [...new Set(pool.filter(p => p.n === n).flatMap(p => p.u))].filter(k => !units.some(([q]) => q === k)).sort((p, q) => Z.cost[q] - Z.cost[p]);
+    for (const k of kin) { const c = Math.min(CAP, ALL - n0, Math.floor(left / Z.cost[k])); if (c < 1) continue; units.push([k, c]); left -= c * Z.cost[k]; n0 += c; }
     return mk(n, units);
   }
   function build(seed, F, floor) {
@@ -290,8 +294,11 @@ RUN.gen = (() => {
     return m;
   }
   const make = (seed, floor = 1) => {
-    const F = frameOf(seed, RUN.zone(floor).shape);
+    const S = RUN.zone(floor).shape || {}, F = frameOf(seed, S);
     for (let k = 0; k < 300; k++) { const m = build(seed * 7919 + k, F, floor); if (m) return rares(m, seed); }
+    // 뽑힌 윤곽에 층이 안 서면 그 구역의 다른 윤곽으로 (구역이 고르지 않은 세로형으로 바로 넘어가지 않게)
+    for (const key of (S.frames || []).filter(k => FRAMES[k](RUN.rng(1)).n !== F.n)) { const F2 = FRAMES[key](RUN.rng(seed * 101 + 17)); F2.flip = F.flip;
+      for (let k = 0; k < 150; k++) { const m = build(seed * 7919 + k, F2, floor); if (m) return rares(m, seed); } }
     for (let k = 0; k < 300; k++) { const m = build(seed * 7919 + k, FRAMES.tall(RUN.rng(seed)), floor); if (m) return rares(m, seed); }  // 윤곽이 너무 좁으면 세로형으로
     throw new Error('지도를 만들지 못했다');
   };

@@ -61,7 +61,7 @@ const CRAWL = (() => {
   }
   function onTap(ev) {
     if (HUD.closeSheet()) return; // 캐릭터 시트가 열려 있으면 바닥을 누르면 닫는다
-    if (cutscene || FIGHT.on || PREPUI.active || REWARDUI.active || $('crawlscene') || $('dicepick') || st.done) return;
+    if (cutscene || FIGHT.on || PREPUI.active || REWARDUI.active || CHECKUI.active || $('crawlscene') || $('dicepick') || st.done) return;
     const [tx, ty] = tileAtScreen(ev.clientX, ev.clientY); moveTo(tx, ty);
   }
   const trail = [];
@@ -115,7 +115,7 @@ const CRAWL = (() => {
   // 앞으로 가는 길: 이 방에서 나가는 길 중 안 지나간 것 (돌아가는 길 · 못 연 문은 빼고)
   const ahead = () => exits().filter(x => x.e.a === st.at && !x.e.walked && !x.e.stuck);
   // 지금 저절로 움직이면 안 되는 때: 걷는 중 · 전투 · 문 열기 · 창이 떠 있음
-  const busy = () => cutscene || !!walk || FIGHT.on || PREPUI.active || REWARDUI.active || !!($('crawlscene') || $('dicepick') || $('exitsign') || $('csheet')) || !!st.done;
+  const busy = () => cutscene || !!walk || FIGHT.on || PREPUI.active || REWARDUI.active || CHECKUI.active || !!($('crawlscene') || $('dicepick') || $('exitsign') || $('csheet')) || !!st.done;
   // 방 일이 끝났다: 새 길이 하나면 그리로, 둘 이상이면 갈림길 창. 새 길이 없으면 가 본 방으로 (앞으로만 — 길은 거꾸로 돌지 않는다)
   function autoNext() {
     st.here.auto = true;
@@ -199,12 +199,16 @@ const CRAWL = (() => {
       const b = ev.target.closest('button'); if (!b || b.disabled) return; box.remove();
       const kind = s.kind, at = st.at, ch = s.choices[+b.dataset.i];
       if (kind === 'fight' && (ch.n === '싸운다' || ch.n === '기습한다')) { st.scene = null; return startFight(st.map.nodes[at], { ambush: ch.n === '기습한다' }); }
-      RUN.choose(st, +b.dataset.i);
-      if (st.flags.ally) { st.flags.ally = false; rescue(); }
-      if (kind === 'rest' && !st.scene) return descend(); // 야영지를 떠난다
-      if ((kind === 'camp' || kind === 'rest') && ch.n === '긴 휴식') G.Dice.rested(G.Party.members(G.S.w.fantasy)); // 긴 휴식: 인간은 영웅적 영감 (SRD)
-      if (kind === 'shop' && !st.scene) { deferred[at] = s; nearKey = 's' + at; } // 상인은 다시 와도 연다 (곁에 선 채로 바로 다시 열리지는 않게 — 떠났다가 돌아오면 연다)
-      arrived();
+      st.lastCheck = null; RUN.choose(st, +b.dataset.i);
+      const go = () => {
+        if (st.flags.ally) { st.flags.ally = false; rescue(); }
+        if (kind === 'rest' && !st.scene) return descend(); // 야영지를 떠난다
+        if ((kind === 'camp' || kind === 'rest') && ch.n === '긴 휴식') G.Dice.rested(G.Party.members(G.S.w.fantasy)); // 긴 휴식: 인간은 영웅적 영감 (SRD)
+        if (kind === 'shop' && !st.scene) { deferred[at] = s; nearKey = 's' + at; } // 상인은 다시 와도 연다 (곁에 선 채로 바로 다시 열리지는 않게 — 떠났다가 돌아오면 연다)
+        arrived();
+      };
+      // 판정을 굴렸으면 굴림 장면을 먼저 (d20 → 보정 → 성공 / 실패 → 결과 글). 그 뒤에 이어 간다
+      const c = st.lastCheck; if (c && !autoN) CHECKUI.show({ ...c, text: st.log[c.at]?.t || '' }, go); else go();
     };
     $('stage').append(box);
   }

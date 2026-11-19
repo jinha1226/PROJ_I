@@ -244,3 +244,32 @@ canvas { image-rendering:pixelated; }
 body[data-fstage] #fatehud, body[data-fstage] #hud .pm-die { visibility:hidden; }
 #hud .pm-die { animation:pmdie .3s cubic-bezier(.2,1.7,.4,1); } @keyframes pmdie { from { transform:scale(1.7); } to { transform:none; } }
 @media (prefers-reduced-motion: reduce) { #fatestage, #fatestage * { animation:none !important; transition:none !important; } }
+
+/* ── 판정 굴림 장면 (js/app/check_ui.js): 화면을 어둡게 덮고 가운데에 d20 — 난이도 → 굴림 → 보정 → 성공 / 실패 ── */
+#checkroll { position:fixed; inset:0; z-index:40; display:grid; place-items:center; background:radial-gradient(60% 50% at 50% 45%, rgba(40,30,18,.82), rgba(6,5,8,.94)); cursor:pointer; --ck:#d9b872; }
+#checkroll .ck-in { width:min(340px, 88vw); display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; color:var(--ink); font:500 14px "Noto Sans KR",sans-serif; }
+#checkroll .ck-hd b { display:block; font:700 20px "Noto Serif KR","Noto Sans KR",serif; color:#f0d9a8; letter-spacing:-.3px; } #checkroll .ck-hd small { color:var(--dim); font-size:13px; }
+#checkroll .ck-dc { display:flex; flex-direction:column; align-items:center; width:64px; padding:5px 0 6px; border:1px solid #6d5a3c; border-radius:10px; background:rgba(0,0,0,.4); }
+#checkroll .ck-dc small { font-size:11px; color:var(--dim); } #checkroll .ck-dc b { font:700 26px "Noto Serif KR",serif; color:#f0d9a8; line-height:1.1; }
+#checkroll .ck-die { position:relative; width:150px; height:150px; margin:6px 0 2px; filter:drop-shadow(0 10px 18px rgba(0,0,0,.7)); }
+#checkroll .ck-die svg { width:100%; height:100%; }
+#checkroll .d-out { fill:#2a2018; stroke:var(--ck); stroke-width:2.5; stroke-linejoin:round; } #checkroll .d-in { fill:#3a2c1c; stroke:var(--ck); stroke-width:2; stroke-linejoin:round; } #checkroll .d-ln { stroke:var(--ck); stroke-width:1.4; opacity:.6; fill:none; }
+#checkroll .ck-n { position:absolute; left:0; right:0; top:50%; transform:translateY(-58%); font:700 44px "Noto Serif KR",serif; color:#f6e7c4; text-shadow:0 2px 0 rgba(0,0,0,.6); }
+#checkroll .ck-die.roll { animation:ckroll .5s linear infinite; } #checkroll .ck-die.roll .ck-n { opacity:.55; font-size:36px; }
+@keyframes ckroll { 0% { transform:rotate(0) translateY(0) scale(.94); } 25% { transform:rotate(90deg) translateY(-12px) scale(1); } 50% { transform:rotate(180deg) translateY(0) scale(.94); } 75% { transform:rotate(270deg) translateY(-8px) scale(1); } 100% { transform:rotate(360deg) translateY(0) scale(.94); } }
+#checkroll .ck-die.roll .ck-n { animation:ckcounter .5s linear infinite; } @keyframes ckcounter { to { transform:translateY(-58%) rotate(-360deg); } }
+#checkroll .ck-die.land { animation:ckland .45s cubic-bezier(.2,1.7,.4,1); } @keyframes ckland { 0% { transform:scale(1.35) rotate(-14deg); } 60% { transform:scale(.94) rotate(3deg); } 100% { transform:none; } }
+#checkroll .ck-die.crit { --ck:#ffd76a; filter:drop-shadow(0 0 22px rgba(255,208,96,.85)); } #checkroll .ck-die.crit .ck-n { color:#ffe9a8; }
+#checkroll .ck-die.fumble { --ck:#d0503e; filter:drop-shadow(0 0 20px rgba(208,80,62,.7)); } #checkroll .ck-die.fumble .ck-n { color:#f0a090; }
+#checkroll .ck-mods { display:flex; flex-wrap:wrap; justify-content:center; gap:6px; min-height:30px; }
+#checkroll .ck-mods span { padding:4px 10px; border-radius:99px; border:1px solid var(--line); background:rgba(0,0,0,.45); color:var(--dim); font-size:13px; opacity:0; transform:translateY(8px) scale(.8); transition:opacity .25s, transform .3s cubic-bezier(.2,1.7,.4,1); }
+#checkroll .ck-mods span.on { opacity:1; transform:none; } #checkroll .ck-mods b { color:#f0d9a8; }
+#checkroll .ck-tot { min-height:44px; font:700 36px "Noto Serif KR",serif; color:#f6e7c4; opacity:0; transition:opacity .2s; } #checkroll .ck-tot.on { opacity:1; }
+#checkroll .ck-tot.bump { animation:ckbump .3s cubic-bezier(.2,1.7,.4,1); } @keyframes ckbump { from { transform:scale(1.4); color:#fff; } to { transform:none; } }
+#checkroll .ck-res { min-height:34px; font:700 26px "Noto Serif KR","Noto Sans KR",serif; letter-spacing:4px; opacity:0; }
+#checkroll.done .ck-res { opacity:1; animation:ckstamp .4s cubic-bezier(.2,1.8,.4,1); } @keyframes ckstamp { from { transform:scale(2.2); opacity:0; } to { transform:none; opacity:1; } }
+#checkroll.ok .ck-res, #checkroll.ok .ck-tot { color:#9fe08a; } #checkroll.no .ck-res, #checkroll.no .ck-tot { color:#e8806e; }
+#checkroll.ok { background:radial-gradient(60% 50% at 50% 45%, rgba(40,56,24,.82), rgba(6,5,8,.94)); } #checkroll.no { background:radial-gradient(60% 50% at 50% 45%, rgba(64,22,16,.82), rgba(6,5,8,.94)); }
+#checkroll .ck-txt { min-height:40px; margin:0; color:#cdbb98; line-height:1.5; opacity:0; transition:opacity .3s .2s; } #checkroll.done .ck-txt { opacity:1; }
+#checkroll .ck-go { min-height:44px; padding:0 28px; border-radius:var(--r); border:1px solid var(--gold); background:var(--btn-on); color:var(--ink); font:700 15px "Noto Sans KR",sans-serif; opacity:0; pointer-events:none; transition:opacity .3s .3s; } #checkroll.done .ck-go { opacity:1; pointer-events:auto; }
+@media (prefers-reduced-motion: reduce) { #checkroll, #checkroll * { animation:none !important; transition:none !important; } }
