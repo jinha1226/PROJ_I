@@ -159,6 +159,15 @@ const FIGHT = (() => {
   }
   // ── 차례 띠 (위): 이번 라운드의 선제권 순서 — 지금 차례는 밝게, 쓰러진 쪽은 빠진다. 그 아래 한 줄: 지금 누가 무엇을 누구에게 (굴림 · 결과) ──
   const nm = e => e.merc?.name || e.n || e.def?.n || '?';
+  // 왜 그 행동인가 (한 마디): 치유 · 이점을 준 것 · 표적을 고른 까닭. 엔진이 고른 것을 결과에서 읽는다
+  function why(r) {
+    if (r.foe) return '';
+    const cur = R.turn?.cur, tg = R.turn?.tg, t = [];
+    if (/치유|치료|회복/.test(r.what || '') || (!r.tg && /회복/.test(r.res || ''))) t.push('다친 동료가 있다');
+    else if (/이점/.test(r.calc || '') || /이점/.test(r.mark || '')) t.push('이점을 얻었다');
+    else if (r.atk && cur && tg && tg.kind === 'mon') { const foes = R.mons.filter(m => m.hp > 0), d = o => Math.hypot(o.x - cur.x, o.y - cur.y); t.push(foes.every(o => d(tg) <= d(o) + 0.01) ? '가장 가까운 적' : foes.every(o => tg.hp <= o.hp) ? '가장 약한 적' : '닿는 적'); }
+    return t.length ? `<em class="why">${esc(t[0])}</em>` : '';
+  }
   function strip() {
     const T = F && R.turn; let el = $('turnstrip');
     if (!T || !T.order.length) { if (el) el.remove(); $('turnmark')?.remove(); $('turntg')?.remove(); return; }
@@ -166,14 +175,15 @@ const FIGHT = (() => {
     const live = T.order.map(x => x.e).filter(e => (e.kind === 'mon' ? e.hp > 0 && R.mons.includes(e) : !e.dead || e.dying)), roll = R.roll, cur = T.cur;
     // 한 줄: 방금 끝난 행동(굴림 · 결과)이 지금 차례 사람의 것이면 그것을, 아니면 지금 하려는 일(대상)
     let act = '';
-    if (roll && F.rollId !== roll.id && roll.who) { F.rollId = roll.id; F.act = { who: roll.who, foe: !!roll.foe, html: `<b>${esc(roll.who)}</b> ${esc(roll.what || '공격')}${roll.tg ? ` → <b>${esc(roll.tg)}</b>` : ''}${roll.word ? ` · <i class="${roll.ok ? 'ok' : 'no'}">${esc(roll.word)}</i>` : ''}${roll.atk && roll.nat ? ` <small>d20 ${roll.nat} ${esc(roll.calc || '')}</small>` : roll.calc ? ` <small>${esc(roll.calc)}</small>` : ''}${roll.res ? ` · ${esc(roll.res)}` : ''}` }; }
+    if (roll && F.rollId !== roll.id && roll.who) { F.rollId = roll.id; F.act = { who: roll.who, foe: !!roll.foe, what: roll.what || '공격', t: F.t, html: why(roll) + `<b>${esc(roll.who)}</b> ${esc(roll.what || '공격')}${roll.tg ? ` → <b>${esc(roll.tg)}</b>` : ''}${roll.word ? ` · <i class="${roll.ok ? 'ok' : 'no'}">${esc(roll.word)}</i>` : ''}${roll.atk && roll.nat ? ` <small>d20 ${roll.nat} ${esc(roll.calc || '')}</small>` : roll.calc ? ` <small>${esc(roll.calc)}</small>` : ''}${roll.res ? ` · ${esc(roll.res)}` : ''}` }; }
     if (cur && F.act && F.act.who === nm(cur) && T.ph === 'wait') act = F.act.html;
     else if (cur && (T.ph === 'move' || T.ph === 'pre' || T.ph === 'show') && T.tg) act = `<b>${esc(nm(cur))}</b> → <b>${esc(nm(T.tg))}</b> <small>다가가 친다</small>`;
     else if (F.act) act = F.act.html;
     // 머리 위 표시: 지금 행동하는 사람(우리 = 금색 ▼, 적 = 붉은 ▼)과 그 대상(◎)
     { const foe = cur?.kind === 'mon', tg = cur && (T.ph === 'move' || T.ph === 'pre' || T.ph === 'show') ? T.tg : null;
       let a = $('turnmark'), b = $('turntg'); if (!a) { a = document.createElement('div'); a.id = 'turnmark'; a.textContent = '▼'; b = document.createElement('div'); b.id = 'turntg'; b.textContent = '◎'; $('floats').append(a, b); }
-      a.className = foe ? 'foe' : ''; a.style.display = cur ? '' : 'none'; if (cur) UI.place(a, cur._dx ?? cur.x, cur._dy ?? cur.y, 2.5);
+      a.textContent = cur && F.act && F.act.who === nm(cur) && F.t - F.act.t < 1.6 ? `${F.act.what}` : '▼'; // 방금 쓴 기술의 이름을 머리 위에
+      a.className = (foe ? 'foe' : '') + (a.textContent === '▼' ? '' : ' say'); a.style.display = cur ? '' : 'none'; if (cur) UI.place(a, cur._dx ?? cur.x, cur._dy ?? cur.y, 2.5);
       b.className = foe ? 'foe' : ''; b.style.display = tg ? '' : 'none'; if (tg) UI.place(b, tg._dx ?? tg.x, tg._dy ?? tg.y, 1.2); }
     const side = cur ? (cur.kind === 'mon' ? '적의 차례' : '우리 차례') : '';
     const k = `${T.round}|${side}|${live.map(e => (e === cur ? '*' : '') + nm(e) + (e.dying ? '!' : '')).join(',')}|${act}`;

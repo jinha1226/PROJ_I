@@ -222,7 +222,7 @@ const CRAWL = (() => {
       if (kind === 'fight' && (ch.n === '싸운다' || ch.n === '기습한다')) { st.scene = null; return startFight(st.map.nodes[at], { ambush: ch.n === '기습한다' }); }
       st.lastCheck = null; RUN.choose(st, +b.dataset.i);
       const go = () => {
-        if (st.pend) { const pd = st.pend, n = st.map.nodes[at]; st.pend = null; st.scene = null; { const cap = RUN.zone(st.floor).seats[st.floor - RUN.zone(st.floor).floors[0]] * 2, c = Math.min(pd.g.count, cap); n.g = { ...pd.g, count: c, label: `${pd.g.name} ${c}`, units: pd.g.units || [[pd.g.name, c]] }; } return startFight(n, pd.mod); } // 사건이 틀어졌다 · 들켰다: 그 방에서 싸운다
+        if (st.pend) { const pd = st.pend, n = st.map.nodes[at]; st.pend = null; st.scene = null; { const cap = RUN.zone(st.floor).seats[st.floor - RUN.zone(st.floor).floors[0]] + 1, c = Math.min(pd.g.count, cap); n.g = { ...pd.g, count: c, label: `${pd.g.name} ${c}`, units: pd.g.units || [[pd.g.name, c]] }; } return startFight(n, pd.mod); } // 사건이 틀어졌다 · 들켰다: 그 방에서 싸운다
         if (st.flags.ally) { st.flags.ally = false; rescue(); }
         if (kind === 'rest' && !st.scene) return descend(); // 야영지를 떠난다
         if ((kind === 'camp' || kind === 'rest') && ch.n === '긴 휴식') G.Dice.rested(G.Party.members(G.S.w.fantasy)); // 긴 휴식: 인간은 영웅적 영감 (SRD)

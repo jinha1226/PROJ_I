@@ -13,7 +13,7 @@ const seq = a => { let i = 0; return () => a[i++ % a.length]; };
   t('처음: 자리 둘 · 기본 직업 셋 · 다음 자리는 2층 우두머리', T.seats(m) === 2 && T.classes(m).join() === 'dragoon,rogue,cleric' && T.nextSeat(m) === 2);
   t('의자: 소문 0이면 넷, 30 · 80 · 150에서 하나씩', T.stools(0) === 4 && T.stools(30) === 5 && T.stools(100) === 6 && T.stools(999) === 7);
   const n = T.night(f, m, 0, seq([0.1, 0.7, 0.3]));
-  t('오늘 밤: 의자 수만큼, 오는 직업만, 1레벨, 기술 5칸', n.length === 4 && n.every(g => T.classes(m).includes(g.cls) && g.lv === 1 && (g.skills || []).length <= 5), n.map(g => g.cls).join());
+  t('오늘 밤: 의자 수만큼, 오는 직업만, 1레벨, 기술 5칸', n.length === 4 && n.every(g => T.classes(m).includes(g.cls) && g.lv === 1 && !g.adv && (g.skills || []).length <= 5), n.map(g => g.cls).join());
   t('오는 직업이 다 앉아 있다', new Set(n.map(g => g.cls)).size === 3);
   t('다시 열어도 같은 사람들', T.night(f, m, 0) === n);
   t('손님마다 생김새의 씨앗이 있다 (던전에서도 같은 모습)', n.every(g => g.lid) && new Set(n.map(g => g.lid)).size === n.length);

@@ -3,7 +3,8 @@
 // 문 앞 준비(js/game/prep.js)가 만든 전투 조건(시작 자리 · 지형 · 적의 상태)은 여기서 적용한다.
 G.Encounter = (() => {
   // 탐사 규칙의 몬스터 이름 → 옛 엔진의 몬스터 (없으면 이름이 겹치는 것, 그래도 없으면 고블린 졸개)
-  const monName = n => { const M = G.D.F.mon; return M[n] ? n : Object.keys(M).find(k => k.includes(n)) || Object.keys(M).find(k => k.includes(n.slice(0, 2))) || '고블린 졸개'; };
+  const ALIAS = { 고블린: '고블린 전사' }; // SRD 고블린 전사(체력 10) — 이름이 먼저 걸리는 「졸개」(체력 7)로 서지 않게
+  const monName = n => { const M = G.D.F.mon; if (ALIAS[n] && M[ALIAS[n]]) return ALIAS[n]; return M[n] ? n : Object.keys(M).find(k => k.includes(n)) || Object.keys(M).find(k => k.includes(n.slice(0, 2))) || '고블린 졸개'; };
   // 방 칸들(cells: 타일 좌표) 중 from에서 먼 곳부터 세 칸 걸러 적을 세운다. units = [[이름, 수], …]
   // major: 옛 G.Flow가 층 시작에 major 아닌 몬스터를 치운다 · aggro · spotted: 바로 싸운다 (문 앞 준비가 있으면 그쪽이 상태를 정한다)
   function spawnRoom(R, cells, units, from, opts = {}) {

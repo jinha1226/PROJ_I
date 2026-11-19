@@ -449,3 +449,7 @@ body[data-fstage] #fatehud, body[data-fstage] #hud .pm-die { visibility:hidden; 
 #titlescreen .tt-go { min-width:200px; min-height:48px; padding:0 26px; background:#efe6cf; color:#17110c; border:0; border-radius:0; font:700 17px var(--serif); cursor:pointer; box-shadow:4px 4px 0 #000; }
 #titlescreen .tt-go:active { transform:translate(2px, 2px); box-shadow:2px 2px 0 #000; }
 #titlescreen small { color:#8a7a5e; font:500 12px "Noto Sans KR",sans-serif; letter-spacing:1px; }
+
+/* 선술집의 파티 조합: 기호마다 한 줄 (비율 · 그 조합이 주는 것). 조합 표는 뺐다 */
+#tavern .tv-sym { list-style:none; margin:0; padding:0; display:grid; gap:4px; font-size:13px; }
+#tavern .tv-sym li { display:grid; grid-template-columns:auto 44px 1fr; align-items:center; gap:8px; } #tavern .tv-sym b { font-family:var(--serif); } #tavern .tv-sym span { color:var(--dim); font-size:12px; }

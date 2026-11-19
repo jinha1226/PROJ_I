@@ -33,6 +33,8 @@
   // 보조 손의 둘째 경량 무기 (G.Gear.off): 쌍수 전투 방식이 없어도 추가 행동으로 한 번 더 친다 (SRD 경량 속성 — 피해에 능력치는 없다, options.js)
   const active0 = G.Guild.active;
   G.Guild.active = function (m) { const l = active0.call(this, m); return G.Reward.on && m.eq?.w2 && !l.includes('fs_twf') ? l.concat('fs_twf') : l; };
+  // 방 안은 밝다 (2026-11-19): 방이 넓어지며 횃불 빛이 닿지 않는 적이 「안 보임 · 불리」가 됐다 — 새 게임의 전투는 방 전체를 본다 (어두운 길은 탐사 규칙이 따로 다룬다)
+  if (G.Light?.sees) { const sees0 = G.Light.sees; G.Light.sees = function (rt, a, b) { return G.Reward.on ? true : sees0.apply(this, arguments); }; }
   // 문 앞 준비의 기습 (G.Encounter.applyPrep → rt.prepSurprise): 옛 엔진의 '들키지 않고 다가갔나' 판정 대신 쓴다. 싸움이 시작되면 지운다
   const sneak0 = G.Pool.sneak;
   G.Pool.sneak = function (rt, list) { if (rt.prepSurprise != null) { const v = rt.prepSurprise; rt.prepSurprise = null; return v; } return sneak0.call(this, rt, list); };

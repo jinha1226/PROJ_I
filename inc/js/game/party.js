@@ -4,7 +4,7 @@
 //   둘은 같은 차례다 (crawl.js의 pair()가 차례로 짝짓는다).
 // - 기술 5칸: 소마법 · 주문 · 직업 행동을 다 합쳐 5개 (늘 적용되는 특성은 칸을 차지하지 않는다). 자동 전투 AI도 이 5개만 쓴다.
 G.Party = (() => {
-  const MAX = 4, CAP = 5;
+  const MAX = 4, CAP = 5, START_LV = 1; // 시작 레벨 — 1레벨에서 시작한다 (3으로 올려 봤다가 되돌렸다: 대신 적의 수를 줄인다, gen.js)
   const CLASSES = ['dragoon', 'rogue', 'mage', 'cleric', 'archer', 'archmage', 'barbarian', 'paladin', 'monk', 'warlock', 'bard', 'scout'];
   // 엔진 직업 → 탐사 규칙의 직업 (열쇠 판정용: 로그 = 자물쇠, 위저드 = 노크 · 빛, 레인저 = 길 찾기)
   const RUN_CLS = { dragoon: 'fighter', barbarian: 'fighter', paladin: 'fighter', monk: 'fighter', rogue: 'rogue', mage: 'wizard', archmage: 'wizard', warlock: 'wizard', bard: 'wizard', cleric: 'cleric', scout: 'cleric', archer: 'ranger' };
@@ -60,7 +60,7 @@ G.Party = (() => {
   // 갑옷 입은 클레릭은 앞줄에서 함께 싸운다 (2인 파티에서 혼자 빠지지 않게). 드루이드 · 바드는 가운데 줄 그대로
   const place = (f, m) => { if (m.cls === 'cleric') (f.form = f.form || {})[m.uid] = 0; return m; };
   // 구출한 사람: 아무 직업, 파티 평균 레벨
-  const rescued = (f, rng = Math.random) => forge(trim(G.Guild.make(f, CLASSES[Math.floor(rng() * CLASSES.length)], { lv: level(f) })), rng);
+  const rescued = (f, rng = Math.random) => forge(trim(G.Guild.make(f, CLASSES[Math.floor(rng() * CLASSES.length)], { lv: Math.max(START_LV, level(f)) })), rng);
   // 들인다: 엔진 명단 · 출전 줄 · 탐사 파티에. at = 나타날 자리. 돌려주는 것: 쿼터뷰 인물
   function join(f, rt, m, st, at) {
     place(f, m); f.mercs.push(m); (f.lineup = f.lineup || []).push(m.uid); G.Fantasy.syncAllies(f);
@@ -69,5 +69,5 @@ G.Party = (() => {
     if (st) st.party.push(runMember(m));
     return a;
   }
-  return { MAX, CAP, CLASSES, RUN_CLS, members, size, level, trim, runMember, rescued, join, place, stdAb, kindOf, forge, links };
+  return { MAX, CAP, START_LV, CLASSES, RUN_CLS, members, size, level, trim, runMember, rescued, join, place, stdAb, kindOf, forge, links };
 })();

@@ -256,3 +256,8 @@ body:has(#turnstrip) #pmapbox:not(.big), body:has(#turnstrip) #dm { display:none
 #turnmark.foe, #turntg.foe { color:#ff6a55; } #turntg { font-size:26px; opacity:.9; }
 #turnstrip .ts-side { margin-right:6px; padding:1px 8px; border-radius:99px; background:#4a3a1e; border:1px solid #f0c070; color:#ffe9b0; font-weight:700; }
 #turnstrip .ts-side.foe { background:#4a211c; border-color:#e0604a; color:#ffc4b8; }
+
+/* 전투: 머리 위에 방금 쓴 기술의 이름, 행동 한 줄에 그 까닭 */
+#turnmark.say { font:700 14px "Noto Serif KR",serif; padding:2px 8px; background:#150e09; border:1px solid #a8823f; box-shadow:0 0 0 1px #000; color:#ffe9b0; white-space:nowrap; }
+#turnmark.say.foe { border-color:#e0604a; color:#ffc4b8; }
+#turnstrip .ts-act .why { display:block; font:500 11px "Noto Sans KR",sans-serif; font-style:normal; color:#b9a784; margin-bottom:1px; }

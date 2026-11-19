@@ -81,11 +81,10 @@ const TAVERNUI = (() => {
     // 주사위 면 수 (「검 ×10 · 방 ×5 · ★ ×1」)와 조합 표
     const LEG = G.Dice.legend(), FC = g => G.Dice.faces({ merc: g }) || {}, SYN = [['atk', '검'], ['def', '방'], ['arc', '주'], ['holy', '빛'], ['wild', '★'], ['blank', '빈 면']];
     const faceChips = g => { const c = FC(g); return SYN.filter(([k]) => c[k]).map(([k, n]) => `<span class="fc-${k}"><i class="sy s-${k}">${n}</i>×${c[k]}</span>`).join(''); };
-    const legend = `<h4>조합 <small>한 라운드에 같은 기호가 둘 이상 · ★은 아무 기호</small></h4><table class="tv-leg"><tr><th></th><th>둘</th><th>셋</th><th>넷</th></tr>${LEG.map(l => `<tr><th><i class="sy s-${l.s}">${l.n}</i> ${esc(l.fx)}</th>${l.tiers.map(t => `<td>${esc(t.replace(/^아군 /, '').replace('가장 다친 아군 ', '한 명 ').replace('아군 모두 ', '모두 '))}</td>`).join('')}</tr>`).join('')}</table><p class="tv-nolk">혼자 세 칸이 같으면 그 사람만: ${LEG.map(l => `<i class="sy s-${l.s}">${l.n}</i> ${esc(l.row)}`).join(' · ')}</p>`;
     box.innerHTML = `<header><h2>선술집</h2><div class="tv-res"><span class="chip">소문 ${rumor}</span><span class="chip tv-seat"></span></div></header>` +
       `<div class="tv-body"><div class="tv-scene"><canvas></canvas><div class="tv-who"></div></div>` +
       `<aside class="tv-side"><dl class="tv-info">${nx ? `<dt>다음 자리</dt><dd>${nx}층 우두머리 처치</dd>` : ''}${nl ? `<dt>새 직업</dt><dd>${nl[0]}층 도달 · ${nl[1].map(clsN).map(esc).join(' · ')}</dd>` : ''}</dl>` +
-      `<div class="tv-links"></div><div class="tv-legend">${legend}</div>` +
+      `<div class="tv-links"></div>` +
       (m.wall.length ? `<h4>명패</h4><ul class="tv-wall">${m.wall.map(w => `<li><b>${esc((w.names || []).join(' · '))}</b><small>${w.floor}층${w.win ? ' 돌파' : ''}</small></li>`).join('')}</ul>` : '') + `</aside></div>` +
       `<div class="tv-sheet" hidden></div><button class="tv-go"></button>`;
     const scene = box.querySelector('.tv-scene'), cv = scene.querySelector('canvas'), x = cv.getContext('2d'), who = box.querySelector('.tv-who'), sheetEl = box.querySelector('.tv-sheet');
@@ -105,7 +104,8 @@ const TAVERNUI = (() => {
       box.querySelector('.tv-seat').textContent = `자리 ${picks.length}/${n}`;
       // 고른 파티의 조합: 주사위 기호(어떤 조합이 잘 맞나)와 연계(누가 깔고 누가 터뜨리나)
       { const L = G.Party.links(picks.map(i => night[i])), SY = [['A', '검', 'atk'], ['D', '방', 'def'], ['R', '주', 'arc'], ['H', '빛', 'holy']], tot = SY.reduce((a, [k]) => a + L.dice[k], 0), top = SY.slice().sort((a, b) => L.dice[b[0]] - L.dice[a[0]])[0];
-        box.querySelector('.tv-links').innerHTML = !picks.length ? '' : `<h4>파티 조합</h4><div class="tv-dice">${SY.filter(([k]) => L.dice[k]).map(([k, n, c]) => `<span class="s-${c}"><i class="sy s-${c}">${n}</i>${Math.round(100 * L.dice[k] / tot)}%</span>`).join('')}<small>${G.Dice.SYM[top[2]].fx}이 잘 맞는다</small></div>` +
+        const rng2 = l => { const n = t => (t.match(/[+]?\d+d\d+(?:\+\d+)?|\+\d+/) || [''])[0]; return l.s === 'holy' ? `회복 ${n(l.tiers[0])} (셋부터 모두)` : `${l.tiers[0].replace(/^아군 /, '').replace(/ ?\+\d+$/, '')} ${n(l.tiers[0])} ~ ${n(l.tiers[2])}`; };
+        box.querySelector('.tv-links').innerHTML = !picks.length ? '' : `<h4>파티 조합 <small>같은 기호가 한 라운드에 둘 이상</small></h4><ul class="tv-sym">${SY.filter(([k]) => L.dice[k]).sort((a, b) => L.dice[b[0]] - L.dice[a[0]]).map(([k, n, c]) => { const l = LEG.find(q => q.s === c); return `<li><i class="sy s-${c}">${n}</i><b>${Math.round(100 * L.dice[k] / tot)}%</b><span>${esc(l.fx)} · ${esc(rng2(l))}</span></li>`; }).join('')}</ul>` +
           (L.links.length ? `<ul class="tv-lk">${L.links.map(l => `<li><b>${esc(l.n)}</b><span>${esc(l.set.join(' · '))} → ${esc(l.use.join(' · '))}</span></li>`).join('')}</ul>` : `<p class="tv-nolk">${picks.length < 2 ? '둘 이상 고르면 연계가 보인다' : '연계 없음'}</p>`); }
       const go = box.querySelector('.tv-go'); go.disabled = !picks.length; go.textContent = picks.length ? `출발 (${picks.length}명)` : `출발 (0/${n})`;
     }

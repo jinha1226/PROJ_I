@@ -16,9 +16,9 @@ G.Tavern = (() => {
   const seats = m => 2 + SEAT_AT.filter(fl => m.boss >= fl).length;
   const nextSeat = m => SEAT_AT.find(fl => m.boss < fl) || null; // 다음 자리가 열리는 우두머리 층
   const stools = rumor => 4 + STOOL_AT.filter(v => rumor >= v).length;
-  // 손님 한 명: 1레벨. 능력치는 직업마다 같고(G.Party.stdAb), 사람마다 다른 것은 기술과 주사위다 (G.Party.forge — 기질 + 기술의 성격으로 새긴다)
+  // 손님 한 명: 시작 레벨(G.Party.START_LV). 능력치는 직업마다 같고(G.Party.stdAb), 사람마다 다른 것은 기술과 주사위다 (G.Party.forge — 기질 + 기술의 성격으로 새긴다)
   // lid = 생김새의 씨앗: 던전에 들어가며 번호(uid)가 바뀌어도 선술집에서 본 모습 그대로다 (js/render/minidoll.js)
-  const guest = (f, cls, rng = Math.random) => { const m = G.Party.trim(G.Guild.make(f, cls, { lv: 1, ab: G.Party.stdAb(cls) })); m.lid = 't' + m.uid + m.name; return G.Party.forge(m, rng); };
+  const guest = (f, cls, rng = Math.random) => { const m = G.Party.trim(G.Guild.make(f, cls, { lv: G.Party.START_LV, ab: G.Party.stdAb(cls) })); if (m.lv >= 3) m.adv = Object.keys(G.D.ADV).find(k => G.D.ADV[k].base === cls) || null; m.lid = 't' + m.uid + m.name; return G.Party.forge(m, rng); }; // 3레벨 이상으로 시작하면 하위 직업까지
   // 상태창에 적을 것 (화면 없이): 직업 · 종족 · 체력 · AC · 능력치 · 무기 · 갑옷 · 늘 적용되는 특성 · 손에 든 기술(효과 한 줄) · 종족 특성 · 탐사에서 맡는 일
   const ROLE = { fighter: '문 부수기 · 앞줄', rogue: '자물쇠 · 함정 찾기 · 정찰', wizard: '열림 주문 · 마법 탐지 · 빛', cleric: '점술 · 치유', ranger: '길 찾기 · 정찰 · 활' };
   const DMG_T = { slashing: '참격', piercing: '관통', bludgeoning: '타격', fire: '화염', cold: '냉기', radiant: '광휘', force: '역장', psychic: '정신', necrotic: '사령', lightning: '번개', poison: '독', acid: '산성', thunder: '천둥' };
@@ -40,7 +40,8 @@ G.Tavern = (() => {
   }
   // 오늘 밤 앉아 있는 사람들: 열린 직업을 돌아가며 의자 수만큼. 떠날 때까지 그대로다 (다시 열어도 같은 사람들)
   function night(f, m, rumor, rng = Math.random) {
-    if (m.night) { for (const g of m.night) if (!g.dieSym) { g.ab = G.Party.stdAb(g.cls); g.abCls = g.cls; G.Party.forge(g, rng); } return m.night; } // 예전 판에 저장된 손님: 주사위를 새긴다
+    if (m.night) for (const g of m.night) if (!g.dieSym || g.lv < G.Party.START_LV) { m.night = null; break; } // 예전 판에 저장된 손님(주사위 없음 · 1레벨)은 새로 부른다
+    if (m.night) return m.night;
     const order = classes(m).sort(() => rng() - 0.5);
     return m.night = Array.from({ length: stools(rumor) }, (_, i) => guest(f, order[i % order.length], rng));
   }

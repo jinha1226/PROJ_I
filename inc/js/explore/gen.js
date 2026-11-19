@@ -183,11 +183,11 @@ RUN.gen = (() => {
     const { n, u: [a, b] } = small ? two[0] : two[1];
     // 한 종류는 기준 인원 + 1까지 (2026-11-19 — 같은 놈 여섯이 한 방에 서면 행동 수가 파티를 압도하고 화면도 되풀이된다).
     // 그래서 남는 예산은 같은 무리(이름이 같은 다른 틀)의 다른 종류로 — 고블린 무리면 홉고블린, 깨어난 병기면 움직이는 갑옷
-    const CAP = Z.seats[fi] + 1, cnt = v => Math.max(1, Math.min(CAP, Math.round(v)));
+    const CAP = Z.seats[fi], cnt = v => Math.max(1, Math.min(CAP, Math.round(v))); // 한 종류는 기준 인원까지
     const units = b ? (() => { const na = cnt(bud / 2 / Z.cost[a]); return [[a, na], [b, cnt((bud - na * Z.cost[a]) / Z.cost[b])]]; })() : [[a, cnt(bud / Z.cost[a])]];
     let left = bud - units.reduce((s, [k, c]) => s + Z.cost[k] * c, 0);
-    // 채울 종류는 그 방과 같은 급의 틀에서만 (보통 방에 정예 몬스터가 섞이지 않게), 무리 전체는 기준 인원의 두 배까지 (행동 수가 파티를 압도하지 않게)
-    const ALL = Z.seats[fi] * 2; let n0 = units.reduce((s, u) => s + u[1], 0);
+    // 채울 종류는 그 방과 같은 급의 틀에서만 (보통 방에 정예 몬스터가 섞이지 않게), 무리 전체는 기준 인원 + 1까지 (2026-11-19 늦게, 두 배 → +1: 1레벨은 서로 한두 방에 쓰러진다 — 레벨을 올리는 대신 맞는 횟수를 줄인다. 둘이 도는 층은 셋, 셋이 도는 층은 넷)
+    const ALL = Z.seats[fi] + 1; let n0 = units.reduce((s, u) => s + u[1], 0);
     for (let i = units.length - 1; n0 > ALL && i >= 0; i--) { const cut = Math.min(units[i][1] - 1, n0 - ALL); units[i][1] -= cut; n0 -= cut; left += cut * Z.cost[units[i][0]]; }
     const kin = [...new Set(pool.filter(p => p.n === n).flatMap(p => p.u))].filter(k => !units.some(([q]) => q === k)).sort((p, q) => Z.cost[q] - Z.cost[p]);
     for (const k of kin) { const c = Math.min(CAP, ALL - n0, Math.floor(left / Z.cost[k])); if (c < 1) continue; units.push([k, c]); left -= c * Z.cost[k]; n0 += c; }
