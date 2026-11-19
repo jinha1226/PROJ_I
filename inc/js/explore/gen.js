@@ -190,7 +190,9 @@ RUN.gen = (() => {
   // 손으로 짠 방의 적 구성 중 예산에 맞는 것: 예산(조금 넘는 것까지) 안에서 가장 센 것, 없으면 가장 약한 것
   function encOf(t, type, tier, Z, fi, deep) {
     const bud = budgetOf(type, tier, Z, fi, deep), cost = e => e.u.reduce((a, [k, c]) => a + Z.cost[k] * c, 0), list = t.enc.slice().sort((a, b) => cost(a) - cost(b));
-    const e = list.filter(x => cost(x) <= bud * 1.15).pop() || list[0];
+    // 무리 전체는 기준 인원 + 1까지 (group의 상한과 같다 — 둘이 도는 층은 셋). 그 안에 드는 구성이 있으면 그중에서 고른다
+    const ALL = Z.seats[fi] + 1, cnt = x => x.u.reduce((a, [, c]) => a + c, 0), fit = list.filter(x => cnt(x) <= ALL), pool = fit.length ? fit : list;
+    const e = pool.filter(x => cost(x) <= bud * 1.15).pop() || pool[0];
     return mkGroup(Z, tier, e.n, e.u.map(u => u.slice()));
   }
   function group(rng, type, tier, Z, fi, small, deep) {
