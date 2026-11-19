@@ -338,3 +338,14 @@ body[data-fstage] #fatehud, body[data-fstage] #hud .pm-die { visibility:hidden; 
 .gs3 .gs-row b { font-size:13px; } .gs3 .gs-row span { font-size:11px; color:var(--dim); line-height:1.35; }
 .gs3 .gs-row.empty b { color:var(--mute); font-weight:500; }
 .gs3 .gs-row.r1 { border-left-color:#5fb878; } .gs3 .gs-row.r2 { border-left-color:#4a8fd8; } .gs3 .gs-row.r3 { border-left-color:#a070e0; } .gs3 .gs-row.r4 { border-left-color:#e8a040; }
+
+/* 선술집: 주사위는 면 수로 · 조합 표는 처음부터 */
+#tavern .tv-cnt { grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:4px 10px; font-size:13px; }
+#tavern .tv-cnt span { display:inline-flex; align-items:center; gap:4px; } #tavern .tv-cnt .fc-blank { color:var(--dim); }
+#tavern .tv-fx { grid-column:1 / -1; list-style:none; margin:4px 0 0; padding:0; display:grid; gap:3px; }
+#tavern .tv-fx li { display:flex; align-items:baseline; gap:6px; font-size:12px; } #tavern .tv-fx b { font-size:12px; } #tavern .tv-fx span { color:var(--dim); }
+#tavern .tv-legend h4 { margin:14px 0 6px; } #tavern .tv-legend h4 small { font-weight:400; }
+#tavern .tv-leg { width:100%; border-collapse:collapse; font-size:12px; }
+#tavern .tv-leg th, #tavern .tv-leg td { padding:4px 6px; text-align:left; border-bottom:1px solid var(--line); font-weight:400; }
+#tavern .tv-leg tr:first-child th { color:var(--dim); font-size:11px; } #tavern .tv-leg th:first-child { white-space:nowrap; color:var(--ink); }
+#tavern .sy.s-wild { background:#e8c860; color:#2b1d14; } #tavern .sy.s-blank { background:#3a3440; color:#b9b0a0; }

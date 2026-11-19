@@ -27,7 +27,10 @@ const PREPUI = (() => {
     busy = true;
     walkTo(n.who, front(), () => {
       const r = G.Prep.open(P, n.who, n.id, io); if (!r) { busy = false; return; }
-      roll(n.who, r.nat, () => { G.Feed.push(r.ev); if (r.ok) startOpening(); else { busy = false; wait = 0.5; } });
+      const then = () => { G.Feed.push(r.ev); if (r.ok) startOpening(); else { busy = false; wait = 0.5; } }, e = [].concat(r.ev || []).find(x => x && x.k === 'try') || {};
+      // 판정이 있으면 굴림 장면으로 (d20 → 보정 → 성공 / 실패), 판정 없는 행동은 머리 위에서 바로
+      if (r.nat != null && e.dc != null && !new URLSearchParams(location.search).get('auto')) CHECKUI.show({ who: n.who.merc?.name || '', skill: e.n || '문 열기', dc: e.dc, r: r.nat, g: 0, bonus: e.mod || 0, tot: r.nat + (e.mod || 0), ok: !!r.ok, text: r.ok ? '문이 열린다.' : '열리지 않는다. 소리가 났다.' }, then);
+      else roll(n.who, r.nat, then);
     });
   }
   function walkTo(who, to, then) { walks.set(who, { to: { x: to.x, y: to.y }, then }); }

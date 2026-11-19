@@ -78,10 +78,14 @@ const TAVERNUI = (() => {
     const back = document.createElement('canvas'), bx = back.getContext('2d'); // 방 그림 (절반 해상도)
     const box = document.createElement('div'); box.id = 'tavern'; box.onpointerup = ev => ev.stopPropagation(); $('stage').append(box);
     const nx = T.nextSeat(m), nl = T.LURE.find(([fl]) => m.deep < fl);
+    // 주사위 면 수 (「검 ×10 · 방 ×5 · ★ ×1」)와 조합 표
+    const LEG = G.Dice.legend(), FC = g => G.Dice.faces({ merc: g }) || {}, SYN = [['atk', '검'], ['def', '방'], ['arc', '주'], ['holy', '빛'], ['wild', '★'], ['blank', '빈 면']];
+    const faceChips = g => { const c = FC(g); return SYN.filter(([k]) => c[k]).map(([k, n]) => `<span class="fc-${k}"><i class="sy s-${k}">${n}</i>×${c[k]}</span>`).join(''); };
+    const legend = `<h4>조합 <small>한 라운드에 같은 기호가 둘 이상 · ★은 아무 기호</small></h4><table class="tv-leg"><tr><th></th><th>둘</th><th>셋</th><th>넷</th></tr>${LEG.map(l => `<tr><th><i class="sy s-${l.s}">${l.n}</i> ${esc(l.fx)}</th>${l.tiers.map(t => `<td>${esc(t.replace(/^아군 /, '').replace('가장 다친 아군 ', '한 명 ').replace('아군 모두 ', '모두 '))}</td>`).join('')}</tr>`).join('')}</table><p class="tv-nolk">혼자 세 칸이 같으면 그 사람만: ${LEG.map(l => `<i class="sy s-${l.s}">${l.n}</i> ${esc(l.row)}`).join(' · ')}</p>`;
     box.innerHTML = `<header><h2>선술집</h2><div class="tv-res"><span class="chip">소문 ${rumor}</span><span class="chip tv-seat"></span></div></header>` +
       `<div class="tv-body"><div class="tv-scene"><canvas></canvas><div class="tv-who"></div></div>` +
       `<aside class="tv-side"><dl class="tv-info">${nx ? `<dt>다음 자리</dt><dd>${nx}층 우두머리 처치</dd>` : ''}${nl ? `<dt>새 직업</dt><dd>${nl[0]}층 도달 · ${nl[1].map(clsN).map(esc).join(' · ')}</dd>` : ''}</dl>` +
-      `<div class="tv-links"></div>` +
+      `<div class="tv-links"></div><div class="tv-legend">${legend}</div>` +
       (m.wall.length ? `<h4>명패</h4><ul class="tv-wall">${m.wall.map(w => `<li><b>${esc((w.names || []).join(' · '))}</b><small>${w.floor}층${w.win ? ' 돌파' : ''}</small></li>`).join('')}</ul>` : '') + `</aside></div>` +
       `<div class="tv-sheet" hidden></div><button class="tv-go"></button>`;
     const scene = box.querySelector('.tv-scene'), cv = scene.querySelector('canvas'), x = cv.getContext('2d'), who = box.querySelector('.tv-who'), sheetEl = box.querySelector('.tv-sheet');
@@ -127,7 +131,7 @@ const TAVERNUI = (() => {
       sheetEl.hidden = false;
       sheetEl.innerHTML = `<div class="tv-hd"><canvas class="tv-face" width="30" height="40"></canvas><div><b>${esc(s.name)}</b><small>${esc(s.cls)} · ${esc(s.sp)} · ${s.lv}레벨</small><small>탐사 — ${esc(s.role)}</small></div><button class="tv-x" aria-label="닫기">✕</button></div>` +
         `<div class="tv-st"><span>체력<b>${s.hp}</b></span><span>AC<b>${s.ac}</b></span>${s.ab.map(a => `<span>${esc(a.n)}<b>${a.v}</b><i>${a.mod}</i></span>`).join('')}</div>` +
-        (s.die ? `<h5>주사위</h5><div class="tv-die"><b>${esc(s.die.n)}</b><small>${esc(s.die.lean)}</small><div class="tv-faces">${[...s.die.sym].map((c, i) => `<i class="f-${c === '.' ? 'x' : c === '*' ? 'w' : c}" title="${i + 1}">${{ A: '검', D: '방', R: '주', H: '빛', '*': '★', '.': '' }[c]}</i>`).join('')}</div></div>` : '') +
+        (s.die ? `<h5>주사위</h5><div class="tv-die"><b>${esc(s.die.n)}</b><small>${esc(s.die.lean)} · d20</small><div class="tv-cnt">${faceChips(g)}</div><ul class="tv-fx">${LEG.filter(l => FC(g)[l.s]).map(l => `<li><i class="sy s-${l.s}">${l.n}</i><b>${esc(l.fx)}</b><span>${esc(l.tiers[0])}</span></li>`).join('')}</ul></div>` : '') +
         `<h5>기본 공격</h5><ul class="tv-sk">${li(s.weapon)}<li><b>${esc(s.armor)}</b><small>방어구</small></li></ul>` +
         (s.skills.length ? `<h5>기술 ${s.skills.length}/${G.Party.CAP}</h5><ul class="tv-sk">${s.skills.map(o => li(o)).join('')}</ul>` : '') +
         (s.feats.length ? `<h5>직업 기능</h5><ul class="tv-sk">${s.feats.map(o => li(o, `${o.lv}레벨`)).join('')}</ul>` : '') +

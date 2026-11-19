@@ -42,7 +42,7 @@ G.Turn = (() => {
     // 흐르는 턴제 (새 게임, 2026-11-18): 판정은 SRD 차례 그대로, 보이는 것만 실시간처럼 — 범위 칠하기 · 큰 주사위 창 · 차례 사이 쉼을 없애고,
     // 걸음은 논리상 바로 옮겨 그림이 따라 걷게 한다(그림이 도착하면 친다). 다음 사람의 걸음이 앞사람의 공격 동작과 겹쳐 보인다
     smooth: false,
-    beat: 1.3, // 흐르는 턴제에서 행동 사이 쉼의 배수 (행동 하나 0.7초쯤 — 누가 무엇을 했는지 읽을 시간. 배속 단추로 줄인다)
+    beat: 1.8, // 흐르는 턴제에서 행동 사이 쉼의 배수 (행동 하나 1초쯤 — 누가 무엇을 했는지 읽을 시간. 배속 단추로 줄인다)
     // 먼저 굴린 주사위 눈: 행동보다 앞서 보여 주고, 그 눈으로 판정한다
     pre: null,
     rolls: { all: 0, shown: 0 },
@@ -313,7 +313,7 @@ G.Turn = (() => {
     if (!x || gone(rt, x.e)) { pause(st, 0); return; }
     const e = st.cur = x.e;
     e.ready = false; e.reacted = false; // 반응은 자기 차례 시작에 되찾는다 (SRD)
-    st.fast = sameNext(st) || st.prevInit === x.init; st.prevInit = x.init; // 무리로 함께 움직인다: 미리 보기 · 걷기 · 겨누기를 기다리지 않는다
+    st.fast = !T.smooth && (sameNext(st) || st.prevInit === x.init); /* 흐르는 턴제: 같은 무리도 하나씩 — 누가 누구를 쳤는지 보이게 */ st.prevInit = x.init; // 무리로 함께 움직인다: 미리 보기 · 걷기 · 겨누기를 기다리지 않는다
     // SRD 라운드 시계: 차례마다 한 라운드를 차례 수로 나눠 올린다. 지속 시간 · 반응(라운드에 한 번)은 실제 시간이 아니라 라운드를 따른다
     { const q = G.Res_ROUND / Math.max(1, st.order.length); G.S.runTime += q; F().roundTick(f, rt, q); T.turnNo = (T.turnNo || 0) + 1; }
     F().startTurnFx(f, rt, e); /* 지속 피해: 그 몸의 차례가 시작될 때 주사위로 (SRD) */
@@ -344,7 +344,7 @@ G.Turn = (() => {
       if (G.Skill.persist) G.Skill.persist(f, rt, e, ROUND);
       if (e.fleeT) e.fleeT = 0;
       // 함께 싸우는 치유 직업은 앞사람 곁으로 먼저 걷고 나서 주문을 쓴다 (새 게임 — 뒤에 혼자 남지 않게). 이 차례의 이동은 여기서 썼다
-      st.pm = null; if (T.smooth && G.Tactics.escorts(e) && !DN().held(e) && !G.Act.adjacent(rt, e).length) { const p = G.Tactics.follow(rt, e, moveOf(e)); if (p.length) { const px = e.x, py = e.y; G.Tactics.walk(e, p, MOVE_V, 99); F().fieldMove(f, rt, e, px, py); st.pm = e; } }
+      st.pm = null; if (T.smooth && (G.Tactics.escorts(e) || G.Tactics.trails(e)) && !DN().held(e) && !G.Act.adjacent(rt, e).length) { const p = G.Tactics.escorts(e) ? G.Tactics.follow(rt, e, moveOf(e)) : G.Tactics.follow(rt, e, moveOf(e), 6, 4); if (p.length) { const px = e.x, py = e.y; G.Tactics.walk(e, p, MOVE_V, 99); F().fieldMove(f, rt, e, px, py); st.pm = e; } }
       if (G.Story.aid(f, rt, e)) { pause(st, BEAT); return; }
       if (G.Trinket.beads(f, rt, e)) { pause(st, BEAT); return; } // 화염구 구슬 (SRD)
       // 치유 → 기술 → 공격 순서로 그 차례의 행동을 정한다
@@ -375,7 +375,7 @@ G.Turn = (() => {
     if (e.kind !== 'mon' && !canHit(rt.map, e, e.x, e.y, st.tg) && G.Tactics.waits(rt, st, e)) { if (G.Act.idle(f, rt, e)) { pause(st, BEAT); return; } e.ready = true; G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.1, s: '준비', col: '#9fc8ff', t: 0.7, sz: 0.7 }); pause(st, SKIP); return; } // 준비 행동 (SRD): 적이 곁에 오면 반응으로 먼저 친다
     // 위기 지시: 체력이 낮은 근접은 후열 동료 곁으로 물러난다
     if (e.kind !== 'mon') { const away = G.Tactics.fall(rt, e, moveOf(e)); if (away && away.length) { if (G.Act.adjacent(rt, e).length) G.Act.disengage(rt, e); else G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.1, s: '물러남', col: '#d8c79a', t: 0.8, sz: 0.75 }); /* 물러나기 (SRD Disengage): 기회 공격 없이 */ st.path = away; st.ph = 'back'; return; } }
-    st.path = e.kind !== 'mon' && !held && !keep && G.Tactics.escorts(e) ? G.Tactics.escort(rt, e, st.tg, moveOf(e), can) : e.kind !== 'mon' && keep ? G.Tactics.rearward(rt, e, st.tg, moveOf(e), can) : keep ? G.Tactics.kite(rt, e, st.tg, held ? 0 : moveOf(e), can) : G.Tactics.plan(rt, e, st.tg, held ? 0 : moveOf(e), can); // 원거리 몬스터 · 후퇴 설정의 원거리는 거리를 벌리고 쏜다
+    st.path = e.kind !== 'mon' && !held && !keep && G.Tactics.escorts(e) ? G.Tactics.escort(rt, e, st.tg, moveOf(e), can) : e.kind !== 'mon' && keep ? G.Tactics.rearward(rt, e, st.tg, held ? 0 : moveOf(e), can) : keep ? G.Tactics.kite(rt, e, st.tg, held ? 0 : moveOf(e), can) : G.Tactics.plan(rt, e, st.tg, held ? 0 : moveOf(e), can); // 원거리 몬스터 · 후퇴 설정의 원거리는 거리를 벌리고 쏜다
     { const end = st.path.length ? st.path[st.path.length - 1] : e; if (!held && !keep && !can(end.x, end.y) && !G.Act.dashing(e) && !(e.kind === 'mon' ? G.Foe.ranged(e) : DN().rng(e) >= 2) && (e.kind !== 'mon' || !G.Foe.reachL?.(e))) { G.Act.dash(e); const p2 = G.Tactics.plan(rt, e, st.tg, moveOf(e), can); if (p2.length >= st.path.length) { st.path = p2; G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.1, s: '질주', col: '#9fc8ff', t: 0.7, sz: 0.7 }); } } } // 질주 (SRD Dash): 행동으로 두 배 — 닿아도 이번 차례엔 치지 않는다
     // 기본 사거리로 못 치면 긴 사거리 · 투척으로 (SRD: 불리)
     { const end = st.path.length ? st.path[st.path.length - 1] : e, L = e.kind === 'mon' ? G.Foe.reachL(e) : G.Dnd.rngL(e); if (L && !st.tg.down && !can(end.x, end.y)) { e.longNow = true; if (!can(end.x, end.y)) e.longNow = false; } }

@@ -222,6 +222,7 @@ const CRAWL = (() => {
       if (kind === 'fight' && (ch.n === '싸운다' || ch.n === '기습한다')) { st.scene = null; return startFight(st.map.nodes[at], { ambush: ch.n === '기습한다' }); }
       st.lastCheck = null; RUN.choose(st, +b.dataset.i);
       const go = () => {
+        if (st.pend) { const pd = st.pend, n = st.map.nodes[at]; st.pend = null; st.scene = null; { const cap = RUN.zone(st.floor).seats[st.floor - RUN.zone(st.floor).floors[0]] * 2, c = Math.min(pd.g.count, cap); n.g = { ...pd.g, count: c, label: `${pd.g.name} ${c}`, units: pd.g.units || [[pd.g.name, c]] }; } return startFight(n, pd.mod); } // 사건이 틀어졌다 · 들켰다: 그 방에서 싸운다
         if (st.flags.ally) { st.flags.ally = false; rescue(); }
         if (kind === 'rest' && !st.scene) return descend(); // 야영지를 떠난다
         if ((kind === 'camp' || kind === 'rest') && ch.n === '긴 휴식') G.Dice.rested(G.Party.members(G.S.w.fantasy)); // 긴 휴식: 인간은 영웅적 영감 (SRD)
@@ -330,7 +331,7 @@ const CRAWL = (() => {
   // 다음 층으로: 파티 · 금화 · 물자 · 기록은 그대로 들고, 층(지도 · 적 · 길)만 새로 세운다
   function descend() {
     const o = st; st = RUN.newRun(o.seed + (o.floor + 1) * 977, o.party.map(m => m.cls), o.floor + 1);
-    st.party = o.party; st.gold = o.gold; st.items = o.items; st.log = o.log.concat(st.log);
+    st.party = o.party; st.gold = o.gold; st.items = o.items; st.log = o.log.concat(st.log); st.real = true;
     for (const k in deferred) delete deferred[k]; for (const k in lootAt) delete lootAt[k]; clearMarks(); closeSign(); walk = null; nearKey = null;
     R.mons = []; R.chests = []; R.fields = []; layFloor(); G.Fantasy.refreshEnts(R);
     PMAP.attach(st); say(); showMarks(); document.body.dataset.room = st.at; document.body.dataset.depth = st.floor;
@@ -351,7 +352,7 @@ const CRAWL = (() => {
     renown: () => renownLoad(),
     start(seed, picks = ['dragoon']) {
       G.Reward.stockShop(RUN.ITEMS); // 상인이 기름 · 마름쇠 · 도둑 도구도 판다
-      st = RUN.newRun(seed, picks.map(p => G.Party.RUN_CLS[typeof p === 'string' ? p : p.cls] || 'fighter'), +q.get('floor') || 1); layFloor(); // 시험용 ?floor=N: 그 층에서 시작 // 선술집에서 고른 파티 (탐사 규칙의 직업으로)
+      st = RUN.newRun(seed, picks.map(p => G.Party.RUN_CLS[typeof p === 'string' ? p : p.cls] || 'fighter'), +q.get('floor') || 1); st.real = true; layFloor(); // real: 싸움은 실제 전투로 (rules.js fight) · 시험용 ?floor=N: 그 층에서 시작 // 선술집에서 고른 파티 (탐사 규칙의 직업으로)
       // 시작 물자 (소문으로 열린 만큼 더)
       unl = G.Reward.unlocked(renownLoad());
       return iso;

@@ -78,7 +78,7 @@ const FIGHT = (() => {
     el.innerHTML = `<div class="fs-hd">${B.base}라운드</div>` + B.rows.map((p, r) => `<div class="fs-row${alive.has(p) ? '' : ' dead'}" data-r="${r}"><span class="fs-n">${esc(p.merc?.name || '동료')}</span>` +
       `${old ? `<span class="fs-cell out">${dieHTML(p, old[r])}</span>` : ''}${B.cells[r].map((d, k) => `<span class="fs-cell c${k}">${old && k === 2 ? '<b class="die spin">?</b>' : dieHTML(p, d)}</span>`).join('')}</div>`).join('') + '<div class="fs-cb"></div>';
     $('stage').append(el); document.body.dataset.fstage = '1';
-    F.stage = { el, c, t: 0, ph: old ? 0 : 1, at: old ? [0.6, 0.85, 1.75, 2.15] : [0, 0.2, 1.1, 1.5] };
+    F.stage = { el, c, t: 0, ph: old ? 0 : 1, at: !c && old ? [0.5, 0.65, 1.05, 1.35] : old ? [0.6, 0.85, 1.75, 2.15] : [0, 0.2, 1.1, 1.5] }; // 조합이 없는 라운드는 짧게
   }
   function stageStep(dt) {
     const S = F.stage, D = G.Dice, B = D.board, el = S.el; S.t += dt * G.Turn.speed(G.S.w.fantasy);
@@ -161,7 +161,7 @@ const FIGHT = (() => {
   const nm = e => e.merc?.name || e.n || e.def?.n || '?';
   function strip() {
     const T = F && R.turn; let el = $('turnstrip');
-    if (!T || !T.order.length) { if (el) el.remove(); return; }
+    if (!T || !T.order.length) { if (el) el.remove(); $('turnmark')?.remove(); $('turntg')?.remove(); return; }
     if (!el) { el = document.createElement('div'); el.id = 'turnstrip'; el.innerHTML = '<div class="ts-row"></div><div class="ts-act"></div>'; $('stage').append(el); }
     const live = T.order.map(x => x.e).filter(e => (e.kind === 'mon' ? e.hp > 0 && R.mons.includes(e) : !e.dead || e.dying)), roll = R.roll, cur = T.cur;
     // 한 줄: 방금 끝난 행동(굴림 · 결과)이 지금 차례 사람의 것이면 그것을, 아니면 지금 하려는 일(대상)
@@ -170,9 +170,15 @@ const FIGHT = (() => {
     if (cur && F.act && F.act.who === nm(cur) && T.ph === 'wait') act = F.act.html;
     else if (cur && (T.ph === 'move' || T.ph === 'pre' || T.ph === 'show') && T.tg) act = `<b>${esc(nm(cur))}</b> → <b>${esc(nm(T.tg))}</b> <small>다가가 친다</small>`;
     else if (F.act) act = F.act.html;
-    const k = `${T.round}|${live.map(e => (e === cur ? '*' : '') + nm(e) + (e.dying ? '!' : '')).join(',')}|${act}`;
+    // 머리 위 표시: 지금 행동하는 사람(우리 = 금색 ▼, 적 = 붉은 ▼)과 그 대상(◎)
+    { const foe = cur?.kind === 'mon', tg = cur && (T.ph === 'move' || T.ph === 'pre' || T.ph === 'show') ? T.tg : null;
+      let a = $('turnmark'), b = $('turntg'); if (!a) { a = document.createElement('div'); a.id = 'turnmark'; a.textContent = '▼'; b = document.createElement('div'); b.id = 'turntg'; b.textContent = '◎'; $('floats').append(a, b); }
+      a.className = foe ? 'foe' : ''; a.style.display = cur ? '' : 'none'; if (cur) UI.place(a, cur._dx ?? cur.x, cur._dy ?? cur.y, 2.5);
+      b.className = foe ? 'foe' : ''; b.style.display = tg ? '' : 'none'; if (tg) UI.place(b, tg._dx ?? tg.x, tg._dy ?? tg.y, 1.2); }
+    const side = cur ? (cur.kind === 'mon' ? '적의 차례' : '우리 차례') : '';
+    const k = `${T.round}|${side}|${live.map(e => (e === cur ? '*' : '') + nm(e) + (e.dying ? '!' : '')).join(',')}|${act}`;
     if (el.dataset.k === k) return; el.dataset.k = k;
-    el.firstChild.innerHTML = `<span class="ts-rd">${T.round}라운드</span>` + live.map(e => { const c = e.merc ? G.Guild.def(e.merc) : null;
+    el.firstChild.innerHTML = `<span class="ts-rd">${T.round}라운드</span>${side ? `<span class="ts-side${cur.kind === 'mon' ? ' foe' : ''}">${side}</span>` : ''}` + live.map(e => { const c = e.merc ? G.Guild.def(e.merc) : null;
       return `<span class="ts-c${e === cur ? ' cur' : ''}${e.kind === 'mon' ? ' foe' : ''}${e.dying ? ' down' : ''}"><i style="background:${c?.col || (e.kind === 'mon' ? '#b0483c' : '#888')}">${esc((c?.n || nm(e)).slice(0, 1))}</i>${esc(nm(e))}</span>`; }).join('<s>›</s>');
     el.lastChild.innerHTML = act; el.lastChild.className = 'ts-act' + (F.act?.foe && act === F.act.html ? ' foe' : '');
     el.querySelector('.ts-c.cur')?.scrollIntoView({ inline: 'center', block: 'nearest' });

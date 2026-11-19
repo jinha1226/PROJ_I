@@ -122,6 +122,10 @@ G.Dice = (() => {
       for (const c of cells) { if (!c || !c.sym) return null; if (c.sym === 'wild') continue; if (s && s !== c.sym) return null; s = c.sym; }
       return s;
     },
+    // 그 사람 주사위의 면 수: { atk, def, arc, holy, wild(★), blank } — 새긴 면 · 규칙 카드까지 (화면: 「검 ×10 · 방 ×5 · ★ ×1」)
+    faces(p) { const kind = D.dieFor(p), out = { atk: 0, def: 0, arc: 0, holy: 0, wild: 0, blank: 0 }; if (!KINDS[kind]?.sym) return null; for (let v = 1; v <= 20; v++) out[face(kind, v, p).sym || 'blank']++; return out; },
+    // 조합 표 (화면에 처음부터 보여 준다): 기호마다 [이름, 조합 이름, 둘 · 셋 · 넷의 효과, 한 줄(혼자 세 칸)의 효과]
+    legend() { return ['atk', 'def', 'arc', 'holy'].map(s => ({ s, n: SYM[s].n, fx: SYM[s].fx, tiers: [2, 3, 4].map(n => SYM[s].txt(n)), row: D.rowTxt(s) })); },
     rowTxt(s) { const Y = SYM[s]; if (Y.prop) return `${Y.short} +${Y.row}`; const [k, d, b] = Y.rowHeal; return `라운드마다 ${k}d${d}+${b} 회복`; },
     // 열 순서 바꾸기 (공짜): 센 열을 앞에 몰지, 뒤로 아낄지
     swapCols(a, b) { const B = D.board; if (!B || a === b) return false; for (const row of B.cells) [row[a], row[b]] = [row[b], row[a]]; return true; },

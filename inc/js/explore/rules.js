@@ -266,6 +266,7 @@ RUN.HINT2 = { event: '뭔가 있다', camp: '쉴 만한 곳', shop: '불빛 · �
   // ── 전투 (임시 계산) ───────────────────────────────────────────
   // 위험도 D와 파티 힘 P의 비로 받는 피해를 정한다. 주문 슬롯을 쓰면 힘이 오른다. 6절이 정해지면 바꾼다.
   function fight(st, n, g, mod = {}) {
+    if (st.real) { st.pend = { g, mod: { ...mod, alert: !!(n.alert || mod.alert) } }; return; } // 새 게임(crawl.js): 숫자로 치르지 않고 그 방에서 실제 전투를 연다
     const small = n.size === 'small';
     const why = [];
     if (mod.ambush) why.push('기습');

@@ -250,3 +250,9 @@ img[src*="assets/chars/"] { image-rendering:auto; object-fit:contain; }
 #turnstrip .ts-act.foe i.ok { color:#e08a7a; } #turnstrip .ts-act.foe i.no { color:#8fd49a; }
 body:has(#turnstrip) #fatebanners { top:calc(var(--hud-h, 46px) + 84px) !important; }
 body:has(#turnstrip) #pmapbox:not(.big), body:has(#turnstrip) #dm { display:none !important; }
+
+/* 전투: 지금 행동하는 사람(▼)과 대상(◎), 띠의 「우리 차례 / 적의 차례」 */
+#turnmark, #turntg { position:absolute; left:0; top:0; z-index:6; pointer-events:none; font:700 20px "Noto Sans KR",sans-serif; color:#ffd76a; text-shadow:0 0 6px #000, 0 2px 0 #000; }
+#turnmark.foe, #turntg.foe { color:#ff6a55; } #turntg { font-size:26px; opacity:.9; }
+#turnstrip .ts-side { margin-right:6px; padding:1px 8px; border-radius:99px; background:#4a3a1e; border:1px solid #f0c070; color:#ffe9b0; font-weight:700; }
+#turnstrip .ts-side.foe { background:#4a211c; border-color:#e0604a; color:#ffc4b8; }
