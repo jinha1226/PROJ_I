@@ -69,7 +69,7 @@ G.SrdX = (() => {
     // 위저드 20레벨 대표 주문: 3레벨 주문 둘 +1번
     signature: m => G.Guild.picks(m).filter(q => lvlOf(q) === 3).slice(0, 2),
     // 몽크 붙잡기: 일반 재주 (4레벨, 근력 또는 민첩 13)
-    grappler: m => m.cls === 'monk' && m.lv >= 4 && (m.uid || 0) % 3 === 0,
+    grappler: m => (G.Reward?.on ? !!m.gfeat?.includes('grappler') : m.cls === 'monk' && m.lv >= 4 && (m.uid || 0) % 3 === 0), // 새 게임: 능력치 향상 자리에서 플레이어가 고른 재주 (js/game/reward.js)
   };
   // SRD 직업 표: 하프 캐스터도 1레벨부터 1레벨 슬롯
   for (const [k, c] of [['sr_smite', 'paladin'], ['sp_searing_smite', 'paladin'], ['sr_cure', 'archer']]) { const M = D.MSKILLS[k]; if (!M) continue; if (typeof M.lv === 'object') M.lv[c] = 1; else M.lv = 1; }

@@ -26,11 +26,11 @@ const HUD = (() => {
     const v = CRAWL.view(); if (!v) return; if (!el) mount();
     if (v.fighting !== wasFight) { wasFight = v.fighting; if (typeof setZoom === 'function') setZoom(zoom(wasFight), true); } // 전투가 시작되면 넓게, 끝나면 되돌린다
     const dice = v.fighting && G.Dice.st ? v.party.map(p => G.Dice.dieOf(p.a)) : [], ins = v.party.map(p => (G.Dice.insp(p.a) ? '✦' : '') + (v.fighting ? G.Dice.bonus(p.a).join('') : ''));
-    const k = JSON.stringify([v.title, v.sub, v.gold, v.items, G.Turn.speed(f()), v.party.map(p => [p.m?.name, p.m?.lv, p.hp, p.max, p.dead, p.cur]), dice.map(r => r && `${r.value}${r.sym}`), ins]);
+    const k = JSON.stringify([v.title, v.sub, v.gold, v.items, GEARUI.count(), G.Turn.speed(f()), v.party.map(p => [p.m?.name, p.m?.lv, p.hp, p.max, p.dead, p.cur]), dice.map(r => r && `${r.value}${r.sym}`), ins]);
     if (k === key) return; key = k;
     const res = v.items ? ITEM.filter(([id]) => v.items[id] > 0).map(([id, n]) => `<span class="chip c-${id}" title="${n}">${n} ${v.items[id]}</span>`).join('') : '';
     el.querySelector('.hud-top').innerHTML = `<div class="hud-l"><b>${esc(v.title)}</b><small>${esc(v.sub)}</small></div>` +
-      `<div class="hud-r">${v.gold != null ? `<span class="chip c-gold" title="금화">금화 ${v.gold}</span>` : ''}${res}<button class="hud-spd" title="배속 (T)">×${G.Turn.speed(f())}</button></div>`;
+      `<div class="hud-r">${v.gold != null ? `<span class="chip c-gold" title="금화">금화 ${v.gold}</span>` : ''}${res}${v.gold != null ? GEARUI.chip() : ''}<button class="hud-spd" title="배속 (T)">×${G.Turn.speed(f())}</button></div>`;
     el.querySelector('.hud-party').innerHTML = v.party.map((p, i) => { const m = p.m, c = clsOf(m), w = Math.round(100 * Math.max(0, p.hp) / Math.max(1, p.max));
       return `<button class="pm${p.cur ? ' cur' : ''}${p.dead ? ' dead' : ''}" data-i="${i}"><i class="pm-cls" style="background:${c.col || '#888'}">${esc((c.n || '?').slice(0, 1))}</i>` +
         `<span class="pm-name">${esc(m?.name || '동료')}${ins[i] ? ` <i class="pm-ins" title="영웅적 영감 · 얹히는 주사위">${ins[i]}</i>` : ''}</span><small class="pm-lv">${esc(c.n || '')} · ${m?.lv || 1}레벨</small>` +
@@ -45,10 +45,11 @@ const HUD = (() => {
     box.innerHTML = `<h3>${esc(m.name)} <small>${esc(c.n || m.cls)} · ${m.lv}레벨</small></h3>` +
       `<div class="sh-bar"><span>체력 ${Math.max(0, p.hp)}/${p.max}</span><i style="width:${Math.round(100 * Math.max(0, p.hp) / Math.max(1, p.max))}%"></i></div>` +
       `<div class="sh-bar xp"><span>경험치 ${Math.round(m.xp || 0)}/${need}</span><i style="width:${Math.round(100 * Math.min(1, (m.xp || 0) / need))}%"></i></div>` +
-      `<div class="sh-ab">${Object.keys(AB).map(a => `<span><small>${AB[a]}</small>${m.ab?.[a] ?? 10}</span>`).join('')}</div>` +
+      `<div class="sh-ab">${Object.keys(AB).map(a => `<span><small>${AB[a]}</small>${G.Dnd.ab(m)[a]}</span>`).join('')}</div>` +
+      `<h4>직업 기능</h4><ul class="sh-sk">${G.Reward.features(m).map(x => `<li><b>${esc(x.n)}</b><small>${x.lv}레벨</small><span>${esc(x.d || '')}</span></li>`).join('')}${G.Opt.of(m).filter(k => G.D.MSKILLS[k]).map(k => `<li><b>${esc(G.D.MSKILLS[k].n)}</b><small>고른 것</small><span>${esc(G.D.MSKILLS[k].d || '')}</span></li>`).join('')}</ul>` +
       `<h4>손에 든 기술 <small>${skills.length}/${G.Party.CAP}</small></h4>` +
       (skills.length ? `<ul class="sh-sk">${skills.map(k => `<li><b>${esc(G.D.MSKILLS[k]?.n || k)}</b><small>${G.Guild.spLv(k) ? `${G.Guild.spLv(k)}레벨 주문` : '소마법'}</small><span>${esc(G.D.MSKILLS[k]?.d || '')}</span></li>`).join('')}</ul>` : '<p class="sh-none">직업 기능으로 싸운다 (기술 칸 없음)</p>') +
-      `<h4>물건</h4><p class="sh-none">${worn.length ? worn.map(esc).join(' · ') : '끼운 마법 물건 없음'}</p>` +
+      GEARUI.section(m, v.fighting) + // 장비: 무기 · 갑옷 · 방패 · 마법 칸 셋 (js/app/gear_ui.js)
       (die ? `<h4>직업 주사위</h4><p class="sh-none">${esc(die.n)}${m.carve ? ` · 새긴 면 ${Object.keys(m.carve).join(' · ')}` : ''}${G.Dice.tags(p.a).length ? ` · ${G.Dice.tags(p.a).map(esc).join(' · ')}` : ''}</p>` : '') +
       '<button class="sh-x">닫기</button>';
     box.querySelector('.sh-x').onclick = () => box.remove();

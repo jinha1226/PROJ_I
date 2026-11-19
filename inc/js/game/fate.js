@@ -33,7 +33,8 @@ G.Dice = (() => {
   const CH = { A: 'atk', D: 'def', R: 'arc', H: 'holy', '*': 'wild', '.': null };
   const rules = new Set(); // 운명판 규칙 카드 (정예 · 보스 3택1, G.Reward): reroll2 · wild19 · pairUp — 이번 판 내내
   // 면: 값은 SRD d20 그대로, 기호는 직업 주사위 표 → 그 사람이 새긴 면(merc.carve) → 규칙 카드(19면도 ★)
-  const face = (kind, v, p) => { let sym = CH[KINDS[kind].sym[v - 1]]; if (p?.merc?.carve?.[v]) sym = p.merc.carve[v]; if (v === 19 && rules.has('wild19')) sym = 'wild'; return { kind, face: v, value: v, sym, special: null }; };
+  const face = (kind, v, p) => { let sym = CH[(p?.merc?.dieSym || KINDS[kind].sym)[v - 1]]; // 사람마다 다른 주사위 (G.Party.forge)
+    if (p?.merc?.carve?.[v]) sym = p.merc.carve[v]; if (v === 19 && rules.has('wild19')) sym = 'wild'; return { kind, face: v, value: v, sym, special: null }; };
   const lucky = p => !!p?.merc?.uid && G.Res?.species?.(p.merc) === 'halfling';
   const roll = (kind, rng = Math.random, p = null) => {
     const K = KINDS[kind]; if (!K) throw new Error('모르는 주사위: ' + kind);

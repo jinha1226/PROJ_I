@@ -24,7 +24,7 @@ const count = (s, re) => (s.match(re) || []).length;
 const strip = d => d.replace(/<script[^>]*>[\s\S]*?<\/script>/g, '');
 const game = (d, ents) => [
   !/data-floor="ready"/.test(d) && '층을 다 굽지 못했다 (data-floor)',
-  !new RegExp(`data-ents="${ents}"`).test(d) && `인물 ${(d.match(/data-ents="(\d+)"/) || [])[1] ?? '?'}명 (${ents}명이어야)`,
+  !(+((d.match(/data-ents="(\d+)"/) || [])[1] ?? -1) >= ents) && `인물 ${(d.match(/data-ents="(\d+)"/) || [])[1] ?? '?'}명 (${ents}명 이상이어야 — 들어서자마자 걷기 시작해 적이 보일 수 있다)`,
   /data-err="/.test(d) && `JS 오류: ${(d.match(/data-err="([^"]*)"/) || [])[1]}`,
   /data-load-err="/.test(d) && `불러오기 오류: ${(d.match(/data-load-err="([^"]*)"/) || [])[1]}`,
   !/id="hud"/.test(d) && '화면 틀(위 바 · 파티 바)이 없다',

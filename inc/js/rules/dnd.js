@@ -120,7 +120,7 @@ G.Dnd = (() => {
       if (m.__base) m = m.__base; // 다중 직업의 직업 시점: 능력치는 그 사람 것 (G.MC)
       if (!m.ab || m.abCls !== m.cls) { m.ab = N.rollAb(m.cls); m.abCls = m.cls; }
       const c = N.cls(m), ab = { ...m.ab }; { const bg = G.SRD.bgAb(m, c.order); for (const k in bg) ab[k] = Math.min(AB_MAX, ab[k] + bg[k]); }
-      let pts = 2 * (G.MC?.on(m) ? G.MC.list(m) : [{ cls: m.cls, lv: m.lv }]).reduce((a, q) => a + (q.cls === 'dragoon' ? [4, 6, 8, 12, 14, 16] : q.cls === 'rogue' ? [4, 8, 10, 12, 16] : ASI_LV).filter(l => q.lv >= l).length, 0); // SRD 직업 표 (다중 직업은 직업 레벨마다)
+      let pts = G.Reward?.on ? 0 : 2 * (G.MC?.on(m) ? G.MC.list(m) : [{ cls: m.cls, lv: m.lv }]).reduce((a, q) => a + (q.cls === 'dragoon' ? [4, 6, 8, 12, 14, 16] : q.cls === 'rogue' ? [4, 8, 10, 12, 16] : ASI_LV).filter(l => q.lv >= l).length, 0); // SRD 직업 표 (다중 직업은 직업 레벨마다) /* 새 게임(G.Reward.on)은 능력치 향상을 플레이어가 고른다 — m.ab에 바로 더한다 (js/game/reward.js) */
       if (G.SrdX?.grappler(m) && pts >= 2) { pts -= 2; ab.dex = Math.min(AB_MAX, ab.dex + 1); } // 첫 능력치 향상 자리에 붙잡기 재주 (SRD: 능력치 향상 대신 재주, 민첩 +1)
       for (const k of c.order) { const up = Math.min(pts, AB_MAX - ab[k]); if (up > 0) { ab[k] += up; pts -= up; } if (!pts) break; }
       const ep = (m.boons || []).length + (m.bt || 0);

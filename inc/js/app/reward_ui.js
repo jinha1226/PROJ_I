@@ -5,13 +5,14 @@
 const REWARDUI = (() => {
   const { $, esc } = UI;
   let queue = [], then = null, res = null;
-  const KIND = { spell: '주문', swap: '바꿀 주문', ability: '능력치', art: '마법 물건', rule: '규칙 카드', carve: '면 새기기' };
+  const KIND = { spell: '주문', swap: '바꿀 주문', asi: '능력치 향상', fs: '전투 방식', iv: '영창', mm: '초마법', art: '마법 물건', rule: '규칙 카드', carve: '면 새기기' };
   const skN = k => G.D.MSKILLS[k]?.n || k, clsN = m => G.Guild.def(m)?.n || m.cls;
   function open() { let box = $('reward'); if (!box) { box = document.createElement('div'); box.id = 'reward'; box.onpointerup = ev => ev.stopPropagation(); $('stage').append(box); } return box; }
   function close() { const b = $('reward'); if (b) b.remove(); }
   // res = { title, gold, xp: [{ p, lv0, lv, xp, need }], loot: [{ name, n }], big: [옵션] | null, type, f }
   function show(r, cb) {
     res = r; then = cb; queue = [{ k: 'sum' }];
+    for (const e of r.gear || []) queue.push({ k: 'gear', e }); // 얻은 장비: 누구에게 (js/app/gear_ui.js)
     for (const x of r.xp) for (let i = 0; i < G.Reward.pending(x.p.merc); i++) queue.push({ k: 'lv', p: x.p });
     if (r.big?.length) queue.push({ k: 'big' });
     step();
@@ -20,6 +21,7 @@ const REWARDUI = (() => {
     while (queue.length && queue[0].k === 'lv' && !G.Reward.pending(queue[0].p.merc)) queue.shift(); // 이미 다 골랐으면 건너뛴다
     const q = queue.shift();
     if (!q) { close(); const cb = then; then = null; if (cb) cb(); return; }
+    if (q.k === 'gear') { close(); return GEARUI.give(q.e, step, '전리품'); }
     const box = open();
     if (q.k === 'sum') {
       box.innerHTML = `<h3>${esc(res.title)}</h3>` +
@@ -29,26 +31,37 @@ const REWARDUI = (() => {
         `<button class="rw-go">계속</button>`;
       box.querySelector('.rw-go').onclick = step; return;
     }
-    if (q.k === 'lv') {
-      const m = q.p.merc, o = G.Reward.offer(m);
-      if (o.kind === 'swap') return swap(box, m, o);
-      box.innerHTML = `<h3>${esc(m.name)} — ${m.lv}레벨</h3><p>${o.kind === 'spell' ? '새 주문 하나를 배운다' : '능력치 하나를 올린다'}</p>` +
-        `<div class="rw-cards">${o.options.map((c, i) => `<button data-i="${i}"><small>${KIND[c.kind]}${c.lv ? ` · ${c.lv}레벨` : c.kind === 'spell' ? ' · 소마법' : ''}</small><b>${esc(c.n)}</b><span>${esc(c.d || '')}</span></button>`).join('')}</div>`;
-      box.querySelector('.rw-cards').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; G.Reward.choose(m, o.options[+b.dataset.i]); step(); };
-      return;
-    }
+    if (q.k === 'lv') return level(box, q.p.merc);
     if (q.k === 'big') {
       box.innerHTML = `<h3>${res.type === 'boss' ? '보스' : '정예'}의 보상</h3><p>하나를 고른다</p>` +
         `<div class="rw-cards">${res.big.map((c, i) => `<button data-i="${i}" class="k-${c.kind}"><small>${KIND[c.kind]}</small><b>${c.ic ? `${c.ic} ` : ''}${esc(c.n)}</b><span>${esc(c.d || '')}</span></button>`).join('')}</div>`;
-      box.querySelector('.rw-cards').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; const opt = res.big[+b.dataset.i]; G.Reward.takeBig(res.f, opt); step(); };
+      box.querySelector('.rw-cards').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; const opt = res.big[+b.dataset.i], got = G.Reward.takeBig(res.f, opt); if (opt.kind === 'art' && got) queue.unshift({ k: 'gear', e: { kind: 'magic', t: got } }); step(); };
     }
   }
+  // 레벨업 한 장: 새로 얻은 것(보기만) → 고를 것 — 추천 셋 중 하나, 「전부 보기」를 누르면 그 자리의 후보 전부 (직접 고르기). 늘 전부 보기는 이 브라우저에 기억한다
+  const ALL_KEY = 'inc.lvall', allOn = () => { try { return localStorage.getItem(ALL_KEY) === '1'; } catch (e) { return false; } }, allSet = v => { try { localStorage.setItem(ALL_KEY, v ? '1' : '0'); } catch (e) { /* 기억 못 해도 된다 */ } };
+  const HEAD = { spell: '주문 하나를 배운다', asi: '능력치 향상', fs: '전투 방식 하나', iv: '영창 하나', mm: '초마법 하나' };
+  function level(box, m, all = allOn()) {
+    const o = G.Reward.offer(m, Math.random, all);
+    if (o.kind === 'new') {
+      box.innerHTML = `<h3>${esc(m.name)} — ${o.lv}레벨</h3><p>${esc(clsN(m))} · 새로 얻은 것</p>` +
+        (o.list.length ? `<ul class="rw-new-list">${o.list.map(x => `<li><b>${esc(x.n)}</b><span>${esc(x.d || '')}</span></li>`).join('')}</ul>` : '<p class="rw-none">이번 레벨은 체력 · 숙련만 오른다</p>') + '<button class="rw-go">확인</button>';
+      box.querySelector('.rw-go').onclick = () => { G.Reward.choose(m, { kind: 'new' }); step(); }; return;
+    }
+    if (o.kind === 'swap') return swap(box, m, o, all);
+    box.innerHTML = `<h3>${esc(m.name)} — ${m.lv}레벨</h3><p>${HEAD[o.kind] || ''}</p>` +
+      `<div class="rw-cards${all ? ' all' : ''}">${o.options.map((c, i) => `<button data-i="${i}"><small>${KIND[c.kind]}${c.lv ? ` · ${c.lv}레벨` : c.kind === 'spell' ? ' · 소마법' : ''}</small><b>${esc(c.n)}</b><span>${esc(c.d || '')}</span></button>`).join('')}</div>` +
+      `<button class="rw-all">${all ? '추천 셋만' : '전부 보기'}</button>`;
+    box.querySelector('.rw-all').onclick = () => { allSet(!all); level(box, m, !all); };
+    box.querySelector('.rw-cards').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; G.Reward.choose(m, o.options[+b.dataset.i]); step(); };
+  }
   // 5칸이 다 찬 채 레벨업: 새 주문 셋 중 하나를 골라 지금 기술 하나와 바꾸거나, 그대로 둔다
-  function swap(box, m, o) {
+  function swap(box, m, o, all = false) {
     if (!o.options.length) { G.Reward.choose(m, 'keep'); return step(); }
     box.innerHTML = `<h3>${esc(m.name)} — ${m.lv}레벨</h3><p>손에 든 기술은 다섯 — 새 주문으로 하나를 바꿀 수 있다</p>` +
-      `<div class="rw-cards">${o.options.map((c, i) => `<button data-i="${i}"><small>${KIND.swap}${c.lv ? ` · ${c.lv}레벨` : ' · 소마법'}</small><b>${esc(c.n)}</b><span>${esc(c.d || '')}</span></button>`).join('')}</div>` +
-      `<button class="rw-go rw-keep">지금 기술 그대로 둔다</button>`;
+      `<div class="rw-cards${all ? ' all' : ''}">${o.options.map((c, i) => `<button data-i="${i}"><small>${KIND.swap}${c.lv ? ` · ${c.lv}레벨` : ' · 소마법'}</small><b>${esc(c.n)}</b><span>${esc(c.d || '')}</span></button>`).join('')}</div>` +
+      `<button class="rw-go rw-keep">지금 기술 그대로 둔다</button><button class="rw-all">${all ? '추천 셋만' : '전부 보기'}</button>`;
+    box.querySelector('.rw-all').onclick = () => { allSet(!all); level(box, m, !all); };
     box.querySelector('.rw-keep').onclick = () => { G.Reward.choose(m, 'keep'); step(); };
     box.querySelector('.rw-cards').onclick = ev => {
       const b = ev.target.closest('button'); if (!b) return; const pickd = o.options[+b.dataset.i];

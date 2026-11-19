@@ -51,7 +51,7 @@ const FIGHT = (() => {
   }
   function end(win) {
     stageEnd(); const f = F; F = null; G.Dice.end(); closeTray(); $('fatepush')?.remove(); $('fatebanners')?.remove(); R.turn = null; // 조합 효과도 여기서 끝
-    document.body.dataset.fights = (+(document.body.dataset.fights || 0) + 1) + (win ? 'w' : 'l'); delete document.body.dataset.fight;
+    document.body.dataset.fights = ((parseInt(document.body.dataset.fights, 10) || 0) + 1) + (win ? 'w' : 'l'); delete document.body.dataset.fight;
     f.done(win, f);
   }
 
@@ -208,5 +208,7 @@ const FIGHT = (() => {
     box.onclick = ev => { const b = ev.target.closest('button'); if (!b || b.disabled) return; if (b.classList.contains('go')) { G.Dice.loadout = sel.slice(); box.remove(); return; } const k = b.dataset.k, i = sel.indexOf(k); if (i >= 0) sel.splice(i, 1); else if (sel.length < 2) sel.push(k); draw(); };
     draw(); $('stage').append(box);
   }
-  return { start, frame, hud, dicePick, get on() { return !!F; } };
+  // 연계 띠: 누가 깐 것을 누가 터뜨렸나 (사건 줄의 'link' — bridge.js). 같은 차례에 같은 연계는 한 번만
+  function link(e) { if (!F) return; const who = e.who.merc?.name || '동료', k = `${G.Turn.no()}|${who}|${e.set}|${e.use}`; if (F.linkK === k) return; F.linkK = k; banner(`<b>연계</b> ${esc(e.set)} → <b>${esc(e.use)}</b> <span>${esc(who)}</span>`, 'link'); }
+  return { start, frame, hud, dicePick, link, get on() { return !!F; } };
 })();

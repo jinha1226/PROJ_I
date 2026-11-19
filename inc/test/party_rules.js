@@ -31,6 +31,21 @@ const seq = a => { let i = 0; return () => a[i++ % a.length]; };
   T.finish(m, { floor: 9 }); t('용의 둥지까지 닿으면 열두 직업이 다 온다', T.classes(m).length === 12 && new Set(T.classes(m)).size === 12 && T.classes(m).every(c => G.Party.CLASSES.includes(c)));
   t('저장한 것을 읽는다 (깨진 값이면 새로)', T.load(JSON.stringify(m)).boss === 4 && T.load('{깨짐').deep === 0 && T.classes(T.load(null)).length === 3);
 }
+// 2-0) 사람마다 다른 것은 주사위와 기술 — 능력치는 직업마다 같다
+{
+  const { G, f } = solo(5), T = G.Tavern, P = G.Party, n = T.night(f, { ...T.fresh(), deep: 9 }, 999, seq([0.1, 0.5, 0.9, 0.3, 0.7]));
+  const byCls = {}; for (const g of n) (byCls[g.cls] = byCls[g.cls] || []).push(g);
+  t('같은 직업은 능력치가 같다 (표준 배열 15 · 14 · 13 · 12 · 10 · 8)', n.every(g => JSON.stringify(g.ab) === JSON.stringify(P.stdAb(g.cls)) && Object.values(g.ab).sort((a, b) => b - a).join() === '15,14,13,12,10,8'));
+  t('사람마다 주사위가 새겨져 있다 (20면 · 1면은 빈 면 · 20면은 ★ · 기질 한 단어)', n.every(g => g.dieSym?.length === 20 && g.dieSym[0] === '.' && g.dieSym[19] === '*' && g.dieN && g.lean), n.map(g => g.dieSym).join());
+  const m = P.trim(G.Guild.make(f, 'cleric', { lv: 1, ab: P.stdAb('cleric') })); m.skills = ['sr_cure', 'sr_hword', 'sp_spare_the_dying']; m.leanK = 'H'; P.forge(m);
+  const a = P.trim(G.Guild.make(f, 'cleric', { lv: 1, ab: P.stdAb('cleric') })); a.skills = ['sr_gbolt', 'sr_sflame']; a.leanK = 'A'; P.forge(a);
+  t('치유 기술이 많으면 빛 면이, 공격 기술이 많으면 검 면이 많다', m.dieCnt.H > a.dieCnt.H && a.dieCnt.A > m.dieCnt.A && m.dieN === '빛의 주사위', JSON.stringify([m.dieCnt, a.dieCnt]));
+  const p = { merc: m }, syms = new Set(); for (let i = 0; i < 300; i++) syms.add(G.Dice.roll(G.Dice.dieFor(p), Math.random, p).sym);
+  t('운명판은 그 사람이 새긴 주사위로 굴린다', [...syms].every(s => s === null || s === 'wild' || 'ADRH'.includes({ atk: 'A', def: 'D', arc: 'R', holy: 'H' }[s])) && (m.dieCnt.A > 0 || !syms.has('atk')));
+  const fi = P.forge(P.trim(G.Guild.make(f, 'dragoon', { lv: 1 }))), ro = P.forge(P.trim(G.Guild.make(f, 'rogue', { lv: 1 }))), L = P.links([fi, ro, a]);
+  t('연계: 파이터 곁에서 로그의 암습, 인도의 화살 뒤 이점', L.links.some(l => /암습/.test(l.n) && l.use.includes(ro.name)) && L.links.some(l => /빛남/.test(l.n) && l.set.includes(a.name)), JSON.stringify(L.links.map(l => l.n)));
+  t('혼자면 연계가 없다', P.links([ro]).links.length === 0);
+}
 // 2-1) 구출: 드문 사건, 그 판에만 함께한다
 {
   const { G, RUN } = solo(3), ev = RUN.EVENTS.find(e => e.id === 'captive');

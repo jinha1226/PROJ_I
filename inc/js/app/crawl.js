@@ -92,6 +92,7 @@ const CRAWL = (() => {
   // 다가갔나: 구조물 (출구는 표지를 누르거나 저절로 간다)
   function near(L) {
     let hit = null;
+    { const o = lootAt[st.at]; if (o && !FIGHT.on && !st.scene && Math.hypot(o.x - L.x, o.y - L.y) < NEAR) return openLoot(o); } // 상자 · 떨어진 장비
     const sc = deferred[st.at]; if (sc) { const [x, y] = centerOf(st.at); if (Math.hypot(x - L.x, y - L.y) < NEAR) hit = { key: 's' + st.at, sc }; }
     if (!hit) { nearKey = null; return; }
     if (hit.key === nearKey) return; nearKey = hit.key;
@@ -109,15 +110,17 @@ const CRAWL = (() => {
       $('floats').append(el); marks.push({ el, x: ex.door[0], y: ex.door[1], ex });
     }
     const sc = deferred[st.at];
+    { const o = lootAt[st.at]; if (o) { const el = document.createElement('div'); el.className = 'exitmark struct loot'; el.innerHTML = `<b>${o.kind === 'chest' ? '▣' : '◆'}</b><small>${o.kind === 'chest' ? '상자' : '장비'}</small>`; el.onclick = () => moveTo(o.x, o.y); $('floats').append(el); marks.push({ el, x: o.x, y: o.y }); } }
     if (sc) { const [x, y] = centerOf(st.at), el = document.createElement('div'); el.className = 'exitmark struct'; el.innerHTML = `<b>${ICON[sc.kind] || '★'}</b><small>${esc(sc.title)}</small>`; el.onclick = () => moveTo(x, y); $('floats').append(el); marks.push({ el, x, y }); }
   }
   function closeSign() { const s = $('exitsign'); if (s) s.remove(); }
   // 앞으로 가는 길: 이 방에서 나가는 길 중 안 지나간 것 (돌아가는 길 · 못 연 문은 빼고)
   const ahead = () => exits().filter(x => x.e.a === st.at && !x.e.walked && !x.e.stuck);
   // 지금 저절로 움직이면 안 되는 때: 걷는 중 · 전투 · 문 열기 · 창이 떠 있음
-  const busy = () => cutscene || !!walk || FIGHT.on || PREPUI.active || REWARDUI.active || CHECKUI.active || !!($('crawlscene') || $('dicepick') || $('exitsign') || $('csheet')) || !!st.done;
+  const busy = () => cutscene || !!walk || FIGHT.on || PREPUI.active || REWARDUI.active || CHECKUI.active || GEARUI.active || !!($('crawlscene') || $('dicepick') || $('exitsign') || $('csheet')) || !!st.done;
   // 방 일이 끝났다: 새 길이 하나면 그리로, 둘 이상이면 갈림길 창. 새 길이 없으면 가 본 방으로 (앞으로만 — 길은 거꾸로 돌지 않는다)
   function autoNext() {
+    { const o = lootAt[st.at]; if (o && !st.here.loot) { st.here.loot = true; if (moveTo(o.x, o.y)) return; } } // 이 방에 놓인 장비부터 줍는다
     st.here.auto = true;
     const fresh = ahead().filter(x => !st.map.nodes[x.to].visited), opts = fresh.length ? fresh : exits().filter(x => x.e.a === st.at && !x.e.stuck);
     if (!opts.length) return;
@@ -174,7 +177,24 @@ const CRAWL = (() => {
   // 새 방에 들어서서 멈출 곳: 가운데까지 가지 않고 문에서 세 칸쯤 안쪽 (다음 길로 이어 걸을 때 덜 멈칫하게)
   const inside = ex => { const [cx, cy] = centerOf(ex.to), [dx, dy] = ex.path[ex.path.length - 1], L = Math.hypot(cx - dx, cy - dy), k = Math.min(1, 3 / (L || 1)); return [dx + (cx - dx) * k, dy + (cy - dy) * k]; };
   const purse = { gold: () => st.gold, pay: n => { st.gold -= n; } }; // 운명판 다시 굴리기 값 (fight.js)
+  // ── 방에 놓인 장비: 보물 방의 상자 · 바닥에 떨어진 장비 (2026-11-19). 다가가면 열고 → 물건 정보 → 「누구에게」 또는 가방 (js/app/gear_ui.js) ──
+  // 처음 들어선 방에서 한 번 굴린다. 적이 있는 방이면 싸움이 끝난 뒤에 걸어간다 (autoNext)
+  const lootAt = {}, P_FLOOR = 0.12; // 바닥 장비가 있을 확률 (입구 · 우두머리 방 빼고, 시험값)
+  function placeLoot() {
+    const n = st.map.nodes[st.at]; if (!n || n.lootDone) return; n.lootDone = true;
+    const f = G.S.w.fantasy, chest = n.type === 'treasure', ds = chest ? G.Gear.drops(st.floor, 'treasure', Math.random, f, R.party) : n.type !== 'start' && n.type !== 'boss' && Math.random() < P_FLOOR ? [G.Gear.roll(st.floor, 'fight', Math.random, f, R.party)].filter(Boolean) : [];
+    if (!ds.length) return;
+    const [cx, cy] = centerOf(st.at), spot = [[1.5, -1], [-1.5, 1], [1.5, 1], [-1.5, -1], [0, 0]].map(([dx, dy]) => [Math.round(cx + dx), Math.round(cy + dy)]).find(([x, y]) => roomAt[TI(x, y)] === st.at && walkable(TI(x, y))) || [cx, cy];
+    const o = lootAt[st.at] = { kind: chest ? 'chest' : 'drop', x: spot[0], y: spot[1], ds };
+    if (chest) { o.ent = { kind: 'obj', chest: true, t: 'x_chest', x: o.x, y: o.y, s: 0.9 }; R.chests.push(o.ent); G.Fantasy.refreshEnts(R); }
+  }
+  function openLoot(o) {
+    delete lootAt[st.at]; if (o.ent) { R.chests = R.chests.filter(c => c !== o.ent); G.Fantasy.refreshEnts(R); }
+    st.log.push({ t: `${o.kind === 'chest' ? '상자' : '바닥'}: ${o.ds.map(d => G.Gear.info(d).n).join(' · ')}.`, c: 'good' }); say(); showMarks();
+    GEARUI.found(o.ds, o.kind === 'chest' ? '상자' : '떨어진 장비', null);
+  }
   function arrived() {
+    placeLoot();
     document.body.dataset.room = st.at; document.body.dataset.moves = (+(document.body.dataset.moves || 0) + 1);
     if (st.combat) { const c = st.combat; st.log.push({ t: `전투 ${c.rounds.length}라운드 — ${c.win ? '이겼다' : '졌다'}.` }); st.combat = null; }
     // 야영 · 상인은 구조물로: 다가가면 연다
@@ -195,6 +215,7 @@ const CRAWL = (() => {
   function scene() {
     const s = st.scene, box = document.createElement('div'); box.id = 'crawlscene';
     box.innerHTML = `<h3>${esc(s.title)}</h3><p>${esc(s.text || '')}</p>` + s.choices.map((c, i) => `<button data-i="${i}"${c.off && c.off() ? ' disabled' : ''}>${esc(c.n)}${c.p != null && c.p < 1 ? ` <i>${Math.round(c.p * 100)}%</i>` : ''}${c.who ? ` <small>${esc(c.who)}</small>` : ''}${c.sub ? ` <small>${esc(c.sub)}</small>` : ''}</button>`).join('');
+    GEARUI.shopHook(box, s, st, R.party); // 상인 · 야영지: 「장비」 줄 (js/app/gear_ui.js)
     box.onclick = ev => {
       const b = ev.target.closest('button'); if (!b || b.disabled) return; box.remove();
       const kind = s.kind, at = st.at, ch = s.choices[+b.dataset.i];
@@ -296,7 +317,7 @@ const CRAWL = (() => {
     tally.fights++; if (type === 'elite') tally.elites++; if (type === 'boss') { tally.boss = true; if (st.floor % 2 === 0) tally.bossFloor = st.floor; }
     const xp = R.party.filter(p => p.merc).map(p => ({ p, lv0: lvSnap?.find(s => s.p === p)?.lv ?? p.merc.lv, lv: p.merc.lv, xp: p.merc.xp, need: G.Guild.needOf(p.merc) }));
     st.log.push({ t: `전투에서 이겼다 (${F.round}라운드). 금화 ${gold}${loot.length ? ' · ' + loot.map(l => `${l.name} ${l.n}`).join(' · ') : ''}.` }); say();
-    REWARDUI.show({ title: `${n.g.label} — 이겼다 (${F.round}라운드)`, gold, xp, loot, big: type === 'fight' ? null : G.Reward.bigOffer(f, R.party, type), type, f }, () => {
+    REWARDUI.show({ title: `${n.g.label} — 이겼다 (${F.round}라운드)`, gold, xp, loot, gear: G.Gear.drops(st.floor, type, Math.random, f, R.party).map(d => G.Gear.take(f, d, st.floor)), big: type === 'fight' ? null : G.Reward.bigOffer(f, R.party, type), type, f }, () => {
       refreshHP();
       if (type === 'boss') {
         if (RUN.ZONES.some(z => st.floor + 1 >= z.floors[0] && st.floor + 1 <= z.floors[1])) { st.log.push({ t: `${n.g.name}가 쓰러졌다. 아래로 내려가는 계단이 있다.` }); if (st.floor % 2) return descend(); RUN.campsite(st, RUN.zone(st.floor).n); say(); PMAP.draw(); return scene(); } // 구역의 끝이면 야영지에서 쉬고 내려간다
@@ -310,7 +331,7 @@ const CRAWL = (() => {
   function descend() {
     const o = st; st = RUN.newRun(o.seed + (o.floor + 1) * 977, o.party.map(m => m.cls), o.floor + 1);
     st.party = o.party; st.gold = o.gold; st.items = o.items; st.log = o.log.concat(st.log);
-    for (const k in deferred) delete deferred[k]; clearMarks(); closeSign(); walk = null; nearKey = null;
+    for (const k in deferred) delete deferred[k]; for (const k in lootAt) delete lootAt[k]; clearMarks(); closeSign(); walk = null; nearKey = null;
     R.mons = []; R.chests = []; R.fields = []; layFloor(); G.Fantasy.refreshEnts(R);
     PMAP.attach(st); say(); showMarks(); document.body.dataset.room = st.at; document.body.dataset.depth = st.floor;
   }
@@ -343,8 +364,11 @@ const CRAWL = (() => {
       { const [x, y] = centerOf(st.at); r.party.forEach((p, i) => { p.x = x - 0.6 * i; p.y = y + 0.3 * i; p._dx = p._rx = p.x; p._dy = p._ry = p.y; }); }
       openRoom(st.at); refreshSeen(); doorTiles = doorsOf();
       canvas.addEventListener('pointerup', onTap);
-      PMAP.attach(st); say(); showMarks(); document.body.dataset.room = st.at; FIGHT.dicePick(unl, Object.fromEntries(G.Reward.UNLOCKS.map(u => [u.id, u.at])));
+      PMAP.attach(st); say(); showMarks(); document.body.dataset.room = st.at; // 들어설 때 특수 주사위를 고르지 않는다 (2026-11-19 뺐다 — 주사위는 사람마다 가진 것이다. 시험용 ?dice=gamble,doom은 남긴다)
+      if (q.get('dice')) FIGHT.dicePick();
       autoN = +q.get('auto') || 0;
+      if (q.get('loot')) { const n = st.map.nodes[st.at], f0 = G.S.w.fantasy, [cx, cy] = centerOf(st.at), chest = q.get('loot') === 'chest', o = lootAt[st.at] = { kind: chest ? 'chest' : 'drop', x: Math.round(cx + 2), y: Math.round(cy), ds: [G.Gear.roll(+q.get('floor') || 1, 'elite', Math.random, f0, R.party)].filter(Boolean) }; n.lootDone = true; if (chest) { o.ent = { kind: 'obj', chest: true, t: 'x_chest', x: o.x, y: o.y, s: 0.9 }; R.chests.push(o.ent); G.Fantasy.refreshEnts(R); } showMarks(); } // 시험용 ?loot=chest|drop: 입구 방에 상자 · 떨어진 장비
+      if (q.get('gear')) GEARUI.found(Array.from({ length: +q.get('gear') || 1 }, (_, i) => G.Gear.roll(+q.get('floor') || 1, i ? 'elite' : 'boss', Math.random, G.S.w.fantasy, R.party)).filter(Boolean), '시험 장비', null); // 시험용 ?gear=N: 입구에서 장비 N개
       // 시험용 ?ev=사건 이름 · ?ev=campsite: 입구에서 그 사건(야영지)을 바로 연다
       if (q.get('ev') === 'campsite') { RUN.campsite(st, RUN.zone(st.floor).n); scene(); } // 구역 끝 야영지
       else if (q.get('ev')) { const ev = RUN.EVENTS.find(x => x.id === q.get('ev')); if (ev) { st.scene = { kind: 'event', title: ev.t, text: ev.d, choices: RUN.eventScene(st, st.map.nodes[st.at], ev.id) }; scene(); } }
@@ -390,6 +414,6 @@ const CRAWL = (() => {
       // ?step=N: 첫 단추를 N번 눌러 다음 창으로 (캡처용)
       let k = 0; const n = +q.get('step') || 0, tick = () => { if (k++ >= n) return; const b = $('reward')?.querySelector('.rw-cards button, .rw-go'); if (b) b.click(); setTimeout(tick, 250); }; setTimeout(tick, 400);
     },
-    get st() { return st; },
+    get st() { return st; }, refreshHP, // refreshHP: 장비를 바꾼 뒤 최대 체력을 다시 (js/app/gear_ui.js)
   };
 })();

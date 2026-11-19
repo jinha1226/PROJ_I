@@ -63,7 +63,7 @@ const TestFloor = (() => {
   // picks (탐사 층): 선술집에서 고른 사람들(첫 사람이 앞장) 또는 직업 이름들 — 판마다 새 모험가, 1레벨
   function world(kind = 'floor', map0 = null, picks = null) {
     G.newState();
-    const f = G.S.w.fantasy, adopt = p => (typeof p === 'string' ? G.Party.trim(G.Guild.make(f, p, { lv: 1 })) : { ...p, uid: f.nextUid = (f.nextUid || 0) + 1, lv: 1, xp: 0 });
+    const f = G.S.w.fantasy, adopt = p => (typeof p === 'string' ? G.Party.forge(G.Party.trim(G.Guild.make(f, p, { lv: 1, ab: G.Party.stdAb(p) }))) : { ...p, uid: f.nextUid = (f.nextUid || 0) + 1, lv: 1, xp: 0 });
     if (picks && typeof picks[0] !== 'string') f.leader = { ...adopt(picks[0]), lead: true };
     const L = G.Guild.leader(f);
     const lv = kind === 'crawl' ? 1 : 3; // 탐사 층은 1레벨에서 시작해 전투로 큰다 (설계 5-12) · 시험 장면은 3레벨

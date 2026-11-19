@@ -23,6 +23,16 @@
   const hurt0 = G.Fantasy.hurt, hurtMember0 = G.Fantasy.hurtMember; // 화염 피해를 입은 자리의 기름이 타오른다
   G.Fantasy.hurt = function (f, rt, m, dmg, src, from) { const ty = G.Foe.dtype, r = hurt0.call(this, f, rt, m, dmg, src, from); if (ty === 'fire' && rt?.terrain?.length) G.Feed.push(TR.fireAt(rt, m, io(f, rt))); return r; };
   G.Fantasy.hurtMember = function (f, rt, p, dmg, mo) { const ty = G.Foe.dtype, r = hurtMember0.call(this, f, rt, p, dmg, mo); if (ty === 'fire' && rt?.terrain?.length) G.Feed.push(TR.fireAt(rt, p, io(f, rt))); return r; };
+  // 연계 (2026-11-19): 동료가 깔아 둔 것 덕에 이점을 얻거나 암습이 터지면 사건 줄에 알린다 (규칙은 그대로 — 보이게만)
+  const WHY = [['prone', '넘어짐'], ['restrained', '속박'], ['stunned', '기절'], ['paralyzed', '마비'], ['unconscious', '의식 없음']];
+  const whyAdv = tg => { for (const [k, n] of WHY) if (G.Dnd.has(tg, k)) return n; if (tg.helped) return '돕기'; if (G.Dnd.bsum(tg, 'hitAdv') > 0) return '빛남'; return null; };
+  const attackRoll0 = G.Dnd.attackRoll;
+  G.Dnd.attackRoll = function (att, tg, critAt) { const why = att?.merc && tg && tg.kind === 'mon' ? whyAdv(tg) : null, r = attackRoll0.call(this, att, tg, critAt); if (why && r && r.adv > 0) G.Feed.push({ k: 'link', who: att, tg, set: why, use: '이점' }); return r; };
+  const sneakDmg0 = G.Dnd.sneak;
+  G.Dnd.sneak = function (rt, a, tg, adv) { const n = sneakDmg0.call(this, rt, a, tg, adv); if (n > 0) G.Feed.push({ k: 'link', who: a, tg, set: adv > 0 ? whyAdv(tg) || '이점' : '곁의 동료', use: `암습 +${n}d6` }); return n; };
+  // 보조 손의 둘째 경량 무기 (G.Gear.off): 쌍수 전투 방식이 없어도 추가 행동으로 한 번 더 친다 (SRD 경량 속성 — 피해에 능력치는 없다, options.js)
+  const active0 = G.Guild.active;
+  G.Guild.active = function (m) { const l = active0.call(this, m); return G.Reward.on && m.eq?.w2 && !l.includes('fs_twf') ? l.concat('fs_twf') : l; };
   // 문 앞 준비의 기습 (G.Encounter.applyPrep → rt.prepSurprise): 옛 엔진의 '들키지 않고 다가갔나' 판정 대신 쓴다. 싸움이 시작되면 지운다
   const sneak0 = G.Pool.sneak;
   G.Pool.sneak = function (rt, list) { if (rt.prepSurprise != null) { const v = rt.prepSurprise; rt.prepSurprise = null; return v; } return sneak0.call(this, rt, list); };
@@ -34,9 +44,7 @@
   const grow0 = G.Guild.grow;
   G.Guild.grow = function (m) {
     if (!G.Reward.on) return grow0.call(this, m);
-    m.skManual = true;
-    if (!G.Reward.caster(m)) m.abPend = (m.abPend || 0) + 1;
-    else if ((m.skills || []).filter(k => G.Guild.spLv(k) != null).length >= G.Party.CAP) m.swapPend = (m.swapPend || 0) + 1; // 5칸이 다 찼다: 바꾸기 기회
+    m.skManual = true; G.Reward.levelUp(m); // SRD대로: 새로 얻은 것 · 그 레벨에 고를 것(능력치 향상 · 전투 방식 · 영창 · 초마법 · 주문)을 줄 세운다
   };
   // 파티 최대 5명 (G.Party): 옛 엔진의 출전 칸(단장 + 3)을 단장 + 4로
   const slots0 = G.Fantasy.slots;

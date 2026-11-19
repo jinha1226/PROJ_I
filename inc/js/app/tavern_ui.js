@@ -81,6 +81,7 @@ const TAVERNUI = (() => {
     box.innerHTML = `<header><h2>선술집</h2><div class="tv-res"><span class="chip">소문 ${rumor}</span><span class="chip tv-seat"></span></div></header>` +
       `<div class="tv-body"><div class="tv-scene"><canvas></canvas><div class="tv-who"></div></div>` +
       `<aside class="tv-side"><dl class="tv-info">${nx ? `<dt>다음 자리</dt><dd>${nx}층 우두머리 처치</dd>` : ''}${nl ? `<dt>새 직업</dt><dd>${nl[0]}층 도달 · ${nl[1].map(clsN).map(esc).join(' · ')}</dd>` : ''}</dl>` +
+      `<div class="tv-links"></div>` +
       (m.wall.length ? `<h4>명패</h4><ul class="tv-wall">${m.wall.map(w => `<li><b>${esc((w.names || []).join(' · '))}</b><small>${w.floor}층${w.win ? ' 돌파' : ''}</small></li>`).join('')}</ul>` : '') + `</aside></div>` +
       `<div class="tv-sheet" hidden></div><button class="tv-go"></button>`;
     const scene = box.querySelector('.tv-scene'), cv = scene.querySelector('canvas'), x = cv.getContext('2d'), who = box.querySelector('.tv-who'), sheetEl = box.querySelector('.tv-sheet');
@@ -96,8 +97,12 @@ const TAVERNUI = (() => {
     function marks() {
       const two = new Set(P.map(p => p.y)).size > 2 || (P.length > 1 && Math.abs(P[0].y - P[P.length - 1].y) > 30); // 두 줄로 서면 이름표는 이름만 (서로 가리지 않게)
       who.innerHTML = night.map((g, i) => { const k = picks.indexOf(i), p = P[i];
-        return `<button class="tv-g${k >= 0 ? ' on' : ''}${cur === i ? ' cur' : ''}" data-i="${i}" style="left:${(100 * p.x / W).toFixed(2)}%;top:${(100 * (p.y - (tall[i] || 40) - 2) / H).toFixed(2)}%;width:${(100 * 30 / W).toFixed(2)}%;height:${(100 * ((tall[i] || 40) + 4) / H).toFixed(2)}%"><span class="tv-nm">${k >= 0 ? `<em>${k === 0 ? '앞장' : k + 1}</em>` : ''}${esc(g.name)}${two ? '' : `<small>${esc(clsN(g.cls))}</small>`}</span></button>`; }).join('');
+        return `<button class="tv-g${k >= 0 ? ' on' : ''}${cur === i ? ' cur' : ''}" data-i="${i}" style="left:${(100 * p.x / W).toFixed(2)}%;top:${(100 * (p.y - (tall[i] || 40) - 2) / H).toFixed(2)}%;width:${(100 * 30 / W).toFixed(2)}%;height:${(100 * ((tall[i] || 40) + 4) / H).toFixed(2)}%"><span class="tv-nm">${k >= 0 ? `<em>${k === 0 ? '앞장' : k + 1}</em>` : ''}${esc(g.name)}${two ? '' : `<small>${esc(clsN(g.cls))}${g.lean ? ' · ' + esc(g.lean) : ''}</small>`}</span></button>`; }).join('');
       box.querySelector('.tv-seat').textContent = `자리 ${picks.length}/${n}`;
+      // 고른 파티의 조합: 주사위 기호(어떤 조합이 잘 맞나)와 연계(누가 깔고 누가 터뜨리나)
+      { const L = G.Party.links(picks.map(i => night[i])), SY = [['A', '검', 'atk'], ['D', '방', 'def'], ['R', '주', 'arc'], ['H', '빛', 'holy']], tot = SY.reduce((a, [k]) => a + L.dice[k], 0), top = SY.slice().sort((a, b) => L.dice[b[0]] - L.dice[a[0]])[0];
+        box.querySelector('.tv-links').innerHTML = !picks.length ? '' : `<h4>파티 조합</h4><div class="tv-dice">${SY.filter(([k]) => L.dice[k]).map(([k, n, c]) => `<span class="s-${c}"><i class="sy s-${c}">${n}</i>${Math.round(100 * L.dice[k] / tot)}%</span>`).join('')}<small>${G.Dice.SYM[top[2]].fx}이 잘 맞는다</small></div>` +
+          (L.links.length ? `<ul class="tv-lk">${L.links.map(l => `<li><b>${esc(l.n)}</b><span>${esc(l.set.join(' · '))} → ${esc(l.use.join(' · '))}</span></li>`).join('')}</ul>` : `<p class="tv-nolk">${picks.length < 2 ? '둘 이상 고르면 연계가 보인다' : '연계 없음'}</p>`); }
       const go = box.querySelector('.tv-go'); go.disabled = !picks.length; go.textContent = picks.length ? `출발 (${picks.length}명)` : `출발 (0/${n})`;
     }
     function paint() {
@@ -122,9 +127,11 @@ const TAVERNUI = (() => {
       sheetEl.hidden = false;
       sheetEl.innerHTML = `<div class="tv-hd"><canvas class="tv-face" width="30" height="40"></canvas><div><b>${esc(s.name)}</b><small>${esc(s.cls)} · ${esc(s.sp)} · ${s.lv}레벨</small><small>탐사 — ${esc(s.role)}</small></div><button class="tv-x" aria-label="닫기">✕</button></div>` +
         `<div class="tv-st"><span>체력<b>${s.hp}</b></span><span>AC<b>${s.ac}</b></span>${s.ab.map(a => `<span>${esc(a.n)}<b>${a.v}</b><i>${a.mod}</i></span>`).join('')}</div>` +
+        (s.die ? `<h5>주사위</h5><div class="tv-die"><b>${esc(s.die.n)}</b><small>${esc(s.die.lean)}</small><div class="tv-faces">${[...s.die.sym].map((c, i) => `<i class="f-${c === '.' ? 'x' : c === '*' ? 'w' : c}" title="${i + 1}">${{ A: '검', D: '방', R: '주', H: '빛', '*': '★', '.': '' }[c]}</i>`).join('')}</div></div>` : '') +
         `<h5>기본 공격</h5><ul class="tv-sk">${li(s.weapon)}<li><b>${esc(s.armor)}</b><small>방어구</small></li></ul>` +
         (s.skills.length ? `<h5>기술 ${s.skills.length}/${G.Party.CAP}</h5><ul class="tv-sk">${s.skills.map(o => li(o)).join('')}</ul>` : '') +
-        (s.traits.length + s.spTraits.length ? `<h5>특성</h5><ul class="tv-sk">${s.traits.map(o => li(o, '직업')).join('')}${s.spTraits.map(o => li(o, s.sp)).join('')}</ul>` : '') +
+        (s.feats.length ? `<h5>직업 기능</h5><ul class="tv-sk">${s.feats.map(o => li(o, `${o.lv}레벨`)).join('')}</ul>` : '') +
+        (s.traits.length + s.spTraits.length ? `<h5>특성</h5><ul class="tv-sk">${s.traits.filter(o => !s.feats.some(x => x.n === o.n)).map(o => li(o, '고른 것')).join('')}${s.spTraits.map(o => li(o, s.sp)).join('')}</ul>` : '') +
         `<button class="tv-take${k >= 0 ? ' out' : ''}"${full ? ' disabled' : ''}>${k >= 0 ? '뺀다' : full ? '자리 없음' : '데려간다'}</button>`;
       face();
     }

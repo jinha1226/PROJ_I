@@ -273,3 +273,68 @@ body[data-fstage] #fatehud, body[data-fstage] #hud .pm-die { visibility:hidden; 
 #checkroll .ck-txt { min-height:40px; margin:0; color:#cdbb98; line-height:1.5; opacity:0; transition:opacity .3s .2s; } #checkroll.done .ck-txt { opacity:1; }
 #checkroll .ck-go { min-height:44px; padding:0 28px; border-radius:var(--r); border:1px solid var(--gold); background:var(--btn-on); color:var(--ink); font:700 15px "Noto Sans KR",sans-serif; opacity:0; pointer-events:none; transition:opacity .3s .3s; } #checkroll.done .ck-go { opacity:1; pointer-events:auto; }
 @media (prefers-reduced-motion: reduce) { #checkroll, #checkroll * { animation:none !important; transition:none !important; } }
+
+/* 연계 띠 (fight.js link): 동료가 깐 것을 터뜨렸을 때 */
+#fatebanners .fb.link { --hc:#ffd76a; font-size:15px; padding:7px 16px; }
+
+/* 선술집: 파티 조합(주사위 기호 비율 · 연계)과 상태창의 주사위 */
+#tavern .tv-links h4 { margin:14px 0 6px; }
+#tavern .tv-dice { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; font-size:13px; }
+#tavern .tv-dice span { display:inline-flex; align-items:center; gap:4px; } #tavern .tv-dice small { color:var(--dim); font-size:12px; }
+#tavern .tv-lk { list-style:none; margin:8px 0 0; padding:0; display:grid; gap:4px; }
+#tavern .tv-lk li { display:grid; gap:1px; padding:6px 10px; border-left:3px solid #ffd76a; background:rgba(0,0,0,.28); font-size:13px; }
+#tavern .tv-lk span { font-size:12px; color:#cdb892; } #tavern .tv-nolk { margin:8px 0 0; font-size:12px; color:var(--dim); }
+#tavern .tv-die { display:grid; grid-template-columns:auto 1fr; align-items:baseline; gap:4px 8px; padding:8px 10px; background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:7px; }
+#tavern .tv-die b { font-size:13px; } #tavern .tv-die small { font-size:11px; color:var(--dim); }
+#tavern .tv-faces { grid-column:1 / -1; display:grid; grid-template-columns:repeat(10, 1fr); gap:2px; }
+#tavern .tv-faces i { display:grid; place-items:center; height:20px; border-radius:3px; font:700 10px "Noto Sans KR",sans-serif; font-style:normal; color:#fff; background:#3a3440; }
+#tavern .tv-faces .f-A { background:#b0483c; } #tavern .tv-faces .f-D { background:#3f74b0; } #tavern .tv-faces .f-R { background:#7d58b8; } #tavern .tv-faces .f-H { background:#b89a3a; } #tavern .tv-faces .f-w { background:#e8c860; color:#2b1d14; } #tavern .tv-faces .f-x { background:#26222a; }
+
+/* 레벨업: 새로 얻은 것 목록 · 「전부 보기」(직접 고르기) */
+#reward .rw-new-list { list-style:none; margin:8px 0 12px; padding:0; display:grid; gap:5px; }
+#reward .rw-new-list li { display:grid; gap:1px; padding:7px 10px; border-left:3px solid var(--gold); background:rgba(0,0,0,.28); }
+#reward .rw-new-list b { font-size:14px; } #reward .rw-new-list span { font-size:12px; color:var(--dim); line-height:1.4; }
+#reward .rw-none { color:var(--dim); margin:8px 0 12px; }
+#reward .rw-all { display:block; margin:10px auto 0; min-height:36px; padding:0 14px; background:none; border:1px solid var(--line); border-radius:99px; color:var(--dim); font:500 13px "Noto Sans KR",sans-serif; cursor:pointer; }
+#reward .rw-cards.all { max-height:46dvh; overflow-y:auto; flex-wrap:wrap; }
+#reward .rw-cards.all button { flex:1 1 150px; }
+
+/* ── 장비 (js/app/gear_ui.js): 「누구에게」 · 칸 고르기 · 가방 · 상인의 장비 창(#gearwin), 시트의 장비 구역(.gs), 위 바의 가방 칩 ── */
+#gearwin { position:fixed; left:0; right:0; bottom:0; z-index:24; max-height:78dvh; overflow:auto; box-sizing:border-box; padding:18px 14px calc(14px + var(--safe-b)); background:var(--panel); border:1px solid var(--line); border-bottom:0; border-radius:10px 10px 0 0; box-shadow:0 -6px 24px rgba(0,0,0,.55); color:var(--ink); font:14px "Noto Sans KR",sans-serif; }
+#gearwin h3 { margin:0 0 8px; font:700 17px "Noto Sans KR",sans-serif; letter-spacing:-.2px; } #gearwin h3 small { font-weight:400; font-size:12px; color:var(--dim); margin-left:6px; }
+#gearwin button { font:inherit; color:inherit; cursor:pointer; min-height:44px; border-radius:var(--r); border:1px solid var(--line); background:rgba(0,0,0,.3); }
+#gearwin button:disabled { opacity:.4; cursor:default; }
+#gearwin .gw-card { padding:9px 11px; border:1px solid var(--line); border-left-width:3px; border-radius:8px; background:rgba(0,0,0,.28); --rc:var(--line); border-left-color:var(--rc); }
+#gearwin .gw-card b { font-size:15px; } #gearwin .gw-card b i { font-style:normal; margin-right:5px; } #gearwin .gw-card small { display:block; margin-top:1px; font-size:11px; color:var(--rc2, var(--dim)); }
+#gearwin .gw-card ul { list-style:none; margin:5px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:3px 5px; } #gearwin .gw-card li { padding:1px 7px; border-radius:99px; background:rgba(255,255,255,.07); font-size:12px; color:#d8ccb4; }
+#gearwin .r1, #csheet .gs-row.r1 { --rc:#5fae6a; --rc2:#8fd49a; } #gearwin .r2, #csheet .gs-row.r2 { --rc:#4a8fd8; --rc2:#8fbcf0; } #gearwin .r3, #csheet .gs-row.r3 { --rc:#a070e0; --rc2:#c4a4f0; } #gearwin .r4, #csheet .gs-row.r4 { --rc:#e8a040; --rc2:#f4c478; }
+#gearwin .gw-who { display:grid; gap:5px; margin:10px 0; }
+#gearwin .gw-who button { display:grid; grid-template-columns:auto 1fr; align-items:baseline; gap:1px 8px; padding:7px 11px; text-align:left; }
+#gearwin .gw-who b { font-size:14px; } #gearwin .gw-who small { font-size:11px; color:var(--dim); } #gearwin .gw-who span { grid-column:1 / -1; font-size:12px; color:#cdb892; }
+#gearwin .gw-who button:not(:disabled):hover, #gearwin .gw-opt button:not(:disabled):hover { background:var(--btn-on); border-color:var(--gold); }
+#gearwin .gw-go { width:100%; margin-top:8px; background:var(--btn-on); border-color:var(--gold); font-weight:700; }
+#gearwin .gw-cur { display:grid; grid-template-columns:auto 1fr; align-items:baseline; gap:1px 8px; padding:7px 11px; margin-bottom:8px; border:1px dashed var(--line); border-radius:8px; }
+#gearwin .gw-cur small { color:var(--dim); font-size:11px; } #gearwin .gw-cur span { grid-column:1 / -1; font-size:12px; color:#cdb892; }
+#gearwin .gw-list { display:grid; gap:8px; } #gearwin .gw-opt { display:grid; gap:4px; } #gearwin .gw-opt.off .gw-card { opacity:.5; }
+#gearwin .gw-opt button { padding:0 12px; text-align:center; } #gearwin .gw-opt button small { color:#cdb892; margin-left:6px; font-size:12px; }
+#gearwin .gw-none { margin:6px 0; color:var(--dim); font-size:13px; }
+#gearwin .gw-bar { display:flex; gap:6px; margin-top:8px; } #gearwin .gw-bar button { flex:1; margin-top:0; } #gearwin .gw-bar .gw-off { flex:0 0 34%; }
+#csheet .gs { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+#csheet .gs-row { display:grid; grid-template-columns:1fr; gap:0; min-height:52px !important; padding:5px 9px !important; text-align:left; border-left:3px solid var(--rc, var(--line)) !important; }
+#csheet .gs-row small { font-size:10px; color:var(--dim); } #csheet .gs-row b { font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } #csheet .gs-row span { font-size:11px; color:#cdb892; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-height:14px; }
+#csheet .gs-row.empty b { color:var(--mute); font-weight:400; } #csheet .gs-row:disabled { opacity:.75; cursor:default; }
+#csheet h4 small { font-weight:400; font-size:11px; color:var(--dim); margin-left:6px; }
+#hud .chip.c-bag { cursor:pointer; border-color:var(--gold); pointer-events:auto; }
+#crawlscene .gshop { display:flex; align-items:center; gap:6px; min-height:44px; margin:5px 0 0; padding:0 10px; border-radius:7px; border:1px solid var(--gold); background:var(--btn-on); cursor:pointer; } #crawlscene .gshop small { color:#cdb892; }
+@media (min-width: 900px) { #gearwin { left:auto; right:16px; bottom:calc(var(--pbar-h) + 12px); width:430px; max-height:calc(100dvh - var(--hud-h) - var(--pbar-h) - 40px); border-radius:10px; border-bottom:1px solid var(--line); box-shadow:0 6px 28px rgba(0,0,0,.6); } }
+#csheet .gs-row { background:rgba(0,0,0,.3) !important; color:var(--ink) !important; border:1px solid var(--line); border-radius:7px; font:inherit; cursor:pointer; }
+#csheet .gs-row:not(:disabled):hover { background:var(--btn-on) !important; }
+
+/* 시트의 장비: 세 묶음 — 무기 · 방어구(갑옷 + 방패) · 장신구 둘 */
+.gs3 { display:grid; gap:6px; }
+.gs3 .gs-g { display:grid; grid-template-columns:54px 1fr; gap:4px 8px; align-items:start; }
+.gs3 .gs-g > small { grid-row:1 / span 2; padding-top:9px; font-size:12px; color:var(--dim); }
+.gs3 .gs-row { grid-column:2; display:grid; gap:1px; width:100%; min-height:44px; padding:6px 10px; text-align:left; background:rgba(0,0,0,.28); border:1px solid var(--line); border-left-width:3px; border-radius:7px; color:var(--ink); font:inherit; cursor:pointer; }
+.gs3 .gs-row b { font-size:13px; } .gs3 .gs-row span { font-size:11px; color:var(--dim); line-height:1.35; }
+.gs3 .gs-row.empty b { color:var(--mute); font-weight:500; }
+.gs3 .gs-row.r1 { border-left-color:#5fb878; } .gs3 .gs-row.r2 { border-left-color:#4a8fd8; } .gs3 .gs-row.r3 { border-left-color:#a070e0; } .gs3 .gs-row.r4 { border-left-color:#e8a040; }
