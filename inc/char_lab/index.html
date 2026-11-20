@@ -529,7 +529,7 @@ const PXH = [32, 40, 48], PXFPS = { idle: 4, walk: 10, atk: 8, hit: 6 }, SETS = 
 for (const pre of ['rng', 'px']) { const S0 = SETS[pre] = { M: null, im: {} }; fetch(`px/${pre}_meta.json`).then(r => r.json()).then(d => { S0.M = d; }).catch(() => {}); for (const H of PXH) { const im = new Image(); im.src = `px/${pre}_H${H}.png`; S0.im[H] = im; } }
 const pxReady = () => { const S0 = SETS[outfit]; return S0.M && PXH.every(H => S0.im[H].complete && S0.im[H].naturalWidth); };
 function pxDraw(c, H, key, t, x, y, k, flip, tint) { // x, y = 발 · k = 배율
-  const M = SETS[outfit].M[H], r = M.rows.indexOf(key), n = M.n[key], f = Math.floor(t * PXFPS[key]) % n;
+  const M = SETS[outfit].M[H], r = M.rows.indexOf(key), n = M.n[key], f = Math.floor(t * (M.fps || PXFPS[key])) % n; // 원래 동작 길이 그대로 (초당 15장)
   c.save(); c.imageSmoothingEnabled = false; c.translate(Math.round(x), Math.round(y)); if (flip) c.scale(-1, 1);
   c.drawImage(SETS[outfit].im[H], f * M.w, r * M.h, M.w, M.h, -Math.round(M.w / 2) * k, -M.foot * k, M.w * k, M.h * k);
   if (tint) { c.globalCompositeOperation = 'source-atop'; } c.restore();
