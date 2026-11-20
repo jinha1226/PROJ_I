@@ -22,11 +22,11 @@
 <body>
 <h1>Quaternius 베이스 캐릭터 → 픽셀 (쓰고 버리는 시험)</h1>
 <p>CC0 베이스 캐릭터(남자 몸 · 머리털 · 수염)에 같은 뼈대의 동작을 입혀 Blender에서 게임 시점(위 30° · 대각선)으로 평평한 색 + 외곽선을 8배로 렌더하고, <b>LAYERLAB 인형과 같은 규칙</b>(8×8 묶음 · 어두운 선 우선 · 1px 외곽선)으로 줄였습니다. 칼은 제가 붙였습니다. 배경은 실제 게임 화면에서 인물만 빼고 찍은 것입니다.</p>
-<div class="bar"><button data-m="idle" class="on">대기</button><button data-m="walk">걷기</button><button data-m="atk">칼 공격</button><button data-m="hit">맞기</button></div>
+<div class="bar"><button data-m="idle" class="on">대기</button><button data-m="walk">걷기</button><button data-m="atk">칼 공격</button><button data-m="hit">맞기</button> &nbsp; <button data-o="rng" class="on">레인저 옷 + 칼</button><button data-o="px">맨몸</button></div>
 <h2>실제 배경 위에서 (게임처럼 2배)</h2>
 <div class="row">
   <div><canvas id="now"></canvas><div class="cap">지금 (LAYERLAB 인형)</div></div>
-  <div><canvas id="pxscene"></canvas><div class="cap">시안 — 픽셀화한 3D 인물 넷 (키 40px)</div></div>
+  <div><canvas id="pxscene"></canvas><div class="cap">시안 — 픽셀화한 3D 인물 넷 (키 40px · 위 단추로 옷 바꾸기)</div></div>
 </div>
 <h2>키 32 · 40 · 48px × 동작 (4배)</h2>
 <canvas id="pxrow"></canvas>
@@ -525,14 +525,13 @@ function lineup(cv, list, cw, chh, t, z = 3, cols = list.length) {
 }
 
 // ── 픽셀화한 3D 인물 (px/px_H*.png: 줄 = 대기 · 걷기 · 칼 공격 · 맞기, 칸 = 프레임)
-const PXH = [32, 40, 48], PXS2 = {}, PXFPS = { idle: 4, walk: 10, atk: 8, hit: 6 };
-let PXM = null; fetch('px/px_meta.json').then(r => r.json()).then(d => { PXM = d; }).catch(() => {});
-for (const H of PXH) { const im = new Image(); im.src = `px/px_H${H}.png`; PXS2[H] = im; }
-const pxReady = () => PXM && PXH.every(H => PXS2[H].complete && PXS2[H].naturalWidth);
+const PXH = [32, 40, 48], PXFPS = { idle: 4, walk: 10, atk: 8, hit: 6 }, SETS = {}; let outfit = 'rng'; // rng = 판타지 옷(레인저) + 무기 팩 칼 · px = 맨몸 + 상자 칼
+for (const pre of ['rng', 'px']) { const S0 = SETS[pre] = { M: null, im: {} }; fetch(`px/${pre}_meta.json`).then(r => r.json()).then(d => { S0.M = d; }).catch(() => {}); for (const H of PXH) { const im = new Image(); im.src = `px/${pre}_H${H}.png`; S0.im[H] = im; } }
+const pxReady = () => { const S0 = SETS[outfit]; return S0.M && PXH.every(H => S0.im[H].complete && S0.im[H].naturalWidth); };
 function pxDraw(c, H, key, t, x, y, k, flip, tint) { // x, y = 발 · k = 배율
-  const M = PXM[H], r = M.rows.indexOf(key), n = M.n[key], f = Math.floor(t * PXFPS[key]) % n;
+  const M = SETS[outfit].M[H], r = M.rows.indexOf(key), n = M.n[key], f = Math.floor(t * PXFPS[key]) % n;
   c.save(); c.imageSmoothingEnabled = false; c.translate(Math.round(x), Math.round(y)); if (flip) c.scale(-1, 1);
-  c.drawImage(PXS2[H], f * M.w, r * M.h, M.w, M.h, -Math.round(M.w / 2) * k, -M.foot * k, M.w * k, M.h * k);
+  c.drawImage(SETS[outfit].im[H], f * M.w, r * M.h, M.w, M.h, -Math.round(M.w / 2) * k, -M.foot * k, M.w * k, M.h * k);
   if (tint) { c.globalCompositeOperation = 'source-atop'; } c.restore();
 }
 function pxScene(t) {
@@ -554,6 +553,7 @@ function pxRow(t) {
     c.fillStyle = '#c8b898'; c.font = '600 22px "Noto Sans KR", sans-serif'; c.textAlign = 'center'; c.fillText(`${H}px · ${NAMES[key]}`, X, Y + 9 * K + 14);
   }));
 }
+document.querySelectorAll('[data-o]').forEach(b => b.onclick = () => { outfit = b.dataset.o; document.querySelectorAll('[data-o]').forEach(x => x.classList.toggle('on', x === b)); });
 let t0 = performance.now();
 function frame() {
   const t = (performance.now() - t0) / 1000;
