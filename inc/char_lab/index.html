@@ -23,7 +23,7 @@
 <h1>던전에 맞춘 캐릭터 · 몬스터 시안 (쓰고 버리는 시험)</h1>
 <p>로우폴리 3D 모형을 게임 픽셀 크기로 직접 그렸습니다. 던전과 같은 시점(쿼터뷰 30°), 같은 빛(횃불 · 들고 다니는 등불, 빛 밖은 흑백), 같은 14단계 색 + 4×4 디더, 어두운 테두리를 씁니다. 배경은 실제 게임 화면(용의 둥지 시험 층)에서 인물만 빼고 찍은 것입니다.</p>
 
-<h2>Quaternius 베이스 캐릭터 → 복셀 (3배)</h2>
+<h2>Quaternius 베이스 캐릭터 → 복셀 (2배)</h2>
 <p>CC0 베이스 캐릭터(남자 몸 · 머리털 · 수염)에 같은 뼈대의 동작(대기 · 걷기 · 칼 공격 · 맞기)을 입혀 프레임마다 복셀로 쌓았습니다. 칼은 제가 붙였습니다. 줄마다 키가 24 · 36 · 48칸입니다 (던전 복셀은 한 칸에 6개). 아래 실제 배경 장면의 맨 앞 인물도 이것(36칸)입니다.</p>
 <canvas id="voxrow"></canvas>
 <h2>용 보스 — 실제 게임 (<a href="../index.html?scene=dragon" style="color:#f0c070">새 탭에서 열기</a>)</h2>
@@ -454,11 +454,12 @@ function dragon(t, pose) {
 }
 
 // ── Quaternius 복셀 인물 (hero_vox.json: 키별 · 동작별 프레임, 복셀 = x · y · z · r · g · b 바이트)
+const VOX_H = 2.5; // 복셀 인물 키 (월드 단위, 한 칸 = 2) — 다른 인물과 같게. 크기는 ZM으로
 let VOXD = null; fetch('hero_vox.json').then(r => r.json()).then(d => { VOXD = d; }).catch(() => {});
 const VCACHE = new Map(), VANIM = { idle: [4, 4], walk: [8, 10], atk: [6, 7], hit: [3, 5] };
 function voxFrame(H, key, i) {
   const id = H + key + i; if (VCACHE.has(id)) return VCACHE.get(id);
-  const F = VOXD[H].fr[key][i], b = Uint8Array.from(atob(F.d), c => c.charCodeAt(0)), vw = VOXD[H].v * 2.5 / 1.86, m = new Mesh(), map = new Map(), K3 = (x, y, z) => x | y << 8 | z << 16;
+  const F = VOXD[H].fr[key][i], b = Uint8Array.from(atob(F.d), c => c.charCodeAt(0)), vw = VOXD[H].v * VOX_H / 1.86, m = new Mesh(), map = new Map(), K3 = (x, y, z) => x | y << 8 | z << 16;
   for (let q = 0; q < b.length; q += 6) map.set(K3(b[q], b[q + 1], b[q + 2]), b[q + 3] << 16 | b[q + 4] << 8 | b[q + 5]);
   const c0 = F.w / 2, M = I();
   for (const [k, col] of map) {
@@ -485,7 +486,7 @@ const toW = (sx, sy) => { const a = sx / K, b = sy / (K * SIN); return [(a + b) 
 const flame = (sx, sy, z = 2.5) => { const p = toW(sx - CROP[0], sy - CROP[1] + z * COS * S); p[2] = z; return p; };
 const off = document.createElement('canvas'), ox = off.getContext('2d');
 function blit(ctx, img, x, y) { off.width = img.width; off.height = img.height; ox.putImageData(img, 0, 0); ctx.drawImage(off, x, y); }
-const ZM = 1.7; // 인물 배율 — 지금 인형 크기(한 칸 남짓)에 맞춤
+const ZM = 2.4; // 인물 배율 — 던전에 비해 크게 (사용자: 「캐릭터가 너무 작아」, 처음 1.7)
 function shadow(ctx, sx, sy, r) { ctx.fillStyle = 'rgba(0,0,0,.42)'; ctx.beginPath(); ctx.ellipse(Math.round(sx), Math.round(sy), r * S * ZM, r * S * SIN * ZM, 0, 0, Math.PI * 2); ctx.fill(); }
 
 function scene(cv, list, t) {
@@ -511,7 +512,7 @@ const party = (k = 0) => [
   { fn: voxHero(36), at: [830 + k, 478], face: .35, ph: 0 }, { fn: hero('dwarf', 'cleric'), at: [768 + k, 500], face: .2, ph: 1.3 },
   { fn: hero('elf', 'wizard'), at: [742 + k, 450], face: .4, ph: 2.1 }, { fn: hero('halfling', 'rogue'), at: [880 + k, 520], face: 0, ph: .7 },
 ];
-function boss(t) { scene(document.getElementById('boss'), [...party(), { fn: dragon, at: [950, 605], face: Math.PI * 1.0 + .25, ph: 0, w: 220, h: 190, sh: 2.2 }], t); }
+function boss(t) { scene(document.getElementById('boss'), [...party(), { fn: dragon, at: [1010, 660], face: Math.PI * 1.0 + .25, ph: 0, w: 220, h: 190, sh: 2.2 }], t); }
 function mobs(t) {
   scene(document.getElementById('mobs'), [...party(), { fn: goblin, at: [915, 545], face: Math.PI + .3, ph: .4 }, { fn: goblin, at: [880, 590], face: Math.PI + .1, ph: 1.9 },
     { fn: skeleton, at: [1000, 530], face: Math.PI + .4, ph: .9 }, { fn: rat, at: [815, 585], face: Math.PI - .2, ph: 2.4, sh: .5 },
@@ -542,11 +543,11 @@ let t0 = performance.now();
 function frame() {
   const t = (performance.now() - t0) / 1000;
   if (bg.complete && bg.naturalWidth) { boss(t); mobs(t); }
-  lineup(document.getElementById('heroes'), CLASS_KEYS.map(k => [CLS[k].n, hero(selSp.value, k)]), 80, 104, t, 3, 6);
-  lineup(document.getElementById('species'), SPEC_KEYS.map(k => [SPEC[k].n, hero(k, selCl.value)]), 80, 104, t, 3, 5);
-  lineup(document.getElementById('monsters'), MONS, 110, 96, t, 2);
-  lineup(document.getElementById('voxrow'), [24, 36, 48].flatMap(H => [['대기', 'idle'], ['걷기', 'walk'], ['칼 공격', 'atk'], ['맞기', 'hit']].map(([n, k]) => [H + '칸 · ' + n, voxHero(H, k)])), 80, 104, t, 3, 4);
-  lineup(document.getElementById('dragon'), [['붉은 성룡 (3×3칸)', dragon]], 330, 230, t, 2);
+  lineup(document.getElementById('heroes'), CLASS_KEYS.map(k => [CLS[k].n, hero(selSp.value, k)]), 100, 140, t, 2, 6);
+  lineup(document.getElementById('species'), SPEC_KEYS.map(k => [SPEC[k].n, hero(k, selCl.value)]), 100, 140, t, 2, 5);
+  lineup(document.getElementById('monsters'), MONS, 140, 130, t, 2, 3);
+  lineup(document.getElementById('voxrow'), [24, 36, 48].flatMap(H => [['대기', 'idle'], ['걷기', 'walk'], ['칼 공격', 'atk'], ['맞기', 'hit']].map(([n, k]) => [H + '칸 · ' + n, voxHero(H, k)])), 110, 140, t, 2, 4);
+  lineup(document.getElementById('dragon'), [['붉은 성룡 (3×3칸)', dragon]], 460, 320, t, 2);
   setTimeout(() => requestAnimationFrame(frame), 90);
 }
 nowImg.onload = now; frame();
