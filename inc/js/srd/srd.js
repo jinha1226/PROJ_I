@@ -219,7 +219,7 @@
     // ── 드루이드 ──
     sr_pflame: { when: W.seen, run(c, x) { const o = pick(x); G.fx(x.rt, { k: 'proj', key: 'fx_flame', x: c.x, y: c.y, x2: o.x, y2: o.y, t: 0.25 }); strike(x, c, o, tierS(c, [1, 8])); } },
     sr_entangle: { res: SL(1), base: 1, conc: true, when: W.seen, run(c, x) { const q = AREA.cast(x, c, 'sr_entangle', { shape: 'square', ft: 20 }); if (!q) return false; ring(x, q.t, 2, '#7fcf8a'); AREA.cond(x, c, q.list.filter(o => o !== c), 'str', 'restrained', 10); G.Terrain.add(x.rt, { x: q.t.x, y: q.t.y, r: 2, sq: true, until: G.S.runTime + R6(10), by: c, conc: true }); } }, // 휘감기 · 어려운 지형 (SRD): 20피트 정사각형 · 시전자 말고 모두 · 1분
-    sr_wild: { res: SHORT(m => (m.lv >= 17 ? 4 : m.lv >= 6 ? 3 : 2)), bonus: true, when: (c, x) => W.fight(c, x) && !c.wild, run(c, x) {
+    sr_wild: { res: SHORT(m => (m.lv >= 17 ? 4 : m.lv >= 6 ? 3 : 2)), bonus: true, when: (c, x) => W.fight(c, x) && !c.wild && ![1, 2, 3, 4, 5, 6, 7, 8, 9].some(L => G.Res.left(c.merc, { slot: L }) > 0) /* 변신하면 주문을 못 쓴다 (SRD) — 슬롯이 남아 있으면 주문부터 */, run(c, x) {
       c.wild = { t: c.t, def: c.def }; c.t = 'm_bear'; c.def = Object.assign({}, c.def, { range: 1.3, proj: null, wpn: null });
       c.thp = (c.thp || 0) + c.merc.lv * (c.max / Math.max(1, DN.srdHP(c.merc))); // 임시 체력: 드루이드 레벨
       persist(c, 'wild', R6(100)); ring(x, c, 1.2, '#7fcf8a'); G.J.shake('fantasy', 4, 0, 1, 0.15);

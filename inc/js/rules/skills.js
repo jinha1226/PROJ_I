@@ -66,7 +66,7 @@ G.Skill = (() => {
         if (!G.Res.can(a.merc, k, S.res)) continue;
         // SRD: 주문 슬롯을 쓰는 주문은 차례에 하나 · 집중은 한 번에 하나 (이미 집중 중이면 새로 걸지 않는다)
         if (S.res?.slot && (a.slotUsed || bonus === 1)) continue;
-        if (S.conc && a.concK) continue;
+        if (S.conc && a.concK && !G.Res.concSpent(a)) continue; // 집중은 하나 — 걸어 둔 것이 다 풀렸으면 새로 건다
         if (a.wild && S.res?.slot && !G.Guild.skill(a.merc, 'ft_beastsp')) continue; // 야수 주문 (SRD 드루이드 18) // 야생 변신 중엔 주문을 못 쓴다 (SRD)
         // 사거리는 여기서만 건다: 그 기술이 볼 수 있는 적 · 동료를 사거리 안으로 좁힌다
         const reach = D.SK_RANGE[k] != null && k === 'sr_eb' && G.Opt.has(a, 'iv_spear') ? G.SRD_RANGE.cells(G.SRD_RANGE.basic.warlock + 6 * a.merc.lv) : D.SK_RANGE[k], x = { f, rt, c: a, reach, base: S.base, seen: reach == null ? seen : seen.filter(o => G.Opt.inReach(a, rt, o, reach)) };

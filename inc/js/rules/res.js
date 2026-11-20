@@ -52,6 +52,12 @@ G.Res = (() => {
     longRest(list) { for (const m of list) if (m) { m.feast = 0; if (m.raisePen > 0) m.raisePen--; R.long(m); } G.Util?.feast(list); G.Util?.longRest(); G.ItemX?.longRest(list); }, // 영웅의 연회 · 사자 소생 벌점 (SRD)
     // ── 집중 (SRD): 한 번에 하나. 새로 걸면 앞의 것이 끝나고, 맞으면 건강 내성 DC max(10, 피해 ÷ 2) ──
     conc(c, k) { R.endConc(c); c.concK = { k, on: [] }; },
+    // 끝난 집중: 걸어 둔 상태 · 버프가 모두 풀렸거나 대상이 쓰러졌다 (내성 성공 · 죽음). 기록이 없는 집중(헥스처럼 자리 · 표식)은 끝난 것으로 보지 않는다 — 다시 걸며 슬롯을 낭비하지 않게
+    concSpent(c) {
+      const q = c.concK; if (!q) return true; if (q.sums) return false; const rt = G.RT.fantasy; if (rt?.darks?.some(d => d.by === c) || rt?.diffs?.some(z => z.conc && z.by === c)) return false;
+      const live = p => p && !p.dead && p.hp > 0, on = q.on || [], cd = q.conds || []; if (!on.length && !cd.length) return false;
+      return !on.some(([p, k]) => live(p) && p.bf?.[k]) && !cd.some(([p, k]) => live(p) && p.cond?.[k]);
+    },
     concOn(c, p, k, t, props) { DN().buff(p, k, t, props); if (c.concK) c.concK.on.push([p, k]); },
     endConc(c) { const q = c.concK; if (!q) return; if (q.sums && G.RT.fantasy) G.Sum.endConc(G.RT.fantasy, c); /* 집중의 생물도 사라진다 */ if (G.RT.fantasy?.darks) G.RT.fantasy.darks = G.RT.fantasy.darks.filter(d => d.by !== c); /* 어둠 주문도 */ if (G.RT.fantasy?.diffs) G.RT.fantasy.diffs = G.RT.fantasy.diffs.filter(z => !(z.conc && z.by === c)); /* 집중의 어려운 지형도 */ for (const [p, k] of q.on) if (p.bf) delete p.bf[k]; for (const [p, k] of q.conds || []) { if (p.cond) delete p.cond[k]; if (k === 'paralyzed') p.stop = 0; if (k === 'stunned') p.stun = 0; if (p.rep) p.rep = p.rep.filter(r => r.k !== k); } /* 집중으로 건 상태 (SRD) */ c.pe = (c.pe || []).filter(e => !e.conc); c.concK = null; c.extConc = false; },
     concHit(rt, p, dmg) { if (!p.concK || p.dead || (p.concK.k === 'sr_hmark' && G.Fantasy.sk(p, 'ft_rhunter'))) return; const raw = dmg * Math.max(1, DN().srdHP(p.merc)) / (p.max || 1); const dc = Math.max(10, Math.round(raw / 2)), adv = p.extConc || G.Opt.has(p, 'iv_mind'); if (!DN().save(p, 'con', dc) && !(adv && DN().save(p, 'con', dc))) { R.endConc(p); G.fx(rt, { k: 'text', x: p.x, y: p.y - 1.1, s: '집중 끊김', col: '#c9a6ff', t: 0.8, sz: 0.75 }); } },

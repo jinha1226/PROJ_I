@@ -73,6 +73,8 @@ G.Tactics = (() => {
       if (rg && of(e).pos === 'kite' && here.length) list = here;
       if (t === 'near' && e.merc) { const r = rg || MELEE_REACH, adv = list.filter(o => dist(o, e) <= r && G.Dnd.adv(e, o) > 0); if (adv.length) return near(adv); } // 동료가 만든 이점을 쓴다 (넘어짐 · 돕기 · 빛남). 닿는 적 안에서만
       if (t === 'weak') return list.reduce((a, b) => (b.hp < a.hp ? b : a));
+      // 닿는 적 안에서 끝내기 (TRPG의 정석 — 쓰러뜨리면 그 적의 공격이 사라진다): 라운드당 피해 ÷ 남은 체력이 큰 적, 이번 차례에 쓰러뜨릴 수 있으면 더. 멀리 있는 적을 노려 대열을 떠나지는 않는다
+      if (t === 'near' && e.merc) { const r = (rg || MELEE_REACH) + 0.5, inR = list.filter(o => dist(o, e) <= r); if (inR.length > 1) { const mine = G.Fantasy.allyAtk(G.S.w.fantasy, e) * Math.max(1, G.Dnd.attacks(e)) * 0.65, dpr = o => { let d = 0; try { for (const q of G.Foe.attacks(o) || []) d += (q.n || 1) * ((q.d || 4) + 1) / 2 + (q.b || 0); } catch (er) { d = 4; } return d; }, sc = o => dpr(o) / Math.max(1, o.hp) * (o.hp <= mine ? 2 : 1) * (o.boss ? 1.3 : 1); return inR.reduce((a, b) => (sc(b) > sc(a) ? b : a)); } }
       if (t === 'back') { const r = list.filter(G.Foe.back); return near(r.length ? r : list); }
       return near(list);
     },

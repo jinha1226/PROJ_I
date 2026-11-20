@@ -354,7 +354,8 @@ G.Turn = (() => {
       T.rec = []; G.Skill.tick(f, rt, e, 0, seen, 1); T.rec = null; // 추가 행동 (SRD): 행동과 따로 하나. 슬롯 주문은 행동 뒤로 미룬다 (큰 주문이 막히지 않게)
       { T.rec = []; const itm = G.Items.turn(f, rt, e, seen), r0 = T.rec; T.rec = null; if (itm) { report(f, rt, e, null, r0, before, itm); pause(st, BEAT); return; } } // 물약 · 두루마리 · 충전 주문
       let healed = false;
-      for (let i = 0; i < HEAL_N && e.def.heal; i++) healed = F().healTurn(f, rt, e, 99) || healed;
+      const ownHeal = e.merc && G.Guild.active(e.merc).some(k => G.Skill.SK[k]?.heal); // 치유 주문을 가진 동료는 스킬 AI가 고른다 (옛 기본 치유는 조금만 다쳐도 1레벨 슬롯을 써서 축복 · 영혼 수호자까지 차례가 안 왔다)
+      for (let i = 0; i < HEAL_N && e.def.heal && !ownHeal; i++) healed = F().healTurn(f, rt, e, 99) || healed;
       if (healed) { report(f, rt, e, null, [], before, '치유'); pause(st, BEAT); return; }
       T.rec = [];
       if (!G.Tactics.rushes(e, seen) && !burnFirst(rt, e).length) G.Skill.tick(f, rt, e, 0, seen); // 트롤을 태울 차례에 다른 기술로 행동을 쓰지 않는다

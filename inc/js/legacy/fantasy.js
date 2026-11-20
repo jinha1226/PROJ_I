@@ -649,14 +649,14 @@ G.Fantasy = (() => {
         return;
       }
       // 한 명: 추가 공격 · 섬뜩한 폭발 광선 수만큼 따로 굴린다
-      const n = a.swing ? 1 : a.merc && a.merc.cls === 'warlock' && !DN.melee(a) ? DN.tier(a) : DN.attacks(a), critAt = F.critAt(a), now = G.S.runTime;
+      const n = a.swing ? 1 : a.merc && DN.ebOf(a.merc) && !DN.melee(a) ? DN.tier(a) : DN.attacks(a), critAt = F.critAt(a), now = G.S.runTime;
       let any = false;
       for (let i = 0; i < n && tg.hp > 0; i++) {
         if (i > 0) { if (def.proj) G.fx(rt, { k: 'proj', key: def.proj, x: a.x, y: a.y, x2: tg.x, y2: tg.y, t: 0.25 + i * 0.06 }); else G.fx(rt, { k: 'slash', x: tg.x, y: tg.y, t: 0.25, rot: Math.random() - 0.5, flip: i % 2 === 0 }); }
         // 신성한 불꽃 (클레릭 기본): 명중 굴림 대신 민첩 내성 — 버티면 피해 없음
         const r = def.saveAtk ? { hit: !DN.save(tg, def.saveAtk, DN.dc(a)), crit: false, adv: 0 } : DN.attack(a, tg, critAt);
         if (r.hit && def.saveAtk && def.saveCond && tg.kind === 'mon') DN.give(rt, tg, def.saveCond, G.Res_ROUND, a); // 잔인한 조롱: 다음 공격 불리 (SRD)
-        if (!r.hit) { DN.miss(rt, tg);  if (a.merc && (a.swing || !DN.cantrip(a.merc))) G.SrdX?.onMiss(f, rt, a, tg); continue; }
+        if (!r.hit) { DN.miss(rt, tg);  if (a.merc && !DN.cantripAtk(a)) G.SrdX?.onMiss(f, rt, a, tg); continue; }
         any = true;
         let d = dmg * DN.rollK(a, r.crit, nd), src = r.crit ? 'crit' : 'hit';
         if (G.Feat.savage(a)) d = Math.max(d, dmg * DN.rollK(a, r.crit, nd)); // 야만적 공격자 (SRD): 턴에 한 번 무기 주사위를 다시 굴려 큰 쪽
@@ -669,7 +669,7 @@ G.Fantasy = (() => {
         // 야만적 공격자 (출신 재주): 한 턴에 한 번 피해를 두 번 굴려 큰 쪽
         d += DN.frenzy(a) * dmg / Math.max(1, DN.avg(DN.weapon(a)));
         F.hurt(f, rt, tg, d, src, a);
-        if (tg.hp > 0) G.Trinket.onHit(f, rt, a, tg, dmg / Math.max(1, DN.avg(DN.weapon(a))), r.nat); if (a.merc && (a.swing || !DN.cantrip(a.merc))) G.SrdX?.onHit(f, rt, a, tg); else if (a.merc?.cls === 'archmage') tg.shock = Math.max(tg.shock || 0, 6); // 서리 광선: 이동 −2칸
+        if (tg.hp > 0) G.Trinket.onHit(f, rt, a, tg, dmg / Math.max(1, DN.avg(DN.weapon(a))), r.nat); if (a.merc && !DN.cantripAtk(a)) G.SrdX?.onHit(f, rt, a, tg); else if (a.merc?.cls === 'archmage') tg.shock = Math.max(tg.shock || 0, 6); // 서리 광선: 이동 −2칸
         if (tg.hp > 0) G.Skill.onHit(f, rt, a, tg);
         // 상위 사냥감: 내 표식이 붙은 적을 맞히면 곁(2칸)의 다른 적에게 절반
         if (F.sk(a, 'sr_sprey') && tg.hm && tg.hm.by === a) { const o = rt.mons.find(q => q !== tg && q.hp > 0 && GR.dist(q, tg) <= 6); if (o) F.hurt(f, rt, o, DN.dice(1, 6) * dmg / Math.max(1, DN.avg(DN.weapon(a))), 'hit', a); } // 상위 사냥감 (SRD): 표식 피해를 30피트 안 다른 적에게

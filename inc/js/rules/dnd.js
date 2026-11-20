@@ -71,7 +71,7 @@ G.Dnd = (() => {
   const CANTRIP = { cleric: [1, 8, 'radiant', '신성한 불꽃'], bard: [1, 6, 'psychic', '잔인한 조롱'], mage: [1, 10, 'fire', '화염살'], archmage: [1, 8, 'cold', '서리 광선'], scout: [1, 8, 'fire', '불꽃 생성'], warlock: [1, 10, 'force', '섬뜩한 폭발'] };
   const dice = (n, d) => { // N.dieMin: 대형 무기 전투 (1 · 2 → 3) · N.reroll: 강화 주문 (낮은 주사위 다시)
     const min = N.dieMin || 0; let rr = N.reroll || 0, s = 0;
-    const fv = N.fateV ? N.fateV() : 0; if (fv) return n * Math.max(min, Math.ceil(fv * d / 20)); // 운명판 (G.Dice): 지금 행동하는 사람의 이번 라운드 눈(d20)을 d면으로 환산 — 1~20을 d등분
+    const fv = N.fateV ? N.fateV() : 0; if (fv) { const face = Math.max(min, Math.ceil(fv * d / 20)); if (!rr || face >= (d + 1) / 2) return n * face; const k = Math.min(n, rr); let s2 = face * (n - k); for (let i = 0; i < k; i++) s2 += 1 + U.rand(d); N.rerollUsed = true; return s2; } // 운명판 (G.Dice): 지금 행동하는 사람의 이번 라운드 눈(d20)을 d면으로 환산 — 1~20을 d등분. 강화 주문은 낮은 눈의 주사위를 (매력 수정치 개수만큼) 새로 굴린다
     if (!rr) { for (let i = 0; i < n; i++) s += Math.max(min, 1 + U.rand(d)); return s; }
     const a = []; for (let i = 0; i < n; i++) a.push(1 + U.rand(d));
     a.sort((p, q) => p - q);
@@ -81,7 +81,9 @@ G.Dnd = (() => {
   const N = {
     AB, AB_N, CLS, COND, SKILL_AB, SKILL_N, TRAIN,
     // ── 피해 (SRD): 주사위 + 능력 수정치. 치명타는 주사위만 두 배. 장비 · 트리 · 스킬 배율은 그 위에 곱한다 ──
-    weapon(e) { const m = e.merc; if (m?.cls === 'warlock') { const o = G.Opt.of(m); if (o.includes('iv_pblade')) return { n: 1, d: 8, b: N.mod(N.ab(m).cha), t: G.Trinket.props(m, 'wtype')[0]?.[1] || 'radiant' }; if (o.includes('sr_agon')) return { n: 1, d: 10, b: N.mod(N.ab(m).cha), t: G.Trinket.props(m, 'wtype')[0]?.[1] || 'force' }; } if (m && CANTRIP[m.cls] && !e.swing) { const q = CANTRIP[m.cls]; return { n: q[0], d: q[1], b: 0, t: G.Trinket.props(m, 'wtype')[0]?.[1] || q[2] }; } if (!m) return { n: 2, d: 6, b: 0, t: 'slashing' }; const SR = G.SRD, q = SR.weaponOf(m), ma = m.cls === 'monk' && (q.hidden || q.cat === 'simple' || q.props.includes('light')), mad = m.lv >= 17 ? 12 : m.lv >= 11 ? 10 : m.lv >= 5 ? 8 : 6, two = q.vd && !SR.eq(m).shield, face = two ? q.vd : q.dd; return { n: ma ? 1 : q.dn, d: ma ? Math.max(mad, face) : face, flat: !ma && q.flat ? q.flat : 0, b: N.mod(N.ab(m)[N.atkAb(m)]) + (!ma && q.flat ? q.flat : 0), t: G.Trinket.props(m, 'wtype')[0]?.[1] || (m.cls === 'monk' && m.lv >= 6 ? 'force' : q.t) }; },
+    // 섬뜩한 폭발을 기본 공격으로 쓰는 사람: 워락, 또는 워락 레벨에 고통의 폭발이 있는 다중 직업 (소서러 + 워락 2 — 그걸 노리고 찍는다). 그 사람의 워락 시점을 돌려준다
+    ebOf(m) { if (!m) return null; if (m.cls === 'warlock') return m; if (G.MC?.on(m) && G.MC.lvOf(m, 'warlock') > 0) { const v = G.MC.view(m, 'warlock'); if (G.Opt.of(v).includes('sr_agon')) return v; } return null; },
+    weapon(e) { const m = e.merc, wv = N.ebOf(m); if (wv) { const o = G.Opt.of(wv); if (o.includes('iv_pblade')) return { n: 1, d: 8, b: N.mod(N.ab(m).cha), t: G.Trinket.props(m, 'wtype')[0]?.[1] || 'radiant' }; if (o.includes('sr_agon')) return { n: 1, d: 10, b: N.mod(N.ab(m).cha), t: G.Trinket.props(m, 'wtype')[0]?.[1] || 'force' }; } if (m && CANTRIP[m.cls] && !e.swing) { const q = CANTRIP[m.cls]; return { n: q[0], d: q[1], b: 0, t: G.Trinket.props(m, 'wtype')[0]?.[1] || q[2] }; } if (!m) return { n: 2, d: 6, b: 0, t: 'slashing' }; const SR = G.SRD, q = SR.weaponOf(m), ma = m.cls === 'monk' && (q.hidden || q.cat === 'simple' || q.props.includes('light')), mad = m.lv >= 17 ? 12 : m.lv >= 11 ? 10 : m.lv >= 5 ? 8 : 6, two = q.vd && !SR.eq(m).shield, face = two ? q.vd : q.dd; return { n: ma ? 1 : q.dn, d: ma ? Math.max(mad, face) : face, flat: !ma && q.flat ? q.flat : 0, b: N.mod(N.ab(m)[N.atkAb(m)]) + (!ma && q.flat ? q.flat : 0), t: G.Trinket.props(m, 'wtype')[0]?.[1] || (m.cls === 'monk' && m.lv >= 6 ? 'force' : q.t) }; },
     // 무기 능력: 기교는 높은 쪽 · 원거리는 민첩 · 몽크 무기도 높은 쪽 · 그 밖 근력
     atkAb(m) { const q = G.SRD.weaponOf(m), ab = N.ab(m); if (q.props.includes('finesse') || (m.cls === 'monk' && (q.hidden || q.cat === 'simple' || q.props.includes('light')))) return ab.dex >= ab.str ? 'dex' : 'str'; return q.rng === 'ranged' ? 'dex' : 'str'; },
     // 공격 사거리 (칸): 주문 직업은 소마법, 나머지는 무기 표. 5피트 = 1칸
@@ -108,7 +110,9 @@ G.Dnd = (() => {
     // 먼 거리 불리: 무기 기본 사거리(투척 포함) 너머
     farDis(att, tg) { if (!att?.longNow || !tg) return false; const d = Math.hypot(att.x - tg.x, att.y - tg.y); if (att.kind === 'mon') return d > G.Foe.reach0(att); return d > G.SRD_RANGE.cells(G.SRD.weaponOf(att.merc).ft / 5); },
     gearWeapon: m => N.weapon({ merc: m, swing: true }),
-    cantrip: m => { const q = CANTRIP[m.cls]; return q && { n: q[0], d: q[1], t: q[2], name: q[3] }; },
+    // 이 공격이 소마법인가: 소마법 직업의 기본 공격이되, 칼날의 계약(계약 무기 — 무기 공격)이면 아니다. 무기 공격이어야 맞힌 뒤 기술(섬뜩한 강타 · 생명을 마시는 자)이 붙는다
+    cantripAtk: a => !!a.merc && !a.swing && !!N.cantrip(a.merc) && !(N.ebOf(a.merc) && G.Opt.of(N.ebOf(a.merc)).includes('iv_pblade')),
+    cantrip: m => { const q = CANTRIP[N.ebOf(m) ? 'warlock' : m.cls]; return q && { n: q[0], d: q[1], t: q[2], name: q[3] }; },
     avg: w => w.n * (w.d + 1) / 2 + w.b,
     dice,
     // 이번 한 번의 피해 / 평균 피해: 평균으로 만든 배율에 곱한다

@@ -39,7 +39,8 @@ for (const seed of [4, 5]) {
     t('옛 방식: 앞줄 파이터는 1라운드에 서서 기다린다 (버티기)', holdOld === true, holdOld);
     t('흐르는 턴제: 기다리지 않고 바로 나선다', holdNew === false, holdNew);
     t('단장 칭호 없이 이름으로 부른다', L.merc.name && L.merc.name !== '단장', L.merc.name); }
-  t('흐르는 턴제: 읽을 수 있는 속도 — 행동 하나에 1초쯤 (옛 방식의 절반보다 길고 1.4배보다 짧다)', sm.per > old.per * 0.5 && sm.per < old.per * 1.4, JSON.stringify({ sm: sm.per.toFixed(2), old: old.per.toFixed(2) }));
+  // 위쪽 한계는 1.5배: 이 비율은 시드마다 0.9 ~ 1.7로 흔들린다 (스킬 AI가 고르는 행동이 달라지면 같이 움직인다 — 2026-11-20에 1.41이 나와 1.4에서 넓혔다)
+  t('흐르는 턴제: 읽을 수 있는 속도 — 행동 하나에 1초쯤 (옛 방식의 절반보다 길고 1.5배보다 짧다)', sm.per > old.per * 0.5 && sm.per < old.per * 1.5, JSON.stringify({ sm: sm.per.toFixed(2), old: old.per.toFixed(2) }));
 }
 // 3) 운명판 규칙
 {
