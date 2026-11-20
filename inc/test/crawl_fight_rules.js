@@ -26,12 +26,12 @@ for (const seed of [4, 5]) {
 }
 // 2-1) 흐르는 턴제: 판정은 SRD 차례 그대로, 범위 칠하기 · 큰 주사위 창 · 차례 사이 쉼이 없어 라운드가 짧다
 {
-  const play = smooth => { let tot = 0, rounds = 0, ov = 0, ends = 0; for (const seed of [6, 7, 8]) {
+  const play = smooth => { let tot = 0, rounds = 0, ov = 0, ends = 0; for (const seed of [6, 7, 8, 9, 10, 11, 12, 13]) { // 시드 셋이면 AI가 고르는 행동에 따라 비율이 0.9 ~ 1.6으로 흔들렸다 — 여덟로 (2026-11-20)
     const { G, r } = boot(seed); G.quiet = false; G.Turn.smooth = smooth; const ov0 = G.Tactics.overlay; G.Tactics.overlay = function (...a) { ov++; return ov0.apply(this, a); };
     spawn(G, r, ['고블린 졸개', '고블린 졸개', '홉고블린 전사']); const res = run(G, r); if (!res.timeout) ends++; tot += res.t; rounds += Math.max(1, res.rounds); }
     return { per: tot / rounds, ov, ends }; };
   const sm = play(true), old = play(false);
-  t('흐르는 턴제: 전투가 끝난다', sm.ends === 3, JSON.stringify(sm));
+  t('흐르는 턴제: 전투가 끝난다', sm.ends === 8, JSON.stringify(sm));
   t('흐르는 턴제: 범위를 칠하지 않는다', sm.ov === 0 && old.ov > 0, JSON.stringify({ sm: sm.ov, old: old.ov }));
   // 앞줄 근접도 첫 라운드부터 나선다 — 옛 '버티기'(달려오는 근접 적을 서서 기다림)는 흐르는 턴제에선 끈다
   { const { G, r } = boot(12); spawn(G, r, ['좀비']); const L = r.party[0], z = r.mons[0]; z.x = 12; z.y = 7; z.aggro = true;
@@ -39,7 +39,7 @@ for (const seed of [4, 5]) {
     t('옛 방식: 앞줄 파이터는 1라운드에 서서 기다린다 (버티기)', holdOld === true, holdOld);
     t('흐르는 턴제: 기다리지 않고 바로 나선다', holdNew === false, holdNew);
     t('단장 칭호 없이 이름으로 부른다', L.merc.name && L.merc.name !== '단장', L.merc.name); }
-  // 위쪽 한계는 1.5배: 이 비율은 시드마다 0.9 ~ 1.7로 흔들린다 (스킬 AI가 고르는 행동이 달라지면 같이 움직인다 — 2026-11-20에 1.41이 나와 1.4에서 넓혔다)
+  // 위쪽 한계 1.5배 (2026-11-20에 1.4에서 넓혔다 — 스킬 AI가 고르는 행동이 달라지면 비율이 같이 움직인다)
   t('흐르는 턴제: 읽을 수 있는 속도 — 행동 하나에 1초쯤 (옛 방식의 절반보다 길고 1.5배보다 짧다)', sm.per > old.per * 0.5 && sm.per < old.per * 1.5, JSON.stringify({ sm: sm.per.toFixed(2), old: old.per.toFixed(2) }));
 }
 // 3) 운명판 규칙
