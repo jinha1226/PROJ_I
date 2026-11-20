@@ -26,9 +26,12 @@
 <h2>실제 배경 위에서 (게임처럼 2배)</h2>
 <div class="row">
   <div><canvas id="now"></canvas><div class="cap">지금 (LAYERLAB 인형)</div></div>
-  <div><canvas id="pxscene"></canvas><div class="cap">시안 — 픽셀화한 3D 인물 넷 (키 40px · 위 단추로 옷 바꾸기)</div></div>
+  <div><canvas id="pxscene"></canvas><div class="cap">시안 — 파이터 · 클레릭 · 위저드 · 레인저 (키 40px)</div></div>
 </div>
-<h2>키 32 · 40 · 48px × 동작 (4배)</h2>
+<h2>SRD 12직업 (3배)</h2>
+<p>옷은 무료 옷 두 벌(농부 · 레인저)의 부품을 색만 바꿔 쓰고, 투구 · 흉갑 · 망토 · 로브 · 모자 · 사슴뿔 · 털 망토 · 지팡이 · 마법 구슬 · 등불 · 책 · 화살통은 제가 만들었습니다. 칼 · 도끼 · 망치 · 단검 · 활 · 방패는 무기 팩(CC0)입니다. 활 쏘기는 동작 라이브러리에 없어서 두 팔을 IK로 움직여 만들었습니다.</p>
+<canvas id="clsrow"></canvas>
+<h2>키 32 · 40 · 48px × 동작 — 레인저 (4배)</h2>
 <canvas id="pxrow"></canvas>
 <h2>용 보스 — 실제 게임 (<a href="../index.html?scene=dragon" style="color:#f0c070">새 탭에서 열기</a>)</h2>
 <p>지금 게임(LAYERLAB 인형 + 용 부위 인형) 그대로입니다.</p>
@@ -540,7 +543,7 @@ function pxScene(t) {
   const key = mode === 'spin' ? 'idle' : mode;
   [[810, 470, 0, false], [762, 500, 1.3, false], [738, 446, 2.1, false], [860, 506, .7, true]].sort((a, b) => a[1] - b[1]).forEach(([x, y, ph, fl]) => {
     const X = x - CROP[0], Y = y - CROP[1]; c.fillStyle = 'rgba(0,0,0,.4)'; c.beginPath(); c.ellipse(X, Y, 14, 6, 0, 0, Math.PI * 2); c.fill();
-    pxDraw(c, 40, key, t + ph, X, Y, 2, !fl);
+    const ck = { 810: 'fighter', 762: 'cleric', 738: 'wizard', 860: 'ranger' }[x]; if (clsOk(ck)) clsDraw(c, ck, key, t + ph, X, Y, 2, !fl); else pxDraw(c, 40, key, t + ph, X, Y, 2, !fl);
   });
   c.fillStyle = 'rgba(40,24,10,.18)'; c.globalCompositeOperation = 'multiply'; c.fillRect(0, 0, cv.width, cv.height); c.globalCompositeOperation = 'source-over'; // 던전 빛처럼 조금 눌러 준다 (게임에서는 voxchar.js가 다시 칠한다)
 }
@@ -554,11 +557,30 @@ function pxRow(t) {
   }));
 }
 document.querySelectorAll('[data-o]').forEach(b => b.onclick = () => { outfit = b.dataset.o; document.querySelectorAll('[data-o]').forEach(x => x.classList.toggle('on', x === b)); });
+// ── SRD 12직업 (cls/cls_*.png · cls_meta.json)
+const CLS12 = [['fighter', '파이터'], ['paladin', '팔라딘'], ['barbarian', '바바리안'], ['monk', '몽크'], ['rogue', '로그'], ['ranger', '레인저'], ['druid', '드루이드'], ['cleric', '클레릭'], ['wizard', '위저드'], ['sorcerer', '소서러'], ['warlock', '워락'], ['bard', '바드']];
+let CM = null; const CIM = {}; fetch('cls/cls_meta.json').then(r => r.json()).then(d => { CM = d; for (const k in d) { const im = new Image(); im.src = `cls/cls_${k}.png?v=2`; CIM[k] = im; } }).catch(() => {});
+const clsOk = k => CM && CM[k] && CIM[k] && CIM[k].complete && CIM[k].naturalWidth;
+function clsDraw(c, k, key, t, x, y, K, flip) {
+  const M = CM[k], r = M.rows.indexOf(key), n = M.n[key], f = Math.floor(t * M.fps) % n;
+  c.save(); c.imageSmoothingEnabled = false; c.translate(Math.round(x), Math.round(y)); if (flip) c.scale(-1, 1);
+  c.drawImage(CIM[k], f * M.w, r * M.h, M.w, M.h, -Math.round(M.w / 2) * K, -M.foot * K, M.w * K, M.h * K); c.restore();
+}
+function clsRow(t) {
+  const cv = document.getElementById('clsrow'), c = cv.getContext('2d'), K = 3, CW = 66, CH = 76, COLS = 6, key = mode === 'spin' ? 'idle' : mode;
+  cv.width = CW * K * COLS; cv.height = (CH + 8) * K * 2; c.fillStyle = '#0d0a08'; c.fillRect(0, 0, cv.width, cv.height);
+  CLS12.forEach(([k, name], i) => {
+    const X = (i % COLS + .5) * CW * K, Y = (Math.floor(i / COLS) * (CH + 8) + CH - 8) * K; c.fillStyle = '#2a2420'; c.beginPath(); c.ellipse(X, Y, 16 * K, 7 * K, 0, 0, Math.PI * 2); c.fill();
+    if (clsOk(k)) clsDraw(c, k, key, t + i * .37, X, Y, K, true); else { c.fillStyle = '#5a4a3a'; c.font = '16px sans-serif'; c.textAlign = 'center'; c.fillText('굽는 중…', X, Y - 40); }
+    c.fillStyle = '#c8b898'; c.font = '600 22px "Noto Sans KR", sans-serif'; c.textAlign = 'center'; c.fillText(name, X, Y + 8 * K + 14);
+  });
+}
 let t0 = performance.now();
 function frame() {
   const t = (performance.now() - t0) / 1000;
   if (bg.complete && bg.naturalWidth && pxReady()) pxScene(t);
   if (pxReady()) pxRow(t);
+  clsRow(t);
   setTimeout(() => requestAnimationFrame(frame), 90);
 }
 nowImg.onload = now; frame();
