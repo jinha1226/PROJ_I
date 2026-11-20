@@ -85,7 +85,7 @@ const TestFloor = (() => {
     }
     if (kind === 'dragon') { // 용 보스 시험: ?mon=이름 (기본 붉은 성룡)
       const n = G.D.F.mon[q.get('mon')] ? q.get('mon') : '붉은 성룡', A = m.rooms.find(q2 => q2.id === 'A');
-      G.Fantasy.spawnMon(r, 10, { n, ...G.D.F.mon[n] }, A.x + A.w - 7, A.cy, true, { major: true, spotted: true });
+      G.Fantasy.spawnMon(r, 10, { n, ...G.D.F.mon[n] }, A.x + 6, A.cy, true, { major: true, spotted: true }); // 방 안쪽 끝(A.x + A.w − 7)이면 카메라 밖이라 안 보였다 (2026-11-20)
     }
     if (kind === 'fight') {
       const names = ['고블린 졸개', '고블린 졸개', '홉고블린'].map(n => G.D.F.mon[n] ? n : Object.keys(G.D.F.mon)[0]);

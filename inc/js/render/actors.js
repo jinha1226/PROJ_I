@@ -171,9 +171,9 @@ function drawRec(R0, t) {
   }
   if (e.max && (e.kind === 'mon' ? e.boss || e.hp < e.max || st : e.hp < e.max)) {
     const w = e.boss ? 40 : 14, th = e.boss ? 2 : 0, f2 = clamp(e.hp / e.max, 0, 1), L = sx - w / 2 | 0, Y = (sy - sp.foot * sc - 5) | 0, ink = rgb(...C.ink); // 보스는 굵고 긴 막대
-    for (let i = -1; i <= w; i++) for (let j = -1; j <= 1 + th; j++) { const k = (Y + j) * W + L + i; if (k >= 0 && k < pix.length) pix[k] = ink; }
+    for (let i = -1; i <= w; i++) for (let j = -1; j <= 1 + th; j++) { const k = (Y + j) * W + L + i; if (k >= 0 && k < pix.length && L + i >= 0 && L + i < W) pix[k] = ink; } // 화면 밖 x가 다음 줄로 넘어가 엉뚱한 곳에 찍히지 않게
     const c = rgb(...(e.kind === 'mon' ? C.red : f2 > .4 ? [110, 196, 110] : C.orange));
-    for (let j = 0; j <= th; j++) for (let i = 0; i < Math.round(f2 * w); i++) { const k = (Y + j) * W + L + i; if (k >= 0 && k < pix.length) pix[k] = c; }
+    for (let j = 0; j <= th; j++) for (let i = 0; i < Math.round(f2 * w); i++) { const k = (Y + j) * W + L + i; if (k >= 0 && k < pix.length && L + i >= 0 && L + i < W) pix[k] = c; }
   }
   if (e._mark && now() < e._mark.until) drawBang(sx, sy - sp.foot * sc - 8, e._mark.c);
   if (st && st.cur === e) drawArrowAt(sx, sy - sp.foot * sc - 8, t, e.kind === 'mon' ? C.red : [255, 214, 10]);
