@@ -1,6 +1,7 @@
 'use strict';
 // 장비 화면 (화면 쪽). 규칙은 js/game/gear.js — 여기는 창뿐이다.
-// - GEARUI.give(x, done, title): 얻은 물건 하나를 누구에게 줄까 (물건 카드 · 낄 수 있는 사람과 견주기 한 줄 · 가방에)
+// - GEARUI.give(x, done, title, reveal): 얻은 물건 하나를 누구에게 줄까 (물건 카드 · 낄 수 있는 사람과 견주기 한 줄 · 가방에)
+//   reveal = 새로 얻은 것: 봉인된 꾸러미가 떨다가 열린다 — 등급이 높을수록 오래 뜸을 들이고(그 등급 빛이 새어 나온다) 크게 터진다. 누르면 바로 연다
 // - GEARUI.found(drops, title, done): 굴린 것들을 가방에 넣고 하나씩 give
 // - GEARUI.section(m, fighting): 캐릭터 시트의 「장비」 구역 (칸을 누르면 가방에서 바꿔 낀다 — 전투 중에는 보기만)
 // - GEARUI.chip(): 위 바의 「가방 N」 · GEARUI.bag(): 가방 창 · GEARUI.shopHook(...): 상인 · 야영지 창에 「장비」 줄
@@ -15,9 +16,14 @@ const GEARUI = (() => {
   function changed(m) { if (typeof CRAWL !== 'undefined' && CRAWL.refreshHP) CRAWL.refreshHP(); if ($('csheet') && m) { const i = (view()?.party || []).findIndex(p => p.m === m); if (i >= 0) HUD.sheet(i); } }
   const card = x => { const o = X().info(x); return `<div class="gw-card ${RC[o.r]}"><b>${o.ic ? `<i>${o.ic}</i>` : ''}${esc(o.n)}</b><small>${esc(o.slotN)}${o.rn ? ` · ${esc(o.rn)}` : ''}</small><ul>${o.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`; };
   // 얻은 물건 하나: 누구에게
-  function give(x, done, title = '장비') {
+  const WAIT = [450, 450, 850, 1350, 1900]; // 등급마다 뜸 들이는 시간(ms)
+  function give(x, done, title = '장비', reveal = false) {
+    if (reveal && !new URLSearchParams(location.search).get('auto')) { const o = X().info(x), box = win(); box.className = ''; box.innerHTML = `<h3>${esc(title)}</h3><div class="gw-seal ${RC[o.r]}" style="--wait:${WAIT[o.r] || 450}ms"><i>?</i></div>`;
+      let t = setTimeout(open, WAIT[o.r] || 450); function open() { clearTimeout(t); box.onclick = null; give(x, done, title); const b = $('gearwin'); if (b) { b.classList.add('gw-pop', `pop${o.r}`); if (o.r >= 2 && o.rn) b.querySelector('.gw-card')?.insertAdjacentHTML('beforebegin', `<div class="gw-rare ${RC[o.r]}">${esc(o.rn)}</div>`); } }
+      box.onclick = open; return; }
     const box = win(), ps = members().filter(p => !p.dead), rows = ps.map(p => { const c = X().can(p.m, x); return { p, ok: c.ok, why: c.why, cmp: c.ok ? X().cmp(p.m, x) : '', gain: c.ok && x.kind === 'base' ? X().better(p.m, x) : 0 }; });
     const best = rows.filter(r => r.gain > 0).sort((a, b) => b.gain - a.gain)[0];
+    box.className = '';
     box.innerHTML = `<h3>${esc(title)}</h3>${card(x)}<div class="gw-who">${rows.map((r, i) => `<button data-i="${i}"${r.ok ? '' : ' disabled'}><b>${esc(r.p.m.name)}</b><small>${esc(clsN(r.p.m))}${r === best ? ' · 추천' : ''}</small><span>${esc(r.ok ? r.cmp : r.why)}</span></button>`).join('')}</div><button class="gw-go">가방에</button>`;
     box.onclick = ev => {
       const b = ev.target.closest('button'); if (!b || b.disabled) return;
@@ -27,7 +33,7 @@ const GEARUI = (() => {
   }
   function found(drops, title, done) {
     const es = (drops || []).map(d => X().take(f(), d, CRAWL.st?.floor || 1)); let i = 0;
-    const next = () => { if (i >= es.length) return done && done(); give(es[i++], next, es.length > 1 ? `${title} ${i}/${es.length}` : title); };
+    const next = () => { if (i >= es.length) return done && done(); give(es[i++], next, es.length > 1 ? `${title} ${i}/${es.length}` : title, true); };
     next();
   }
   // 시트의 「장비」 구역

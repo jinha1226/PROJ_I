@@ -180,8 +180,7 @@ img[src*="assets/chars/"] { image-rendering:auto; object-fit:contain; }
 .record-stub { position:absolute; left:50%; top:40%; transform:translate(-50%,-50%); padding:18px 26px; border-radius:10px; background:rgba(28,20,14,.95); border:1px solid #c9a86a; color:#f3e4c3; font:24px "Nanum Pen Script",cursive; z-index:16; }
 
 /* 라운드 주사위 · 특수 주사위 */
-.die { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:8px; background:#f3e4c3; color:#2b1d14; font:700 17px "Noto Sans KR",sans-serif; box-shadow:inset 0 -3px 0 rgba(0,0,0,.25); }
-.die.k-gamble { background:#e8c060; } .die.k-doom { background:#2b1d14; color:#e05040; border:1px solid #e05040; } .die.k-steady { background:#a8c8a0; } .die.k-twin { background:#a8bce0; }
+.die { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; color:#2b1d14; font:700 17px "Noto Sans KR",sans-serif; }
 #dicebear, #dicepick { position:absolute; left:50%; bottom:90px; transform:translateX(-50%); width:min(460px,94vw); padding:12px 14px; border-radius:10px; border:1px solid #c9a86a; background:rgba(28,20,14,.96); color:#f3e4c3; z-index:17; font:14px "Noto Sans KR",sans-serif; }
 #dicepick { top:50%; bottom:auto; transform:translate(-50%,-50%); }
  .sy { display:inline-block; margin-left:3px; padding:0 3px; border-radius:4px; font:700 11px "Noto Sans KR",sans-serif; font-style:normal; color:#fff; background:#777; vertical-align:middle; }
@@ -225,7 +224,6 @@ img[src*="assets/chars/"] { image-rendering:auto; object-fit:contain; }
 #turnstrip .ts-act b { font-weight:700; } #turnstrip .ts-act small { color:#a89878; margin-left:4px; }
 #turnstrip .ts-act i { font-style:normal; font-weight:700; } #turnstrip .ts-act i.ok { color:#8fd49a; } #turnstrip .ts-act i.no { color:#e08a7a; }
 #turnstrip .ts-act.foe i.ok { color:#e08a7a; } #turnstrip .ts-act.foe i.no { color:#8fd49a; }
-body:has(#turnstrip) #fatebanners { top:calc(var(--hud-h, 46px) + 84px) !important; }
 body:has(#turnstrip) #pmapbox:not(.big), body:has(#turnstrip) #dm { display:none !important; }
 
 /* 전투: 지금 행동하는 사람(▼)과 대상(◎), 띠의 「우리 차례 / 적의 차례」 */

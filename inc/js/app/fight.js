@@ -64,9 +64,12 @@ const FIGHT = (() => {
   const cast = (p, id) => G.fx(R, { k: 'cast', mode: 'me', id, who: p, x: p.x, y: p.y, pts: [[p.x, p.y]], t: 0.6 }); // 0.6초: 배속으로 한 화면에 여러 틱이 돌아도 그리기 전에 사라지지 않게 (재생은 한 번 — playCast)
   const chip = s => `<i class="sy s-${s}">${G.Dice.SYM[s].n}</i>`;
   function banner(html, cls = '') {
-    let box = $('fatebanners'); if (!box) { box = document.createElement('div'); box.id = 'fatebanners'; $('stage').append(box); }
+    let box = $('fatebanners'); const host = $('turnstrip') || $('stage'); if (!box) { box = document.createElement('div'); box.id = 'fatebanners'; } if (box.parentNode !== host) host.append(box); // 차례 띠가 있으면 그 아래에 이어 쌓는다 (겹치지 않게)
     const b = document.createElement('div'); b.className = 'fb ' + cls; b.innerHTML = html; box.append(b); setTimeout(() => b.remove(), 2300);
   }
+  // 화면 번쩍 (게임 화면 가장자리에서 그 빛깔이 한 번 스민다)
+  function flash(col) { const st = $('stage'); if (!st || F?.quiet) return; const el = document.createElement('div'); el.className = 'fateflash'; el.style.setProperty('--hc', col); st.append(el); setTimeout(() => el.remove(), 800); }
+  const HC = { atk: '#e0604a', def: '#4a8fd8', arc: '#a070e0', holy: '#e8c860' };
   function roundFx() {
     const D = G.Dice, S = D.st, fx = S?.fx; if (!fx || !F) return;
     const got = new Set(fx.insp), rowed = new Set(); // 가로줄로 얻은 영감은 그 띠에 같이 적는다 (띠가 쌓이지 않게)
@@ -75,6 +78,7 @@ const FIGHT = (() => {
       if (x.t === 'r') { rowed.add(x.p); banner(`${chip(x.s).repeat(D.K.COLS)} <b>${name(x.p)} — 한 줄!</b> <span>${D.rowTxt(x.s)}${got.has(x.p) ? ' · ✦ 영감' : ''}</span>`, 'row'); if (x.fresh) cast(x.p, ROW_FX); }
       else { banner(`${chip(x.s).repeat(Math.min(4, x.n))} <b>${D.SYM[x.s].fx}</b> <span>${D.lineTxt(x)}</span>`, `c-${x.s}${x.n >= 3 ? ' big' : ''}`); if (x.fresh) for (const p of D.party()) cast1(p, COMBO_FX[x.s]); }
     }
+    { const news = fx.news.filter(x => x.fresh); if (news.length) flash(HC[news[0].s] || '#f0c070'); if (news.length >= 2) banner(`★ <b>잭팟!</b> <span>한 번에 ${news.length}줄</span>`, 'jack'); } // 새로 맞은 줄: 화면이 그 빛으로 번쩍 · 둘 이상이면 잭팟
     for (const p of got) { if (!rowed.has(p)) banner(`✦ <b>영웅적 영감</b> <span>${name(p)}</span>`, 'insp'); cast(p, INSP_FX); }
   }
   // ── 죽음의 주사위를 맡을 사람 (층의 첫 전투에서) ──
@@ -128,12 +132,16 @@ const FIGHT = (() => {
         n.style.left = (i === 0 ? 0 : cw + gap + (i - 1) * step + (ci > 0 && i >= wrapAt ? dv : 0)) + 'px'; n.style.zIndex = 50 - i; n.style.opacity = i === 0 ? 1 : Math.max(0.5, 1 - i * 0.07); });
       wr.style.display = ci > 0 ? '' : 'none'; wr.style.left = Math.round(wrapAt === 1 ? cw + (gap + dv) / 2 : cw + gap + (wrapAt - 1) * step + (fw - step + dv) / 2) - 1 + 'px';
       Q.style.width = (cw + gap + (n1 - 1) * step + fw + dv) + 'px'; }
-    el.lastChild.innerHTML = act; el.lastChild.className = 'ts-act' + (F.act?.foe && act === F.act.html ? ' foe' : '');
+    { const ac = el.querySelector('.ts-act'); ac.innerHTML = act; ac.className = 'ts-act' + (F.act?.foe && act === F.act.html ? ' foe' : ''); }
   }
   // 칸을 쓰면(G.Dice.board.uses) 왼쪽 칸의 그 자리에서 주사위가 빠져나와 그 사람 머리 위로 날아간다
   function fly(u) {
     const src = SIDE.cell(u.p, u.c), fl = $('floats'); if (!src || !fl || u.d.special) return;
-    const el = document.createElement('div'); el.className = 'fatefly'; el.innerHTML = dieHTML(u.p, u.d) + (u.how === 'save' ? '<i>내성</i>' : ''); fl.append(el);
+    const top = u.d.value === 20, low = u.d.value === 1;
+    const el = document.createElement('div'); el.className = 'fatefly' + (top ? ' jack' : low ? ' doom' : ''); el.innerHTML = dieHTML(u.p, u.d) + (u.how === 'save' ? '<i>내성</i>' : ''); fl.append(el);
+    // 터지는 순간: 20을 쓰는 라운드 (전부 맞고 주사위는 모두 최대) · 1을 쓰는 라운드
+    if (top) { banner(`★ <b>운명의 20</b> <span>${name(u.p)} — 이번 라운드는 모두 최고의 눈</span>`, 'jack'); flash('#ffd76a'); cast(u.p, ROW_FX); }
+    else if (low) banner(`<b>운명의 1</b> <span>${name(u.p)} — 이번 라운드는 모두 최악의 눈</span>`, 'doom');
     UI.place(el, u.p._dx ?? u.p.x, u.p._dy ?? u.p.y, 2.7); // 끝자리: 머리 위
     const a = src.getBoundingClientRect(), b = el.getBoundingClientRect(), die = el.firstChild;
     el.style.cssText = `position:fixed; left:${b.left}px; top:${b.top}px; transform:none;`; document.body.append(el); // 게임 화면 밖(왼쪽 칸)에서 출발하니 화면 전체 위에 띄운다

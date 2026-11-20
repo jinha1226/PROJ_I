@@ -21,7 +21,7 @@ const REWARDUI = (() => {
     while (queue.length && queue[0].k === 'lv' && !G.Reward.pending(queue[0].p.merc)) queue.shift(); // 이미 다 골랐으면 건너뛴다
     const q = queue.shift();
     if (!q) { close(); const cb = then; then = null; if (cb) cb(); return; }
-    if (q.k === 'gear') { close(); return GEARUI.give(q.e, step, '전리품'); }
+    if (q.k === 'gear') { close(); return GEARUI.give(q.e, step, '전리품', true); }
     const box = open();
     if (q.k === 'sum') {
       box.innerHTML = `<h3>${esc(res.title)}</h3>` +
