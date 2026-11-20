@@ -330,8 +330,6 @@ canvas { image-rendering:pixelated; }
 /* ── 전투: 차례 띠 · 운명판 · 표지 ── */
 #turnstrip .ts-row { padding:5px 8px !important; font:500 12px "Noto Sans KR",sans-serif !important; }
 #turnstrip .ts-rd { font-family:var(--serif); color:var(--brass-hi) !important; }
-#turnstrip .ts-c, #turnstrip .ts-side { border-radius:2px !important; } #turnstrip .ts-c i { border-radius:1px !important; }
-#turnstrip .ts-c.cur { background:linear-gradient(#7a5a2a, #55401f) !important; border-color:var(--brass-hi) !important; } #turnstrip .ts-c.cur.foe { background:linear-gradient(#7a2c22, #4a1a14) !important; border-color:#e0604a !important; }
 #turnstrip .ts-act { font:500 13px "Noto Sans KR",sans-serif !important; } #turnstrip .ts-act b { font-family:var(--serif); color:#fff4d6; }
 #fatebanners .fb b { font-family:var(--serif) !important; }
 .die { border-radius:3px !important; background:linear-gradient(#efe2bf, #d2bf90) !important; color:#24170b !important; box-shadow:inset 0 -3px 0 #b09a6a, inset 0 0 0 1px #5b4426, 0 1px 0 #000 !important; font-family:var(--serif) !important; }
@@ -381,7 +379,7 @@ canvas { image-rendering:pixelated; }
   /* 위 바 */
   #hud .hud-l b { font-size:19px !important; } #hud .hud-l small { font-size:12px !important; } #hud .chip { font-size:13px !important; padding:4px 10px !important; } #hud .hud-spd { min-width:48px; min-height:34px; font-size:14px !important; }
   /* 전투: 차례 띠 · 라운드 연출 · 작은 운명판 */
-  #turnstrip .ts-row { font-size:14px !important; padding:6px 12px !important; gap:6px !important; } #turnstrip .ts-c i { width:22px !important; height:22px !important; font-size:12px !important; } #turnstrip .ts-c.cur { font-size:15px !important; }
+  #turnstrip .ts-row { font-size:14px !important; padding:6px 12px !important; gap:6px !important; }
   #turnstrip .ts-act { font-size:15px !important; padding:7px 16px !important; } #turnstrip .ts-act .why { font-size:12px !important; }
   #turnmark { font-size:24px; } #turnmark.say { font-size:16px; }
   /* 창 글씨 */
@@ -469,3 +467,16 @@ canvas { image-rendering:pixelated; }
 .sy.s-wild { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath fill='%23f0c070' d='M4 0h1v1h-1zM4 1h1v1h-1zM3 2h3v1h-3zM0 3h9v1h-9zM1 4h7v1h-7zM2 5h5v1h-5zM2 6h5v1h-5zM1 7h3v1h-3zM5 7h3v1h-3zM1 8h1v1h-1zM7 8h1v1h-1z'/%3E%3C/svg%3E"); }
 /* 폰: 고르는 창(갈림길 · 장면 · 누가 할까 · 주사위 고르기)은 운명판 칸 위에 얹는다 — 판을 보면서 고르게 */
 @media (max-width: 899px) { body.has-side #exitsign, body.has-side #crawlscene, body.has-side #dicepick, body.has-side #dicebear { bottom:var(--pbar-h) !important; max-height:calc(100dvh - var(--hud-h) - var(--pbar-h) - 8px); padding-bottom:12px !important; border-radius:10px 10px 0 0 !important; } }
+/* 차례 띠 (FIGHT.strip): 얼굴을 차례대로 — 맨 왼쪽(크게 · 밝은 테)이 지금 차례, 차례가 넘어가면 한 칸씩 왼쪽으로 미끄러져 온다. 우리 = 놋쇠 테 · 적 = 붉은 테 */
+#turnstrip .ts-q { position:relative; flex:none; height:44px; }
+#turnstrip .ts-f { position:absolute; bottom:2px; box-sizing:border-box; width:30px; height:34px; overflow:hidden; display:grid; place-items:center; background:radial-gradient(circle at 50% 35%, #4a3826, #17100b); border:1px solid #000; border-bottom:3px solid var(--brass); box-shadow:0 0 0 1px #4a3826;
+  transition:left .35s cubic-bezier(.3,.9,.3,1), width .25s, height .25s, opacity .3s; }
+#turnstrip .ts-f.foe { background:radial-gradient(circle at 50% 35%, #4a2620, #1a0d0b); border-bottom-color:#c0483a; }
+#turnstrip .ts-f canvas { position:absolute; left:0; top:0; width:100%; height:100%; image-rendering:pixelated; }
+#turnstrip .ts-f em { font:700 15px var(--serif); font-style:normal; color:#e8d8b8; } #turnstrip .ts-f.pic em { display:none; }
+#turnstrip .ts-f.cur { width:40px; height:44px; bottom:0; box-shadow:0 0 0 2px var(--brass-hi), 0 0 12px rgba(240,192,112,.75); }
+#turnstrip .ts-f.cur.foe { box-shadow:0 0 0 2px #e0604a, 0 0 12px rgba(224,96,74,.75); }
+#turnstrip .ts-f.down { filter:grayscale(1) brightness(.6); }
+#turnstrip .ts-wrap { position:absolute; top:6px; bottom:2px; width:0; border-left:2px dotted var(--brass); opacity:.7; transition:left .35s; }
+@media (min-width: 900px) { #turnstrip .ts-q { height:56px; } #turnstrip .ts-f { width:38px; height:44px; } #turnstrip .ts-f.cur { width:50px; height:56px; } #turnstrip .ts-f em { font-size:19px; } }
+@media (prefers-reduced-motion: reduce) { #turnstrip .ts-f, #turnstrip .ts-wrap { transition:none; } }

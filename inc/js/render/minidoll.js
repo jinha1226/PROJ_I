@@ -366,5 +366,7 @@ const MD = (() => {
   }
   // 선술집 등 전투 밖 화면: 그 사람의 32px 픽셀 인형 한 장 (가만히 선 모습, time = 초). 그림이 아직 안 왔으면 null
   function pix(m, time = 0) { if (!MINI_READY) return null; const d = dollOf(m), fi = Math.round((time % PaperDoll.anims.Idle.len) * FPS), key = 'P' + fi; let sp = d.cache.get(key); if (!sp) { sp = px32(d, 'Idle', fi / FPS); d.cache.set(key, sp); } return sp; }
-  return { lookOf, frame, portrait, pix, iconUrl, enqueue, snap, present, clear, isMon };
+  // 몬스터의 서 있는 모습 (인형으로 그리는 몬스터만 — 아니면 null)
+  function pixMon(e) { if (!MINI_READY || !isMon(e)) return null; const d = monDoll(e); let sp = d.cache.get('P0'); if (!sp) { sp = px32(d, 'Idle', 0); d.cache.set('P0', sp); } return sp; }
+  return { lookOf, frame, portrait, pix, pixMon, iconUrl, enqueue, snap, present, clear, isMon };
 })();

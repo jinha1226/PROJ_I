@@ -71,6 +71,7 @@ G.Dnd = (() => {
   const CANTRIP = { cleric: [1, 8, 'radiant', '신성한 불꽃'], bard: [1, 6, 'psychic', '잔인한 조롱'], mage: [1, 10, 'fire', '화염살'], archmage: [1, 8, 'cold', '서리 광선'], scout: [1, 8, 'fire', '불꽃 생성'], warlock: [1, 10, 'force', '섬뜩한 폭발'] };
   const dice = (n, d) => { // N.dieMin: 대형 무기 전투 (1 · 2 → 3) · N.reroll: 강화 주문 (낮은 주사위 다시)
     const min = N.dieMin || 0; let rr = N.reroll || 0, s = 0;
+    const fv = N.fateV ? N.fateV() : 0; if (fv) return n * Math.max(min, Math.ceil(fv * d / 20)); // 운명판 (G.Dice): 지금 행동하는 사람의 이번 라운드 눈(d20)을 d면으로 환산 — 1~20을 d등분
     if (!rr) { for (let i = 0; i < n; i++) s += Math.max(min, 1 + U.rand(d)); return s; }
     const a = []; for (let i = 0; i < n; i++) a.push(1 + U.rand(d));
     a.sort((p, q) => p - q);

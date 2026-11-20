@@ -340,7 +340,7 @@ G.Turn = (() => {
     if (e.merc && (G.Story.brokenTurn(f, rt, st, e) || G.Persona.turn(f, rt, st, e))) { pause(st, BEAT); return; }
     if (e.kind !== 'mon' && e.broke !== 'rage') {
       e.gcd = 0; e.lastSk = null; e.lastBonus = null; e.freeDone = null; e.lastHitSk = null; e.hit1Done = false; e.heroic = !!(e.merc && F().sk(e, 'ft_heroic'));
-      if (G.Skill.persist) G.Skill.persist(f, rt, e, ROUND);
+      if (G.Skill.persist) { const by0 = DN().actor; DN().actor = e; try { G.Skill.persist(f, rt, e, ROUND); } finally { DN().actor = by0; } } // 이어지는 효과도 그 사람의 행동 (운명판의 눈)
       if (e.fleeT) e.fleeT = 0;
       // 함께 싸우는 치유 직업은 앞사람 곁으로 먼저 걷고 나서 주문을 쓴다 (새 게임 — 뒤에 혼자 남지 않게). 이 차례의 이동은 여기서 썼다
       st.pm = null; if (T.smooth && (G.Tactics.escorts(e) || G.Tactics.trails(e)) && !DN().held(e) && !G.Act.adjacent(rt, e).length) { const p = G.Tactics.escorts(e) ? G.Tactics.follow(rt, e, moveOf(e)) : G.Tactics.follow(rt, e, moveOf(e), 6, 4); if (p.length) { const px = e.x, py = e.y; G.Tactics.walk(e, p, MOVE_V, 99); F().fieldMove(f, rt, e, px, py); st.pm = e; } }

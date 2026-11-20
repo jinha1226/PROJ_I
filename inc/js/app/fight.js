@@ -40,9 +40,9 @@ const FIGHT = (() => {
       F.fxWait = !F.quiet; if (F.quiet) roundFx(); else SIDE.frame(); // 새로 굴린 줄은 왼쪽 칸에서 굴러 멈춘다 — 그 뒤에 띠 · 이펙트
     }
     if (F.fxWait) { if (SIDE.busy) return true; F.fxWait = false; roundFx(); } // 줄이 구르는 동안 전투는 멈춘다
-    // 차례가 바뀌었다: 앞 사람의 내성 뒤집기를 끝내고, 즉사 면이 다음 칸인 사람이면 쓰러진다
+    // 차례가 바뀌었다: 즉사 면이 다음 칸인 사람이면 쓰러진다
     if (T && T.cur !== F.cur) {
-      if (F.cur) D.turnEnd(F.cur); F.cur = T.cur;
+      F.cur = T.cur;
       const r = T.cur && D.dieOf(T.cur);
       if (r && r.special === 'death' && !T.cur.dead) { D.use(T.cur, 'death'); T.cur.hp = 0; T.cur.dead = true; T.cur.dying = false; F.log(`죽음의 주사위가 ${T.cur.merc?.name || '동료'}를 데려갔다.`); G.Fantasy.refreshEnts(R); }
     }
@@ -98,7 +98,8 @@ const FIGHT = (() => {
   function strip() {
     const T = F && R.turn; let el = $('turnstrip');
     if (!T || !T.order.length) { if (el) el.remove(); $('turnmark')?.remove(); $('turntg')?.remove(); return; }
-    if (!el) { el = document.createElement('div'); el.id = 'turnstrip'; el.innerHTML = '<div class="ts-row"></div><div class="ts-act"></div>'; $('stage').append(el); }
+    if (!el) { el = document.createElement('div'); el.id = 'turnstrip'; el.innerHTML = '<div class="ts-row"><span class="ts-rd"></span><div class="ts-q"><i class="ts-wrap" title="여기서부터 다음 라운드"></i></div></div><div class="ts-act"></div>'; el._n = new Map(); $('stage').append(el); }
+    for (const [e, n] of el._n) { const cv = n.firstChild; if (!cv.dataset.ok && (e.kind === 'mon' && !MD.isMon(e) ? true : UI.face(cv, e.kind === 'mon' ? e : e.merc))) { cv.dataset.ok = '1'; if (e.kind !== 'mon' || MD.isMon(e)) n.classList.add('pic'); } } // 얼굴은 그림이 오는 대로
     const live = T.order.map(x => x.e).filter(e => (e.kind === 'mon' ? e.hp > 0 && R.mons.includes(e) : !e.dead || e.dying)), roll = R.roll, cur = T.cur;
     // 한 줄: 방금 끝난 행동(굴림 · 결과)이 지금 차례 사람의 것이면 그것을, 아니면 지금 하려는 일(대상)
     let act = '';
@@ -112,13 +113,22 @@ const FIGHT = (() => {
       a.textContent = cur && F.act && F.act.who === nm(cur) && F.t - F.act.t < 1.6 ? `${F.act.what}` : '▼'; // 방금 쓴 기술의 이름을 머리 위에
       a.className = (foe ? 'foe' : '') + (a.textContent === '▼' ? '' : ' say'); a.style.display = cur ? '' : 'none'; if (cur) UI.place(a, cur._dx ?? cur.x, cur._dy ?? cur.y, 2.5);
       b.className = foe ? 'foe' : ''; b.style.display = tg ? '' : 'none'; if (tg) UI.place(b, tg._dx ?? tg.x, tg._dy ?? tg.y, 1.2); }
-    const side = cur ? (cur.kind === 'mon' ? '적의 차례' : '우리 차례') : '';
-    const k = `${T.round}|${side}|${live.map(e => (e === cur ? '*' : '') + nm(e) + (e.dying ? '!' : '')).join(',')}|${act}`;
+    const big = innerWidth >= 900;
+    const k = `${T.round}|${big}|${live.map(e => (e === cur ? '*' : '') + nm(e) + (e.dying ? '!' : '')).join(',')}|${act}`;
     if (el.dataset.k === k) return; el.dataset.k = k;
-    el.firstChild.innerHTML = `<span class="ts-rd">${T.round}라운드</span>${side ? `<span class="ts-side${cur.kind === 'mon' ? ' foe' : ''}">${side}</span>` : ''}` + live.map(e => { const c = e.merc ? G.Guild.def(e.merc) : null;
-      return `<span class="ts-c${e === cur ? ' cur' : ''}${e.kind === 'mon' ? ' foe' : ''}${e.dying ? ' down' : ''}"><i style="background:${c?.col || (e.kind === 'mon' ? '#b0483c' : '#888')}">${esc((c?.n || nm(e)).slice(0, 1))}</i>${esc(nm(e))}</span>`; }).join('<s>›</s>');
+    // 차례 띠: 얼굴을 차례대로 — 맨 왼쪽(크게)이 지금 차례, 차례가 넘어갈 때마다 한 칸씩 왼쪽 끝으로 다가온다. 끝낸 사람은 맨 뒤로. ┆ = 여기서부터 다음 라운드
+    { const ci = Math.max(0, live.indexOf(cur)), q = live.slice(ci).concat(live.slice(0, ci)), N = el._n, Q = el.querySelector('.ts-q'), wr = Q.firstChild;
+      const cw = big ? 50 : 40, fw = big ? 38 : 30, gap = big ? 10 : 7, dv = ci > 0 ? (big ? 12 : 9) : 0, n1 = Math.max(1, q.length - 1);
+      el.querySelector('.ts-rd').textContent = `${T.round}라운드`;
+      const room = el.clientWidth - el.querySelector('.ts-rd').offsetWidth - 40 - cw - gap - dv - fw, step = Math.max(12, Math.min(fw + 4, Math.floor(room / Math.max(1, n1 - 1)))); // 많으면 겹쳐 놓는다
+      for (const [e, n] of N) if (!q.includes(e)) { n.remove(); N.delete(e); }
+      const wrapAt = q.length - ci; // 이 자리부터 다음 라운드
+      q.forEach((e, i) => { let n = N.get(e); if (!n) { n = document.createElement('span'); n.innerHTML = `<canvas width="26" height="30"></canvas><em>${esc(nm(e).slice(0, 1))}</em>`; n.title = nm(e); Q.append(n); N.set(e, n); }
+        n.className = `ts-f${n.classList.contains('pic') ? ' pic' : ''}${i === 0 ? ' cur' : ''}${e.kind === 'mon' ? ' foe' : ''}${e.dying ? ' down' : ''}`;
+        n.style.left = (i === 0 ? 0 : cw + gap + (i - 1) * step + (ci > 0 && i >= wrapAt ? dv : 0)) + 'px'; n.style.zIndex = 50 - i; n.style.opacity = i === 0 ? 1 : Math.max(0.5, 1 - i * 0.07); });
+      wr.style.display = ci > 0 ? '' : 'none'; wr.style.left = Math.round(wrapAt === 1 ? cw + (gap + dv) / 2 : cw + gap + (wrapAt - 1) * step + (fw - step + dv) / 2) - 1 + 'px';
+      Q.style.width = (cw + gap + (n1 - 1) * step + fw + dv) + 'px'; }
     el.lastChild.innerHTML = act; el.lastChild.className = 'ts-act' + (F.act?.foe && act === F.act.html ? ' foe' : '');
-    el.querySelector('.ts-c.cur')?.scrollIntoView({ inline: 'center', block: 'nearest' });
   }
   // 칸을 쓰면(G.Dice.board.uses) 왼쪽 칸의 그 자리에서 주사위가 빠져나와 그 사람 머리 위로 날아간다
   function fly(u) {

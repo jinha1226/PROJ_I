@@ -11,7 +11,7 @@ G.Prep = (() => {
   // 시작: door { x, y } 문 칸 · out 문에서 우리 쪽으로 향하는 방향 · grid { w, h, pass(k), door(k) } · mons 방 안 몬스터(aware 있음) · items { tools }
   function begin(o) {
     const l = Math.hypot(o.out.x, o.out.y) || 1;
-    return { door: { x: o.door.x, y: o.door.y }, out: { x: o.out.x / l, y: o.out.y / l }, locked: !!o.locked, grid: o.grid, mons: o.mons,
+    return { door: { x: o.door.x, y: o.door.y }, out: { x: o.out.x / l, y: o.out.y / l }, locked: !!o.locked, noDoor: !!o.noDoor /* 문 없는 통로: 살며시 다가가 들어선다 */, grid: o.grid, mons: o.mons,
       items: { tools: 0, ...o.items }, others: o.others || [], opened: null, tries: [] };
   }
   // 여는 방법: who가 할 수 있는 것 (못 하면 이유)
@@ -19,7 +19,7 @@ G.Prep = (() => {
   function methods(P, who) {
     const L = LV();
     return [
-      { id: 'push', n: '살살 연다', ok: !P.locked, why: P.locked ? '잠겨 있다' : '', noise: L.push },
+      { id: 'push', n: P.noDoor ? '살며시 다가간다' : '살살 연다', ok: !P.locked, why: P.locked ? '잠겨 있다' : '', noise: L.push },
       { id: 'pick', n: '자물쇠 따기', ok: P.locked && P.items.tools > 0, why: !P.locked ? '잠기지 않았다' : P.items.tools > 0 ? '' : '도둑 도구가 없다', dc: DC, sk: 'sleight', noise: L.pick, fail: L.pickFail },
       { id: 'kick', n: '걷어차기', ok: true, why: '', dc: DC, sk: 'athletics', noise: L.kick, fail: L.kick },
       { id: 'knock', n: '노크 주문', ok: knows(who, 'u_knock'), why: knows(who, 'u_knock') ? '' : '노크 주문을 모른다', noise: L.knock },
@@ -42,10 +42,10 @@ G.Prep = (() => {
     let ok = true, nat = null, mod = 0;
     let insp = false;
     if (m.dc) { nat = io.d20(who); mod = io.skill(who, m.sk); ok = nat + mod >= m.dc; if (!ok && io.insp && io.insp(who)) { insp = true; nat = io.d20(who, true); ok = nat + mod >= m.dc; } } // 영웅적 영감 (SRD): 실패한 d20을 다시 굴리고 새 눈을 쓴다
-    const noise = ok ? m.noise : m.fail, ev = [{ k: 'try', who, id, n: m.n, ok, nat, mod, dc: m.dc || null, insp }];
+    const noise = ok ? m.noise : m.fail, ev = [{ k: 'try', who, id, n: m.n, noDoor: P.noDoor, ok, nat, mod, dc: m.dc || null, insp }];
     ev.push(...G.Noise.emit(P.grid, src(P), noise, P.mons.concat(P.others))); // 다른 방(others)도 듣는다 — 쫓아오면 증원
     P.tries.push({ who, id, ok, noise });
-    if (ok) { P.opened = { who, id }; P.locked = false; ev.push({ k: 'open', who, id }); }
+    if (ok) { P.opened = { who, id }; P.locked = false; ev.push({ k: 'open', who, id, noDoor: P.noDoor }); }
     return { ok, nat, mod, dc: m.dc || null, noise, ev };
   }
   // 전투 조건 (문이 열린 뒤): 기습(모든 적이 잠듦 · 모름이면 — SRD: 선제권 불리) · 잠든 적 · 쫓아오는 적

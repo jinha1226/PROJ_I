@@ -300,7 +300,7 @@ const CRAWL = (() => {
     cutscene = true;
     go(lane.length ? lane : [stop], () => {
       cutscene = false;
-      PREPUI.open(R, { door: { x: door[0], y: door[1] }, doorTiles: dts, out: { x: stop[0] - door[0], y: stop[1] - door[1] }, locked: ex.e.kind === 'locked' && !ex.e.opened, mons, others,
+      PREPUI.open(R, { door: { x: door[0], y: door[1] }, doorTiles: dts, out: { x: stop[0] - door[0], y: stop[1] - door[1] }, locked: ex.e.kind === 'locked' && !ex.e.opened, noDoor: ex.e.kind !== 'locked', mons, others,
         items: { tools: st.party.some(m => m.cls === 'rogue' && !m.dead) || st.items.tools ? 1 : 0 },
         reveal: () => { openRoom(ex.to); refreshSeen(); },
         ask: (o, cb) => pickWho({ title: o.n, dc: o.dc, cands: o.cands.map(c => ({ name: c.w.merc?.name || '동료', bonus: c.bonus, p: c.w })) }, i => cb(o.cands[i].w)),
@@ -409,7 +409,7 @@ const CRAWL = (() => {
       if (!R) return null;
       const T = R.turn, fighting = FIGHT.on;
       const party = R.party.map((a, i) => { const rm = st?.party[i], hp = fighting || !rm ? a.hp : Math.round(a.max * rm.hp / Math.max(1, rm.max)); return { a, m: a.merc, hp: Math.round(hp), max: a.max, dead: !!(a.dead || rm?.dead), cur: fighting && T?.cur === a }; });
-      return { title: (iso || R.map)?.title || '', sub: fighting ? `${T?.round || 1}라운드` : PREPUI.active ? '문을 연다' : st?.done ? '끝' : '탐사', fighting, gold: st ? st.gold : null, items: st ? st.items : null, party };
+      return { title: (iso || R.map)?.title || '', sub: fighting ? `${T?.round || 1}라운드` : PREPUI.active ? (PREPUI.noDoor ? '다가간다' : '문을 연다') : st?.done ? '끝' : '탐사', fighting, gold: st ? st.gold : null, items: st ? st.items : null, party };
     },
     // 방 검수 (?scene=rooms&i=N&e=K): 손으로 짠 방(js/explore/rooms.js) 하나를 복셀로 — 적 구성 K번을 몬스터 자리에 세워 본다. 걷기 · 전투 없음
     roomStart(i) {

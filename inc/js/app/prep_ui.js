@@ -17,7 +17,7 @@ const PREPUI = (() => {
     R = rt; O = o; busy = false; opening = null; die = null; wait = 0; walks.clear();
     const dset = new Set(o.doorTiles || [Math.round(o.door.y) * R.map.w + Math.round(o.door.x)]); // 닫힌 문 칸들 (탐사 층은 지도 1칸 = 2×2타일)
     const grid = { w: R.map.w, h: R.map.h, pass: k => R.map.c[k] !== '#', door: k => dset.has(k) && !(P && P.opened) };
-    P = G.Prep.begin({ door: o.door, out: o.out, locked: o.locked, grid, mons: o.mons, items: o.items, others: o.others });
+    P = G.Prep.begin({ door: o.door, out: o.out, locked: o.locked, noDoor: o.noDoor, grid, mons: o.mons, items: o.items, others: o.others });
     intro = o.intro ? { to: o.intro, t: 0 } : null;
   }
   function close() { const el = $('prepdie'); if (el) el.remove(); P = null; }
@@ -66,5 +66,5 @@ const PREPUI = (() => {
     if (opening && (opening.t += dt) > 1.1) { const S = G.Prep.setup(P), cb = O.onOpen; close(); cb(S); return false; }
     return true;
   }
-  return { open, frame, get active() { return !!P; } };
+  return { open, frame, get active() { return !!P; }, get noDoor() { return !!(P && P.noDoor); } };
 })();

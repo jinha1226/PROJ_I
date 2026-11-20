@@ -10,9 +10,12 @@
 // - 특수 주사위(원정 전에 고른 것, 2개까지): 줄을 굴릴 때마다 그 사람 줄의 칸 하나씩 — 죽음의 주사위는 맡은 사람 줄, 나머지는 무기를 휘두르는 사람 줄.
 //   죽음의 주사위의 즉사 면이 다음 칸이면 그 사람이 차례 시작에 쓰러진다.
 // - SRD의 주사위 능력을 판에서 보인다: 하플링 행운(1이 나오면 그 칸을 다시 굴린다) · 치명타 범위(챔피언 19) · 축복 · 바드의 영감 등 — D.tags · D.mark · D.bonus. 규칙은 엔진 그대로다.
-// - 직업 주사위 = SRD 그대로의 d20(1~20 고르게)에 면마다 기호를 새긴 것. 자연 20 치명타 · 자연 1 빗나감이 그대로 살아 있다. 이점이면 보통 d20과 큰 쪽, 불리면 작은 쪽.
-// - 적은 보통 d20. 이니셔티브에도 쓰지 않는다. 전투는 옛 턴제 오토배틀 그대로 — 공격 굴림만 판의 값이다.
-// G.Dnd.attack · save · d20을 감싸서 끼운다 (원래 함수는 그대로 부른다). 금화는 D.purse(앱이 채운다)로 낸다.
+// - 직업 주사위 = d20(1~20 고르게)에 면마다 기호를 새긴 것.
+// - **한 사람의 한 라운드 = 한 칸** (2026-11-20, SRD를 여기서 비튼다 — 주사위는 판의 d20 하나): 그 라운드에 처음 무엇을 하든(공격 · 내성 주문 · 치유 · 강화) 칸을 하나 쓰고,
+//   그 라운드에 그 사람이 굴리는 것은 모두 그 눈에서 나온다 — 명중 d20(추가 공격 · 반응 공격도) = 눈 · 적에게 시킨 내성 = 21 − 눈 · 그 행동의 피해 · 치유 주사위 dN = 올림(눈 × N ÷ 20).
+//   눈 20의 치명타는 그 라운드의 첫 공격만 (뒤 공격은 19로 친다). 이점이면 보통 d20과 큰 쪽, 불리면 작은 쪽. 수식(명중 보정 · AC · DC · 피해 공식)은 SRD 그대로.
+// - 판은 내가 하는 행동에만 쓴다: 우리 쪽이 굴리는 내성(집중 유지 · 사망 내성) · 선제권 · 적 · 소환수는 보통 주사위. 전투는 옛 턴제 오토배틀 그대로.
+// G.Dnd.attack · save · d20 · dice(fateV)를 감싸서 끼운다 (원래 함수는 그대로 부른다). 누가 행동 중인가는 G.Dnd.actor (기술: skills.js · 기본 공격 · 기본 치유: 아래). 금화는 D.purse(앱이 채운다)로 낸다.
 G.Dice = (() => {
   const d = (rng, n) => 1 + Math.floor(rng() * n);
   const KINDS = {
@@ -67,8 +70,8 @@ G.Dice = (() => {
     bearer: null,       // 죽음의 주사위를 맡은 사람
     board: null,        // 이번 층의 운명판: { lines: Map(사람 → 줄), rerolls: 이 층에서 한 칸 다시 굴린 횟수, on: [맞아 있는 빙고 줄], news: [새로 맞은 줄 — fire가 비운다], got: [영감을 얻은 사람 — fire가 비운다],
                         //   turned: [{ p, kept, cost }] 마지막 turnover에서 넘어간 줄, uses: [{ p, c, d, how }] 쓴 칸 — 화면이 비운다 }. 줄 = { cells: [Roll × 4], at: 다음에 쓸 칸 (4 = 다 썼다), hold: 붙잡기, holds: 이어서 붙잡은 횟수 }
-    st: null,           // 이번 전투 라운드: { round, first: 이 전투의 첫 라운드, used: Set(이번 라운드에 칸을 쓴 사람), saveBy, ready, fx: { lines, news, insp } — 화면이 연출에 쓴다 }
-    ctx: null,          // 지금 굴리는 것: { kind: 'attack', actor } | { kind: 'save', target }
+    st: null,           // 이번 전투 라운드: { round, first: 이 전투의 첫 라운드, used: Set(이번 라운드에 칸을 쓴 사람), die: Map(사람 → 이번 라운드의 칸), crit: Set(20의 치명타를 이미 쓴 사람), ready, fx: { lines, news, insp } — 화면이 연출에 쓴다 }
+    ctx: null,          // 지금 굴리는 d20: { kind: 'attack', actor } | { kind: 'save', target }
     fated: [],          // 이번 라운드 빙고 효과를 받은 사람
     party: () => [],    // 앱이 채운다: 살아 있는 아군 목록
     roster: () => D.party(), // 앱이 채운다: 줄을 가진 사람 모두 (쓰러진 사람도)
@@ -181,7 +184,7 @@ G.Dice = (() => {
     // 전투 라운드 시작: 앞 라운드의 빙고 효과를 지우고, 다 쓴 줄을 넘긴다 (B.turned — 화면이 그 줄을 굴린다)
     useRound(round, rng = Math.random) {
       const first = !D.st; D.clearFate(); D.sync(rng); D.turnover(rng);
-      D.st = { round, first, used: new Set(), saveBy: null, ready: true, fx: { lines: [], news: [], insp: [] } };
+      D.st = { round, first, used: new Set(), die: new Map(), crit: new Set(), ready: true, fx: { lines: [], news: [], insp: [] } };
       return D.st;
     },
     // 전투 끝: 라운드 · 빙고 효과를 치운다 (판은 층 내내 남는다)
@@ -209,8 +212,8 @@ G.Dice = (() => {
     suggestBearer() { const ps = D.party(); return ps.slice().sort((a, b) => b.hp / b.max - a.hp / a.max)[0] || null; },
     // 이번 라운드에 그 사람이 쓸 칸 (이미 썼으면 null) — 파티 카드에 보인다
     dieOf(p) { const S = D.st; return S && S.used.has(p) ? null : D.peek(p); },
-    // 차례가 바뀌면: 앞 사람의 내성 뒤집기를 끝낸다 (그 칸을 썼다)
-    turnEnd(p) { const S = D.st; if (S && S.saveBy === p) { S.saveBy = null; D.use(p, 'save'); } },
+    // 이번 라운드에 그 사람이 쓰는 칸: 처음 부르면 그 줄의 다음 칸을 쓴다 (how — 화면 표시). 줄이 없거나(적 · 소환수) 특수 면이면 null → 보통 주사위
+    roundDie(p, how) { const S = D.st; if (!S || !S.ready || !p) return null; let r = S.die.get(p); if (r === undefined) { r = S.used.has(p) ? null : D.use(p, how); S.die.set(p, r || null); } return r && !r.special ? r : null; },
   };
 
   // ── 굴림에 끼우기 ──
@@ -221,15 +224,21 @@ G.Dice = (() => {
   N.d20 = function (adv) {
     const S = D.st, c = D.ctx; if (!S || !S.ready || !c) return d20(adv);
     const mix = v => (adv > 0 ? Math.max(v, d20(0)) : adv < 0 ? Math.min(v, d20(0)) : v); // SRD 이점 · 불리는 살아 있다
-    if (c.kind === 'attack' && c.actor && !S.used.has(c.actor)) {
-      const r = D.use(c.actor, 'atk'); return !r || r.special ? d20(adv) : mix(r.value); // 그 라운드의 첫 공격
+    if (c.kind === 'attack' && c.actor) { // 그 라운드의 공격은 모두 그 눈 (20의 치명타는 첫 공격만)
+      const r = D.roundDie(c.actor, 'atk'); if (!r) return d20(adv);
+      if (r.value === 20) { if (S.crit.has(c.actor)) return mix(19); S.crit.add(c.actor); }
+      return mix(r.value);
     }
-    if (c.kind === 'save' && c.target && c.target.kind === 'mon') {
-      const who = D.cur(); if (!who || who.kind === 'mon' || S.used.has(who)) return d20(adv);
-      const r = D.peek(who); if (!r || r.special) return d20(adv);
-      S.saveBy = who; return mix(21 - r.value); // 그 차례의 내성 주문은 모두 같은 칸 — 차례가 끝나면 쓴 것이 된다 (turnEnd)
+    if (c.kind === 'save' && c.target && c.target.kind === 'mon') { // 우리가 적에게 시킨 내성 (행동 중인 사람 · 없으면 차례인 사람): 눈을 뒤집는다
+      const who = N.actor || D.cur(); if (!who || who.kind === 'mon') return d20(adv);
+      const r = D.roundDie(who, 'save'); return r ? mix(21 - r.value) : d20(adv);
     }
     return d20(adv);
   };
+  // 피해 · 치유 주사위 (G.Dnd.dice): 지금 행동하는 사람의 눈에서 환산. 눈이 없으면(적 · 특수 면 · 전투 밖) 0 → 보통 주사위
+  N.fateV = () => { const r = N.actor ? D.roundDie(N.actor, 'act') : null; return r ? r.value : 0; };
+  N.acted = a => { D.roundDie(a, 'act'); };
+  // 기본 공격 · 기본 치유도 그 사람의 행동이다 (기술은 skills.js가 G.Dnd.actor를 건다)
+  for (const fn of ['allyAttack', 'healTurn']) { const f0 = G.Fantasy[fn]; G.Fantasy[fn] = function (f, rt, a) { const by0 = N.actor; N.actor = a; try { return f0.apply(this, arguments); } finally { N.actor = by0; } }; }
   return D;
 })();

@@ -28,7 +28,6 @@ function run(G, r, { dice = null, maxT = 400 } = {}) {
     const T = r.turn;
     // 앱과 같게: 라운드마다 다 쓴 줄을 넘기고 빙고 효과를 켠다
     if (dice && T && T.round !== round) { round = T.round; G.Dice.useRound(T.round); G.Dice.fire(); }
-    if (dice && T && T.cur !== cur) { if (cur) G.Dice.turnEnd(cur); cur = T.cur; }
     G.tick(0.1);
     const foes = r.mons.filter(m => m.hp > 0), ps = r.party.filter(p => !p.dead && p.hp > 0);
     if (!foes.length || !ps.length) { if (dice) G.Dice.end(); return { win: !!ps.length && !foes.length, t: k / 10, rounds: r.turn?.round || round, used, maxRound: round }; }

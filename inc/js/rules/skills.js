@@ -52,7 +52,7 @@ G.Skill = (() => {
     desc(m, k) { const S = D.MSKILLS[k], R0 = Sk.resOf(k); const kd = Sk.kindOf(k); return `${kd === '늘 적용' || kd === '탐험' ? '' : `[${kd}] `}${Sk.text(m, k)}${R0 ? ` · ${G.Res.usesOf(m, R0, k)}번` : ''}`; },
     // 동료 한 명: 열린 칸의 스킬 중 쿨다운이 끝났고 쓸 만한 것 하나 (한 번 쓰면 GAP초 쉰다)
     tick(f, rt, a, dt, seen, bonus) {
-      if (G.Skill.persist && !bonus && dt) G.Skill.persist(f, rt, a, dt);
+      if (G.Skill.persist && !bonus && dt) { const by0 = G.Dnd.actor; G.Dnd.actor = a; try { G.Skill.persist(f, rt, a, dt); } finally { G.Dnd.actor = by0; } }
       if (!a.merc || a.dead) return;
       const pri = a.merc.skPri, rank = p => { if (SK[p]?.prio) return 1000 + SK[p].prio; const i = pri ? pri.indexOf(p) : -1; return i >= 0 ? 100 - i : G.Res.cost(a.merc, SK[p]?.res); }, dealt = p => { const t = spellType(p); if (!t || !seen.length) return 1; return Math.max(...seen.map(o => (o.stat ? G.Foe.typeK(o, t, a) + (t === 'fire' && G.Foe.needsFire(o) ? 2 : 0) : 1))); };
       if (!bonus && G.Team) G.Team.expire(rt, a);
@@ -85,12 +85,13 @@ G.Skill = (() => {
         const mm = G.Opt.begin(a, k, S, x, one);
         a.castAb = G.SrdX?.castAb(a.merc, k) || null;
         if (S.res?.slot && a.bf?.invis2) delete a.bf.invis2; // 투명화 (SRD): 주문을 쓰면 끝
-        let ran; const fx0 = rt.fx ? rt.fx.length : 0; if (G.MC?.on(m0)) a.merc = G.MC.viewFor(m0, k); try { ran = S.run(a, x); } finally { a.merc = m0; }
+        let ran; const fx0 = rt.fx ? rt.fx.length : 0; if (G.MC?.on(m0)) a.merc = G.MC.viewFor(m0, k); const by0 = G.Dnd.actor; G.Dnd.actor = a; try { ran = S.run(a, x); } finally { a.merc = m0; G.Dnd.actor = by0; } /* G.Dnd.actor: 지금 행동하는 사람 (운명판이 그 사람의 눈을 쓴다) */
         a.castAb = null;
         G.Opt.end(a, mm, ran);
         G.Skill.maxDice = false;
         G.Foe.dtype = null; G.Skill.dtOver = null;
         if (ran === false) continue;
+        if (G.Dnd.acted) G.Dnd.acted(a); // 운명판: 주사위가 없는 행동(강화 · 보호)도 그 라운드의 칸을 쓴다
         G.Res.pay(a.merc, k, S.res);
         if (S.res?.slot) a.slotUsed = true;
         if (bonus === 'free') { (a.freeDone = a.freeDone || {})[k] = 1; } else if (bonus) { a.lastBonus = k; } else a.lastSk = k;
