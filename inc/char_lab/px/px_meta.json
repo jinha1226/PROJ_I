@@ -1,0 +1,1 @@
+{"32": {"w": 52, "h": 52, "foot": 41, "rows": ["idle", "walk", "atk", "hit"], "n": {"idle": 4, "walk": 8, "atk": 6, "hit": 3}}, "40": {"w": 65, "h": 65, "foot": 52, "rows": ["idle", "walk", "atk", "hit"], "n": {"idle": 4, "walk": 8, "atk": 6, "hit": 3}}, "48": {"w": 77, "h": 77, "foot": 62, "rows": ["idle", "walk", "atk", "hit"], "n": {"idle": 4, "walk": 8, "atk": 6, "hit": 3}}}
