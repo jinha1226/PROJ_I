@@ -18,7 +18,7 @@ G.Tavern = (() => {
   const stools = rumor => 4 + STOOL_AT.filter(v => rumor >= v).length;
   // 손님 한 명: 시작 레벨(G.Party.START_LV). 능력치는 직업마다 같고(G.Party.stdAb), 사람마다 다른 것은 기술과 주사위다 (G.Party.forge — 기질 + 기술의 성격으로 새긴다)
   // lid = 생김새의 씨앗: 던전에 들어가며 번호(uid)가 바뀌어도 선술집에서 본 모습 그대로다 (js/render/minidoll.js)
-  const guest = (f, cls, rng = Math.random) => { const m = G.Party.trim(G.Guild.make(f, cls, { lv: G.Party.START_LV, ab: G.Party.stdAb(cls) })); if (m.lv >= 3) m.adv = Object.keys(G.D.ADV).find(k => G.D.ADV[k].base === cls) || null; m.lid = 't' + m.uid + m.name; return G.Party.forge(m, rng); }; // 3레벨 이상으로 시작하면 하위 직업까지
+  const guest = (f, cls, rng = Math.random) => { const m = G.Party.trim(G.Guild.make(f, cls, { lv: G.Party.START_LV, ab: G.Party.stdAb(cls) })); if (m.lv >= 3) m.adv = Object.keys(G.D.ADV).find(k => G.D.ADV[k].base === cls) || null; m.lid = 't' + m.uid + m.name; if (G.Builds) G.Builds.assign(m, rng); return G.Party.forge(m, rng); }; // 빌드 계획을 가지고 온다 (js/game/builds.js — 주사위 기호도 그 기술로) // 3레벨 이상으로 시작하면 하위 직업까지
   // 상태창에 적을 것 (화면 없이): 직업 · 종족 · 체력 · AC · 능력치 · 무기 · 갑옷 · 늘 적용되는 특성 · 손에 든 기술(효과 한 줄) · 종족 특성 · 탐사에서 맡는 일
   const ROLE = { fighter: '문 부수기 · 앞줄', rogue: '자물쇠 · 함정 찾기 · 정찰', wizard: '열림 주문 · 마법 탐지 · 빛', cleric: '점술 · 치유', ranger: '길 찾기 · 정찰 · 활' };
   const DMG_T = { slashing: '참격', piercing: '관통', bludgeoning: '타격', fire: '화염', cold: '냉기', radiant: '광휘', force: '역장', psychic: '정신', necrotic: '사령', lightning: '번개', poison: '독', acid: '산성', thunder: '천둥' };
@@ -35,6 +35,7 @@ G.Tavern = (() => {
       feats: G.Reward.features(m), // SRD 직업 표의 기능 전부 (그 레벨까지)
       skills: (m.skills || []).filter(k => G.Guild.spLv(k) != null).map(k => ({ ...sk(k), tag: G.Guild.spLv(k) ? `${G.Guild.spLv(k)}레벨 주문` : '소마법' })),
       spTraits: sp.traits.map(([n, d]) => ({ n, d })),
+      build: G.Builds ? G.Builds.view(m) : null, // 빌드: 지금 6칸 · 20레벨까지 성장 경로 (js/game/builds.js)
       die: m.dieSym ? { n: m.dieN, lean: m.lean, cnt: m.dieCnt, sym: m.dieSym } : null,
     };
   }

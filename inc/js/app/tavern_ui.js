@@ -133,7 +133,7 @@ const TAVERNUI = (() => {
         `<div class="tv-st"><span>체력<b>${s.hp}</b></span><span>AC<b>${s.ac}</b></span>${s.ab.map(a => `<span>${esc(a.n)}<b>${a.v}</b><i>${a.mod}</i></span>`).join('')}</div>` +
         (s.die ? `<h5>주사위</h5><div class="tv-die"><b>${esc(s.die.n)}</b><small>${esc(s.die.lean)} · d20</small><div class="tv-cnt">${faceChips(g)}</div><ul class="tv-fx">${LEG.filter(l => FC(g)[l.s]).map(l => `<li><i class="sy s-${l.s}">${l.n}</i><b>${esc(l.fx)}</b><span>${esc(l.tiers[0])}</span></li>`).join('')}</ul></div>` : '') +
         `<h5>기본 공격</h5><ul class="tv-sk">${li(s.weapon)}<li><b>${esc(s.armor)}</b><small>방어구</small></li></ul>` +
-        (s.skills.length ? `<h5>기술 ${s.skills.length}/${G.Party.CAP}</h5><ul class="tv-sk">${s.skills.map(o => li(o)).join('')}</ul>` : '') +
+        (s.build ? UI.build(s.build, 'h5') : s.skills.length ? `<h5>기술 ${s.skills.length}/${G.Party.CAP}</h5><ul class="tv-sk">${s.skills.map(o => li(o)).join('')}</ul>` : '') +
         (s.feats.length ? `<h5>직업 기능</h5><ul class="tv-sk">${s.feats.map(o => li(o, `${o.lv}레벨`)).join('')}</ul>` : '') +
         (s.traits.length + s.spTraits.length ? `<h5>특성</h5><ul class="tv-sk">${s.traits.filter(o => !s.feats.some(x => x.n === o.n)).map(o => li(o, '고른 것')).join('')}${s.spTraits.map(o => li(o, s.sp)).join('')}</ul>` : '') +
         `<button class="tv-take${k >= 0 ? ' out' : ''}"${full ? ' disabled' : ''}>${k >= 0 ? '뺀다' : full ? '자리 없음' : '데려간다'}</button>`;

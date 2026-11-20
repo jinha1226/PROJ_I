@@ -5,7 +5,7 @@
 const REWARDUI = (() => {
   const { $, esc } = UI;
   let queue = [], then = null, res = null;
-  const KIND = { spell: '주문', swap: '바꿀 주문', asi: '능력치 향상', fs: '전투 방식', iv: '영창', mm: '초마법', art: '마법 물건', rule: '규칙 카드', carve: '면 새기기' };
+  const KIND = { spell: '주문', swap: '바꿀 주문', asi: '능력치 향상', fs: '전투 방식', iv: '영창', mm: '초마법', art: '마법 물건', rule: '규칙 카드', carve: '면 새기기', plan: '새 기술' };
   const skN = k => G.D.MSKILLS[k]?.n || k, clsN = m => G.Guild.def(m)?.n || m.cls;
   function open() { let box = $('reward'); if (!box) { box = document.createElement('div'); box.id = 'reward'; box.onpointerup = ev => ev.stopPropagation(); $('stage').append(box); } return box; }
   function close() { const b = $('reward'); if (b) b.remove(); }
@@ -40,7 +40,7 @@ const REWARDUI = (() => {
   }
   // 레벨업 한 장: 새로 얻은 것(보기만) → 고를 것 — 추천 셋 중 하나, 「전부 보기」를 누르면 그 자리의 후보 전부 (직접 고르기). 늘 전부 보기는 이 브라우저에 기억한다
   const ALL_KEY = 'inc.lvall', allOn = () => { try { return localStorage.getItem(ALL_KEY) === '1'; } catch (e) { return false; } }, allSet = v => { try { localStorage.setItem(ALL_KEY, v ? '1' : '0'); } catch (e) { /* 기억 못 해도 된다 */ } };
-  const HEAD = { spell: '주문 하나를 배운다', asi: '능력치 향상', fs: '전투 방식 하나', iv: '영창 하나', mm: '초마법 하나' };
+  const HEAD = { plan: '새 기술 — 계획한 길, 또는 다른 길 하나 (고르면 성장 경로가 그쪽으로 바뀐다)', spell: '주문 하나를 배운다', asi: '능력치 향상', fs: '전투 방식 하나', iv: '영창 하나', mm: '초마법 하나' };
   function level(box, m, all = allOn()) {
     const o = G.Reward.offer(m, Math.random, all);
     if (o.kind === 'new') {
@@ -50,7 +50,7 @@ const REWARDUI = (() => {
     }
     if (o.kind === 'swap') return swap(box, m, o, all);
     box.innerHTML = `<h3>${esc(m.name)} — ${m.lv}레벨</h3><p>${HEAD[o.kind] || ''}</p>` +
-      `<div class="rw-cards${all ? ' all' : ''}">${o.options.map((c, i) => `<button data-i="${i}"><small>${KIND[c.kind]}${c.lv ? ` · ${c.lv}레벨` : c.kind === 'spell' ? ' · 소마법' : ''}</small><b>${esc(c.n)}</b><span>${esc(c.d || '')}</span></button>`).join('')}</div>` +
+      `<div class="rw-cards${all ? ' all' : ''}">${o.options.map((c, i) => `<button data-i="${i}"${c.plan ? ' class="rw-plan"' : ''}><small>${c.plan ? '계획 · ' : ''}${KIND[c.kind]}${c.lv ? ` · ${c.lv}레벨 주문` : c.kind === 'spell' ? ' · 소마법' : ''}</small><b>${esc(c.n)}</b><span>${esc(c.d || '')}</span></button>`).join('')}</div>` +
       `<button class="rw-all">${all ? '추천 셋만' : '전부 보기'}</button>`;
     box.querySelector('.rw-all').onclick = () => { allSet(!all); level(box, m, !all); };
     box.querySelector('.rw-cards').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; G.Reward.choose(m, o.options[+b.dataset.i]); step(); };

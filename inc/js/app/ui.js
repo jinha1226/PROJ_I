@@ -41,5 +41,11 @@ const UI = (() => {
   const px = n => `<i class="px px-${n}"></i>`;
   const IC = { '🦺': 'armor', '🥋': 'armor', '🛡': 'shield', '🗡': 'sword', '⚔': 'sword', '🔱': 'sword', '💍': 'ring', '🪄': 'wand', '🥢': 'wand', '🧥': 'cloak', '🥻': 'cloak', '🧤': 'glove', '⛓': 'glove', '🔨': 'hammer', '📿': 'amulet', '🎗': 'amulet', '👑': 'crown', '🏹': 'bow', '👢': 'boots', '🥾': 'boots', '🪓': 'axe', '🔮': 'orb', '🧿': 'orb', '💀': 'skull', '☠': 'skull', '★': 'star', '✦': 'spark' };
   const ic = e => (e ? px(IC[[...e][0]] || 'gem') : '');
-  return { $, esc, place, toStage, tileAt, ring, svg, say, face, px, ic };
+  // 빌드 칸 · 성장 경로 (G.Builds.view): 선술집 상태창 · 캐릭터 시트가 같이 쓴다. 경로는 기술마다 생기는 레벨 — 지금 든 것은 밝게, 앞으로 생길 것은 흐리게, 내려놓은 것은 줄을 긋는다
+  function build(v, H = 'h4') {
+    if (!v) return ''; const li = o => `<li><b>${esc(o.n)}</b><small>${esc(o.tag)}</small><span>${esc(o.d)}</span></li>`;
+    return `<${H}>기술 ${v.now.length}/${v.max} <small>${esc(v.n)}</small></${H}><ul class="bd-now">${v.now.map(li).join('')}${'<li class="bd-empty"><b>빈 칸</b><small>레벨이 오르면 채워진다</small></li>'.repeat(Math.max(0, v.max - v.now.length))}</ul>` +
+      `<${H}>성장 경로 <small>20레벨까지 · 기술마다 생기는 레벨</small></${H}><ol class="bd-path">${v.path.map(t => `<li class="${t.have ? 'on' : t.gone ? 'gone' : 'soon'}" title="${esc(t.d)}"><i>${t.lv ?? '-'}</i><b>${esc(t.n)}</b><small>${t.outN ? `${esc(t.outN)} 대신` : esc(t.tag)}</small></li>`).join('')}</ol>`;
+  }
+  return { $, esc, place, toStage, tileAt, ring, svg, say, face, px, ic, build };
 })();

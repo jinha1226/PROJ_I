@@ -60,7 +60,7 @@ G.Party = (() => {
   // 갑옷 입은 클레릭은 앞줄에서 함께 싸운다 (2인 파티에서 혼자 빠지지 않게). 드루이드 · 바드는 가운데 줄 그대로
   const place = (f, m) => { if (m.cls === 'cleric') (f.form = f.form || {})[m.uid] = 0; return m; };
   // 구출한 사람: 아무 직업, 파티 평균 레벨
-  const rescued = (f, rng = Math.random) => forge(trim(G.Guild.make(f, CLASSES[Math.floor(rng() * CLASSES.length)], { lv: Math.max(START_LV, level(f)) })), rng);
+  const rescued = (f, rng = Math.random) => { const m = trim(G.Guild.make(f, CLASSES[Math.floor(rng() * CLASSES.length)], { lv: Math.max(START_LV, level(f)) })); if (G.Builds) G.Builds.assign(m, rng); return forge(m, rng); };
   // 들인다: 엔진 명단 · 출전 줄 · 탐사 파티에. at = 나타날 자리. 돌려주는 것: 쿼터뷰 인물
   function join(f, rt, m, st, at) {
     place(f, m); f.mercs.push(m); (f.lineup = f.lineup || []).push(m.uid); G.Fantasy.syncAllies(f);

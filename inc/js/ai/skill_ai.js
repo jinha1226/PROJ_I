@@ -96,7 +96,8 @@ G.SkillAI = (() => {
         const hurt = ps.filter(p => p.hp < p.max).sort((p, q) => p.hp / p.max - q.hp / q.max), n = o?.n || 1, g = H().G0 ? H().G0(x, a) : 1, each = diceAvg(num?.d) * (p => p.max / Math.max(1, DN().srdHP(p.merc)))(a), healed = hurt.slice(0, n).reduce((s, p) => s + Math.min(p.max - p.hp, each || p.max * 0.2), 0), whole = Math.max(1, ps.reduce((s, p) => s + p.max, 0)), low = hurt[0] ? hurt[0].hp / hurt[0].max : 1, dying = (x.rt.party || []).some(p => p.dying);
         v = hurt.length ? (healed / whole) * HEAL_K * (dying ? 6 : low < 0.25 ? 4 : low < 0.5 ? 2 : 0.6) + (dying ? 12 : low < 0.25 ? 8 : low < 0.5 ? 2 : 0) : 0;
       } else if (num?.d && !S.heal) {
-        const r = o?.area || (M.d && /반경 (\d+)칸|곁 (\d+)칸/.exec(M.d)?.slice(1).find(Boolean)) || 0, list = r ? AI.best(x, +r) : o?.n > 1 ? x.seen.slice(0, o.n) : x.seen.slice(0, 1), p = o?.save || num.sv ? SAVE_FAIL + (o?.half ? 0.2 : 0) : HIT_P, g = H().G0(x, a), ty = G.Skill.spellType(k), upD = res?.slot && G.Skill.UP?.[k] ? diceAvg(G.Skill.UP[k]) * Math.max(0, G.Res.castLevel(m, res) - (S.base || 1)) : 0, dmg = list.reduce((s, q) => s + Math.min(q.hp, (diceAvg(num.d) + upD) * g * p * (ty ? G.Foe.dealK(a, q, ty) : 1)), 0); /* 높은 슬롯으로 쓰면 주사위가 는다 (SRD) — 예전 스킬 레벨 배율 대신 */
+        // 명중 굴림도 내성도 없는 피해 주문(마법 화살 · 금속 달구기 — SRD DB에 atk · save가 없다)은 자동 명중
+        const r = o?.area || (M.d && /반경 (\d+)칸|곁 (\d+)칸/.exec(M.d)?.slice(1).find(Boolean)) || 0, list = r ? AI.best(x, +r) : o?.n > 1 ? x.seen.slice(0, o.n) : x.seen.slice(0, 1), p = o?.save || num.sv ? SAVE_FAIL + (o?.half ? 0.2 : 0) : o && !o.atk && GD().spLv(k) > 0 ? 1 : HIT_P, g = H().G0(x, a), ty = G.Skill.spellType(k), upD = res?.slot && G.Skill.UP?.[k] ? diceAvg(G.Skill.UP[k]) * Math.max(0, G.Res.castLevel(m, res) - (S.base || 1)) : 0, dmg = list.reduce((s, q) => s + Math.min(q.hp, (diceAvg(num.d) + upD) * g * p * (ty ? G.Foe.dealK(a, q, ty) : 1)), 0); /* 높은 슬롯으로 쓰면 주사위가 는다 (SRD) — 예전 스킬 레벨 배율 대신 */
         v = dmg / base;
         if (GD().spLv(k) === 0 && (!DN().caster(a) || (DN().ebOf(a.merc) && k !== 'sr_eb'))) v *= 0.5; // 고통의 폭발이 있는 워락도 섬뜩한 폭발이 먼저 // 무기 직업이 재주 · 종족으로 얻은 소마법: 무기를 먼저 쓴다 (강타 · 암습 · 표식이 무기에 붙는다 — 그 값은 위 계산에 없다)
         if (num.t && x.seen.every(q => G.Foe.typeK(q, num.t, a) <= 0)) v = -1; // 다 면역이면 쓰지 않는다
@@ -106,7 +107,8 @@ G.SkillAI = (() => {
       else if (o?.k === 'summon' || o?.k === 'field') v = SUMMON_K * Math.min(1, threat);
       else if (!res) v = DEFAULT_K; else v = DEFAULT_K * Math.min(1.5, 0.5 + threat);
       if (!TAC[k] && !useDB && S.conc && !S.heal) v *= 0.5; // 값을 모르는 집중 주문(선악 보호 · 저항 …)이 집중을 차지해 축복 · 헥스를 막지 않게
-      if (res?.slot) { const L = G.Res.castLevel(m, res), left = G.Res.left(m, res, k), need = Math.max(0, 1.2 - Math.min(1, threat)); v -= SLOT_K * L * need * (left <= 1 ? 1.5 : 1); }
+      // 슬롯 값: 이번 전투의 몫 = 전투를 시작할 때 남은 슬롯 ÷ 다음 긴 휴식까지 남은 전투(G.Res.fightsLeft). 몫 안에서는 과감하게, 넘으면 아낀다. 쉬운 전투일수록 아끼는 것은 그대로 (위협이 크면 몫과 상관없이 쓴다)
+      if (res?.slot) { const L = G.Res.castLevel(m, res), left = G.Res.left(m, res, k), fr = G.Res.slotFrac ? G.Res.slotFrac(m) : 0.5, f0 = m.frac0 ?? fr, share = f0 / Math.max(1, G.Res.fightsLeft ? G.Res.fightsLeft() : 3), spent = Math.max(0, f0 - fr), keep = spent < share ? 0.2 : spent < share * 1.6 ? 0.7 : 1.5, need = Math.max(0, 1.2 - Math.min(1, threat)) * keep; v -= SLOT_K * L * need * (left <= 1 ? 1.5 : 1); }
       else if (res) v -= 0.1 * Math.max(0, 1 - threat);
       if (S.conc && a.concK && !G.Res.concSpent(a)) v -= 0.5;
       return v;

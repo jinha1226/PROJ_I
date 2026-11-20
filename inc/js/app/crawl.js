@@ -198,6 +198,8 @@ const CRAWL = (() => {
   // 운명판을 이 판(탐사)에 잇는다: 줄을 가진 사람 · 주머니 · 탐험 판정의 d20 (RUN.fate — 그 사람의 다음 칸). 층에 들어설 때마다 newBoard
   function bindDice() {
     const D = G.Dice; D.party = () => R.party.filter(p => !p.dead && p.hp > 0); D.roster = () => R.party; D.cur = () => R.turn?.cur || null; D.purse = purse;
+    // 다음 긴 휴식까지 남은 전투를 지도로 (G.Res.fightsLeft가 기록과 섞는다): 이 층에 남은 적 방의 6할(갈림길이라 다 가지 않는다) + 홀수 층이면 다음 층 몫. 이 층에 안 간 야영 방이 있으면 더 빨리 쉰다
+    G.Res.paceHint = () => { const ns = st?.map?.nodes; if (!ns) return null; const left = ns.filter(n => n.hostile && !n.visited).length, all = ns.filter(n => n.hostile).length, camp = ns.some(n => n.type === 'camp' && !n.visited); return Math.round(left * (camp ? 0.35 : 0.6)) + (st.floor % 2 && !camp ? Math.round(all * 0.6) : 0); };
     RUN.fate = m => { const p = pair().find(([, x]) => x === m)?.[0]; return p && !p.dead ? D.take(p) : null; };
   }
   // ── 방에 놓인 장비: 보물 방의 상자 · 바닥에 떨어진 장비 (2026-11-19). 다가가면 열고 → 물건 정보 → 「누구에게」 또는 가방 (js/app/gear_ui.js) ──

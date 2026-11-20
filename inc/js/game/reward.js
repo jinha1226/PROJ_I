@@ -16,6 +16,7 @@ G.Reward = (() => {
   // 열린 칸: SRD 표의 소마법 · 준비 주문 수 − 지금 아는 수. 손에 든 기술은 5칸까지(G.Party.CAP) — 주문 칸을 먼저 연다
   const CAP = () => G.Party?.CAP ?? 99;
   function slotsOpen(m) {
+    if (m.plan) return { cantrip: 0, prepared: 0 }; // 빌드 계획이 있으면 칸은 계획대로 열린다 (js/game/builds.js)
     const L = GD().limits(m.cls, m.lv), cur = (m.skills || []).filter(k => GD().spLv(k) != null), free = Math.max(0, CAP() - cur.length);
     const p = Math.min(free, Math.max(0, L.prepared - cur.filter(k => GD().spLv(k) > 0).length)), c = Math.min(free - p, Math.max(0, L.cantrip - cur.filter(k => GD().spLv(k) === 0).length));
     return { cantrip: c, prepared: p };
@@ -58,7 +59,7 @@ G.Reward = (() => {
     if (ASI_AT(m.cls).includes(m.lv)) q.push({ k: 'asi' });
     O.of(m); // 고르는 기능이 있는 직업만 m.opts가 생긴다 (파이터 · 팔라딘 · 레인저의 전투 방식, 워락의 영창, 소서러의 초마법)
     for (const g of ['fs', 'iv', 'mm']) { if (!m.opts?.[g]) continue; const n1 = O.count(m, g); m.lv--; const n0 = O.count(m, g); m.lv++; for (let i = n0; i < n1; i++) if (!(g === 'fs' && m.cls === 'dragoon' && m.lv === 1)) q.push({ k: g }); }
-    if (caster(m) && (m.skills || []).filter(k => GD().spLv(k) != null).length >= CAP()) m.swapPend = (m.swapPend || 0) + 1; // 5칸이 다 찼다: 바꾸기 기회
+    if (!m.plan && caster(m) && (m.skills || []).filter(k => GD().spLv(k) != null).length >= CAP()) m.swapPend = (m.swapPend || 0) + 1; // 5칸이 다 찼다: 바꾸기 기회
   }
   // 남은 고르기 수: 줄(lvq) + 열린 주문 칸 + 바꾸기 기회
   function pending(m) { const o = caster(m) ? slotsOpen(m) : { cantrip: 0, prepared: 0 }; return (m.lvq || []).length + o.cantrip + o.prepared + (caster(m) ? m.swapPend || 0 : 0); }
@@ -90,6 +91,7 @@ G.Reward = (() => {
     const h = (m.lvq || [])[0];
     if (h) {
       if (h.k === 'new') return { kind: 'new', lv: h.lv, list: gained(m, h.lv), options: [] };
+      if (h.k === 'plan') { const options = G.Builds ? G.Builds.offer(m, h, rng, all) : []; if (!options.length) { m.lvq.shift(); return offer(m, rng, all); } return { kind: 'plan', options }; } // 빌드 경로의 기술 (js/game/builds.js): 계획한 기술 + 다른 길 둘
       const options = h.k === 'asi' ? asiOptions(m, all) : optOptions(m, h.k, all, rng);
       if (!options.length) { m.lvq.shift(); return offer(m, rng, all); } // 고를 것이 없다 (다 찼다)
       return { kind: h.k, options };
@@ -110,6 +112,7 @@ G.Reward = (() => {
     if (opt?.kind === 'swap' || opt === 'keep') { if (opt !== 'keep' && drop && (m.skills || []).includes(drop)) { m.skills = m.skills.map(k => (k === drop ? opt.id : k)); m.skPri = m.skills.slice(); } m.swapPend = Math.max(0, (m.swapPend || 0) - 1); return true; }
     if (opt.kind === 'spell') { m.skills = (m.skills || []).concat(opt.id); m.skManual = true; m.skPri = m.skills.slice(); return true; }
     if (opt.kind === 'new') { m.lvq.shift(); return true; }
+    if (opt.kind === 'plan') { G.Builds.choose(m, m.lvq[0], opt); m.lvq.shift(); return true; }
     if (opt.kind === 'asi') { G.Dnd.ab(m); for (const k in opt.add) m.ab[k] = (m.ab[k] ?? 10) + opt.add[k]; if (opt.feat) (m.gfeat = m.gfeat || []).push(opt.feat); m.lvq.shift(); return true; }
     if (opt.kind === 'fs' || opt.kind === 'iv' || opt.kind === 'mm') { const g = opt.kind, r = m.opts || G.Opt.roll(m); m.opts = { ...r, [g]: [...opt.keep, opt.id, ...(r[g] || []).filter(q => q !== opt.id && !opt.keep.includes(q))] }; if (g === 'fs') m.fsLv = m.lv; m.lvq.shift(); return true; }
     return false;
