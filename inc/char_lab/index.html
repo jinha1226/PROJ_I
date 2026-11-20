@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>캐릭터 시안</title>
+<style>
+  body { margin: 0; background: #120d0a; color: #e8dcc4; font: 14px "Noto Sans KR", sans-serif; padding: 16px; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 16px; margin: 28px 0 8px; color: #f0c070; }
+  p { margin: 4px 0; color: #b8a888; max-width: 980px; line-height: 1.55; }
+  canvas { image-rendering: pixelated; display: block; max-width: 100%; height: auto; } /* 폰에서는 화면 폭에 맞춰 줄인다 */
+  @media (max-width: 700px) { body { padding: 10px; } .row > div { width: 100%; } }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+  .cap { font-size: 12px; color: #9a8a6a; margin-top: 4px; }
+  .bar { margin: 10px 0; display: flex; gap: 8px; }
+  button { background: #2a201a; color: #e8dcc4; border: 1px solid #5a4a3a; padding: 6px 12px; font: inherit; cursor: pointer; }
+  button.on { background: #6a4a24; border-color: #c08a40; }
+</style>
+</head>
+<body>
+<h1>던전에 맞춘 캐릭터 · 몬스터 시안 (쓰고 버리는 시험)</h1>
+<p>로우폴리 3D 모형을 게임 픽셀 크기로 직접 그렸습니다. 던전과 같은 시점(쿼터뷰 30°), 같은 빛(횃불 · 들고 다니는 등불, 빛 밖은 흑백), 같은 14단계 색 + 4×4 디더, 어두운 테두리를 씁니다. 배경은 실제 게임 화면(용의 둥지 시험 층)에서 인물만 빼고 찍은 것입니다.</p>
+
+<div class="bar"><button data-m="idle" class="on">대기</button><button data-m="walk">걷기</button><button data-m="spin">8방향 돌리기</button></div>
+
+<h2>실제 배경 위에서</h2>
+<div class="row">
+  <div><canvas id="now"></canvas><div class="cap">지금 (LAYERLAB 인형)</div></div>
+  <div><canvas id="boss"></canvas><div class="cap">시안 — 보스전 (붉은 용)</div></div>
+  <div><canvas id="mobs"></canvas><div class="cap">시안 — 잡몹 (고블린 · 해골 · 오크 · 큰 쥐 · 젤라틴 큐브 · 거미)</div></div>
+</div>
+
+<h2>파티 (3배 확대)</h2>
+<canvas id="heroes"></canvas>
+<h2>몬스터 (2배 확대)</h2>
+<canvas id="monsters"></canvas>
+<h2>최종 보스 (2배 확대)</h2>
+<canvas id="dragon"></canvas>
+
+<script>
+window.onerror=(m,u,l)=>{document.body.insertAdjacentHTML('afterbegin','<pre style="color:#f66">'+m+' @'+l+'</pre>')};
+'use strict';
+// ── 게임과 같은 시점 · 색 (js/render/core.js · voxel.js)
+const S = 14, SIN = .5, COS = Math.sqrt(3) / 2, K = S / Math.SQRT2, LV = 14;
+const BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => v / 16 - .5);
+const fin = (r, g, b, X, Y) => {
+  r = r / (1 + r * .35) * 1.3; g = g / (1 + g * .35) * 1.3; b = b / (1 + b * .35) * 1.3;
+  const dz = BAY[(Y & 3) * 4 + (X & 3)], q = v => Math.max(0, Math.min(255, Math.floor(v * LV + dz + .5) / LV * 255));
+  return [q(r), q(g), q(b)];
+};
+
+// ── 벡터 · 3×4 행렬
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const mul = (a, k) => [a[0] * k, a[1] * k, a[2] * k], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const len = a => Math.hypot(a[0], a[1], a[2]), nrm = a => mul(a, 1 / (len(a) || 1)), lerp3 = (a, b, t) => add(a, mul(sub(b, a), t));
+const I = () => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
+function mm(A, B) { const r = new Array(12); for (let i = 0; i < 3; i++) for (let j = 0; j < 4; j++) r[i * 4 + j] = A[i * 4] * B[j] + A[i * 4 + 1] * B[4 + j] + A[i * 4 + 2] * B[8 + j] + (j === 3 ? A[i * 4 + 3] : 0); return r; }
+const tp = (M, p) => [M[0] * p[0] + M[1] * p[1] + M[2] * p[2] + M[3], M[4] * p[0] + M[5] * p[1] + M[6] * p[2] + M[7], M[8] * p[0] + M[9] * p[1] + M[10] * p[2] + M[11]];
+const Tr = (x, y, z) => [1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z];
+const RZ = a => { const c = Math.cos(a), s = Math.sin(a); return [c, -s, 0, 0, s, c, 0, 0, 0, 0, 1, 0]; };
+const RY = a => { const c = Math.cos(a), s = Math.sin(a); return [c, 0, s, 0, 0, 1, 0, 0, -s, 0, c, 0]; };
+const RX = a => { const c = Math.cos(a), s = Math.sin(a); return [1, 0, 0, 0, 0, c, -s, 0, 0, s, c, 0]; };
+const Sc = (x, y, z) => [x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0];
+const ch = (...Ms) => Ms.reduce(mm);
+function align(d) { const z = nrm(d), h = Math.abs(z[2]) < .9 ? [0, 0, 1] : [1, 0, 0], x = nrm(cross(h, z)), y = cross(z, x); return [x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0]; }
+
+// ── 모형: 삼각형 목록 + 스스로 빛나는 점
+class Mesh {
+  constructor() { this.t = []; this.lights = []; }
+  poly(M, pts, col, mat) { const P = pts.map(p => tp(M, p)); for (let i = 1; i < P.length - 1; i++) this.t.push({ a: P[0], b: P[i], c: P[i + 1], col, mat }); }
+  box(M, w, d, h, col, mat, tx = 1, ty = 1) { // 바닥 가운데가 원점, z 0..h
+    const b = [[-w / 2, -d / 2, 0], [w / 2, -d / 2, 0], [w / 2, d / 2, 0], [-w / 2, d / 2, 0]], u = b.map(p => [p[0] * tx, p[1] * ty, h]);
+    this.poly(M, b, col, mat); this.poly(M, u, col, mat); for (let i = 0; i < 4; i++) { const j = (i + 1) % 4; this.poly(M, [b[i], b[j], u[j], u[i]], col, mat); }
+  }
+  cyl(M, r0, r1, h, col, mat, n = 6) { // z 0..h
+    const ring = (r, z) => Array.from({ length: n }, (_, i) => [Math.cos(i / n * Math.PI * 2 + .3) * r, Math.sin(i / n * Math.PI * 2 + .3) * r, z]), a = ring(r0, 0), b = ring(Math.max(r1, .001), h);
+    this.poly(M, a, col, mat); this.poly(M, b, col, mat); for (let i = 0; i < n; i++) { const j = (i + 1) % n; this.poly(M, [a[i], a[j], b[j], b[i]], col, mat); }
+  }
+  sph(M, rx, ry, rz, col, mat, nl = 8, nt = 5) {
+    const P = (i, j) => { const th = j / nt * Math.PI, ph = i / nl * Math.PI * 2 + .2; return [Math.sin(th) * Math.cos(ph) * rx, Math.sin(th) * Math.sin(ph) * ry, Math.cos(th) * rz]; };
+    for (let j = 0; j < nt; j++) for (let i = 0; i < nl; i++) { const q = [P(i, j), P(i + 1, j), P(i + 1, j + 1), P(i, j + 1)]; this.poly(M, j === 0 ? [q[0], q[2], q[3]] : j === nt - 1 ? [q[0], q[1], q[2]] : q, col, mat); }
+  }
+  limb(M, a, b, r0, r1, col, mat, n = 6) { const d = sub(b, a); this.cyl(ch(M, Tr(...a), align(d)), r0, r1, len(d), col, mat, n); }
+  glow(M, p, c, r, i) { this.lights.push({ p: tp(M, p), c, r, i }); }
+}
+
+// ── 그리기: 모형 → 픽셀 (깊이 버퍼 · 면마다 평평한 빛 · 디더 · 테두리)
+function render(mesh, o) {
+  const { w, h, fx, fy } = o, Z = o.z || 1, n = w * h, R = ch(Tr(...o.root), RZ(o.face || 0));
+  const zb = new Float32Array(n).fill(-1e9), cl = new Float32Array(n * 3), on = new Uint8Array(n), glass = [];
+  const cam = [COS / Math.SQRT2, COS / Math.SQRT2, SIN];
+  const proj = p => { const x = p[0] - o.root[0], y = p[1] - o.root[1], z = p[2] - o.root[2]; return [fx + (x - y) * K * Z, fy + (x + y) * K * SIN * Z - z * COS * S * Z, (x + y) / Math.SQRT2 * COS + z * SIN]; };
+  const lights = o.lights.concat(mesh.lights.map(l => ({ ...l, p: tp(R, l.p) })));
+  function shade(col, mat, nn, p) {
+    const c = [(col >> 16 & 255) / 255, (col >> 8 & 255) / 255, (col & 255) / 255];
+    if (mat === 'glow') return mul(c, 1.5);
+    let r = o.amb[0] * c[0], g = o.amb[1] * c[1], b = o.amb[2] * c[2], lit = 0;
+    r += c[0] * Math.max(0, nn[2]) * .05; g += c[1] * Math.max(0, nn[2]) * .05; b += c[2] * Math.max(0, nn[2]) * .06; // 위는 조금 밝게 (던전 윗면처럼)
+    for (const l of lights) {
+      const d = sub(l.p, p), di = len(d), f = Math.max(0, 1 - di / l.r); if (!f) continue;
+      const k = Math.max(0, (dot(nn, mul(d, 1 / di)) + .3) / 1.3) * f * f * l.i;
+      r += c[0] * l.c[0] * k; g += c[1] * l.c[1] * k; b += c[2] * l.c[2] * k; lit += k;
+    }
+    if (o.gray) { const m = Math.min(1, lit * 2.5), y = (.3 * c[0] + .59 * c[1] + .11 * c[2]) * .5 * (nn[2] > .6 ? 1.15 : .9), gy = [y * .86, y * .9, y]; r = gy[0] + (r - gy[0]) * m; g = gy[1] + (g - gy[1]) * m; b = gy[2] + (b - gy[2]) * m; } // 빛 밖은 흑백 (던전과 같게)
+    return [r, g, b];
+  }
+  function raster(A, B, C, put) {
+    const x0 = Math.max(0, Math.floor(Math.min(A[0], B[0], C[0]))), x1 = Math.min(w - 1, Math.ceil(Math.max(A[0], B[0], C[0]))), y0 = Math.max(0, Math.floor(Math.min(A[1], B[1], C[1]))), y1 = Math.min(h - 1, Math.ceil(Math.max(A[1], B[1], C[1])));
+    const ar = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]); if (Math.abs(ar) < 1e-6) return;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const px = x + .5, py = y + .5;
+      const w0 = ((B[0] - px) * (C[1] - py) - (B[1] - py) * (C[0] - px)) / ar, w1 = ((C[0] - px) * (A[1] - py) - (C[1] - py) * (A[0] - px)) / ar, w2 = 1 - w0 - w1;
+      if (w0 < -1e-4 || w1 < -1e-4 || w2 < -1e-4) continue;
+      put(y * w + x, w0 * A[2] + w1 * B[2] + w2 * C[2]);
+    }
+  }
+  for (const t of mesh.t) {
+    const A = tp(R, t.a), B = tp(R, t.b), C = tp(R, t.c);
+    let nn = cross(sub(B, A), sub(C, A)); if (len(nn) < 1e-9) continue; nn = nrm(nn); if (dot(nn, cam) < 0) nn = mul(nn, -1);
+    const L = shade(t.col, t.mat, nn, mul(add(add(A, B), C), 1 / 3)), pa = proj(A), pb = proj(B), pc = proj(C);
+    if (t.mat === 'glass') { glass.push([pa, pb, pc, L]); continue; }
+    raster(pa, pb, pc, (i, d) => { if (d > zb[i]) { zb[i] = d; cl[i * 3] = L[0]; cl[i * 3 + 1] = L[1]; cl[i * 3 + 2] = L[2]; on[i] = 1; } });
+  }
+  const gl = new Uint8Array(n);
+  for (const [pa, pb, pc, L] of glass) raster(pa, pb, pc, (i, d) => { if (d <= zb[i]) return; const a = gl[i] ? .35 : .55; if (on[i] || gl[i]) { for (let k = 0; k < 3; k++) cl[i * 3 + k] = cl[i * 3 + k] * (1 - a) + L[k] * a * 1.15; } else { cl[i * 3] = L[0]; cl[i * 3 + 1] = L[1]; cl[i * 3 + 2] = L[2]; } gl[i] = 1; });
+  // 색 · 안쪽 경계(깊이가 크게 끊기는 곳) · 바깥 테두리
+  const img = new ImageData(w, h), D = img.data, ox = o.dx || 0, oy = o.dy || 0, col = new Uint8Array(n * 3);
+  for (let i = 0; i < n; i++) if (on[i] || gl[i]) { const c = fin(cl[i * 3], cl[i * 3 + 1], cl[i * 3 + 2], (i % w) + ox, ((i / w) | 0) + oy); col[i * 3] = c[0]; col[i * 3 + 1] = c[1]; col[i * 3 + 2] = c[2]; }
+  for (let i = 0; i < n; i++) {
+    const x = i % w, y = (i / w) | 0, nb = [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1];
+    if (on[i]) {
+      let k = 1; for (const j of nb) if (j >= 0 && on[j] && zb[j] - zb[i] > .45) k = .6;
+      D[i * 4] = col[i * 3] * k; D[i * 4 + 1] = col[i * 3 + 1] * k; D[i * 4 + 2] = col[i * 3 + 2] * k; D[i * 4 + 3] = 255;
+    } else if (gl[i]) { D[i * 4] = col[i * 3]; D[i * 4 + 1] = col[i * 3 + 1]; D[i * 4 + 2] = col[i * 3 + 2]; D[i * 4 + 3] = 170; }
+    else { const j = nb.find(j => j >= 0 && on[j]); if (j != null && j >= 0) { D[i * 4] = col[j * 3] * .3; D[i * 4 + 1] = col[j * 3 + 1] * .28; D[i * 4 + 2] = col[j * 3 + 2] * .34; D[i * 4 + 3] = 255; } }
+  }
+  return img;
+}
+
+// ── 공통 부위
+const SKIN = 0xc0907a, IRON = 0x868c94, STEEL = 0xb8bec6, WOOD = 0x6a4a2c, LEATHER = 0x5a3e2a;
+const ph = (t, pose, k = 9) => pose === 'walk' ? Math.sin(t * k) : 0;
+function legs(m, M, u, t, pose, c, boot, w = .14, r = .12) {
+  const s0 = ph(t, pose), c0 = pose === 'walk' ? Math.cos(t * 9) : 0;
+  for (const s of [1, -1]) {
+    const sw = s0 * s * .3 * u, lift = Math.max(0, c0 * s) * .14 * u;
+    const hip = [0, s * w * u, 1.02 * u], foot = [sw, s * w * u, .14 * u + lift], knee = [sw * .5 + .1 * u, s * w * u, .58 * u + lift * .5];
+    m.limb(M, hip, knee, r * u, r * .85 * u, c); m.limb(M, knee, foot, r * .85 * u, r * .7 * u, c);
+    if (boot) m.box(ch(M, Tr(foot[0] + .05 * u, foot[1], 0 + lift)), .3 * u, .17 * u, .2 * u, boot, null, .85, .9);
+  }
+}
+const elbowOf = (sh, hand, out) => add(lerp3(sh, hand, .5), out);
+function arm(m, M, sh, hand, r, col, out, handCol = SKIN) { const el = elbowOf(sh, hand, out); m.limb(M, sh, el, r, r * .9, col); m.limb(M, el, hand, r * .9, r * .8, col); m.sph(ch(M, Tr(...hand)), r, r, r, handCol, null, 6, 4); }
+const bob = (t, pose) => pose === 'walk' ? Math.abs(Math.sin(t * 9)) * .06 : Math.sin(t * 2.2) * .018;
+const swing = (t, pose) => pose === 'walk' ? Math.sin(t * 9) * .22 : 0;
+
+// ── 파티 ─────────────────────────────────
+// 전사: 쇠 투구(붉은 술) · 사슬 갑옷 위 붉은 덧옷 · 둥근 나무 방패 · 곧은 칼
+function fighter(t, pose) {
+  const m = new Mesh(), M = I(); legs(m, M, 1, t, pose, 0x4a4642, 0x3a2a1e, .15, .13);
+  const B = ch(M, Tr(0, 0, bob(t, pose))), sw = swing(t, pose);
+  m.cyl(ch(B, Tr(0, 0, .98)), .3, .37, .76, 0x6a6e76, null, 7);
+  m.cyl(ch(B, Tr(0, 0, 1.72)), .37, .2, .14, 0x6a6e76, null, 7);
+  m.box(ch(B, Tr(.25, 0, .62)), .07, .44, 1.08, 0x8a2c22, null, 1, .9); m.box(ch(B, Tr(-.25, 0, .66)), .07, .44, 1.04, 0x8a2c22);
+  m.cyl(ch(B, Tr(0, 0, .98)), .34, .34, .1, 0x3a2818, null, 7);
+  m.box(ch(B, Tr(.33, 0, 1.25)), .03, .14, .2, 0xc8a040); // 덧옷 가슴 무늬
+  m.sph(ch(B, Tr(.04, 0, 2.06)), .23, .23, .25, SKIN);
+  m.cyl(ch(B, Tr(0, 0, 2.02)), .29, .27, .24, IRON, null, 8); m.sph(ch(B, Tr(0, 0, 2.25)), .27, .27, .2, IRON, null, 8, 4);
+  m.box(ch(B, Tr(.28, 0, 1.9)), .05, .07, .32, IRON); m.box(ch(B, Tr(-.04, 0, 2.4)), .46, .07, .16, 0xa02a1e, null, .7, 1);
+  for (const s of [1, -1]) m.sph(ch(B, Tr(0, s * .38, 1.72)), .17, .16, .13, IRON);
+  arm(m, B, [0, .38, 1.66], [.3 - sw, .38, 1.2], .1, 0x6a6e76, [-.05, .08, 0], 0x4a3a2a);
+  m.cyl(ch(B, Tr(.42 - sw, .4, 1.2), RY(Math.PI / 2)), .42, .42, .07, WOOD, null, 10); m.cyl(ch(B, Tr(.49 - sw, .4, 1.2), RY(Math.PI / 2)), .13, .08, .07, IRON, null, 6);
+  const hand = [.28 + sw, -.4, 1.18]; arm(m, B, [0, -.38, 1.66], hand, .1, 0x6a6e76, [-.05, -.08, 0], 0x4a3a2a);
+  const d = nrm([.55, 0, .8]); m.limb(B, add(hand, mul(d, -.14)), add(hand, mul(d, .1)), .045, .045, 0x3a2818, null, 4);
+  m.limb(B, add(add(hand, mul(d, .1)), [0, .15, 0]), add(add(hand, mul(d, .1)), [0, -.15, 0]), .04, .04, IRON, null, 4);
+  m.limb(B, add(hand, mul(d, .1)), add(hand, mul(d, 1.05)), .065, .02, STEEL, null, 4);
+  return m;
+}
+// 마법사: 넓은 챙의 꺾인 모자 · 흰 수염 · 짙은 남색 긴 옷 · 푸른 수정 지팡이 (스스로 빛난다)
+function mage(t, pose) {
+  const m = new Mesh(), M = I(), B = ch(M, Tr(0, 0, bob(t, pose))), sw = swing(t, pose), s0 = ph(t, pose);
+  for (const s of [1, -1]) m.box(ch(M, Tr(s * s0 * .2 + .06, s * .13, 0)), .26, .15, .14, 0x2a2018);
+  m.cyl(ch(B, Tr(0, 0, .06)), .5, .27, 1.7, 0x2c3462, null, 8);
+  m.cyl(ch(B, Tr(0, 0, .06)), .52, .5, .1, 0x8a6a2a, null, 8);
+  m.cyl(ch(B, Tr(0, 0, .95)), .37, .36, .08, 0x5a4020, null, 8);
+  m.sph(ch(B, Tr(.03, 0, 2.0)), .22, .22, .24, SKIN);
+  m.cyl(ch(B, Tr(.17, 0, 1.98), RY(Math.PI)), .17, .03, .55, 0xd8d2c6, null, 6);
+  m.cyl(ch(B, Tr(0, 0, 2.13)), .54, .5, .05, 0x262c52, null, 10);
+  m.cyl(ch(B, Tr(0, 0, 2.15)), .28, .15, .42, 0x262c52, null, 8);
+  m.limb(B, [0, 0, 2.55], [-.28, .05, 2.85 + Math.sin(t * 2) * .03], .15, .02, 0x262c52, null, 6);
+  arm(m, B, [0, .32, 1.62], [.22 - sw, .36, 1.05], .13, 0x2c3462, [-.05, .1, 0]);
+  const hand = [.32 + sw * .5, -.42, 1.25]; arm(m, B, [0, -.32, 1.62], hand, .13, 0x2c3462, [-.05, -.1, 0]);
+  m.limb(B, add(hand, [0, 0, -1.15]), add(hand, [0, 0, 1.35]), .045, .04, WOOD, null, 5);
+  const top = add(hand, [0, 0, 1.45]); for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2; m.limb(B, add(hand, [0, 0, 1.3]), add(top, [Math.cos(a) * .12, Math.sin(a) * .12, .12]), .025, .02, WOOD, null, 4); }
+  m.sph(ch(B, Tr(...top)), .12, .12, .15, 0x7fd8ff, 'glow', 6, 4); m.glow(B, top, [.45, .8, 1.15], 6, .9 + Math.sin(t * 5) * .1);
+  return m;
+}
+// 성직자: 둥근 쇠 모자 · 사슬 두건 · 흰 덧옷에 금빛 해 무늬 · 철퇴 · 등불(파티의 빛)
+function cleric(t, pose) {
+  const m = new Mesh(), M = I(); legs(m, M, 1, t, pose, 0x4a4642, 0x3a2a1e, .16, .14);
+  const B = ch(M, Tr(0, 0, bob(t, pose))), sw = swing(t, pose);
+  m.cyl(ch(B, Tr(0, 0, .95)), .36, .4, .8, 0x6a6e76, null, 8);
+  m.box(ch(B, Tr(0, 0, .55)), .78, .66, 1.22, 0xb6ad98, null, .82, .82);
+  m.cyl(ch(B, Tr(0, 0, 1.0)), .38, .38, .1, LEATHER, null, 8);
+  m.cyl(ch(B, Tr(.33, 0, 1.32), RY(Math.PI / 2)), .13, .13, .03, 0xd0a040, null, 8);
+  m.cyl(ch(B, Tr(0, 0, 1.72)), .3, .27, .3, 0x6a6e76, null, 8);
+  m.sph(ch(B, Tr(.05, 0, 2.06)), .22, .22, .22, SKIN);
+  m.sph(ch(B, Tr(0, 0, 2.15)), .28, .28, .22, IRON, null, 8, 4); m.cyl(ch(B, Tr(0, 0, 2.1)), .31, .31, .04, IRON, null, 10);
+  arm(m, B, [0, .4, 1.66], [.38, .42, 1.15 + Math.sin(t * 3) * .02], .12, 0x6a6e76, [-.08, .1, 0], 0x4a3a2a);
+  const lt = [.42, .45, .82 + Math.sin(t * 3) * .03]; m.limb(B, [.38, .42, 1.12], add(lt, [0, 0, .3]), .015, .015, IRON, null, 3);
+  m.box(ch(B, Tr(...lt)), .17, .17, .26, 0x2a2420, null, .8, .8); m.sph(ch(B, Tr(lt[0], lt[1], lt[2] + .12)), .075, .075, .1, 0xffc870, 'glow', 6, 4);
+  m.glow(B, add(lt, [0, 0, .12]), [1.1, .78, .45], 9, 1.0 + Math.sin(t * 7) * .06);
+  const hand = [.3 + sw, -.42, 1.15]; arm(m, B, [0, -.4, 1.66], hand, .12, 0x6a6e76, [-.05, -.1, 0], 0x4a3a2a);
+  m.limb(B, add(hand, [-.05, 0, -.12]), add(hand, [.25, 0, .55]), .04, .04, WOOD, null, 5);
+  const hd = add(hand, [.28, 0, .62]); m.sph(ch(B, Tr(...hd)), .12, .12, .12, IRON, null, 6, 4); for (let i = 0; i < 4; i++) m.box(ch(B, Tr(...hd), RZ(i * Math.PI / 4), Tr(0, 0, -.12)), .32, .05, .24, IRON);
+  return m;
+}
+// 도적: 몸을 숙인 자세 · 두건 달린 짙은 망토 · 붉은 목도리 · 얼굴은 그림자 · 거꾸로 쥔 단검 둘
+function rogue(t, pose) {
+  const m = new Mesh(), M = I(); legs(m, M, .95, t, pose, 0x3a3430, 0x2a201a, .15, .12);
+  const B = ch(M, Tr(0, 0, bob(t, pose) - .04), Tr(0, 0, 1.0), RY(.18), Tr(0, 0, -1.0)), sw = swing(t, pose);
+  m.cyl(ch(B, Tr(0, 0, .96)), .26, .32, .7, LEATHER, null, 7);
+  m.cyl(ch(B, Tr(-.06, 0, .55)), .5, .3, 1.15, 0x34422e, null, 8);
+  m.cyl(ch(B, Tr(0, 0, 1.62)), .27, .25, .14, 0x8a2a22, null, 8);
+  m.sph(ch(B, Tr(0, 0, 1.98)), .29, .28, .3, 0x34422e);
+  m.limb(B, [-.1, 0, 2.1], [-.42, 0, 2.0], .2, .02, 0x34422e, null, 6);
+  m.sph(ch(B, Tr(.17, 0, 1.94)), .14, .17, .16, 0x161210);
+  arm(m, B, [0, .32, 1.55], [.4 - sw, .36, 1.05], .1, LEATHER, [-.1, .1, 0], 0x2a201a);
+  arm(m, B, [0, -.32, 1.55], [.42 + sw, -.36, 1.08], .1, LEATHER, [-.1, -.1, 0], 0x2a201a);
+  for (const s of [1, -1]) { const h0 = [.42 + (s > 0 ? -sw : sw), s * .36, 1.06]; m.limb(B, h0, add(h0, [.05, 0, .1]), .035, .035, 0x2a201a, null, 4); m.limb(B, h0, add(h0, [.18, 0, -.42]), .05, .012, STEEL, null, 4); }
+  return m;
+}
+
+// ── 몬스터 ───────────────────────────────
+// 고블린: 작고 굽은 몸 · 큰 머리 · 뾰족한 귀 · 노란 눈빛 · 녹슨 창
+function goblin(t, pose) {
+  const m = new Mesh(), M = I(), sk = 0x6e7836; legs(m, M, .6, t, pose, sk, null, .2, .14);
+  const B = ch(M, Tr(0, 0, bob(t, pose) * .8)), sw = swing(t, pose);
+  m.box(ch(B, Tr(0, 0, .36)), .42, .4, .3, 0x5a4028, null, .9, .9);
+  m.sph(ch(B, Tr(.06, 0, .9), RY(.35)), .24, .22, .32, sk);
+  const hz = 1.32 + Math.sin(t * 2.5) * .02;
+  m.sph(ch(B, Tr(.16, 0, hz)), .3, .3, .27, sk);
+  for (const s of [1, -1]) { m.poly(B, [[.08, s * .22, hz + .06], [-.18, s * .68, hz + .2 + Math.sin(t * 3 + s) * .03], [.0, s * .26, hz - .1]], 0x7a8240); m.sph(ch(B, Tr(.4, s * .11, hz + .05)), .045, .045, .045, 0xffd040, 'glow', 4, 3); }
+  m.cyl(ch(B, Tr(.4, 0, hz - .02), RY(Math.PI / 2 + .3)), .08, .01, .2, 0x7a8240, null, 5);
+  m.box(ch(B, Tr(.38, 0, hz - .2)), .1, .26, .05, 0xe8e0c8);
+  arm(m, B, [.05, .25, 1.0], [.32 - sw, .3, .62], .07, sk, [0, .08, 0]);
+  const hand = [.34 + sw, -.28, .75]; arm(m, B, [.05, -.25, 1.0], hand, .07, sk, [0, -.08, 0]);
+  m.limb(B, add(hand, [-.25, 0, -.5]), add(hand, [.3, 0, 1.1]), .03, .03, WOOD, null, 4); m.cyl(ch(B, Tr(...add(hand, [.3, 0, 1.1])), align([.3, 0, 1.1])), .07, .0, .26, 0x8a6048, null, 4);
+  return m;
+}
+// 해골 병사: 가는 뼈 · 갈비 고리 · 빈 눈구멍의 붉은 점 · 녹슨 칼 · 깨진 방패
+function skeleton(t, pose) {
+  const m = new Mesh(), M = I(), bn = 0xcfc6ae, s0 = ph(t, pose), c0 = pose === 'walk' ? Math.cos(t * 9) : 0;
+  for (const s of [1, -1]) { const sw = s0 * s * .28, lift = Math.max(0, c0 * s) * .12, hip = [0, s * .13, .98], kn = [sw * .5 + .08, s * .13, .55 + lift * .5], ft = [sw, s * .13, .08 + lift]; m.limb(M, hip, kn, .05, .045, bn, null, 5); m.limb(M, kn, ft, .045, .04, bn, null, 5); m.sph(ch(M, Tr(...kn)), .07, .07, .07, bn, null, 5, 3); m.box(ch(M, Tr(ft[0] + .06, ft[1], ft[2] - .08)), .22, .1, .07, bn); }
+  const B = ch(M, Tr(0, 0, bob(t, pose) + Math.sin(t * 6) * .006)), sw = swing(t, pose);
+  m.box(ch(B, Tr(0, 0, .9)), .2, .36, .14, bn, null, 1.2, 1); m.limb(B, [0, 0, .95], [0, 0, 1.75], .045, .045, bn, null, 5);
+  [[1.22, .17], [1.38, .21], [1.54, .22]].forEach(([z, r]) => m.cyl(ch(B, Tr(.02, 0, z)), r, r * .97, .055, bn, null, 8));
+  m.limb(B, [0, -.28, 1.66], [0, .28, 1.66], .05, .05, bn, null, 4);
+  const hz = 1.98 + Math.sin(t * 1.7) * .02; m.sph(ch(B, Tr(.02, 0, hz)), .2, .19, .21, bn); m.box(ch(B, Tr(.1, 0, hz - .26)), .22, .26, .1, bn, null, .9, .9);
+  for (const s of [1, -1]) { m.sph(ch(B, Tr(.17, s * .08, hz + .01)), .06, .055, .06, 0x120c0a, null, 5, 3); m.sph(ch(B, Tr(.21, s * .08, hz + .01)), .022, .022, .022, 0xff3a22, 'glow', 4, 3); }
+  arm(m, B, [0, .28, 1.64], [.3 - sw, .32, 1.1], .045, bn, [-.06, .06, 0], bn);
+  m.poly(ch(B, Tr(.4 - sw, .36, 1.15), RY(Math.PI / 2)), Array.from({ length: 7 }, (_, i) => { const a = i / 7 * Math.PI * 1.6 - .2; return [Math.cos(a) * .36, Math.sin(a) * .36, 0]; }), 0x5a4430);
+  const hand = [.3 + sw, -.32, 1.12]; arm(m, B, [0, -.28, 1.64], hand, .045, bn, [-.06, -.06, 0], bn);
+  m.limb(B, hand, add(hand, [.5, 0, .55]), .05, .015, 0x8a7460, null, 4); m.limb(B, add(hand, [0, .12, .02]), add(hand, [0, -.12, -.02]), .03, .03, 0x5a4a3a, null, 4);
+  return m;
+}
+// 큰 쥐: 낮고 긴 몸 · 분홍 귀 · 붉은 눈 · 흔들리는 긴 꼬리
+function rat(t, pose) {
+  const m = new Mesh(), M = I(), fur = 0x5c4e44, s0 = ph(t, pose, 14), br = Math.sin(t * 6) * .015, B = ch(M, Tr(0, 0, br + (pose === 'walk' ? Math.abs(s0) * .04 : 0)));
+  m.sph(ch(B, Tr(-.05, 0, .42)), .62, .34, .3, fur, null, 9, 5);
+  m.cyl(ch(B, Tr(.45, 0, .46), RY(Math.PI / 2 + .25)), .24, .05, .5, fur, null, 7);
+  for (const s of [1, -1]) { m.sph(ch(B, Tr(.45, s * .16, .68)), .06, .1, .1, 0xa06a62, null, 6, 3); m.sph(ch(B, Tr(.62, s * .1, .52)), .03, .03, .03, 0xff3020, 'glow', 4, 3); }
+  m.box(ch(B, Tr(.88, 0, .28)), .05, .07, .07, 0xe8e0c8);
+  [[.3, 1], [.3, -1], [-.35, 1], [-.35, -1]].forEach(([x, s], i) => { const k = (i % 3 === 0 ? 1 : -1) * s0 * .12; m.limb(B, [x, s * .22, .3], [x + k + .05, s * .26, .03], .07, .05, fur, null, 5); });
+  let p = [-.62, 0, .38]; for (let i = 0; i < 7; i++) { const q = add(p, [-.2, Math.sin(t * 3 + i * .7) * .09, -.03 + (i > 3 ? -.01 : 0)]); m.limb(B, p, q, .05 - i * .006, .045 - i * .006, 0xa07a72, null, 4); p = q; }
+  return m;
+}
+// 오크: 크고 묵직함 · 아래턱에서 솟은 엄니 · 가죽끈과 한쪽 어깨 갑옷 · 큰 도끼
+function orc(t, pose) {
+  const m = new Mesh(), M = I(), sk = 0x5e6c44, u = 1.15; legs(m, M, u, t, pose, 0x3e342c, 0x2a201a, .17, .15);
+  const B = ch(M, Tr(0, 0, bob(t, pose))), sw = swing(t, pose);
+  m.box(ch(B, Tr(0, 0, .72)), .5, .6, .5, LEATHER, null, .9, .9);
+  m.cyl(ch(B, Tr(0, 0, 1.12)), .4, .52, .78, sk, null, 8);
+  m.limb(B, [.36, .4, 1.9], [.4, -.4, 1.2], .05, .05, 0x3a2818, null, 4);
+  m.sph(ch(B, Tr(0, .5, 1.88)), .24, .24, .17, IRON); m.cyl(ch(B, Tr(0, .5, 1.95)), .03, .0, .2, STEEL, null, 4);
+  const hz = 2.1; m.sph(ch(B, Tr(.18, 0, hz)), .26, .25, .25, sk); m.box(ch(B, Tr(.28, 0, hz - .26)), .28, .38, .18, sk, null, .9, 1);
+  m.box(ch(B, Tr(.36, 0, hz + .06)), .1, .4, .07, 0x4e5a38);
+  for (const s of [1, -1]) { m.cyl(ch(B, Tr(.4, s * .13, hz - .14)), .04, .0, .2, 0xe8e0c8, null, 4); m.sph(ch(B, Tr(.4, s * .1, hz + .01)), .03, .03, .025, 0xff5020, 'glow', 4, 3); }
+  const hL = [.42 - sw * .3, .2, 1.25], hR = [.36 + sw * .3, -.35, 1.05];
+  arm(m, B, [0, .52, 1.78], hL, .15, sk, [-.1, .14, 0], 0x4a5636); arm(m, B, [0, -.52, 1.78], hR, .15, sk, [-.1, -.14, 0], 0x4a5636);
+  const d = nrm(sub(hL, hR)); m.limb(B, add(hR, mul(d, -.25)), add(hR, mul(d, 1.6)), .045, .045, WOOD, null, 5);
+  const top = add(hR, mul(d, 1.45)); m.poly(ch(B, Tr(...top)), [[0, -.04, .2], [.08, -.5, .32], [.12, -.6, 0], [.08, -.5, -.32], [0, -.04, -.2]].map(p => p), 0x6a7078);
+  return m;
+}
+// 젤라틴 큐브: 반투명한 초록 덩어리 안에 삼킨 것들 (해골 · 칼 · 금화)
+function cube(t, pose) {
+  const m = new Mesh(), M = I(), wob = 1 + Math.sin(t * 2.4) * .035;
+  m.sph(ch(M, Tr(.1, .2, .7)), .2, .19, .2, 0xcfc6ae); m.limb(M, [-.4, -.3, .3], [.35, -.1, 1.3], .05, .02, 0x9a8a78, null, 4);
+  for (let i = 0; i < 6; i++) m.cyl(ch(M, Tr(-.3 + i * .1, .3 - i * .08, .1 + i * .05)), .07, .07, .03, 0xd8a838, null, 6);
+  m.box(ch(M, Tr(0, 0, 0), Sc(1, 1, wob)), 1.9, 1.9, 1.85, 0x7ec25a, 'glass', .94, .94);
+  return m;
+}
+// 큰 거미: 둥근 배(붉은 무늬) · 붉은 눈 무리 · 꺾인 다리 여덟
+function spider(t, pose) {
+  const m = new Mesh(), M = I(), bk = 0x2e2828, s0 = ph(t, pose, 12), B = ch(M, Tr(0, 0, Math.sin(t * 3) * .015));
+  m.sph(ch(B, Tr(-.5, 0, .62)), .6, .5, .45, bk, null, 9, 6); m.sph(ch(B, Tr(-.62, 0, 1.03)), .18, .12, .06, 0x8a2018, null, 6, 3);
+  m.sph(ch(B, Tr(.22, 0, .5)), .32, .3, .24, 0x3a3030);
+  [[.5, .07, .6], [.5, -.07, .6], [.46, .14, .64], [.46, -.14, .64]].forEach(p => m.sph(ch(B, Tr(...p)), .04, .04, .04, 0xff2a18, 'glow', 4, 3));
+  for (const s of [1, -1]) m.cyl(ch(B, Tr(.48, s * .08, .42), RY(Math.PI * .8)), .05, .0, .2, 0x6a5a50, null, 4);
+  for (let i = 0; i < 4; i++) for (const s of [1, -1]) {
+    const a = (.9 - i * .5) * s, k = (i % 2 ? 1 : -1) * s * s0 * .15, hip = [.2 - i * .08, s * .2, .55], knee = [.2 - i * .08 + Math.cos(a) * .55, s * Math.abs(Math.sin(a)) * .55 + s * .2, 1.0 + Math.sin(t * 4 + i) * .02], foot = [.2 - i * .08 + Math.cos(a) * 1.05 + k, s * Math.abs(Math.sin(a)) * 1.0 + s * .25, 0];
+    m.limb(B, hip, knee, .06, .05, 0x3a302c, null, 5); m.limb(B, knee, foot, .05, .02, 0x3a302c, null, 5);
+  }
+  return m;
+}
+// 붉은 용: 묵직한 몸 · 긴 목 · 펼친 날개 · 목구멍의 불빛(스스로 빛나 어둠에서도 보인다)
+function dragon(t, pose) {
+  const m = new Mesh(), M = I(), red = 0x9a2a1e, dk = 0x6e1c16, bel = 0xc8965a, mem = 0x5a1a16, horn = 0xd8ccb0;
+  const br = Math.sin(t * 1.6), B = ch(M, Tr(0, 0, br * .04));
+  m.sph(ch(B, Tr(0, 0, 1.75)), 1.55, 1.0, .95, red, null, 10, 6);
+  m.sph(ch(B, Tr(.2, 0, 1.4)), 1.25, .8, .62, bel, null, 10, 6);
+  for (let i = 0; i < 6; i++) m.cyl(ch(B, Tr(1.0 - i * .45, 0, 2.6 - Math.abs(i - 1.5) * .07)), .16, .0, .42, dk, null, 4);
+  // 다리 넷
+  [[1.0, 1], [1.0, -1], [-.9, 1], [-.9, -1]].forEach(([x, s], i) => { const hip = [x, s * .75, 1.6], kn = [x + (i < 2 ? .35 : -.25), s * .95, .85], ft = [x + (i < 2 ? .5 : .1), s * .95, .12];
+    m.limb(B, hip, kn, .42, .32, red, null, 7); m.limb(B, kn, ft, .3, .24, red, null, 7); m.box(ch(B, Tr(ft[0] + .15, ft[1], 0)), .65, .5, .22, dk, null, .8, .9);
+    for (const c of [-.17, 0, .17]) m.cyl(ch(B, Tr(ft[0] + .5, ft[1] + c, .06), RY(Math.PI / 2)), .06, .0, .2, horn, null, 4); });
+  // 꼬리
+  let p = [-1.4, 0, 1.75], r = .5; for (let i = 0; i < 8; i++) { const q = add(p, [-.5, Math.sin(t * 1.3 + i * .6) * .18 + i * .12, -.17 + (i > 4 ? .02 : 0)]); m.limb(B, p, q, r, r * .8, red, null, 6); if (i % 2 === 0) m.cyl(ch(B, Tr(...p), Tr(0, 0, r * .8)), .1, .0, .28, dk, null, 4); p = q; r *= .8; }
+  m.poly(B, [add(p, [0, 0, 0]), add(p, [-.45, .25, .05]), add(p, [-.7, 0, .05]), add(p, [-.45, -.25, .05])], dk);
+  // 목: 어깨에서 위로 굽어 앞으로
+  const inh = pose === 'walk' ? 0 : (Math.sin(t * .9) + 1) / 2; // 대기에서 천천히 들이마셨다 내뱉는 시늉
+  let nk = [1.3, 0, 2.2]; const pts = []; for (let i = 0; i < 6; i++) { const a = i / 5; pts.push([1.3 + a * 1.4 - inh * a * .5, Math.sin(t * .8) * .15 * a, 2.2 + Math.sin(a * Math.PI * .6) * 2.0 + inh * a * .4]); }
+  for (let i = 0; i < 5; i++) { m.limb(B, pts[i], pts[i + 1], .5 - i * .05, .45 - i * .05, red, null, 7); m.cyl(ch(B, Tr(...pts[i]), Tr(-.05, 0, .38 - i * .03)), .1, .0, .3, dk, null, 4); m.limb(B, add(pts[i], [.18, 0, -.15]), add(pts[i + 1], [.18, 0, -.15]), .3, .27, bel, null, 6); }
+  const hd = pts[5], HM = ch(B, Tr(...hd), RY(.25 - inh * .45));
+  m.sph(HM, .5, .42, .4, red, null, 8, 5);
+  m.box(ch(HM, Tr(.35, 0, -.25)), .9, .5, .35, red, null, .7, .7);
+  const jaw = .15 + inh * .35; m.box(ch(HM, Tr(.3, 0, -.25), RY(jaw), Tr(0, 0, -.18)), .85, .44, .18, dk, null, .8, .8);
+  m.sph(ch(HM, Tr(.55, 0, -.27)), .3, .18, .05, 0xffa040, 'glow', 6, 3);
+  for (const s of [1, -1]) { m.limb(HM, [-.1, s * .25, .25], [-.75, s * .45, .55], .14, .02, horn, null, 5); m.limb(HM, [-.2, s * .35, -.05], [-.6, s * .55, -.1], .08, .01, horn, null, 4); m.sph(ch(HM, Tr(.25, s * .3, .12)), .07, .05, .05, 0xffd050, 'glow', 4, 3); m.box(ch(HM, Tr(.6, s * .2, -.03)), .1, .08, .08, dk); }
+  // 목 아래 불빛 (숨결이 차오른다)
+  m.sph(ch(B, Tr(...lerp3(pts[1], pts[2], .5)), Tr(.35, 0, -.25)), .18, .3, .3, 0xff7a28, 'glow', 6, 4);
+  m.glow(B, add(hd, [.6, 0, -.4]), [1.2, .55, .22], 9, .8 + inh * .9); m.glow(B, add(pts[1], [.6, 0, -.3]), [1.2, .5, .2], 6, .6 + inh * .5);
+  // 날개
+  const fl = Math.sin(t * 1.4) * .12 + (pose === 'walk' ? Math.sin(t * 4) * .2 : 0);
+  for (const s of [1, -1]) {
+    const sh = [.7, s * .8, 2.45], el = [.0, s * 2.0, 3.6 + fl], wr = [-.6, s * 3.0, 4.6 + fl * 1.6];
+    m.limb(B, sh, el, .2, .16, red, null, 6); m.limb(B, el, wr, .16, .1, red, null, 6);
+    const tips = [[-.2, s * 4.0, 3.6 + fl], [-1.3, s * 3.6, 2.6 + fl * .7], [-1.9, s * 2.4, 1.9 + fl * .4], [-1.6, s * 1.0, 1.9]];
+    tips.forEach(tp2 => m.limb(B, wr, tp2, .07, .02, red, null, 4));
+    m.cyl(ch(B, Tr(...wr), align(sub(wr, el)), Tr(0, 0, .05)), .1, .0, .35, horn, null, 4);
+    const ring = [sh, el, wr, ...tips, [-.8, s * .8, 2.2]]; for (let i = 0; i < ring.length - 1; i++) m.poly(B, [wr, ring[i], ring[i + 1]], mem);
+    m.poly(B, [sh, el, wr], mem); m.poly(B, [sh, wr, [-.8, s * .8, 2.2]], mem);
+  }
+  return m;
+}
+
+// ── 장면
+const HEROES = [['전사', fighter], ['마법사', mage], ['성직자', cleric], ['도적', rogue]];
+const MONS = [['고블린', goblin], ['해골 병사', skeleton], ['큰 쥐', rat], ['오크', orc], ['젤라틴 큐브', cube], ['큰 거미', spider]];
+let mode = 'idle';
+document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { mode = b.dataset.m; document.querySelectorAll('[data-m]').forEach(x => x.classList.toggle('on', x === b)); });
+
+const bg = new Image(); bg.src = 'bg.png'; const nowImg = new Image(); nowImg.src = 'now.png';
+const CROP = [440, 150, 660, 620];
+const toW = (sx, sy) => { const a = sx / K, b = sy / (K * SIN); return [(a + b) / 2, (b - a) / 2, 0]; }; // 크롭 화면 좌표(바닥) → 월드
+const flame = (sx, sy, z = 2.5) => { const p = toW(sx - CROP[0], sy - CROP[1] + z * COS * S); p[2] = z; return p; };
+const off = document.createElement('canvas'), ox = off.getContext('2d');
+function blit(ctx, img, x, y) { off.width = img.width; off.height = img.height; ox.putImageData(img, 0, 0); ctx.drawImage(off, x, y); }
+const ZM = 1.7; // 인물 배율 — 지금 인형 크기(한 칸 남짓)에 맞춤
+function shadow(ctx, sx, sy, r) { ctx.fillStyle = 'rgba(0,0,0,.42)'; ctx.beginPath(); ctx.ellipse(Math.round(sx), Math.round(sy), r * S * ZM, r * S * SIN * ZM, 0, 0, Math.PI * 2); ctx.fill(); }
+
+function scene(cv, list, t) {
+  const c = cv.getContext('2d'); cv.width = CROP[2]; cv.height = CROP[3]; c.imageSmoothingEnabled = false;
+  c.drawImage(bg, CROP[0], CROP[1], CROP[2], CROP[3], 0, 0, CROP[2], CROP[3]);
+  const fk = 1 + Math.sin(t * 9) * .05 + Math.sin(t * 23) * .03, partyC = [800, 480];
+  const lights = [
+    { p: flame(517, 300), c: [1.2, .72, .38], r: 13, i: 1.5 * fk }, { p: flame(875, 322), c: [1.2, .72, .38], r: 13, i: 1.5 * fk }, { p: flame(556, 470), c: [1.2, .72, .38], r: 13, i: 1.5 * fk },
+    { p: flame(partyC[0], partyC[1], 3), c: [1.0, .78, .5], r: 26, i: 1.3 },
+  ];
+  // 성직자 등불 · 마법사 수정 · 용의 불빛은 그 인물의 모형에서 나와 다른 인물도 비춘다
+  const ents = list.map(e => { const p = toW(e.at[0] - CROP[0], e.at[1] - CROP[1]); return { ...e, p, mesh: e.fn(t + e.ph, mode === 'walk' ? 'walk' : 'idle') }; });
+  const shared = []; for (const e of ents) for (const l of e.mesh.lights) { const R = ch(Tr(...e.p), RZ(e.face)); shared.push({ ...l, p: tp(R, l.p), own: e }); }
+  ents.sort((a, b) => (a.p[0] + a.p[1]) - (b.p[0] + b.p[1]));
+  for (const e of ents) {
+    const sx = Math.round(e.at[0] - CROP[0]), sy = Math.round(e.at[1] - CROP[1]); shadow(c, sx, sy, e.sh || .4);
+    const bw = Math.round((e.w || 72) * ZM), bh = Math.round((e.h || 72) * ZM), fy = bh - 16;
+    const img = render(e.mesh, { root: e.p, face: e.face, z: ZM, w: bw, h: bh, fx: bw >> 1, fy, lights: lights.concat(shared.filter(l => l.own !== e)), amb: [.15, .15, .19], gray: true, dx: sx, dy: sy });
+    blit(c, img, sx - (bw >> 1), sy - fy);
+  }
+}
+const party = (k = 0) => [
+  { fn: fighter, at: [830 + k, 478], face: .35, ph: 0 }, { fn: cleric, at: [768 + k, 500], face: .2, ph: 1.3 },
+  { fn: mage, at: [742 + k, 450], face: .4, ph: 2.1 }, { fn: rogue, at: [880 + k, 520], face: 0, ph: .7 },
+];
+function boss(t) { scene(document.getElementById('boss'), [...party(), { fn: dragon, at: [950, 605], face: Math.PI * 1.0 + .25, ph: 0, w: 220, h: 190, sh: 2.2 }], t); }
+function mobs(t) {
+  scene(document.getElementById('mobs'), [...party(), { fn: goblin, at: [915, 545], face: Math.PI + .3, ph: .4 }, { fn: goblin, at: [880, 590], face: Math.PI + .1, ph: 1.9 },
+    { fn: skeleton, at: [1000, 530], face: Math.PI + .4, ph: .9 }, { fn: rat, at: [815, 585], face: Math.PI - .2, ph: 2.4, sh: .5 },
+    { fn: orc, at: [985, 640], face: Math.PI + .2, ph: 1.1 }, { fn: cube, at: [1060, 600], face: Math.PI, ph: 0, w: 90, h: 90, sh: 1.1 }, { fn: spider, at: [1040, 700], face: Math.PI + .5, ph: .3, w: 90, h: 80, sh: .9 }], t);
+}
+function now() { const cv = document.getElementById('now'), c = cv.getContext('2d'); cv.width = CROP[2]; cv.height = CROP[3]; c.drawImage(nowImg, CROP[0], CROP[1], CROP[2], CROP[3], 0, 0, CROP[2], CROP[3]); }
+
+// 진열: 칸마다 작은 바닥 + 횃불 하나 · 3배
+function lineup(cv, list, cw, chh, t, z = 3) {
+  const c = cv.getContext('2d'), W = cw * list.length; cv.width = W * z; cv.height = (chh + 16) * z; c.imageSmoothingEnabled = false;
+  c.fillStyle = '#0d0a08'; c.fillRect(0, 0, cv.width, cv.height);
+  const L = [{ p: [3.5, 4.5, 3.6], c: [1.2, .74, .42], r: 13, i: 1.4 * (1 + Math.sin(t * 9) * .04) }, { p: [-2, -4, 2.5], c: [.3, .36, .55], r: 10, i: .5 }];
+  list.forEach(([name, fn], i) => {
+    const face = mode === 'spin' ? Math.floor(t / .6) % 8 * Math.PI / 4 : .35, mesh = fn(t + i * .7, mode === 'walk' ? 'walk' : 'idle');
+    const tile = document.createElement('canvas'); tile.width = cw; tile.height = chh; const tc = tile.getContext('2d'), fx = cw >> 1, fy = chh - 14;
+    tc.fillStyle = '#2a2420'; tc.beginPath(); const r = Math.min(cw * .42, 40 * ZM); tc.moveTo(fx - r, fy); tc.lineTo(fx, fy - r / 2); tc.lineTo(fx + r, fy); tc.lineTo(fx, fy + r / 2); tc.fill();
+    tc.fillStyle = 'rgba(0,0,0,.45)'; tc.beginPath(); tc.ellipse(fx, fy, (fn === dragon ? 2.2 : .42) * S * ZM, (fn === dragon ? 2.2 : .42) * S * SIN * ZM, 0, 0, Math.PI * 2); tc.fill();
+    const img = render(mesh, { root: [0, 0, 0], face, w: cw, h: chh, fx, fy, z: ZM, lights: L, amb: [.12, .11, .13] });
+    off.width = cw; off.height = chh; ox.putImageData(img, 0, 0); tc.drawImage(off, 0, 0);
+    c.drawImage(tile, i * cw * z, 0, cw * z, chh * z);
+    c.fillStyle = '#c8b898'; c.font = '600 14px "Noto Sans KR", sans-serif'; c.textAlign = 'center'; c.fillText(name, (i + .5) * cw * z, chh * z + 12 * z - 8);
+  });
+}
+
+let t0 = performance.now();
+function frame() {
+  const t = (performance.now() - t0) / 1000;
+  if (bg.complete && bg.naturalWidth) { boss(t); mobs(t); }
+  lineup(document.getElementById('heroes'), HEROES, 100, 96, t);
+  lineup(document.getElementById('monsters'), MONS, 110, 96, t, 2);
+  lineup(document.getElementById('dragon'), [['붉은 성룡 (3×3칸)', dragon]], 330, 230, t, 2);
+  setTimeout(() => requestAnimationFrame(frame), 90);
+}
+nowImg.onload = now; frame();
+</script>
+</body>
+</html>
