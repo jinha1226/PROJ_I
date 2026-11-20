@@ -16,6 +16,7 @@
   .bar { margin: 10px 0; display: flex; gap: 8px; }
   button { background: #2a201a; color: #e8dcc4; border: 1px solid #5a4a3a; padding: 6px 12px; font: inherit; cursor: pointer; }
   button.on { background: #6a4a24; border-color: #c08a40; }
+  select { background: #2a201a; color: #e8dcc4; border: 1px solid #5a4a3a; padding: 4px 8px; font: 14px "Noto Sans KR", sans-serif; margin-left: 8px; }
 </style>
 </head>
 <body>
@@ -31,8 +32,10 @@
   <div><canvas id="mobs"></canvas><div class="cap">시안 — 잡몹 (고블린 · 해골 · 오크 · 큰 쥐 · 젤라틴 큐브 · 거미)</div></div>
 </div>
 
-<h2>파티 (3배 확대)</h2>
+<h2>SRD 직업 12 (3배) <select id="selSp"></select></h2>
 <canvas id="heroes"></canvas>
+<h2>SRD 종족 9 (3배) <select id="selCl"></select></h2>
+<canvas id="species"></canvas>
 <h2>몬스터 (2배 확대)</h2>
 <canvas id="monsters"></canvas>
 <h2>최종 보스 (2배 확대)</h2>
@@ -156,82 +159,170 @@ function arm(m, M, sh, hand, r, col, out, handCol = SKIN) { const el = elbowOf(s
 const bob = (t, pose) => pose === 'walk' ? Math.abs(Math.sin(t * 9)) * .06 : Math.sin(t * 2.2) * .018;
 const swing = (t, pose) => pose === 'walk' ? Math.sin(t * 9) * .22 : 0;
 
-// ── 파티 ─────────────────────────────────
-// 전사: 쇠 투구(붉은 술) · 사슬 갑옷 위 붉은 덧옷 · 둥근 나무 방패 · 곧은 칼
-function fighter(t, pose) {
-  const m = new Mesh(), M = I(); legs(m, M, 1, t, pose, 0x4a4642, 0x3a2a1e, .15, .13);
-  const B = ch(M, Tr(0, 0, bob(t, pose))), sw = swing(t, pose);
-  m.cyl(ch(B, Tr(0, 0, .98)), .3, .37, .76, 0x6a6e76, null, 7);
-  m.cyl(ch(B, Tr(0, 0, 1.72)), .37, .2, .14, 0x6a6e76, null, 7);
-  m.box(ch(B, Tr(.25, 0, .62)), .07, .44, 1.08, 0x8a2c22, null, 1, .9); m.box(ch(B, Tr(-.25, 0, .66)), .07, .44, 1.04, 0x8a2c22);
-  m.cyl(ch(B, Tr(0, 0, .98)), .34, .34, .1, 0x3a2818, null, 7);
-  m.box(ch(B, Tr(.33, 0, 1.25)), .03, .14, .2, 0xc8a040); // 덧옷 가슴 무늬
-  m.sph(ch(B, Tr(.04, 0, 2.06)), .23, .23, .25, SKIN);
-  m.cyl(ch(B, Tr(0, 0, 2.02)), .29, .27, .24, IRON, null, 8); m.sph(ch(B, Tr(0, 0, 2.25)), .27, .27, .2, IRON, null, 8, 4);
-  m.box(ch(B, Tr(.28, 0, 1.9)), .05, .07, .32, IRON); m.box(ch(B, Tr(-.04, 0, 2.4)), .46, .07, .16, 0xa02a1e, null, .7, 1);
-  for (const s of [1, -1]) m.sph(ch(B, Tr(0, s * .38, 1.72)), .17, .16, .13, IRON);
-  arm(m, B, [0, .38, 1.66], [.3 - sw, .38, 1.2], .1, 0x6a6e76, [-.05, .08, 0], 0x4a3a2a);
-  m.cyl(ch(B, Tr(.42 - sw, .4, 1.2), RY(Math.PI / 2)), .42, .42, .07, WOOD, null, 10); m.cyl(ch(B, Tr(.49 - sw, .4, 1.2), RY(Math.PI / 2)), .13, .08, .07, IRON, null, 6);
-  const hand = [.28 + sw, -.4, 1.18]; arm(m, B, [0, -.38, 1.66], hand, .1, 0x6a6e76, [-.05, -.08, 0], 0x4a3a2a);
-  const d = nrm([.55, 0, .8]); m.limb(B, add(hand, mul(d, -.14)), add(hand, mul(d, .1)), .045, .045, 0x3a2818, null, 4);
-  m.limb(B, add(add(hand, mul(d, .1)), [0, .15, 0]), add(add(hand, mul(d, .1)), [0, -.15, 0]), .04, .04, IRON, null, 4);
-  m.limb(B, add(hand, mul(d, .1)), add(hand, mul(d, 1.05)), .065, .02, STEEL, null, 4);
-  return m;
+// ── 파티: 종족 몸 × 직업 옷 ─────────────────────────────────
+// 종족(SRD 9): 키 · 너비 · 머리 크기 · 피부 · 머리털 · 머리 부위(귀 · 수염 · 엄니 · 뿔 · 주둥이 …)
+const SPEC = {
+  human: { n: '인간', h: 1, w: 1, hs: 1, skin: 0xc0907a, hair: 0x4a3020 },
+  elf: { n: '엘프', h: 1.04, w: .88, hs: .95, skin: 0xdcb89c, hair: 0xd8c27a, ears: 'long', long: 1 },
+  dwarf: { n: '드워프', h: .74, w: 1.28, hs: 1.08, skin: 0xb87e64, hair: 0x9a3e1e, beard: .22 },
+  halfling: { n: '하플링', h: .6, w: .95, hs: 1.02, skin: 0xc8987a, hair: 0x6a4422, curly: 1 },
+  gnome: { n: '노움', h: .56, w: .9, hs: 1.14, skin: 0xd2a48a, hair: 0xe4e2d8, nose: 1, ears: 'short' },
+  orc: { n: '오크', h: 1.1, w: 1.22, hs: 1, skin: 0x76875a, hair: 0x1e1a16, tusk: 1, ears: 'short' },
+  tiefling: { n: '티플링', h: 1, w: .95, hs: 1, skin: 0xa44a4a, hair: 0x2a1830, horns: 1, tail: 1 },
+  dragonborn: { n: '드래곤본', h: 1.1, w: 1.15, hs: 1.05, skin: 0xa86a30, snout: 1, bald: 1 },
+  goliath: { n: '골리앗', h: 1.32, w: 1.3, hs: .95, skin: 0x8a8f96, bald: 1, marks: 1 },
+};
+const SH_L = [0, .38, 1.66], SH_R = [0, -.38, 1.66];
+// 몸통: 허리 → 가슴 → 어깨를 10각 기둥 셋으로 (네모가 아니라 둥글게)
+function torso(m, B, col, k = 1) {
+  m.cyl(ch(B, Tr(0, 0, .96)), .28 * k, .33 * k, .36, col, null, 10);
+  m.cyl(ch(B, Tr(0, 0, 1.32)), .33 * k, .37 * k, .32, col, null, 10);
+  m.cyl(ch(B, Tr(0, 0, 1.64)), .37 * k, .18, .16, col, null, 10);
 }
-// 마법사: 넓은 챙의 꺾인 모자 · 흰 수염 · 짙은 남색 긴 옷 · 푸른 수정 지팡이 (스스로 빛난다)
-function mage(t, pose) {
-  const m = new Mesh(), M = I(), B = ch(M, Tr(0, 0, bob(t, pose))), sw = swing(t, pose), s0 = ph(t, pose);
-  for (const s of [1, -1]) m.box(ch(M, Tr(s * s0 * .2 + .06, s * .13, 0)), .26, .15, .14, 0x2a2018);
-  m.cyl(ch(B, Tr(0, 0, .06)), .5, .27, 1.7, 0x2c3462, null, 8);
-  m.cyl(ch(B, Tr(0, 0, .06)), .52, .5, .1, 0x8a6a2a, null, 8);
-  m.cyl(ch(B, Tr(0, 0, .95)), .37, .36, .08, 0x5a4020, null, 8);
-  m.sph(ch(B, Tr(.03, 0, 2.0)), .22, .22, .24, SKIN);
-  m.cyl(ch(B, Tr(.17, 0, 1.98), RY(Math.PI)), .17, .03, .55, 0xd8d2c6, null, 6);
-  m.cyl(ch(B, Tr(0, 0, 2.13)), .54, .5, .05, 0x262c52, null, 10);
-  m.cyl(ch(B, Tr(0, 0, 2.15)), .28, .15, .42, 0x262c52, null, 8);
-  m.limb(B, [0, 0, 2.55], [-.28, .05, 2.85 + Math.sin(t * 2) * .03], .15, .02, 0x262c52, null, 6);
-  arm(m, B, [0, .32, 1.62], [.22 - sw, .36, 1.05], .13, 0x2c3462, [-.05, .1, 0]);
-  const hand = [.32 + sw * .5, -.42, 1.25]; arm(m, B, [0, -.32, 1.62], hand, .13, 0x2c3462, [-.05, -.1, 0]);
-  m.limb(B, add(hand, [0, 0, -1.15]), add(hand, [0, 0, 1.35]), .045, .04, WOOD, null, 5);
-  const top = add(hand, [0, 0, 1.45]); for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2; m.limb(B, add(hand, [0, 0, 1.3]), add(top, [Math.cos(a) * .12, Math.sin(a) * .12, .12]), .025, .02, WOOD, null, 4); }
-  m.sph(ch(B, Tr(...top)), .12, .12, .15, 0x7fd8ff, 'glow', 6, 4); m.glow(B, top, [.45, .8, 1.15], 6, .9 + Math.sin(t * 5) * .1);
-  return m;
+const skirt = (m, B, col, rTop, rBot, z0, z1, n = 10) => m.cyl(ch(B, Tr(0, 0, z0)), rBot, rTop, z1 - z0, col, null, n);
+const belt = (m, B, col, r = .34, z = .98, buckle = 0xc8a040) => { m.cyl(ch(B, Tr(0, 0, z)), r, r, .09, col, null, 10); if (buckle) m.box(ch(B, Tr(r - .01, 0, z - .01)), .04, .1, .11, buckle); };
+function cape(m, B, col, len, t, w = .36) {
+  const s = Math.sin(t * 2) * .05, L = [-.16, w, 1.72], R = [-.16, -w, 1.72], M = [-.24, 0, 1.74];
+  const BL = [-.34 - s, w * 1.3, 1.72 - len], BR = [-.34 + s, -w * 1.3, 1.72 - len], BM = [-.44, 0, 1.72 - len];
+  m.poly(B, [L, M, BM, BL], col); m.poly(B, [M, R, BR, BM], col);
 }
-// 성직자: 둥근 쇠 모자 · 사슬 두건 · 흰 덧옷에 금빛 해 무늬 · 철퇴 · 등불(파티의 빛)
-function cleric(t, pose) {
-  const m = new Mesh(), M = I(); legs(m, M, 1, t, pose, 0x4a4642, 0x3a2a1e, .16, .14);
-  const B = ch(M, Tr(0, 0, bob(t, pose))), sw = swing(t, pose);
-  m.cyl(ch(B, Tr(0, 0, .95)), .36, .4, .8, 0x6a6e76, null, 8);
-  m.box(ch(B, Tr(0, 0, .55)), .78, .66, 1.22, 0xb6ad98, null, .82, .82);
-  m.cyl(ch(B, Tr(0, 0, 1.0)), .38, .38, .1, LEATHER, null, 8);
-  m.cyl(ch(B, Tr(.33, 0, 1.32), RY(Math.PI / 2)), .13, .13, .03, 0xd0a040, null, 8);
-  m.cyl(ch(B, Tr(0, 0, 1.72)), .3, .27, .3, 0x6a6e76, null, 8);
-  m.sph(ch(B, Tr(.05, 0, 2.06)), .22, .22, .22, SKIN);
-  m.sph(ch(B, Tr(0, 0, 2.15)), .28, .28, .22, IRON, null, 8, 4); m.cyl(ch(B, Tr(0, 0, 2.1)), .31, .31, .04, IRON, null, 10);
-  arm(m, B, [0, .4, 1.66], [.38, .42, 1.15 + Math.sin(t * 3) * .02], .12, 0x6a6e76, [-.08, .1, 0], 0x4a3a2a);
-  const lt = [.42, .45, .82 + Math.sin(t * 3) * .03]; m.limb(B, [.38, .42, 1.12], add(lt, [0, 0, .3]), .015, .015, IRON, null, 3);
-  m.box(ch(B, Tr(...lt)), .17, .17, .26, 0x2a2420, null, .8, .8); m.sph(ch(B, Tr(lt[0], lt[1], lt[2] + .12)), .075, .075, .1, 0xffc870, 'glow', 6, 4);
-  m.glow(B, add(lt, [0, 0, .12]), [1.1, .78, .45], 9, 1.0 + Math.sin(t * 7) * .06);
-  const hand = [.3 + sw, -.42, 1.15]; arm(m, B, [0, -.4, 1.66], hand, .12, 0x6a6e76, [-.05, -.1, 0], 0x4a3a2a);
-  m.limb(B, add(hand, [-.05, 0, -.12]), add(hand, [.25, 0, .55]), .04, .04, WOOD, null, 5);
-  const hd = add(hand, [.28, 0, .62]); m.sph(ch(B, Tr(...hd)), .12, .12, .12, IRON, null, 6, 4); for (let i = 0; i < 4; i++) m.box(ch(B, Tr(...hd), RZ(i * Math.PI / 4), Tr(0, 0, -.12)), .32, .05, .24, IRON);
-  return m;
+// 머리 (머리 중심이 원점, 반지름 ≈ .23, 앞이 +x). cov = 덮개(투구 · 두건 · 모자)가 머리털을 가린다
+function head(m, H, B, sp, cov, t, beard) {
+  if (sp.snout) {
+    m.sph(H, .22, .2, .22, sp.skin); m.box(ch(H, Tr(.16, 0, -.14)), .34, .2, .16, sp.skin, null, .75, .8);
+    m.box(ch(H, Tr(.12, 0, -.2)), .3, .18, .06, 0xc8a070);
+    for (const s of [1, -1]) { m.cyl(ch(H, Tr(-.12, s * .1, .1), RY(-2.3)), .06, .0, .32, 0x6a4020, null, 4); m.sph(ch(H, Tr(.17, s * .1, .03)), .035, .03, .03, 0xffc040, 'glow', 4, 3); }
+    m.cyl(ch(H, Tr(-.16, 0, .14), RY(-2.0)), .07, .0, .36, 0x6a4020, null, 4);
+  } else {
+    m.sph(H, .22, .21, .24, sp.skin);
+    for (const s of [1, -1]) m.sph(ch(H, Tr(.2, s * .08, -.01)), .03, .03, .035, 0x1a1210, null, 4, 3);
+    if (sp.nose) m.sph(ch(H, Tr(.23, 0, -.05)), .075, .07, .07, sp.skin); else m.box(ch(H, Tr(.21, 0, -.1)), .06, .06, .09, sp.skin);
+  }
+  if (!sp.bald && !cov) {
+    m.sph(ch(H, Tr(-.04, 0, .05)), .245, .235, .235, sp.hair);
+    if (sp.long) m.box(ch(H, Tr(-.16, 0, -.42)), .12, .36, .45, sp.hair, null, 1, .9);
+    if (sp.curly) for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; m.sph(ch(H, Tr(-.04 + Math.cos(a) * .14, Math.sin(a) * .16, .16)), .1, .1, .09, sp.hair, null, 5, 3); }
+  }
+  const bd = sp.beard || (beard && !sp.snout && !sp.bald && sp !== SPEC.elf ? .16 : 0);
+  if (bd) m.cyl(ch(H, Tr(.13, 0, -.12), RY(Math.PI)), bd, .03, bd * 2.6, sp.beard ? sp.hair : 0xd8d2c6, null, 7);
+  if (sp.ears) for (const s of [1, -1]) sp.ears === 'long' ? m.limb(H, [0, s * .19, 0], [-.14, s * .44, .2], .06, .01, sp.skin, null, 4) : m.limb(H, [-.02, s * .2, 0], [-.07, s * .33, .1], .05, .01, sp.skin, null, 4);
+  if (sp.tusk) for (const s of [1, -1]) m.cyl(ch(H, Tr(.19, s * .07, -.16)), .03, .0, .11, 0xe8e0c8, null, 4);
+  if (sp.marks) for (const s of [1, -1]) m.box(ch(H, Tr(.2, s * .11, -.08)), .03, .03, .12, 0x4a4e56);
+  if (sp.horns) for (const s of [1, -1]) { const a = [.04, s * .12, .17], b = [-.08, s * .2, .38], c = [-.26, s * .24, .44]; m.limb(H, a, b, .065, .045, 0x3a2a2a, null, 5); m.limb(H, b, c, .045, .01, 0x3a2a2a, null, 5); }
+  if (sp.tail) { let p = [-.2, 0, 1.0]; for (let i = 0; i < 6; i++) { const q = add(p, [-.1, Math.sin(t * 2 + i * .6) * .06, -.13 + i * .035]); m.limb(B, p, q, .05, .045, sp.skin, null, 4); p = q; } m.poly(B, [p, add(p, [-.12, .07, .04]), add(p, [-.2, 0, .1]), add(p, [-.12, -.07, .04])], 0x3a2a2a); }
 }
-// 도적: 몸을 숙인 자세 · 두건 달린 짙은 망토 · 붉은 목도리 · 얼굴은 그림자 · 거꾸로 쥔 단검 둘
-function rogue(t, pose) {
-  const m = new Mesh(), M = I(); legs(m, M, .95, t, pose, 0x3a3430, 0x2a201a, .15, .12);
-  const B = ch(M, Tr(0, 0, bob(t, pose) - .04), Tr(0, 0, 1.0), RY(.18), Tr(0, 0, -1.0)), sw = swing(t, pose);
-  m.cyl(ch(B, Tr(0, 0, .96)), .26, .32, .7, LEATHER, null, 7);
-  m.cyl(ch(B, Tr(-.06, 0, .55)), .5, .3, 1.15, 0x34422e, null, 8);
-  m.cyl(ch(B, Tr(0, 0, 1.62)), .27, .25, .14, 0x8a2a22, null, 8);
-  m.sph(ch(B, Tr(0, 0, 1.98)), .29, .28, .3, 0x34422e);
-  m.limb(B, [-.1, 0, 2.1], [-.42, 0, 2.0], .2, .02, 0x34422e, null, 6);
-  m.sph(ch(B, Tr(.17, 0, 1.94)), .14, .17, .16, 0x161210);
-  arm(m, B, [0, .32, 1.55], [.4 - sw, .36, 1.05], .1, LEATHER, [-.1, .1, 0], 0x2a201a);
-  arm(m, B, [0, -.32, 1.55], [.42 + sw, -.36, 1.08], .1, LEATHER, [-.1, -.1, 0], 0x2a201a);
-  for (const s of [1, -1]) { const h0 = [.42 + (s > 0 ? -sw : sw), s * .36, 1.06]; m.limb(B, h0, add(h0, [.05, 0, .1]), .035, .035, 0x2a201a, null, 4); m.limb(B, h0, add(h0, [.18, 0, -.42]), .05, .012, STEEL, null, 4); }
-  return m;
+const helmet = (m, H, col, plume) => { m.cyl(ch(H, Tr(0, 0, .03)), .29, .27, .2, col, null, 10); m.sph(ch(H, Tr(0, 0, .22)), .27, .27, .19, col, null, 10, 4); m.box(ch(H, Tr(.28, 0, -.16)), .05, .07, .34, col); if (plume) m.box(ch(H, Tr(-.04, 0, .36)), .46, .07, .16, plume, null, .7, 1); };
+const hood = (m, H, col, eyes) => { m.sph(ch(H, Tr(-.03, 0, .03)), .29, .28, .3, col); m.limb(H, [-.12, 0, .14], [-.44, 0, .04], .2, .02, col, null, 6); m.sph(ch(H, Tr(.17, 0, -.03)), .15, .18, .17, 0x141010); if (eyes) for (const s of [1, -1]) m.sph(ch(H, Tr(.29, s * .07, 0)), .03, .03, .025, eyes, 'glow', 4, 3); };
+
+// 직업(SRD 12): 바지 · 신 · 몸 · 머리 덮개 · 두 팔(쥔 것)
+const CLS = {
+  fighter: { n: '파이터', pants: 0x4a4642, boots: 0x3a2a1e,
+    body(c) { const { m, B } = c; torso(m, B, 0x6a6e76); m.box(ch(B, Tr(.27, 0, .62)), .05, .42, 1.08, 0x8a2c22, null, 1, .85); m.box(ch(B, Tr(-.27, 0, .66)), .05, .42, 1.04, 0x8a2c22); belt(m, B, LEATHER); for (const s of [1, -1]) m.sph(ch(B, Tr(0, s * .38, 1.7)), .17, .16, .13, IRON); },
+    head(c) { helmet(c.m, c.H, IRON, 0xa02a1e); return 1; },
+    arms(c) { const { m, B, sw } = c; arm(m, B, SH_L, [.3 - sw, .38, 1.2], .1, 0x6a6e76, [-.05, .08, 0], 0x4a3a2a);
+      m.cyl(ch(B, Tr(.42 - sw, .4, 1.2), RY(Math.PI / 2)), .42, .42, .07, WOOD, null, 12); m.cyl(ch(B, Tr(.42 - sw, .4, 1.2), RY(Math.PI / 2)), .45, .45, .04, IRON, null, 12); m.cyl(ch(B, Tr(.49 - sw, .4, 1.2), RY(Math.PI / 2)), .13, .06, .08, IRON, null, 6);
+      sword(m, B, [.28 + sw, -.4, 1.18], [.55, 0, .8], 1.0); arm(m, B, SH_R, [.28 + sw, -.4, 1.18], .1, 0x6a6e76, [-.05, -.08, 0], 0x4a3a2a); } },
+  paladin: { n: '팔라딘', pants: 0x9aa0a8, boots: 0x7a8088,
+    body(c) { const { m, B, t } = c; torso(m, B, 0xa8aeb6, 1.04); m.sph(ch(B, Tr(.1, 0, 1.42)), .28, .32, .3, 0xb8bec6); skirt(m, B, 0x9aa0a8, .36, .43, .7, 1.0);
+      m.box(ch(B, Tr(.33, 0, .5)), .04, .26, 1.1, 0xd8d2c4, null, 1, .8); m.cyl(ch(B, Tr(.35, 0, 1.3), RY(Math.PI / 2)), .09, .09, .03, 0xffd870, 'glow', 8); m.glow(B, [.4, 0, 1.3], [1.1, .95, .6], 3, .5);
+      cape(m, B, 0xd0c8b8, 1.5, t, .4); for (const s of [1, -1]) { m.sph(ch(B, Tr(0, s * .4, 1.72)), .21, .19, .15, 0xb8bec6); m.cyl(ch(B, Tr(0, s * .4, 1.62)), .2, .2, .03, 0xc8a040, null, 8); } belt(m, B, 0x5a4020); },
+    head(c) { const { m, H } = c; m.cyl(ch(H, Tr(0, 0, -.26)), .27, .27, .46, 0xb8bec6, null, 10); m.sph(ch(H, Tr(0, 0, .2)), .27, .27, .17, 0xb8bec6, null, 10, 4); m.box(ch(H, Tr(.26, 0, -.04)), .04, .3, .05, 0x141418); m.box(ch(H, Tr(-.02, 0, .34)), .32, .05, .12, 0xc8a040, null, .6, 1); return 1; },
+    arms(c) { const { m, B, sw } = c; arm(m, B, SH_L, [.3 - sw, .4, 1.2], .11, 0xa8aeb6, [-.05, .08, 0], 0x8a9098);
+      const KM = ch(B, Tr(.44 - sw, .42, 1.25), RY(Math.PI / 2)); m.poly(KM, [[-.32, -.3, 0], [-.32, .3, 0], [.15, .3, 0], [.6, 0, 0], [.15, -.3, 0]], 0xd8d2c4); m.poly(ch(KM, Tr(0, 0, .02)), [[-.3, -.04, 0], [.45, -.04, 0], [.45, .04, 0], [-.3, .04, 0]], 0xc8a040); m.poly(ch(KM, Tr(0, 0, .02)), [[-.1, -.24, 0], [0, -.24, 0], [0, .24, 0], [-.1, .24, 0]], 0xc8a040);
+      sword(m, B, [.3 + sw, -.42, 1.2], [.35, 0, .95], 1.15, 0xc8a040); arm(m, B, SH_R, [.3 + sw, -.42, 1.2], .11, 0xa8aeb6, [-.05, -.08, 0], 0x8a9098); } },
+  barbarian: { n: '바바리안', pants: 0x6a4a30, boots: 0x5a4030,
+    body(c) { const { m, B, sp } = c; torso(m, B, sp.skin, 1.12); for (const s of [1, -1]) m.sph(ch(B, Tr(.2, s * .14, 1.48)), .16, .15, .13, sp.skin); skirt(m, B, 0x6a4a2a, .4, .48, .58, 1.02, 8);
+      m.limb(B, [.3, .3, 1.7], [.32, -.32, 1.0], .04, .04, LEATHER, null, 4); belt(m, B, LEATHER, .38); m.sph(ch(B, Tr(-.04, 0, 1.72)), .44, .5, .19, 0x7a6a58, null, 9, 4); },
+    head(c) { const { m, H, sp } = c; if (!sp.bald) for (let i = 0; i < 5; i++) m.cyl(ch(H, Tr(-.1, (i - 2) * .08, .12), RY(-1.9 + Math.abs(i - 2) * .2)), .08, .0, .34, sp.hair, null, 4); return 0; },
+    arms(c) { const { m, B, sp, sw } = c; const h1 = [.38, .18, 1.32 + sw * .2], h2 = [.3, -.18, 1.02 + sw * .2];
+      arm(m, B, SH_L, h1, .13, sp.skin, [-.12, .14, 0], sp.skin); arm(m, B, SH_R, h2, .13, sp.skin, [-.12, -.14, 0], sp.skin);
+      const d = nrm(sub(h1, h2)); m.limb(B, add(h2, mul(d, -.3)), add(h2, mul(d, 1.6)), .045, .045, WOOD, null, 5); const AX = ch(B, Tr(...add(h2, mul(d, 1.45))), align(d));
+      for (const s of [1, -1]) m.poly(AX, [[0, s * .03, -.14], [0, s * .32, -.24], [0, s * .38, 0], [0, s * .32, .24], [0, s * .03, .14]], 0x8a9098); m.cyl(ch(AX, Tr(0, 0, -.1)), .06, .06, .2, IRON, null, 6); } },
+  monk: { n: '몽크', pants: 0x5a3a28, boots: 0x6a4a2a,
+    body(c) { const { m, B, sp } = c; torso(m, B, 0xc8862a, .96); m.box(ch(B, Tr(.3, 0, 1.5)), .05, .14, .26, sp.skin, null, 1, .4); skirt(m, B, 0xc8862a, .33, .4, .74, 1.02);
+      belt(m, B, 0x8a2a22, .33, .98, 0); m.box(ch(B, Tr(.28, .12, .7)), .04, .08, .3, 0x8a2a22); for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; m.sph(ch(B, Tr(Math.cos(a) * .2 + .04, Math.sin(a) * .2, 1.74 - Math.max(0, Math.cos(a)) * .1)), .035, .035, .035, 0x6a3a1e, null, 4, 3); } },
+    head(c) { return 2; }, // 머리를 민다 (머리털 없음)
+    arms(c) { const { m, B, sp, t } = c, k = Math.sin(t * 2.2) * .03; arm(m, B, SH_L, [.55, .22, 1.45 + k], .1, sp.skin, [.0, .14, -.08], 0xd8d0c0); arm(m, B, SH_R, [.14, -.38, 1.16 - k], .1, sp.skin, [-.1, -.1, 0], 0xd8d0c0);
+      for (const s of [1, -1]) m.cyl(ch(B, Tr(...(s > 0 ? [.38, .3, 1.36] : [.08, -.42, 1.3]))), .1, .1, .12, 0xc8862a, null, 6); } },
+  rogue: { n: '로그', pants: 0x3a3430, boots: 0x2a201a, lean: .18,
+    body(c) { const { m, B, t } = c; torso(m, B, LEATHER, .9); skirt(m, B, 0x34422e, .3, .5, .55, 1.7, 9); m.cyl(ch(B, Tr(0, 0, 1.62)), .27, .25, .14, 0x8a2a22, null, 8); belt(m, B, 0x2a201a, .3); },
+    head(c) { hood(c.m, c.H, 0x34422e); return 1; },
+    arms(c) { const { m, B, sw } = c; for (const s of [1, -1]) { const h0 = [.42 + (s > 0 ? -sw : sw), s * .36, 1.06]; arm(m, B, s > 0 ? SH_L : SH_R, h0, .1, LEATHER, [-.1, s * .1, 0], 0x2a201a); m.limb(B, h0, add(h0, [.05, 0, .1]), .035, .035, 0x2a201a, null, 4); m.limb(B, h0, add(h0, [.18, 0, -.42]), .05, .012, STEEL, null, 4); } } },
+  ranger: { n: '레인저', pants: 0x4a4030, boots: 0x3a2a1e,
+    body(c) { const { m, B, t } = c; torso(m, B, 0x6a4a2e, .95); cape(m, B, 0x3e5232, .75, t, .34); m.cyl(ch(B, Tr(0, 0, 1.6)), .32, .27, .18, 0x3e5232, null, 10); belt(m, B, 0x3a2818, .31); m.box(ch(B, Tr(.18, .22, .86)), .14, .1, .16, 0x5a3e22);
+      const Q = ch(B, Tr(-.3, -.14, .95), RX(-.35), RY(-.2)); m.cyl(Q, .09, .1, .72, 0x5a3a22, null, 6); for (let i = 0; i < 4; i++) { m.limb(Q, [(i % 2) * .05 - .02, (i - 1.5) * .04, .7], [(i % 2) * .05 - .02, (i - 1.5) * .05, 1.0], .012, .012, WOOD, null, 3); m.box(ch(Q, Tr((i % 2) * .05 - .02, (i - 1.5) * .05, .92)), .02, .07, .1, i % 2 ? 0xd8d0c0 : 0xa03020); } },
+    head(c) { return 0; },
+    arms(c) { const { m, B, sw, t } = c; const hb = [.36, .52, 1.3]; arm(m, B, SH_L, hb, .1, 0x6a4a2e, [-.04, .12, -.05], 0x3a2818); arm(m, B, SH_R, [.2, -.2, 1.42], .1, 0x6a4a2e, [-.15, -.15, 0], 0x3a2818);
+      let p = null; for (let i = 0; i <= 8; i++) { const a = -1 + i / 4, q = add(hb, [-.2 * a * a + .02, 0, a * .82]); if (p) m.limb(B, p, q, i === 4 || i === 5 ? .055 : .045, .045, 0x9a6a32, null, 4); p = q; } m.limb(B, add(hb, [-.18, 0, .82]), add(hb, [-.18, 0, -.82]), .012, .012, 0xd8d0c0, null, 3); } },
+  druid: { n: '드루이드', pants: 0x4a4030, boots: 0x5a4a38,
+    body(c) { const { m, B } = c; torso(m, B, 0x5a5a34, .96); skirt(m, B, 0x4e5a30, .33, .52, .06, 1.08, 9); m.sph(ch(B, Tr(-.02, 0, 1.7)), .4, .46, .17, 0x8a7a5a, null, 9, 4);
+      for (const s of [1, -1]) for (let i = 0; i < 3; i++) m.sph(ch(B, Tr(-.05 + i * .1, s * (.32 + i * .03), 1.78 - i * .05)), .09, .09, .07, 0x4a7a32, null, 5, 3); belt(m, B, 0x8a7a50, .33, .98, 0); },
+    head(c) { const { m, H } = c; m.cyl(ch(H, Tr(0, 0, .1)), .25, .25, .04, 0x7a5a30, null, 10); for (const s of [1, -1]) { const a = [-.02, s * .2, .14], b = [-.1, s * .34, .42], c2 = [-.04, s * .46, .58]; m.limb(H, a, b, .035, .03, 0x9a8a68, null, 4); m.limb(H, b, c2, .03, .01, 0x9a8a68, null, 4); m.limb(H, lerp3(a, b, .6), add(lerp3(a, b, .6), [.14, s * .06, .16]), .025, .01, 0x9a8a68, null, 4); m.limb(H, b, add(b, [-.2, s * .06, .12]), .025, .01, 0x9a8a68, null, 4); } return 0; },
+    arms(c) { const { m, B, sw, t } = c; const hand = [.32 + sw * .5, -.42, 1.2]; arm(m, B, SH_L, [.3 - sw, .36, 1.1], .11, 0x5a5a34, [-.05, .1, 0]); arm(m, B, SH_R, hand, .11, 0x5a5a34, [-.05, -.1, 0]);
+      let p = add(hand, [0, 0, -1.1]); for (let i = 0; i < 6; i++) { const q = add(p, [Math.sin(i * 2.1) * .06, Math.cos(i * 1.7) * .04, .44]); m.limb(B, p, q, .05, .045, 0x5a3e24, null, 5); p = q; }
+      for (let i = 0; i < 4; i++) m.sph(ch(B, Tr(...add(p, [Math.cos(i * 1.6) * .12, Math.sin(i * 1.6) * .12, .05 + (i % 2) * .08]))), .1, .1, .08, 0x4a7a32, null, 5, 3); m.sph(ch(B, Tr(...add(p, [0, 0, .18 + Math.sin(t * 3) * .04]))), .05, .05, .05, 0x9aff6a, 'glow', 4, 3); m.glow(B, add(p, [0, 0, .2]), [.6, 1.1, .5], 3.5, .6); } },
+  cleric: { n: '클레릭', pants: 0x4a4642, boots: 0x3a2a1e,
+    body(c) { const { m, B } = c; torso(m, B, 0x6a6e76, 1.02);
+      skirt(m, B, 0xbab09a, .37, .5, .46, 1.06); m.cyl(ch(B, Tr(0, 0, .46)), .51, .51, .05, 0xc8a040, null, 10); // 덧옷 아랫자락 (펴진 치마) + 금테
+      m.box(ch(B, Tr(.3, 0, 1.0)), .05, .34, .66, 0xbab09a, null, 1, .8); m.box(ch(B, Tr(-.3, 0, 1.0)), .05, .34, .66, 0xbab09a, null, 1, .8);
+      const E = ch(B, Tr(.35, 0, 1.36), RY(Math.PI / 2)); m.cyl(E, .09, .09, .03, 0xd0a040, null, 8); for (let i = 0; i < 4; i++) m.box(ch(E, RZ(i * Math.PI / 4), Tr(0, 0, .01)), .32, .035, .02, 0xd0a040); // 해 무늬
+      m.cyl(ch(B, Tr(0, 0, 1.48)), .45, .3, .28, 0x3a4a7a, null, 10); // 어깨 망토 (둥근 어깨선)
+      belt(m, B, LEATHER, .38, 1.0); m.box(ch(B, Tr(.2, .3, .82)), .12, .08, .14, 0x5a3e22); },
+    head(c) { const { m, H } = c; m.sph(ch(H, Tr(-.07, 0, -.04)), .25, .27, .26, 0x6a6e76); m.sph(ch(H, Tr(0, 0, .12)), .27, .27, .2, IRON, null, 10, 4); m.cyl(ch(H, Tr(0, 0, .08)), .3, .3, .04, IRON, null, 12); return 1; },
+    arms(c) { const { m, B, sw, t } = c; arm(m, B, [0, .42, 1.62], [.38, .44, 1.15 + Math.sin(t * 3) * .02], .12, 0x3a4a7a, [-.08, .1, 0], 0x4a3a2a);
+      const lt = [.42, .47, .82 + Math.sin(t * 3) * .03]; m.limb(B, [.38, .44, 1.12], add(lt, [0, 0, .3]), .015, .015, IRON, null, 3);
+      m.cyl(ch(B, Tr(...lt)), .09, .09, .04, 0x2a2420, null, 6); m.cyl(ch(B, Tr(lt[0], lt[1], lt[2] + .22)), .09, .03, .08, 0x2a2420, null, 6); m.sph(ch(B, Tr(lt[0], lt[1], lt[2] + .12)), .075, .075, .1, 0xffc870, 'glow', 6, 4);
+      for (let i = 0; i < 4; i++) { const a = i / 4 * Math.PI * 2 + .4; m.limb(B, add(lt, [Math.cos(a) * .08, Math.sin(a) * .08, .03]), add(lt, [Math.cos(a) * .08, Math.sin(a) * .08, .22]), .012, .012, 0x2a2420, null, 3); }
+      m.glow(B, add(lt, [0, 0, .12]), [1.1, .78, .45], 9, 1.0 + Math.sin(t * 7) * .06);
+      const hand = [.3 + sw, -.44, 1.15]; arm(m, B, [0, -.42, 1.62], hand, .12, 0x3a4a7a, [-.05, -.1, 0], 0x4a3a2a);
+      m.limb(B, add(hand, [-.05, 0, -.12]), add(hand, [.25, 0, .55]), .04, .04, WOOD, null, 5);
+      const hd = add(hand, [.28, 0, .62]); m.sph(ch(B, Tr(...hd)), .1, .1, .1, IRON, null, 6, 4); for (let i = 0; i < 4; i++) m.box(ch(B, Tr(...hd), RZ(i * Math.PI / 4), Tr(0, 0, -.11)), .3, .045, .22, IRON, null, .8, 1); } },
+  wizard: { n: '위저드', pants: 0x2a2018, boots: 0x2a2018, beard: 1, nolegs: 1,
+    body(c) { const { m, B } = c; skirt(m, B, 0x2c3462, .27, .5, .06, 1.76, 10); m.cyl(ch(B, Tr(0, 0, .06)), .52, .5, .1, 0x8a6a2a, null, 10); belt(m, B, 0x5a4020, .37, .95, 0); m.box(ch(B, Tr(.12, .3, .7)), .12, .06, .2, 0xd8ccaa); },
+    head(c) { const { m, H, t } = c; m.cyl(ch(H, Tr(0, 0, .1)), .54, .5, .05, 0x262c52, null, 12); m.cyl(ch(H, Tr(0, 0, .12)), .28, .15, .42, 0x262c52, null, 10); m.limb(H, [0, 0, .52], [-.28, .05, .82 + Math.sin(t * 2) * .03], .15, .02, 0x262c52, null, 8); return 1; },
+    arms(c) { const { m, B, sw, t } = c; const bk = [.42, .2, 1.18]; arm(m, B, SH_L, bk, .13, 0x2c3462, [-.06, .12, 0]); m.box(ch(B, Tr(...bk), RZ(.4), RY(.5)), .26, .34, .05, 0x5a2a1e); m.box(ch(B, Tr(bk[0], bk[1], bk[2] + .04), RZ(.4), RY(.5)), .23, .3, .02, 0xe0d4b0);
+      const hand = [.32 + sw * .5, -.42, 1.25]; arm(m, B, SH_R, hand, .13, 0x2c3462, [-.05, -.1, 0]);
+      m.limb(B, add(hand, [0, 0, -1.15]), add(hand, [0, 0, 1.35]), .045, .04, WOOD, null, 5); const top = add(hand, [0, 0, 1.45]);
+      for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2; m.limb(B, add(hand, [0, 0, 1.3]), add(top, [Math.cos(a) * .12, Math.sin(a) * .12, .12]), .025, .02, WOOD, null, 4); }
+      m.sph(ch(B, Tr(...top)), .12, .12, .15, 0x7fd8ff, 'glow', 6, 4); m.glow(B, top, [.45, .8, 1.15], 6, .9 + Math.sin(t * 5) * .1); } },
+  sorcerer: { n: '소서러', pants: 0x3a2a3a, boots: 0x2a1e1a,
+    body(c) { const { m, B } = c; torso(m, B, 0x7a2232, .95); skirt(m, B, 0x7a2232, .34, .46, .52, 1.0, 8); m.cyl(ch(B, Tr(0, 0, .52)), .47, .47, .04, 0xc8a040, null, 8);
+      m.cyl(ch(B, Tr(0, 0, 1.72)), .18, .3, .2, 0x5a1828, null, 10); belt(m, B, 0x2a1a1a, .32); m.box(ch(B, Tr(.33, 0, 1.12)), .03, .05, .55, 0xc8a040); },
+    head(c) { return 0; },
+    arms(c) { const { m, B, t } = c, k = Math.sin(t * 2) * .03; const hL = [.42, .34, 1.25 + k], hR = [.42, -.34, 1.25 - k];
+      arm(m, B, SH_L, hL, .1, 0x7a2232, [-.1, .1, -.05], c.sp.skin); arm(m, B, SH_R, hR, .1, 0x7a2232, [-.1, -.1, -.05], c.sp.skin);
+      for (const h of [hL, hR]) { const o = add(h, [.05, 0, .2 + Math.sin(t * 4 + h[1] * 9) * .04]); m.sph(ch(B, Tr(...o)), .1, .1, .1, 0xff8a2a, 'glow', 6, 4); for (let i = 0; i < 3; i++) { const a = t * 3 + i * 2.1; m.sph(ch(B, Tr(...add(o, [Math.cos(a) * .18, Math.sin(a) * .18, Math.sin(a * 2) * .06]))), .03, .03, .03, 0xffd070, 'glow', 4, 3); } m.glow(B, o, [1.2, .6, .25], 5, .8); } } },
+  warlock: { n: '워락', pants: 0x2a2430, boots: 0x1e1a1e,
+    body(c) { const { m, B, t } = c; torso(m, B, 0x3a2a4a, .96); skirt(m, B, 0x3a2a4a, .34, .5, .08, 1.06, 7); cape(m, B, 0x241c2c, 1.55, t, .38);
+      for (let i = 0; i < 8; i++) m.sph(ch(B, Tr(...lerp3([.3, .3, 1.66], [.3, -.28, 1.04], i / 7))), .04, .04, .04, IRON, null, 4, 3); belt(m, B, 0x1a141a, .35, .98, 0); m.box(ch(B, Tr(.1, -.38, .72)), .2, .08, .24, 0x4a2a2a); },
+    head(c) { hood(c.m, c.H, 0x3a2a4a, 0xc070ff); return 1; },
+    arms(c) { const { m, B, sw, t } = c; const hR = [.48, -.34, 1.3]; arm(m, B, SH_L, [.3 - sw, .36, 1.05], .11, 0x3a2a4a, [-.05, .1, 0], 0x6a5a7a); arm(m, B, SH_R, hR, .11, 0x3a2a4a, [-.1, -.12, -.05], 0x6a5a7a);
+      const o = add(hR, [.12, 0, .06]); m.sph(ch(B, Tr(...o)), .11 + Math.sin(t * 6) * .015, .11, .11, 0xb060ff, 'glow', 6, 4); for (let i = 0; i < 4; i++) { const a = t * 2 + i * 1.6; m.limb(B, o, add(o, [Math.cos(a) * .2, Math.sin(a) * .2, .1 + i * .04]), .02, .005, 0x8a3aff, 'glow', 3); } m.glow(B, o, [.75, .4, 1.2], 5, .9); } },
+  bard: { n: '바드', pants: 0x6a2a3a, boots: 0x4a2e1e,
+    body(c) { const { m, B, t } = c; torso(m, B, 0x2a6a6a, .95); skirt(m, B, 0x2a6a6a, .33, .4, .8, 1.02); for (let i = 0; i < 4; i++) m.sph(ch(B, Tr(.33, 0, 1.0 + i * .15)), .03, .03, .03, 0xd8b040, null, 4, 3);
+      const CM = ch(B, RZ(.5)); cape(m, CM, 0x8a2a2a, .7, t, .3); belt(m, B, 0x3a2418, .32); m.limb(B, [.0, .34, .95], [-.55, .4, .45], .02, .012, STEEL, null, 4); m.sph(ch(B, Tr(.06, .34, 1.0)), .06, .06, .06, 0xc8a040, null, 5, 3); },
+    head(c) { const { m, H } = c; m.cyl(ch(H, Tr(-.02, .03, .12), RX(.25)), .3, .27, .08, 0x7a2a3a, null, 10); m.poly(H, [[-.05, .2, .2], [-.5, .32, .52], [-.42, .22, .3]], 0xe8e0c0); m.poly(H, [[-.05, .16, .2], [-.4, .24, .44], [-.34, .14, .26]], 0xd8b040); return 0; },
+    arms(c) { const { m, B, t } = c, st = Math.sin(t * 6) * .04; const LB = [.34, -.06, 1.22];
+      const LM = ch(B, Tr(...LB), RX(.75)); m.sph(LM, .1, .27, .3, 0xa06a32, null, 8, 5); m.cyl(ch(LM, Tr(.1, 0, 0), RY(Math.PI / 2)), .07, .07, .01, 0x2a1810, null, 8); m.limb(LM, [0, 0, .25], [0, 0, .75], .05, .04, 0x5a3418, null, 4); m.box(ch(LM, Tr(0, 0, .75)), .08, .1, .14, 0x3a2010);
+      arm(m, B, SH_L, add(LB, [.02, .4, .25]), .12, 0x2a6a6a, [-.08, .12, 0]); arm(m, B, SH_R, add(LB, [.1, -.08, -.05 + st]), .12, 0x2a6a6a, [-.1, -.1, 0]); } },
+};
+function sword(m, B, hand, dir, L, guard = IRON) { const d = nrm(dir); m.limb(B, add(hand, mul(d, -.14)), add(hand, mul(d, .1)), .045, .045, 0x3a2818, null, 4); m.limb(B, add(add(hand, mul(d, .1)), [0, .15, 0]), add(add(hand, mul(d, .1)), [0, -.15, 0]), .04, .04, guard, null, 4); m.limb(B, add(hand, mul(d, .1)), add(hand, mul(d, L)), .065, .02, STEEL, null, 4); }
+// 사람 하나 = 종족 몸 + 직업 옷
+function hero(spk, ck) {
+  return (t, pose) => {
+    const sp = SPEC[spk], C = CLS[ck], m = new Mesh(), b = bob(t, pose), sw = swing(t, pose);
+    const LM = Sc(sp.w, sp.w, sp.h);
+    if (!C.nolegs) legs(m, LM, 1, t, pose, C.pants, C.boots, ck === 'monk' ? .19 : .15, ck === 'barbarian' ? .15 : .13);
+    else { const s0 = ph(t, pose); for (const s of [1, -1]) m.box(ch(LM, Tr(s * s0 * .2 + .06, s * .13, 0)), .26, .15, .14, C.boots); }
+    const B = ch(Tr(0, 0, b * sp.h), LM, C.lean ? ch(Tr(0, 0, 1.0), RY(C.lean), Tr(0, 0, -1.0)) : I());
+    m.cyl(ch(B, Tr(0, 0, 1.74)), .1, .1, .12, sp.skin, null, 6);
+    const hz = sp.hs * (.55 + .45 * sp.h), H = ch(Tr(0, 0, b * sp.h), C.lean ? ch(Tr(0, 0, sp.h), RY(C.lean), Tr(0, 0, -sp.h)) : I(), Tr(0, 0, 1.84 * sp.h + .21 * hz), Sc(hz, hz, hz), RY(C.lean ? -C.lean * .5 : 0));
+    const c = { m, B, H, t, pose, sw, sp };
+    C.body(c); const cov = C.head(c); head(m, H, B, sp, cov === 1 || cov === 2, t, C.beard); C.arms(c);
+    return m;
+  };
 }
+const CLASS_KEYS = Object.keys(CLS), SPEC_KEYS = Object.keys(SPEC);
 
 // ── 몬스터 ───────────────────────────────
 // 고블린: 작고 굽은 몸 · 큰 머리 · 뾰족한 귀 · 노란 눈빛 · 녹슨 창
@@ -357,7 +448,6 @@ function dragon(t, pose) {
 }
 
 // ── 장면
-const HEROES = [['전사', fighter], ['마법사', mage], ['성직자', cleric], ['도적', rogue]];
 const MONS = [['고블린', goblin], ['해골 병사', skeleton], ['큰 쥐', rat], ['오크', orc], ['젤라틴 큐브', cube], ['큰 거미', spider]];
 let mode = 'idle';
 document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { mode = b.dataset.m; document.querySelectorAll('[data-m]').forEach(x => x.classList.toggle('on', x === b)); });
@@ -391,8 +481,8 @@ function scene(cv, list, t) {
   }
 }
 const party = (k = 0) => [
-  { fn: fighter, at: [830 + k, 478], face: .35, ph: 0 }, { fn: cleric, at: [768 + k, 500], face: .2, ph: 1.3 },
-  { fn: mage, at: [742 + k, 450], face: .4, ph: 2.1 }, { fn: rogue, at: [880 + k, 520], face: 0, ph: .7 },
+  { fn: hero('human', 'fighter'), at: [830 + k, 478], face: .35, ph: 0 }, { fn: hero('dwarf', 'cleric'), at: [768 + k, 500], face: .2, ph: 1.3 },
+  { fn: hero('elf', 'wizard'), at: [742 + k, 450], face: .4, ph: 2.1 }, { fn: hero('halfling', 'rogue'), at: [880 + k, 520], face: 0, ph: .7 },
 ];
 function boss(t) { scene(document.getElementById('boss'), [...party(), { fn: dragon, at: [950, 605], face: Math.PI * 1.0 + .25, ph: 0, w: 220, h: 190, sh: 2.2 }], t); }
 function mobs(t) {
@@ -403,8 +493,8 @@ function mobs(t) {
 function now() { const cv = document.getElementById('now'), c = cv.getContext('2d'); cv.width = CROP[2]; cv.height = CROP[3]; c.drawImage(nowImg, CROP[0], CROP[1], CROP[2], CROP[3], 0, 0, CROP[2], CROP[3]); }
 
 // 진열: 칸마다 작은 바닥 + 횃불 하나 · 3배
-function lineup(cv, list, cw, chh, t, z = 3) {
-  const c = cv.getContext('2d'), W = cw * list.length; cv.width = W * z; cv.height = (chh + 16) * z; c.imageSmoothingEnabled = false;
+function lineup(cv, list, cw, chh, t, z = 3, cols = list.length) {
+  const c = cv.getContext('2d'), rows = Math.ceil(list.length / cols); cv.width = cw * cols * z; cv.height = (chh + 16) * z * rows; c.imageSmoothingEnabled = false;
   c.fillStyle = '#0d0a08'; c.fillRect(0, 0, cv.width, cv.height);
   const L = [{ p: [3.5, 4.5, 3.6], c: [1.2, .74, .42], r: 13, i: 1.4 * (1 + Math.sin(t * 9) * .04) }, { p: [-2, -4, 2.5], c: [.3, .36, .55], r: 10, i: .5 }];
   list.forEach(([name, fn], i) => {
@@ -414,16 +504,19 @@ function lineup(cv, list, cw, chh, t, z = 3) {
     tc.fillStyle = 'rgba(0,0,0,.45)'; tc.beginPath(); tc.ellipse(fx, fy, (fn === dragon ? 2.2 : .42) * S * ZM, (fn === dragon ? 2.2 : .42) * S * SIN * ZM, 0, 0, Math.PI * 2); tc.fill();
     const img = render(mesh, { root: [0, 0, 0], face, w: cw, h: chh, fx, fy, z: ZM, lights: L, amb: [.12, .11, .13] });
     off.width = cw; off.height = chh; ox.putImageData(img, 0, 0); tc.drawImage(off, 0, 0);
-    c.drawImage(tile, i * cw * z, 0, cw * z, chh * z);
-    c.fillStyle = '#c8b898'; c.font = '600 14px "Noto Sans KR", sans-serif'; c.textAlign = 'center'; c.fillText(name, (i + .5) * cw * z, chh * z + 12 * z - 8);
+    const X0 = (i % cols) * cw * z, Y0 = Math.floor(i / cols) * (chh + 16) * z; c.drawImage(tile, X0, Y0, cw * z, chh * z);
+    c.fillStyle = '#c8b898'; c.font = '600 14px "Noto Sans KR", sans-serif'; c.textAlign = 'center'; c.fillText(name, X0 + cw * z / 2, Y0 + chh * z + 12 * z - 8);
   });
 }
 
+const selSp = document.getElementById('selSp'), selCl = document.getElementById('selCl');
+selSp.innerHTML = SPEC_KEYS.map(k => `<option value="${k}">${SPEC[k].n}으로 보기</option>`).join(''); selCl.innerHTML = CLASS_KEYS.map(k => `<option value="${k}">${CLS[k].n}로 보기</option>`).join(''); selCl.value = 'ranger'; // 머리가 드러나는 직업이라 종족 차이가 잘 보인다
 let t0 = performance.now();
 function frame() {
   const t = (performance.now() - t0) / 1000;
   if (bg.complete && bg.naturalWidth) { boss(t); mobs(t); }
-  lineup(document.getElementById('heroes'), HEROES, 100, 96, t);
+  lineup(document.getElementById('heroes'), CLASS_KEYS.map(k => [CLS[k].n, hero(selSp.value, k)]), 80, 104, t, 3, 6);
+  lineup(document.getElementById('species'), SPEC_KEYS.map(k => [SPEC[k].n, hero(k, selCl.value)]), 80, 104, t, 3, 5);
   lineup(document.getElementById('monsters'), MONS, 110, 96, t, 2);
   lineup(document.getElementById('dragon'), [['붉은 성룡 (3×3칸)', dragon]], 330, 230, t, 2);
   setTimeout(() => requestAnimationFrame(frame), 90);
