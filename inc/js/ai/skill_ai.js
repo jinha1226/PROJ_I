@@ -41,7 +41,16 @@ G.SkillAI = (() => {
   const COND_W = { paralyzed: [1, 0.6], unconscious: [1, 0.6], stunned: [1, 0.3], petrified: [1, 0.3], incapacitated: [1, 0], restrained: [0.3, 0.3], frightened: [0.5, 0], charmed: [0.4, 0], blinded: [0.4, 0.3], prone: [0.2, 0.3], poisoned: [0.3, 0], grappled: [0.1, 0], deafened: [0.05, 0], outlined: [0, 0.3] };
   const condW = cs => [Math.max(0, ...(cs || []).map(c => (COND_W[c] || [0.3, 0])[0])), Math.max(0, ...(cs || []).map(c => (COND_W[c] || [0.3, 0])[1]))];
   const hits = C => { const a = C.a, mel = DN().melee(a); return (DN().ebOf(a.merc) && !mel ? DN().tier(a) : DN().caster(a) && !mel ? 1 : DN().attacks(a)) * C.ph; }; // 이 사람이 라운드에 맞히는 횟수 (헥스 · 표식이 붙는 수)
-  const dis = (C, o, w, dur) => { const t = Math.min(C.R, dur); return (C.toE(C.fDPR(o)) * w[0] + C.pDPR * C.share(o) * w[1]) * t; }; // 그 적을 묶는 값: 그 적이 못 친 몫 + 아군이 이점으로 더 친 몫 (w = [못 하는 몫, 아군 몫])
+  // 그 적을 묶는 값: 그 적이 못 친 몫 + 아군이 이점으로 더 친 몫 (w = [못 하는 몫, 아군 몫]). 파티 단위 (2026-11-20 4단계):
+  //  - 이미 행동 불능인 적에게 또 거는 값은 없다 (다른 아군이 먼저 묶었다)
+  //  - 아군 몫(이점 · 마비의 근접 치명타 · 넘어짐)은 근접 아군이 그 적 곁에 있어야 다 산다 — 없으면 절반 (원거리도 이점은 받지만 치명타 · 넘어짐의 이점은 근접만)
+  //  - 한 라운드짜리(기절 타격 · 명령)는 이번 라운드에 내 뒤로 차례가 남은 아군만 그 이점을 쓴다
+  const DOWN = ['paralyzed', 'stunned', 'unconscious', 'petrified', 'incapacitated'];
+  const dis = (C, o, w, dur) => {
+    if (DOWN.some(c => DN().has(o, c))) return 0; const t = Math.min(C.R, dur);
+    const melee = C.ps.some(p => p !== C.a && !p.dead && !(DN().caster(p) && !DN().melee(p)) && Math.hypot(p.x - o.x, p.y - o.y) <= 2.5) ? 1 : 0.5, soon = dur <= 1 && C.after ? C.after : 1;
+    return (C.toE(C.fDPR(o)) * w[0] + C.pDPR * C.share(o) * w[1] * melee * soon) * t;
+  };
   const repeat = (C, o, ab) => 1 / Math.max(0.15, 1 - C.pf(o, ab)); // 차례마다 다시 내성 — 묶여 있는 기대 라운드
   const one = (C, f) => Math.max(0, ...C.foes.map(o => f(o))); // 가장 좋은 한 놈
   const typeOk = { 'Hold Person': o => /humanoid/.test(o.stat?.ty || o.ty || ''), 'Hold Monster': o => !/undead/.test(o.stat?.ty || o.ty || '') }; // 대상 종류가 정해진 주문 (SRD 본문)
@@ -90,7 +99,8 @@ G.SkillAI = (() => {
     const used = new Map();
     for (const b of E.buf || []) {
       if (b.to === 'foe') continue; const keys = Object.keys(b.p).filter(q => PROP[q]), off = keys.some(q => /hit|dmg|adv|extra|insp/.test(q));
-      let t = C.a; if (b.to === 'ally') { const taken = used.get(b.k) || new Set(), cand = C.ps.filter(p => !taken.has(p)).sort((p, q) => (off ? C.dprOf(q) - C.dprOf(p) : onT(C, q) - onT(C, p))); t = cand[0]; if (!t) continue; taken.add(t); used.set(b.k, taken); } else (used.get(b.k) || used.set(b.k, new Set()).get(b.k)).add(t);
+      let t = C.a; if (b.to === 'ally') { const taken = used.get(b.k) || new Set(), cand = C.ps.filter(p => !taken.has(p) && !DN().bon(p, b.k)).sort((p, q) => (off ? C.dprOf(q) - C.dprOf(p) : onT(C, q) - onT(C, p))); t = cand[0]; if (!t) continue; taken.add(t); used.set(b.k, taken); } else (used.get(b.k) || used.set(b.k, new Set()).get(b.k)).add(t);
+      if (b.to === 'self' && DN().bon(t, b.k)) continue; // 이미 걸려 있다 (같은 효과는 겹치지 않는다)
       const rounds = Math.min(R, Math.max(1, b.r));
       for (const q of keys) v += PROP[q](C, t, b.p[q]) * (ONCE.has(q) ? 1 : rounds) * cc;
       if (KEY[b.k]) v += KEY[b.k](C, t) * rounds * cc;
@@ -112,7 +122,7 @@ G.SkillAI = (() => {
   function fromDB(o, C, res, noDice) {
     const d = noDice ? 0 : dbDice(o, C, res), dA = noDice ? 0 : dbDice(o, C, res, true), dN = noDice ? 0 : dbDice(o, C, res, false, true), w = condW(o.conds), fct = w[0] + w[1], extra = o.upR?.n ? C.up(res, o.lv) : 0, ok = typeOk[o.en] || (() => true);
     const zone = o.conc && o.area && d > 0, keep = o.conc && !o.area && d > 0; // 자리 피해 (영혼 수호자 · 월광) · 한 대상에 이어지는 피해 (흡혈의 손길 · 금속 달구기)
-    const per = q => { const p = o.save ? C.pf(q, o.save) : o.atk ? pHit(C.a, q) : 1, once = !zone && !keep, dmg = C.g * (p + (o.half ? (1 - p) * 0.5 : 0)) * (zone ? (d + (C.R >= 2 ? dN + dA * (C.R - 2) : 0)) * CONC : keep ? (d + (C.R >= 2 ? dN + dA * (C.R - 2) : 0)) * CONC * 0.6 : d * (o.atk ? crit2(C.a) : 1)), raw = d * C.g * (o.atk ? crit2(C.a) : 1), hold = fct && ok(q) ? dis(C, q, w, o.conc ? (o.save ? repeat(C, q, o.save) : C.R) : 1) * (o.save ? C.pf(q, o.save) : HIT_P) : 0; return (once ? Math.min(q.hp, dmg) + killV(C, q, raw * (o.half && o.save ? 0.5 : 1), o.half && o.save ? 1 : p) : dmg) + hold; };
+    const per = q => { const p = o.save ? C.pf(q, o.save) : o.atk ? pHit(C.a, q) : 1, once = !zone && !keep, dmg = C.g * (p + (o.half ? (1 - p) * 0.5 : 0)) * (zone ? (d + (C.R >= 2 ? dN + dA * (C.R - 2) : 0)) * CONC : keep ? (d + (C.R >= 2 ? dN + dA * (C.R - 2) : 0)) * CONC * 0.6 : d * (o.atk ? crit2(C.a) : 1)), raw = d * C.g * (o.atk ? crit2(C.a) : 1), hold = fct && ok(q) && !(o.conds || []).every(c => DN().has(q, c)) /* 이미 그 상태다 */ ? dis(C, q, w, o.conc ? (o.save ? repeat(C, q, o.save) : C.R) : 1) * (o.save ? C.pf(q, o.save) : HIT_P) : 0; return (once ? Math.min(q.hp, dmg) + killV(C, q, raw * (o.half && o.save ? 0.5 : 1), o.half && o.save ? 1 : p) : dmg) + hold; };
     const L = o.area ? (o.rng === 0 ? C.near(o.area) : AI.best(C.x, o.area)) : C.foes;
     return o.area ? L.reduce((s, q) => s + per(q), 0) : L.map(per).sort((p, q) => q - p).slice(0, 1 + extra).reduce((s, v) => s + v, 0);
   }
@@ -181,7 +191,9 @@ G.SkillAI = (() => {
       const pHP = Math.max(1, ps.reduce((s, p) => s + Math.max(1, DN().srdHP(p.merc)) * Math.max(0, p.hp) / p.max, 0)); // 우리 체력 (SRD 단위 — 적의 SRD 주사위와 견준다)
       const acP = ps.length ? ps.reduce((s, p) => s + DN().ac(p), 0) / ps.length : 15, fDPR = o => { let d = 0; try { for (const q of G.Foe.attacks(o) || []) d += ((q.n || 1) * ((q.d || 4) + 1) / 2 + (q.b || 0)) * P20(acP - (q.hit ?? 4)); } catch (e) { d = 4 * 0.5; } return d; }; // 적이 우리를 칠 확률은 우리 AC로
       const pf = (o, ab) => pFail(a, o, ab), ph = foes.length ? foes.reduce((s, o) => s + pHit(a, o), 0) / foes.length : 0.6; // 그 적이 내성에 실패할 확률 · 내 공격이 맞을 확률 (운명판의 눈까지)
-      return { a, x, ps, foes, all, g, pDPR, eHP, dprOf, fDPR, pf, ph, allyP, R: Math.max(1, Math.min(6, eHP / pDPR)),
+      // 이번 라운드에 내 뒤로 차례가 남은 아군의 몫 (한 라운드짜리 효과의 이점을 쓸 수 있는 사람) — 차례 정보가 없으면 null
+      const T = x.rt.turn, order = T?.order?.map(q => q.e) || null, me = order ? order.indexOf(a) : -1, after = order && me >= 0 ? ps.filter(p => p !== a && order.indexOf(p) > me).length / Math.max(1, ps.length - 1) : null;
+      return { a, x, ps, foes, all, g, pDPR, eHP, dprOf, fDPR, pf, ph, allyP, after, R: Math.max(1, Math.min(6, eHP / pDPR)),
         toE: d => d / pHP * eHP, // 우리가 덜 받은 피해(SRD) → 적 체력으로 (싸움은 경주 — 우리 체력의 몫 = 적 체력의 몫)
         share: o => o.hp / eHP, near: r => foes.filter(o => Math.hypot(o.x - a.x, o.y - a.y) <= r), up: (res, b) => Math.max(0, G.Res.castLevel(a.merc, res) - (b || 1)),
         mod: () => DN().mod(DN().ab(a.merc)[G.SrdX?.castAb?.(a.merc) || ({ cleric: 'wis', scout: 'wis', archer: 'wis', archmage: 'int' })[a.merc.cls] || 'cha'] || 10) };
