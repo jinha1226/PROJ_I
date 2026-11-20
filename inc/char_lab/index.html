@@ -103,7 +103,7 @@ function render(mesh, o) {
       const k = Math.max(0, (dot(nn, mul(d, 1 / di)) + .3) / 1.3) * f * f * l.i;
       r += c[0] * l.c[0] * k; g += c[1] * l.c[1] * k; b += c[2] * l.c[2] * k; lit += k;
     }
-    if (o.gray) { const m = Math.min(1, lit * 2.5), y = (.3 * c[0] + .59 * c[1] + .11 * c[2]) * .5 * (nn[2] > .6 ? 1.15 : .9), gy = [y * .86, y * .9, y]; r = gy[0] + (r - gy[0]) * m; g = gy[1] + (g - gy[1]) * m; b = gy[2] + (b - gy[2]) * m; } // 빛 밖은 흑백 (던전과 같게)
+    if (o.gray) { const m = Math.min(1, lit * 2.5), y = (.3 * c[0] + .59 * c[1] + .11 * c[2]) * .7 * (nn[2] > .6 ? 1.15 : .9), gy = [y * .86, y * .9, y]; r = gy[0] + (r - gy[0]) * m; g = gy[1] + (g - gy[1]) * m; b = gy[2] + (b - gy[2]) * m; } // 빛 밖은 흑백 (던전과 같게)
     return [r, g, b];
   }
   function raster(A, B, C, put) {
@@ -386,7 +386,7 @@ function scene(cv, list, t) {
   for (const e of ents) {
     const sx = Math.round(e.at[0] - CROP[0]), sy = Math.round(e.at[1] - CROP[1]); shadow(c, sx, sy, e.sh || .4);
     const bw = Math.round((e.w || 72) * ZM), bh = Math.round((e.h || 72) * ZM), fy = bh - 16;
-    const img = render(e.mesh, { root: e.p, face: e.face, z: ZM, w: bw, h: bh, fx: bw >> 1, fy, lights: lights.concat(shared.filter(l => l.own !== e)), amb: [.15, .15, .19], gray: true, dx: sx, dy: sy });
+    const img = render(e.mesh, { root: e.p, face: e.face, z: ZM, w: bw, h: bh, fx: bw >> 1, fy, lights: lights.concat(shared.filter(l => l.own !== e)), amb: [.2, .2, .25], gray: true, dx: sx, dy: sy });
     blit(c, img, sx - (bw >> 1), sy - fy);
   }
 }

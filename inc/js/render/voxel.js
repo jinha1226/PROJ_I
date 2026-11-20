@@ -9,7 +9,7 @@
 const VOXON = q.get('vox') !== '0';
 const VOX = (() => {
   const VPT = 6, VS = T / VPT, FLOOR = 3, WH = FLOOR + 11, WLOW = FLOOR + 2, ZZ = WH + 2;
-  const LR = 48, VR = 9; // 빛 반지름(복셀) · 시야(타일)
+  const LR = 60, VR = 9; // 빛 반지름(복셀) · 시야(타일)
   const NORM = [[0, 0, 1], [0, 1, 0], [1, 0, 0]];
   const BAY = BAYER.map(v => v - .5);
   const hs = (a, b, c = 0) => { const s = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453; return s - Math.floor(s); };
@@ -17,7 +17,7 @@ const VOX = (() => {
   const mix = (a, b, t) => { const o = [16, 8, 0].map(s => Math.round(((a >> s) & 255) + (((b >> s) & 255) - ((a >> s) & 255)) * t)); return (o[0] << 16) | (o[1] << 8) | o[2]; };
   const hex = c => (Math.min(255, c[0] | 0) << 16) | (Math.min(255, c[1] | 0) << 8) | Math.min(255, c[2] | 0);
   // 빛이 없는 곳: 흑백 (판과 빛 덮개가 같은 식 — 경계가 이어진다)
-  const grayLin = (r0, g0, b0, a, nr) => { const up = nr === 0 ? 1.15 : .9, l = (.3 * r0 + .59 * g0 + .11 * b0) * .5 * a * up; return [l * .86, l * .9, l]; };
+  const grayLin = (r0, g0, b0, a, nr) => { const up = nr === 0 ? 1.15 : .9, l = (.3 * r0 + .59 * g0 + .11 * b0) * .7 * a * up; return [l * .86, l * .9, l]; };
   // 톤 · 디더(판 좌표 기준) → 색 하나
   const fin = (r, g, b, X, Y) => {
     r = r / (1 + r * .35) * 1.3; g = g / (1 + g * .35) * 1.3; b = b / (1 + b * .35) * 1.3;
@@ -209,7 +209,7 @@ const VOX = (() => {
     let R, G2, B;
     if (emv === 1) { R = r0 * 1.6 * L0.fl; G2 = g0 * 1.6 * L0.fl; B = b0 * 1.6 * L0.fl; }
     else {
-      const up = nr === 0 ? 1.15 : .9, amb = .32; let lr = amb * a * up, lg = .33 * a * up, lb = .44 * a * up;
+      const up = nr === 0 ? 1.15 : .9, amb = .46; let lr = amb * a * up, lg = .47 * a * up, lb = .58 * a * up; // 2026-11-20 밝게 (사용자: 「너무 어두워서 잘 안 보여」)
       for (const Lg of L0.lights) { const dx = Lg.x - px, dy = Lg.y - py, dz = Lg.z - pz, dd = Math.hypot(dx, dy, dz) + 1e-3, qq = dd / Lg.r; if (qq > 2.6) continue; const nd = Math.max(0, (n[0] * dx + n[1] * dy + n[2] * dz) / dd); if (!nd) continue; const val = Lg.i / (1 + qq * qq * 2.2) * (1 - qq / 2.6) * nd * (.55 + .45 * a); lr += Lg.c[0] * val; lg += Lg.c[1] * val; lb += Lg.c[2] * val; }
       R = r0 * lr; G2 = g0 * lg; B = b0 * lb;
       if (emv === 2) { const ww = Math.max(0, Math.sin(px * 1.1 + t * 2.1) + Math.sin(py * 1.5 - t * 1.7) + Math.sin((px + py) * .6 + t * 1.3) - 1.2); R += .05 + ww * .1; G2 += .12 + ww * .22; B += .18 + ww * .3; }
