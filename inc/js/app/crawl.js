@@ -11,7 +11,7 @@
 const CRAWL = (() => {
   const FL = G.Floor, { $, esc } = UI;
   const KIND = { open: '통로', locked: '잠긴 문', trap: '함정 복도', dark: '어두운 길', hidden: '숨은 통로' };
-  const ICON = { open: '›', locked: '▣', trap: '!', dark: '●', hidden: '⋯', camp: '▲', shop: '◎' }; // 그림 글자(이모지)는 쓰지 않는다 — 기기마다 모양이 다르고 화면 틀과 안 어울린다
+  const ICON = { open: 'arrow', locked: 'lock', trap: 'warn', dark: 'moon', hidden: 'dots', camp: 'tent', shop: 'coin' }, icon = k => UI.px(k); // 픽셀 아이콘 이름 (app.css .px-*) // 그림 글자(이모지)는 쓰지 않는다 — 기기마다 모양이 다르고 화면 틀과 안 어울린다
   const NEAR = 1.6; // 이만큼 다가가면 안내 표지 · 구조물이 열린다
   let st = null, iso = null, R = null, walk = null, marks = [], cutscene = false, roomLab = null; // roomLab: 방 검수 장면(?scene=rooms)의 방
   let open = null, roomAt = null; // 열린 타일 · 타일 → 방
@@ -105,13 +105,13 @@ const CRAWL = (() => {
     clearMarks(); if (st.done) return;
     for (const ex of ahead()) {
       const k = FL.kindOf(ex.e), el = document.createElement('div');
-      el.className = 'exitmark'; el.innerHTML = `<b>${ICON[k] || '›'}</b><small>${esc(KIND[k] || '통로')}</small>`;
+      el.className = 'exitmark'; el.innerHTML = `<b>${icon(ICON[k] || 'arrow')}</b><small>${esc(KIND[k] || '통로')}</small>`;
       el.onclick = () => { if (!busy()) takeExit(ex); };
       $('floats').append(el); marks.push({ el, x: ex.door[0], y: ex.door[1], ex });
     }
     const sc = deferred[st.at];
-    { const o = lootAt[st.at]; if (o) { const el = document.createElement('div'); el.className = 'exitmark struct loot'; el.innerHTML = `<b>${o.kind === 'chest' ? '▣' : '◆'}</b><small>${o.kind === 'chest' ? '상자' : '장비'}</small>`; el.onclick = () => moveTo(o.x, o.y); $('floats').append(el); marks.push({ el, x: o.x, y: o.y }); } }
-    if (sc) { const [x, y] = centerOf(st.at), el = document.createElement('div'); el.className = 'exitmark struct'; el.innerHTML = `<b>${ICON[sc.kind] || '★'}</b><small>${esc(sc.title)}</small>`; el.onclick = () => moveTo(x, y); $('floats').append(el); marks.push({ el, x, y }); }
+    { const o = lootAt[st.at]; if (o) { const el = document.createElement('div'); el.className = 'exitmark struct loot'; el.innerHTML = `<b>${icon(o.kind === 'chest' ? 'chest' : 'gem')}</b><small>${o.kind === 'chest' ? '상자' : '장비'}</small>`; el.onclick = () => moveTo(o.x, o.y); $('floats').append(el); marks.push({ el, x: o.x, y: o.y }); } }
+    if (sc) { const [x, y] = centerOf(st.at), el = document.createElement('div'); el.className = 'exitmark struct'; el.innerHTML = `<b>${icon(ICON[sc.kind] || 'star')}</b><small>${esc(sc.title)}</small>`; el.onclick = () => moveTo(x, y); $('floats').append(el); marks.push({ el, x, y }); }
   }
   function closeSign() { const s = $('exitsign'); if (s) s.remove(); }
   // 앞으로 가는 길: 이 방에서 나가는 길 중 안 지나간 것 (돌아가는 길 · 못 연 문은 빼고)

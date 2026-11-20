@@ -238,6 +238,7 @@ G.Dice = (() => {
   // 피해 · 치유 주사위 (G.Dnd.dice): 지금 행동하는 사람의 눈에서 환산. 눈이 없으면(적 · 특수 면 · 전투 밖) 0 → 보통 주사위
   N.fateV = () => { const r = N.actor ? D.roundDie(N.actor, 'act') : null; return r ? r.value : 0; };
   N.acted = a => { D.roundDie(a, 'act'); };
+  N.actDie = a => { const r = D.roundDie(a, 'act'); return r ? r.value : 0; }; // 판정이 있는 기본 행동(숨기)의 d20
   // 기본 공격 · 기본 치유도 그 사람의 행동이다 (기술은 skills.js가 G.Dnd.actor를 건다)
   for (const fn of ['allyAttack', 'healTurn']) { const f0 = G.Fantasy[fn]; G.Fantasy[fn] = function (f, rt, a) { const by0 = N.actor; N.actor = a; try { return f0.apply(this, arguments); } finally { N.actor = by0; } }; }
   return D;

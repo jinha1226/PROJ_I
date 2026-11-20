@@ -37,5 +37,9 @@ const UI = (() => {
     dm.innerHTML = lines.slice(-2).map(l => `<div>${esc(l.t)}</div>`).join(''); dm.classList.remove('hidden'); // 새 줄 중 마지막 둘만, 한 줄씩 (화면을 덜 가리게)
     clearTimeout(say.t); say.t = setTimeout(() => dm.classList.add('hidden'), 2600 + Math.min(2, lines.length) * 600);
   }
-  return { $, esc, place, toStage, tileAt, ring, svg, say, face };
+  // 픽셀 아이콘 (app.css의 .px-*): px('star') · 데이터의 그림 글자(이모지)는 ic()가 같은 벌의 아이콘으로 바꾼다 (모르는 것은 보석)
+  const px = n => `<i class="px px-${n}"></i>`;
+  const IC = { '🦺': 'armor', '🥋': 'armor', '🛡': 'shield', '🗡': 'sword', '⚔': 'sword', '🔱': 'sword', '💍': 'ring', '🪄': 'wand', '🥢': 'wand', '🧥': 'cloak', '🥻': 'cloak', '🧤': 'glove', '⛓': 'glove', '🔨': 'hammer', '📿': 'amulet', '🎗': 'amulet', '👑': 'crown', '🏹': 'bow', '👢': 'boots', '🥾': 'boots', '🪓': 'axe', '🔮': 'orb', '🧿': 'orb', '💀': 'skull', '☠': 'skull', '★': 'star', '✦': 'spark' };
+  const ic = e => (e ? px(IC[[...e][0]] || 'gem') : '');
+  return { $, esc, place, toStage, tileAt, ring, svg, say, face, px, ic };
 })();

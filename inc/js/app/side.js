@@ -1,5 +1,6 @@
 'use strict';
 // 운명판 칸 (넓은 화면은 왼쪽 기둥, 폰은 아래): 파티와 운명판을 한 곳에 — 게임 화면 위에는 판을 띄우지 않는다.
+// 넓은 화면의 왼쪽 기둥은 위에 미니맵(#pmapbox를 이리로 옮겨 온다 — 폰에서는 게임 화면 위 그대로), 아래에 운명판.
 // - 줄 = 사람: 초상 · 이름 · 체력(누르면 캐릭터 시트) | 주사위 네 칸(쓴 칸은 흐리게 · 다음 칸은 밝은 테 · 맞은 줄은 그 빛의 묶음 테) | 붙잡기
 // - 아래: 맞아 있는 빙고와 효과 · 안 쓴 칸을 누르면 「다시 굴리기」(금화) · 그 사람에게 영감이 있으면 「✦ 영감으로」(공짜)
 // - 줄이 새로 굴려지면(층에 들어설 때 모두 · 다 쓴 줄) 그 자리에서 슬롯처럼 굴러 한 줄씩 멈춘다. 그동안 SIDE.busy — 탐사 · 전투가 기다린다
@@ -7,7 +8,7 @@
 // 읽는 것은 CRAWL.view() · G.Dice. 바꾸는 것은 G.Dice의 붙잡기 · 다시 굴리기 · 영감뿐 (규칙은 js/game/fate.js).
 const SIDE = (() => {
   const { $, esc } = UI;
-  let el = null, key = '', sel = null, faceLeft = 0, barH = -1, tickT = 0;
+  let el = null, body = null, key = '', sel = null, faceLeft = 0, barH = -1, tickT = 0;
   const seen = new Map(), spin = new Map(), landed = new Set(), tease = new Map(), grpOn = new Set(); // 사람 → 지난번에 본 줄 · '줄,칸' → 멈출 시각(ms) · 방금 멈춘 칸 · 20이 나올 칸 → 뜸 들이기 시작 시각 · 이미 보여 준 묶음
   const TEASE = 620; // 20이 나올 칸이 더 구르는 시간(ms)
   const wide = matchMedia('(min-width: 900px)');
@@ -25,7 +26,7 @@ const SIDE = (() => {
     if (!spin.size) { grpOn.clear(); for (const id of now1) grpOn.add(id); } // 구르는 동안은 묶음이 없다 — 멈춘 뒤 새로 맞은 것만 번쩍
   }
   function mount() {
-    el = document.createElement('div'); el.id = 'side'; el.onpointerup = ev => ev.stopPropagation(); el.onclick = click;
+    el = document.createElement('div'); el.id = 'side'; el.onpointerup = ev => ev.stopPropagation(); el.innerHTML = '<div class="sd-map"></div><div class="sd-body"></div>'; body = el.lastChild; body.onclick = click;
     $('wrap').insertBefore(el, $('stage')); document.body.classList.add('has-side'); dispatchEvent(new Event('resize')); // 게임 화면이 남은 자리에 맞춘다
   }
   function click(ev) {
@@ -45,6 +46,7 @@ const SIDE = (() => {
   function frame() {
     const v = CRAWL.view(), D = G.Dice; if (!v || !v.party.length) return;
     if (!el) mount();
+    { const pm = $('pmapbox'), to = wide.matches ? el.firstChild : $('stage'); if (pm && pm.parentNode !== to) to.append(pm); } // 미니맵: 넓은 화면이면 왼쪽 기둥 위로
     const now = performance.now(), ps = v.party.map(p => p.a), lines = ps.map(p => (D.board ? D.line(p) : null));
     // 새로 굴린 줄: 위에서부터 한 줄씩, 왼쪽 칸부터 멈춘다 (모든 줄이면 = 층에 들어섰다 — 조금 더 뜸을 들인다)
     { const fresh = []; lines.forEach((L, r) => { if (L && seen.get(ps[r]) !== L) { seen.set(ps[r], L); fresh.push(r); } });
@@ -58,18 +60,18 @@ const SIDE = (() => {
     const hits = new Map(), cols = [...Array(D.K.COLS).keys()]; for (const x of L) for (const q of lineCells(ps, x)) hits.set(q, x.s);
     const row = (p, r) => { const a = p.a, Ln = lines[r], c0 = G.Guild.def(p.m) || {}, w = Math.round(100 * Math.max(0, p.hp) / Math.max(1, p.max));
       return `<div class="sd-row${p.cur ? ' cur' : ''}${p.dead ? ' dead' : ''}">` +
-        `<button class="sd-who" data-i="${r}" title="${esc(c0.n || '')} · ${p.m?.lv || 1}레벨 — 캐릭터 시트"><canvas class="sd-face" width="26" height="30" style="--cc:${c0.col || '#888'}"></canvas><span class="sd-name">${esc(p.m?.name || '동료')}${D.insp(a) ? '<i class="ins" title="영웅적 영감">✦</i>' : ''}</span>` +
+        `<button class="sd-who" data-i="${r}" title="${esc(c0.n || '')} · ${p.m?.lv || 1}레벨 — 캐릭터 시트"><canvas class="sd-face" width="26" height="30" style="--cc:${c0.col || '#888'}"></canvas><span class="sd-name">${esc(p.m?.name || '동료')}${D.insp(a) ? `<i class="ins px px-spark" title="영웅적 영감"></i>` : ''}</span>` +
         `<span class="sd-hp"><i style="width:${w}%"></i></span><small>${Math.max(0, p.hp)}/${p.max}</small></button>` +
         (Ln ? `<div class="sd-dice">${cols.map(c => { const q = r + ',' + c, d = spin.has(q) ? null : Ln.cells[c], s = d && hits.get(q);
           return `<span class="sd-c${spin.has(q) ? '' : c === Ln.at ? ' now' : c < Ln.at ? ' used' : ''}">${FIGHT.die(a, d, `${sel === q ? 'sel' : ''}${landed.has(q) ? (d && d.value === 20 ? ' land jack' : ' land') : ''}${hot.includes(q) ? ' tease' : ''}${s ? ` hit h-${s}` : ''}`, `data-rc="${q}"`)}${c === Ln.at && bon[r] ? `<i class="bn">${bon[r]}</i>` : ''}</span>`; }).join('')}</div>` +
           `<button class="sd-hold${Ln.hold ? ' on' : ''}" data-h="${r}"${p.dead ? ' disabled' : ''} title="이 줄을 다 쓴 뒤 유지비를 내고 한 바퀴 더 쓴다">${Ln.hold ? '붙잡음' : '붙잡기'}<small>금화 ${D.holdCost(Ln)}</small></button>` : '') + '</div>'; };
     let bar = `<span class="hint">안 쓴 칸을 누르면 다시 굴린다 · ${cost ? `금화 ${cost}` : '이번은 공짜'}</span>`;
-    if (sel) { const [r, c] = sel.split(',').map(Number); bar = `<button class="rr"${cost > gold ? ' disabled' : ''}>다시 굴리기 · ${cost ? `금화 ${cost}${cost > gold ? ' (모자람)' : ''}` : '공짜'}</button>${D.canInsp(ps[r], c) ? '<button class="ir">✦ 영감으로 · 공짜</button>' : ''}`; }
-    el.innerHTML = `<div class="sd-hd"><b>운명판</b><small>앞에서부터 한 칸씩 · 다 쓴 줄은 새로 굴린다</small></div><div class="sd-rows">${v.party.map(row).join('')}</div>` +
+    if (sel) { const [r, c] = sel.split(',').map(Number); bar = `<button class="rr"${cost > gold ? ' disabled' : ''}>다시 굴리기 · ${cost ? `금화 ${cost}${cost > gold ? ' (모자람)' : ''}` : '공짜'}</button>${D.canInsp(ps[r], c) ? `<button class="ir">${UI.px('spark')} 영감으로 · 공짜</button>` : ''}`; }
+    body.innerHTML = `<div class="sd-hd"><b>운명판</b><small>앞에서부터 한 칸씩 · 다 쓴 줄은 새로 굴린다</small></div><div class="sd-rows">${v.party.map(row).join('')}</div>` +
       `<div class="sd-fx">${spin.size ? '<div class="none">굴리는 중…</div>' : L.length ? L.map(x => `<div class="h-${x.s}"><b>${lineName(x)}</b> ${esc(D.lineTxt(x))}</div>`).join('') : '<div class="none">빙고 없음 <small>가로 네 칸 · 세로 한 줄이 같은 기호면 맞는다</small></div>'}</div>` +
       (FIGHT.quiet ? '' : `<div class="sd-bar${sel ? ' on' : ''}">${bar}</div>`);
     landed.clear(); drawFaces(v); groups(ps, L);
-    const h = wide.matches ? 0 : el.offsetHeight; if (h !== barH) { barH = h; document.documentElement.style.setProperty('--pbar-h', h + 'px'); } // 폰: 다른 창이 이 칸 위로 올라오게
+    const h = wide.matches ? 0 : el.offsetHeight; if (h !== barH) { barH = h; document.documentElement.style.setProperty('--pbar-h', h + 'px'); if (typeof camCover !== 'undefined') camCover = h; } // 폰: 다른 창이 이 칸 위로 올라오게
   }
   return { frame, cell: (p, c) => { const v = CRAWL.view(), r = v ? v.party.findIndex(x => x.a === p) : -1; return el && r >= 0 ? el.querySelector(`[data-rc="${r},${c}"]`) : null; }, get busy() { return spin.size > 0; } };
 })();

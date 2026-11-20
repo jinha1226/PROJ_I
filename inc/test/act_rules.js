@@ -14,10 +14,9 @@ const r0 = rt.map.rooms[1], cx = r0.cx ?? r0.x + 2, cy = r0.cy ?? r0.y + 2;
 const A = G.Act, MC = G.MC, DN = G.Dnd, P = rt.party.filter(p => p.merc && !p.dead), T0 = G.Turn;
 // 질주 · 물러나기 · 숨기 · 찾기
 { const e = P[1]; A.dash(e); ok('질주: 이번 차례 이동력 두 배 · 공격 없음', A.dashing(e) && A.noAttack(e)); }
-{ const e = P[2]; A.disengage(rt, e); ok('물러나기: 이번 차례 기회 공격 없음', e.fleetN === T0.no() && A.noAttack(e)); }
+{ const e = P[2]; A.disengage(rt, e); ok('물러나기: 이번 차례 기회 공격 없음 · 이동의 일부라 행동을 쓰지 않는다', e.fleetN === T0.no() && !A.noAttack(e)); }
 { const e = P[3], sv = G.Dnd.d20; rt.mons = []; G.Dnd.d20 = () => 20; const ok1 = A.hide(rt, e); G.Dnd.d20 = sv; ok('숨기: 보는 적이 없으면 DC 15 은신 → 투명 (찾기 DC를 남긴다)', ok1 && DN.invis(e) && e.bf.invis2.hideDC >= 15);
   e.bf.invis2.hideDC = 15; G.D.F.STAT.T_s = ['tough']; const o = mon({ n: 'T_s', r: 'brute' }, cx, cy); o.x = e.x + 1; o.y = e.y; G.Dnd.d20 = () => 20; const s = A.search(rt, o); G.Dnd.d20 = sv; ok('찾기: 지각이 은신 이상이면 드러난다', s && !DN.invis(e)); rt.mons = []; }
-{ const e = P.find(p => p.merc.cls === 'cleric'); G.D.F.STAT.T_s = ['tough']; const o = mon({ n: 'T_s', r: 'brute' }, cx, cy); o.x = e.x + 1; o.y = e.y; o.hp = 1; e.merc.ab = { ...DN.ab(e.merc), cha: 20 }; const sv = G.Mission.roll; G.Mission.roll = () => ({ ok: true, nat: 20, mod: 5, dc: 15 }); A.influence(f, rt, e); G.Mission.roll = sv; ok('설득: 꺾인 적이 항복한다', o.surrender && o.flee); rt.mons = []; }
 // 다중 직업
 { const m = G.Guild.make(f, 'dragoon', { lv: 5 }); m.ab = { str: 16, dex: 13, con: 14, int: 14, wis: 10, cha: 8 }; m.abCls = m.cls; const hp5 = DN.srdHP(m);
   ok('선행 조건: 지능 13 → 위저드 가능 · 지혜 10 → 클레릭 불가', MC.canAdd(m, 'archmage') && !MC.canAdd(m, 'cleric'));

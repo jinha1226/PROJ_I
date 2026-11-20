@@ -34,7 +34,7 @@ const REWARDUI = (() => {
     if (q.k === 'lv') return level(box, q.p.merc);
     if (q.k === 'big') {
       box.innerHTML = `<h3>${res.type === 'boss' ? '보스' : '정예'}의 보상</h3><p>하나를 고른다</p>` +
-        `<div class="rw-cards">${res.big.map((c, i) => `<button data-i="${i}" class="k-${c.kind}"><small>${KIND[c.kind]}</small><b>${c.ic ? `${c.ic} ` : ''}${esc(c.n)}</b><span>${esc(c.d || '')}</span></button>`).join('')}</div>`;
+        `<div class="rw-cards">${res.big.map((c, i) => `<button data-i="${i}" class="k-${c.kind}"><small>${KIND[c.kind]}</small><b>${c.ic ? UI.ic(c.ic) + ' ' : ''}${esc(c.n)}</b><span>${esc(c.d || '')}</span></button>`).join('')}</div>`;
       box.querySelector('.rw-cards').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; const opt = res.big[+b.dataset.i], got = G.Reward.takeBig(res.f, opt); if (opt.kind === 'art' && got) queue.unshift({ k: 'gear', e: { kind: 'magic', t: got } }); step(); };
     }
   }

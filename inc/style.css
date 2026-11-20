@@ -224,7 +224,7 @@ img[src*="assets/chars/"] { image-rendering:auto; object-fit:contain; }
 #turnstrip .ts-act b { font-weight:700; } #turnstrip .ts-act small { color:#a89878; margin-left:4px; }
 #turnstrip .ts-act i { font-style:normal; font-weight:700; } #turnstrip .ts-act i.ok { color:#8fd49a; } #turnstrip .ts-act i.no { color:#e08a7a; }
 #turnstrip .ts-act.foe i.ok { color:#e08a7a; } #turnstrip .ts-act.foe i.no { color:#8fd49a; }
-body:has(#turnstrip) #pmapbox:not(.big), body:has(#turnstrip) #dm { display:none !important; }
+body:has(#turnstrip) #stage > #pmapbox:not(.big), body:has(#turnstrip) #dm { display:none !important; } /* 전투 중: 게임 화면 위의 지도는 감춘다 (왼쪽 기둥으로 옮긴 지도는 둔다) */
 
 /* 전투: 지금 행동하는 사람(▼)과 대상(◎), 띠의 「우리 차례 / 적의 차례」 */
 #turnmark, #turntg { position:absolute; left:0; top:0; z-index:6; pointer-events:none; font:700 20px "Noto Sans KR",sans-serif; color:#ffd76a; text-shadow:0 0 6px #000, 0 2px 0 #000; }

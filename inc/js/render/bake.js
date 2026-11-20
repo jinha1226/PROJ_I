@@ -46,7 +46,8 @@ function copyView() {
     bakedPix.set(big.pix.subarray(a, b), o); bakedZ.set(big.z.subarray(a, b), o); viewGZ.set(big.gz.subarray(a, b), o); viewG.set(big.g.subarray(a, b), o);
   }
 }
-const camFor = (x, y) => { const u = (wx(x) - wy(y)) / R2, v = (wx(x) + wy(y)) / R2; return [big.ox + u * S - VW / 2, big.oy + v * SIN * S - VH / 2 - 8]; };
+let camCover = 0; // 화면 아래를 가리는 띠의 높이(CSS px — 폰의 운명판 칸, js/app/side.js가 채운다): 그만큼 보이는 곳의 가운데로 올려 잡는다
+const camFor = (x, y) => { const u = (wx(x) - wy(y)) / R2, v = (wx(x) + wy(y)) / R2; return [big.ox + u * S - VW / 2, big.oy + v * SIN * S - VH / 2 - 8 + Math.round(camCover * DPR / PXS / 2)]; };
 // 맹그로브: 갈라진 뿌리 · 줄기 · 잎 뭉치
 function tree(x, y) {
   const a = wx(x), b = wy(y), s = hash(x * 3, y * 5), H0 = 2.3 + s * 1.1, BARK = [74, 58, 44], LEAF = [[52, 92, 58], [66, 108, 62], [44, 80, 62]];

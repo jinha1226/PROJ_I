@@ -5,7 +5,7 @@
 const FIGHT = (() => {
   const { $, esc } = UI;
   let R = null, F = null;
-  const dieFace = r => (r.special === 'death' ? '☠' : r.value) + (r.sym ? `<i class="sy s-${r.sym}">${G.Dice.SYM[r.sym].n}</i>` : '');
+  const dieFace = r => (r.special === 'death' ? UI.px('skull') : r.value) + (r.sym ? `<i class="sy s-${r.sym}">${G.Dice.SYM[r.sym].n}</i>` : '');
   // 칸 하나: 치명타 범위 · 자연 1 · 하플링 행운으로 다시 굴린 칸을 표시한다 (d = null이면 굴러가는 칸)
   const dieHTML = (p, d, cls = '', attr = '') => (d ? `<b class="die k-${d.kind}${G.Dice.KINDS[d.kind].sym ? ` y-${d.sym || 'none'}` : ''} ${G.Dice.mark(p, d) || ''}${d.lucky ? ' lucky' : ''} ${cls}" ${attr} title="${esc(G.Dice.KINDS[d.kind].n)}${d.lucky ? ' · 하플링 행운으로 다시 굴림' : ''}">${dieFace(d)}</b>` : `<b class="die roll ${cls}" ${attr}>?</b>`);
   const name = p => esc(p.merc?.name || '동료');
@@ -35,7 +35,7 @@ const FIGHT = (() => {
     // 라운드 시작: 다 쓴 줄이 넘어가고(새로 굴리거나 붙잡거나) 빙고 효과가 켜진다
     if (T && D.st?.round !== T.round) {
       D.useRound(T.round); const L = D.fire(), S = D.st;
-      for (const x of D.board.turned) { if (x.kept && !F.quiet) banner(`◆ <b>${name(x.p)}</b> <span>줄을 붙잡았다 · 금화 ${x.cost}</span>`, 'insp'); F.log(x.kept ? `${x.p.merc?.name || '동료'} — 운명판의 줄을 붙잡았다 (금화 ${x.cost}).` : `${x.p.merc?.name || '동료'} — 운명판의 줄을 새로 굴렸다.`); }
+      for (const x of D.board.turned) { if (x.kept && !F.quiet) banner(`${UI.px('gem')} <b>${name(x.p)}</b> <span>줄을 붙잡았다 · 금화 ${x.cost}</span>`, 'insp'); F.log(x.kept ? `${x.p.merc?.name || '동료'} — 운명판의 줄을 붙잡았다 (금화 ${x.cost}).` : `${x.p.merc?.name || '동료'} — 운명판의 줄을 새로 굴렸다.`); }
       for (const x of S.first ? L : S.fx.news) F.log(`운명판 — ${lineName(x).replace(/<[^>]+>/g, '')}: ${D.lineTxt(x)}`);
       F.fxWait = !F.quiet; if (F.quiet) roundFx(); else SIDE.frame(); // 새로 굴린 줄은 왼쪽 칸에서 굴러 멈춘다 — 그 뒤에 띠 · 이펙트
     }
@@ -75,11 +75,11 @@ const FIGHT = (() => {
     const got = new Set(fx.insp), rowed = new Set(); // 가로줄로 얻은 영감은 그 띠에 같이 적는다 (띠가 쌓이지 않게)
     const done = new Set(), cast1 = (p, id) => { const k = id + '|' + R.party.indexOf(p); if (!done.has(k)) { done.add(k); cast(p, id); } }; // 같은 이펙트는 한 사람에 한 번 (같은 기호의 줄이 둘이어도)
     for (const x of S.first ? fx.lines : fx.news) {
-      if (x.t === 'r') { rowed.add(x.p); banner(`${chip(x.s).repeat(D.K.COLS)} <b>${name(x.p)} — 한 줄!</b> <span>${D.rowTxt(x.s)}${got.has(x.p) ? ' · ✦ 영감' : ''}</span>`, 'row'); if (x.fresh) cast(x.p, ROW_FX); }
+      if (x.t === 'r') { rowed.add(x.p); banner(`${chip(x.s).repeat(D.K.COLS)} <b>${name(x.p)} — 한 줄!</b> <span>${D.rowTxt(x.s)}${got.has(x.p) ? ` · ${UI.px('spark')} 영감` : ''}</span>`, 'row'); if (x.fresh) cast(x.p, ROW_FX); }
       else { banner(`${chip(x.s).repeat(Math.min(4, x.n))} <b>${D.SYM[x.s].fx}</b> <span>${D.lineTxt(x)}</span>`, `c-${x.s}${x.n >= 3 ? ' big' : ''}`); if (x.fresh) for (const p of D.party()) cast1(p, COMBO_FX[x.s]); }
     }
-    { const news = fx.news.filter(x => x.fresh); if (news.length) flash(HC[news[0].s] || '#f0c070'); if (news.length >= 2) banner(`★ <b>잭팟!</b> <span>한 번에 ${news.length}줄</span>`, 'jack'); } // 새로 맞은 줄: 화면이 그 빛으로 번쩍 · 둘 이상이면 잭팟
-    for (const p of got) { if (!rowed.has(p)) banner(`✦ <b>영웅적 영감</b> <span>${name(p)}</span>`, 'insp'); cast(p, INSP_FX); }
+    { const news = fx.news.filter(x => x.fresh); if (news.length) flash(HC[news[0].s] || '#f0c070'); if (news.length >= 2) banner(`${UI.px('star')} <b>잭팟!</b> <span>한 번에 ${news.length}줄</span>`, 'jack'); } // 새로 맞은 줄: 화면이 그 빛으로 번쩍 · 둘 이상이면 잭팟
+    for (const p of got) { if (!rowed.has(p)) banner(`${UI.px('spark')} <b>영웅적 영감</b> <span>${name(p)}</span>`, 'insp'); cast(p, INSP_FX); }
   }
   // ── 죽음의 주사위를 맡을 사람 (층의 첫 전투에서) ──
   function bearerPick() {
@@ -113,9 +113,9 @@ const FIGHT = (() => {
     else if (F.act) act = F.act.html;
     // 머리 위 표시: 지금 행동하는 사람(우리 = 금색 ▼, 적 = 붉은 ▼)과 그 대상(◎)
     { const foe = cur?.kind === 'mon', tg = cur && (T.ph === 'move' || T.ph === 'pre' || T.ph === 'show') ? T.tg : null;
-      let a = $('turnmark'), b = $('turntg'); if (!a) { a = document.createElement('div'); a.id = 'turnmark'; a.textContent = '▼'; b = document.createElement('div'); b.id = 'turntg'; b.textContent = '◎'; $('floats').append(a, b); }
-      a.textContent = cur && F.act && F.act.who === nm(cur) && F.t - F.act.t < 1.6 ? `${F.act.what}` : '▼'; // 방금 쓴 기술의 이름을 머리 위에
-      a.className = (foe ? 'foe' : '') + (a.textContent === '▼' ? '' : ' say'); a.style.display = cur ? '' : 'none'; if (cur) UI.place(a, cur._dx ?? cur.x, cur._dy ?? cur.y, 2.5);
+      let a = $('turnmark'), b = $('turntg'); if (!a) { a = document.createElement('div'); a.id = 'turnmark'; b = document.createElement('div'); b.id = 'turntg'; b.innerHTML = UI.px('target'); $('floats').append(a, b); }
+      { const say = cur && F.act && F.act.who === nm(cur) && F.t - F.act.t < 1.6 ? `${F.act.what}` : '', k = say || '▼'; if (a.dataset.k !== k) { a.dataset.k = k; if (say) a.textContent = say; else a.innerHTML = UI.px('down'); } // 방금 쓴 기술의 이름을 머리 위에 (아니면 ▼ 표시)
+        a.className = (foe ? 'foe' : '') + (say ? ' say' : ''); } a.style.display = cur ? '' : 'none'; if (cur) UI.place(a, cur._dx ?? cur.x, cur._dy ?? cur.y, 2.5);
       b.className = foe ? 'foe' : ''; b.style.display = tg ? '' : 'none'; if (tg) UI.place(b, tg._dx ?? tg.x, tg._dy ?? tg.y, 1.2); }
     const big = innerWidth >= 900;
     const k = `${T.round}|${big}|${live.map(e => (e === cur ? '*' : '') + nm(e) + (e.dying ? '!' : '')).join(',')}|${act}`;
@@ -140,7 +140,7 @@ const FIGHT = (() => {
     const top = u.d.value === 20, low = u.d.value === 1;
     const el = document.createElement('div'); el.className = 'fatefly' + (top ? ' jack' : low ? ' doom' : ''); el.innerHTML = dieHTML(u.p, u.d) + (u.how === 'save' ? '<i>내성</i>' : ''); fl.append(el);
     // 터지는 순간: 20을 쓰는 라운드 (전부 맞고 주사위는 모두 최대) · 1을 쓰는 라운드
-    if (top) { banner(`★ <b>운명의 20</b> <span>${name(u.p)} — 이번 라운드는 모두 최고의 눈</span>`, 'jack'); flash('#ffd76a'); cast(u.p, ROW_FX); }
+    if (top) { banner(`${UI.px('star')} <b>운명의 20</b> <span>${name(u.p)} — 이번 라운드는 모두 최고의 눈</span>`, 'jack'); flash('#ffd76a'); cast(u.p, ROW_FX); }
     else if (low) banner(`<b>운명의 1</b> <span>${name(u.p)} — 이번 라운드는 모두 최악의 눈</span>`, 'doom');
     UI.place(el, u.p._dx ?? u.p.x, u.p._dy ?? u.p.y, 2.7); // 끝자리: 머리 위
     const a = src.getBoundingClientRect(), b = el.getBoundingClientRect(), die = el.firstChild;
@@ -160,9 +160,9 @@ const FIGHT = (() => {
     if (q.get('dice') != null) return take(q.get('dice').split(',').filter(k => G.Dice.SPECIAL.includes(k)).slice(0, 2));
     if (q.get('auto')) return;
     const box = document.createElement('div'), sel = []; box.id = 'dicepick';
-    const SP = G.Dice.SPECIAL, faces = k => (G.Dice.KINDS[k].faces ? G.Dice.KINDS[k].faces.map(f => (f === 'death' ? '☠' : f)).join(' · ') : k === 'twin' ? 'd20 두 번 중 높은 쪽' : '');
+    const SP = G.Dice.SPECIAL, faces = k => (G.Dice.KINDS[k].faces ? G.Dice.KINDS[k].faces.map(f => (f === 'death' ? UI.px('skull') : f)).join(' · ') : k === 'twin' ? 'd20 두 번 중 높은 쪽' : '');
     const locked = k => open && (k === 'twin' || k === 'doom') && !open.includes(k);
-    const draw = () => { box.innerHTML = `<h3>특수 주사위</h3><p>둘까지 골라 간다. 운명판의 줄을 굴릴 때마다 칸 하나씩에 들어간다.</p>${SP.map(k => locked(k) ? `<button disabled><b class="die">?</b><span>잠김<small>소문 ${need[k] || '?'}에 열린다</small></span></button>` : `<button data-k="${k}" class="${sel.includes(k) ? 'on' : ''}"><b class="die k-${k}">${k === 'doom' ? '☠' : k === 'gamble' ? '20' : k === 'steady' ? '10' : '↑'}</b><span>${esc(G.Dice.KINDS[k].n)}<small>${esc(faces(k))}</small></span></button>`).join('')}<button class="go">출발${sel.length ? ` (${sel.length})` : ' (보통 주사위만)'}</button>`; };
+    const draw = () => { box.innerHTML = `<h3>특수 주사위</h3><p>둘까지 골라 간다. 운명판의 줄을 굴릴 때마다 칸 하나씩에 들어간다.</p>${SP.map(k => locked(k) ? `<button disabled><b class="die">?</b><span>잠김<small>소문 ${need[k] || '?'}에 열린다</small></span></button>` : `<button data-k="${k}" class="${sel.includes(k) ? 'on' : ''}"><b class="die k-${k}">${k === 'doom' ? '☠' : k === 'gamble' ? '20' : k === 'steady' ? '10' : '↑'}</b><span>${esc(G.Dice.KINDS[k].n)}<small>${faces(k)}</small></span></button>`).join('')}<button class="go">출발${sel.length ? ` (${sel.length})` : ' (보통 주사위만)'}</button>`; };
     box.onclick = ev => { const b = ev.target.closest('button'); if (!b || b.disabled) return; if (b.classList.contains('go')) { take(sel.slice()); box.remove(); return; } const k = b.dataset.k, i = sel.indexOf(k); if (i >= 0) sel.splice(i, 1); else if (sel.length < 2) sel.push(k); draw(); };
     draw(); $('stage').append(box);
   }

@@ -38,7 +38,7 @@
   function bar() {
     const it = Object.entries(st.items).filter(([, v]) => v > 0).map(([k, v]) => `${RUN.ITEMS[k].n} ${v}`).join(' · ');
     $('#info').innerHTML = `<b>1층</b> <span>금화 ${st.gold}</span><span class="it">${esc(it || '물품 없음')}</span>`;
-    $('#mode').textContent = RUN.view.mode === 'dnd' ? '표기: D&D' : '표기: 숫자';
+    $('#mode').textContent = RUN.view.mode === 'dnd' ? '표기: 주사위' : '표기: 숫자';
   }
   function party() {
     $('#party').innerHTML = st.party.map(m => {

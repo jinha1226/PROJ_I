@@ -216,7 +216,7 @@ G.Turn = (() => {
       opportunity(f, rt, st, e, px, py);
       if (gone(rt, e) || rt.phase === 'dead') { pause(st, SKIP); return; }
       if (!done) return;
-      if (G.Act.noAttack(e)) { pause(st, SKIP); return; } // 행동을 질주 · 물러나기 · 숨기에 썼다
+      if (G.Act.noAttack(e)) { pause(st, SKIP); return; } // 달리기만 한 차례 · 행동을 숨기에 썼다
       if (canHit(m, e, e.x, e.y, tg)) { strike(f, rt, st, e, tg); return; }
       // 표적에 닿지 못했어도 닿는 적이 있으면 그쪽을 친다 (길이 막혔을 때)
       const alt = (e.kind === 'mon' ? rt.party.filter(p => !p.dead).concat(G.Sum.alive(rt)) : foes(rt)).find(o => canHit(m, e, e.x, e.y, o));
@@ -366,7 +366,6 @@ G.Turn = (() => {
     if (e.kind !== 'mon' && !burnFirst(rt, e).length && G.Foe.useless(e, foes(rt).filter(o => !o.down))) { DN().buff(e, 'dodge', G.Res_ROUND, { hitDis: 1 }); G.fx(rt, { k: 'text', x: e.x, y: e.y - 1.1, s: '회피', col: '#9fc8ff', t: 0.7, sz: 0.7 }); pause(st, SKIP); return; }
     G.Tactics.snap(rt); // 기술로 옮겨 간 사람이 겹치지 않게
     e.longNow = false;
-    if (e.merc && ['bard', 'paladin', 'warlock', 'mage'].includes(e.merc.cls) && G.Act.influence(f, rt, e)) { pause(st, BEAT); return; } // 설득 (SRD Influence): 꺾인 적을 항복시킨다
     st.tg = target(rt, e);
     if (!st.tg) { if (e.kind !== 'mon' && G.Act.search(rt, e)) { pause(st, BEAT); return; } pause(st, SKIP); return; } // 보이는 적이 없으면 찾기 (SRD Search)
     const held = DN().held(e) || st.pm === e, keep = e.kind === 'mon' ? G.Foe.ranged(e) : !G.Dnd.melee(e) && G.Dnd.rng(e) >= 2 && G.Tactics.keeps(e) && !st.tg.down, can = (x, y) => canHit(rt.map, e, x, y, st.tg);

@@ -129,7 +129,7 @@ const TAVERNUI = (() => {
       const g = night[cur], s = T.sheet(g), k = picks.indexOf(cur), full = k < 0 && picks.length >= n;
       const li = (o, tag) => `<li><b>${esc(o.n)}</b>${tag || o.tag ? `<small>${esc(tag || o.tag)}</small>` : ''}<span>${esc(o.d)}</span></li>`;
       sheetEl.hidden = false;
-      sheetEl.innerHTML = `<div class="tv-hd"><canvas class="tv-face" width="30" height="40"></canvas><div><b>${esc(s.name)}</b><small>${esc(s.cls)} · ${esc(s.sp)} · ${s.lv}레벨</small><small>탐사 — ${esc(s.role)}</small></div><button class="tv-x" aria-label="닫기">✕</button></div>` +
+      sheetEl.innerHTML = `<div class="tv-hd"><canvas class="tv-face" width="30" height="40"></canvas><div><b>${esc(s.name)}</b><small>${esc(s.cls)} · ${esc(s.sp)} · ${s.lv}레벨</small><small>탐사 — ${esc(s.role)}</small></div><button class="tv-x" aria-label="닫기">${UI.px('x')}</button></div>` +
         `<div class="tv-st"><span>체력<b>${s.hp}</b></span><span>AC<b>${s.ac}</b></span>${s.ab.map(a => `<span>${esc(a.n)}<b>${a.v}</b><i>${a.mod}</i></span>`).join('')}</div>` +
         (s.die ? `<h5>주사위</h5><div class="tv-die"><b>${esc(s.die.n)}</b><small>${esc(s.die.lean)} · d20</small><div class="tv-cnt">${faceChips(g)}</div><ul class="tv-fx">${LEG.filter(l => FC(g)[l.s]).map(l => `<li><i class="sy s-${l.s}">${l.n}</i><b>${esc(l.fx)}</b><span>${esc(l.tiers[0])}</span></li>`).join('')}</ul></div>` : '') +
         `<h5>기본 공격</h5><ul class="tv-sk">${li(s.weapon)}<li><b>${esc(s.armor)}</b><small>방어구</small></li></ul>` +

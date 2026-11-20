@@ -28,13 +28,13 @@ const TITLEUI = (() => {
     function size() {
       // 세로 화면: 너비를 고정하고 위아래로 쌓는다 (위 로고 · 가운데 용 · 아래 파티 · 맨 아래 단추)
       port = innerWidth < innerHeight * .9;
-      if (port) { LW = 180; LH = Math.round(LW * innerHeight / innerWidth); } else { LH = innerWidth < 700 ? 240 : 300; LW = Math.round(LH * innerWidth / innerHeight); }
+      if (port) { LW = 270; /* 세로 화면: 그림이 화면을 덮지 않게 (180이면 용 · 파티가 너무 컸다) */ LH = Math.round(LW * innerHeight / innerWidth); } else { LH = innerWidth < 700 ? 240 : 300; LW = Math.round(LH * innerWidth / innerHeight); }
       wall.width = LW; wall.height = LH;
-      const dH = port ? Math.round(Math.min(LH * .4, LW * 1.15 / 1.6)) : Math.round(LH * .6); // 세로면 용 그림(너비 ≈ 1.6×높이)이 화면 너비를 조금 넘는 정도
+      const dH = port ? Math.round(Math.min(LH * .32, LW * .88 / 1.6)) : Math.round(LH * .6); // 세로면 용 그림(너비 ≈ 1.6×높이)이 화면 너비 안에 들어오게
       drag = typeof DRAGON !== 'undefined' ? DRAGON.bake(DRAGON.COLORS.red, { ...DRAGON.AGE.adult, H: dH }, 'w0', 0, 1) : null;
       embers = Array.from({ length: 70 }, () => ({ x: R(0, LW), y: R(0, LH), v: R(6, 22), p: R(0, 6) }));
       // 로고: 화면 너비에 맞춘 픽셀 크기
-      const W = Math.min(innerWidth, 720), px = Math.max(3, Math.floor(W * 0.86 / widthOf('ROLL FOR'))), px2 = Math.round(px * 1.5);
+      const W = Math.min(innerWidth, 720), px = Math.max(3, Math.floor(W * (port ? 0.66 : 0.86) / widthOf('ROLL FOR'))), px2 = Math.round(px * 1.5);
       logo.width = W; logo.height = px * 7 + px2 * 7 + px * 5; lx.clearRect(0, 0, W, logo.height);
       text(lx, 'ROLL FOR', Math.round((W - widthOf('ROLL FOR') * px) / 2), px, px, () => '#efe6cf');
       text(lx, 'FATE', Math.round((W - widthOf('FATE') * px2) / 2), px * 10, px2, j => ['#ffe08a', '#ffd070', '#ffb84a', '#f59a36', '#e87a2a', '#d65c22', '#b8431c'][j]); // 운명은 불빛 색으로 (위는 밝고 아래는 짙다)

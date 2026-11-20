@@ -10,7 +10,7 @@ const HUD = (() => {
   const ITEM = [['potion', '물약'], ['tools', '도구'], ['torch', '횃불'], ['knockScroll', '열림'], ['seeScroll', '투시']];
   const clsOf = m => G.Guild.def(m) || {};
   // 화면 너비 기준 확대: 폰은 게임 픽셀 250(탐사) · 340(전투 — 적까지 보이게), 넓은 화면은 560 · 660
-  const zoom = (fight = false) => { const w = STG.clientWidth || innerWidth; return Math.max(1, w * DPR / (w < 700 ? (fight ? 460 : 250) : (fight ? 860 : 560))); };
+  const zoom = (fight = false) => { const w = STG.clientWidth || innerWidth; return Math.max(1, Math.round(w * DPR / (w < 700 ? (fight ? 400 : 250) : (fight ? 720 : 560)))); }; // 정수 배율: 게임 픽셀 하나가 화면 픽셀 정수 개 — 소수 배율이면 픽셀 굵기가 들쭉날쭉해진다
   let wasFight = false;
   function mount() {
     el = document.createElement('div'); el.id = 'hud';

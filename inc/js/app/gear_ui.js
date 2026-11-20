@@ -14,7 +14,7 @@ const GEARUI = (() => {
   const close = () => { const b = $('gearwin'); if (b) b.remove(); };
   // 장비가 바뀌었다: 최대 체력을 다시 세고(crawl.js) 열린 시트를 다시 그린다
   function changed(m) { if (typeof CRAWL !== 'undefined' && CRAWL.refreshHP) CRAWL.refreshHP(); if ($('csheet') && m) { const i = (view()?.party || []).findIndex(p => p.m === m); if (i >= 0) HUD.sheet(i); } }
-  const card = x => { const o = X().info(x); return `<div class="gw-card ${RC[o.r]}"><b>${o.ic ? `<i>${o.ic}</i>` : ''}${esc(o.n)}</b><small>${esc(o.slotN)}${o.rn ? ` · ${esc(o.rn)}` : ''}</small><ul>${o.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`; };
+  const card = x => { const o = X().info(x); return `<div class="gw-card ${RC[o.r]}"><b>${UI.ic(o.ic)} ${esc(o.n)}</b><small>${esc(o.slotN)}${o.rn ? ` · ${esc(o.rn)}` : ''}</small><ul>${o.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`; };
   // 얻은 물건 하나: 누구에게
   const WAIT = [450, 450, 850, 1350, 1900]; // 등급마다 뜸 들이는 시간(ms)
   function give(x, done, title = '장비', reveal = false) {
