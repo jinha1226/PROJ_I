@@ -9,7 +9,7 @@
   const COND_N = { blinded: '실명', charmed: '매혹', frightened: '공포', paralyzed: '행동 불능', poisoned: '중독', prone: '넘어짐', restrained: '속박', stunned: '기절', sapped: '약화', outlined: '빛남', push: '밀침', slow: '느려짐' };
   const AB = k => DN.AB_N[k] || k, DT = k => G.Trinket.DT_N[k] || k || '';
   const diceTxt = s => (s ? (s[0] ? `${s[0]}d${s[1]}` : '') + (s[2] ? `${s[0] ? ' + ' : ''}${s[2]}` : '') : '');
-  const PROP = { hitD: v => `명중 +1d${v}`, saveD: v => `내성 +1d${v}`, hit: v => `명중 +${v}`, ac: v => `AC +${v}`, save: v => `내성 +${v}`, dmgB: v => `피해 +${v}`, adv: () => '공격 이점', hitDis: () => '나를 노리는 공격 불리', taken: v => `받는 피해 ×${v}`, moveK: v => `이동 +${Math.round(v * 100)}%`, thp: v => `임시 체력 ${diceTxt(v)}`, extraAtk: v => `공격 +${v}`, deathWard: () => '쓰러질 때 한 번 버팀', imm: k => `${COND_N[k] || k} 면역` };
+  const PROP = { hitDisVs: () => '이형체 · 천상체 · 원소 · 요정 · 악마 · 언데드의 공격에 불리', hitD: v => `명중 +1d${v}`, saveD: v => `내성 +1d${v}`, hit: v => `명중 +${v}`, ac: v => `AC +${v}`, save: v => `내성 +${v}`, dmgB: v => `피해 +${v}`, adv: () => '공격 이점', hitDis: () => '나를 노리는 공격 불리', taken: v => `받는 피해 ×${v}`, moveK: v => `이동 +${Math.round(v * 100)}%`, thp: v => `임시 체력 ${diceTxt(v)}`, extraAtk: v => `공격 +${v}`, deathWard: () => '쓰러질 때 한 번 버팀', imm: k => `${COND_N[k] || k} 면역` };
   const propsTxt = p => Object.keys(p).filter(k => k !== 'self').map(k => (k.startsWith('res_') ? `${DT(k.slice(4))} 저항` : PROP[k] ? PROP[k](p[k]) : '')).filter(Boolean).join(' · ');
   function descOf(o) {
     const area = o.area ? `반경 ${o.area}칸 ` : '', sv = o.save ? `${AB(o.save)} 내성${o.half ? ' 절반' : ''}` : '', dice = `${diceTxt(o.dice)} ${DT(o.dt)}`.trim(), T = n => `${n}라운드`;
@@ -96,7 +96,7 @@
         let list; if (shapeOf(o)) { const q = areaCast(o, x, c); if (!q) return false; list = q.sc ? q.list.filter(t => x.rt.mons.includes(t)) : q.list; } else list = targets(o, x, c); if (o.only) list = list.filter(t => (o.only === 'beast' ? t.ty === 'beast' : DN.humanoid(t))); if (!list.length) return false;
         for (const t of list) { if (o.save && DN.save(t, o.save, DN.dc(c))) continue; hit(x, c, t, o.cond, durR(o)); condOn(x, c, t, o, o.cond); } // 원문 지속 · 재내성 · 집중
       }; break;
-      case 'buff': { const p = o.props || {}, key = 'sp_' + o.en; S.when = (c, x) => H.W.fight(c, x) && (p.self ? !DN.bon(c, key) : H.alive(x).some(q => !DN.bon(q, key))); S.run = (c, x) => {
+      case 'buff': { const p = o.en === 'Protection from Evil and Good' ? { hitDisVs: ['aberration', 'celestial', 'elemental', 'fey', 'fiend', 'undead'] } : o.props || {}, key = 'sp_' + o.en; /* 선악 보호 (SRD): 이 종류의 생물이 치는 공격만 불리 */ S.when = (c, x) => H.W.fight(c, x) && (p.self ? !DN.bon(c, key) : H.alive(x).some(q => !DN.bon(q, key))); S.run = (c, x) => {
         const list = p.self ? [c] : H.alive(x).filter(q => !DN.bon(q, key)).sort((a, b) => a.hp / a.max - b.hp / b.max).slice(0, nOf(o, x)); if (!list.length) return false;
         const step = o.upR?.steps?.filter(q => (x.slot || o.lv) >= q[0]).pop()?.[1], thpUp = (o.upR?.thp || 0) * plus(o, x);
         const props = {}; for (const k in p) if (k !== 'self' && k !== 'thp' && k !== 'imm') props[k] = step ?? p[k]; if (p.imm) props['imm_' + p.imm] = 1;

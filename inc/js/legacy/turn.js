@@ -350,7 +350,9 @@ G.Turn = (() => {
       // 기술은 자기 눈에 보이는 적 중 그 기술의 사거리 안에서만 고른다 (G.Skill.tick · G.D.SK_RANGE)
       const before = snapshot(rt), seen = rt.mons.filter(o => !o.down && !o.ethereal && F().inView(rt, o.x, o.y) && F().sees(rt.map, e, o));
       e.slotUsed = false;
-      T.rec = []; for (let i = 0; i < 3; i++) G.Skill.tick(f, rt, e, 0, seen, 'free'); T.rec = null; // 행동 쇄도 · 무모한 공격처럼 칸을 안 쓰는 기능
+      T.rec = []; for (let i = 0; i < 3; i++) G.Skill.tick(f, rt, e, 0, seen, 'free'); T.rec = null;
+      e.plan = G.SkillAI?.plan ? G.SkillAI.plan(f, rt, e, seen) : null; // 차례 계획: 행동 + 추가 행동을 함께 (자유 행동 — 무모한 공격 · 행동 쇄도 — 뒤에)
+      T.rec = []; T.rec = null; // 행동 쇄도 · 무모한 공격처럼 칸을 안 쓰는 기능
       T.rec = []; G.Skill.tick(f, rt, e, 0, seen, 1); T.rec = null; // 추가 행동 (SRD): 행동과 따로 하나. 슬롯 주문은 행동 뒤로 미룬다 (큰 주문이 막히지 않게)
       { T.rec = []; const itm = G.Items.turn(f, rt, e, seen), r0 = T.rec; T.rec = null; if (itm) { report(f, rt, e, null, r0, before, itm); pause(st, BEAT); return; } } // 물약 · 두루마리 · 충전 주문
       let healed = false;
@@ -402,6 +404,7 @@ G.Turn = (() => {
       }
     } else if (tg.down && !G.Foe.burns(e)) { if (G.Lore.knows(f, tg)) G.Foe.torch(f, rt, e, tg); }
     else F().allyAttack(f, rt, e, tg);
+    if (e.merc && !e.lastBonus && !e.dead && G.SkillAI?.planBonus) { const seen = rt.mons.filter(o => o.hp > 0 && !o.down && !o.ethereal && F().inView(rt, o.x, o.y) && F().sees(rt.map, e, o)), p = G.SkillAI.planBonus(f, rt, e, seen); if (p) { e.plan = p; G.Skill.tick(f, rt, e, 0, seen, 2); } } // 걸어가 친 뒤 남은 추가 행동 (연타 · 치유의 말 …)
     const rec = T.rec; T.rec = null;
     if (rt.phase === 'dead') return;
     G.Story.afterAct(f, rt, e, tg, rec, hp0);

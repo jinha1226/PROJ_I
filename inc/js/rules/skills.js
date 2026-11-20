@@ -50,13 +50,26 @@ G.Skill = (() => {
     kindOf: k => (D.MSKILLS[k]?.explore ? '탐험' : REACT[k] || SK[k]?.react ? '반응' : D.MSKILLS[k]?.passive ? '늘 적용' : SK[k]?.free ? '소모 없음' : SK[k]?.bonus ? '추가 행동' : '행동'),
     resOf: k => SK[k]?.res || AUTO_RES[k] || null,
     desc(m, k) { const S = D.MSKILLS[k], R0 = Sk.resOf(k); const kd = Sk.kindOf(k); return `${kd === '늘 적용' || kd === '탐험' ? '' : `[${kd}] `}${Sk.text(m, k)}${R0 ? ` · ${G.Res.usesOf(m, R0, k)}번` : ''}`; },
+    // 지금 그 기술을 쓸 수 있나 (차례 계획이 후보를 고를 때 — tick과 같은 검사, 부작용 없이). slotOk = 이번 차례 슬롯 주문은 이것 하나 (행동이 슬롯을 안 쓴다)
+    usable(f, rt, a, k, seen, kind, slotOk, swapConc) { // swapConc = 집중 중이어도 후보로 (갈아탈지는 계획이 값으로 정한다)
+      const S = SK[k]; if (!S || S.rider || !a.merc) return false; const quick = kind !== 'action' && S && !S.bonus && S.res?.slot && G.Opt.can(a, 'sr_quicken');
+      if (kind === 'free' ? !S.free : S.free) return false; if (kind !== 'free' && (!!S.bonus !== (kind === 'bonus') && !quick)) return false;
+      if (!G.Res.can(a.merc, k, S.res)) return false; if (S.res?.slot && (a.slotUsed || (kind === 'bonus' && !slotOk))) return false;
+      if (S.conc && a.concK && !G.Res.concSpent(a) && !swapConc) return false; if (a.wild && S.res?.slot && !G.Guild.skill(a.merc, 'ft_beastsp')) return false;
+      const reach = D.SK_RANGE[k], x = { f, rt, c: a, reach, base: S.base, seen: reach == null ? seen : seen.filter(o => G.Opt.inReach(a, rt, o, reach)) };
+      const ty = spellType(k); if (ty && !S.heal && x.seen.length && !x.seen.some(o => G.Foe.dealK(a, o, ty) >= 0.5)) return false;
+      const m0 = a.merc; if (G.MC?.on(m0)) a.merc = G.MC.viewFor(m0, k); let ok = false; try { ok = !!S.when(a, x); } catch (e) { ok = false; } finally { a.merc = m0; } return ok;
+    },
     // 동료 한 명: 열린 칸의 스킬 중 쿨다운이 끝났고 쓸 만한 것 하나 (한 번 쓰면 GAP초 쉰다)
+    // 차례 계획(a.plan — G.SkillAI.plan, 차례 시작에 행동 + 추가 행동을 함께 고른다)이 있으면 그 단계는 계획한 것만 쓴다
     tick(f, rt, a, dt, seen, bonus) {
       if (G.Skill.persist && !bonus && dt) { const by0 = G.Dnd.actor; G.Dnd.actor = a; try { G.Skill.persist(f, rt, a, dt); } finally { G.Dnd.actor = by0; } }
       if (!a.merc || a.dead) return;
       const pri = a.merc.skPri, rank = p => { if (SK[p]?.prio) return 1000 + SK[p].prio; const i = pri ? pri.indexOf(p) : -1; return i >= 0 ? 100 - i : G.Res.cost(a.merc, SK[p]?.res); }, dealt = p => { const t = spellType(p); if (!t || !seen.length) return 1; return Math.max(...seen.map(o => (o.stat ? G.Foe.typeK(o, t, a) + (t === 'fire' && G.Foe.needsFire(o) ? 2 : 0) : 1))); };
       if (!bonus && G.Team) G.Team.expire(rt, a);
-      const list = G.SkillAI && seen.length ? G.SkillAI.rank(G.Team ? G.Team.add(G.Guild.active(a.merc)) : G.Guild.active(a.merc), a, { f, rt, c: a, seen }, bonus) : G.Guild.active(a.merc).slice().sort((p, q) => rank(q) - rank(p) || dealt(q) - dealt(p)); // 상황마다 점수로 고른다 (G.SkillAI)
+      let list = G.SkillAI && seen.length ? G.SkillAI.rank(G.Team ? G.Team.add(G.Guild.active(a.merc)) : G.Guild.active(a.merc), a, { f, rt, c: a, seen }, bonus) : G.Guild.active(a.merc).slice().sort((p, q) => rank(q) - rank(p) || dealt(q) - dealt(p)); // 상황마다 점수로 고른다 (G.SkillAI)
+      const P = a.plan && a.plan.turn === G.Turn.no() ? a.plan : null;
+      if (P && bonus !== 'free') { const want = bonus ? P.bonus : P.action; list = want && want !== 'basic' ? [want] : []; if (bonus && P.bonusDone) list = []; } // 계획대로 (기본 공격이면 기술을 쓰지 않는다)
       for (const k of list) {
         const S = SK[k];
         const quick = bonus && S && !S.bonus && S.res && S.res.slot && G.Opt.can(a, 'sr_quicken'); // 주문 가속 (SRD): 주문을 추가 행동으로
@@ -65,8 +78,8 @@ G.Skill = (() => {
         if (bonus !== 'free' && (!!S.bonus !== !!bonus && !quick)) continue;
         if (!G.Res.can(a.merc, k, S.res)) continue;
         // SRD: 주문 슬롯을 쓰는 주문은 차례에 하나 · 집중은 한 번에 하나 (이미 집중 중이면 새로 걸지 않는다)
-        if (S.res?.slot && (a.slotUsed || bonus === 1)) continue;
-        if (S.conc && a.concK && !G.Res.concSpent(a)) continue; // 집중은 하나 — 걸어 둔 것이 다 풀렸으면 새로 건다
+        if (S.res?.slot && (a.slotUsed || (bonus === 1 && !(P && P.slotOk && P.bonus === k)))) continue; // 계획이 행동에 슬롯을 안 쓰면 추가 행동 슬롯 주문(헥스)을 먼저 — 헥스를 걸고 폭발을 쏜다
+        if (S.conc && a.concK && !G.Res.concSpent(a) && !(P && P.swap === k)) continue; // 집중은 하나 — 걸어 둔 것이 다 풀렸거나, 계획이 갈아타기로 했으면 새로 건다
         if (a.wild && S.res?.slot && !G.Guild.skill(a.merc, 'ft_beastsp')) continue; // 야수 주문 (SRD 드루이드 18) // 야생 변신 중엔 주문을 못 쓴다 (SRD)
         // 사거리는 여기서만 건다: 그 기술이 볼 수 있는 적 · 동료를 사거리 안으로 좁힌다
         const reach = D.SK_RANGE[k] != null && k === 'sr_eb' && G.Opt.has(a, 'iv_spear') ? G.SRD_RANGE.cells(G.SRD_RANGE.basic.warlock + 6 * a.merc.lv) : D.SK_RANGE[k], x = { f, rt, c: a, reach, base: S.base, seen: reach == null ? seen : seen.filter(o => G.Opt.inReach(a, rt, o, reach)) };
@@ -94,7 +107,7 @@ G.Skill = (() => {
         if (G.Dnd.acted) G.Dnd.acted(a); // 운명판: 주사위가 없는 행동(강화 · 보호)도 그 라운드의 칸을 쓴다
         G.Res.pay(a.merc, k, S.res);
         if (S.res?.slot) a.slotUsed = true;
-        if (bonus === 'free') { (a.freeDone = a.freeDone || {})[k] = 1; } else if (bonus) { a.lastBonus = k; } else a.lastSk = k;
+        if (bonus === 'free') { (a.freeDone = a.freeDone || {})[k] = 1; } else if (bonus) { a.lastBonus = k; if (P) P.bonusDone = true; } else a.lastSk = k;
         if (!G.quiet && rt.turn) { (a.skLog = a.skLog || []).push(k); G.SkillFx.cast(rt, a, k, x.seen, fx0); } // 쓰는 순간: 이름 + 아이콘 번쩍임 (그리는 쪽이 꺼내 간다)
         if (G.Sim) G.Sim.casts[k] = (G.Sim.casts[k] || 0) + 1;
         return;
