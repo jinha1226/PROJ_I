@@ -23,6 +23,9 @@
 <h1>던전에 맞춘 캐릭터 · 몬스터 시안 (쓰고 버리는 시험)</h1>
 <p>로우폴리 3D 모형을 게임 픽셀 크기로 직접 그렸습니다. 던전과 같은 시점(쿼터뷰 30°), 같은 빛(횃불 · 들고 다니는 등불, 빛 밖은 흑백), 같은 14단계 색 + 4×4 디더, 어두운 테두리를 씁니다. 배경은 실제 게임 화면(용의 둥지 시험 층)에서 인물만 빼고 찍은 것입니다.</p>
 
+<h2>Quaternius 베이스 캐릭터 → 복셀 (3배)</h2>
+<p>CC0 베이스 캐릭터(남자 몸 · 머리털 · 수염)에 같은 뼈대의 동작(대기 · 걷기 · 칼 공격 · 맞기)을 입혀 프레임마다 복셀로 쌓았습니다. 칼은 제가 붙였습니다. 줄마다 키가 24 · 36 · 48칸입니다 (던전 복셀은 한 칸에 6개). 아래 실제 배경 장면의 맨 앞 인물도 이것(36칸)입니다.</p>
+<canvas id="voxrow"></canvas>
 <h2>용 보스 — 실제 게임 (<a href="../index.html?scene=dragon" style="color:#f0c070">새 탭에서 열기</a>)</h2>
 <p>지금 게임(LAYERLAB 인형 + 용 부위 인형) 그대로입니다. 붉은 성룡(3×3칸)이 파티 앞에 섭니다. 주소 끝에 <code>&amp;mon=붉은 고룡</code>을 붙이면 4×4 고룡입니다.</p>
 <iframe src="../index.html?scene=dragon&amp;phone=1" style="width:412px;max-width:100%;height:820px;border:1px solid #5a4a3a;background:#000" loading="lazy"></iframe>
@@ -450,6 +453,27 @@ function dragon(t, pose) {
   return m;
 }
 
+// ── Quaternius 복셀 인물 (hero_vox.json: 키별 · 동작별 프레임, 복셀 = x · y · z · r · g · b 바이트)
+let VOXD = null; fetch('hero_vox.json').then(r => r.json()).then(d => { VOXD = d; }).catch(() => {});
+const VCACHE = new Map(), VANIM = { idle: [4, 4], walk: [8, 10], atk: [6, 7], hit: [3, 5] };
+function voxFrame(H, key, i) {
+  const id = H + key + i; if (VCACHE.has(id)) return VCACHE.get(id);
+  const F = VOXD[H].fr[key][i], b = Uint8Array.from(atob(F.d), c => c.charCodeAt(0)), vw = VOXD[H].v * 2.5 / 1.86, m = new Mesh(), map = new Map(), K3 = (x, y, z) => x | y << 8 | z << 16;
+  for (let q = 0; q < b.length; q += 6) map.set(K3(b[q], b[q + 1], b[q + 2]), b[q + 3] << 16 | b[q + 4] << 8 | b[q + 5]);
+  const c0 = F.w / 2, M = I();
+  for (const [k, col] of map) {
+    const x = k & 255, y = k >> 8 & 255, z = k >> 16, X0 = (x - c0) * vw, Y0 = (y - c0) * vw, Z0 = z * vw, X1 = X0 + vw, Y1 = Y0 + vw, Z1 = Z0 + vw;
+    if (!map.has(K3(x, y, z + 1))) m.poly(M, [[X0, Y0, Z1], [X1, Y0, Z1], [X1, Y1, Z1], [X0, Y1, Z1]], col);
+    if (z > 0 && !map.has(K3(x, y, z - 1))) m.poly(M, [[X0, Y0, Z0], [X1, Y0, Z0], [X1, Y1, Z0], [X0, Y1, Z0]], col);
+    if (!map.has(K3(x + 1, y, z))) m.poly(M, [[X1, Y0, Z0], [X1, Y1, Z0], [X1, Y1, Z1], [X1, Y0, Z1]], col);
+    if (!map.has(K3(x - 1, y, z))) m.poly(M, [[X0, Y0, Z0], [X0, Y1, Z0], [X0, Y1, Z1], [X0, Y0, Z1]], col);
+    if (!map.has(K3(x, y + 1, z))) m.poly(M, [[X0, Y1, Z0], [X1, Y1, Z0], [X1, Y1, Z1], [X0, Y1, Z1]], col);
+    if (!map.has(K3(x, y - 1, z))) m.poly(M, [[X0, Y0, Z0], [X1, Y0, Z0], [X1, Y0, Z1], [X0, Y0, Z1]], col);
+  }
+  VCACHE.set(id, m); return m;
+}
+const voxHero = (H, fixed) => (t, pose) => { if (!VOXD) return new Mesh(); const key = fixed || (pose === 'walk' ? 'walk' : 'idle'), [n, fps] = VANIM[key]; return voxFrame(H, key, Math.floor(t * fps) % n); };
+
 // ── 장면
 const MONS = [['고블린', goblin], ['해골 병사', skeleton], ['큰 쥐', rat], ['오크', orc], ['젤라틴 큐브', cube], ['큰 거미', spider]];
 let mode = 'idle';
@@ -484,7 +508,7 @@ function scene(cv, list, t) {
   }
 }
 const party = (k = 0) => [
-  { fn: hero('human', 'fighter'), at: [830 + k, 478], face: .35, ph: 0 }, { fn: hero('dwarf', 'cleric'), at: [768 + k, 500], face: .2, ph: 1.3 },
+  { fn: voxHero(36), at: [830 + k, 478], face: .35, ph: 0 }, { fn: hero('dwarf', 'cleric'), at: [768 + k, 500], face: .2, ph: 1.3 },
   { fn: hero('elf', 'wizard'), at: [742 + k, 450], face: .4, ph: 2.1 }, { fn: hero('halfling', 'rogue'), at: [880 + k, 520], face: 0, ph: .7 },
 ];
 function boss(t) { scene(document.getElementById('boss'), [...party(), { fn: dragon, at: [950, 605], face: Math.PI * 1.0 + .25, ph: 0, w: 220, h: 190, sh: 2.2 }], t); }
@@ -521,6 +545,7 @@ function frame() {
   lineup(document.getElementById('heroes'), CLASS_KEYS.map(k => [CLS[k].n, hero(selSp.value, k)]), 80, 104, t, 3, 6);
   lineup(document.getElementById('species'), SPEC_KEYS.map(k => [SPEC[k].n, hero(k, selCl.value)]), 80, 104, t, 3, 5);
   lineup(document.getElementById('monsters'), MONS, 110, 96, t, 2);
+  lineup(document.getElementById('voxrow'), [24, 36, 48].flatMap(H => [['대기', 'idle'], ['걷기', 'walk'], ['칼 공격', 'atk'], ['맞기', 'hit']].map(([n, k]) => [H + '칸 · ' + n, voxHero(H, k)])), 80, 104, t, 3, 4);
   lineup(document.getElementById('dragon'), [['붉은 성룡 (3×3칸)', dragon]], 330, 230, t, 2);
   setTimeout(() => requestAnimationFrame(frame), 90);
 }
