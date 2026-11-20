@@ -25,7 +25,7 @@ G.Act = (() => {
     cunning(f, rt, e) {
       if (A.hide(rt, e, true)) return 'hide';
       const adj = adjacent(rt, e);
-      if (adj.length && (DN().rng(e) >= 2 || e.hp < e.max * 0.5)) { A.disengage(rt, e, true); return 'dis'; }
+      if (adj.length && (DN().rng(e) >= 2 || e.hp < e.max * 0.5)) { A.disengage(rt, e, true); G.Opt?.away?.({ rt }, e, 3); return 'dis'; } // 물러나서 실제로 빠진다 (기회 공격 없이 3칸 — 붙은 적이 가장 적은 곳으로)
       const near = foesOf(rt, e).reduce((d, o) => Math.min(d, Math.hypot(o.x - e.x, o.y - e.y)), 99);
       if (!adj.length && near > (e.def?.mv || 6) + 1.5) { A.dash(e, true); say(rt, e, '질주'); return 'dash'; }
       return null;

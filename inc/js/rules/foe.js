@@ -427,5 +427,9 @@ G.Foe = (() => {
       return foes.some(o => dist(o, att) <= MELEE_R);
     },
   };
+  // 감속 (SRD 5.2.1 Slow): 속도 절반 · 공격 행동을 해도 공격은 하나 (AC −2 · 반응 없음은 버프와 G.Dnd.react)
+  { const a0 = Foe.attacks, m0 = Foe.move, slow = e => !!(e.bf?.slow && e.bf.slow.until > G.S.runTime);
+    Foe.attacks = (e, tg) => { const L = a0(e, tg); return slow(e) ? L.slice(0, 1) : L; };
+    Foe.move = e => { const v = m0(e); return slow(e) ? Math.floor(v / 2) : v; }; }
   return Foe;
 })();

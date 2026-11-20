@@ -289,7 +289,7 @@ G.Dnd = (() => {
       return (a || la ? 1 : 0) - (d || ld || sun ? 1 : 0);
     },
     // 반응 (SRD): 라운드에 하나 — 자기 차례 시작에 되찾는다 (G.Turn.next). 기회 공격 · 방어막 · 반격 주문 · 베는 말 · 직감 회피 · 받아넘기기 … 모두 이것 하나를 쓴다
-    react: e => !!e && !(e.reacted && (G.RT.fantasy?.turn || now() - (e.reactT || 0) < G.Res_ROUND)) && !e.noReact && !N.out(e) && !(e.kind === 'mon' && (e.stun > 0 || e.stop > 0)),
+    react: e => !!e && !N.bon(e, 'slow') /* 감속 (SRD): 반응을 못 한다 */ && !(e.reacted && (G.RT.fantasy?.turn || now() - (e.reactT || 0) < G.Res_ROUND)) && !e.noReact && !N.out(e) && !(e.kind === 'mon' && (e.stun > 0 || e.stop > 0)),
     useReact(e) { e.reacted = true; e.reactT = now(); }, /* 실시간 구간은 한 라운드 시간이 지나면 */
     boon: (m, k) => !!(m && m.boons && m.boons.includes(k)),
     d20(adv) { const a = 1 + U.rand(20); if (!adv) return a; const b = 1 + U.rand(20); return adv > 0 ? Math.max(a, b) : Math.min(a, b); },
