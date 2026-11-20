@@ -97,7 +97,7 @@ jobs:
           mkdir -p dist/inc
           cp -r inc/index.html inc/style.css inc/app.css inc/run.html inc/run.css inc/px_lab.html inc/char_lab inc/js inc/assets dist/inc/
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
       - id: deployment
