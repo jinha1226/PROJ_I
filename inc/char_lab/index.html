@@ -29,7 +29,7 @@
   <div><canvas id="pxscene"></canvas><div class="cap">시안 — 파이터 · 클레릭 · 위저드 · 레인저 (키 40px)</div></div>
 </div>
 <h2>SRD 12직업 (3배)</h2>
-<p>옷은 무료 옷 두 벌(농부 · 레인저)의 부품을 색만 바꿔 쓰고, 투구 · 흉갑 · 망토 · 로브 · 모자 · 사슴뿔 · 털 망토 · 지팡이 · 마법 구슬 · 등불 · 책 · 화살통은 제가 만들었습니다. 칼 · 도끼 · 망치 · 단검 · 활 · 방패는 무기 팩(CC0)입니다. 활 쏘기는 동작 라이브러리에 없어서 두 팔을 IK로 움직여 만들었습니다.</p>
+<p>옷은 무료 옷 두 벌(농부 · 레인저, 남녀)의 색만 바꿨고, 직업마다 무기 팩(CC0)의 무기만 다르게 쥐었습니다 — 파이터 칼+둥근 방패 · 팔라딘 금빛 칼+금빛 방패 · 바바리안 양날도끼 · 몽크 맨손 · 로그 단검 둘 · 레인저 활 · 드루이드 낫 · 클레릭 망치+방패 · 위저드 창(지팡이 대신) · 소서러 단검 · 워락 대검 · 바드 칼+단검. 활 쏘기는 동작 라이브러리에 없어서 두 팔을 IK로 움직여 만들었습니다.</p>
 <canvas id="clsrow"></canvas>
 <h2>키 32 · 40 · 48px × 동작 — 레인저 (4배)</h2>
 <canvas id="pxrow"></canvas>
@@ -559,7 +559,7 @@ function pxRow(t) {
 document.querySelectorAll('[data-o]').forEach(b => b.onclick = () => { outfit = b.dataset.o; document.querySelectorAll('[data-o]').forEach(x => x.classList.toggle('on', x === b)); });
 // ── SRD 12직업 (cls/cls_*.png · cls_meta.json)
 const CLS12 = [['fighter', '파이터'], ['paladin', '팔라딘'], ['barbarian', '바바리안'], ['monk', '몽크'], ['rogue', '로그'], ['ranger', '레인저'], ['druid', '드루이드'], ['cleric', '클레릭'], ['wizard', '위저드'], ['sorcerer', '소서러'], ['warlock', '워락'], ['bard', '바드']];
-let CM = null; const CIM = {}; fetch('cls/cls_meta.json').then(r => r.json()).then(d => { CM = d; for (const k in d) { const im = new Image(); im.src = `cls/cls_${k}.png?v=2`; CIM[k] = im; } }).catch(() => {});
+let CM = null; const CIM = {}; fetch('cls/cls_meta.json').then(r => r.json()).then(d => { CM = d; for (const k in d) { const im = new Image(); im.src = `cls/cls_${k}.png?v=3`; CIM[k] = im; } }).catch(() => {});
 const clsOk = k => CM && CM[k] && CIM[k] && CIM[k].complete && CIM[k].naturalWidth;
 function clsDraw(c, k, key, t, x, y, K, flip) {
   const M = CM[k], r = M.rows.indexOf(key), n = M.n[key], f = Math.floor(t * M.fps) % n;
