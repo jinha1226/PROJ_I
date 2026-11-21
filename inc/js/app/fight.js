@@ -17,6 +17,51 @@ const FIGHT = (() => {
     F = { log: () => {}, done: () => {}, purse: { gold: () => Infinity, pay: () => {} }, ...opts, acc: 0, round: 0, cur: null, t: 0, intro: opts.intro ? { t: 0, to: opts.intro } : null };
     const D = G.Dice; D.party = () => R.party.filter(p => !p.dead && p.hp > 0); D.roster = () => R.party; D.cur = () => R.turn?.cur || null; D.purse = F.purse;
     D.end(); D.sync(); // 층의 운명판은 그대로 — 새 동료의 줄만 굴린다 (판이 없으면 새로)
+    // 직접 조종 (G.Ctrl): 조종하는 사람이 파티에 없으면 첫째 칸 사람을. 봇 · 알아서 하는 전투(?auto · quiet)는 아무도 조종하지 않는다
+    const C = G.Ctrl; if (q.get('auto') || opts.quiet) C.clear(); else if (!R.party.some(p => C.hand.has(p.merc?.uid))) C.only(R.party[0]?.merc);
+  }
+  // ── 직접 조종 (G.Ctrl): 조종하는 사람의 차례면 아래 막대(눈 · 이동력 · 기술 · 차례 끝 · 자동)와 갈 수 있는 칸을 보인다. 바닥을 누르면 걷고, 적을 누르면 친다(기술을 골랐으면 그 기술로) ──
+  let pickSk = null, tipK = '';
+  const foeAt = (tx, ty) => R.mons.find(o => o.hp > 0 && !o.down && G.Dnd.foot(o).some(([u, v]) => u === Math.round(tx) && v === Math.round(ty)));
+  const pct = p => (p == null ? '' : p >= 0.9 ? '확정' : p <= 0.1 ? '빗나감' : `${Math.round(p * 100)}%`);
+  function pvTxt(v, o) { // 그 적을 누르면 일어날 일 (한 줄)
+    if (pickSk) { const s = v.skills.find(q => q.k === pickSk), P = G.Ctrl.preview(G.S.w.fantasy, R, pickSk, o.e); return `${esc(s?.n || '')} → ${esc(nm(o.e))}${P?.p != null ? ` · ${P.ab ? `내성 실패 ${pct(P.p)}` : `명중 ${pct(P.p)}`}` : ''}`; }
+    if (!o.can) return `${esc(nm(o.e))} · 닿지 않는다 — 다가가야 한다`;
+    return `${esc(nm(o.e))} 공격 · 명중 ${pct(o.pv?.p)}${o.pv?.dmg ? ` · 예상 피해 ${Math.round(o.pv.dmg)}` : ''}`;
+  }
+  function ctrlBar() {
+    const f = G.S.w.fantasy, v = F && !F.quiet ? G.Ctrl.view(f, R) : null; let el = $('ctrlbar');
+    if (!v) { if (el) el.remove(); pickSk = null; if (R?.turn?.ph !== 'input' && R?.turn?.ov?.hand) R.turn.ov = null; return; }
+    R.turn.ov = Object.assign(G.Tactics.overlay(R, v.e, v.left, G.Turn.io.reach(v.e), []), { hand: true }); // 갈 수 있는 칸 · 칠 수 있는 칸 (그리는 쪽: drawRange)
+    if (pickSk && !v.skills.some(s => s.k === pickSk && s.ok)) pickSk = null;
+    const d = v.die, k = `${nm(v.e)}|${d ? d.value + d.sym : '-'}|${v.left}|${v.bonusUsed}|${pickSk}|${G.Ctrl.auto}|${v.skills.map(s => s.k + s.ok + s.left).join()}|${tipK}`;
+    if (!el) { el = document.createElement('div'); el.id = 'ctrlbar'; $('stage').append(el); el.onclick = ctrlClick; }
+    if (el.dataset.k === k) return; el.dataset.k = k;
+    el.innerHTML = `<div class="cb-who">${d ? dieHTML(v.e, d) : '<b class="die">?</b>'}<span><b>${name(v.e)}</b><small>이동 ${v.left}칸${v.bonusUsed ? ' · 추가 행동 씀' : ''}</small></span></div>`
+      + `<div class="cb-sk">${v.skills.map(s => `<button data-k="${esc(s.k)}" class="${s.k === pickSk ? 'on' : ''}"${s.ok ? '' : ' disabled'}><b>${esc(s.n)}</b><small>${s.bonus ? '추가' : '행동'}${s.left != null && s.left < 20 ? ` · ${s.left}` : ''}</small></button>`).join('')}</div>`
+      + `<div class="cb-btn"><button data-c="end">차례 끝</button><button data-c="auto">이번만 자동</button><button data-c="all" class="${G.Ctrl.auto ? 'on' : ''}">모두 자동</button></div>`
+      + `<div class="cb-tip">${tipK || (pickSk ? '적을 누르면 그 적에게 · 기술을 한 번 더 누르면 알아서' : '바닥을 누르면 걷고 · 적을 누르면 친다')}</div>`;
+  }
+  function ctrlDo(c) { const r = G.Ctrl.cmd(G.S.w.fantasy, R, c); if (!r.ok) { tipK = esc(r.why); setTimeout(() => { tipK = ''; }, 1400); } else { pickSk = null; tipK = ''; } return r.ok; }
+  function ctrlClick(ev) {
+    ev.stopPropagation(); const b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.c === 'end') return ctrlDo({ end: true });
+    if (b.dataset.c === 'auto') return ctrlDo({ auto: true });
+    if (b.dataset.c === 'all') { G.Ctrl.auto = !G.Ctrl.auto; if (G.Ctrl.auto && G.Ctrl.cur(R)) ctrlDo({ auto: true }); $('ctrlbar') && ($('ctrlbar').dataset.k = ''); return; }
+    const sk = b.dataset.k; if (!sk) return;
+    if (pickSk === sk) return ctrlDo({ sk }); // 한 번 더: 대상은 AI가 (치유 · 강화 · 범위)
+    pickSk = sk;
+  }
+  // 게임 화면을 눌렀다 (crawl.js의 누르기가 전투 중이면 여기로): 적이면 공격 · 기술, 바닥이면 걷기
+  function tap(ev) {
+    if (!F || !G.Ctrl.cur(R)) return; const [tx, ty] = UI.tileAt(ev.clientX, ev.clientY), o = foeAt(tx, ty);
+    if (o) return ctrlDo(pickSk ? { sk: pickSk, tg: o } : { atk: o });
+    ctrlDo({ move: { x: Math.round(tx), y: Math.round(ty) } });
+  }
+  // 적 위에 손을 올리면 미리보기 (눈으로 맞음 · 빗나감)
+  function hover(ev) {
+    if (!F || !G.Ctrl.cur(R)) return; const [tx, ty] = UI.tileAt(ev.clientX, ev.clientY), o = foeAt(tx, ty), v = G.Ctrl.view(G.S.w.fantasy, R);
+    const t = o && v ? pvTxt(v, v.foes.find(q => q.e === o) || { e: o, can: false }) : ''; if (t !== tipK) tipK = t;
   }
   // 매 화면 틱. 전투 중이면 true
   function frame(dt) {
@@ -151,7 +196,7 @@ const FIGHT = (() => {
   }
   // 매 화면: 차례 띠 · 쓴 칸의 주사위 날리기 (왼쪽 칸을 다시 그리기 전에 — 빠져나오는 자리는 지금 화면의 그 칸)
   function hud() {
-    strip(); const B = G.Dice.board; if (!B) return;
+    strip(); if (R) ctrlBar(); const B = G.Dice.board; if (!B) return;
     for (const u of B.uses.splice(0)) if (!(F && F.quiet) && !SIDE.busy) fly(u);
   }
   // ── 원정 전: 특수 주사위 고르기 (2개까지). ?dice=gamble,doom 이면 창 없이 그대로, ?auto면 건너뛴다. 고르면 판을 다시 굴린다 (특수 주사위가 줄에 들어간다) ──
@@ -168,5 +213,5 @@ const FIGHT = (() => {
   }
   // 연계 띠: 누가 깐 것을 누가 터뜨렸나 (사건 줄의 'link' — bridge.js). 같은 차례에 같은 연계는 한 번만
   function link(e) { if (!F) return; const who = e.who.merc?.name || '동료', k = `${G.Turn.no()}|${who}|${e.set}|${e.use}`; if (F.linkK === k) return; F.linkK = k; banner(`<b>연계</b> ${esc(e.set)} → <b>${esc(e.use)}</b> <span>${esc(who)}</span>`, 'link'); }
-  return { start, frame, hud, dicePick, link, die: dieHTML, log: t => { if (F) F.log(t); }, get on() { return !!F; }, get quiet() { return !!(F && F.quiet); } };
+  return { start, frame, hud, dicePick, link, tap, hover, die: dieHTML, log: t => { if (F) F.log(t); }, get on() { return !!F; }, get quiet() { return !!(F && F.quiet); } };
 })();

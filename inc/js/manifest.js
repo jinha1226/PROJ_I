@@ -15,7 +15,7 @@
     'js/rules/summon', 'js/rules/light', 'js/rules/monact', 'js/rules/actions', 'js/rules/lore', 'js/legacy/region', 'js/rules/mons_extra', 'js/rules/res', 'js/legacy/turn', 'js/legacy/flow', 'js/legacy/story',
     'js/legacy/state',
     // 새 게임 규칙 (화면 없이 — 고돗으로 옮길 부분): 층 변환 · 전투 세우기, 옛 엔진에 거는 고리는 맨 끝
-    'js/game/feed', 'js/game/floor', 'js/game/noise', 'js/game/ground', 'js/game/prep', 'js/game/party', 'js/game/tavern', 'js/game/reward', 'js/game/gear', 'js/game/encounter', 'js/game/bridge', 'js/game/builds',
+    'js/game/feed', 'js/game/floor', 'js/game/noise', 'js/game/ground', 'js/game/prep', 'js/game/party', 'js/game/tavern', 'js/game/reward', 'js/game/gear', 'js/game/encounter', 'js/game/bridge', 'js/game/builds', 'js/game/ctrl',
   ],
   // 쿼터뷰 화면: 그림 표 · DCSS 타일 지도 · pixelfx · LAYERLAB 인형 → 그리기 코드 → 새 게임 시작(app/boot — 그리기 파일 사이, 옛 game.js 자리) → 루프(app/main)
   render: [

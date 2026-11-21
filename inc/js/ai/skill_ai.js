@@ -270,6 +270,15 @@ G.SkillAI = (() => {
       let best = null; for (const k of all) { if (!G.Skill.usable(f, rt, a, k, seen, 'bonus', !a.slotUsed)) continue; const v = val(k) * later(k); if (v > 0.05 && (!best || v > best.v)) best = { k, v }; }
       return best ? { turn: G.Turn.no(), action: 'basic', bonus: best.k, slotOk: !a.slotUsed && slot(best.k), v: best.v } : null;
     },
+    // 조종 화면의 미리보기 (G.Ctrl — 2026-11-21): 이번 라운드 그 사람의 눈으로 잰다. p = 맞을(내성이면 실패할) 확률 — 눈을 알면 0.95 · 0.05로 갈린다,
+    // dmg = 기본 공격의 기대 피해 (넘치는 몫은 뺀다), v = 기술의 값 (기본 공격 한 번 = 1). tg가 없으면(치유 · 강화) p 없이
+    preview(f, rt, a, k, tg) {
+      const x = { f, rt, c: a, seen: tg ? [tg] : [] };
+      if (k === 'basic') return tg ? { p: pBasic(a, tg), dmg: AI.basic(a, x) } : null;
+      const o = meta(k), num = G.SkillNum_at?.(k, a.merc.cls, a.merc.lv), ab = o?.save || num?.sv || null;
+      let v = 0; try { v = AI.scoreNow(k, a, x, AI.threat(a, x)); } catch (e) { v = 0; }
+      return { p: tg ? (ab ? pFail(a, tg, ab) : o?.atk ? pHit(a, tg) : null) : null, ab, v };
+    },
     rank(list, a, x0, bonus) {
       const threat = AI.threat(a, x0), base = bonus ? 0 : 1, out = [];
       // 주문 가속 · 헥스 같은 맞물림은 차례 계획(plan)이 고른다 — 여기선 그 단계의 후보 순서만

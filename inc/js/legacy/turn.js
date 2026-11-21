@@ -191,6 +191,7 @@ G.Turn = (() => {
   function step(f, rt, st, dt) {
     const m = rt.map;
     if ((st.ph === 'show' || st.ph === 'move' || st.ph === 'back') && !foes(rt).length) { pause(st, 0); return; } // 적이 다 쓰러졌으면 걸음을 마저 걷지 않는다
+    if (st.ph === 'input') { if (!foes(rt).length || gone(rt, st.cur) || st.cur.dying) pause(st, 0); return; } // 플레이어의 명령을 기다린다 (G.Ctrl.cmd)
     if (st.ph === 'wait') { G.Tactics.snap(rt); if ((st.t -= dt) > 0) return; next(f, rt, st); return; } // 행동이 끝나면 밀리거나 소환된 인물을 칸 위로
     if (st.ph === 'show') { G.Tactics.snap(rt, st.cur); if ((st.t -= dt) <= 0) { st.ph = 'move'; st.t = 0; } return; }
     if (st.ph === 'pre') {
@@ -342,15 +343,25 @@ G.Turn = (() => {
       e.gcd = 0; e.lastSk = null; e.lastBonus = null; e.freeDone = null; e.lastHitSk = null; e.hit1Done = false; e.heroic = !!(e.merc && F().sk(e, 'ft_heroic'));
       if (G.Skill.persist) { const by0 = DN().actor; DN().actor = e; try { G.Skill.persist(f, rt, e, ROUND); } finally { DN().actor = by0; } } // 이어지는 효과도 그 사람의 행동 (운명판의 눈)
       if (e.fleeT) e.fleeT = 0;
+      const hand = !!G.Ctrl?.is(e); // 플레이어가 조종하는 사람 (js/game/ctrl.js): 저절로 걷기 · 저절로 쓰는 물건 없이 입력을 기다린다
       // 함께 싸우는 치유 직업은 앞사람 곁으로 먼저 걷고 나서 주문을 쓴다 (새 게임 — 뒤에 혼자 남지 않게). 이 차례의 이동은 여기서 썼다
-      st.pm = null; if (T.smooth && (G.Tactics.escorts(e) || G.Tactics.trails(e)) && !DN().held(e) && !G.Act.adjacent(rt, e).length) { const p = G.Tactics.escorts(e) ? G.Tactics.follow(rt, e, moveOf(e)) : G.Tactics.follow(rt, e, moveOf(e), 6, 4); if (p.length) { const px = e.x, py = e.y; G.Tactics.walk(e, p, MOVE_V, 99); F().fieldMove(f, rt, e, px, py); st.pm = e; } }
-      if (G.Story.aid(f, rt, e)) { pause(st, BEAT); return; }
-      if (G.Trinket.beads(f, rt, e)) { pause(st, BEAT); return; } // 화염구 구슬 (SRD)
+      st.pm = null; if (!hand && T.smooth && (G.Tactics.escorts(e) || G.Tactics.trails(e)) && !DN().held(e) && !G.Act.adjacent(rt, e).length) { const p = G.Tactics.escorts(e) ? G.Tactics.follow(rt, e, moveOf(e)) : G.Tactics.follow(rt, e, moveOf(e), 6, 4); if (p.length) { const px = e.x, py = e.y; G.Tactics.walk(e, p, MOVE_V, 99); F().fieldMove(f, rt, e, px, py); st.pm = e; } }
+      if (!hand && G.Story.aid(f, rt, e)) { pause(st, BEAT); return; }
+      if (!hand && G.Trinket.beads(f, rt, e)) { pause(st, BEAT); return; } // 화염구 구슬 (SRD)
+      e.slotUsed = false;
+      { const seen = seenBy(rt, e); T.rec = []; for (let i = 0; i < 3; i++) G.Skill.tick(f, rt, e, 0, seen, 'free'); T.rec = null; } // 자유 행동 (무모한 공격 · 행동 쇄도) — 조종해도 저절로
+      if (hand) { G.Ctrl.begin(f, rt, st, e); return; } // 입력을 기다린다 (st.ph 'input' — 명령은 G.Ctrl.cmd)
+    }
+    decide(f, rt, st, e);
+  }
+  // 보이는 적 (그 사람의 눈에)
+  const seenBy = (rt, e) => rt.mons.filter(o => !o.down && !o.ethereal && F().inView(rt, o.x, o.y) && F().sees(rt.map, e, o));
+  // 그 차례의 행동을 AI가 정한다 (아군: 치유 → 기술 → 공격 · 몬스터: 공격). 조종하던 사람이 「자동」을 누르면 여기로
+  function decide(f, rt, st, e) {
+    if (e.kind !== 'mon' && e.broke !== 'rage') {
       // 치유 → 기술 → 공격 순서로 그 차례의 행동을 정한다
       // 기술은 자기 눈에 보이는 적 중 그 기술의 사거리 안에서만 고른다 (G.Skill.tick · G.D.SK_RANGE)
-      const before = snapshot(rt), seen = rt.mons.filter(o => !o.down && !o.ethereal && F().inView(rt, o.x, o.y) && F().sees(rt.map, e, o));
-      e.slotUsed = false;
-      T.rec = []; for (let i = 0; i < 3; i++) G.Skill.tick(f, rt, e, 0, seen, 'free'); T.rec = null;
+      const before = snapshot(rt), seen = seenBy(rt, e);
       e.plan = G.SkillAI?.plan ? G.SkillAI.plan(f, rt, e, seen) : null; // 차례 계획: 행동 + 추가 행동을 함께 (자유 행동 — 무모한 공격 · 행동 쇄도 — 뒤에)
       T.rec = []; T.rec = null; // 행동 쇄도 · 무모한 공격처럼 칸을 안 쓰는 기능
       T.rec = []; G.Skill.tick(f, rt, e, 0, seen, 1); T.rec = null; // 추가 행동 (SRD): 행동과 따로 하나. 슬롯 주문은 행동 뒤로 미룬다 (큰 주문이 막히지 않게)
@@ -453,5 +464,7 @@ G.Turn = (() => {
       else if (main || label) log(rt, e, [head, R.tg ? `→ ${R.tg}${hits ? ' 피해 없음' : ''}` : ''].filter(Boolean).join(' ')); // 맞았는데 체력이 그대로: 면역 · 임시 체력 · 반응
     }
   }
+  // 조종 모듈(G.Ctrl)이 쓰는 차례 엔진의 손잡이 — 걷기 · 기회 공격 · 치기 · 보고 · 차례 끝은 AI 차례와 같은 함수다
+  T.io = { foes, gone, seenBy, moveOf, reach, canHit, opportunity, strike, decide, pause, report, snapshot, BEAT, SKIP, MOVE_V };
   return T;
 })();

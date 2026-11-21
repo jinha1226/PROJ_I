@@ -61,6 +61,7 @@ const CRAWL = (() => {
   }
   function onTap(ev) {
     if (HUD.closeSheet()) return; // 캐릭터 시트가 열려 있으면 바닥을 누르면 닫는다
+    if (FIGHT.on) return FIGHT.tap(ev); // 직접 조종: 걷기 · 공격 (G.Ctrl)
     if (cutscene || FIGHT.on || PREPUI.active || REWARDUI.active || CHECKUI.active || $('crawlscene') || $('dicepick') || SIDE.busy || st.done) return;
     const [tx, ty] = tileAtScreen(ev.clientX, ev.clientY); moveTo(tx, ty);
   }
@@ -393,7 +394,7 @@ const CRAWL = (() => {
       bindDice(); G.Dice.newBoard(); // 이 층의 운명판
       { const [x, y] = centerOf(st.at); r.party.forEach((p, i) => { p.x = x - 0.6 * i; p.y = y + 0.3 * i; p._dx = p._rx = p.x; p._dy = p._ry = p.y; }); }
       openRoom(st.at); refreshSeen(); doorTiles = doorsOf();
-      canvas.addEventListener('pointerup', onTap);
+      canvas.addEventListener('pointerup', onTap); canvas.addEventListener('pointermove', ev => FIGHT.hover(ev)); // 직접 조종: 적 위 미리보기
       PMAP.attach(st); say(); showMarks(); document.body.dataset.room = st.at; // 들어설 때 특수 주사위를 고르지 않는다 (2026-11-19 뺐다 — 주사위는 사람마다 가진 것이다. 시험용 ?dice=gamble,doom은 남긴다)
       if (q.get('dice')) FIGHT.dicePick();
       autoN = +q.get('auto') || 0;

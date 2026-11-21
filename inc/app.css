@@ -571,3 +571,17 @@ canvas { image-rendering:pixelated; }
 .bd-path li.soon b { color:var(--dim); } .bd-path li.soon { opacity:.75; }
 .bd-path li.gone b { color:var(--mute); text-decoration:line-through; } .bd-path li.gone { opacity:.55; }
 #reward .rw-cards button.rw-plan { border-color:var(--gold) !important; box-shadow:0 0 0 1px var(--gold), 0 0 12px -2px rgba(240,192,112,.6) !important; }
+/* 직접 조종 막대 (fight.js ctrlBar — G.Ctrl): 조종하는 사람의 차례에 아래쪽 가운데. 눈 · 이동력 · 기술 · 차례 끝 · 자동 */
+#ctrlbar { position:absolute; left:50%; bottom:12px; transform:translateX(-50%); z-index:30; width:min(720px, calc(100% - 24px)); display:grid; grid-template-columns:auto 1fr auto; gap:6px 10px; align-items:center; padding:8px 10px; background:rgba(20,16,12,.92); border:2px solid var(--brass, #b08a4a); box-shadow:0 0 0 2px #000; font:12px "Galmuri11",sans-serif; color:#efe3c8; }
+#ctrlbar .cb-who { display:flex; gap:8px; align-items:center; }
+#ctrlbar .cb-who .die { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; font-size:24px; flex:none; } #ctrlbar .cb-who .die .sy { position:absolute; right:-6px; top:-7px; margin:0; font-size:9px; }
+#ctrlbar .cb-who span { display:flex; flex-direction:column; } #ctrlbar .cb-who small { color:#bfae8a; }
+#ctrlbar .cb-sk { display:flex; flex-wrap:wrap; gap:4px; min-width:0; }
+#ctrlbar button { font:inherit; color:inherit; background:#2c241b; border:1px solid #6b5636; padding:3px 7px; cursor:pointer; display:flex; flex-direction:column; align-items:flex-start; line-height:1.25; }
+#ctrlbar button small { color:#bfae8a; font-size:12px; }
+#ctrlbar button:hover:not(:disabled) { border-color:#e8c870; }
+#ctrlbar button.on { background:#5a4320; border-color:#ffd76a; color:#fff4d6; }
+#ctrlbar button:disabled { opacity:.38; cursor:default; }
+#ctrlbar .cb-btn { display:flex; gap:4px; }
+#ctrlbar .cb-tip { grid-column:1 / -1; color:#d8c79a; min-height:14px; }
+@media (max-width:640px) { #ctrlbar { grid-template-columns:auto 1fr; } #ctrlbar .cb-btn { grid-column:1 / -1; } }
