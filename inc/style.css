@@ -1,7 +1,10 @@
+/* 픽셀 글꼴: Galmuri11 (OFL · assets/fonts) — 12px의 배수에서 가장 또렷하다 */
+@font-face { font-family:"Galmuri11"; src:url("assets/fonts/Galmuri11.woff2") format("woff2"); font-weight:400; font-display:swap; }
+@font-face { font-family:"Galmuri11"; src:url("assets/fonts/Galmuri11-Bold.woff2") format("woff2"); font-weight:700 900; font-display:swap; }
 :root { --bg:#efe7d6; --ink:#2a2420; --dim:#857a6c; --line:#d8cdb8; --card:#f7f1e4; --ok:#3f7d4a; --no:#b5392b; --gold:#a8761c; }
   body.dark { --bg:#17151c; --ink:#ece4d4; --dim:#8d8577; --line:#35303d; --card:#211e28; --ok:#7fc98a; --no:#e8695a; --gold:#e3b34d; }
-  * { box-sizing:border-box; }
-  html,body { height:100%; margin:0; background:var(--bg); color:var(--ink); overflow:hidden; font:14px/1.45 "Noto Sans KR","Malgun Gothic",sans-serif; }
+  * { box-sizing:border-box; font-synthesis:none; }
+  html,body { height:100%; margin:0; background:var(--bg); color:var(--ink); overflow:hidden; font:14px/1.45 "Galmuri11","Noto Sans KR","Malgun Gothic",sans-serif; }
   #wrap { position:fixed; inset:0; display:grid; grid-template-rows:auto 1fr auto; }
   #top { display:flex; align-items:center; justify-content:center; gap:10px; min-height:38px; padding:8px 16px 0; }
   #round { font-weight:700; }
@@ -168,25 +171,25 @@ img[src*="assets/chars/"] { image-rendering:auto; object-fit:contain; }
 #pmapbox { position:absolute; left:8px; top:8px; width:min(230px,42vw); max-height:46vh; overflow:hidden; border-radius:6px; cursor:zoom-in; z-index:6; box-shadow:0 4px 14px rgba(0,0,0,.55); background:#24180f; }
 #pmapbox.big { left:50%; top:50%; width:min(760px,94vw); max-height:88vh; transform:translate(-50%,-50%); overflow:auto; cursor:zoom-out; z-index:20; }
 #pmap { display:block; width:100%; height:auto; }
-#pmap .note { font:13px "Nanum Pen Script",cursive; } #pmap .sym { font:700 14px "Noto Sans KR",sans-serif; } #pmap .qm { font:700 22px "Nanum Pen Script",cursive; } #pmap .title { font:17px "Nanum Pen Script",cursive; }
-#pmap .stampt { font:28px "Nanum Pen Script",cursive; } #pmap .stampt2 { font:20px "Nanum Pen Script",cursive; } #pmap .halo { paint-order:stroke; stroke:#f3e4c3; stroke-width:3px; stroke-linejoin:round; }
-.exitmark { position:absolute; left:0; top:0; pointer-events:auto; display:flex; flex-direction:column; align-items:center; gap:1px; padding:4px 8px; border-radius:8px; border:1px solid #c9a86a; background:rgba(36,24,15,.88); color:#f3e4c3; font:12px "Noto Sans KR",sans-serif; cursor:pointer; }
+#pmap .note { font:13px "Galmuri11",sans-serif; } #pmap .sym { font:700 14px "Galmuri11","Noto Sans KR",sans-serif; } #pmap .qm { font:700 22px "Galmuri11",sans-serif; } #pmap .title { font:17px "Galmuri11",sans-serif; }
+#pmap .stampt { font:28px "Galmuri11",sans-serif; } #pmap .stampt2 { font:20px "Galmuri11",sans-serif; } #pmap .halo { paint-order:stroke; stroke:#f3e4c3; stroke-width:3px; stroke-linejoin:round; }
+.exitmark { position:absolute; left:0; top:0; pointer-events:auto; display:flex; flex-direction:column; align-items:center; gap:1px; padding:4px 8px; border-radius:8px; border:1px solid #c9a86a; background:rgba(36,24,15,.88); color:#f3e4c3; font:12px "Galmuri11","Noto Sans KR",sans-serif; cursor:pointer; }
 .exitmark b { font-size:15px; line-height:1; } .exitmark.seen { opacity:.7; border-color:#8a7a5a; } .exitmark:hover { background:rgba(70,48,24,.95); }
-#exitsign, #crawlscene { position:absolute; left:50%; bottom:96px; transform:translateX(-50%); width:min(420px,92vw); padding:12px 14px; border-radius:10px; border:1px solid #c9a86a; background:rgba(28,20,14,.95); color:#f3e4c3; z-index:15; font:14px "Noto Sans KR",sans-serif; }
-#exitsign h4, #crawlscene h3 { margin:0 0 6px; font:22px "Nanum Pen Script",cursive; } #exitsign p, #crawlscene p { margin:0 0 10px; color:#cdbb98; }
+#exitsign, #crawlscene { position:absolute; left:50%; bottom:96px; transform:translateX(-50%); width:min(420px,92vw); padding:12px 14px; border-radius:10px; border:1px solid #c9a86a; background:rgba(28,20,14,.95); color:#f3e4c3; z-index:15; font:14px "Galmuri11","Noto Sans KR",sans-serif; }
+#exitsign h4, #crawlscene h3 { margin:0 0 6px; font:22px "Galmuri11",sans-serif; } #exitsign p, #crawlscene p { margin:0 0 10px; color:#cdbb98; }
 #exitsign button, #crawlscene button { display:block; width:100%; text-align:left; margin:5px 0 0; padding:8px 10px; border-radius:7px; border:1px solid #6d5a3c; background:#3a2a1a; color:#f3e4c3; cursor:pointer; }
 #exitsign button:hover, #crawlscene button:hover { background:#4c3720; } #exitsign button.x { background:none; color:#a89878; } #exitsign i, #crawlscene i { color:#f0c070; font-style:normal; } #exitsign small, #crawlscene small { color:#a89878; margin-left:6px; }
 #crawlscene button:disabled { opacity:.45; cursor:default; }
-.record-stub { position:absolute; left:50%; top:40%; transform:translate(-50%,-50%); padding:18px 26px; border-radius:10px; background:rgba(28,20,14,.95); border:1px solid #c9a86a; color:#f3e4c3; font:24px "Nanum Pen Script",cursive; z-index:16; }
+.record-stub { position:absolute; left:50%; top:40%; transform:translate(-50%,-50%); padding:18px 26px; border-radius:10px; background:rgba(28,20,14,.95); border:1px solid #c9a86a; color:#f3e4c3; font:24px "Galmuri11",sans-serif; z-index:16; }
 
 /* 라운드 주사위 · 특수 주사위 */
-.die { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; color:#2b1d14; font:700 17px "Noto Sans KR",sans-serif; }
-#dicebear, #dicepick { position:absolute; left:50%; bottom:90px; transform:translateX(-50%); width:min(460px,94vw); padding:12px 14px; border-radius:10px; border:1px solid #c9a86a; background:rgba(28,20,14,.96); color:#f3e4c3; z-index:17; font:14px "Noto Sans KR",sans-serif; }
+.die { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; color:#2b1d14; font:700 17px "Galmuri11","Noto Sans KR",sans-serif; }
+#dicebear, #dicepick { position:absolute; left:50%; bottom:90px; transform:translateX(-50%); width:min(460px,94vw); padding:12px 14px; border-radius:10px; border:1px solid #c9a86a; background:rgba(28,20,14,.96); color:#f3e4c3; z-index:17; font:14px "Galmuri11","Noto Sans KR",sans-serif; }
 #dicepick { top:50%; bottom:auto; transform:translate(-50%,-50%); }
- .sy { display:inline-block; margin-left:3px; padding:0 3px; border-radius:4px; font:700 11px "Noto Sans KR",sans-serif; font-style:normal; color:#fff; background:#777; vertical-align:middle; }
+ .sy { display:inline-block; margin-left:3px; padding:0 3px; border-radius:4px; font:700 11px "Galmuri11","Noto Sans KR",sans-serif; font-style:normal; color:#fff; background:#777; vertical-align:middle; }
  .sy.s-atk { background:#c0503c; } .sy.s-def { background:#3c78b8; } .sy.s-arc { background:#8a5cc8; } .sy.s-holy { background:#c8a030; } .sy.s-wild { background:#2b1d14; color:#f0c070; border:1px solid #f0c070; }
  #dicebear button, #dicepick button { flex:1; padding:8px 10px; border-radius:7px; border:1px solid #6d5a3c; background:#3a2a1a; color:#f3e4c3; cursor:pointer; }
-#dicebear h4, #dicepick h3 { margin:0 0 6px; font:22px "Nanum Pen Script",cursive; } #dicebear p, #dicepick p { margin:0 0 8px; color:#cdbb98; } #dicebear button { display:block; width:100%; margin-top:5px; text-align:left; } #dicebear .sug { border-color:#f0c070; } #dicebear small { color:#a89878; }
+#dicebear h4, #dicepick h3 { margin:0 0 6px; font:22px "Galmuri11",sans-serif; } #dicebear p, #dicepick p { margin:0 0 8px; color:#cdbb98; } #dicebear button { display:block; width:100%; margin-top:5px; text-align:left; } #dicebear .sug { border-color:#f0c070; } #dicebear small { color:#a89878; }
 #dicepick button { display:flex; align-items:center; gap:10px; width:100%; margin-top:6px; text-align:left; } #dicepick button span { display:flex; flex-direction:column; } #dicepick button small { color:#a89878; font-size:12px; } #dicepick button.on { border-color:#f0c070; background:#4c3720; } #dicepick .go { justify-content:center; background:#6a4a1c; margin-top:10px; }
 
 .record-stub button { margin-left:10px; padding:5px 12px; border-radius:7px; border:1px solid #6d5a3c; background:#6a4a1c; color:#f3e4c3; cursor:pointer; }
@@ -200,25 +203,25 @@ img[src*="assets/chars/"] { image-rendering:auto; object-fit:contain; }
 #fxsvg .g-sheen { fill:rgba(210,190,150,.2); } #fxsvg .g-cal { fill:rgba(120,120,120,.16); stroke:rgba(190,190,190,.55); stroke-dasharray:3 3; }
 #fxsvg .g-spike { font:10px sans-serif; fill:#cfcfcf; text-anchor:middle; dominant-baseline:middle; }
 /* 문 열기: 머리 위 주사위 */
-#prepdie { position:absolute; left:0; top:0; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:9px; background:#f3e4c3; color:#2b1d14; font:800 19px "Noto Sans KR",sans-serif; box-shadow:0 3px 10px rgba(0,0,0,.5); z-index:9; }
+#prepdie { position:absolute; left:0; top:0; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:9px; background:#f3e4c3; color:#2b1d14; font:800 19px "Galmuri11","Noto Sans KR",sans-serif; box-shadow:0 3px 10px rgba(0,0,0,.5); z-index:9; }
 #prepdie.rolling { background:#e8dcc0; color:#6a5a40; } #prepdie.crit { background:#f0c070; } #prepdie.fumble { background:#e06050; color:#fff; }
 /* 전투 결과 · 고르기 · 기록 (설계 5-12) */
 #reward { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(520px, calc(100% - 24px)); max-height:calc(100% - 40px); overflow:auto; box-sizing:border-box; padding:14px 16px; border-radius:12px; background:rgba(28,20,14,.96); border:1px solid #c9a86a; color:#f3e4c3; z-index:12; }
-#reward h3 { margin:0 0 6px; font:26px "Nanum Pen Script",cursive; } #reward p { margin:0 0 10px; color:#cdbb98; font:13px "Noto Sans KR",sans-serif; }
-#reward .rw-line { margin:6px 0; font:14px "Noto Sans KR",sans-serif; } #reward .rw-line b { margin-right:6px; color:#f0c070; } #reward .rw-new b { color:#9fe08a; }
-#reward .rw-xp div { position:relative; padding:4px 0 9px; font:13px "Noto Sans KR",sans-serif; } #reward .rw-xp em { margin-left:4px; color:#9fe08a; font-style:normal; font-weight:700; }
+#reward h3 { margin:0 0 6px; font:26px "Galmuri11",sans-serif; } #reward p { margin:0 0 10px; color:#cdbb98; font:13px "Galmuri11","Noto Sans KR",sans-serif; }
+#reward .rw-line { margin:6px 0; font:14px "Galmuri11","Noto Sans KR",sans-serif; } #reward .rw-line b { margin-right:6px; color:#f0c070; } #reward .rw-new b { color:#9fe08a; }
+#reward .rw-xp div { position:relative; padding:4px 0 9px; font:13px "Galmuri11","Noto Sans KR",sans-serif; } #reward .rw-xp em { margin-left:4px; color:#9fe08a; font-style:normal; font-weight:700; }
 #reward .rw-xp i { position:absolute; left:0; bottom:2px; height:3px; max-width:100%; border-radius:2px; background:#7fb4e8; }
 #reward .rw-cards { display:flex; flex-wrap:wrap; gap:8px; } #reward .rw-cards button { flex:1 1 140px; display:flex; flex-direction:column; gap:3px; padding:10px; border-radius:10px; border:1px solid #6d5a3c; background:#3a2a1a; color:#f3e4c3; text-align:left; cursor:pointer; }
-#reward .rw-cards button:hover { border-color:#f0c070; background:#4c3720; } #reward .rw-cards small { font:11px "Noto Sans KR",sans-serif; color:#a89878; } #reward .rw-cards b { font:700 15px "Noto Sans KR",sans-serif; } #reward .rw-cards span { font:12px "Noto Sans KR",sans-serif; color:#cdbb98; }
+#reward .rw-cards button:hover { border-color:#f0c070; background:#4c3720; } #reward .rw-cards small { font:11px "Galmuri11","Noto Sans KR",sans-serif; color:#a89878; } #reward .rw-cards b { font:700 15px "Galmuri11","Noto Sans KR",sans-serif; } #reward .rw-cards span { font:12px "Galmuri11","Noto Sans KR",sans-serif; color:#cdbb98; }
 #reward .rw-cards .k-art { border-color:#8a6cc8; } #reward .rw-cards .k-rule { border-color:#c8a030; } #reward .rw-cards .k-carve { border-color:#3c78b8; }
-#reward .rw-go { width:100%; margin-top:10px; padding:10px; border-radius:8px; border:1px solid #6d5a3c; background:#6a4a1c; color:#f3e4c3; font:600 15px "Noto Sans KR",sans-serif; cursor:pointer; }
-#reward .rw-stats { display:flex; gap:8px; margin:8px 0; } #reward .rw-stats div { flex:1; padding:8px 4px; border-radius:8px; background:#3a2a1a; text-align:center; font:12px "Noto Sans KR",sans-serif; color:#cdbb98; } #reward .rw-stats b { display:block; font:800 20px "Noto Sans KR",sans-serif; color:#f3e4c3; }
+#reward .rw-go { width:100%; margin-top:10px; padding:10px; border-radius:8px; border:1px solid #6d5a3c; background:#6a4a1c; color:#f3e4c3; font:600 15px "Galmuri11","Noto Sans KR",sans-serif; cursor:pointer; }
+#reward .rw-stats { display:flex; gap:8px; margin:8px 0; } #reward .rw-stats div { flex:1; padding:8px 4px; border-radius:8px; background:#3a2a1a; text-align:center; font:12px "Galmuri11","Noto Sans KR",sans-serif; color:#cdbb98; } #reward .rw-stats b { display:block; font:800 20px "Galmuri11","Noto Sans KR",sans-serif; color:#f3e4c3; }
 
 /* ── 전투 차례 띠 (js/app/fight.js strip): 위 바 아래. 선제권 순서 · 지금 차례 · 지금 행동 한 줄 ── */
 #turnstrip { position:absolute; top:calc(var(--hud-h, 46px) + var(--safe-t, 0px) + 4px); left:8px; right:8px; z-index:8; pointer-events:none; display:flex; flex-direction:column; gap:4px; align-items:center; }
-#turnstrip .ts-row { display:flex; align-items:center; gap:10px; max-width:100%; box-sizing:border-box; overflow:hidden; padding:4px 8px; border-radius:10px; background:rgba(20,18,23,.88); border:1px solid #3a3440; font:500 12px "Noto Sans KR",sans-serif; color:#b9b0a0; white-space:nowrap; }
+#turnstrip .ts-row { display:flex; align-items:center; gap:10px; max-width:100%; box-sizing:border-box; overflow:hidden; padding:4px 8px; border-radius:10px; background:rgba(20,18,23,.88); border:1px solid #3a3440; font:500 12px "Galmuri11","Noto Sans KR",sans-serif; color:#b9b0a0; white-space:nowrap; }
 #turnstrip .ts-rd { color:#f0c070; font-weight:700; margin-right:4px; }
-#turnstrip .ts-act { min-height:20px; max-width:100%; padding:5px 12px; border-radius:10px; background:rgba(20,18,23,.92); border:1px solid #6d5a3c; font:500 13px "Noto Sans KR",sans-serif; color:#ece4d4; text-align:center; }
+#turnstrip .ts-act { min-height:20px; max-width:100%; padding:5px 12px; border-radius:10px; background:rgba(20,18,23,.92); border:1px solid #6d5a3c; font:500 13px "Galmuri11","Noto Sans KR",sans-serif; color:#ece4d4; text-align:center; }
 #turnstrip .ts-act:empty { display:none; }
 #turnstrip .ts-act.foe { border-color:#8a3a30; }
 #turnstrip .ts-act b { font-weight:700; } #turnstrip .ts-act small { color:#a89878; margin-left:4px; }
@@ -227,10 +230,10 @@ img[src*="assets/chars/"] { image-rendering:auto; object-fit:contain; }
 body:has(#turnstrip) #stage > #pmapbox:not(.big), body:has(#turnstrip) #dm { display:none !important; } /* 전투 중: 게임 화면 위의 지도는 감춘다 (왼쪽 기둥으로 옮긴 지도는 둔다) */
 
 /* 전투: 지금 행동하는 사람(▼)과 대상(◎), 띠의 「우리 차례 / 적의 차례」 */
-#turnmark, #turntg { position:absolute; left:0; top:0; z-index:6; pointer-events:none; font:700 20px "Noto Sans KR",sans-serif; color:#ffd76a; text-shadow:0 0 6px #000, 0 2px 0 #000; }
+#turnmark, #turntg { position:absolute; left:0; top:0; z-index:6; pointer-events:none; font:700 20px "Galmuri11","Noto Sans KR",sans-serif; color:#ffd76a; text-shadow:0 0 6px #000, 0 2px 0 #000; }
 #turnmark.foe, #turntg.foe { color:#ff6a55; } #turntg { font-size:26px; opacity:.9; }
 
 /* 전투: 머리 위에 방금 쓴 기술의 이름, 행동 한 줄에 그 까닭 */
-#turnmark.say { font:700 14px "Noto Serif KR",serif; padding:2px 8px; background:#150e09; border:1px solid #a8823f; box-shadow:0 0 0 1px #000; color:#ffe9b0; white-space:nowrap; }
+#turnmark.say { font:700 14px "Galmuri11",serif; padding:2px 8px; background:#150e09; border:1px solid #a8823f; box-shadow:0 0 0 1px #000; color:#ffe9b0; white-space:nowrap; }
 #turnmark.say.foe { border-color:#e0604a; color:#ffc4b8; }
-#turnstrip .ts-act .why { display:block; font:500 11px "Noto Sans KR",sans-serif; font-style:normal; color:#b9a784; margin-bottom:1px; }
+#turnstrip .ts-act .why { display:block; font:500 11px "Galmuri11","Noto Sans KR",sans-serif; font-style:normal; color:#b9a784; margin-bottom:1px; }

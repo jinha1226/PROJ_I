@@ -10,12 +10,12 @@ body { touch-action:manipulation; overscroll-behavior:none; -webkit-tap-highligh
 /* ── 위 바 ── */
 #hud { position:absolute; inset:0; pointer-events:none; z-index:6; }
 #hud .hud-top { position:absolute; top:0; left:0; right:0; min-height:var(--hud-h); box-sizing:border-box; padding:calc(5px + var(--safe-t)) 10px 5px; display:flex; align-items:center; justify-content:space-between; gap:8px; background:linear-gradient(rgba(14,10,6,.92), rgba(14,10,6,.55) 70%, rgba(14,10,6,0)); pointer-events:auto; }
-#hud .hud-l { min-width:0; } #hud .hud-l b { display:block; font:22px/1 "Nanum Pen Script",cursive; color:var(--ink); white-space:nowrap; }
-#hud .hud-l small { font:11px "Noto Sans KR",sans-serif; color:var(--dim); }
+#hud .hud-l { min-width:0; } #hud .hud-l b { display:block; font:22px/1 "Galmuri11",sans-serif; color:var(--ink); white-space:nowrap; }
+#hud .hud-l small { font:11px "Galmuri11","Noto Sans KR",sans-serif; color:var(--dim); }
 #hud .hud-r { display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:4px; }
-#hud .chip { padding:3px 7px; border-radius:10px; background:rgba(40,28,16,.88); border:1px solid var(--line); font:600 11px "Noto Sans KR",sans-serif; color:var(--ink); white-space:nowrap; }
+#hud .chip { padding:3px 7px; border-radius:10px; background:rgba(40,28,16,.88); border:1px solid var(--line); font:600 11px "Galmuri11","Noto Sans KR",sans-serif; color:var(--ink); white-space:nowrap; }
 #hud .chip.c-gold { color:#ffd98a; border-color:#8a6c3a; } #hud .chip.c-oil { color:#e8b878; } #hud .chip.c-potion { color:#ff9a9a; } #hud .chip.c-caltrops { color:#d0d0d0; }
-#hud .hud-spd { min-width:40px; min-height:30px; padding:2px 8px; border-radius:8px; border:1px solid var(--line); background:#3a2a1a; color:var(--ink); font:700 13px "Noto Sans KR",sans-serif; }
+#hud .hud-spd { min-width:40px; min-height:30px; padding:2px 8px; border-radius:8px; border:1px solid var(--line); background:#3a2a1a; color:var(--ink); font:700 13px "Galmuri11","Noto Sans KR",sans-serif; }
 
 /* ── 아래 파티 바 ── */
 
@@ -23,7 +23,7 @@ body { touch-action:manipulation; overscroll-behavior:none; -webkit-tap-highligh
 #pmapbox:not(.big) { top:calc(var(--hud-h) + var(--safe-t) + 4px) !important; right:8px !important; left:auto !important; width:116px !important; height:86px !important; }
 /* 진행 글: 위 바 바로 아래 왼쪽, 새 줄 둘까지 한 줄씩 (옛 bottom:82px를 꼭 지운다 — 위아래가 둘 다 잡히면 상자가 화면 끝까지 늘어난다) */
 #dm { top:calc(var(--hud-h) + var(--safe-t) + 4px) !important; bottom:auto !important; left:8px !important; right:132px !important; transform:none !important; max-width:none !important;
-  padding:4px 8px !important; font:12px/1.45 "Noto Sans KR",sans-serif !important; font-style:normal !important; text-align:left !important; pointer-events:none; }
+  padding:4px 8px !important; font:12px/1.45 "Galmuri11","Noto Sans KR",sans-serif !important; font-style:normal !important; text-align:left !important; pointer-events:none; }
 #dm div { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } #dm div + div { color:var(--ink); } #dm div:first-child:not(:last-child) { color:var(--dim); }
  /* 폰에서도 작은 판을 보인다 (누르면 운명판) */
 
@@ -40,15 +40,15 @@ body { touch-action:manipulation; overscroll-behavior:none; -webkit-tap-highligh
 
 /* 캐릭터 시트 */
 #csheet { color:var(--ink); }
-#csheet h3 { margin:0 0 8px; font:26px "Nanum Pen Script",cursive; } #csheet h3 small, #csheet h4 small { font:12px "Noto Sans KR",sans-serif; color:var(--dim); margin-left:6px; }
-#csheet h4 { margin:12px 0 6px; font:700 13px "Noto Sans KR",sans-serif; color:var(--gold); }
+#csheet h3 { margin:0 0 8px; font:26px "Galmuri11",sans-serif; } #csheet h3 small, #csheet h4 small { font:12px "Galmuri11","Noto Sans KR",sans-serif; color:var(--dim); margin-left:6px; }
+#csheet h4 { margin:12px 0 6px; font:700 13px "Galmuri11","Noto Sans KR",sans-serif; color:var(--gold); }
 #csheet .sh-bar { position:relative; height:20px; margin:4px 0; border-radius:6px; background:#2a1a12; overflow:hidden; } #csheet .sh-bar i { position:absolute; left:0; top:0; bottom:0; background:rgba(127,207,138,.55); } #csheet .sh-bar.xp i { background:rgba(127,180,232,.55); }
-#csheet .sh-bar span { position:relative; z-index:1; padding-left:8px; font:600 12px/20px "Noto Sans KR",sans-serif; }
-#csheet .sh-ab { display:grid; grid-template-columns:repeat(6, 1fr); gap:4px; margin-top:8px; } #csheet .sh-ab span { padding:6px 2px; border-radius:7px; background:#3a2a1a; text-align:center; font:800 15px "Noto Sans KR",sans-serif; } #csheet .sh-ab small { display:block; font:400 10px "Noto Sans KR",sans-serif; color:var(--mute); }
+#csheet .sh-bar span { position:relative; z-index:1; padding-left:8px; font:600 12px/20px "Galmuri11","Noto Sans KR",sans-serif; }
+#csheet .sh-ab { display:grid; grid-template-columns:repeat(6, 1fr); gap:4px; margin-top:8px; } #csheet .sh-ab span { padding:6px 2px; border-radius:7px; background:#3a2a1a; text-align:center; font:800 15px "Galmuri11","Noto Sans KR",sans-serif; } #csheet .sh-ab small { display:block; font:400 10px "Galmuri11","Noto Sans KR",sans-serif; color:var(--mute); }
 #csheet .sh-sk { margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:5px; } #csheet .sh-sk li { padding:7px 9px; border-radius:8px; background:#3a2a1a; border:1px solid var(--line); }
-#csheet .sh-sk b { font:700 13px "Noto Sans KR",sans-serif; } #csheet .sh-sk small { margin-left:6px; font:11px "Noto Sans KR",sans-serif; color:var(--mute); } #csheet .sh-sk span { display:block; margin-top:2px; font:11px "Noto Sans KR",sans-serif; color:var(--dim); }
-#csheet .sh-none { margin:0; font:12px "Noto Sans KR",sans-serif; color:var(--dim); }
-#csheet .sh-x { width:100%; margin-top:12px; border-radius:8px; border:1px solid var(--line); background:#6a4a1c; color:var(--ink); font:600 15px "Noto Sans KR",sans-serif; }
+#csheet .sh-sk b { font:700 13px "Galmuri11","Noto Sans KR",sans-serif; } #csheet .sh-sk small { margin-left:6px; font:11px "Galmuri11","Noto Sans KR",sans-serif; color:var(--mute); } #csheet .sh-sk span { display:block; margin-top:2px; font:11px "Galmuri11","Noto Sans KR",sans-serif; color:var(--dim); }
+#csheet .sh-none { margin:0; font:12px "Galmuri11","Noto Sans KR",sans-serif; color:var(--dim); }
+#csheet .sh-x { width:100%; margin-top:12px; border-radius:8px; border:1px solid var(--line); background:#6a4a1c; color:var(--ink); font:600 15px "Galmuri11","Noto Sans KR",sans-serif; }
 /* 판 끝 기록 · 결과 창의 카드는 폰에서 한 줄에 하나씩 넓게 */
 #reward .rw-cards button { flex-basis:100%; }
 
@@ -71,7 +71,7 @@ body { touch-action:manipulation; overscroll-behavior:none; -webkit-tap-highligh
 canvas { image-rendering:pixelated; }
 /* 창 (시트 · 옆 창 · 가운데 창) */
 #exitsign, #crawlscene, #reward, #dicepick, #dicebear, #csheet { background:var(--panel) !important; border-color:var(--line) !important; color:var(--ink) !important; border-radius:10px 10px 0 0 !important; box-shadow:0 -6px 24px rgba(0,0,0,.55); }
-#exitsign h4, #crawlscene h3, #reward h3, #dicepick h3, #dicebear h4, #csheet h3 { font:700 17px "Noto Sans KR",sans-serif !important; color:var(--ink); letter-spacing:-.2px; }
+#exitsign h4, #crawlscene h3, #reward h3, #dicepick h3, #dicebear h4, #csheet h3 { font:700 17px "Galmuri11","Noto Sans KR",sans-serif !important; color:var(--ink); letter-spacing:-.2px; }
 #exitsign p, #crawlscene p, #reward p, #dicepick p, #dicebear p { color:var(--dim) !important; }
 /* 단추 · 카드: 어두운 단추, 얇은 갈색 테, 고른 것만 금색 */
 #exitsign button, #crawlscene button, #reward .rw-cards button, #dicepick button, #dicebear button, #csheet .sh-sk li, #csheet .sh-ab span {
@@ -83,7 +83,7 @@ canvas { image-rendering:pixelated; }
 #reward .rw-stats div { background:var(--btn) !important; border:1px solid var(--line); border-radius:var(--r) !important; }
 /* 위 바 · 파티 바 */
 #hud .hud-top { background:linear-gradient(rgba(20,18,23,.96), rgba(20,18,23,.6) 70%, rgba(20,18,23,0)); }
-#hud .hud-l b { font:700 15px "Noto Sans KR",sans-serif; letter-spacing:-.2px; }
+#hud .hud-l b { font:700 15px "Galmuri11","Noto Sans KR",sans-serif; letter-spacing:-.2px; }
 #hud .chip { border-radius:4px; background:rgba(42,32,24,.92); }
 #hud .hud-spd { background:var(--btn); border-radius:var(--r); }
 /* 미니맵 · 진행 글 · 작은 운명판: 어두운 판에 얇은 갈색 테 (px_lab의 미니맵 판처럼) */
@@ -104,7 +104,7 @@ canvas { image-rendering:pixelated; }
 .die.tease { animation:dieroll .1s linear infinite, teasef .36s ease-in-out infinite alternate; opacity:1; } @keyframes teasef { from { filter:brightness(1.1) drop-shadow(0 0 2px #f0c070); } to { filter:brightness(1.7) drop-shadow(0 0 10px #ffd76a); } }
 .h-atk { --hc:#e0604a; } .h-def { --hc:#4a8fd8; } .h-arc { --hc:#a070e0; } .h-holy { --hc:#e8c860; }
 #fatebanners { position:absolute; left:50%; top:calc(var(--hud-h) + 14px); transform:translateX(-50%); z-index:7; display:flex; flex-direction:column; align-items:center; gap:6px; pointer-events:none; width:max-content; max-width:94vw; }
-#fatebanners .fb { padding:6px 14px; border-radius:var(--r); background:rgba(20,18,23,.92); border:1px solid var(--hc, var(--line)); color:var(--ink); font:500 14px "Noto Sans KR",sans-serif; white-space:nowrap; box-shadow:0 0 18px -4px var(--hc, transparent); animation:fbin 2.3s ease both; }
+#fatebanners .fb { padding:6px 14px; border-radius:var(--r); background:rgba(20,18,23,.92); border:1px solid var(--hc, var(--line)); color:var(--ink); font:500 14px "Galmuri11","Noto Sans KR",sans-serif; white-space:nowrap; box-shadow:0 0 18px -4px var(--hc, transparent); animation:fbin 2.3s ease both; }
 #fatebanners .fb b { margin:0 6px; font-weight:700; color:var(--hc, var(--ink)); } #fatebanners .fb span { color:var(--dim); } #fatebanners .fb .sy { margin:0 1px; font-size:11px; }
 #fatebanners .fb.big { font-size:16px; padding:8px 18px; } #fatebanners .fb.row, #fatebanners .fb.insp { --hc:#f0c070; } #fatebanners .fb.row { font-size:16px; padding:8px 18px; }
 #fatebanners .c-atk { --hc:#e0604a; } #fatebanners .c-def { --hc:#4a8fd8; } #fatebanners .c-arc { --hc:#a070e0; } #fatebanners .c-holy { --hc:#e8c860; }
@@ -112,9 +112,9 @@ canvas { image-rendering:pixelated; }
 @media (prefers-reduced-motion: reduce) { .die.roll, .die.tease, .die.land, #fatebanners .fb { animation:none !important; } }
 
 /* ── 선술집 (판과 판 사이의 한 화면 — js/app/tavern_ui.js): 위는 장면(캔버스 + 인물 누를 자리), 곁은 안내 · 명패, 인물을 누르면 상태창 ── */
-#tavern { position:fixed; inset:0; z-index:60; overflow-y:auto; background:#120c08; color:var(--ink); font:14px "Noto Sans KR",sans-serif; }
+#tavern { position:fixed; inset:0; z-index:60; overflow-y:auto; background:#120c08; color:var(--ink); font:14px "Galmuri11","Noto Sans KR",sans-serif; }
 #tavern header { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 14px; max-width:1180px; margin:0 auto; }
-#tavern h2 { font:700 20px "Noto Sans KR",sans-serif; margin:0; color:#f0d9a8; letter-spacing:-.3px; }
+#tavern h2 { font:700 20px "Galmuri11","Noto Sans KR",sans-serif; margin:0; color:#f0d9a8; letter-spacing:-.3px; }
 #tavern .tv-res { display:flex; gap:6px; }
 #tavern .tv-res .chip { background:rgba(0,0,0,.4); border:1px solid var(--line); border-radius:99px; padding:4px 10px; font-size:13px; }
 #tavern .tv-res .tv-seat { border-color:var(--gold); color:#f0d9a8; }
@@ -125,16 +125,16 @@ canvas { image-rendering:pixelated; }
 #tavern button { font:inherit; color:inherit; cursor:pointer; }
 #tavern .tv-g { position:absolute; transform:translateX(-50%); padding:0; background:none; border:0; -webkit-tap-highlight-color:transparent; }
 #tavern .tv-nm { position:absolute; left:50%; bottom:100%; transform:translateX(-50%); display:grid; justify-items:center; gap:1px; white-space:nowrap; padding:2px 7px 3px; border-radius:6px; background:rgba(10,7,5,.72); border:1px solid rgba(255,255,255,.1);
-  font:700 12px/1.15 "Noto Sans KR",sans-serif; color:#f3e9d2; pointer-events:none; }
+  font:700 12px/1.15 "Galmuri11","Noto Sans KR",sans-serif; color:#f3e9d2; pointer-events:none; }
 #tavern .tv-nm small { font-weight:400; font-size:10px; color:#bfae8c; }
-#tavern .tv-nm em { font:700 10px "Noto Sans KR",sans-serif; font-style:normal; background:var(--gold); color:#16110b; border-radius:99px; padding:1px 6px; margin-bottom:1px; }
+#tavern .tv-nm em { font:700 10px "Galmuri11","Noto Sans KR",sans-serif; font-style:normal; background:var(--gold); color:#16110b; border-radius:99px; padding:1px 6px; margin-bottom:1px; }
 #tavern .tv-g.on .tv-nm { border-color:var(--gold); background:rgba(40,28,12,.9); }
 #tavern .tv-g.cur .tv-nm { border-color:#f3e9d2; }
 #tavern .tv-g:hover .tv-nm { background:rgba(40,28,12,.9); }
 #tavern .tv-side { padding:12px 14px 0; }
 #tavern .tv-info { display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin:0; font-size:13px; }
 #tavern .tv-info dt { color:var(--dim); } #tavern .tv-info dd { margin:0; }
-#tavern h4 { font:700 13px "Noto Sans KR",sans-serif; margin:14px 0 6px; color:var(--dim); }
+#tavern h4 { font:700 13px "Galmuri11","Noto Sans KR",sans-serif; margin:14px 0 6px; color:var(--dim); }
 #tavern .tv-wall { list-style:none; margin:0; padding:0; display:grid; gap:3px; }
 #tavern .tv-wall li { display:flex; justify-content:space-between; gap:10px; padding:5px 10px; border-left:3px solid #6b5334; background:rgba(0,0,0,.3); font-size:13px; }
 #tavern .tv-wall b { font-weight:500; } #tavern .tv-wall small { color:var(--dim); white-space:nowrap; }
@@ -149,13 +149,13 @@ canvas { image-rendering:pixelated; }
 #tavern .tv-st span { display:grid; justify-items:center; padding:5px 0 4px; background:rgba(0,0,0,.3); border:1px solid var(--line); border-radius:6px; font-size:10px; color:var(--dim); line-height:1.2; }
 #tavern .tv-st b { font-size:15px; color:var(--ink); } #tavern .tv-st i { font-style:normal; font-size:10px; }
 #tavern .tv-st span:nth-child(-n+2) { border-color:#6b5334; } #tavern .tv-st span:nth-child(-n+2)::after { content:'\00a0'; font-size:10px; }
-#tavern h5 { font:700 12px "Noto Sans KR",sans-serif; margin:12px 0 5px; color:var(--dim); }
+#tavern h5 { font:700 12px "Galmuri11","Noto Sans KR",sans-serif; margin:12px 0 5px; color:var(--dim); }
 #tavern .tv-sk { list-style:none; margin:0; padding:0; display:grid; gap:4px; }
 #tavern .tv-sk li { display:grid; grid-template-columns:1fr auto; gap:1px 8px; padding:6px 10px; background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:7px; }
 #tavern .tv-sk b { font-size:13px; } #tavern .tv-sk small { font-size:11px; color:var(--dim); } #tavern .tv-sk span { grid-column:1 / -1; font-size:12px; color:#cdb892; line-height:1.4; }
-#tavern .tv-take { position:sticky; bottom:0; display:block; width:100%; min-height:48px; margin-top:12px; text-align:center; font:700 15px "Noto Sans KR",sans-serif; background:var(--btn-on); border:1px solid var(--gold); border-radius:10px; box-shadow:0 10px 0 8px #1b1511, 0 -8px 10px 4px #1b1511; }
+#tavern .tv-take { position:sticky; bottom:0; display:block; width:100%; min-height:48px; margin-top:12px; text-align:center; font:700 15px "Galmuri11","Noto Sans KR",sans-serif; background:var(--btn-on); border:1px solid var(--gold); border-radius:10px; box-shadow:0 10px 0 8px #1b1511, 0 -8px 10px 4px #1b1511; }
 #tavern .tv-take.out { background:#241a12; border-color:var(--line); } #tavern .tv-take:disabled { opacity:.55; cursor:default; }
-#tavern .tv-go { position:fixed; left:50%; bottom:16px; z-index:2; transform:translateX(-50%); width:min(420px, calc(100vw - 28px)); min-height:52px; text-align:center; font:700 16px "Noto Sans KR",sans-serif; background:var(--btn-on); border:1px solid var(--gold); border-radius:10px; box-shadow:0 6px 24px rgba(0,0,0,.6); }
+#tavern .tv-go { position:fixed; left:50%; bottom:16px; z-index:2; transform:translateX(-50%); width:min(420px, calc(100vw - 28px)); min-height:52px; text-align:center; font:700 16px "Galmuri11","Noto Sans KR",sans-serif; background:var(--btn-on); border:1px solid var(--gold); border-radius:10px; box-shadow:0 6px 24px rgba(0,0,0,.6); }
 #tavern .tv-go:disabled { opacity:.6; cursor:default; }
 @media (min-width: 900px) {
   #tavern .tv-body { display:grid; grid-template-columns:1fr 372px; gap:0 16px; padding:0 14px 96px; align-items:start; }
@@ -171,14 +171,14 @@ canvas { image-rendering:pixelated; }
 
 /* ── 판정 굴림 장면 (js/app/check_ui.js): 화면을 어둡게 덮고 가운데에 d20 — 난이도 → 굴림 → 보정 → 성공 / 실패 ── */
 #checkroll { position:fixed; inset:0; z-index:40; display:grid; place-items:center; background:radial-gradient(60% 50% at 50% 45%, rgba(40,30,18,.82), rgba(6,5,8,.94)); cursor:pointer; --ck:#d9b872; }
-#checkroll .ck-in { width:min(340px, 88vw); display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; color:var(--ink); font:500 14px "Noto Sans KR",sans-serif; }
-#checkroll .ck-hd b { display:block; font:700 20px "Noto Serif KR","Noto Sans KR",serif; color:#f0d9a8; letter-spacing:-.3px; } #checkroll .ck-hd small { color:var(--dim); font-size:13px; }
+#checkroll .ck-in { width:min(340px, 88vw); display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; color:var(--ink); font:500 14px "Galmuri11","Noto Sans KR",sans-serif; }
+#checkroll .ck-hd b { display:block; font:700 20px "Noto Serif KR","Galmuri11","Noto Sans KR",serif; color:#f0d9a8; letter-spacing:-.3px; } #checkroll .ck-hd small { color:var(--dim); font-size:13px; }
 #checkroll .ck-dc { display:flex; flex-direction:column; align-items:center; width:64px; padding:5px 0 6px; border:1px solid #6d5a3c; border-radius:10px; background:rgba(0,0,0,.4); }
-#checkroll .ck-dc small { font-size:11px; color:var(--dim); } #checkroll .ck-dc b { font:700 26px "Noto Serif KR",serif; color:#f0d9a8; line-height:1.1; }
+#checkroll .ck-dc small { font-size:11px; color:var(--dim); } #checkroll .ck-dc b { font:700 26px "Galmuri11",serif; color:#f0d9a8; line-height:1.1; }
 #checkroll .ck-die { position:relative; width:150px; height:150px; margin:6px 0 2px; filter:drop-shadow(0 10px 18px rgba(0,0,0,.7)); }
 #checkroll .ck-die svg { width:100%; height:100%; }
 #checkroll .d-out { fill:#2a2018; stroke:var(--ck); stroke-width:2.5; stroke-linejoin:round; } #checkroll .d-in { fill:#3a2c1c; stroke:var(--ck); stroke-width:2; stroke-linejoin:round; } #checkroll .d-ln { stroke:var(--ck); stroke-width:1.4; opacity:.6; fill:none; }
-#checkroll .ck-n { position:absolute; left:0; right:0; top:50%; transform:translateY(-58%); font:700 44px "Noto Serif KR",serif; color:#f6e7c4; text-shadow:0 2px 0 rgba(0,0,0,.6); }
+#checkroll .ck-n { position:absolute; left:0; right:0; top:50%; transform:translateY(-58%); font:700 44px "Galmuri11",serif; color:#f6e7c4; text-shadow:0 2px 0 rgba(0,0,0,.6); }
 #checkroll .ck-die.roll { animation:ckroll .5s linear infinite; } #checkroll .ck-die.roll .ck-n { opacity:.55; font-size:36px; }
 @keyframes ckroll { 0% { transform:rotate(0) translateY(0) scale(.94); } 25% { transform:rotate(90deg) translateY(-12px) scale(1); } 50% { transform:rotate(180deg) translateY(0) scale(.94); } 75% { transform:rotate(270deg) translateY(-8px) scale(1); } 100% { transform:rotate(360deg) translateY(0) scale(.94); } }
 #checkroll .ck-die.roll .ck-n { animation:ckcounter .5s linear infinite; } @keyframes ckcounter { to { transform:translateY(-58%) rotate(-360deg); } }
@@ -188,14 +188,14 @@ canvas { image-rendering:pixelated; }
 #checkroll .ck-mods { display:flex; flex-wrap:wrap; justify-content:center; gap:6px; min-height:30px; }
 #checkroll .ck-mods span { padding:4px 10px; border-radius:99px; border:1px solid var(--line); background:rgba(0,0,0,.45); color:var(--dim); font-size:13px; opacity:0; transform:translateY(8px) scale(.8); transition:opacity .25s, transform .3s cubic-bezier(.2,1.7,.4,1); }
 #checkroll .ck-mods span.on { opacity:1; transform:none; } #checkroll .ck-mods b { color:#f0d9a8; }
-#checkroll .ck-tot { min-height:44px; font:700 36px "Noto Serif KR",serif; color:#f6e7c4; opacity:0; transition:opacity .2s; } #checkroll .ck-tot.on { opacity:1; }
+#checkroll .ck-tot { min-height:44px; font:700 36px "Galmuri11",serif; color:#f6e7c4; opacity:0; transition:opacity .2s; } #checkroll .ck-tot.on { opacity:1; }
 #checkroll .ck-tot.bump { animation:ckbump .3s cubic-bezier(.2,1.7,.4,1); } @keyframes ckbump { from { transform:scale(1.4); color:#fff; } to { transform:none; } }
-#checkroll .ck-res { min-height:34px; font:700 26px "Noto Serif KR","Noto Sans KR",serif; letter-spacing:4px; opacity:0; }
+#checkroll .ck-res { min-height:34px; font:700 26px "Noto Serif KR","Galmuri11","Noto Sans KR",serif; letter-spacing:4px; opacity:0; }
 #checkroll.done .ck-res { opacity:1; animation:ckstamp .4s cubic-bezier(.2,1.8,.4,1); } @keyframes ckstamp { from { transform:scale(2.2); opacity:0; } to { transform:none; opacity:1; } }
 #checkroll.ok .ck-res, #checkroll.ok .ck-tot { color:#9fe08a; } #checkroll.no .ck-res, #checkroll.no .ck-tot { color:#e8806e; }
 #checkroll.ok { background:radial-gradient(60% 50% at 50% 45%, rgba(40,56,24,.82), rgba(6,5,8,.94)); } #checkroll.no { background:radial-gradient(60% 50% at 50% 45%, rgba(64,22,16,.82), rgba(6,5,8,.94)); }
 #checkroll .ck-txt { min-height:40px; margin:0; color:#cdbb98; line-height:1.5; opacity:0; transition:opacity .3s .2s; } #checkroll.done .ck-txt { opacity:1; }
-#checkroll .ck-go { min-height:44px; padding:0 28px; border-radius:var(--r); border:1px solid var(--gold); background:var(--btn-on); color:var(--ink); font:700 15px "Noto Sans KR",sans-serif; opacity:0; pointer-events:none; transition:opacity .3s .3s; } #checkroll.done .ck-go { opacity:1; pointer-events:auto; }
+#checkroll .ck-go { min-height:44px; padding:0 28px; border-radius:var(--r); border:1px solid var(--gold); background:var(--btn-on); color:var(--ink); font:700 15px "Galmuri11","Noto Sans KR",sans-serif; opacity:0; pointer-events:none; transition:opacity .3s .3s; } #checkroll.done .ck-go { opacity:1; pointer-events:auto; }
 @media (prefers-reduced-motion: reduce) { #checkroll, #checkroll * { animation:none !important; transition:none !important; } }
 
 /* 연계 띠 (fight.js link): 동료가 깐 것을 터뜨렸을 때 */
@@ -211,7 +211,7 @@ canvas { image-rendering:pixelated; }
 #tavern .tv-die { display:grid; grid-template-columns:auto 1fr; align-items:baseline; gap:4px 8px; padding:8px 10px; background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:7px; }
 #tavern .tv-die b { font-size:13px; } #tavern .tv-die small { font-size:11px; color:var(--dim); }
 #tavern .tv-faces { grid-column:1 / -1; display:grid; grid-template-columns:repeat(10, 1fr); gap:2px; }
-#tavern .tv-faces i { display:grid; place-items:center; height:20px; border-radius:3px; font:700 10px "Noto Sans KR",sans-serif; font-style:normal; color:#fff; background:#3a3440; }
+#tavern .tv-faces i { display:grid; place-items:center; height:20px; border-radius:3px; font:700 10px "Galmuri11","Noto Sans KR",sans-serif; font-style:normal; color:#fff; background:#3a3440; }
 #tavern .tv-faces .f-A { background:#b0483c; } #tavern .tv-faces .f-D { background:#3f74b0; } #tavern .tv-faces .f-R { background:#7d58b8; } #tavern .tv-faces .f-H { background:#b89a3a; } #tavern .tv-faces .f-w { background:#e8c860; color:#2b1d14; } #tavern .tv-faces .f-x { background:#26222a; }
 
 /* 레벨업: 새로 얻은 것 목록 · 「전부 보기」(직접 고르기) */
@@ -219,13 +219,13 @@ canvas { image-rendering:pixelated; }
 #reward .rw-new-list li { display:grid; gap:1px; padding:7px 10px; border-left:3px solid var(--gold); background:rgba(0,0,0,.28); }
 #reward .rw-new-list b { font-size:14px; } #reward .rw-new-list span { font-size:12px; color:var(--dim); line-height:1.4; }
 #reward .rw-none { color:var(--dim); margin:8px 0 12px; }
-#reward .rw-all { display:block; margin:10px auto 0; min-height:36px; padding:0 14px; background:none; border:1px solid var(--line); border-radius:99px; color:var(--dim); font:500 13px "Noto Sans KR",sans-serif; cursor:pointer; }
+#reward .rw-all { display:block; margin:10px auto 0; min-height:36px; padding:0 14px; background:none; border:1px solid var(--line); border-radius:99px; color:var(--dim); font:500 13px "Galmuri11","Noto Sans KR",sans-serif; cursor:pointer; }
 #reward .rw-cards.all { max-height:46dvh; overflow-y:auto; flex-wrap:wrap; }
 #reward .rw-cards.all button { flex:1 1 150px; }
 
 /* ── 장비 (js/app/gear_ui.js): 「누구에게」 · 칸 고르기 · 가방 · 상인의 장비 창(#gearwin), 시트의 장비 구역(.gs), 위 바의 가방 칩 ── */
-#gearwin { position:fixed; left:0; right:0; bottom:0; z-index:24; max-height:78dvh; overflow:auto; box-sizing:border-box; padding:18px 14px calc(14px + var(--safe-b)); background:var(--panel); border:1px solid var(--line); border-bottom:0; border-radius:10px 10px 0 0; box-shadow:0 -6px 24px rgba(0,0,0,.55); color:var(--ink); font:14px "Noto Sans KR",sans-serif; }
-#gearwin h3 { margin:0 0 8px; font:700 17px "Noto Sans KR",sans-serif; letter-spacing:-.2px; } #gearwin h3 small { font-weight:400; font-size:12px; color:var(--dim); margin-left:6px; }
+#gearwin { position:fixed; left:0; right:0; bottom:0; z-index:24; max-height:78dvh; overflow:auto; box-sizing:border-box; padding:18px 14px calc(14px + var(--safe-b)); background:var(--panel); border:1px solid var(--line); border-bottom:0; border-radius:10px 10px 0 0; box-shadow:0 -6px 24px rgba(0,0,0,.55); color:var(--ink); font:14px "Galmuri11","Noto Sans KR",sans-serif; }
+#gearwin h3 { margin:0 0 8px; font:700 17px "Galmuri11","Noto Sans KR",sans-serif; letter-spacing:-.2px; } #gearwin h3 small { font-weight:400; font-size:12px; color:var(--dim); margin-left:6px; }
 #gearwin button { font:inherit; color:inherit; cursor:pointer; min-height:44px; border-radius:var(--r); border:1px solid var(--line); background:rgba(0,0,0,.3); }
 #gearwin button:disabled { opacity:.4; cursor:default; }
 #gearwin .gw-card { padding:9px 11px; border:1px solid var(--line); border-left-width:3px; border-radius:8px; background:rgba(0,0,0,.28); --rc:var(--line); border-left-color:var(--rc); }
@@ -279,7 +279,7 @@ canvas { image-rendering:pixelated; }
    단추는 도드라진 판 · 체력은 붉은 막대 · 파티 카드에는 인물 초상. 쓰지 않는 것: 둥근 알약, 반투명 유리판, 얇은 1px 테만 두른 카드, 그림 글자.
    값은 아래 변수 한 곳. 이 블록이 앞의 모양을 덮는다 (배치는 그대로). */
 :root { --ink:#eadcbd; --dim:#b9a784; --mute:#8a7a5e; --line:#7a5c30; --gold:#e3c27a; --brass:#a8823f; --brass-hi:#e3c27a; --wood:#231912; --wood-hi:#3b2b1c; --wood-lo:#0b0705;
-  --parch:#dfcfa6; --parch-ink:#24170b; --parch-dim:#5d4829; --blood:#a8332a; --panel:#231912; --btn:#3a2a1c; --btn-on:#6a4a22; --r:2px; --serif:"Noto Serif KR","Nanum Myeongjo",serif; }
+  --parch:#dfcfa6; --parch-ink:#24170b; --parch-dim:#5d4829; --blood:#a8332a; --panel:#231912; --btn:#3a2a1c; --btn-on:#6a4a22; --r:2px; --serif:"Galmuri11","Noto Serif KR",serif; }
 /* ── 틀: 나무 판 + 놋쇠 두 줄 테 ── */
 #exitsign, #crawlscene, #reward, #dicepick, #dicebear, #csheet, #gearwin, #dm, #pmapbox:not(.big), #turnstrip .ts-row, #turnstrip .ts-act, #fatebanners .fb, .exitmark, #tavern .tv-sheet {
   background:linear-gradient(#2a1e15, #1e150f) !important; border:2px solid var(--wood-lo) !important; border-radius:2px !important; color:var(--ink) !important;
@@ -307,7 +307,7 @@ canvas { image-rendering:pixelated; }
   background:linear-gradient(#cba25d, #8c672f) !important; border:1px solid #2e2010 !important; border-radius:2px !important; color:#1d130a !important; font:700 15px var(--serif) !important;
   box-shadow:inset 0 1px 0 #f0d79a, inset 0 -2px 0 #5e4420, 0 2px 0 rgba(0,0,0,.5) !important; text-shadow:0 1px 0 rgba(255,236,186,.45) !important; }
 #tavern .tv-take.out { background:linear-gradient(#4b3824, #33251a) !important; color:var(--ink) !important; text-shadow:0 1px 0 #000 !important; box-shadow:inset 0 1px 0 #7a5f3e, inset 0 -2px 0 #1b130c !important; }
-#reward .rw-all { font:500 12px "Noto Sans KR",sans-serif !important; min-height:32px; }
+#reward .rw-all { font:500 12px "Galmuri11","Noto Sans KR",sans-serif !important; min-height:32px; }
 /* ── 고를 것 · 읽을 것: 양피지 카드 (먹색 글씨) ── */
 #reward .rw-cards button, #gearwin .gw-card, #reward .rw-new-list li, #csheet .sh-sk li, #tavern .tv-sk li, #tavern .tv-die, #tavern .tv-lk li, .gs3 .gs-row, #gearwin .gw-cur {
   background:linear-gradient(#e6d7b0, #d3c092) !important; border:1px solid #4e3a1e !important; border-radius:2px !important; color:var(--parch-ink) !important;
@@ -323,16 +323,16 @@ canvas { image-rendering:pixelated; }
 /* ── 위 바 · 파티 바: 나무 선반 ── */
 #hud .hud-top { background:linear-gradient(#2c2017, #1b130d) !important; border-bottom:2px solid var(--wood-lo); box-shadow:inset 0 -1px 0 var(--brass), 0 3px 0 rgba(0,0,0,.35); }
 #hud .hud-l b { font:700 16px var(--serif) !important; color:var(--brass-hi) !important; text-shadow:0 1px 0 #000; } #hud .hud-l small { color:var(--dim) !important; }
-#hud .chip, #tavern .chip { padding:3px 8px !important; border-radius:2px !important; background:#150e09 !important; border:1px solid var(--brass) !important; box-shadow:inset 0 0 0 1px #000 !important; color:var(--ink) !important; font:600 11px "Noto Sans KR",sans-serif !important; }
+#hud .chip, #tavern .chip { padding:3px 8px !important; border-radius:2px !important; background:#150e09 !important; border:1px solid var(--brass) !important; box-shadow:inset 0 0 0 1px #000 !important; color:var(--ink) !important; font:600 11px "Galmuri11","Noto Sans KR",sans-serif !important; }
 #hud .chip.c-gold { color:#ffd98a !important; }
 /* ── 전투: 차례 띠 · 운명판 · 표지 ── */
-#turnstrip .ts-row { padding:5px 8px !important; font:500 12px "Noto Sans KR",sans-serif !important; }
+#turnstrip .ts-row { padding:5px 8px !important; font:500 12px "Galmuri11","Noto Sans KR",sans-serif !important; }
 #turnstrip .ts-rd { font-family:var(--serif); color:var(--brass-hi) !important; }
-#turnstrip .ts-act { font:500 13px "Noto Sans KR",sans-serif !important; } #turnstrip .ts-act b { font-family:var(--serif); color:#fff4d6; }
+#turnstrip .ts-act { font:500 13px "Galmuri11","Noto Sans KR",sans-serif !important; } #turnstrip .ts-act b { font-family:var(--serif); color:#fff4d6; }
 #fatebanners .fb b { font-family:var(--serif) !important; }
 /* 주사위 = d20 (정이십면체를 앞에서 본 꼴): 육각 윤곽 + 삼각 면. 빛깔은 --d1 · --d2 (기호 · 특수 주사위가 바꾼다), 몸은 ::before가 그린다 — 구석 딱지(.sy)가 잘리지 않게. 테두리 강조는 outline 대신 filter(육각을 따라간다) */
 .die { position:relative; isolation:isolate; --d1:#efe2bf; --d2:#d2bf90; border-radius:0 !important; background:none !important; box-shadow:none !important; color:#24170b !important; font-family:var(--serif) !important; text-shadow:0 1px 0 rgba(255,255,255,.4); }
-.die::before { content:""; position:absolute; inset:-9% -3%; z-index:-1; clip-path:polygon(50% 0, 97% 25%, 97% 75%, 50% 100%, 3% 75%, 3% 25%); background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='%23fff' fill-opacity='.24' d='M50 0L3 25L50 21z'/%3E%3Cpath fill='%23fff' fill-opacity='.1' d='M50 0L50 21L97 25z'/%3E%3Cpath fill='%23fff' fill-opacity='.07' d='M3 25L17 70L50 21z'/%3E%3Cpath fill-opacity='.06' d='M97 25L50 21L83 70z'/%3E%3Cpath fill-opacity='.1' d='M3 25L3 75L17 70z'/%3E%3Cpath fill-opacity='.17' d='M97 25L83 70L97 75z'/%3E%3Cpath fill-opacity='.17' d='M3 75L50 100L17 70z'/%3E%3Cpath fill-opacity='.26' d='M17 70L83 70L50 100z'/%3E%3Cpath fill-opacity='.21' d='M83 70L97 75L50 100z'/%3E%3Cpath fill='none' stroke='%23000' stroke-opacity='.3' stroke-width='2.5' d='M50 0V21M3 25L50 21L97 25M50 21L17 70L83 70zM3 25L17 70L3 75M97 25L83 70L97 75M17 70L50 100L83 70'/%3E%3Cpath fill='none' stroke='%23000' stroke-opacity='.75' stroke-width='5' d='M50 0L97 25V75L50 100L3 75V25z'/%3E%3C/svg%3E") center / 100% 100% no-repeat, linear-gradient(var(--d1), var(--d2)); }
+.die::before { content:""; position:absolute; inset:-9% -3%; z-index:-1; /* 픽셀 d20: 15×17 격자 (원래 벡터 도안을 찍은 것) */ -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 17' shape-rendering='crispEdges' preserveAspectRatio='none'%3E%3Cpath d='M7 0h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM9 2h1v1h-1zM10 2h1v1h-1zM11 2h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM12 3h1v1h-1zM0 4h1v1h-1zM1 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM14 4h1v1h-1zM0 5h1v1h-1zM1 5h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM14 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM14 6h1v1h-1zM0 7h1v1h-1zM1 7h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM10 7h1v1h-1zM11 7h1v1h-1zM12 7h1v1h-1zM13 7h1v1h-1zM14 7h1v1h-1zM0 8h1v1h-1zM1 8h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM10 8h1v1h-1zM11 8h1v1h-1zM12 8h1v1h-1zM13 8h1v1h-1zM14 8h1v1h-1zM0 9h1v1h-1zM1 9h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM11 9h1v1h-1zM12 9h1v1h-1zM13 9h1v1h-1zM14 9h1v1h-1zM0 10h1v1h-1zM1 10h1v1h-1zM2 10h1v1h-1zM3 10h1v1h-1zM4 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM11 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM14 10h1v1h-1zM0 11h1v1h-1zM1 11h1v1h-1zM2 11h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM5 11h1v1h-1zM6 11h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM9 11h1v1h-1zM10 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM14 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM2 12h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM11 12h1v1h-1zM12 12h1v1h-1zM13 12h1v1h-1zM14 12h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM4 13h1v1h-1zM5 13h1v1h-1zM6 13h1v1h-1zM7 13h1v1h-1zM8 13h1v1h-1zM9 13h1v1h-1zM10 13h1v1h-1zM11 13h1v1h-1zM12 13h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM7 16h1v1h-1z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 17' shape-rendering='crispEdges' preserveAspectRatio='none'%3E%3Cpath d='M7 0h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM7 1h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM9 2h1v1h-1zM10 2h1v1h-1zM11 2h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM12 3h1v1h-1zM0 4h1v1h-1zM1 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM14 4h1v1h-1zM0 5h1v1h-1zM1 5h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM14 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM14 6h1v1h-1zM0 7h1v1h-1zM1 7h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM5 7h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM9 7h1v1h-1zM10 7h1v1h-1zM11 7h1v1h-1zM12 7h1v1h-1zM13 7h1v1h-1zM14 7h1v1h-1zM0 8h1v1h-1zM1 8h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM9 8h1v1h-1zM10 8h1v1h-1zM11 8h1v1h-1zM12 8h1v1h-1zM13 8h1v1h-1zM14 8h1v1h-1zM0 9h1v1h-1zM1 9h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM6 9h1v1h-1zM7 9h1v1h-1zM8 9h1v1h-1zM9 9h1v1h-1zM10 9h1v1h-1zM11 9h1v1h-1zM12 9h1v1h-1zM13 9h1v1h-1zM14 9h1v1h-1zM0 10h1v1h-1zM1 10h1v1h-1zM2 10h1v1h-1zM3 10h1v1h-1zM4 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM11 10h1v1h-1zM12 10h1v1h-1zM13 10h1v1h-1zM14 10h1v1h-1zM0 11h1v1h-1zM1 11h1v1h-1zM2 11h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM5 11h1v1h-1zM6 11h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM9 11h1v1h-1zM10 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM14 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM2 12h1v1h-1zM3 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM11 12h1v1h-1zM12 12h1v1h-1zM13 12h1v1h-1zM14 12h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM4 13h1v1h-1zM5 13h1v1h-1zM6 13h1v1h-1zM7 13h1v1h-1zM8 13h1v1h-1zM9 13h1v1h-1zM10 13h1v1h-1zM11 13h1v1h-1zM12 13h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM7 16h1v1h-1z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 15 17' shape-rendering='crispEdges' preserveAspectRatio='none'%3E%3Cpath fill='%23000' fill-opacity='0.8' d='M7 0h1v1h-1zM5 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM10 2h1v1h-1zM11 2h1v1h-1zM2 3h1v1h-1zM12 3h1v1h-1zM0 4h1v1h-1zM1 4h1v1h-1zM13 4h1v1h-1zM14 4h1v1h-1zM0 5h1v1h-1zM14 5h1v1h-1zM0 6h1v1h-1zM14 6h1v1h-1zM0 7h1v1h-1zM14 7h1v1h-1zM0 8h1v1h-1zM14 8h1v1h-1zM0 9h1v1h-1zM14 9h1v1h-1zM0 10h1v1h-1zM14 10h1v1h-1zM0 11h1v1h-1zM14 11h1v1h-1zM0 12h1v1h-1zM1 12h1v1h-1zM13 12h1v1h-1zM14 12h1v1h-1zM2 13h1v1h-1zM12 13h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM7 16h1v1h-1z'/%3E%3Cpath fill='%23fff' fill-opacity='0.3' d='M7 1h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1z'/%3E%3Cpath fill='%23000' fill-opacity='0.22' d='M7 1h1v1h-1zM7 2h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM5 3h1v1h-1zM6 3h1v1h-1zM7 3h1v1h-1zM8 3h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM5 5h1v1h-1zM8 5h1v1h-1zM13 5h1v1h-1zM5 6h1v1h-1zM8 6h1v1h-1zM9 6h1v1h-1zM13 6h1v1h-1zM1 7h1v1h-1zM4 7h1v1h-1zM9 7h1v1h-1zM13 7h1v1h-1zM1 8h1v1h-1zM4 8h1v1h-1zM9 8h1v1h-1zM10 8h1v1h-1zM12 8h1v1h-1zM1 9h1v1h-1zM3 9h1v1h-1zM10 9h1v1h-1zM11 9h1v1h-1zM12 9h1v1h-1zM1 10h1v1h-1zM2 10h1v1h-1zM11 10h1v1h-1zM12 10h1v1h-1zM1 11h1v1h-1zM2 11h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM5 11h1v1h-1zM6 11h1v1h-1zM7 11h1v1h-1zM8 11h1v1h-1zM9 11h1v1h-1zM10 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM2 12h1v1h-1zM3 12h1v1h-1zM11 12h1v1h-1zM3 13h1v1h-1zM4 13h1v1h-1zM10 13h1v1h-1zM5 14h1v1h-1zM9 14h1v1h-1z'/%3E%3Cpath fill='%23fff' fill-opacity='0.12' d='M8 2h1v1h-1zM9 2h1v1h-1zM8 3h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1z'/%3E%3Cpath fill='%23fff' fill-opacity='0.06' d='M2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM1 5h1v1h-1zM2 5h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM1 7h1v1h-1zM2 7h1v1h-1zM3 7h1v1h-1zM4 7h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM2 9h1v1h-1zM3 9h1v1h-1zM2 10h1v1h-1zM2 11h1v1h-1z'/%3E%3Cpath fill='%23000' fill-opacity='0.06' d='M8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM9 5h1v1h-1zM10 5h1v1h-1zM11 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM9 6h1v1h-1zM10 6h1v1h-1zM11 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM10 7h1v1h-1zM11 7h1v1h-1zM12 7h1v1h-1zM13 7h1v1h-1zM10 8h1v1h-1zM11 8h1v1h-1zM12 8h1v1h-1zM11 9h1v1h-1zM12 9h1v1h-1zM12 10h1v1h-1zM12 11h1v1h-1z'/%3E%3Cpath fill='%23000' fill-opacity='0.12' d='M1 8h1v1h-1zM1 9h1v1h-1zM1 10h1v1h-1zM1 11h1v1h-1z'/%3E%3Cpath fill='%23000' fill-opacity='0.2' d='M13 8h1v1h-1zM13 9h1v1h-1zM13 10h1v1h-1zM13 11h1v1h-1zM2 12h1v1h-1zM3 13h1v1h-1z'/%3E%3Cpath fill='%23000' fill-opacity='0.3' d='M3 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM11 12h1v1h-1zM4 13h1v1h-1zM5 13h1v1h-1zM6 13h1v1h-1zM7 13h1v1h-1zM8 13h1v1h-1zM9 13h1v1h-1zM10 13h1v1h-1zM5 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM7 15h1v1h-1z'/%3E%3Cpath fill='%23000' fill-opacity='0.24' d='M12 12h1v1h-1zM11 13h1v1h-1z'/%3E%3C/svg%3E") center / 100% 100% no-repeat, linear-gradient(var(--d1) 52%, var(--d2) 52%); }
 .die.k-doom { --d1:#4a3626; --d2:#17100b; color:#ff7060 !important; text-shadow:0 1px 0 #000; } .die.k-gamble { --d1:#f0cf78; --d2:#c79b45; } .die.k-steady { --d1:#bcd4b0; --d2:#8fae84; } .die.k-twin { --d1:#bccbea; --d2:#8fa3cf; }
 .exitmark { padding:4px 9px !important; } .exitmark b { font-family:var(--serif); color:var(--brass-hi); } .exitmark small { color:var(--dim) !important; }
 /* ── 선술집 ── */
@@ -363,7 +363,7 @@ canvas { image-rendering:pixelated; }
 #titlescreen .tt-menu { position:relative; display:flex; flex-direction:column; align-items:center; gap:14px; }
 #titlescreen .tt-go { min-width:200px; min-height:48px; padding:0 26px; background:#efe6cf; color:#17110c; border:0; border-radius:0; font:700 17px var(--serif); cursor:pointer; box-shadow:4px 4px 0 #000; }
 #titlescreen .tt-go:active { transform:translate(2px, 2px); box-shadow:2px 2px 0 #000; }
-#titlescreen small { color:#8a7a5e; font:500 12px "Noto Sans KR",sans-serif; letter-spacing:1px; }
+#titlescreen small { color:#8a7a5e; font:500 12px "Galmuri11","Noto Sans KR",sans-serif; letter-spacing:1px; }
 
 /* 선술집의 파티 조합: 기호마다 한 줄 (비율 · 그 조합이 주는 것). 조합 표는 뺐다 */
 #tavern .tv-sym { list-style:none; margin:0; padding:0; display:grid; gap:4px; font-size:13px; }
@@ -390,16 +390,16 @@ canvas { image-rendering:pixelated; }
 /* ══ 운명판 (2026-11-19 다시 짬): 줄 = 사람, 네 칸. 쓴 칸은 흐리게 · 다음에 쓸 칸은 밝은 테 · 맞은 줄(빙고)은 그 기호의 빛 ══ */
 /* 주사위를 쓸 때: 작은 판의 그 칸에서 빠져나와 그 사람 머리 위로 날아가 멈췄다가 사라진다 (fight.js fly) */
 .fatefly { position:absolute; left:0; top:0; z-index:8; pointer-events:none; animation:flyout 1.2s linear forwards; } .fatefly .die { width:30px; height:30px; font-size:15px; filter:drop-shadow(0 0 2px var(--gold)) drop-shadow(0 0 6px rgba(240,192,112,.8)); }
-.fatefly .die .sy { position:absolute; right:-6px; top:-7px; margin:0; font-size:9px; } .fatefly i:not(.sy) { display:block; margin-top:1px; text-align:center; font:700 10px "Noto Sans KR",sans-serif; font-style:normal; color:var(--gold); text-shadow:0 1px 2px #000; }
+.fatefly .die .sy { position:absolute; right:-6px; top:-7px; margin:0; font-size:9px; } .fatefly i:not(.sy) { display:block; margin-top:1px; text-align:center; font:700 10px "Galmuri11","Noto Sans KR",sans-serif; font-style:normal; color:var(--gold); text-shadow:0 1px 2px #000; }
 @keyframes flyout { 0%, 78% { opacity:1; } 100% { opacity:0; } }
-@media (min-width: 900px) {     .fatefly .die { width:40px; height:40px; font-size:20px; } }
+@media (min-width: 900px) {     .fatefly .die { width:40px; height:40px; font-size:24px; } }
 @media (prefers-reduced-motion: reduce) { .fatefly { animation-duration:.8s; } .fatefly .die { transition:none !important; } }
 /* 누가 할까 (탐험 판정): 사람마다 다음 칸의 눈 · 보정 · 합 (crawl.js pickWho) */
 #crawlscene.who button { display:flex; align-items:center; gap:8px; } #crawlscene.who .die { position:relative; flex:none; width:30px; height:30px; font-size:15px; }
 #crawlscene.who .die .sy { position:absolute; right:-6px; top:-7px; margin:0; font-size:9px; color:#fff !important; } #crawlscene.who .die .sy.s-wild { color:#f0c070 !important; }
 #crawlscene.who button i.ok, #crawlscene.who button i.no { margin-left:auto; font-style:normal; font-weight:700; } #crawlscene.who button i.ok { color:#9fe08a !important; } #crawlscene.who button i.no { color:#e08a6a !important; }
 /* ── 운명판 칸 (js/app/side.js, 2026-11-19): 파티 + 운명판을 한 곳에 — 폰은 아래 띠, 넓은 화면은 왼쪽 기둥 (오른쪽이 게임 화면) ── */
-#side { position:fixed; left:0; right:0; bottom:0; z-index:5; box-sizing:border-box; padding:6px 8px calc(6px + var(--safe-b)); color:var(--ink); font:12px "Noto Sans KR",sans-serif;
+#side { position:fixed; left:0; right:0; bottom:0; z-index:5; box-sizing:border-box; padding:6px 8px calc(6px + var(--safe-b)); color:var(--ink); font:12px "Galmuri11","Noto Sans KR",sans-serif;
   background:linear-gradient(#1b130d, #2c2017); border-top:2px solid var(--wood-lo); box-shadow:inset 0 1px 0 var(--brass), 0 -3px 0 rgba(0,0,0,.35); user-select:none; }
 #side .sd-hd { display:none; }
 #side .sd-rows { position:relative; display:grid; gap:3px; }
@@ -422,9 +422,9 @@ canvas { image-rendering:pixelated; }
 #side .sd-c.used .die { opacity:.3; filter:grayscale(.7); cursor:default; }
 #side .sd-c.now .die { filter:drop-shadow(0 0 1px var(--gold)) drop-shadow(0 0 3px var(--gold)); }
 #side .die.sel { filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px #fff3c4) !important; transform:translateY(-3px) scale(1.08); }
-#side .bn { position:absolute; left:0; bottom:-4px; font:700 8px "Noto Sans KR",sans-serif; font-style:normal; color:#9fe08a; }
+#side .bn { position:absolute; left:0; bottom:-4px; font:700 8px "Galmuri11","Noto Sans KR",sans-serif; font-style:normal; color:#9fe08a; }
 #side .h-atk { --hc:#e0604a; } #side .h-def { --hc:#4a8fd8; } #side .h-arc { --hc:#a070e0; } #side .h-holy { --hc:#e8c860; }
-#side button { font-family:"Noto Sans KR",sans-serif; }
+#side button { font-family:"Galmuri11","Noto Sans KR",sans-serif; }
 #side .sd-hold { min-height:30px; padding:1px 2px; font-size:10px; line-height:1.15; color:var(--dim); background:#221810; border:1px solid #000; box-shadow:inset 0 0 0 1px #4a3826; cursor:pointer; }
 #side .sd-hold small { display:block; font-size:9px; color:var(--mute); }
 #side .sd-hold.on { color:#1a120c; background:linear-gradient(#e3c27a, #b08a45); } #side .sd-hold.on small { color:#3a2a14; }
@@ -443,7 +443,7 @@ canvas { image-rendering:pixelated; }
   #side .sd-row { grid-template-columns:minmax(0,1fr) auto 58px; gap:10px; padding:5px 8px; }
   #side .sd-who { grid-template-columns:34px minmax(0,1fr) auto; column-gap:8px; }
   #side .sd-face { width:34px; height:40px; } #side .sd-name { font-size:15px; } #side .sd-hp { height:9px; } #side .sd-who small { font-size:12px; }
-  #side .sd-dice { gap:6px; } #side .die { width:48px; height:48px; font-size:22px; } #side .die .sy { right:-7px; top:-7px; font-size:14px; } #side .bn { font-size:10px; bottom:-6px; }
+  #side .sd-dice { gap:6px; } #side .die { width:48px; height:48px; font-size:24px; } #side .die .sy { right:-7px; top:-7px; font-size:14px; } #side .bn { font-size:10px; bottom:-6px; }
   #side .sd-hold { min-height:48px; font-size:12px; } #side .sd-hold small { font-size:11px; }
   #side .sd-fx { margin:12px 2px 0; gap:4px; font-size:14px; } #side .sd-fx .none small { display:block; margin:2px 0 0; font-size:12px; }
   #side .sd-bar { display:flex; margin-top:auto; padding-top:12px; min-height:44px; align-items:center; } #side .sd-bar .hint { font-size:12px; color:var(--mute); } #side .sd-bar button { min-height:44px; font-size:15px; }
@@ -556,6 +556,13 @@ canvas { image-rendering:pixelated; }
 .bd-now li { display:grid; grid-template-columns:1fr auto; gap:1px 8px; padding:6px 10px; background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:7px; }
 .bd-now b { font-size:13px; color:var(--ink); font-family:var(--serif); } .bd-now small { font-size:11px; color:var(--dim); } .bd-now span { grid-column:1 / -1; font-size:12px; color:#cdb892; line-height:1.4; }
 .bd-now .bd-empty { border-style:dashed; background:none; } .bd-now .bd-empty b { color:var(--mute); }
+/* 칸 고치기 (UI.bindBuild): 칸을 누르면 아래에 배운 기술 목록 */
+.bd-pick[hidden] { display:none; } .bd-now .bd-lock { opacity:.45; border-style:dashed; background:none; }
+.bd-now li.ed { cursor:pointer; } .bd-now li.ed:hover { border-color:var(--brass); } .bd-now li.on { border-color:var(--brass-hi); box-shadow:0 0 0 1px var(--brass-hi); }
+.bd-pick { list-style:none; margin:6px 0 0; padding:6px; display:grid; gap:3px; background:#150e09; border:1px solid var(--brass); border-radius:2px; }
+.bd-pick li { display:grid; grid-template-columns:1fr auto; gap:1px 8px; padding:5px 8px; border:1px solid var(--line); cursor:pointer; } .bd-pick li:hover { border-color:var(--brass-hi); }
+.bd-pick b { font-size:12px; color:var(--ink); } .bd-pick small { font-size:11px; color:var(--dim); } .bd-pick span { grid-column:1 / -1; font-size:11px; color:#cdb892; } .bd-pick li.none { cursor:default; }
+.bd-reset { margin-left:6px; padding:1px 8px; font:inherit; font-size:11px; color:var(--brass-hi); background:none; border:1px solid var(--brass); border-radius:2px; cursor:pointer; }
 .bd-path { list-style:none; margin:0; padding:0; display:grid; gap:2px; }
 .bd-path li { display:grid; grid-template-columns:44px 1fr auto; align-items:baseline; gap:8px; padding:3px 8px; border-left:2px solid var(--line); }
 .bd-path i { font:700 12px var(--serif); font-style:normal; color:var(--brass-hi); text-align:right; white-space:nowrap; } .bd-path i::after { content:"레벨"; font-size:9px; margin-left:1px; color:var(--mute); }

@@ -33,13 +33,13 @@ const HUD = (() => {
     const v = CRAWL.view(), p = v && v.party[i]; if (!p || !p.m) return;
     const m = p.m, c = clsOf(m), need = G.Guild.needOf(m), AB = G.Reward.AB_N, skills = (m.skills || []).filter(k => G.Guild.spLv(k) != null);
     const worn = (G.Trinket.worn?.(f(), m.uid) || []).map(t => G.Trinket.def(t)?.n).filter(Boolean), die = G.Dice.KINDS[G.Dice.dieFor(p.a)];
-    let box = $('csheet'); if (!box) { box = document.createElement('div'); box.id = 'csheet'; box.onpointerup = ev => ev.stopPropagation(); $('stage').append(box); }
+    let box = $('csheet'); if (!box) { box = document.createElement('div'); box.id = 'csheet'; box.onpointerup = ev => ev.stopPropagation(); $('stage').append(box); UI.bindBuild(box, () => CRAWL.view()?.party[+box.dataset.i]?.m, () => sheet(+box.dataset.i)); } box.dataset.i = i;
     box.innerHTML = `<h3>${esc(m.name)} <small>${esc(c.n || m.cls)} · ${m.lv}레벨</small></h3>` +
       `<div class="sh-bar"><span>체력 ${Math.max(0, p.hp)}/${p.max}</span><i style="width:${Math.round(100 * Math.max(0, p.hp) / Math.max(1, p.max))}%"></i></div>` +
       `<div class="sh-bar xp"><span>경험치 ${Math.round(m.xp || 0)}/${need}</span><i style="width:${Math.round(100 * Math.min(1, (m.xp || 0) / need))}%"></i></div>` +
       `<div class="sh-ab">${Object.keys(AB).map(a => `<span><small>${AB[a]}</small>${G.Dnd.ab(m)[a]}</span>`).join('')}</div>` +
       `<h4>직업 기능</h4><ul class="sh-sk">${G.Reward.features(m).map(x => `<li><b>${esc(x.n)}</b><small>${x.lv}레벨</small><span>${esc(x.d || '')}</span></li>`).join('')}${G.Opt.of(m).filter(k => G.D.MSKILLS[k]).map(k => `<li><b>${esc(G.D.MSKILLS[k].n)}</b><small>고른 것</small><span>${esc(G.D.MSKILLS[k].d || '')}</span></li>`).join('')}</ul>` +
-      (G.Builds?.view(m) ? UI.build(G.Builds.view(m)) : `<h4>손에 든 기술 <small>${skills.length}/${G.Party.CAP}</small></h4>` +
+      (G.Builds?.view(m) ? UI.build(G.Builds.view(m), 'h4', !v.fighting) : `<h4>손에 든 기술 <small>${skills.length}/${G.Party.CAP}</small></h4>` +
       (skills.length ? `<ul class="sh-sk">${skills.map(k => `<li><b>${esc(G.D.MSKILLS[k]?.n || k)}</b><small>${G.Guild.spLv(k) ? `${G.Guild.spLv(k)}레벨 주문` : '소마법'}</small><span>${esc(G.D.MSKILLS[k]?.d || '')}</span></li>`).join('')}</ul>` : '<p class="sh-none">직업 기능으로 싸운다 (기술 칸 없음)</p>')) +
       GEARUI.section(m, v.fighting) + // 장비: 무기 · 갑옷 · 방패 · 마법 칸 셋 (js/app/gear_ui.js)
       (die ? `<h4>주사위</h4><p class="sh-none">${esc(m.dieN || die.n)} · ${(c => [['atk', '검'], ['def', '방'], ['arc', '주'], ['holy', '빛'], ['wild', '★'], ['blank', '빈 면']].filter(([k]) => c[k]).map(([k, n]) => `${n} ×${c[k]}`).join(' · '))(G.Dice.faces(p.a) || {})}${m.carve ? ` · 새긴 면 ${Object.keys(m.carve).join(' · ')}` : ''}${G.Dice.tags(p.a).length ? ` · ${G.Dice.tags(p.a).map(esc).join(' · ')}` : ''}</p>` : '') +

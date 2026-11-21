@@ -16,7 +16,7 @@ G.Reward = (() => {
   // 열린 칸: SRD 표의 소마법 · 준비 주문 수 − 지금 아는 수. 손에 든 기술은 5칸까지(G.Party.CAP) — 주문 칸을 먼저 연다
   const CAP = () => G.Party?.CAP ?? 99;
   function slotsOpen(m) {
-    if (m.plan) return { cantrip: 0, prepared: 0 }; // 빌드 계획이 있으면 칸은 계획대로 열린다 (js/game/builds.js)
+    if (G.Builds?.byId(m.build)) return { cantrip: 0, prepared: 0 }; // 빌드가 있으면 칸은 빌드대로 열린다 (js/game/builds.js)
     const L = GD().limits(m.cls, m.lv), cur = (m.skills || []).filter(k => GD().spLv(k) != null), free = Math.max(0, CAP() - cur.length);
     const p = Math.min(free, Math.max(0, L.prepared - cur.filter(k => GD().spLv(k) > 0).length)), c = Math.min(free - p, Math.max(0, L.cantrip - cur.filter(k => GD().spLv(k) === 0).length));
     return { cantrip: c, prepared: p };
@@ -37,20 +37,30 @@ G.Reward = (() => {
     'Primal Knowledge': ['원초의 지식', '기술 숙련 하나'], 'Magical Discoveries': ['마법의 발견', '다른 직업의 주문 둘'], 'Greater Divine Intervention': ['상급 신의 개입', '소원을 빈다'], "Nature's Ward": ['자연의 보호', '독 면역 · 지형의 저항'], 'Heightened Focus': ['고조된 집중', '연타 · 인내 · 바람 걸음이 세진다'],
     'Body and Mind': ['몸과 마음', '민첩 · 지혜 +4'], Roving: ['방랑', '이동 속도 · 오르기 · 헤엄'], "Hunter's Prey": ['사냥꾼의 사냥감', '다친 적에게 추가 피해'], "Thief's Reflexes": ['도둑의 반사신경', '첫 라운드에 차례가 둘'], 'Dragon Wings': ['용의 날개', '날개로 난다'],
     'Contact Patron': ['후원자와 교신', '후원자에게 묻는다'], 'Eldritch Master': ['섬뜩한 대가', '계약 슬롯을 모두 되찾는다'], 'Memorize Spell': ['주문 암기', '짧은 휴식에 준비 주문 하나를 바꾼다'], 'Spell Mastery': ['주문 통달', '1 · 2레벨 주문 하나씩을 슬롯 없이'], 'Signature Spells': ['대표 주문', '3레벨 주문 둘을 늘 준비'], 'Evocation Savant': ['방출 전문가', '방출 주문을 더 배운다'] };
+  // 화면에는 효과만 (2026-11-21 사용자: 줄글 말고 효과만). 싸움에 아무 효과가 없는 기능(언어 · 기술 숙련 · 탐험 · 주문 시전 자체)은 목록에서 뺀다
+  const HIDE = new Set(['Spellcasting', 'Druidic', "Thieves' Cant", 'Second-Story Work', 'Contact Patron', 'Ritual Adept', 'Evocation Savant', "Hunter's Lore", 'Slow Fall']);
+  const FX = { '추가 공격': '공격 2회', '광란': '격노 중 첫 명중 +격노 피해만큼 d6', '영감의 샘': '영감이 짧은 휴식마다 회복', '생명 보존': '절반 아래 동료 회복 · 합계 레벨 × 5', '자연 회복': '짧은 휴식에 슬롯 회복 (합계 레벨 절반)', '전술적 사고': '판정 실패 시 +1d10 (재기 1번)', '야생 변신': '곰 변신 · 임시 체력 = 레벨', '자연의 성역': '곁 동료 AC +2 · 저항 · 10라운드', '창조의 말': '권능어: 치유 · 죽음 항상 준비', '전문화': '기술 2개 숙련 ×2', '원초의 지식': '기술 숙련 +1', '추가 숙련': '기술 숙련 +3', '학자': '기술 1개 숙련 ×2', '능숙한 탐험가': '기술 1개 숙련 ×2', '마법 도구 사용': '충전 아낌 · 아무 두루마리', '추가 공격 둘': '공격 3회', '추가 공격 셋': '공격 4회', '서사 은혜': '재주 1', '전투 방식': '전투 방식 1', '추가 전투 방식': '전투 방식 +1', '계약 마법': '슬롯이 짧은 휴식마다 회복',
+    '신성 변환': '언데드 퇴치 · 신성한 불꽃', '집중': '연타 · 인내 · 바람 걸음', '비무장 이동': '이동 +2칸 (갑옷 없이)', '팔라딘의 강타': '신성 강타 항상 준비', '선호하는 적': '사냥꾼의 표식 항상 준비', '마법의 샘': '마력 점수 ↔ 슬롯',
+    '초마법': '초마법 2', '섬뜩한 영창': '영창 1', '비전 회복': '짧은 휴식에 슬롯 회복', '주문 암기': '짧은 휴식에 준비 주문 1개 교체', '마력 회복': '짧은 휴식에 마력 점수 회복', '어둠의 행운': '판정 · 내성 +d10 (1번)', '마법의 발견': '다른 직업 주문 2',
+    '상급 신의 개입': '소원 (1번)', '고조된 집중': '연타 · 인내 · 바람 걸음 강화', '방랑': '이동 +2칸', '사냥꾼의 사냥감': '다친 적 +1d8 (차례에 한 번)', '용의 날개': '비행', '섬뜩한 대가': '계약 슬롯 전부 회복', '대표 주문': '3레벨 주문 2개 항상 준비',
+    '마법의 비밀': '다른 직업 주문 선택', '신의 개입': '5레벨 이하 주문 1번 슬롯 없이 (20레벨: 8레벨)', '야생 동반자': '사역마: 적 1 다음 공격 이점', '날랜 걸음': '추가 행동 뒤 바람 걸음', '완벽한 집중': '선제권 때 집중 최소 4',
+    '최상급 잠행': '공격해도 투명 유지', '끈질긴 사냥꾼': '맞아도 표식 유지', '마법의 기지': '계약 슬롯 절반 회복 (1번)', '마법의 화신': '마력 점수 2 → 타고난 마력', '충직한 탈것': '탈것: 이동 2배 · 명중 1d8 + 2 광휘',
+    '끈질긴 격노': '격노 중 0이 되면 건강 내성으로 버팀', '보복': '곁의 적에게 맞으면 반격', '공격 튕겨내기': '받는 피해 −(1d10 + 민첩 + 레벨)', '무기 숙련': '든 무기의 숙련 효과', '놀라운 신진대사': '전투 시작 시 집중 회복 · 레벨 + 무술 주사위 회복' };
   // SRD 기능 표의 한 줄 → 화면에 쓸 이름 · 설명 (엔진에 한글 자료가 있으면 그것)
   let EN = null;
   function feat(x, m) {
     EN = EN || new Map(Object.entries(G.D.MSKILLS).map(([k, v]) => [v.en, k]));
     if (/Subclass$/.test(x.en)) { const a = G.D.ADV[m.adv || subOf(m.cls)]; return { n: `하위 직업 — ${a ? a.n : '?'}`, d: '' , lv: x.lv }; }
-    if (/ Spells$/.test(x.en)) return { n: '하위 직업 주문', d: '늘 준비된 주문이 생긴다', lv: x.lv };
-    const k = EN.get(x.en), K = k && G.D.MSKILLS[k]; let n = K ? K.n : KO[x.en] ? KO[x.en][0] : x.en, d = K ? K.d : KO[x.en] ? KO[x.en][1] : '';
-    if (x.en === 'Sneak Attack') d = `${Math.ceil(m.lv / 2)}d6 · ${d}`;
+    if (/ Spells$/.test(x.en)) return { n: '하위 직업 주문', d: '항상 준비 주문 추가', lv: x.lv };
+    const k = EN.get(x.en), K = k && G.D.MSKILLS[k]; let n = K ? K.n : KO[x.en] ? KO[x.en][0] : x.en, d = FX[n] ?? (K ? K.d : KO[x.en] ? KO[x.en][1] : '');
+    if (x.en === 'Sneak Attack') d = `+${Math.ceil(m.lv / 2)}d6 · 이점 또는 동료가 적 곁`;
+    if (x.en === 'Unarmored Defense') d = `AC 10 + 민첩 + ${m.cls === 'monk' ? '지혜' : '건강'}`;
     return { n, d, lv: x.lv };
   }
   const rows = m => { const cls = G.SRD.RAW_CLS[m.cls], sub = m.adv ? slug(G.D.ADV[m.adv]?.en) : null; return Object.values(G.SRD_RAW.FEATURE).filter(x => x.cls === cls && (!x.sub || (sub && slug(x.sub).includes(sub)))); };
   // 그 사람이 지금 가진 직업 기능 전부 (레벨 순) · 그 레벨에 새로 얻은 것
-  const features = m => rows(m).filter(x => x.lv <= m.lv).sort((a, b) => a.lv - b.lv).map(x => feat(x, m));
-  const gained = (m, lv) => rows(m).filter(x => x.lv === lv).map(x => feat(x, m));
+  const features = m => rows(m).filter(x => x.lv <= m.lv && !HIDE.has(x.en)).sort((a, b) => a.lv - b.lv).map(x => feat(x, m));
+  const gained = (m, lv) => rows(m).filter(x => x.lv === lv && !HIDE.has(x.en)).map(x => feat(x, m));
   // 레벨이 하나 올랐다 (bridge.js의 G.Guild.grow가 부른다 — m.lv는 이미 오른 값)
   function levelUp(m) {
     const q = m.lvq || (m.lvq = []), O = G.Opt;
@@ -59,7 +69,7 @@ G.Reward = (() => {
     if (ASI_AT(m.cls).includes(m.lv)) q.push({ k: 'asi' });
     O.of(m); // 고르는 기능이 있는 직업만 m.opts가 생긴다 (파이터 · 팔라딘 · 레인저의 전투 방식, 워락의 영창, 소서러의 초마법)
     for (const g of ['fs', 'iv', 'mm']) { if (!m.opts?.[g]) continue; const n1 = O.count(m, g); m.lv--; const n0 = O.count(m, g); m.lv++; for (let i = n0; i < n1; i++) if (!(g === 'fs' && m.cls === 'dragoon' && m.lv === 1)) q.push({ k: g }); }
-    if (!m.plan && caster(m) && (m.skills || []).filter(k => GD().spLv(k) != null).length >= CAP()) m.swapPend = (m.swapPend || 0) + 1; // 5칸이 다 찼다: 바꾸기 기회
+    if (!G.Builds?.byId(m.build) && caster(m) && (m.skills || []).filter(k => GD().spLv(k) != null).length >= CAP()) m.swapPend = (m.swapPend || 0) + 1; // 5칸이 다 찼다: 바꾸기 기회
   }
   // 남은 고르기 수: 줄(lvq) + 열린 주문 칸 + 바꾸기 기회
   function pending(m) { const o = caster(m) ? slotsOpen(m) : { cantrip: 0, prepared: 0 }; return (m.lvq || []).length + o.cantrip + o.prepared + (caster(m) ? m.swapPend || 0 : 0); }

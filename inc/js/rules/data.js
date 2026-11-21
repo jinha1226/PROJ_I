@@ -263,7 +263,7 @@ Object.assign(G.D.MSKILLS, {
   sr_revive: { n: '소생술', en: 'Revivify', t: 'u_god', d: '쓰러진 동료 체력 1', lv: 5 },
   sr_mhw: { n: '집단 치유의 말', en: 'Mass Healing Word', t: 'b_regen', d: '파티 2d4 + 능력치', lv: 5 },
   // 바드
-  sr_insp: { n: '바드의 영감', en: 'Bardic Inspiration', t: 'fx_song', d: '동료 한 명 · D20 굴림에 실패하면 d6~d12를 더한다 · 한 번', lv: { bard: 1 } },
+  sr_insp: { n: '바드의 영감', en: 'Bardic Inspiration', t: 'fx_song', d: '동료 d20 실패 시 +d6~d12 (1번)', lv: { bard: 1 } },
   sr_faerie: { n: '요정 불꽃', en: 'Faerie Fire', t: 'fx_song', d: '반경 2칸 민첩 내성 · 빛남 10라운드 · 집중', lv: 1 },
   sr_mock: { n: '잔인한 조롱', en: 'Vicious Mockery', t: 'b_fury', d: '1d6 (Lv 5 · 11 · 17에 +d6) · 지혜 내성 · 다음 공격 불리', lv: 1 },
   sr_whisper: { n: '불협화음의 속삭임', en: 'Dissonant Whispers', t: 'fx_zap', d: '3d6 · 지혜 내성 절반 · 공포', lv: 1 },

@@ -129,7 +129,8 @@ G.Guild = (() => {
     },
     // 레벨이 오르면 쓸 수 없던 칸 · 낮은 기술 하나를 새 기술로 (사람이 고른 칸은 그대로)
     grow(m) { Gd.fillSlots(m); },
-    skLv(cls, k) { const L = D.MSKILLS[k]?.lv; return typeof L === 'object' ? L[cls] || 1 : L || 1; },
+    // 그 직업이 그 기술을 쓰는 레벨. 직업 목록에 없는 주문(하위 직업이 늘 준비해 주는 주문 — 악마 워락의 화염구 등)은 그 주문 레벨의 슬롯이 생기는 직업 레벨 (SRD 직업 표 · 2026-11-21: 전에는 1이었다)
+    skLv(cls, k) { const L = D.MSKILLS[k]?.lv, v = typeof L === 'object' ? L[cls] : L; if (v) return v; const n = Gd.spLv(k); if (!n) return 1; if (cls === 'warlock' && n >= 6) return { 6: 11, 7: 13, 8: 15, 9: 17 }[n]; for (let lv = 1; lv <= 20; lv++) if (G.Res.table({ cls, lv }).length >= n) return lv; return 1; },
     // 주문 레벨 (0 소마법 · 없으면 주문이 아닌 기능)
     spLv(k) { const e = D.MSKILLS[k]?.en; if (!e) return null; if (!Gd._lvOf) { Gd._lvOf = {}; for (const id in G.SRD_SP) Gd._lvOf[G.SRD_SP[id].en] = G.SRD_SP[id].lv; } return Gd._lvOf[e] ?? null; },
     // 고르는 수 (SRD 직업 표): 소마법 · 준비 주문

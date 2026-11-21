@@ -41,11 +41,37 @@ const UI = (() => {
   const px = n => `<i class="px px-${n}"></i>`;
   const IC = { '🦺': 'armor', '🥋': 'armor', '🛡': 'shield', '🗡': 'sword', '⚔': 'sword', '🔱': 'sword', '💍': 'ring', '🪄': 'wand', '🥢': 'wand', '🧥': 'cloak', '🥻': 'cloak', '🧤': 'glove', '⛓': 'glove', '🔨': 'hammer', '📿': 'amulet', '🎗': 'amulet', '👑': 'crown', '🏹': 'bow', '👢': 'boots', '🥾': 'boots', '🪓': 'axe', '🔮': 'orb', '🧿': 'orb', '💀': 'skull', '☠': 'skull', '★': 'star', '✦': 'spark' };
   const ic = e => (e ? px(IC[[...e][0]] || 'gem') : '');
-  // 빌드 칸 · 성장 경로 (G.Builds.view): 선술집 상태창 · 캐릭터 시트가 같이 쓴다. 경로는 기술마다 생기는 레벨 — 지금 든 것은 밝게, 앞으로 생길 것은 흐리게, 내려놓은 것은 줄을 긋는다
-  function build(v, H = 'h4') {
-    if (!v) return ''; const li = o => `<li><b>${esc(o.n)}</b><small>${esc(o.tag)}</small><span>${esc(o.d)}</span></li>`;
-    return `<${H}>기술 ${v.now.length}/${v.max} <small>${esc(v.n)}</small></${H}><ul class="bd-now">${v.now.map(li).join('')}${'<li class="bd-empty"><b>빈 칸</b><small>레벨이 오르면 채워진다</small></li>'.repeat(Math.max(0, v.max - v.now.length))}</ul>` +
-      `<${H}>성장 경로 <small>20레벨까지 · 기술마다 생기는 레벨</small></${H}><ol class="bd-path">${v.path.map(t => `<li class="${t.have ? 'on' : t.gone ? 'gone' : 'soon'}" title="${esc(t.d)}"><i>${t.lv ?? '-'}</i><b>${esc(t.n)}</b><small>${t.outN ? `${esc(t.outN)} 대신` : esc(t.tag)}</small></li>`).join('')}</ol>`;
+  // 기술 칸 (G.Builds.view): 선술집 상태창 · 캐릭터 시트가 같이 쓴다. 칸 6개(필수 · 자유 · 잠김) + 종족 칸
+  // edit = 자유 칸 · 종족 칸을 눌러 바꿀 수 있다 (전투 밖) — bindBuild가 누름을 받는다
+  function build(v, H = 'h4', edit = false) {
+    if (!v) return '';
+    const body = (o, kd) => `<b>${esc(o.n)}</b><small>${kd} · ${esc(o.tag)}${o.left != null ? ` · 남은 ${o.left}` : ''}</small><span>${esc(o.d)}</span>`;
+    const li = c => {
+      if (c.locked) return `<li class="bd-lock"><b>${c.core ? esc(c.coreN) : '자유'}</b><small>${c.core ? `필수 · ${c.coreLv}` : c.open}레벨</small></li>`;
+      const ed = edit && !c.core ? ` class="ed${c.s ? '' : ' bd-empty'}" data-slot="${c.i}"` : c.s ? '' : ' class="bd-empty"';
+      return `<li${ed}>${c.s ? body(c.s, c.core ? '필수' : '자유') : `<b>${c.core ? esc(c.coreN) : '빈 칸'}</b><small>${c.core ? `필수 · ${c.coreLv}레벨` : '자유'}</small>`}</li>`;
+    };
+    const rc = v.race ? `<li${edit && v.raceOpts.length > 1 ? ' class="ed" data-slot="race"' : ''}>${body(v.race, '종족')}</li>` : '';
+    return `<${H}>기술 <small>${esc(v.n)}</small>${edit && v.custom ? ' <button class="bd-reset">추천대로</button>' : ''}</${H}><ul class="bd-now">${v.slots.map(li).join('')}${rc}</ul>${edit ? '<ul class="bd-pick" hidden></ul>' : ''}`;
   }
-  return { $, esc, place, toStage, tileAt, ring, svg, say, face, px, ic, build };
+  // 칸 고치기 (m = 사람 또는 사람을 돌려주는 함수): 자유 칸 · 종족 칸을 누르면 그 아래에 후보 · 고르면 그 칸에 · 다 되면 redraw()
+  function bindBuild(root, m, redraw) {
+    root.addEventListener('click', ev => {
+      const r = ev.target.closest('.bd-reset'), slot = ev.target.closest('.bd-now li.ed'), pk = ev.target.closest('.bd-pick li');
+      if (!r && !slot && !pk) return; ev.stopPropagation(); const M = typeof m === 'function' ? m() : m; if (!M) return;
+      if (r) { G.Builds.resetSlots(M); redraw(); return; }
+      const pick = root.querySelector('.bd-pick'); if (!pick) return;
+      if (slot) { const i = slot.dataset.slot, v = G.Builds.view(M), isR = i === 'race', cur = isR ? null : v.slots[+i].s;
+        if (pick.dataset.i === i && !pick.hidden) { pick.hidden = true; return; }
+        root.querySelectorAll('.bd-now li.on').forEach(q => q.classList.remove('on')); slot.classList.add('on');
+        const L = isR ? v.raceOpts.filter(o => o.k !== v.race?.k) : v.pool(+i);
+        pick.dataset.i = i; pick.hidden = false;
+        pick.innerHTML = L.map(o => `<li data-k="${esc(o.k)}"><b>${esc(o.n)}</b><small>${esc(o.tag)}</small><span>${esc(o.d)}</span></li>`).join('') + (cur ? '<li data-k=""><b>비우기</b></li>' : '') || '<li class="none"><small>넣을 기술이 없다</small></li>';
+        return; }
+      if (pk.classList.contains('none')) return;
+      if (pick.dataset.i === 'race') G.Builds.setRace(M, pk.dataset.k); else G.Builds.setSlot(M, +pick.dataset.i, pk.dataset.k || null);
+      redraw();
+    });
+  }
+  return { $, esc, place, toStage, tileAt, ring, svg, say, face, px, ic, build, bindBuild };
 })();
